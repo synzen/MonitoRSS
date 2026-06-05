@@ -1,23 +1,20 @@
-import {
-  Button,
-  HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  Heading,
-  Text,
-} from "@chakra-ui/react";
+import { Button, HStack, Stack, Heading, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useUpdateUserFeedManagementInvite, useUserFeed, UserFeed } from "@/features/feed";
 import { ConnectionsCheckboxList } from "../../ConnectionsCheckboxList";
 import { InlineErrorAlert } from "@/components";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
 
 interface Props {
   feedId?: string;
@@ -101,14 +98,24 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
   }, [isOpen]);
 
   return (
-    <Modal size="xl" isOpen={isOpen} onClose={onClose} finalFocusRef={onCloseRef}>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Update feed management invite</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <Stack spacing={6}>
-            <Stack spacing={2}>
+    <DialogRoot
+      size="xl"
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) {
+          onClose();
+        }
+      }}
+      finalFocusEl={onCloseRef ? () => onCloseRef.current : undefined}
+    >
+      <DialogContent>
+        <DialogHeader marginRight={4}>
+          <DialogTitle>Update feed management invite</DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
+          <Stack gap={6}>
+            <Stack gap={2}>
               <Heading size="sm" as="h2">
                 Shared Connections
               </Heading>
@@ -136,18 +143,18 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
               />
             )}
           </Stack>
-        </ModalBody>
-        <ModalFooter>
+        </DialogBody>
+        <DialogFooter>
           <HStack>
             <Button variant="ghost" onClick={onClose}>
               <span>Cancel</span>
             </Button>
-            <Button colorScheme="blue" mr={3} onClick={onSubmit} isLoading={status === "loading"}>
+            <PrimaryActionButton mr={3} onClick={onSubmit} loading={status === "loading"}>
               <span>Save</span>
-            </Button>
+            </PrimaryActionButton>
           </HStack>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

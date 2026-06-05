@@ -2,6 +2,7 @@ import "@testing-library/jest-dom";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { system } from "@/utils/theme";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { FeedLimitBar } from "./index";
 
@@ -20,7 +21,7 @@ const mockOnOpen = vi.fn();
 
 const renderBar = (props: { showOnlyWhenConstrained?: boolean } = {}) => {
   return render(
-    <ChakraProvider>
+    <ChakraProvider value={system}>
       <PricingDialogContext.Provider value={{ onOpen: mockOnOpen }}>
         <FeedLimitBar {...props} />
       </PricingDialogContext.Provider>

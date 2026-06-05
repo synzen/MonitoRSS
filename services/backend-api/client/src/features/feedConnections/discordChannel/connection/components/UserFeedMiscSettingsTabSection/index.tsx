@@ -1,43 +1,24 @@
 import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
   Box,
   Button,
   Center,
   Code,
-  Divider,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  Heading,
+  Separator,
   HStack,
   IconButton,
   Input,
-  Link,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  NumberDecrementStepper,
-  NumberIncrementStepper,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  Select,
+  Link as ChakraLink,
   Skeleton,
   Stack,
-  Table,
-  TableContainer,
-  Tag,
-  Tbody,
-  Td,
+  TableBody,
+  TableCell,
+  TableColumnHeader,
+  TableHeader,
+  TableRoot,
+  TableRow,
+  TableScrollArea,
   Text,
-  Th,
-  Thead,
-  Tr,
+  Heading,
 } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -45,8 +26,8 @@ import dayjs from "dayjs";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
 import { array, InferType, number, object, string } from "yup";
-import { ChevronDownIcon, DeleteIcon, ExternalLinkIcon, SettingsIcon } from "@chakra-ui/icons";
-import { useState } from "react";
+import { FaChevronDown, FaTrash, FaUpRightFromSquare, FaGear } from "react-icons/fa6";
+import { useState, useRef } from "react";
 import { ConfirmModal, InlineErrorAlert, Loading, SavedUnsavedChangesPopupBar } from "@/components";
 import {
   useCreateUserFeedManagementInvite,
@@ -71,6 +52,12 @@ import {
 import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { getEffectiveRefreshRateSeconds } from "@/utils/formatRefreshRateSeconds";
+import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
+import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
+import { NativeSelectRoot, NativeSelectField } from "@/components/ui/native-select";
+import { Tag } from "@/components/ui/tag";
 
 interface Props {
   feedId: string;
@@ -129,6 +116,9 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
     isOpen: false,
     inviteId: "",
   });
+  const [isComanageDialogOpen, setIsComanageDialogOpen] = useState(false);
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
+  const formFocusRef = useRef<HTMLFormElement>(null);
 
   const formMethods = useForm<FormValues>({
     resolver: yupResolver(FormSchema),
@@ -246,14 +236,14 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
               {canHaveLowerRate && (
                 <>
                   {" "}
-                  <Link
-                    color="blue.200"
+                  <ChakraLink
+                    color="text.link"
                     href="https://monitorss.xyz/pricing"
                     target="_blank"
                     rel="noreferrer"
                   >
                     Get lower rates by being a paid supporter.
-                  </Link>
+                  </ChakraLink>
                 </>
               )}
             </Text>
@@ -318,7 +308,12 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
   return (
     <PageAlertProvider>
       <FormProvider {...formMethods}>
-        <form onSubmit={handleSubmit(onUpdatedFeed)} id="user-management">
+        <form
+          ref={formFocusRef}
+          onSubmit={handleSubmit(onUpdatedFeed)}
+          id="user-management"
+          aria-label="Feed settings"
+        >
           <ManageUserFeedManagementInviteSettingsDialog
             feedId={feedId}
             inviteId={manageInviteDialogState.inviteId}
@@ -328,9 +323,9 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
           <Heading size="md" as="h2" mb={8}>
             Miscellaneous Feed Settings
           </Heading>
-          <Stack spacing={8} marginBottom={8}>
-            <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
-              <Stack spacing={2}>
+          <Stack gap={8} marginBottom={8}>
+            <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>
+              <Stack gap={2}>
                 <Heading size="sm" as="h3">
                   Feed Management Invites
                 </Heading>
@@ -340,16 +335,13 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                   delete their invite.
                 </Text>
                 {!feed?.connections.length && (
-                  <Alert role="none">
-                    <AlertIcon />
-                    <Stack>
-                      <AlertTitle>
-                        You must have at least one feed connection created to create feed management
-                        invites.
-                      </AlertTitle>
-                      <Box>
-                        <Button
-                          as={Link}
+                  <Alert
+                    role="none"
+                    title="You must have at least one feed connection created to create feed management invites."
+                  >
+                    <Box>
+                      <Button asChild>
+                        <ChakraLink
                           href={pages.userFeed(feed?.id || "", {
                             tab: UserFeedTabSearchParam.Connections,
                           })}
@@ -358,46 +350,44 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                         >
                           <HStack alignItems="center">
                             <Text>View and create connections</Text>
-                            <ExternalLinkIcon />
+                            <FaUpRightFromSquare />
                           </HStack>
-                        </Button>
-                      </Box>
-                    </Stack>
+                        </ChakraLink>
+                      </Button>
+                    </Box>
                   </Alert>
                 )}
                 <PageAlertContextOutlet />
               </Stack>
               <Stack>
-                <Divider />
+                <Separator />
                 {feed && feed.sharedAccessDetails && (
                   <Alert status="warning">
-                    <AlertDescription>
-                      Only the feed owner can manage feed management invites.
-                    </AlertDescription>
+                    Only the feed owner can manage feed management invites.
                   </Alert>
                 )}
                 {feed && !feed.sharedAccessDetails && (
                   <Stack>
                     <Text
                       hidden={!!feed.shareManageOptions?.invites.length}
-                      color="gray.400"
+                      color="fg.muted"
                       pt={2}
                     >
                       This feed does not have any users with feed management access.
                     </Text>
-                    <TableContainer hidden={!feed.shareManageOptions?.invites.length}>
-                      <Table variant="simple">
-                        <Thead>
-                          <Tr>
-                            <Th>Name</Th>
-                            <Th>Type</Th>
-                            <Th>Status</Th>
-                            <Th>Connections</Th>
-                            <Th>Added On</Th>
-                            <Th />
-                          </Tr>
-                        </Thead>
-                        <Tbody>
+                    <TableScrollArea hidden={!feed.shareManageOptions?.invites.length}>
+                      <TableRoot variant="line">
+                        <TableHeader>
+                          <TableRow>
+                            <TableColumnHeader>Name</TableColumnHeader>
+                            <TableColumnHeader>Type</TableColumnHeader>
+                            <TableColumnHeader>Status</TableColumnHeader>
+                            <TableColumnHeader>Connections</TableColumnHeader>
+                            <TableColumnHeader>Added On</TableColumnHeader>
+                            <TableColumnHeader />
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
                           {feed.shareManageOptions?.invites.map((u) => {
                             const connectionIds = new Set(
                               u.connections?.map((c) => c.connectionId) || [],
@@ -407,36 +397,36 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                               .map((c) => c.name);
 
                             return (
-                              <Tr key={u.id}>
-                                <Td>
+                              <TableRow key={u.id}>
+                                <TableCell>
                                   <DiscordUsername userId={u.discordUserId} />
-                                </Td>
-                                <Td>
+                                </TableCell>
+                                <TableCell>
                                   {(!u.type || u.type === UserFeedManagerInviteType.CoManage) && (
                                     <Text>Co-manage</Text>
                                   )}
                                   {u.type === UserFeedManagerInviteType.Transfer && (
                                     <Text>Ownership transfer</Text>
                                   )}
-                                </Td>
-                                <Td>
+                                </TableCell>
+                                <TableCell>
                                   {u.status === UserFeedManagerStatus.Accepted && (
-                                    <Tag colorScheme="green">Accepted</Tag>
+                                    <Tag colorPalette="green">Accepted</Tag>
                                   )}
                                   {u.status === UserFeedManagerStatus.Pending && (
-                                    <Tag colorScheme="yellow">Pending</Tag>
+                                    <Tag colorPalette="yellow">Pending</Tag>
                                   )}
                                   {u.status === UserFeedManagerStatus.Declined && (
                                     <HStack>
-                                      <Tag colorScheme="red">Declined</Tag>
+                                      <Tag colorPalette="red">Declined</Tag>
                                       <ResendUserFeedManagementInviteButton
                                         feedId={feedId}
                                         inviteId={u.id}
                                       />
                                     </HStack>
                                   )}
-                                </Td>
-                                <Td>
+                                </TableCell>
+                                <TableCell>
                                   <Stack>
                                     {!connectionNames.length && <Text>All</Text>}
                                     {connectionNames.map((n) => (
@@ -445,28 +435,30 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                                       </Text>
                                     ))}
                                   </Stack>
-                                </Td>
-                                <Td>{u.createdAt}</Td>
-                                <Td isNumeric>
+                                </TableCell>
+                                <TableCell>{u.createdAt}</TableCell>
+                                <TableCell textAlign="right">
                                   <HStack>
                                     <IconButton
                                       aria-label="Manage invite settings"
-                                      icon={<SettingsIcon />}
                                       size="sm"
                                       variant="ghost"
                                       onClick={() =>
                                         setManageInviteDialogState({ isOpen: true, inviteId: u.id })
                                       }
-                                    />
+                                    >
+                                      <FaGear />
+                                    </IconButton>
                                     <ConfirmModal
                                       trigger={
                                         <IconButton
                                           size="sm"
                                           aria-label="Delete user"
-                                          icon={<DeleteIcon />}
                                           variant="ghost"
-                                          isDisabled={deletingInviteStatus === "loading"}
-                                        />
+                                          disabled={deletingInviteStatus === "loading"}
+                                        >
+                                          <FaTrash />
+                                        </IconButton>
                                       }
                                       okText="Delete"
                                       title="Delete User"
@@ -477,59 +469,73 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                                       error={deleteInviteError?.message}
                                     />
                                   </HStack>
-                                </Td>
-                              </Tr>
+                                </TableCell>
+                              </TableRow>
                             );
                           })}
-                        </Tbody>
-                      </Table>
-                    </TableContainer>
+                        </TableBody>
+                      </TableRoot>
+                    </TableScrollArea>
                   </Stack>
                 )}
                 {!!feed?.connections.length && (
-                  <Menu>
-                    <MenuButton
-                      aria-disabled={
-                        !feed?.connections.length ||
-                        creatingInvitesStatus === "loading" ||
-                        !!feed?.sharedAccessDetails?.inviteId
-                      }
-                      as={Button}
-                      rightIcon={<ChevronDownIcon />}
-                      width="min-content"
-                    >
-                      Invite user to...
-                    </MenuButton>
-                    <MenuList>
-                      <AddFeedComanagerDialog trigger={<MenuItem>Co-manage feed</MenuItem>} />
-                      <SelectUserDialog
-                        trigger={<MenuItem color="red.300">Transfer ownership</MenuItem>}
-                        description={
-                          <Text>
-                            This user will have full ownership of this feed, and you will lose
-                            access to it after they accept the invite. They must accept the invite
-                            by logging in.
-                          </Text>
+                  <MenuRoot>
+                    <MenuTrigger asChild>
+                      <Button
+                        aria-disabled={
+                          !feed?.connections.length ||
+                          creatingInvitesStatus === "loading" ||
+                          !!feed?.sharedAccessDetails?.inviteId
                         }
-                        title="Invite User to Transfer Ownership"
-                        okButtonText="Invite User to Transfer Ownership"
-                        onAdded={({ id }) =>
-                          onAddUser({
-                            id,
-                            type: UserFeedManagerInviteType.Transfer,
-                            connections: [],
-                          })
-                        }
-                        onClosed={resetCreateInvite}
-                        error={createInviteError?.message}
-                      />
-                    </MenuList>
-                  </Menu>
+                        width="min-content"
+                      >
+                        Invite user to...
+                        <FaChevronDown />
+                      </Button>
+                    </MenuTrigger>
+                    <MenuContent>
+                      <MenuItem value="co-manage" onSelect={() => setIsComanageDialogOpen(true)}>
+                        Co-manage feed
+                      </MenuItem>
+                      <MenuItem
+                        value="transfer"
+                        color="text.error"
+                        onSelect={() => setIsTransferDialogOpen(true)}
+                      >
+                        Transfer ownership
+                      </MenuItem>
+                    </MenuContent>
+                  </MenuRoot>
                 )}
+                <AddFeedComanagerDialog
+                  open={isComanageDialogOpen}
+                  onOpenChange={setIsComanageDialogOpen}
+                />
+                <SelectUserDialog
+                  open={isTransferDialogOpen}
+                  onOpenChange={setIsTransferDialogOpen}
+                  description={
+                    <Text>
+                      This user will have full ownership of this feed, and you will lose access to
+                      it after they accept the invite. They must accept the invite by logging in.
+                    </Text>
+                  }
+                  title="Invite User to Transfer Ownership"
+                  okButtonText="Invite User to Transfer Ownership"
+                  onAdded={({ id }) =>
+                    onAddUser({
+                      id,
+                      type: UserFeedManagerInviteType.Transfer,
+                      connections: [],
+                    })
+                  }
+                  onClosed={resetCreateInvite}
+                  error={createInviteError?.message}
+                />
               </Stack>
             </Stack>
-            <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
-              <Stack spacing={2}>
+            <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>
+              <Stack gap={2}>
                 <Heading size="sm" as="h3">
                   Refresh Rate
                 </Heading>
@@ -539,10 +545,10 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                   rate-limit-related issues. If other users are using this feed at a rate faster
                   than what you set here, the bot will ignore this setting.
                 </Text>
-                <Divider mt={2} />
+                <Separator mt={2} />
               </Stack>
               {!feed?.refreshRateOptions.length && (
-                <Text color="gray.400">This feed does not have any refresh rate options.</Text>
+                <Text color="fg.muted">This feed does not have any refresh rate options.</Text>
               )}
               {!!feed?.refreshRateOptions.length && (
                 <Controller
@@ -550,99 +556,94 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                   control={control}
                   render={({ field }) => {
                     return (
-                      <FormControl
-                        isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}
-                        as="fieldset"
+                      <Field
+                        invalid={!!formErrors.oldArticleDateDiffMsThreshold}
+                        errorText={formErrors.userRefreshRateMinutes?.message}
                       >
-                        <HStack alignItems="center" spacing={4}>
-                          <NumberInput
+                        <HStack alignItems="center" gap={4}>
+                          <NumberInputRoot
                             allowMouseWheel
-                            precision={1}
                             step={0.1}
                             value={field.value}
-                            onChange={(str) => {
-                              return field.onChange(str);
+                            onValueChange={(details) => {
+                              return field.onChange(details.value);
                             }}
                             onBlur={() => field.onBlur()}
-                            isDisabled={!user || field.disabled}
+                            disabled={!user || field.disabled}
                             ref={field.ref}
                             name={field.name}
                           >
                             <NumberInputField />
-                            <NumberInputStepper>
-                              <NumberIncrementStepper />
-                              <NumberDecrementStepper />
-                            </NumberInputStepper>
-                          </NumberInput>
-                          <FormLabel>minutes</FormLabel>
+                          </NumberInputRoot>
+                          <Text as="label">minutes</Text>
                         </HStack>
-                        {formErrors.userRefreshRateMinutes && (
-                          <FormErrorMessage>
-                            {formErrors.userRefreshRateMinutes.message}
-                          </FormErrorMessage>
-                        )}
-                      </FormControl>
+                      </Field>
                     );
                   }}
                 />
               )}
             </Stack>
-            <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
-              <Stack spacing={2}>
+            <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>
+              <Stack gap={2}>
                 <Heading size="sm" as="h3" pb={2}>
                   Article Date Checks
                 </Heading>
-                <Divider />
+                <Separator />
               </Stack>
               <Controller
                 name="oldArticleDateDiffMsThreshold"
                 control={control}
                 render={({ field }) => {
                   return (
-                    <FormControl isInvalid={!!formErrors.oldArticleDateDiffMsThreshold}>
-                      <FormLabel id={`${field.name}-label-1`}>
+                    <Field
+                      invalid={!!formErrors.oldArticleDateDiffMsThreshold}
+                      errorText={formErrors.oldArticleDateDiffMsThreshold?.message}
+                      helperText={
+                        !formErrors.oldArticleDateDiffMsThreshold ? (
+                          <>
+                            Set to <Code>0</Code> to disable. Articles that have no published date
+                            will also be ignored if this is enabled. It is strongly advised to leave
+                            this at the default, unless you face issues otherwise.
+                          </>
+                        ) : undefined
+                      }
+                    >
+                      <Text as="label" id={`${field.name}-label-1`}>
                         Never deliver articles older than
-                      </FormLabel>
-                      <HStack alignItems="center" spacing={4}>
-                        <NumberInput
+                      </Text>
+                      <HStack alignItems="center" gap={4}>
+                        <NumberInputRoot
                           min={0}
                           allowMouseWheel
-                          {...field}
-                          onChange={(str, num) =>
-                            Number.isNaN(num)
+                          name={field.name}
+                          disabled={field.disabled}
+                          ref={field.ref}
+                          onBlur={field.onBlur}
+                          onValueChange={(details) =>
+                            Number.isNaN(Number(details.value))
                               ? field.onChange(null)
-                              : field.onChange(num * 1000 * 60 * 60 * 24)
+                              : field.onChange(Number(details.value) * 1000 * 60 * 60 * 24)
                           }
                           value={
-                            typeof field.value === "number" ? field.value / 1000 / 60 / 60 / 24 : ""
+                            typeof field.value === "number"
+                              ? String(field.value / 1000 / 60 / 60 / 24)
+                              : ""
                           }
                           aria-describedby={`${field.name}-label-1 ${field.name}-label-2`}
                         >
                           <NumberInputField />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
-                        <FormLabel id={`${field.name}-label-2`}>days</FormLabel>
+                        </NumberInputRoot>
+                        <Text as="label" id={`${field.name}-label-2`}>
+                          days
+                        </Text>
                       </HStack>
-                      <FormHelperText>
-                        Set to <Code>0</Code> to disable. Articles that have no published date will
-                        also be ignored if this is enabled. It is strongly advised to leave this at
-                        the default, unless you face issues otherwise.
-                      </FormHelperText>
-                      {formErrors.oldArticleDateDiffMsThreshold && (
-                        <FormErrorMessage>
-                          {formErrors.oldArticleDateDiffMsThreshold.message}
-                        </FormErrorMessage>
-                      )}
-                    </FormControl>
+                    </Field>
                   );
                 }}
               />
             </Stack>
-            <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" p={4}>
-              <Stack spacing={2}>
+            <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>
+              <Stack gap={2}>
                 <Heading size="sm" as="h3">
                   {t(
                     "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsTitle",
@@ -651,25 +652,25 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                 <Text>
                   Change how dates are formatted if you use date placeholders in your message. If
                   you&apos;ve already configured date settings in your{" "}
-                  <Link as={RouterLink} to={pages.userSettings()} color="blue.300">
-                    Account Settings
-                  </Link>
+                  <ChakraLink asChild color="text.link">
+                    <RouterLink to={pages.userSettings()}>Account Settings</RouterLink>
+                  </ChakraLink>
                   , they will be overridden by the settings here.
                 </Text>
-                <Divider mt={2} />
+                <Separator mt={2} />
               </Stack>
-              <Stack spacing={4}>
-                <FormControl aria-live="polite" aria-busy={!!datePreviewData}>
-                  <FormLabel marginBottom={0}>
+              <Stack gap={4}>
+                <Field aria-live="polite" aria-busy={!!datePreviewData}>
+                  <Text as="label" marginBottom={0}>
                     {t(
                       "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle",
                     )}
-                  </FormLabel>
+                  </Text>
                   {!datePreviewError && (
-                    <Skeleton isLoaded={!!datePreviewData}>
+                    <Skeleton loading={!datePreviewData}>
                       <Text
                         fontSize="xl"
-                        color={datePreviewData?.result.valid ? "gray.400" : "red.400"}
+                        color={datePreviewData?.result.valid ? "fg.muted" : "text.error"}
                       >
                         {datePreviewData?.result.valid && datePreviewData?.result.output}
                         {!datePreviewData?.result.valid &&
@@ -685,114 +686,120 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                       description={datePreviewError.message}
                     />
                   )}
-                </FormControl>
+                </Field>
                 <Controller
                   name="dateTimezone"
                   control={control}
                   render={({ field }) => (
-                    <FormControl isInvalid={!!formErrors.dateTimezone}>
-                      <FormLabel>
-                        {t(
-                          "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel",
-                        )}
-                      </FormLabel>
+                    <Field
+                      invalid={!!formErrors.dateTimezone}
+                      label={t(
+                        "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel",
+                      )}
+                      errorText={
+                        formErrors.dateTimezone ? (
+                          <>
+                            {formErrors.dateTimezone.message} (
+                            <Trans
+                              i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
+                              components={[
+                                <ChakraLink
+                                  href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                  color="text.link"
+                                />,
+                              ]}
+                            />
+                            )
+                          </>
+                        ) : undefined
+                      }
+                      helperText={
+                        !formErrors.dateTimezone ? (
+                          <Trans
+                            i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
+                            components={[
+                              <ChakraLink
+                                href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                color="text.link"
+                              />,
+                            ]}
+                          />
+                        ) : undefined
+                      }
+                    >
                       <Input spellCheck={false} autoComplete="off" {...field} />
-                      {!formErrors.dateTimezone && (
-                        <FormHelperText>
-                          <Trans
-                            i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
-                            components={[
-                              <Link
-                                href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
-                                target="_blank"
-                                rel="noreferrer noopener"
-                                color="blue.300"
-                              />,
-                            ]}
-                          />
-                        </FormHelperText>
-                      )}
-                      {formErrors.dateTimezone && (
-                        <FormErrorMessage>
-                          {formErrors.dateTimezone.message} (
-                          <Trans
-                            i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
-                            components={[
-                              <Link
-                                href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
-                                target="_blank"
-                                rel="noreferrer noopener"
-                                color="blue.400"
-                              />,
-                            ]}
-                          />
-                          )
-                        </FormErrorMessage>
-                      )}
-                    </FormControl>
+                    </Field>
                   )}
                 />
                 <Controller
                   name="dateFormat"
                   control={control}
                   render={({ field }) => (
-                    <FormControl isInvalid={!!formErrors.dateFormat}>
-                      <FormLabel>
-                        {t(
-                          "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel",
-                        )}
-                      </FormLabel>
+                    <Field
+                      invalid={!!formErrors.dateFormat}
+                      label={t(
+                        "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel",
+                      )}
+                      errorText={formErrors.dateFormat?.message}
+                      helperText={
+                        !formErrors.dateFormat ? (
+                          <>
+                            This will dictate how the placeholders with dates (such as{" "}
+                            <Code>{`{{date}}`}</Code> ) will be formatted. For more information on
+                            formatting, see{" "}
+                            <ChakraLink
+                              color="text.link"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              href="https://day.js.org/docs/en/display/format"
+                            >
+                              https://day.js.org/docs/en/display/format
+                            </ChakraLink>
+                          </>
+                        ) : undefined
+                      }
+                    >
                       <Input spellCheck={false} autoComplete="off" {...field} />
-                      {!formErrors.dateFormat && (
-                        <FormHelperText>
-                          This will dictate how the placeholders with dates (such as{" "}
-                          <Code>{`{{date}}`}</Code> ) will be formatted. For more information on
-                          formatting, see{" "}
-                          <Link
-                            color="blue.300"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            href="https://day.js.org/docs/en/display/format"
-                          >
-                            https://day.js.org/docs/en/display/format
-                          </Link>
-                        </FormHelperText>
-                      )}
-                      {formErrors.dateFormat && (
-                        <FormErrorMessage>{formErrors.dateFormat.message}</FormErrorMessage>
-                      )}
-                    </FormControl>
+                    </Field>
                   )}
                 />
                 <Controller
                   name="dateLocale"
                   control={control}
                   render={({ field }) => (
-                    <FormControl isInvalid={!!formErrors.dateLocale}>
-                      <FormLabel>Date Format Locale</FormLabel>
-                      <Select placeholder="Select option" {...field}>
-                        {DATE_LOCALES.map(({ key, name }) => (
-                          <option key={key} value={key}>
-                            {name}
-                          </option>
-                        ))}
-                      </Select>
-                      {!formErrors.dateLocale && (
-                        <FormHelperText>
-                          The locale to use for formatting dates. Leave blank to use the default (
-                          <Code>English</Code>).
-                        </FormHelperText>
-                      )}
-                      {formErrors.dateLocale?.message && (
-                        <FormErrorMessage>{formErrors.dateLocale.message}</FormErrorMessage>
-                      )}
-                    </FormControl>
+                    <Field
+                      invalid={!!formErrors.dateLocale}
+                      label="Date Format Locale"
+                      errorText={formErrors.dateLocale?.message}
+                      helperText={
+                        !formErrors.dateLocale ? (
+                          <>
+                            The locale to use for formatting dates. Leave blank to use the default (
+                            <Code>English</Code>).
+                          </>
+                        ) : undefined
+                      }
+                    >
+                      <NativeSelectRoot>
+                        <NativeSelectField placeholder="Select option" {...field}>
+                          {DATE_LOCALES.map(({ key, name }) => (
+                            <option key={key} value={key}>
+                              {name}
+                            </option>
+                          ))}
+                        </NativeSelectField>
+                      </NativeSelectRoot>
+                    </Field>
                   )}
                 />
               </Stack>
             </Stack>
           </Stack>
-          <SavedUnsavedChangesPopupBar useDirtyFormCheck />
+          <SavedUnsavedChangesPopupBar useDirtyFormCheck restoreFocusRef={formFocusRef} />
         </form>
       </FormProvider>
     </PageAlertProvider>

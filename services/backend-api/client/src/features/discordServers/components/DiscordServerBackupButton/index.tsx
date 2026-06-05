@@ -1,6 +1,6 @@
-import { Button } from "@chakra-ui/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { notifyError } from "@/utils/notifyError";
 import { getServerBackup } from "../../api";
 
@@ -38,8 +38,8 @@ export const DiscordServerBackupButton: React.FC<Props> = ({ serverId }) => {
   };
 
   return (
-    <Button onClick={onClick} isLoading={downloading} isDisabled={downloading || !serverId}>
+    <SafeLoadingButton onClick={onClick} loading={downloading} disabled={!serverId}>
       <span>{t("features.discordServers.components.backupButton.text")}</span>
-    </Button>
+    </SafeLoadingButton>
   );
 };

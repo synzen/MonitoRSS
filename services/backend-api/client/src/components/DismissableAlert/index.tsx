@@ -1,13 +1,6 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Box,
-  CloseButton,
-  HStack,
-} from "@chakra-ui/react";
+import { Alert, HStack } from "@chakra-ui/react";
 import { ReactNode, useState } from "react";
+import { CloseButton } from "@/components/ui/close-button";
 
 interface Props {
   status: "success" | "error" | "info";
@@ -25,21 +18,24 @@ export const DismissableAlert = ({ status, description, title, onClosed }: Props
   };
 
   return (
-    <Alert status={status} borderRadius="md" hidden={!isOpen}>
-      <AlertIcon color="gray.100" />
-      <HStack justifyContent="space-between" w="100%">
-        <Box>
-          <AlertTitle>{title}</AlertTitle>
-          <AlertDescription>{description}</AlertDescription>
-        </Box>
-        <CloseButton
-          alignSelf="flex-start"
-          position="relative"
-          right={-1}
-          top={-1}
-          onClick={onClose}
-        />
+    <Alert.Root
+      role="alert"
+      status={status}
+      hidden={!isOpen}
+      alignItems={description ? "flex-start" : "center"}
+    >
+      <Alert.Indicator />
+      <HStack
+        justifyContent="space-between"
+        w="100%"
+        alignItems={description ? "flex-start" : "center"}
+      >
+        <Alert.Content>
+          <Alert.Title>{title}</Alert.Title>
+          {description && <Alert.Description>{description}</Alert.Description>}
+        </Alert.Content>
+        <CloseButton size="sm" pos="relative" top="-2" insetEnd="-2" onClick={onClose} />
       </HStack>
-    </Alert>
+    </Alert.Root>
   );
 };

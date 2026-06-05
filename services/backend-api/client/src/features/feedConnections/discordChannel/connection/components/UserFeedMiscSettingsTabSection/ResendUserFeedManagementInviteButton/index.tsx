@@ -1,7 +1,7 @@
-import { IconButton } from "@chakra-ui/react";
 import { FiSend } from "react-icons/fi";
 import { useCreateUserFeedManagementInviteResend } from "@/features/feed";
 import { ConfirmModal } from "@/components";
+import { SafeLoadingIconButton } from "@/components/SafeLoadingIconButton";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
 
 interface Props {
@@ -26,15 +26,16 @@ export const ResendUserFeedManagementInviteButton = ({ feedId, inviteId }: Props
   return (
     <ConfirmModal
       trigger={
-        <IconButton
+        <SafeLoadingIconButton
           size="md"
           title="Resend invite"
-          variant="link"
-          icon={<FiSend />}
+          variant="ghost"
           aria-label="Resend invite"
-          isLoading={status === "loading"}
+          loading={status === "loading"}
           onClick={onClick}
-        />
+        >
+          <FiSend />
+        </SafeLoadingIconButton>
       }
       title="Resend Invite"
       description="Are you sure you want to resend this invite?"

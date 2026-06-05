@@ -3,22 +3,15 @@ import {
   Button,
   Flex,
   Link,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Skeleton,
   Spinner,
   Stack,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
+  TableBody,
+  TableCell,
+  TableRoot,
+  TableRow,
+  TableScrollArea,
   Text,
-  Tr,
 } from "@chakra-ui/react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
@@ -31,6 +24,15 @@ import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { notifyError } from "@/utils/notifyError";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { ProductKey, TOP_LEVEL_PRODUCTS } from "@/constants";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
 
 interface Props {
   onClose: (reopenPricing?: boolean) => void;
@@ -128,22 +130,22 @@ export const ChangeSubscriptionDialog = ({
   const isLoading = !data && !isChangingToFree;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={() => onClose(true)}
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) {
+          onClose(true);
+        }
+      }}
       size="xl"
-      motionPreset="slideInBottom"
-      isCentered
-      scrollBehavior="outside"
-      closeOnOverlayClick={false}
-      closeOnEsc={false}
-      initialFocusRef={initialRef}
+      initialFocusEl={() => initialRef.current}
     >
-      <ModalOverlay backdropFilter="blur(3px)" bg="blackAlpha.700" />
-      <ModalContent>
-        <ModalHeader>Confirm Subscription Changes</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
+      <DialogContent>
+        <DialogHeader marginRight={4}>
+          <DialogTitle>Confirm Subscription Changes</DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
           {isLoading && !error && (
             <Flex justifyContent="center" m={6}>
               <Spinner />
@@ -173,13 +175,13 @@ export const ChangeSubscriptionDialog = ({
           <Box aria-live="polite" aria-atomic="true">
             {!isLoading && !isChangingToFree && (
               <Stack>
-                <Stack spacing={8}>
+                <Stack gap={8}>
                   <Stack>
                     <Box>
                       <Flex alignItems="baseline" gap={3} flexWrap="wrap">
                         <Text>{topLevelPriceToUseForUpdate?.productName}</Text>
                         {additionalFeedsPriceToUseForUpdate && (
-                          <Text fontSize="sm" color="whiteAlpha.700">
+                          <Text fontSize="sm" color="fg.muted">
                             + {additionalFeedsPriceToUseForUpdate.quantity} additional feed
                             {additionalFeedsPriceToUseForUpdate.quantity > 1 ? "s" : ""}
                           </Text>
@@ -193,7 +195,7 @@ export const ChangeSubscriptionDialog = ({
                             {topLevelPriceToUseForUpdate?.interval}
                           </Text>
                           {additionalFeedsPriceToUseForUpdate && (
-                            <Text fontSize="lg" fontWeight={500} color="whiteAlpha.800">
+                            <Text fontSize="lg" fontWeight={500} color="fg">
                               + {additionalFeedsPriceToUseForUpdate.formattedPrice}/
                               {additionalFeedsPriceToUseForUpdate.interval}
                             </Text>
@@ -202,7 +204,7 @@ export const ChangeSubscriptionDialog = ({
                       )}
                       {!data && <Skeleton width={64} height={6} mt={2} />}
                       {data && (
-                        <Text color="whiteAlpha.700">
+                        <Text color="fg.muted">
                           {new Date(
                             data.data.immediateTransaction.billingPeriod.startsAt,
                           ).toLocaleDateString(undefined, {
@@ -222,75 +224,75 @@ export const ChangeSubscriptionDialog = ({
                       )}
                     </Box>
                   </Stack>
-                  <TableContainer pt={4} tabIndex={-1}>
-                    <Table variant="unstyled">
-                      <Tbody>
-                        <Tr>
-                          <Td padding={0}>
+                  <TableScrollArea pt={4} tabIndex={-1}>
+                    <TableRoot variant="line">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell padding={0}>
                             <Text>Subtotal</Text>
-                            <Text color="whiteAlpha.700" fontSize={14}>
+                            <Text color="fg.muted" fontSize={14}>
                               for remaining time on new plan
                             </Text>
-                          </Td>
-                          <Td textAlign="right" p={0}>
+                          </TableCell>
+                          <TableCell textAlign="right" p={0}>
                             <Flex justifyContent="flex-end">
                               {!data && <Skeleton width={16} height={6} />}
                               {data && (
                                 <Text>{data.data.immediateTransaction.subtotalFormatted}</Text>
                               )}
                             </Flex>
-                          </Td>
-                        </Tr>
-                        <Tr>
-                          <Td pt={4} pl={0} pr={0} pb={0}>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell pt={4} pl={0} pr={0} pb={0}>
                             <Text>Tax</Text>
-                            <Text color="whiteAlpha.700" fontSize={14}>
+                            <Text color="fg.muted" fontSize={14}>
                               Included in plan price
                             </Text>
-                          </Td>
-                          <Td textAlign="right" p={0}>
+                          </TableCell>
+                          <TableCell textAlign="right" p={0}>
                             <Flex justifyContent="flex-end">
                               {!data && <Skeleton width={16} height={6} />}
                               {data && <Text>{data.data.immediateTransaction.taxFormatted}</Text>}
                             </Flex>
-                          </Td>
-                        </Tr>
-                        <Tr>
-                          <Td pt={4} pl={0} pr={0} pb={0}>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell pt={4} pl={0} pr={0} pb={0}>
                             <Text>Total</Text>
-                          </Td>
-                          <Td textAlign="right" p={0}>
+                          </TableCell>
+                          <TableCell textAlign="right" p={0}>
                             <Flex justifyContent="flex-end">
                               {!data && <Skeleton width={16} height={6} />}
                               {data && <Text>{data.data.immediateTransaction.totalFormatted}</Text>}
                             </Flex>
-                          </Td>
-                        </Tr>
+                          </TableCell>
+                        </TableRow>
                         {data && data.data.immediateTransaction.credit !== "0" && (
-                          <Tr>
-                            <Td pt={4} pl={0} pr={0} pb={0}>
+                          <TableRow>
+                            <TableCell pt={4} pl={0} pr={0} pb={0}>
                               <Text>Credit</Text>
-                              <Text color="whiteAlpha.700" fontSize={14}>
+                              <Text color="fg.muted" fontSize={14}>
                                 Includes refund for time remaining on current plan
                               </Text>
-                            </Td>
-                            <Td p={0} textAlign="right">
+                            </TableCell>
+                            <TableCell p={0} textAlign="right">
                               <Flex justifyContent="flex-end">
                                 {!data && <Skeleton width={16} height={6} />}
                                 {data && (
-                                  <Text color="green.200">
+                                  <Text color="text.success">
                                     -{data.data.immediateTransaction.creditFormatted}
                                   </Text>
                                 )}
                               </Flex>
-                            </Td>
-                          </Tr>
+                            </TableCell>
+                          </TableRow>
                         )}
-                        <Tr>
-                          <Td pt={8} pl={0} pr={0} pb={0}>
+                        <TableRow>
+                          <TableCell pt={8} pl={0} pr={0} pb={0}>
                             <Text fontWeight="bold">Due Today</Text>
-                          </Td>
-                          <Td textAlign="right" pt={8} pl={0} pr={0} pb={0}>
+                          </TableCell>
+                          <TableCell textAlign="right" pt={8} pl={0} pr={0} pb={0}>
                             <Flex justifyContent="flex-end">
                               {!data && <Skeleton width={16} height={6} />}
                               {data && (
@@ -299,21 +301,21 @@ export const ChangeSubscriptionDialog = ({
                                 </Text>
                               )}
                             </Flex>
-                          </Td>
-                        </Tr>
-                      </Tbody>
-                    </Table>
-                  </TableContainer>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </TableRoot>
+                  </TableScrollArea>
                 </Stack>
-                <Text color="whiteAlpha.700" pt={4}>
+                <Text color="fg.muted" pt={4}>
                   By proceeding, you are agreeing to our{" "}
-                  <Link target="_blank" href="https://monitorss.xyz/terms" color="blue.300">
+                  <Link target="_blank" href="https://monitorss.xyz/terms" color="text.link">
                     terms and conditions
                   </Link>{" "}
                   and{" "}
                   <Link
                     target="_blank"
-                    color="blue.300"
+                    color="text.link"
                     href="https://monitorss.xyz/privacy-policy"
                   >
                     privacy policy
@@ -323,15 +325,16 @@ export const ChangeSubscriptionDialog = ({
               </Stack>
             )}
           </Box>
-        </ModalBody>
-        <ModalFooter>
+        </DialogBody>
+        <DialogFooter>
           {!isLoading && (
             <>
               <Button variant="ghost" mr={3} onClick={() => onClose(true)} ref={initialRef}>
                 <span>Cancel</span>
               </Button>
               <Button
-                colorScheme={!isDowngrade ? "blue" : "red"}
+                variant="solid"
+                colorPalette={!isDowngrade ? "brand" : "red"}
                 onClick={onConfirm}
                 aria-disabled={
                   (!isChangingToFree && !data) ||
@@ -346,8 +349,8 @@ export const ChangeSubscriptionDialog = ({
               </Button>
             </>
           )}
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

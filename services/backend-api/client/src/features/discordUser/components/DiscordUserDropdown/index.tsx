@@ -6,7 +6,7 @@ export const DiscordUserDropdown: React.FC = () => {
 
   return (
     <Box overflow="hidden" width="100%" textAlign="left">
-      <Text color="gray.500">Welcome</Text>
+      <Text color="fg.muted">Welcome</Text>
       <Text
         width="100%"
         textOverflow="ellipsis"

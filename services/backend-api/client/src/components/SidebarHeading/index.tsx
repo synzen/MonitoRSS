@@ -1,4 +1,5 @@
-import { Text, useColorModeValue } from "@chakra-ui/react";
+import { Text } from "@chakra-ui/react";
+import { useColorModeValue } from "@/components/ui/color-mode";
 
 interface Props {
   children?: React.ReactNode;

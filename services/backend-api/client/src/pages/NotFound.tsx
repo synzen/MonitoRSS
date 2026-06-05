@@ -1,5 +1,5 @@
-import { WarningTwoIcon } from "@chakra-ui/icons";
-import { Button, Heading, Stack, Text } from "@chakra-ui/react";
+import { FaTriangleExclamation } from "react-icons/fa6";
+import { Button, Heading, Icon, Stack, Text } from "@chakra-ui/react";
 import { pages } from "../constants";
 
 export const NotFound = () => {
@@ -13,14 +13,16 @@ export const NotFound = () => {
       paddingBottom="10rem"
       textAlign="center"
       paddingX="12"
-      spacing="6"
+      gap="6"
     >
       <Stack display="flex" justifyContent="center" alignItems="center">
-        <WarningTwoIcon fontSize="8rem" color="yellow.500" />
+        <Icon fontSize="8rem" color="text.warning">
+          <FaTriangleExclamation />
+        </Icon>
         <Heading>This page doesn&apos;t exist!</Heading>
         <Text fontSize="lg">Looks like you took a wrong turn.</Text>
-        <Button as="a" href={pages.userFeeds()} mt={4}>
-          Go Home
+        <Button asChild mt={4}>
+          <a href={pages.userFeeds()}>Go Home</a>
         </Button>
       </Stack>
     </Stack>

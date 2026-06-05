@@ -5,6 +5,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { system } from "@/utils/theme";
 import { CuratedFeed } from "../features/feed/types";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { UserFeeds } from "./UserFeeds";
@@ -304,7 +305,7 @@ const renderPage = () => {
   const user = userEvent.setup();
   const result = render(
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider>
+      <ChakraProvider value={system}>
         <MemoryRouter>
           <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
             <UserFeeds />
@@ -592,7 +593,7 @@ describe("UserFeeds - Non-discovery mode", () => {
     });
     rerender(
       <QueryClientProvider client={queryClient}>
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
               <UserFeeds />

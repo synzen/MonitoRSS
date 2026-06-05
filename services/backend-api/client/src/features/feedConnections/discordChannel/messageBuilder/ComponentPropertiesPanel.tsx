@@ -1,10 +1,12 @@
 import React from "react";
-import { Box, VStack, HStack, Text, Button, Alert, AlertIcon } from "@chakra-ui/react";
-import { DeleteIcon, ChevronUpIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import { Box, VStack, HStack, Text, Button, Alert } from "@chakra-ui/react";
+import { FaTrash, FaChevronUp, FaChevronDown } from "react-icons/fa6";
 import type { Component, ComponentPropertiesPanelProps } from "./types";
 import { ComponentType, ROOT_COMPONENT_TYPES } from "./types";
 import { InputWithInsertPlaceholder } from "./components/InputWithInsertPlaceholder";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { DestructiveActionButton } from "@/components/DestructiveActionButton";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { DiscordButtonStyle } from "./constants/DiscordButtonStyle";
@@ -24,6 +26,7 @@ import getMessageBuilderComponentLabel from "./utils/getMessageBuilderComponentL
 import { useUserFeedConnectionContext } from "@/features/feed";
 import { FeedDiscordChannelConnection } from "@/types";
 import { useMessageBuilderStateContext } from "./state";
+import { EMPTY_STATE_PROMPTS } from "./constants/componentChildRules";
 
 const NON_REPOSITIONABLE_COMPONENTS = new Set([
   ComponentType.LegacyEmbedContainer,
@@ -101,7 +104,7 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
 
     return (
       <Box>
-        <Text fontSize="sm" color="gray.300" mb={2}>
+        <Text fontSize="sm" color="fg.muted" mb={2}>
           {description}
         </Text>
       </Box>
@@ -142,16 +145,16 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
       );
 
       return (
-        <VStack align="stretch" spacing={6}>
+        <VStack align="stretch" gap={6}>
           <InputWithInsertPlaceholder
             value={component.label}
             onChange={(value) => onChange({ ...component, label: value })}
             label="Button Label"
             placeholder="Enter button label"
             error={labelError?.message}
-            isInvalid={!!labelError}
+            invalid={!!labelError}
             as="input"
-            isRequired
+            required
             guildId={guildId}
           />
           {component.style === DiscordButtonStyle.Link && (
@@ -161,9 +164,9 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
               label="Link URL"
               placeholder="https://example.com"
               error={urlError?.message}
-              isInvalid={!!urlError}
+              invalid={!!urlError}
               as="input"
-              isRequired
+              required
               guildId={guildId}
             />
           )}
@@ -244,11 +247,11 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
   }
 
   return (
-    <VStack align="stretch" spacing={6} p={4} minWidth={250}>
+    <VStack align="stretch" gap={6} p={4} minWidth={250}>
       {(!hideTitle || !isRootComponent) && (
-        <HStack justify="space-between" align="center" flexWrap="wrap" spacing={2}>
+        <HStack justify="space-between" align="center" flexWrap="wrap" gap={2}>
           {!hideTitle && (
-            <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+            <Text fontSize="lg" fontWeight="bold" color="fg" as="h2">
               {getMessageBuilderComponentLabel(selectedComponent.type)} Properties
             </Text>
           )}
@@ -256,9 +259,10 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
             (descendantCount > 0 ? (
               <ConfirmModal
                 trigger={
-                  <Button size="sm" colorScheme="red" variant="outline" leftIcon={<DeleteIcon />}>
+                  <DestructiveActionButton size="sm">
+                    <FaTrash />
                     Delete Component
-                  </Button>
+                  </DestructiveActionButton>
                 }
                 title="Delete Component?"
                 description={`This will also delete ${descendantCount} nested component${
@@ -272,227 +276,109 @@ export const ComponentPropertiesPanel: React.FC<ComponentPropertiesPanelProps> =
                 }}
               />
             ) : (
-              <Button
+              <DestructiveActionButton
                 size="sm"
-                colorScheme="red"
-                variant="outline"
-                leftIcon={<DeleteIcon />}
                 onClick={() => {
                   deleteComponent(selectedComponent.id);
                   onDeleted?.();
                 }}
               >
+                <FaTrash />
                 Delete Component
-              </Button>
+              </DestructiveActionButton>
             ))}
         </HStack>
       )}
-      {(selectedComponent.type === ComponentType.LegacyActionRow ||
-        selectedComponent.type === ComponentType.V2ActionRow) &&
-        selectedComponent.children.length === 0 && (
-          <Alert status="info" borderRadius="md">
-            <AlertIcon />
+      {(EMPTY_STATE_PROMPTS[selectedComponent.type] ?? [])
+        .filter((prompt) => prompt.isMissing(selectedComponent))
+        .map((prompt) => (
+          <Alert.Root key={prompt.key} status="info">
+            <Alert.Indicator />
             <Box flex="1">
-              <Text>Add at least one button to your Action Row.</Text>
-              <Button
-                size="sm"
-                colorScheme="blue"
-                mt={2}
-                onClick={() =>
-                  addChildComponent(
-                    selectedComponent.id,
-                    selectedComponent.type === ComponentType.LegacyActionRow
-                      ? ComponentType.LegacyButton
-                      : ComponentType.V2Button,
-                  )
-                }
-              >
-                Add Button
-              </Button>
-            </Box>
-          </Alert>
-        )}
-      {selectedComponent.type === ComponentType.V2Section &&
-        selectedComponent.children.length === 0 && (
-          <Alert status="info" borderRadius="md">
-            <AlertIcon />
-            <Box flex="1">
-              <Text>Add at least one text display to your Section.</Text>
-              <Button
-                size="sm"
-                colorScheme="blue"
-                mt={2}
-                onClick={() => addChildComponent(selectedComponent.id, ComponentType.V2TextDisplay)}
-              >
-                Add Text Display
-              </Button>
-            </Box>
-          </Alert>
-        )}
-      {selectedComponent.type === ComponentType.V2Section &&
-        selectedComponent.children.length > 3 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
-            <AlertIcon />
-            Sections can have at most 3 child components. {selectedComponent.children.length -
-              3}{" "}
-            child components must be deleted.
-          </Alert>
-        )}
-      {selectedComponent.type === ComponentType.V2Section && !selectedComponent.accessory && (
-        <Alert status="info" borderRadius="md">
-          <AlertIcon />
-          <Box flex="1">
-            <Text>An accessory (thumbnail or button) is required for Sections.</Text>
-            <HStack mt={2} spacing={2}>
-              <Button
-                size="sm"
-                colorScheme="blue"
-                onClick={() =>
-                  addChildComponent(selectedComponent.id, ComponentType.V2Thumbnail, true)
-                }
-              >
-                Add Thumbnail
-              </Button>
-              <Button
-                size="sm"
-                colorScheme="blue"
-                onClick={() =>
-                  addChildComponent(selectedComponent.id, ComponentType.V2Button, true)
-                }
-              >
-                Add Button
-              </Button>
-            </HStack>
-          </Box>
-        </Alert>
-      )}
-      {selectedComponent.type === ComponentType.V2ActionRow &&
-        selectedComponent.children.length > 5 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
-            <AlertIcon />
-            Action Rows can have at most 5 child components. {selectedComponent.children.length -
-              5}{" "}
-            child components must be deleted.
-          </Alert>
-        )}
-      {selectedComponent.type === ComponentType.V2Container &&
-        selectedComponent.children.length === 0 && (
-          <Alert status="info" borderRadius="md">
-            <AlertIcon />
-            <Box flex="1">
-              <Text>Add at least one component to your Container.</Text>
-              <HStack mt={2} spacing={2} flexWrap="wrap">
-                <Button
-                  size="sm"
-                  colorScheme="blue"
-                  onClick={() => addChildComponent(selectedComponent.id, ComponentType.V2Section)}
-                >
-                  Add Section
-                </Button>
-                <Button
-                  size="sm"
-                  colorScheme="blue"
-                  onClick={() =>
-                    addChildComponent(selectedComponent.id, ComponentType.V2TextDisplay)
-                  }
-                >
-                  Add Text Display
-                </Button>
-                <Button
-                  size="sm"
-                  colorScheme="blue"
-                  onClick={() => addChildComponent(selectedComponent.id, ComponentType.V2ActionRow)}
-                >
-                  Add Action Row
-                </Button>
-                <Button
-                  size="sm"
-                  colorScheme="blue"
-                  onClick={() =>
-                    addChildComponent(selectedComponent.id, ComponentType.V2MediaGallery)
-                  }
-                >
-                  Add Media Gallery
-                </Button>
-                <Button
-                  size="sm"
-                  colorScheme="blue"
-                  onClick={() => addChildComponent(selectedComponent.id, ComponentType.V2Divider)}
-                >
-                  Add Divider
-                </Button>
+              <Text>{prompt.message}</Text>
+              <HStack mt={2} gap={2} flexWrap="wrap">
+                {prompt.actions.map((action) => (
+                  <PrimaryActionButton
+                    key={action.label}
+                    size="sm"
+                    onClick={() =>
+                      addChildComponent(selectedComponent.id, action.type, action.isAccessory)
+                    }
+                  >
+                    {action.label}
+                  </PrimaryActionButton>
+                ))}
               </HStack>
             </Box>
-          </Alert>
+          </Alert.Root>
+        ))}
+      {selectedComponent.type === ComponentType.V2Section &&
+        selectedComponent.children.length > 3 && (
+          <Alert.Root status="error" role={undefined}>
+            <Alert.Indicator />
+            <Alert.Content>
+              Sections can have at most 3 child components. {selectedComponent.children.length - 3}{" "}
+              child components must be deleted.
+            </Alert.Content>
+          </Alert.Root>
         )}
-      {selectedComponent.type === ComponentType.V2MediaGallery &&
-        selectedComponent.children.length === 0 && (
-          <Alert status="info" borderRadius="md">
-            <AlertIcon />
-            <Box flex="1">
-              <Text>Add at least one item to your Media Gallery.</Text>
-              <Button
-                size="sm"
-                colorScheme="blue"
-                mt={2}
-                onClick={() =>
-                  addChildComponent(selectedComponent.id, ComponentType.V2MediaGalleryItem)
-                }
-              >
-                Add Gallery Item
-              </Button>
-            </Box>
-          </Alert>
+      {selectedComponent.type === ComponentType.V2ActionRow &&
+        selectedComponent.children.length > 5 && (
+          <Alert.Root status="error" role={undefined}>
+            <Alert.Indicator />
+            <Alert.Content>
+              Action Rows can have at most 5 child components.{" "}
+              {selectedComponent.children.length - 5} child components must be deleted.
+            </Alert.Content>
+          </Alert.Root>
         )}
       {selectedComponent.type === ComponentType.V2MediaGallery &&
         selectedComponent.children.length > 10 && (
-          <Alert status="error" borderRadius="md" role={undefined}>
-            <AlertIcon />
-            Media Galleries can have at most 10 items. {selectedComponent.children.length - 10}{" "}
-            items must be deleted.
-          </Alert>
+          <Alert.Root status="error" role={undefined}>
+            <Alert.Indicator />
+            <Alert.Content>
+              Media Galleries can have at most 10 items. {selectedComponent.children.length - 10}{" "}
+              items must be deleted.
+            </Alert.Content>
+          </Alert.Root>
         )}
       {renderComponentDescription(selectedComponent)}
       {canBeRepositioned && positionInfo && !isRootComponent && (
         <Box>
-          <Text fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Position
           </Text>
-          <VStack spacing={2}>
-            <Box bg="gray.700" p={3} borderRadius="md" w="full">
-              <Text fontSize="sm" color="white">
+          <VStack gap={2}>
+            <Box bg="bg.emphasized" p={3} borderRadius="l3" w="full">
+              <Text fontSize="sm" color="fg">
                 {positionInfo.index + 1} of {positionInfo.total} in {positionInfo.parent.name}
               </Text>
             </Box>
-            <HStack spacing={2} w="full" flexWrap="wrap">
+            <HStack gap={2} w="full" flexWrap="wrap">
               <Button
                 size="sm"
-                leftIcon={<ChevronUpIcon />}
                 aria-disabled={!canMoveUp}
                 onClick={() => {
                   if (!canMoveUp) return;
                   moveComponentUp(selectedComponent.id);
                 }}
-                variant="outline"
-                colorScheme="blue"
                 flex={1}
                 minWidth={125}
               >
+                <FaChevronUp />
                 Move Up
               </Button>
               <Button
                 size="sm"
-                leftIcon={<ChevronDownIcon />}
                 aria-disabled={!canMoveDown}
                 onClick={() => {
                   if (!canMoveDown) return;
                   moveComponentDown(selectedComponent.id);
                 }}
-                variant="outline"
-                colorScheme="blue"
                 flex={1}
                 minWidth={125}
               >
+                <FaChevronDown />
                 Move Down
               </Button>
             </HStack>

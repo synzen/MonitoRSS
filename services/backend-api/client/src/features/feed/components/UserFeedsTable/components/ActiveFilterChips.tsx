@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Button, HStack, Tag, TagCloseButton, TagLabel } from "@chakra-ui/react";
+import { Button, HStack, Tag } from "@chakra-ui/react";
 import { UserFeedComputedStatus } from "../../../types";
 import { STATUS_FILTERS } from "../constants";
 
@@ -61,37 +61,37 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
   };
 
   return (
-    <HStack role="group" aria-label="Active filters" flexWrap="wrap" spacing={2}>
+    <HStack role="group" aria-label="Active filters" flexWrap="wrap" gap={2}>
       {hasSearch && (
-        <Tag size="md" variant="subtle" colorScheme="blue">
-          <TagLabel>
+        <Tag.Root size="lg" variant="subtle" colorPalette="brand">
+          <Tag.Label>
             <strong>Search:</strong> &ldquo;{search}&rdquo;
-          </TagLabel>
-          <TagCloseButton
-            ref={searchChipRef}
-            aria-label="Remove search filter"
-            onClick={handleSearchClear}
-            minW="24px"
-            minH="24px"
-          />
-        </Tag>
+          </Tag.Label>
+          <Tag.EndElement>
+            <Tag.CloseTrigger
+              ref={searchChipRef}
+              aria-label="Remove search filter"
+              onClick={handleSearchClear}
+            />
+          </Tag.EndElement>
+        </Tag.Root>
       )}
       {hasStatusFilters && (
-        <Tag size="md" variant="subtle" colorScheme="blue">
-          <TagLabel>
+        <Tag.Root size="lg" variant="subtle" colorPalette="brand">
+          <Tag.Label>
             <strong>Status:</strong> {statusLabels}
-          </TagLabel>
-          <TagCloseButton
-            ref={statusChipRef}
-            aria-label="Remove status filter"
-            onClick={handleStatusClear}
-            minW="24px"
-            minH="24px"
-          />
-        </Tag>
+          </Tag.Label>
+          <Tag.EndElement>
+            <Tag.CloseTrigger
+              ref={statusChipRef}
+              aria-label="Remove status filter"
+              onClick={handleStatusClear}
+            />
+          </Tag.EndElement>
+        </Tag.Root>
       )}
       {hasMultipleFilterTypes && (
-        <Button variant="link" colorScheme="blue" size="sm" onClick={handleClearAll}>
+        <Button variant="plain" colorPalette="brand" size="sm" onClick={handleClearAll}>
           Clear all filters
         </Button>
       )}

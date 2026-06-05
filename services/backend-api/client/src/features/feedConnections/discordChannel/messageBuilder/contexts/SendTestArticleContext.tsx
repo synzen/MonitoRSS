@@ -1,20 +1,9 @@
-import {
-  Button,
-  Heading,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  Text,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { Heading, Stack, Text } from "@chakra-ui/react";
 import { PropsWithChildren, ReactNode, createContext, useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FaCheck, FaTimes } from "react-icons/fa";
 import { FaTriangleExclamation } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import {
   FeedConnectionType,
   SendTestArticleDeliveryStatus,
@@ -23,12 +12,19 @@ import {
 import { CreateDiscordChannelConnectionPreviewInput } from "../../connection/api";
 import { notifyError } from "@/utils/notifyError";
 import { notifySuccess } from "@/utils/notifySuccess";
-import getChakraColor from "@/utils/getChakraColor";
 import { notifyInfo } from "@/utils/notifyInfo";
 import {
   CreateConnectionTestArticleOutput,
   useCreateConnectionTestArticle,
 } from "../../connection/hooks";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ContextProps {
   sendTestArticle: (
@@ -89,7 +85,7 @@ const getMessageByStatus = (
           "features.feedConnections.components." +
           "sendTestArticleButton.alertDescriptionThirdPartyInternalError",
         useModal: {
-          headerBackgroundColor: getChakraColor("red.600"),
+          headerBackgroundColor: "var(--app-status-error-bg)",
         },
         titleIcon: <FaTimes />,
       };
@@ -100,7 +96,7 @@ const getMessageByStatus = (
         description:
           "features.feedConnections.components.sendTestArticleButton.alertDescriptionBadPayload",
         useModal: {
-          headerBackgroundColor: getChakraColor("red.600"),
+          headerBackgroundColor: "var(--app-status-error-bg)",
         },
         titleIcon: <FaTimes />,
       };
@@ -114,8 +110,8 @@ const getMessageByStatus = (
             "sendTestArticleButton.alertDescriptionMissingApplicationPermission",
         useModal: {
           headerBackgroundColor: isCreateThread
-            ? getChakraColor("orange.600")
-            : getChakraColor("red.600"),
+            ? "var(--app-status-warning-bg)"
+            : "var(--app-status-error-bg)",
         },
         titleIcon: isCreateThread ? <FaTriangleExclamation /> : <FaTimes />,
       };
@@ -127,7 +123,7 @@ const getMessageByStatus = (
           "features.feedConnections.components." +
           "sendTestArticleButton.alertDescriptionMissingChannel",
         useModal: {
-          headerBackgroundColor: getChakraColor("red.600"),
+          headerBackgroundColor: "var(--app-status-error-bg)",
         },
         titleIcon: <FaTimes />,
       };
@@ -139,7 +135,7 @@ const getMessageByStatus = (
           "features.feedConnections.components." +
           "sendTestArticleButton.alertDescriptionTooManyRequests",
         useModal: {
-          headerBackgroundColor: getChakraColor("red.600"),
+          headerBackgroundColor: "var(--app-status-error-bg)",
         },
         titleIcon: <FaTimes />,
       };
@@ -165,7 +161,7 @@ const getMessageByStatus = (
 
 export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => {
   const { t } = useTranslation();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const [sendResult, setSendResult] = useState({
     title: "",
     description: <div />,
@@ -195,18 +191,18 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
       const descriptionNode = !description ? (
         <div />
       ) : (
-        <Stack spacing={8}>
+        <Stack gap={8}>
           <Text mt={2}>{t(description)}</Text>
-          <Stack spacing={12}>
+          <Stack gap={12}>
             {result.apiPayload && (
-              <Stack spacing={6}>
+              <Stack gap={6}>
                 <Heading size="md">
                   {t("features.feedConnections.components.sendTestArticleButton.apiPayload")}
                 </Heading>
                 <Text>The configured message that was sent to Discord.</Text>
                 <pre
                   style={{
-                    backgroundColor: getChakraColor("gray.800"),
+                    backgroundColor: "var(--app-bg-emphasized)",
                     overflow: "auto",
                     padding: "1rem",
                   }}
@@ -216,7 +212,7 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
               </Stack>
             )}
             {result.apiResponse && (
-              <Stack spacing={6}>
+              <Stack gap={6}>
                 <Heading size="md">
                   {t("features.feedConnections.components.sendTestArticleButton.apiResponse")}
                 </Heading>
@@ -226,7 +222,7 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
                 </Text>
                 <pre
                   style={{
-                    backgroundColor: getChakraColor("gray.800"),
+                    backgroundColor: "var(--app-bg-emphasized)",
                     overflow: "auto",
                     padding: "1rem",
                   }}
@@ -245,7 +241,7 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
         headerBackgroundColor: useModal?.headerBackgroundColor || "",
         titleIcon,
       });
-      onOpen();
+      setOpen(true);
 
       return null;
     } catch (err) {
@@ -272,10 +268,9 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
 
   return (
     <SendTestArticleContext.Provider value={providerValue}>
-      <Modal size="4xl" isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader
+      <DialogRoot size="cover" open={open} onOpenChange={(e) => setOpen(e.open)}>
+        <DialogContent>
+          <DialogHeader
             backgroundColor={sendResult.headerBackgroundColor}
             borderTopRightRadius="xl"
             borderTopLeftRadius="xl"
@@ -283,17 +278,19 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
             alignItems="center"
             gap={2}
           >
-            {sendResult.titleIcon}
-            {sendResult.title}
-          </ModalHeader>
-          <ModalBody>{sendResult.description}</ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={onClose}>
+            <DialogTitle display="flex" alignItems="center" gap={2}>
+              {sendResult.titleIcon}
+              {sendResult.title}
+            </DialogTitle>
+          </DialogHeader>
+          <DialogBody>{sendResult.description}</DialogBody>
+          <DialogFooter>
+            <PrimaryActionButton onClick={() => setOpen(false)}>
               {t("common.buttons.close")}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+            </PrimaryActionButton>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
       {children}
     </SendTestArticleContext.Provider>
   );

@@ -1,20 +1,17 @@
-import {
-  Button,
-  HStack,
-  Heading,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  Text,
-  useDisclosure,
-} from "@chakra-ui/react";
-import React from "react";
+import { Button, HStack, Heading, Stack, Text } from "@chakra-ui/react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogTrigger,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 import { FiltersForm } from "../FiltersForm";
 import { LogicalFilterExpression } from "../../types";
 
@@ -31,57 +28,54 @@ export const DiscordMentionSettingsDialog = ({
   onFiltersUpdated,
   onRemoved,
 }: Props) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const { t } = useTranslation();
 
   return (
-    <>
-      {React.cloneElement(trigger, {
-        onClick: onOpen,
-      })}
-      <Modal size="4xl" isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
+    <DialogRoot size="cover" open={open} onOpenChange={(e) => setOpen(e.open)}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
             {t("components.discordMessageMentionForm.mentionSettingsTitle")}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody marginBottom={4}>
-            <Stack spacing={8}>
-              <Stack spacing={4}>
-                <Heading size="md">
-                  {t("components.discordMessageMentionForm.mentionFiltersTitle")}
-                </Heading>
-                <Text>{t("components.discordMessageMentionForm.mentionFiltersDescription")}</Text>
-                <FiltersForm
-                  previewTitle={
-                    <Heading as="h3" size="sm">
-                      Filter Results Preview
-                    </Heading>
-                  }
-                  expression={filters?.expression || null}
-                  onSave={async (expression) => {
-                    onFiltersUpdated(expression ? { expression } : null);
-                    onClose();
-                  }}
-                  formContainerProps={{
-                    bg: "gray.800",
-                    rounded: "md",
-                  }}
-                />
-              </Stack>
+          </DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody marginBottom={4}>
+          <Stack gap={8}>
+            <Stack gap={4}>
+              <Heading size="md">
+                {t("components.discordMessageMentionForm.mentionFiltersTitle")}
+              </Heading>
+              <Text>{t("components.discordMessageMentionForm.mentionFiltersDescription")}</Text>
+              <FiltersForm
+                previewTitle={
+                  <Heading as="h3" size="sm">
+                    Filter Results Preview
+                  </Heading>
+                }
+                expression={filters?.expression || null}
+                onSave={async (expression) => {
+                  onFiltersUpdated(expression ? { expression } : null);
+                  setOpen(false);
+                }}
+                formContainerProps={{
+                  bg: "bg.subtle",
+                  rounded: "md",
+                }}
+              />
             </Stack>
-          </ModalBody>
-          <ModalFooter>
-            <HStack justifyContent="space-between" width="100%">
-              <Button colorScheme="red" variant="outline" onClick={onRemoved}>
-                {t("components.discordMessageMentionForm.removeMentionButton")}
-              </Button>
-              <Button onClick={onClose}>{t("common.buttons.close")}</Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+          </Stack>
+        </DialogBody>
+        <DialogFooter>
+          <HStack justifyContent="space-between" width="100%">
+            <DestructiveActionButton onClick={onRemoved}>
+              {t("components.discordMessageMentionForm.removeMentionButton")}
+            </DestructiveActionButton>
+            <Button onClick={() => setOpen(false)}>{t("common.buttons.close")}</Button>
+          </HStack>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

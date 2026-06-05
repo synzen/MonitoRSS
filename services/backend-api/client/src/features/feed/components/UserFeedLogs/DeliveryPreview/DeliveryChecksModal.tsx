@@ -2,36 +2,37 @@ import { useEffect, useState } from "react";
 import {
   Box,
   Button,
-  Collapse,
   Flex,
-  FormControl,
-  FormLabel,
   Grid,
   Heading,
   HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Select,
+  Icon,
   Stack,
-  Tag,
   Text,
   useDisclosure,
   VisuallyHidden,
 } from "@chakra-ui/react";
 import {
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  CloseIcon,
-  InfoIcon,
-  RepeatIcon,
-  WarningIcon,
-} from "@chakra-ui/icons";
+  FaCheck,
+  FaChevronDown,
+  FaChevronUp,
+  FaXmark,
+  FaCircleInfo,
+  FaArrowsRotate,
+  FaTriangleExclamation,
+} from "react-icons/fa6";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Field } from "@/components/ui/field";
+import { NativeSelectRoot, NativeSelectField } from "@/components/ui/native-select";
+import { Tag } from "@/components/ui/tag";
 import {
   formatRefreshRateSeconds,
   getEffectiveRefreshRateSeconds,
@@ -114,25 +115,25 @@ const StatusSummary = ({ stages }: StatusSummaryProps) => {
   const failedStage = stages.find((s) => s.status === DeliveryPreviewStageStatus.Failed);
   const isSuccess = !failedStage;
 
-  const bgColor = isSuccess ? "green.900" : "orange.900";
-  const borderColor = isSuccess ? "green.600" : "orange.600";
-  const iconColor = isSuccess ? "green.400" : "orange.400";
+  const colorPalette = isSuccess ? "green" : "orange";
+  const iconColor = isSuccess ? "text.success" : "text.warning";
 
   return (
     <Box
-      bg={bgColor}
+      colorPalette={colorPalette}
+      bg="colorPalette.subtle"
       borderLeft="4px solid"
-      borderLeftColor={borderColor}
-      borderRadius="md"
+      borderLeftColor="colorPalette.500"
+      borderRadius="l3"
       p={4}
       mb={4}
     >
-      <HStack spacing={3} align="flex-start">
+      <HStack gap={3} align="flex-start">
         <Box mt={0.5}>
           {isSuccess ? (
-            <CheckIcon color={iconColor} boxSize={4} />
+            <Icon as={FaCheck} color={iconColor} boxSize={4} />
           ) : (
-            <WarningIcon color={iconColor} boxSize={4} />
+            <Icon as={FaTriangleExclamation} color={iconColor} boxSize={4} />
           )}
         </Box>
         <Box>
@@ -155,9 +156,9 @@ const StatusIndicator = ({ status }: StatusIndicatorProps) => {
 
   if (isPassed) {
     return (
-      <HStack spacing={1} alignItems="center">
-        <CheckIcon color="green.400" boxSize={3} aria-hidden="true" />
-        <Text fontSize="xs" fontWeight="bold" color="green.400" textTransform="uppercase">
+      <HStack gap={1} alignItems="center">
+        <Icon as={FaCheck} color="text.success" boxSize={3} aria-hidden="true" />
+        <Text fontSize="xs" fontWeight="bold" color="text.success" textTransform="uppercase">
           Passed
         </Text>
       </HStack>
@@ -166,9 +167,9 @@ const StatusIndicator = ({ status }: StatusIndicatorProps) => {
 
   if (isFailed) {
     return (
-      <HStack spacing={1} alignItems="center">
-        <CloseIcon color="orange.400" boxSize={3} aria-hidden="true" />
-        <Text fontSize="xs" fontWeight="bold" color="orange.400" textTransform="uppercase">
+      <HStack gap={1} alignItems="center">
+        <Icon as={FaXmark} color="text.warning" boxSize={3} aria-hidden="true" />
+        <Text fontSize="xs" fontWeight="bold" color="text.warning" textTransform="uppercase">
           Blocked
         </Text>
       </HStack>
@@ -193,20 +194,19 @@ const PipelineStage = ({
   isLast,
   defaultExpanded = false,
 }: PipelineStageProps) => {
-  const { isOpen, onToggle } = useDisclosure({ defaultIsOpen: defaultExpanded });
+  const { open, onToggle } = useDisclosure({ defaultOpen: defaultExpanded });
   const isPassed = stageResult.status === DeliveryPreviewStageStatus.Passed;
   const isFailed = stageResult.status === DeliveryPreviewStageStatus.Failed;
   const hasDetails = !!stageResult.details;
 
-  const getCircleColor = () => {
-    if (isPassed) return "green.500";
-    if (isFailed) return "orange.500";
+  const getCirclePalette = () => {
+    if (isPassed) return "green";
+    if (isFailed) return "orange";
 
-    return "gray.500";
+    return "gray";
   };
 
-  const circleColor = getCircleColor();
-  const lineColor = isPassed ? "green.500" : "gray.600";
+  const circlePalette = getCirclePalette();
 
   return (
     <Box as="li" aria-current={isFailed ? "step" : undefined}>
@@ -220,17 +220,26 @@ const PipelineStage = ({
             w={8}
             h={8}
             borderRadius="full"
-            bg={circleColor}
+            colorPalette={circlePalette}
+            bg="colorPalette.500"
             color="white"
             fontWeight="bold"
             fontSize="sm"
           >
-            {isPassed && <CheckIcon boxSize={3} />}
-            {isFailed && <CloseIcon boxSize={3} />}
+            {isPassed && <Icon as={FaCheck} boxSize={3} />}
+            {isFailed && <Icon as={FaXmark} boxSize={3} />}
             {!isPassed && !isFailed && stepNumber}
           </Flex>
           {/* Connecting line */}
-          {!isLast && <Box w="2px" flex={1} minH={4} bg={lineColor} />}
+          {!isLast && (
+            <Box
+              w="2px"
+              flex={1}
+              minH={4}
+              colorPalette={isPassed ? "green" : undefined}
+              bg={isPassed ? "colorPalette.500" : "border"}
+            />
+          )}
         </Flex>
         {/* Content column */}
         <Box flex={1} pb={isLast ? 0 : 6}>
@@ -241,7 +250,7 @@ const PipelineStage = ({
             <Text fontWeight="semibold">{getStageName(stageResult.stage)}</Text>
             <StatusIndicator status={stageResult.status} />
           </Flex>
-          <Text fontSize="sm" color="whiteAlpha.700" mb={hasDetails ? 2 : 0}>
+          <Text fontSize="sm" color="fg.muted" mb={hasDetails ? 2 : 0}>
             {stageResult.summary}
           </Text>
           {hasDetails && (
@@ -250,19 +259,25 @@ const PipelineStage = ({
                 size="xs"
                 variant="ghost"
                 onClick={onToggle}
-                rightIcon={isOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                aria-expanded={isOpen}
-                color="whiteAlpha.600"
+                aria-expanded={open}
+                color="fg.muted"
                 aria-controls={stageResult.stage}
-                _hover={{ color: "whiteAlpha.900" }}
+                _hover={{ color: "fg" }}
               >
-                {isOpen ? "Hide details" : "Show details"}
+                {open ? "Hide details" : "Show details"}
+                <Icon as={open ? FaChevronUp : FaChevronDown} />
               </Button>
-              <Collapse in={isOpen} id={stageResult.stage}>
-                <Box mt={2} pl={4} borderLeft="2px solid" borderLeftColor="whiteAlpha.200">
+              {open && (
+                <Box
+                  id={stageResult.stage}
+                  mt={2}
+                  pl={4}
+                  borderLeft="2px solid"
+                  borderLeftColor="border"
+                >
                   <StageDetails stageResult={stageResult} />
                 </Box>
-              </Collapse>
+              )}
             </>
           )}
         </Box>
@@ -296,22 +311,22 @@ const StagesPipeline = ({ stages }: StagesPipelineProps) => {
 
 interface FieldTagsProps {
   fields: string[];
-  colorScheme?: "orange" | "green" | "gray";
+  colorPalette?: "orange" | "green" | "gray";
 }
 
-const FieldTags = ({ fields, colorScheme = "gray" }: FieldTagsProps) => {
+const FieldTags = ({ fields, colorPalette = "gray" }: FieldTagsProps) => {
   if (!fields || fields.length === 0) {
     return (
-      <Text as="span" color="gray.500" fontStyle="italic">
+      <Text as="span" color="fg.muted" fontStyle="italic">
         (none)
       </Text>
     );
   }
 
   return (
-    <HStack spacing={1} display="inline-flex" flexWrap="wrap">
+    <HStack gap={1} display="inline-flex" flexWrap="wrap">
       {fields.map((field) => (
-        <Tag key={field} size="sm" colorScheme={colorScheme} fontFamily="mono">
+        <Tag key={field} size="sm" colorPalette={colorPalette} fontFamily="mono">
           {field}
         </Tag>
       ))}
@@ -324,7 +339,7 @@ interface TechnicalDetailsProps {
 }
 
 const TechnicalDetails = ({ children }: TechnicalDetailsProps) => {
-  const { isOpen, onToggle } = useDisclosure();
+  const { open, onToggle } = useDisclosure();
 
   return (
     <Box mt={3}>
@@ -332,13 +347,13 @@ const TechnicalDetails = ({ children }: TechnicalDetailsProps) => {
         size="xs"
         variant="ghost"
         onClick={onToggle}
-        color="whiteAlpha.500"
-        _hover={{ color: "whiteAlpha.700" }}
+        color="fg.muted"
+        _hover={{ color: "fg.muted" }}
         px={0}
       >
-        {isOpen ? "Hide technical details" : "Show technical details"}
+        {open ? "Hide technical details" : "Show technical details"}
       </Button>
-      <Collapse in={isOpen}>
+      {open && (
         <Grid
           as="dl"
           templateColumns="180px 1fr"
@@ -346,13 +361,13 @@ const TechnicalDetails = ({ children }: TechnicalDetailsProps) => {
           fontSize="xs"
           mt={2}
           p={2}
-          bg="whiteAlpha.50"
-          borderRadius="md"
-          color="whiteAlpha.600"
+          bg="bg.subtle"
+          borderRadius="l3"
+          color="fg.muted"
         >
           {children}
         </Grid>
-      </Collapse>
+      )}
     </Box>
   );
 };
@@ -477,15 +492,15 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
 
       if (isFailed && blockedByFields.length > 0) {
         return (
-          <Stack spacing={3}>
+          <Stack gap={3}>
             <Text fontSize="sm">
               This article was blocked because the{" "}
-              <FieldTags fields={blockedByFields} colorScheme="orange" />{" "}
+              <FieldTags fields={blockedByFields} colorPalette="orange" />{" "}
               {blockedByFields.length === 1 ? "field hasn't" : "fields haven't"} changed since it
               was last seen.
             </Text>
             {comparisonFields.length > 0 && (
-              <Text fontSize="sm" color="whiteAlpha.700">
+              <Text fontSize="sm" color="fg.muted">
                 You&apos;ve configured blocking comparisons on{" "}
                 <FieldTags fields={comparisonFields} /> to prevent re-delivery of unchanged
                 articles.
@@ -517,12 +532,12 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
 
       if (isFailed) {
         return (
-          <Stack spacing={3}>
+          <Stack gap={3}>
             <Text fontSize="sm">
               None of the fields you selected for passing comparison have changed.
             </Text>
             {comparisonFields.length > 0 && (
-              <Text fontSize="sm" color="whiteAlpha.700">
+              <Text fontSize="sm" color="fg.muted">
                 You&apos;ve set up passing comparisons on <FieldTags fields={comparisonFields} /> to
                 only deliver articles when those specific fields change.
               </Text>
@@ -547,7 +562,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
 
       return (
         <Text fontSize="sm">
-          The <FieldTags fields={changedFields} colorScheme="green" />{" "}
+          The <FieldTags fields={changedFields} colorPalette="green" />{" "}
           {changedFields.length === 1 ? "field" : "fields"} changed, which triggered delivery based
           on your passing comparison settings.
         </Text>
@@ -566,7 +581,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
 
       if (!withinThreshold && thresholdText) {
         return (
-          <Stack spacing={3}>
+          <Stack gap={3}>
             <Text fontSize="sm">
               This article is{" "}
               <Text as="span" fontWeight="semibold">
@@ -625,13 +640,13 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
       }
 
       return (
-        <Stack spacing={4}>
+        <Stack gap={4}>
           {!filterResult && explainBlocked.length > 0 && (
             <Box>
               <Text fontSize="sm" mb={3}>
                 This article was blocked by your connection filters.
               </Text>
-              <Stack spacing={2}>
+              <Stack gap={2}>
                 {explainBlocked.map((detail) => (
                   <FilterResultItem
                     key={`${detail.fieldName}-${detail.operator}-${detail.filterInput}`}
@@ -644,10 +659,10 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
           {filterResult && <Text fontSize="sm">This article matched your filter criteria.</Text>}
           {explainMatched.length > 0 && (
             <Box>
-              <Text fontSize="sm" color="whiteAlpha.600" mb={2}>
+              <Text fontSize="sm" color="fg.muted" mb={2}>
                 {!filterResult ? "Other filters that matched:" : "Matched filters:"}
               </Text>
-              <Stack spacing={2}>
+              <Stack gap={2}>
                 {explainMatched.map((detail) => (
                   <FilterResultItem
                     key={`${detail.fieldName}-${detail.operator}-${detail.filterInput}`}
@@ -676,7 +691,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
 
       if (wouldExceed) {
         return (
-          <Stack spacing={2}>
+          <Stack gap={2}>
             <Text fontSize="sm">
               {isConnectionLimit ? "Connection" : "Feed"} rate limit reached.{" "}
               <Text as="span" fontWeight="semibold">
@@ -692,7 +707,7 @@ const StageDetails = ({ stageResult }: StageDetailsProps) => {
               </Text>{" "}
               article limit.
             </Text>
-            <Text fontSize="sm" color="whiteAlpha.700">
+            <Text fontSize="sm" color="fg.muted">
               New articles will be allowed as older deliveries fall outside the {timeWindowText}{" "}
               window.
             </Text>
@@ -736,29 +751,38 @@ const LearningPhaseContent = ({ refreshRateSeconds }: LearningPhaseContentProps)
         display="inline-flex"
         alignItems="center"
         justifyContent="center"
-        bg="blue.900"
+        colorPalette="brand"
+        bg="colorPalette.subtle"
         borderRadius="full"
         p={3}
         mb={4}
       >
-        <InfoIcon boxSize={6} color="blue.300" aria-hidden="true" />
+        <Icon as={FaCircleInfo} boxSize={6} color="colorPalette.fg" aria-hidden="true" />
       </Box>
       <Text fontSize="lg" fontWeight="semibold" mb={2}>
         Learning Phase Active
       </Text>
-      <Text color="whiteAlpha.800" maxW="md" mx="auto">
+      <Text color="fg" maxW="md" mx="auto">
         This feed is in its learning phase. MonitoRSS is identifying existing articles so it only
         delivers new ones.
       </Text>
-      <Box bg="blue.900" p={3} borderRadius="md" mt={4} maxW="sm" mx="auto">
-        <Text fontWeight="medium" color="blue.200">
+      <Box
+        colorPalette="brand"
+        bg="colorPalette.subtle"
+        p={3}
+        borderRadius="l3"
+        mt={4}
+        maxW="sm"
+        mx="auto"
+      >
+        <Text fontWeight="medium" color="colorPalette.fg">
           Expected completion: Within {formattedTime}
         </Text>
-        <Text fontSize="sm" color="blue.300">
+        <Text fontSize="sm" color="colorPalette.fg">
           Based on your feed&apos;s refresh interval
         </Text>
       </Box>
-      <Text color="whiteAlpha.600" mt={4} fontSize="sm">
+      <Text color="fg.muted" mt={4} fontSize="sm">
         Delivery checks will be available once the feed begins normal operation.
       </Text>
     </Box>
@@ -771,21 +795,21 @@ const FeedUnchangedContent = () => (
       display="inline-flex"
       alignItems="center"
       justifyContent="center"
-      bg="gray.700"
+      bg="bg.emphasized"
       borderRadius="full"
       p={3}
       mb={4}
     >
-      <RepeatIcon boxSize={6} color="gray.400" aria-hidden="true" />
+      <Icon as={FaArrowsRotate} boxSize={6} color="fg.muted" aria-hidden="true" />
     </Box>
     <Text fontSize="lg" fontWeight="semibold" mb={2}>
       Feed Content Unchanged
     </Text>
-    <Text color="whiteAlpha.800" maxW="md" mx="auto">
+    <Text color="fg" maxW="md" mx="auto">
       The feed content has not changed since it was last checked. MonitoRSS skips processing when
       the feed is identical to avoid unnecessary work.
     </Text>
-    <Text color="whiteAlpha.600" mt={4} fontSize="sm">
+    <Text color="fg.muted" mt={4} fontSize="sm">
       Delivery checks run when new or updated content is detected.
     </Text>
   </Box>
@@ -801,27 +825,36 @@ const FeedErrorContent = ({ outcomeReason }: FeedErrorContentProps) => (
       display="inline-flex"
       alignItems="center"
       justifyContent="center"
-      bg="red.900"
+      colorPalette="red"
+      bg="colorPalette.subtle"
       borderRadius="full"
       p={3}
       mb={4}
     >
-      <WarningIcon boxSize={6} color="red.300" aria-hidden="true" />
+      <Icon as={FaTriangleExclamation} boxSize={6} color="text.error" aria-hidden="true" />
     </Box>
     <Text fontSize="lg" fontWeight="semibold" mb={2}>
       Feed Error
     </Text>
-    <Text color="whiteAlpha.800" maxW="md" mx="auto">
+    <Text color="fg" maxW="md" mx="auto">
       MonitoRSS could not fetch or process this feed. Article-level checks were not performed.
     </Text>
     {outcomeReason && (
-      <Box bg="red.900" p={3} borderRadius="md" mt={4} maxW="md" mx="auto">
-        <Text fontSize="sm" color="red.200" fontFamily="mono">
+      <Box
+        colorPalette="red"
+        bg="colorPalette.subtle"
+        p={3}
+        borderRadius="l3"
+        mt={4}
+        maxW="md"
+        mx="auto"
+      >
+        <Text fontSize="sm" color="text.error" fontFamily="mono">
           {outcomeReason}
         </Text>
       </Box>
     )}
-    <Text color="whiteAlpha.600" mt={4} fontSize="sm">
+    <Text color="fg.muted" mt={4} fontSize="sm">
       Request History shows the full details for this fetch attempt.
     </Text>
   </Box>
@@ -856,57 +889,62 @@ export const DeliveryChecksModal = ({ isOpen, onClose, result, initialMediumId }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
-      <ModalOverlay />
-      <ModalContent bg="gray.900">
-        <ModalHeader as="div">
-          <Stack spacing={1}>
-            <Heading as="h2" size="md">
-              Delivery Checks
-            </Heading>
-            <Text fontSize="sm" fontWeight="normal" color="whiteAlpha.700" noOfLines={1}>
-              {result.articleTitle || "(no title)"}
-            </Text>
-          </Stack>
-        </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) onClose();
+      }}
+      size="xl"
+      scrollBehavior="inside"
+    >
+      <DialogContent>
+        <DialogHeader marginRight={4}>
+          <DialogTitle>
+            <Stack gap={1}>
+              <Heading as="h2" size="md">
+                Delivery Checks
+              </Heading>
+              <Text fontSize="sm" fontWeight="normal" color="fg.muted" lineClamp={1}>
+                {result.articleTitle || "(no title)"}
+              </Text>
+            </Stack>
+          </DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
           {isLearningPhase && (
             <LearningPhaseContent refreshRateSeconds={getEffectiveRefreshRateSeconds(userFeed)} />
           )}
           {isFeedUnchanged && <FeedUnchangedContent />}
           {isFeedError && <FeedErrorContent outcomeReason={result.outcomeReason} />}
           {!hasNoStages && (
-            <Stack spacing={4}>
+            <Stack gap={4}>
               {result.mediumResults.length > 1 && (
-                <FormControl>
-                  <FormLabel htmlFor="connection-select" fontSize="sm" color="gray.400">
-                    Connection
-                  </FormLabel>
-                  <Select
-                    id="connection-select"
-                    value={selectedMediumId}
-                    onChange={(e) => setSelectedMediumId(e.target.value)}
-                    bg="gray.800"
-                    size="sm"
-                  >
-                    {result.mediumResults.map((mr) => (
-                      <option key={mr.mediumId} value={mr.mediumId}>
-                        {getConnectionName(mr.mediumId)}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Field label="Connection">
+                  <NativeSelectRoot size="sm">
+                    <NativeSelectField
+                      id="connection-select"
+                      value={selectedMediumId}
+                      onChange={(e) => setSelectedMediumId(e.target.value)}
+                    >
+                      {result.mediumResults.map((mr) => (
+                        <option key={mr.mediumId} value={mr.mediumId}>
+                          {getConnectionName(mr.mediumId)}
+                        </option>
+                      ))}
+                    </NativeSelectField>
+                  </NativeSelectRoot>
+                </Field>
               )}
               <StatusSummary stages={relevantStages} />
               <StagesPipeline key={selectedMediumId} stages={relevantStages} />
             </Stack>
           )}
-        </ModalBody>
-        <ModalFooter>
+        </DialogBody>
+        <DialogFooter>
           <Button onClick={onClose}>Close</Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

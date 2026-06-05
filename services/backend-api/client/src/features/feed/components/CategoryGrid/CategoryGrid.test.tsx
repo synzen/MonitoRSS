@@ -1,8 +1,8 @@
 import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi } from "vitest";
+import { Provider } from "@/components/ui/provider";
 import { CategoryGrid } from ".";
 
 const categories = [
@@ -23,9 +23,9 @@ const renderGrid = (overrides = {}) => {
   const user = userEvent.setup();
   const props = { ...defaultProps, ...overrides };
   const result = render(
-    <ChakraProvider>
+    <Provider>
       <CategoryGrid {...props} />
-    </ChakraProvider>,
+    </Provider>,
   );
 
   return { user, ...result };

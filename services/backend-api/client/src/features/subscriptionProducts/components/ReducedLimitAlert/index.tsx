@@ -1,17 +1,7 @@
 import { useContext, useState } from "react";
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Box,
-  Button,
-  CloseButton,
-  HStack,
-  ListItem,
-  UnorderedList,
-} from "@chakra-ui/react";
-import { ArrowLeftIcon } from "@chakra-ui/icons";
+import { Alert, Box, Button, HStack, List } from "@chakra-ui/react";
+import { FaArrowLeft } from "react-icons/fa6";
+import { CloseButton } from "@/components/ui/close-button";
 import { ProductKey } from "@/constants";
 import { useUserMe } from "@/features/discordUser";
 import { UserFeedDisabledCode, useUserFeeds } from "@/features/feed";
@@ -42,28 +32,28 @@ export const ReducedLimitAlert = () => {
     !isUserHiddenDecreasedLimitAlert
   ) {
     return (
-      <Alert status="info" mt={2}>
-        <AlertIcon />
+      <Alert.Root status="info" mt={2}>
+        <Alert.Indicator />
         <HStack justifyContent="space-between" alignItems="flex-start">
           <Box>
-            <AlertTitle>
+            <Alert.Title>
               The default limits on the free tier have been reduced as of 1 May 2025.
-            </AlertTitle>
-            <AlertDescription>
+            </Alert.Title>
+            <Alert.Description>
               Due to the unsustainably increasing cost of running this service, free tier benefits
               have unfortunately been scaled back on 1 May 2025 as feeds on the free tier account
               for the overwhelming majority of the load.
               <br /> <br />
-              <UnorderedList>
-                <ListItem>
+              <List.Root>
+                <List.Item>
                   The number of feeds available on the free tier have been reduced from 5 to 3.
                   Feeds over this limit will be disabled until you remove some feeds or upgrade.
-                </ListItem>
-                <ListItem>
+                </List.Item>
+                <List.Item>
                   The refresh rate on the free tier have been increased from 10 minutes to 20
                   minutes.
-                </ListItem>
-              </UnorderedList>
+                </List.Item>
+              </List.Root>
               <br />
               You may attempt to reduce your number of feeds by using third-party RSS feed
               combiners/aggregators to combine multiple RSS feeds into one.
@@ -73,12 +63,10 @@ export const ReducedLimitAlert = () => {
               usage of this open-source service. If you would like to support the service, consider
               becoming a supporter by upgrading to a paid plan. Thank you for your continued
               support.
-            </AlertDescription>
+            </Alert.Description>
             <Box mt={4}>
-              <Button
-                leftIcon={<ArrowLeftIcon transform="rotate(90deg)" />}
-                onClick={onOpenPricingDialog}
-              >
+              <Button onClick={onOpenPricingDialog}>
+                <FaArrowLeft style={{ transform: "rotate(90deg)" }} />
                 Become a supporter
               </Button>
             </Box>
@@ -90,7 +78,7 @@ export const ReducedLimitAlert = () => {
             }}
           />
         </HStack>
-      </Alert>
+      </Alert.Root>
     );
   }
 

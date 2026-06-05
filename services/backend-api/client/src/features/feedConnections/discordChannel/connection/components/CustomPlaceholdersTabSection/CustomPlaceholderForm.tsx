@@ -1,43 +1,32 @@
 import { Controller, useFormContext } from "react-hook-form";
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Box,
   Button,
   Code,
-  Divider,
   Flex,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
   HStack,
   IconButton,
   Input,
   Link,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItemOption,
-  MenuList,
-  MenuOptionGroup,
+  Separator,
   Stack,
   Text,
   chakra,
 } from "@chakra-ui/react";
-import { AddIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import { FaPlus, FaChevronDown } from "react-icons/fa6";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { v4 as uuidv4 } from "uuid";
 import dayjs from "dayjs";
 import { FiMousePointer, FiChevronUp, FiChevronDown } from "react-icons/fi";
 import { CustomPlaceholdersFormData } from "./constants/CustomPlaceholderFormSchema";
-import { AnimatedComponent, ConfirmModal } from "@/components";
+import { AnimatedComponent, ConfirmModal, DestructiveActionButton } from "@/components";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { CustomPlaceholderPreview } from "./CustomPlaceholderPreview";
 import { CustomPlaceholderDateFormatStep } from "@/types/CustomPlaceholder";
 import { useGetUserFeedArticlesError } from "../../hooks";
 import { AutoResizeTextarea } from "@/components/AutoResizeTextarea";
+import { Panel } from "@/components/Panel";
 import { CustomPlaceholderStepType } from "@/constants";
 import {
   DatePreferencesForm,
@@ -50,6 +39,15 @@ import { useUserMe } from "@/features/discordUser";
 
 import { notifyInfo } from "@/utils/notifyInfo";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
+import { Field } from "@/components/ui/field";
+import { Alert } from "@/components/ui/alert";
+import {
+  MenuRoot,
+  MenuTrigger,
+  MenuContent,
+  MenuCheckboxItem,
+  MenuItem,
+} from "@/components/ui/menu";
 
 interface Props {
   index: number;
@@ -85,17 +83,37 @@ const RegexStep = ({ customPlaceholderIndex, stepIndex }: StepProps) => {
   )?.regexSearchFlags;
 
   return (
-    <Stack flex={1} spacing={4}>
+    <Stack flex={1} gap={4}>
       <HStack alignItems="flex-start">
-        <FormControl isInvalid={!!regexSearchError} flexGrow={1}>
-          <FormLabel variant="inline">Search</FormLabel>
+        <Field
+          invalid={!!regexSearchError}
+          flexGrow={1}
+          label={<chakra.span fontWeight="medium">Search</chakra.span>}
+          errorText={regexSearchError?.message}
+          helperText={
+            !regexSearchError ? (
+              <>
+                The regular expression to find the text of interest. For more information on your
+                regular expressions, you may visit{" "}
+                <Link
+                  color="text.link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href="https://regex101.com/"
+                >
+                  https://regex101.com/
+                </Link>{" "}
+                (be sure to select the JavaScript flavor).
+              </>
+            ) : undefined
+          }
+        >
           <Controller
             name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.regexSearch`}
             control={control}
             render={({ field }) => {
               return (
                 <Input
-                  bg="gray.800"
                   size="sm"
                   fontFamily="mono"
                   autoCorrect="off"
@@ -108,113 +126,138 @@ const RegexStep = ({ customPlaceholderIndex, stepIndex }: StepProps) => {
               );
             }}
           />
-          {!regexSearchError && (
-            <FormHelperText>
-              The regular expression to find the text of interest. For more information on your
-              regular expressions, you may visit{" "}
-              <Link
-                color="blue.300"
-                target="_blank"
-                rel="noopener noreferrer"
-                href="https://regex101.com/"
-              >
-                https://regex101.com/
-              </Link>{" "}
-              (be sure to select the JavaScript flavor).
-            </FormHelperText>
-          )}
-          {regexSearchError && <FormErrorMessage>{regexSearchError.message}</FormErrorMessage>}
-        </FormControl>
-        <FormControl flex={0}>
-          <FormLabel variant="inline" whiteSpace="nowrap">
-            Regex Flags
-          </FormLabel>
+        </Field>
+        <Field
+          flex={0}
+          label={
+            <chakra.span fontWeight="medium" whiteSpace="nowrap">
+              Regex Flags
+            </chakra.span>
+          }
+          errorText={regexFlagsError?.message}
+          invalid={!!regexFlagsError}
+        >
           <Controller
             name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.regexSearchFlags`}
             control={control}
             render={({ field }) => {
+              const flagValues = field.value?.split("") || [];
+
+              const toggleFlag = (flag: string) => {
+                const current = field.value?.split("") || [];
+
+                if (current.includes(flag)) {
+                  field.onChange(current.filter((f) => f !== flag).join(""));
+                } else {
+                  field.onChange([...current, flag].join(""));
+                }
+              };
+
               return (
-                <Menu closeOnSelect={false}>
-                  <MenuButton
-                    as={Button}
-                    size="sm"
-                    bg="gray.800"
-                    rightIcon={<ChevronDownIcon />}
-                    aria-label="Regex Flags"
-                  >
-                    {field.value || "/"}
-                  </MenuButton>
-                  <MenuList minWidth="240px">
-                    <MenuOptionGroup
-                      type="checkbox"
-                      onChange={(val) => {
-                        if (val instanceof Array) {
-                          field.onChange(val.join(""));
-                        }
-                      }}
-                      value={field.value?.split("")}
+                <MenuRoot closeOnSelect={false}>
+                  <MenuTrigger asChild>
+                    <Button size="sm" variant="outline" aria-label="Regex Flags">
+                      {field.value || "/"}
+                      <FaChevronDown />
+                    </Button>
+                  </MenuTrigger>
+                  <MenuContent minWidth="240px">
+                    <MenuCheckboxItem
+                      value="g"
+                      checked={flagValues.includes("g")}
+                      onCheckedChange={() => toggleFlag("g")}
                     >
-                      <MenuItemOption value="g">
-                        <Box>
-                          <Text>
-                            <chakra.strong color="blue.300">g</chakra.strong>lobal
-                          </Text>
-                          <Text color="whiteAlpha.600">
-                            Don&apos;t return after the first match
-                          </Text>
-                        </Box>
-                      </MenuItemOption>
-                      <MenuItemOption value="i">
+                      <Box>
                         <Text>
-                          case <chakra.strong color="blue.300">i</chakra.strong>nsensitive
+                          <chakra.strong color="text.link">g</chakra.strong>lobal
                         </Text>
-                        <Text color="whiteAlpha.600">Case insensitive match</Text>
-                      </MenuItemOption>
-                      <MenuItemOption value="m">
-                        <Text>
-                          <chakra.strong color="blue.300">m</chakra.strong>ultiline
-                        </Text>
-                        <Text color="whiteAlpha.600">^ and $ match start/end of line</Text>
-                      </MenuItemOption>
-                      <MenuItemOption value="y">
-                        <Text>
-                          stick<chakra.strong color="blue.300">y</chakra.strong>
-                        </Text>
-                        <Text color="whiteAlpha.600">
-                          Anchor to start of pattern, or at the end of the most recent match
-                        </Text>
-                      </MenuItemOption>
-                      <MenuItemOption value="v">
-                        <Text>
-                          <chakra.strong color="blue.300">v</chakra.strong>nicode
-                        </Text>
-                        <Text color="whiteAlpha.600">
-                          Enable all unicode and character set features
-                        </Text>
-                      </MenuItemOption>
-                      <MenuItemOption value="s">
-                        <Text>
-                          <chakra.strong color="blue.300">s</chakra.strong>ingle line
-                        </Text>
-                        <Text color="whiteAlpha.600">Dot matches newline</Text>
-                      </MenuItemOption>
-                      <MenuItemOption value="d">
-                        <Text>
-                          in<chakra.strong color="blue.300">d</chakra.strong>ices
-                        </Text>
-                        <Text color="whiteAlpha.600">The regex engine returns match indices</Text>
-                      </MenuItemOption>
-                    </MenuOptionGroup>
-                  </MenuList>
-                </Menu>
+                        <Text color="fg.muted">Don&apos;t return after the first match</Text>
+                      </Box>
+                    </MenuCheckboxItem>
+                    <MenuCheckboxItem
+                      value="i"
+                      checked={flagValues.includes("i")}
+                      onCheckedChange={() => toggleFlag("i")}
+                    >
+                      <Text>
+                        case <chakra.strong color="text.link">i</chakra.strong>nsensitive
+                      </Text>
+                      <Text color="fg.muted">Case insensitive match</Text>
+                    </MenuCheckboxItem>
+                    <MenuCheckboxItem
+                      value="m"
+                      checked={flagValues.includes("m")}
+                      onCheckedChange={() => toggleFlag("m")}
+                    >
+                      <Text>
+                        <chakra.strong color="text.link">m</chakra.strong>ultiline
+                      </Text>
+                      <Text color="fg.muted">^ and $ match start/end of line</Text>
+                    </MenuCheckboxItem>
+                    <MenuCheckboxItem
+                      value="y"
+                      checked={flagValues.includes("y")}
+                      onCheckedChange={() => toggleFlag("y")}
+                    >
+                      <Text>
+                        stick<chakra.strong color="text.link">y</chakra.strong>
+                      </Text>
+                      <Text color="fg.muted">
+                        Anchor to start of pattern, or at the end of the most recent match
+                      </Text>
+                    </MenuCheckboxItem>
+                    <MenuCheckboxItem
+                      value="v"
+                      checked={flagValues.includes("v")}
+                      onCheckedChange={() => toggleFlag("v")}
+                    >
+                      <Text>
+                        <chakra.strong color="text.link">v</chakra.strong>nicode
+                      </Text>
+                      <Text color="fg.muted">Enable all unicode and character set features</Text>
+                    </MenuCheckboxItem>
+                    <MenuCheckboxItem
+                      value="s"
+                      checked={flagValues.includes("s")}
+                      onCheckedChange={() => toggleFlag("s")}
+                    >
+                      <Text>
+                        <chakra.strong color="text.link">s</chakra.strong>ingle line
+                      </Text>
+                      <Text color="fg.muted">Dot matches newline</Text>
+                    </MenuCheckboxItem>
+                    <MenuCheckboxItem
+                      value="d"
+                      checked={flagValues.includes("d")}
+                      onCheckedChange={() => toggleFlag("d")}
+                    >
+                      <Text>
+                        in<chakra.strong color="text.link">d</chakra.strong>ices
+                      </Text>
+                      <Text color="fg.muted">The regex engine returns match indices</Text>
+                    </MenuCheckboxItem>
+                  </MenuContent>
+                </MenuRoot>
               );
             }}
           />
-          {regexFlagsError && <FormErrorMessage>{regexFlagsError.message}</FormErrorMessage>}
-        </FormControl>
+        </Field>
       </HStack>
-      <FormControl isInvalid={!!replacementStringError}>
-        <FormLabel variant="inline">Replacement</FormLabel>
+      <Field
+        invalid={!!replacementStringError}
+        label={<chakra.span fontWeight="medium">Replacement</chakra.span>}
+        errorText={replacementStringError?.message}
+        helperText={
+          !replacementStringError ? (
+            <>
+              The string to replace the matched text with. If empty, the matched content will be
+              removed from the placeholder. If you want to extract content, You may use{" "}
+              <Code>$1</Code>, <Code>$2</Code>, etc. to reference the matched groups indicated via
+              parenthesis in your regex search.
+            </>
+          ) : undefined
+        }
+      >
         <Controller
           name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}.replacementString`}
           control={control}
@@ -223,7 +266,6 @@ const RegexStep = ({ customPlaceholderIndex, stepIndex }: StepProps) => {
               <AutoResizeTextarea
                 fontFamily="mono"
                 size="sm"
-                bg="gray.800"
                 autoCorrect="off"
                 autoCapitalize="off"
                 spellCheck="false"
@@ -234,26 +276,15 @@ const RegexStep = ({ customPlaceholderIndex, stepIndex }: StepProps) => {
             );
           }}
         />
-        {!replacementStringError && (
-          <FormHelperText>
-            The string to replace the matched text with. If empty, the matched content will be
-            removed from the placeholder. If you want to extract content, You may use{" "}
-            <Code>$1</Code>, <Code>$2</Code>, etc. to reference the matched groups indicated via
-            parenthesis in your regex search.
-          </FormHelperText>
-        )}
-        {replacementStringError && (
-          <FormErrorMessage>{replacementStringError.message}</FormErrorMessage>
-        )}
-      </FormControl>
+      </Field>
     </Stack>
   );
 };
 
 const NoOptionsAvailableStep = (_: StepProps) => {
   return (
-    <Stack flex={1} spacing={4}>
-      <Text color="whiteAlpha.700">No options are available for this type of step</Text>
+    <Stack flex={1} gap={4}>
+      <Text color="fg.muted">No options are available for this type of step</Text>
     </Stack>
   );
 };
@@ -276,7 +307,7 @@ const DateFormatStep = ({ customPlaceholderIndex, stepIndex }: StepProps) => {
   )?.format;
 
   return (
-    <Stack flex={1} spacing={4} width="100%">
+    <Stack flex={1} gap={4} width="100%">
       <Controller
         name={`customPlaceholders.${customPlaceholderIndex}.steps.${stepIndex}`}
         control={control}
@@ -419,9 +450,20 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
     isNewField && (!customPlaceholder.referenceName || !customPlaceholder.sourcePlaceholder);
 
   return (
-    <Stack background="gray.700" p={4} spacing={4} rounded="lg">
-      <FormControl isInvalid={!!referenceNameError} isRequired>
-        <FormLabel variant="inline">Reference Name</FormLabel>
+    <Panel display="flex" flexDirection="column" p={4} gap={4} rounded="lg">
+      <Field
+        invalid={!!referenceNameError}
+        required
+        label={<chakra.span fontWeight="medium">Reference Name</chakra.span>}
+        errorText={referenceNameError?.message}
+        helperText={
+          <>
+            The reference name for this custom placeholder. For example, if the reference name is{" "}
+            <Code>mytitle</Code>, then the placeholder to use into your custom message contente will
+            be <Code>{`{{custom::mytitle}}`}</Code>.
+          </>
+        }
+      >
         <Controller
           name={`customPlaceholders.${index}.referenceName`}
           control={control}
@@ -432,32 +474,27 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
               autoCapitalize="off"
               spellCheck="false"
               autoComplete="off"
-              bg="gray.800"
               {...field}
               value={field.value || ""}
               ref={null}
             />
           )}
         />
-        <FormErrorMessage>{referenceNameError?.message}</FormErrorMessage>
-        <FormHelperText>
-          The reference name for this custom placeholder. For example, if the reference name is{" "}
-          <Code>mytitle</Code>, then the placeholder to use into your custom message contente will
-          be <Code>{`{{custom::mytitle}}`}</Code>.
-        </FormHelperText>
-      </FormControl>
-      <FormControl isInvalid={!!sourcePlaceholderError} isRequired>
-        <FormLabel
-          variant="inline"
-          id="source-placeholder-label"
-          htmlFor="source-placeholder-select"
-        >
-          Source Placeholder
-        </FormLabel>
+      </Field>
+      <Field
+        invalid={!!sourcePlaceholderError}
+        required
+        label={
+          <chakra.span fontWeight="medium" id="source-placeholder-label">
+            Source Placeholder
+          </chakra.span>
+        }
+        errorText={sourcePlaceholderError?.message}
+        helperText="The placeholder where the content should originate from."
+      >
         {userFeedArticlesMessage && (
-          <Alert status="error" mb={2} rounded="lg">
-            <AlertTitle>Failed to load placeholders</AlertTitle>
-            <AlertDescription>{userFeedArticlesMessage}</AlertDescription>
+          <Alert status="error" mb={2} rounded="lg" title="Failed to load placeholders">
+            {userFeedArticlesMessage}
           </Alert>
         )}
         <Controller
@@ -478,20 +515,18 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
             />
           )}
         />
-        <FormErrorMessage>{sourcePlaceholderError?.message}</FormErrorMessage>
-        <FormHelperText>The placeholder where the content should originate from.</FormHelperText>
-      </FormControl>
-      <FormControl isInvalid={!!hasStepsError}>
-        <FormLabel variant="inline">Transformation Steps</FormLabel>
-        <FormHelperText pb={2}>
+      </Field>
+      <Field
+        invalid={!!hasStepsError}
+        label={<chakra.span fontWeight="medium">Transformation Steps</chakra.span>}
+      >
+        <Text color="inherit" fontSize="sm" mb={2}>
           The steps to apply in sequence to the content of the source placeholder. The final result
           will be the content of the custom placeholder. At least 1 step must be defined.
-        </FormHelperText>
+        </Text>
         {isNewAndIncompletePlaceholder && (
           <Alert role={undefined}>
-            <AlertDescription>
-              Input a reference name and source placeholder to start adding steps
-            </AlertDescription>
+            Input a reference name and source placeholder to start adding steps
           </Alert>
         )}
         {!isNewAndIncompletePlaceholder && (
@@ -499,30 +534,34 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
             <Box>
               <Stack width="100%">
                 {userFeedArticlesMessage && (
-                  <Alert status="error" mb={2} rounded="lg">
-                    <AlertTitle>Failed to load placeholder preview</AlertTitle>
-                    <AlertDescription>{userFeedArticlesMessage}</AlertDescription>
+                  <Alert
+                    status="error"
+                    mb={2}
+                    rounded="lg"
+                    title="Failed to load placeholder preview"
+                  >
+                    {userFeedArticlesMessage}
                   </Alert>
                 )}
                 <ArticleSelectDialog
                   singleProperty={customPlaceholder.sourcePlaceholder}
                   trigger={
-                    <Button
+                    <SafeLoadingButton
                       size="sm"
                       width="min-content"
-                      leftIcon={<FiMousePointer />}
-                      isLoading={fetchStatusUserFeedArticles === "fetching"}
-                      isDisabled={fetchStatusUserFeedArticles === "fetching" || hasArticlesAlert}
+                      loading={fetchStatusUserFeedArticles === "fetching"}
+                      aria-disabled={fetchStatusUserFeedArticles === "fetching" || hasArticlesAlert}
                     >
+                      <FiMousePointer />
                       <span>Select preview placeholder content</span>
-                    </Button>
+                    </SafeLoadingButton>
                   }
                   feedId={userFeed.id}
                   onArticleSelected={setSelectedArticleId}
                   onClickRandomArticle={onClickRandomFeedArticle}
                   articleFormatOptions={articleFormatOptions}
                 />
-                <Text fontSize={12} color="whiteAlpha.700">
+                <Text fontSize={12} color="fg.muted">
                   Preview Input
                 </Text>
                 <CustomPlaceholderPreview
@@ -532,7 +571,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                 />
               </Stack>
               <Flex justifyContent="center" py={2}>
-                <ChevronDownIcon fontSize={24} />
+                <FaChevronDown fontSize={24} />
               </Flex>
               <AnimatedComponent>
                 {steps.map((step, stepIndex) => {
@@ -543,8 +582,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
 
                   return (
                     <Stack key={step.id}>
-                      <Box
-                        as={motion.div}
+                      <motion.div
                         exit={{
                           opacity: 0,
                         }}
@@ -558,7 +596,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                         <Stack
                           borderStyle="solid"
                           borderWidth="2px"
-                          borderColor="whiteAlpha.300"
+                          borderColor="border"
                           paddingX={5}
                           paddingY={5}
                           rounded="lg"
@@ -579,11 +617,11 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                                   "Date Format"}
                               </Text>
                               {step.type === CustomPlaceholderStepType.DateFormat && (
-                                <Text fontSize={12} color="whiteAlpha.700">
+                                <Text fontSize={12} color="fg.muted">
                                   For the most accurate result, ensure the input date complies with
                                   the{" "}
                                   <Link
-                                    color="blue.300"
+                                    color="text.link"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     href="https://simple.wikipedia.org/wiki/ISO_8601"
@@ -598,23 +636,25 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                             </Box>
                             <HStack flexShrink={0}>
                               <IconButton
-                                icon={<FiChevronUp />}
                                 aria-label="Move step up"
                                 size="sm"
                                 variant="ghost"
-                                isDisabled={stepIndex === 0}
+                                disabled={stepIndex === 0}
                                 onClick={() => moveStepUp(stepIndex)}
-                              />
+                              >
+                                <FiChevronUp />
+                              </IconButton>
                               <IconButton
-                                icon={<FiChevronDown />}
                                 aria-label="Move step down"
                                 size="sm"
                                 variant="ghost"
-                                isDisabled={stepIndex === steps.length - 1}
+                                disabled={stepIndex === steps.length - 1}
                                 onClick={() => moveStepDown(stepIndex)}
-                              />
+                              >
+                                <FiChevronDown />
+                              </IconButton>
                               <Button
-                                colorScheme="red"
+                                colorPalette="red"
                                 size="sm"
                                 variant="ghost"
                                 aria-disabled={steps.length === 1}
@@ -640,7 +680,7 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                               </Button>
                             </HStack>
                           </Flex>
-                          <Divider mb={2} />
+                          <Separator mb={2} />
                           {!step.type ||
                             (step.type === CustomPlaceholderStepType.Regex && (
                               <RegexStep key={step.id} {...props} />
@@ -659,11 +699,11 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                           )}
                         </Stack>
                         <Flex justifyContent="center" py={2}>
-                          <ChevronDownIcon fontSize={24} />
+                          <FaChevronDown fontSize={24} />
                         </Flex>
                         <Stack>
                           {stepIndex === steps.length - 1 && (
-                            <Text fontSize={12} color="whiteAlpha.700">
+                            <Text fontSize={12} color="fg.muted">
                               Final Output
                             </Text>
                           )}
@@ -679,34 +719,29 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                           opacity={stepIndex < steps.length - 1 ? 1 : 0}
                           py={2}
                         >
-                          <ChevronDownIcon fontSize={24} />
+                          <FaChevronDown fontSize={24} />
                         </Flex>
-                      </Box>
+                      </motion.div>
                     </Stack>
                   );
                 })}
               </AnimatedComponent>
             </Box>
             <Flex justifyContent={steps.length > 0 ? "center" : "flex-start"} width="100%">
-              <Menu>
-                <MenuButton
-                  as={Button}
-                  width="min-content"
-                  size="sm"
-                  variant="outline"
-                  mt={-4}
-                  leftIcon={<AddIcon fontSize={13} />}
-                  rightIcon={
+              <MenuRoot>
+                <MenuTrigger asChild>
+                  <Button width="min-content" size="sm" variant="outline" mt={-4}>
+                    <FaPlus fontSize={13} />
+                    Add step
                     <HStack>
-                      <Divider />
-                      <ChevronDownIcon />
+                      <Separator />
+                      <FaChevronDown />
                     </HStack>
-                  }
-                >
-                  Add step
-                </MenuButton>
-                <MenuList>
+                  </Button>
+                </MenuTrigger>
+                <MenuContent>
                   <MenuItem
+                    value="regex"
                     onClick={() => {
                       setValue(
                         `customPlaceholders.${index}.steps`,
@@ -721,12 +756,13 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                   >
                     <Box>
                       <Text display="block">Regex Replace</Text>
-                      <Text color="whiteAlpha.600" display="block" fontSize="sm">
+                      <Text color="fg.muted" display="block" fontSize="sm">
                         Replace or extract text using regular expressions.
                       </Text>
                     </Box>
                   </MenuItem>
                   <MenuItem
+                    value="dateformat"
                     onClick={() => {
                       setValue(
                         `customPlaceholders.${index}.steps`,
@@ -742,12 +778,13 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                   >
                     <Box>
                       <Text display="block">Date Format</Text>
-                      <Text color="whiteAlpha.600" display="block" fontSize="sm">
+                      <Text color="fg.muted" display="block" fontSize="sm">
                         Format text as a date. Input must be in a valid date form.
                       </Text>
                     </Box>
                   </MenuItem>
                   <MenuItem
+                    value="urlencode"
                     onClick={() => {
                       setValue(
                         `customPlaceholders.${index}.steps`,
@@ -760,12 +797,13 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                   >
                     <Box>
                       <Text display="block">URL Encode</Text>
-                      <Text color="whiteAlpha.600" display="block" fontSize="sm">
+                      <Text color="fg.muted" display="block" fontSize="sm">
                         URL-encode the input.
                       </Text>
                     </Box>
                   </MenuItem>
                   <MenuItem
+                    value="uppercase"
                     onClick={() => {
                       setValue(
                         `customPlaceholders.${index}.steps`,
@@ -778,12 +816,13 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                   >
                     <Box>
                       <Text display="block">Uppercase</Text>
-                      <Text color="whiteAlpha.600" display="block" fontSize="sm">
+                      <Text color="fg.muted" display="block" fontSize="sm">
                         Convert the input to uppercase.
                       </Text>
                     </Box>
                   </MenuItem>
                   <MenuItem
+                    value="lowercase"
                     onClick={() => {
                       setValue(
                         `customPlaceholders.${index}.steps`,
@@ -796,18 +835,18 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
                   >
                     <Box>
                       <Text display="block">Lowercase</Text>
-                      <Text color="whiteAlpha.600" display="block" fontSize="sm">
+                      <Text color="fg.muted" display="block" fontSize="sm">
                         Convert the input to lowercase.
                       </Text>
                     </Box>
                   </MenuItem>
-                </MenuList>
-              </Menu>
+                </MenuContent>
+              </MenuRoot>
             </Flex>
           </Stack>
         )}
-      </FormControl>
-      <Divider my={2} />
+      </Field>
+      <Separator my={2} />
       <Flex justifyContent="space-between">
         <Box>
           {!isNewField && (
@@ -817,20 +856,16 @@ export const CustomPlaceholderForm = ({ index, onDelete, isExpanded }: Props) =>
               title="Delete Custom Placeholder"
               colorScheme="red"
               okText="Delete"
-              trigger={
-                <Button variant="outline" colorScheme="red">
-                  Delete
-                </Button>
-              }
+              trigger={<DestructiveActionButton>Delete</DestructiveActionButton>}
             />
           )}
           {isNewField && (
-            <Button variant="outline" colorScheme="red" onClick={onClickDeleteCustomPlaceholder}>
+            <DestructiveActionButton onClick={onClickDeleteCustomPlaceholder}>
               <span>Delete</span>
-            </Button>
+            </DestructiveActionButton>
           )}
         </Box>
       </Flex>
-    </Stack>
+    </Panel>
   );
 };

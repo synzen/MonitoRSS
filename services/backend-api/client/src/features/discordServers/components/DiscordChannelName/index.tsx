@@ -1,20 +1,16 @@
 /* eslint-disable react/jsx-no-useless-fragment */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Text, TextProps, chakra, Button, Skeleton } from "@chakra-ui/react";
 import {
-  Text,
-  TextProps,
-  chakra,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Button,
-  useDisclosure,
-  Skeleton,
-} from "@chakra-ui/react";
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogCloseTrigger,
+  DialogBody,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useDiscordServerChannels, useDiscordServerActiveThreads } from "../../hooks";
 import { GetDiscordChannelType } from "../../constants";
 
@@ -41,7 +37,7 @@ export const DiscordChannelName: React.FC<Props> = ({
       GetDiscordChannelType.Text,
     ],
   });
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const channelNamesById = useMemo(() => {
     const map = new Map<string, string>();
 
@@ -91,32 +87,32 @@ export const DiscordChannelName: React.FC<Props> = ({
     return (
       <>
         <Button
-          variant="link"
-          color="orange.500"
+          variant="plain"
+          textDecoration="underline"
+          color="text.warning"
           display="inline"
           p={0}
           h="auto"
           fontWeight="inherit"
           fontSize="inherit"
-          onClick={onOpen}
+          onClick={() => setOpen(true)}
         >
           ID: {channelId}
         </Button>
-        <Modal isOpen={isOpen} onClose={onClose} size="md">
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Failed to get Discord channel name</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
+        <DialogRoot open={open} onOpenChange={(e) => setOpen(e.open)} size="md">
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Failed to get Discord channel name</DialogTitle>
+            </DialogHeader>
+            <DialogCloseTrigger />
+            <DialogBody>
               <Text>{errorMessage}</Text>
-            </ModalBody>
-            <ModalFooter>
-              <Button colorScheme="blue" onClick={onClose}>
-                Close
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+            </DialogBody>
+            <DialogFooter>
+              <PrimaryActionButton onClick={() => setOpen(false)}>Close</PrimaryActionButton>
+            </DialogFooter>
+          </DialogContent>
+        </DialogRoot>
       </>
     );
   }

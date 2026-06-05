@@ -1,15 +1,12 @@
-import { AddIcon } from "@chakra-ui/icons";
+import { FaPlus } from "react-icons/fa6";
 import {
   Button,
   Flex,
   Heading,
   HStack,
+  Icon,
   IconButton,
   Stack,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
   Tabs,
   Text,
 } from "@chakra-ui/react";
@@ -17,6 +14,8 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { useState } from "react";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 import { DiscordMessageFormData, discordMessageFormSchema } from "@/types/discord";
 import { DiscordMessageContentFormLegacy } from "./DiscordMessageContentFormLegacy";
 import { DiscordMessageEmbedFormLegacy } from "./DiscordMessageEmbedFormLegacy";
@@ -115,70 +114,63 @@ export const DiscordMessageFormLegacy = ({ defaultValues, onClickSave }: Props) 
   return (
     <FormProvider {...formMethods}>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={24}>
-          <Stack spacing={4}>
+        <Stack gap={24}>
+          <Stack gap={4}>
             <Heading size="md">{t("components.discordMessageForm.textSectionTitle")}</Heading>
             <DiscordMessageContentFormLegacy />
           </Stack>
-          <Stack spacing={4}>
+          <Stack gap={4}>
             <Heading size="md">{t("components.discordMessageForm.embedSectionTitle")}</Heading>
             <Text>{t("components.discordMessageForm.embedSectionDescription")}</Text>
-            <Tabs variant="solid-rounded" index={activeEmbedIndex} onChange={onEmbedTabChanged}>
+            <Tabs.Root
+              variant="line"
+              value={String(activeEmbedIndex)}
+              onValueChange={(e) => onEmbedTabChanged(Number(e.value))}
+            >
               <HStack overflow="auto">
-                <TabList>
+                <Tabs.List>
                   {embeds?.map((embed, index) => (
-                    <Tab key={embed.id}>Embed {index + 1}</Tab>
+                    <Tabs.Trigger key={embed.id} value={String(index)}>
+                      Embed {index + 1}
+                    </Tabs.Trigger>
                   ))}
-                </TabList>
+                </Tabs.List>
                 {(embeds?.length ?? 0) < 10 && (
-                  <IconButton
-                    onClick={onAddEmbed}
-                    variant="ghost"
-                    aria-label="Add new embed"
-                    icon={<AddIcon />}
-                  />
+                  <IconButton onClick={onAddEmbed} variant="ghost" aria-label="Add new embed">
+                    <Icon as={FaPlus} />
+                  </IconButton>
                 )}
               </HStack>
-              <TabPanels>
+              <Tabs.ContentGroup>
                 {embeds?.map((embed, index) => (
-                  <TabPanel key={embed.id}>
-                    <Stack spacing={8}>
+                  <Tabs.Content key={embed.id} value={String(index)}>
+                    <Stack gap={8}>
                       <Flex justifyContent="flex-end">
-                        <Button
-                          colorScheme="red"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onRemoveEmbed(index)}
-                        >
+                        <DestructiveActionButton size="sm" onClick={() => onRemoveEmbed(index)}>
                           {t("features.feedConnections.components.embedForm.deleteButtonText")}
-                        </Button>
+                        </DestructiveActionButton>
                       </Flex>
                       <DiscordMessageEmbedFormLegacy index={index} />
                     </Stack>
-                  </TabPanel>
+                  </Tabs.Content>
                 ))}
-              </TabPanels>
-            </Tabs>
+              </Tabs.ContentGroup>
+            </Tabs.Root>
           </Stack>
           <Flex direction="row-reverse">
             <HStack>
               {isDirty && (
-                <Button
-                  onClick={() => reset()}
-                  variant="ghost"
-                  isDisabled={!isDirty || isSubmitting}
-                >
+                <Button onClick={() => reset()} variant="ghost" disabled={!isDirty || isSubmitting}>
                   {t("features.feed.components.sidebar.resetButton")}
                 </Button>
               )}
-              <Button
+              <PrimaryActionButton
                 type="submit"
-                colorScheme="blue"
-                isDisabled={isSubmitting || !isDirty || errorsExist}
-                isLoading={isSubmitting}
+                disabled={!isDirty || errorsExist}
+                loading={isSubmitting}
               >
                 <span>{t("features.feed.components.sidebar.saveButton")}</span>
-              </Button>
+              </PrimaryActionButton>
             </HStack>
           </Flex>
         </Stack>

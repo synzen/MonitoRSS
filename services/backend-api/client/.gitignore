@@ -9,3 +9,9 @@ dist-ssr
 
 *storybook.log
 storybook-static
+
+# transient lint logs
+eslint-out.txt
+eslint-after.txt
+tsc-*.txt
+fixmap*.json

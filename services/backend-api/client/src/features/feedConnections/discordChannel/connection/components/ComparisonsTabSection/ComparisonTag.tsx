@@ -1,4 +1,4 @@
-import { Spinner, Tag, TagCloseButton, TagLabel, TagRightIcon } from "@chakra-ui/react";
+import { Spinner, Tag as ChakraTag } from "@chakra-ui/react";
 import { useState } from "react";
 
 interface Props {
@@ -18,12 +18,23 @@ export const ComparisonTag = ({ colorScheme, title, onDelete, deleteButtonAriaLa
   };
 
   return (
-    <Tag size="lg" colorScheme={colorScheme} margin={0} as="li">
-      <TagLabel>{title}</TagLabel>
-      {isDeleting && <TagRightIcon as={Spinner} />}
-      {!isDeleting && (
-        <TagCloseButton aria-label={deleteButtonAriaLabel} onClick={() => onClickDelete()} />
-      )}
-    </Tag>
+    <ChakraTag.Root size="lg" colorPalette={colorScheme} margin={0} asChild>
+      <li>
+        <ChakraTag.Label>{title}</ChakraTag.Label>
+        {isDeleting && (
+          <ChakraTag.EndElement>
+            <Spinner size="xs" />
+          </ChakraTag.EndElement>
+        )}
+        {!isDeleting && (
+          <ChakraTag.EndElement>
+            <ChakraTag.CloseTrigger
+              aria-label={deleteButtonAriaLabel}
+              onClick={() => onClickDelete()}
+            />
+          </ChakraTag.EndElement>
+        )}
+      </li>
+    </ChakraTag.Root>
   );
 };

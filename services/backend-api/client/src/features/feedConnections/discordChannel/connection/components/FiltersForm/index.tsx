@@ -1,7 +1,8 @@
-import { BoxProps, Button, HStack, Stack, TableHeadProps } from "@chakra-ui/react";
+import { Button, HStack, Stack, StackProps, TableHeaderProps } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
-import React from "react";
+import React, { useRef } from "react";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import {
   FilterExpressionType,
   LogicalExpressionOperator,
@@ -23,9 +24,9 @@ interface FormData {
 interface Props {
   expression?: LogicalFilterExpression | null;
   onSave: (expression: LogicalFilterExpression | null) => Promise<void>;
-  formContainerProps?: BoxProps;
+  formContainerProps?: StackProps;
   previewContainerProps?: {
-    thead: TableHeadProps;
+    thead: TableHeaderProps;
   };
   previewTitle?: React.ReactNode;
 }
@@ -56,6 +57,7 @@ export const FiltersForm = ({
     control,
     name: "expression",
   });
+  const formFocusRef = useRef<HTMLFormElement>(null);
 
   const onDeletedExpression = async () => {
     setValue("expression", null, {
@@ -111,7 +113,7 @@ export const FiltersForm = ({
     return (
       <FormProvider {...formMethods}>
         <form onSubmit={onSubmit}>
-          <Stack spacing={8}>
+          <Stack gap={8}>
             <Stack>
               <Button onClick={addInitialExpression}>
                 <span>
@@ -119,14 +121,9 @@ export const FiltersForm = ({
                 </span>
               </Button>
               <HStack justifyContent="flex-end">
-                <Button
-                  colorScheme="blue"
-                  type="submit"
-                  isLoading={isSubmitting}
-                  isDisabled={!isDirty || isSubmitting}
-                >
+                <PrimaryActionButton type="submit" loading={isSubmitting} disabled={!isDirty}>
                   <span>{t("common.buttons.save")}</span>
-                </Button>
+                </PrimaryActionButton>
               </HStack>
             </Stack>
             <ArticleFilterResults
@@ -144,8 +141,8 @@ export const FiltersForm = ({
 
   return (
     <FormProvider {...formMethods}>
-      <form onSubmit={onSubmit}>
-        <Stack spacing={12}>
+      <form ref={formFocusRef} onSubmit={onSubmit} aria-label="Article filters settings">
+        <Stack gap={12}>
           <Stack>
             <NavigableTree accessibleLabel="Filter expression">
               <NavigableTreeItem
@@ -169,7 +166,7 @@ export const FiltersForm = ({
             }}
           />
         </Stack>
-        <SavedUnsavedChangesPopupBar useDirtyFormCheck />
+        <SavedUnsavedChangesPopupBar useDirtyFormCheck restoreFocusRef={formFocusRef} />
       </form>
     </FormProvider>
   );

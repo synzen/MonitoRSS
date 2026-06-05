@@ -1,33 +1,9 @@
-import {
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  Button,
-  Center,
-  HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Spinner,
-  Stack,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  useDisclosure,
-} from "@chakra-ui/react";
-import { cloneElement, useState } from "react";
+import { Button, Center, HStack, Icon, Spinner, Stack, Table, Text } from "@chakra-ui/react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
+import { FaCheck, FaXmark } from "react-icons/fa6";
 import { useUpdateUserFeedManagementInviteStatus, useUserFeedManagementInvites } from "../../hooks";
+import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 import { InlineErrorAlert } from "../../../../components/InlineErrorAlert";
 import { DiscordUsername } from "../../../discordUser";
 import { UserFeedManagementInvite } from "../../types";
@@ -37,6 +13,17 @@ import {
   PageAlertProvider,
   usePageAlertContext,
 } from "../../../../contexts/PageAlertContext";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Alert } from "@/components/ui/alert";
 
 interface Props {
   trigger: React.ReactElement;
@@ -115,111 +102,112 @@ const FeedManagementInviteRow = ({
   };
 
   return (
-    <Tr key={id}>
-      <Td>
+    <Table.Row key={id}>
+      <Table.Cell>
         {(!type || type === UserFeedManagerInviteType.CoManage) && <Text>Co-manage</Text>}
         {type === UserFeedManagerInviteType.Transfer && <Text>Ownership transfer</Text>}
-      </Td>
-      <Td>
+      </Table.Cell>
+      <Table.Cell>
         <DiscordUsername userId={ownerDiscordUserId} />
-      </Td>
-      <Td>{title}</Td>
-      <Td overflow="hidden" textOverflow="ellipsis" maxWidth="300px" title={url}>
+      </Table.Cell>
+      <Table.Cell>{title}</Table.Cell>
+      <Table.Cell overflow="hidden" textOverflow="ellipsis" maxWidth="300px" title={url}>
         {url}
-      </Td>
-      <Td>
+      </Table.Cell>
+      <Table.Cell>
         <HStack>
           <Button
             size="xs"
-            colorScheme="green"
-            leftIcon={<CheckIcon />}
+            variant="solid"
+            colorPalette="green"
             aria-disabled={isAccepting}
             onClick={onAccept}
           >
+            <Icon as={FaCheck} />
             <span>{isAccepting ? "Accepting..." : "Accept"}</span>
           </Button>
-          <Button
-            size="xs"
-            colorScheme="red"
-            leftIcon={<CloseIcon />}
-            aria-disabled={isDeclining}
-            onClick={onDecline}
-          >
+          <DestructiveActionButton size="xs" aria-disabled={isDeclining} onClick={onDecline}>
+            <Icon as={FaXmark} />
             <span>{isDeclining ? "Declining..." : "Decline"}</span>
-          </Button>
+          </DestructiveActionButton>
         </HStack>
-      </Td>
-    </Tr>
+      </Table.Cell>
+    </Table.Row>
   );
 };
 
 export const FeedManagementInvitesDialog = ({ trigger }: Props) => {
   const { data, error, status } = useUserFeedManagementInvites();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const { t } = useTranslation();
 
   return (
-    <>
-      {cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Feed Management Invites</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <PageAlertProvider>
-              <Stack spacing={4}>
-                <Text>
-                  You have been invited to either co-manage or own one or more feeds owned by
-                  someone else. Once you accept the invite, you&apos;ll be able to see those feeds
-                  in your feed list.
-                </Text>
-                {!error && data && (
-                  <Alert status="warning" role="none">
-                    <AlertIcon />
-                    <AlertTitle>Accepting an invite will count towards your feed limit</AlertTitle>
-                  </Alert>
-                )}
-                {error && (
-                  <InlineErrorAlert
-                    title={t("common.errors.somethingWentWrong")}
-                    description={error.message}
-                  />
-                )}
-                {status === "loading" && (
-                  <Center>
-                    <Spinner />
-                  </Center>
-                )}
-                {data && (
-                  <TableContainer bg="gray.800" borderRadius="md">
-                    <Table variant="simple">
-                      <Thead>
-                        <Tr>
-                          <Th>Request Type</Th>
-                          <Th>Owner</Th>
-                          <Th>Feed Title</Th>
-                          <Th>Feed URL</Th>
-                          <Th>Action</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {data.results.map((invite) => (
-                          <FeedManagementInviteRow invite={invite} key={invite.id} />
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </TableContainer>
-                )}
-                <PageAlertContextOutlet />
-              </Stack>
-            </PageAlertProvider>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onClose}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+    <DialogRoot open={open} onOpenChange={(e) => setOpen(e.open)} size="xl">
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader marginRight={4}>
+          <DialogTitle>Feed Management Invites</DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
+          <PageAlertProvider>
+            <Stack gap={4}>
+              <Text>
+                You have been invited to either co-manage or own one or more feeds owned by someone
+                else. Once you accept the invite, you&apos;ll be able to see those feeds in your
+                feed list.
+              </Text>
+              {!error && data && (
+                <Alert
+                  status="warning"
+                  role="none"
+                  title="Accepting an invite will count towards your feed limit"
+                />
+              )}
+              {error && (
+                <InlineErrorAlert
+                  title={t("common.errors.somethingWentWrong")}
+                  description={error.message}
+                />
+              )}
+              {status === "loading" && (
+                <Center>
+                  <Spinner />
+                </Center>
+              )}
+              {data && (
+                <Table.ScrollArea
+                  bg="bg.subtle"
+                  borderWidth="1px"
+                  borderColor="border"
+                  borderRadius="l3"
+                >
+                  <Table.Root variant="line">
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.ColumnHeader>Request Type</Table.ColumnHeader>
+                        <Table.ColumnHeader>Owner</Table.ColumnHeader>
+                        <Table.ColumnHeader>Feed Title</Table.ColumnHeader>
+                        <Table.ColumnHeader>Feed URL</Table.ColumnHeader>
+                        <Table.ColumnHeader>Action</Table.ColumnHeader>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {data.results.map((invite) => (
+                        <FeedManagementInviteRow invite={invite} key={invite.id} />
+                      ))}
+                    </Table.Body>
+                  </Table.Root>
+                </Table.ScrollArea>
+              )}
+              <PageAlertContextOutlet />
+            </Stack>
+          </PageAlertProvider>
+        </DialogBody>
+        <DialogFooter>
+          <Button onClick={() => setOpen(false)}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

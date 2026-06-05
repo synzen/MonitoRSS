@@ -1,27 +1,7 @@
-import {
-  Avatar,
-  Box,
-  Button,
-  Flex,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  Tag,
-  TagLabel,
-  Text,
-  useDisclosure,
-} from "@chakra-ui/react";
-import React, { cloneElement, useEffect, useState } from "react";
+import { Box, Button, Flex, HStack, Stack, Text } from "@chakra-ui/react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 
 import { InlineErrorAlert, ThemedSelect } from "@/components";
 import { useDebounce } from "@/hooks";
@@ -35,6 +15,18 @@ import { ConnectionsCheckboxList } from "../../ConnectionsCheckboxList";
 import { useCreateUserFeedManagementInvite, useUserFeedContext } from "@/features/feed";
 import { UserFeedManagerInviteType } from "@/constants";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Field } from "@/components/ui/field";
+import { Avatar } from "@/components/ui/avatar";
+import { Tag } from "@/components/ui/tag";
 
 interface OptionData {
   id: string;
@@ -43,16 +35,17 @@ interface OptionData {
 }
 
 interface Props {
-  trigger: React.ReactElement;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const AddFeedComanagerDialog = ({ trigger }: Props) => {
+export const AddFeedComanagerDialog = ({ open, onOpenChange }: Props) => {
   const { t } = useTranslation();
   const { userFeed } = useUserFeedContext();
   const [currentInput, setCurrentInput] = useState("");
   const [guildId, setGuildId] = useState("");
   const [selectedMention, setSelectedMention] = useState<OptionData>();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const setOpen = onOpenChange;
   const { data: discordUserMe } = useDiscordUserMe();
   const [checkedConnections, setCheckedConnections] = useState<string[]>([]);
   const debouncedSearch = useDebounce(currentInput, 500);
@@ -63,7 +56,7 @@ export const AddFeedComanagerDialog = ({ trigger }: Props) => {
     isFetching: isFetchingUsers,
   } = useDiscordServerMembers({
     serverId: guildId,
-    disabled: !isOpen || !debouncedSearch,
+    disabled: !open || !debouncedSearch,
     data: {
       limit: 25,
       search: debouncedSearch,
@@ -107,7 +100,7 @@ export const AddFeedComanagerDialog = ({ trigger }: Props) => {
       createSuccessAlert({
         title: `Successfully sent invite to ${selectedMention.name}`,
       });
-      onClose();
+      setOpen(false);
     } catch (err) {}
   };
 
@@ -123,7 +116,7 @@ export const AddFeedComanagerDialog = ({ trigger }: Props) => {
     setSelectedMention(undefined);
     setGuildId("");
     resetCreateInvite();
-  }, [isOpen]);
+  }, [open]);
 
   const options: Array<{
     label: string;
@@ -151,124 +144,125 @@ export const AddFeedComanagerDialog = ({ trigger }: Props) => {
   const isInvalidServer = serverAccessData && !serverAccessData.result.authorized;
 
   return (
-    <>
-      {cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Invite User to Co-manage Feed</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Stack spacing={8}>
-              <Text>
-                This user will have access to manage the settings and the existing connections of
-                this feed. You will retain ownership of this feed after they accept the invite. They
-                must accept the invite by logging in.
-              </Text>
-              <Stack spacing={6}>
-                <FormControl isInvalid={isInvalidServer} isRequired>
-                  <FormLabel htmlFor="server-select" id="server-select-label">
-                    Discord Server
-                  </FormLabel>
-                  <DiscordServerSearchSelectv2
-                    inputId="server-select"
-                    onChange={(id) => setGuildId(id)}
-                    value={guildId}
-                    isInvalid={isInvalidServer || false}
-                    placeholder="Search or select the server user's server"
-                    ariaLabelledBy="server-select-label"
-                  />
-                  {isInvalidServer && (
-                    <FormErrorMessage>The bot has no access to this server.</FormErrorMessage>
-                  )}
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel htmlFor="user-select" id="user-select-label">
-                    User
-                  </FormLabel>
-                  <ThemedSelect
-                    loading={isFetchingUsers}
-                    onInputChange={(value) => setCurrentInput(value)}
-                    options={options}
-                    isInvalid={!!usersError}
-                    onChange={(id, option) =>
-                      onSelected({
-                        value: id,
-                        label: option.name,
-                        icon: option.icon,
-                      })
-                    }
-                    placeholder="Search for a user"
-                    selectProps={{
-                      filterOption: () => true,
-                      inputId: "user-select",
-                      "aria-labelledby": "user-select-label",
-                    }}
-                  />
-                </FormControl>
-                {selectedMention && (
-                  <Flex justifyContent="center">
-                    <Tag size="lg">
-                      {selectedMention.icon &&
-                        React.cloneElement(selectedMention.icon, { size: "xs" })}
-                      <TagLabel ml={2}>{selectedMention.name}</TagLabel>
-                    </Tag>
-                  </Flex>
-                )}
-                {usersError && (
-                  <InlineErrorAlert title="Failed to get users" description={usersError.message} />
-                )}
-                <FormControl isRequired as="fieldset">
-                  <Stack>
-                    <Box>
-                      <FormLabel as="legend">Connections</FormLabel>
-                      <Text fontSize="sm">
-                        The connections the invitee will be able to view and have access to for
-                        management.
-                      </Text>
-                    </Box>
-                    <HStack mt={1}>
-                      <Button size="sm" onClick={onClickSelectAllConnections}>
-                        Select all Connections
-                      </Button>
-                      <Button size="sm" onClick={onClickSelectNoneConnections}>
-                        Unselect all Connections
-                      </Button>
-                    </HStack>
-                    <ConnectionsCheckboxList
-                      checkedConnectionIds={checkedConnections}
-                      onCheckConnectionChange={setCheckedConnections}
-                      feed={userFeed}
-                    />
-                  </Stack>
-                </FormControl>
-              </Stack>
-              {createInviteError?.message && (
-                <InlineErrorAlert
-                  title={t("common.errors.somethingWentWrong")}
-                  description={createInviteError.message}
-                />
-              )}
-            </Stack>
-          </ModalBody>
-          <ModalFooter>
-            <HStack>
-              <Button variant="ghost" onClick={onClose}>
-                {t("common.buttons.cancel")}
-              </Button>
-              <Button
-                colorScheme="blue"
-                mr={3}
-                onClick={onClickSave}
-                aria-disabled={submitIsDisabled}
-                isLoading={creatingInvitesStatus === "loading"}
+    <DialogRoot open={open} onOpenChange={(e) => setOpen(e.open)} size="lg">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite User to Co-manage Feed</DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
+          <Stack gap={8}>
+            <Text>
+              This user will have access to manage the settings and the existing connections of this
+              feed. You will retain ownership of this feed after they accept the invite. They must
+              accept the invite by logging in.
+            </Text>
+            <Stack gap={6}>
+              <Field
+                invalid={!!isInvalidServer}
+                required
+                label={<span id="server-select-label">Discord Server</span>}
+                errorText="The bot has no access to this server."
               >
-                <span>Invite User to Co-manage</span>
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+                <DiscordServerSearchSelectv2
+                  inputId="server-select"
+                  onChange={(id) => setGuildId(id)}
+                  value={guildId}
+                  invalid={isInvalidServer || false}
+                  placeholder="Search or select the server user's server"
+                  ariaLabelledBy="server-select-label"
+                />
+              </Field>
+              <Field required label={<span id="user-select-label">User</span>}>
+                <ThemedSelect
+                  loading={isFetchingUsers}
+                  onInputChange={(value) => setCurrentInput(value)}
+                  options={options}
+                  isInvalid={!!usersError}
+                  onChange={(id, option) =>
+                    onSelected({
+                      value: id,
+                      label: option.name,
+                      icon: option.icon,
+                    })
+                  }
+                  placeholder="Search for a user"
+                  selectProps={{
+                    filterOption: () => true,
+                    inputId: "user-select",
+                    "aria-labelledby": "user-select-label",
+                  }}
+                />
+              </Field>
+              {selectedMention && (
+                <Flex justifyContent="center">
+                  <Tag
+                    size="lg"
+                    startElement={
+                      selectedMention.icon &&
+                      React.cloneElement(selectedMention.icon, { size: "xs" })
+                    }
+                  >
+                    {selectedMention.name}
+                  </Tag>
+                </Flex>
+              )}
+              {usersError && (
+                <InlineErrorAlert title="Failed to get users" description={usersError.message} />
+              )}
+              <fieldset>
+                <Stack>
+                  <Box>
+                    <legend>
+                      <Text as="span" fontWeight="medium">
+                        Connections
+                      </Text>
+                    </legend>
+                    <Text fontSize="sm">
+                      The connections the invitee will be able to view and have access to for
+                      management.
+                    </Text>
+                  </Box>
+                  <HStack mt={1}>
+                    <Button size="sm" onClick={onClickSelectAllConnections}>
+                      Select all Connections
+                    </Button>
+                    <Button size="sm" onClick={onClickSelectNoneConnections}>
+                      Unselect all Connections
+                    </Button>
+                  </HStack>
+                  <ConnectionsCheckboxList
+                    checkedConnectionIds={checkedConnections}
+                    onCheckConnectionChange={setCheckedConnections}
+                    feed={userFeed}
+                  />
+                </Stack>
+              </fieldset>
+            </Stack>
+            {createInviteError?.message && (
+              <InlineErrorAlert
+                title={t("common.errors.somethingWentWrong")}
+                description={createInviteError.message}
+              />
+            )}
+          </Stack>
+        </DialogBody>
+        <DialogFooter>
+          <HStack>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              {t("common.buttons.cancel")}
+            </Button>
+            <PrimaryActionButton
+              mr={3}
+              onClick={onClickSave}
+              aria-disabled={submitIsDisabled}
+              loading={creatingInvitesStatus === "loading"}
+            >
+              <span>Invite User to Co-manage</span>
+            </PrimaryActionButton>
+          </HStack>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

@@ -1,28 +1,20 @@
 import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
   Badge,
   Box,
   Button,
-  Divider,
+  Field,
   Flex,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
   HStack,
   Input,
+  Separator,
   Stack,
   Text,
-  useDisclosure,
 } from "@chakra-ui/react";
 import { useFieldArray, useFormContext } from "react-hook-form";
-import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
-import { motion } from "motion/react";
+import { FaPlus, FaTrash } from "react-icons/fa6";
+import { motion, type Transition } from "motion/react";
 import { v4 } from "uuid";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import { DiscordMessageFormData } from "@/types/discord";
 import {
@@ -32,6 +24,7 @@ import {
   FeedDiscordChannelConnection,
 } from "@/types";
 import { AnimatedComponent } from "@/components";
+import { Alert } from "@/components/ui/alert";
 import { useConnection } from "../../hooks";
 import { DiscordTextChannelConnectionDialogContent } from "../AddConnectionDialog";
 
@@ -61,7 +54,7 @@ const DiscordMessageComponentRow = ({
   const rowErrors = errors.componentRows?.[rowIndex];
 
   return (
-    <Stack border="solid 1px" borderColor="gray.700" p={4} rounded="md" bg="gray.900">
+    <Stack border="solid 1px" borderColor="border" p={4} rounded="l3" bg="bg.subtle">
       <HStack justifyContent="space-between" flexWrap="wrap">
         <Badge bg="none" p={0}>
           Button Row {rowIndex + 1}
@@ -69,16 +62,16 @@ const DiscordMessageComponentRow = ({
         <Button
           size="sm"
           variant="ghost"
-          colorScheme="red"
+          colorPalette="red"
           onClick={() => {
             onClickDeleteRow();
           }}
-          leftIcon={<DeleteIcon />}
         >
+          <FaTrash />
           Delete Row
         </Button>
       </HStack>
-      <Divider />
+      <Separator />
       <Flex overflow="auto" ref={scrollContainer}>
         <AnimatedComponent>
           {components
@@ -92,17 +85,19 @@ const DiscordMessageComponentRow = ({
               const urlError = rowErrors?.components?.[componentIndex]?.url?.message;
 
               return (
-                <HStack
-                  as={motion.div}
+                <motion.div
                   key={c.hookKey}
-                  alignItems="center"
-                  overflow="hidden"
-                  minW={400}
-                  maxW={400}
-                  width="100%"
-                  mb={2}
-                  rounded="md"
-                  mr={2}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    overflow: "hidden",
+                    minWidth: 400,
+                    maxWidth: 400,
+                    width: "100%",
+                    marginBottom: 8,
+                    borderRadius: 6,
+                    marginRight: 8,
+                  }}
                   exit={{
                     opacity: 0,
                     minWidth: 0,
@@ -112,43 +107,40 @@ const DiscordMessageComponentRow = ({
                   animate={{
                     opacity: 1,
                   }}
-                  transition={{
-                    type: "linear",
-                  }}
+                  transition={{ ease: "linear" } as Transition}
                 >
                   <Stack
                     flex={1}
                     px={6}
                     py={4}
                     border="solid 1px"
-                    borderColor="gray.800"
-                    bg="gray.700"
-                    rounded="md"
+                    borderColor="border"
+                    bg="bg.panel"
+                    rounded="l3"
                   >
                     <HStack justifyContent="space-between">
-                      <Badge fontSize={11} bg="none" color="whiteAlpha.700" p={0}>
+                      <Badge fontSize={11} bg="none" color="fg.muted" p={0}>
                         Button {componentIndex + 1}
                       </Badge>
                       <Button
                         variant="ghost"
-                        colorScheme="red"
+                        colorPalette="red"
                         size="xs"
-                        leftIcon={<DeleteIcon />}
                         onClick={() => {
                           removeButton(componentIndex);
                         }}
                       >
+                        <FaTrash />
                         Delete Button
                       </Button>
                     </HStack>
-                    <Divider />
-                    <FormControl isInvalid={!!labelError}>
-                      <FormLabel fontSize={12}>Label</FormLabel>
+                    <Separator />
+                    <Field.Root invalid={!!labelError}>
+                      <Field.Label fontSize={12}>Label</Field.Label>
                       <Input
                         autoCapitalize="off"
                         autoComplete="off"
                         autoCorrect="off"
-                        bg="gray.800"
                         size="sm"
                         // value={field.value || ""}
                         {...register(
@@ -156,62 +148,38 @@ const DiscordMessageComponentRow = ({
                         )}
                       />
                       {!labelError && (
-                        <FormHelperText
-                          fontSize={11}
-                          as={motion.div}
-                          exit={{ whiteSpace: "nowrap" }}
-                        >
+                        <Field.HelperText fontSize={11}>
                           The text that will be displayed on the button.
-                        </FormHelperText>
+                        </Field.HelperText>
                       )}
-                      {labelError && (
-                        <FormErrorMessage
-                          as={motion.div}
-                          exit={{ whiteSpace: "nowrap" }}
-                          fontSize={11}
-                        >
-                          {labelError}
-                        </FormErrorMessage>
-                      )}
-                    </FormControl>
-                    <FormControl isInvalid={!!urlError}>
-                      <FormLabel fontSize={12}>URL</FormLabel>
+                      {labelError && <Field.ErrorText fontSize={11}>{labelError}</Field.ErrorText>}
+                    </Field.Root>
+                    <Field.Root invalid={!!urlError}>
+                      <Field.Label fontSize={12}>URL</Field.Label>
                       <Input
                         autoCapitalize="off"
                         autoComplete="off"
                         autoCorrect="off"
-                        bg="gray.800"
                         size="sm"
                         {...register(`componentRows.${rowIndex}.components.${componentIndex}.url`)}
                       />
                       {!urlError && (
-                        <FormHelperText
-                          as={motion.div}
-                          exit={{ whiteSpace: "nowrap" }}
-                          fontSize={11}
-                        >
+                        <Field.HelperText fontSize={11}>
                           The external URL that the button will link to.
-                        </FormHelperText>
+                        </Field.HelperText>
                       )}
-                      {urlError && (
-                        <FormErrorMessage
-                          as={motion.div}
-                          exit={{ whiteSpace: "nowrap" }}
-                          fontSize={11}
-                        >
-                          {urlError}
-                        </FormErrorMessage>
-                      )}
-                    </FormControl>
+                      {urlError && <Field.ErrorText fontSize={11}>{urlError}</Field.ErrorText>}
+                    </Field.Root>
                   </Stack>
-                </HStack>
+                </motion.div>
               );
             })}
           <Flex alignItems="center">
             <Button
-              leftIcon={<AddIcon fontSize={12} />}
               aria-label="Add button"
               size="sm"
+              variant="outline"
+              colorPalette="brand"
               onClick={() => {
                 appendButton({
                   id: v4(),
@@ -229,6 +197,7 @@ const DiscordMessageComponentRow = ({
                 }, 100);
               }}
             >
+              <FaPlus fontSize={12} />
               Add button
             </Button>
           </Flex>
@@ -258,10 +227,10 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
     name: "componentRows",
     keyName: "hookKey",
   });
-  const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const [editIsOpen, setEditIsOpen] = useState(false);
 
   return (
-    <Stack spacing={4}>
+    <Stack gap={4}>
       <Text>
         Add buttons that contain links. You may add up to 5 rows, with up to 5 buttons in each row.
         Placeholders may be used.
@@ -270,36 +239,31 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
         connection.key === FeedConnectionType.DiscordChannel &&
         (connection as FeedDiscordChannelConnection).details.webhook &&
         !(connection as FeedDiscordChannelConnection).details.webhook?.isApplicationOwned && (
-          <Alert status="warning" role="none">
-            <AlertIcon />
-            <Box>
-              <AlertTitle>
-                Buttons will not be sent to Discord until this connection&apos;s webhook is
-                converted to an application-owned webhook!
-              </AlertTitle>
-              <AlertDescription>
-                <Stack spacing={2}>
-                  <Text>
-                    This connection&apos;s webhook is not currently application-owned. To convert
-                    it, update this connection. Once updated, an application webhook will be
-                    automatically created and attached to this connection.
-                  </Text>
-                  <Box>
-                    <DiscordTextChannelConnectionDialogContent
-                      connection={connection as FeedDiscordChannelConnection}
-                      isOpen={editIsOpen}
-                      onClose={editOnClose}
-                    />
-                    <Button onClick={editOnOpen}>
-                      <span>Update webhook connection</span>
-                    </Button>
-                  </Box>
-                </Stack>
-              </AlertDescription>
-            </Box>
+          <Alert
+            status="warning"
+            role="none"
+            title="Buttons will not be sent to Discord until this connection's webhook is converted to an application-owned webhook!"
+          >
+            <Stack gap={2}>
+              <Text>
+                This connection&apos;s webhook is not currently application-owned. To convert it,
+                update this connection. Once updated, an application webhook will be automatically
+                created and attached to this connection.
+              </Text>
+              <Box>
+                <DiscordTextChannelConnectionDialogContent
+                  connection={connection as FeedDiscordChannelConnection}
+                  isOpen={editIsOpen}
+                  onClose={() => setEditIsOpen(false)}
+                />
+                <Button onClick={() => setEditIsOpen(true)}>
+                  <span>Update webhook connection</span>
+                </Button>
+              </Box>
+            </Stack>
           </Alert>
         )}
-      <Stack spacing={4}>
+      <Stack gap={4}>
         {rows?.map((row, rowIndex) => {
           return (
             <DiscordMessageComponentRow
@@ -311,8 +275,9 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
         })}
         <Box>
           <Button
-            leftIcon={<AddIcon fontSize={12} />}
-            isDisabled={rows ? rows.length >= 5 : false}
+            variant="outline"
+            colorPalette="brand"
+            disabled={rows ? rows.length >= 5 : false}
             onClick={() => {
               append({
                 id: v4(),
@@ -328,6 +293,7 @@ export const DiscordMessageComponentsForm = ({ connectionId, feedId }: Props) =>
               });
             }}
           >
+            <FaPlus fontSize={12} />
             Add button row
           </Button>
         </Box>

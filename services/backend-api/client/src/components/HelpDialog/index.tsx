@@ -1,16 +1,16 @@
-import {
-  Button,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  useDisclosure,
-} from "@chakra-ui/react";
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogCloseTrigger,
+  DialogBody,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface Props {
   trigger: React.ReactElement;
@@ -19,25 +19,24 @@ interface Props {
 }
 
 export const HelpDialog = ({ trigger, title, body }: Props) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const { t } = useTranslation();
 
   return (
-    <>
-      {React.cloneElement(trigger, { onClick: onOpen })}
-      <Modal size="xl" isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{title}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>{body}</ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={onClose}>
-              {t("common.buttons.close")}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+    <DialogRoot size="xl" open={open} onOpenChange={(e) => setOpen(e.open)}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>{body}</DialogBody>
+        <DialogFooter>
+          <PrimaryActionButton onClick={() => setOpen(false)}>
+            {t("common.buttons.close")}
+          </PrimaryActionButton>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

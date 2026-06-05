@@ -1,19 +1,8 @@
 import React from "react";
-import {
-  Box,
-  HStack,
-  Text,
-  Stack,
-  Highlight,
-  FormControl,
-  FormLabel,
-  FormHelperText,
-  Input,
-  Avatar,
-  chakra,
-  VisuallyHidden,
-} from "@chakra-ui/react";
-import { ChevronRightIcon, LockIcon } from "@chakra-ui/icons";
+import { Box, HStack, Text, Stack, Input, Icon, chakra, VisuallyHidden } from "@chakra-ui/react";
+import { FaChevronRight, FaLock } from "react-icons/fa6";
+import { Avatar } from "@/components/ui/avatar";
+import { Field } from "@/components/ui/field";
 import { ArticlePreviewBanner } from "./ArticlePreviewBanner";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { useMessageBuilderStateContext } from "./state";
@@ -22,7 +11,7 @@ import { useCreateConnectionPreview } from "../connection/hooks";
 import { FeedConnectionType, FeedDiscordChannelConnection } from "@/types";
 import { useDebounce } from "@/hooks";
 import { useDiscordBot } from "@/features/discordUser";
-import { InlineErrorAlert } from "@/components";
+import { InlineErrorAlert, UnsavedChangesBadge } from "@/components";
 import {
   DiscordMessageDisplay,
   resolvePreviewAvatarUrl,
@@ -189,7 +178,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
 
   if (error && !hasValidationErrors && !previewDataIsDebouncing) {
     return (
-      <Stack spacing={0}>
+      <Stack gap={0}>
         <PageAlertProvider>
           <ArticlePreviewBanner
             brandingDisplayName={brandingDisplayName}
@@ -216,7 +205,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   const brandingSummary = brandingDisplayName.trim() || "Default";
 
   return (
-    <Stack spacing={0}>
+    <Stack gap={0}>
       <PageAlertProvider>
         <ArticlePreviewBanner
           brandingDisplayName={brandingDisplayName}
@@ -230,9 +219,9 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
           }}
         />
         <HStack mb={2} flexWrap="wrap">
-          <Text fontSize="sm" color="gray.400" fontWeight="medium">
+          <Text fontSize="sm" color="fg.muted" fontWeight="medium">
             Previewing in{" "}
-            <Box as="span" color="gray.300">
+            <Box as="span" color="fg">
               {connection.details.channel?.guildId ? (
                 <>
                   <DiscordServerName
@@ -257,27 +246,15 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
             </Box>
           </Text>
           {(isDirty || brandingChanged) && (
-            <Text fontSize="sm" fontWeight={600}>
-              <Highlight
-                query="You are previewing unsaved changes"
-                styles={{
-                  bg: "orange.200",
-                  rounded: "full",
-                  px: "2",
-                  py: "1",
-                }}
-              >
-                You are previewing unsaved changes
-              </Highlight>
-            </Text>
+            <UnsavedChangesBadge label="You are previewing unsaved changes" />
           )}
         </HStack>
         <chakra.details
           mb={3}
           borderRadius="md"
           border="1px solid"
-          borderColor="gray.600"
-          bg="gray.700"
+          borderColor="border"
+          bg="bg.subtle"
           open={!webhooksAllowed || undefined}
         >
           <chakra.summary
@@ -286,65 +263,70 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
             cursor="pointer"
             fontSize="sm"
             fontWeight="medium"
-            color="gray.300"
-            _hover={{ bg: "gray.600" }}
+            color="fg.muted"
+            _hover={{ bg: "bg.emphasized" }}
             borderRadius="md"
             listStyleType="none"
-            sx={{
+            css={{
               "&::-webkit-details-marker": { display: "none" },
               "&::marker": { display: "none" },
             }}
           >
-            <HStack spacing={2}>
-              <ChevronRightIcon
+            <HStack gap={2}>
+              <Icon
+                as={FaChevronRight}
                 boxSize={4}
-                color="gray.400"
+                color="fg.muted"
                 transition="transform 0.15s ease"
-                sx={{
+                css={{
                   "details[open] > summary > div > &": {
                     transform: "rotate(90deg)",
                   },
                 }}
               />
-              <Avatar size="2xs" src={resolvedAvatarUrl} bg="gray.500" />
+              <Avatar size="2xs" src={resolvedAvatarUrl} bg="bg.emphasized" />
               <Text as="span">Branding: {brandingSummary}</Text>
               {!webhooksAllowed && (
                 <>
-                  <LockIcon boxSize={3} color="whiteAlpha.600" aria-hidden="true" />
+                  <Icon as={FaLock} boxSize={3} color="fg.muted" aria-hidden="true" />
                   <VisuallyHidden>— requires paid plan</VisuallyHidden>
                 </>
               )}
             </HStack>
           </chakra.summary>
-          <Box px={3} pb={3} pt={2} borderTop="1px solid" borderColor="gray.600">
+          <Box px={3} pb={3} pt={2} borderTop="1px solid" borderColor="border">
             {!webhooksAllowed && (
-              <Text fontSize="xs" color="whiteAlpha.800" mb={3}>
+              <Text fontSize="xs" color="fg.muted" mb={3}>
                 Upgrade to customize your branding. Preview it here first!
               </Text>
             )}
-            <HStack spacing={4} flexWrap="wrap">
-              <FormControl flex={1} minW="200px">
-                <FormLabel fontSize="sm">Display Name</FormLabel>
+            <HStack gap={4} flexWrap="wrap">
+              <Field
+                flex={1}
+                minW="200px"
+                label={<Text fontSize="sm">Display Name</Text>}
+                helperText={<Text fontSize="xs">The name shown as the message author</Text>}
+              >
                 <Input
                   size="sm"
-                  bg="gray.800"
                   placeholder="e.g. Gaming News"
                   value={brandingDisplayName}
                   onChange={(e) => onBrandingDisplayNameChange(e.target.value)}
                 />
-                <FormHelperText fontSize="xs">The name shown as the message author</FormHelperText>
-              </FormControl>
-              <FormControl flex={1} minW="200px">
-                <FormLabel fontSize="sm">Avatar URL</FormLabel>
+              </Field>
+              <Field
+                flex={1}
+                minW="200px"
+                label={<Text fontSize="sm">Avatar URL</Text>}
+                helperText={<Text fontSize="xs">The avatar shown next to the message</Text>}
+              >
                 <Input
                   size="sm"
-                  bg="gray.800"
                   placeholder="https://example.com/avatar.png"
                   value={brandingAvatarUrl}
                   onChange={(e) => onBrandingAvatarUrlChange(e.target.value)}
                 />
-                <FormHelperText fontSize="xs">The avatar shown next to the message</FormHelperText>
-              </FormControl>
+              </Field>
             </HStack>
           </Box>
         </chakra.details>
@@ -360,7 +342,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
             avatarUrl={resolvedAvatarUrl}
           />
         </MentionDataProvider>
-        <Text fontSize="sm" color="gray.400" mt={2} textAlign="left">
+        <Text fontSize="sm" color="fg.muted" mt={2} textAlign="left">
           This is an approximate preview. Send to Discord to see the actual representation.
         </Text>
       </PageAlertProvider>

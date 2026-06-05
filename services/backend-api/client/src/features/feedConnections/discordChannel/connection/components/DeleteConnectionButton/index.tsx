@@ -1,5 +1,5 @@
-import { DeleteIcon } from "@chakra-ui/icons";
 import { Button } from "@chakra-ui/react";
+import { FaTrash } from "react-icons/fa6";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -47,7 +47,8 @@ export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: 
             disabled: status === "loading",
           })
         ) : (
-          <Button variant="outline" isDisabled={status === "loading"} leftIcon={<DeleteIcon />}>
+          <Button variant="outline" disabled={status === "loading"}>
+            <FaTrash />
             {t("common.buttons.delete")}
           </Button>
         )

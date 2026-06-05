@@ -1,4 +1,5 @@
-import { Button, Center, Stack, Text } from "@chakra-ui/react";
+import { Center, Stack, Text } from "@chakra-ui/react";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 
 interface LoadMoreSectionProps {
   loadedCount: number;
@@ -15,18 +16,23 @@ export const LoadMoreSection: React.FC<LoadMoreSectionProps> = ({
   isFetchingNextPage,
   onLoadMore,
 }) => {
-  const isDisabled = !hasNextPage || isFetchingNextPage || totalCount === loadedCount;
+  const isDisabled = !hasNextPage || totalCount === loadedCount;
 
   return (
     <Stack>
       <Center>
-        <Text color="whiteAlpha.600" fontSize="sm">
+        <Text color="fg.muted" fontSize="sm">
           Viewed {loadedCount} of {totalCount} feeds
         </Text>
       </Center>
-      <Button isDisabled={isDisabled} isLoading={isFetchingNextPage} onClick={onLoadMore} mb={20}>
+      <SafeLoadingButton
+        disabled={isDisabled}
+        loading={isFetchingNextPage}
+        onClick={onLoadMore}
+        mb={20}
+      >
         <span>Load More</span>
-      </Button>
+      </SafeLoadingButton>
     </Stack>
   );
 };

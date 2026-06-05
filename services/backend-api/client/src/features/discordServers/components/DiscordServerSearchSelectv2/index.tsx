@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Alert, Box, Button, Flex, Spinner } from "@chakra-ui/react";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
+import { FaUpRightFromSquare } from "react-icons/fa6";
 import { InlineErrorAlert, ThemedSelect } from "@/components";
 import { useDiscordServers, useDiscordServerSettings } from "@/features/discordServers";
 import { useDiscordBot } from "../../../discordUser";
@@ -9,24 +9,24 @@ interface Props {
   onChange: (serverId: string) => void;
   value: string;
   inputRef?: React.ComponentProps<typeof ThemedSelect>["inputRef"];
-  isDisabled?: boolean;
+  disabled?: boolean;
   inputId?: string;
   ariaLabelledBy: string;
   alertOnArticleEligibility?: boolean;
   placeholder?: string;
-  isInvalid: boolean;
+  invalid: boolean;
 }
 
 export const DiscordServerSearchSelectv2: React.FC<Props> = ({
   onChange,
   value,
   inputRef,
-  isDisabled,
+  disabled,
   inputId,
   ariaLabelledBy,
   alertOnArticleEligibility,
   placeholder,
-  isInvalid,
+  invalid,
 }) => {
   const { status, data } = useDiscordServers();
   const {
@@ -77,15 +77,15 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
   }, [refetchServerSettings, isFetchingServerSettings, getServerError]);
 
   return (
-    <Flex flexDirection="column">
+    <Flex flexDirection="column" w="100%">
       <ThemedSelect
         onChange={onChangedValue}
         loading={loading}
         value={value}
-        isInvalid={isInvalid}
+        isInvalid={invalid}
         placeholder={placeholder}
         inputRef={inputRef}
-        isDisabled={isDisabled}
+        isDisabled={disabled}
         options={
           data?.results.map((server) => ({
             value: server.id,
@@ -105,10 +105,12 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
         hidden={!alertOnArticleEligibility}
       >
         {showLoadingAlert && (
-          <Alert status="info" mt={2}>
-            <Spinner size="sm" mr={2} />
-            Verifying bot access...
-          </Alert>
+          <Alert.Root status="info" mt={2}>
+            <Alert.Indicator>
+              <Spinner size="sm" />
+            </Alert.Indicator>
+            <Alert.Title>Verifying bot access...</Alert.Title>
+          </Alert.Root>
         )}
         <Box mt={2} hidden={getServerError?.statusCode !== 404}>
           <InlineErrorAlert
@@ -116,17 +118,16 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
             description={
               <Flex flexDirection="column">
                 <span>Articles are unable to be sent to this server until the bot is invited.</span>
-                <Button
-                  as="a"
-                  href={discordBot?.result.inviteLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  size="sm"
-                  mt="2"
-                  tabIndex={0}
-                  rightIcon={<ExternalLinkIcon />}
-                >
-                  {`Invite ${discordBot?.result.username} to this server`}
+                <Button asChild size="sm" mt="2">
+                  <a
+                    href={discordBot?.result.inviteLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    tabIndex={0}
+                  >
+                    {`Invite ${discordBot?.result.username} to this server`}
+                    <FaUpRightFromSquare />
+                  </a>
                 </Button>
               </Flex>
             }

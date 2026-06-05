@@ -1,5 +1,7 @@
-import { Box, Button, Select, Stack, chakra } from "@chakra-ui/react";
+import { Box, Stack, chakra } from "@chakra-ui/react";
 import { useState } from "react";
+import { NativeSelectField, NativeSelectRoot } from "@/components/ui/native-select";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 
 interface Props {
   properties?: string[];
@@ -34,20 +36,21 @@ export const AddComparisonSelect = ({
           <chakra.span paddingBottom="1" display="block" fontSize="sm" fontWeight="medium">
             {formLabel}
           </chakra.span>
-          <Select
-            size="sm"
-            isDisabled={isAdding || isDisabled}
-            minWidth={16}
-            placeholder="Select a property to add"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-          >
-            {properties?.map((comparison) => (
-              <option value={comparison}>{comparison}</option>
-            ))}
-          </Select>
+          <NativeSelectRoot size="sm" disabled={isAdding || isDisabled} minWidth={16}>
+            <NativeSelectField
+              placeholder="Select a property to add"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+            >
+              {properties?.map((comparison) => (
+                <option key={comparison} value={comparison}>
+                  {comparison}
+                </option>
+              ))}
+            </NativeSelectField>
+          </NativeSelectRoot>
         </label>
-        <Button
+        <SafeLoadingButton
           onClick={(e) => {
             e.preventDefault();
             onClickAdd();
@@ -55,10 +58,10 @@ export const AddComparisonSelect = ({
           type="submit"
           size="sm"
           minW={32}
-          isLoading={isAdding || isLoading}
+          loading={isAdding || isLoading}
         >
           <span>Add</span>
-        </Button>
+        </SafeLoadingButton>
       </Stack>
     </Box>
   );

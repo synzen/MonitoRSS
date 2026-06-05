@@ -295,7 +295,9 @@ test.describe("Connection Settings", () => {
       });
 
       await page.getByRole("tab", { name: "Custom Placeholders" }).click();
-      await expect(page.getByText("clonedPlaceholder").first()).toBeVisible({
+      await expect(
+        page.getByRole("tabpanel").getByText("clonedPlaceholder").first(),
+      ).toBeVisible({
         timeout: 10000,
       });
     } finally {
@@ -398,6 +400,64 @@ test.describe("Connection Settings", () => {
         targetFeed3.id,
       ]);
     }
+  });
+
+  test("can expand split settings and edit split inputs", async ({
+    page,
+    testFeedWithConnection,
+  }) => {
+    const { feed, connection } = testFeedWithConnection;
+
+    await page.goto(
+      `/feeds/${feed.id}/discord-channel-connections/${connection.id}`,
+    );
+
+    await expect(
+      page.getByRole("heading", { name: connection.name }),
+    ).toBeVisible({ timeout: 10000 });
+
+    await page.getByRole("tab", { name: "Message Format" }).click();
+
+    await expect(
+      page.getByRole("heading", { name: "Message Format", exact: true }),
+    ).toBeVisible({ timeout: 10000 });
+
+    // Enable Split Content, which un-disables the Split Settings accordion.
+    // The visible Chakra switch control intercepts pointer events on the hidden
+    // input, so toggle via keyboard instead of a pointer click.
+    const splitToggle = page.getByRole("checkbox", { name: "Split Content" });
+    await expect(splitToggle).toBeVisible({ timeout: 10000 });
+    await splitToggle.focus();
+    await page.keyboard.press("Space");
+    await expect(splitToggle).toBeChecked();
+
+    // Expand the Split Settings accordion. Regression guard: it must STAY open
+    // (it previously opened then immediately collapsed due to a double-toggle).
+    const splitSettingsTrigger = page.getByRole("button", {
+      name: "Split Settings",
+    });
+    await splitSettingsTrigger.click();
+
+    const splitTextInput = page.getByLabel("Split text");
+    await expect(splitTextInput).toBeVisible({ timeout: 10000 });
+    // Re-assert after a beat to catch an immediate re-collapse.
+    await page.waitForTimeout(500);
+    await expect(splitTextInput).toBeVisible();
+
+    // The inputs are editable and retain typed values.
+    await splitTextInput.fill("|");
+    await expect(splitTextInput).toHaveValue("|");
+
+    const appendTextInput = page.getByLabel("Append text");
+    await appendTextInput.fill(">>");
+    await expect(appendTextInput).toHaveValue(">>");
+
+    const prependTextInput = page.getByLabel("Prepend text");
+    await prependTextInput.fill("<<");
+    await expect(prependTextInput).toHaveValue("<<");
+
+    // Accordion is still open after typing.
+    await expect(splitTextInput).toBeVisible();
   });
 
   test("can delete a connection", async ({ page, testFeedWithConnection }) => {
@@ -577,7 +637,9 @@ test.describe("Copy Connection Settings", () => {
 
     // Verify custom placeholders were copied
     await page.getByRole("tab", { name: "Custom Placeholders" }).click();
-    await expect(page.getByText("copiedPlaceholder").first()).toBeVisible({
+    await expect(
+      page.getByRole("tabpanel").getByText("copiedPlaceholder").first(),
+    ).toBeVisible({
       timeout: 10000,
     });
 

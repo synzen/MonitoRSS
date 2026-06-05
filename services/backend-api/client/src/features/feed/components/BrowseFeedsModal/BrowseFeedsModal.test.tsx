@@ -5,6 +5,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { system } from "@/utils/theme";
 import { CuratedFeed, CuratedCategory } from "../../types";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { BrowseFeedsModal } from "./index";
@@ -135,7 +136,7 @@ const renderModal = (props: Partial<React.ComponentProps<typeof BrowseFeedsModal
   });
   const result = render(
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider>
+      <ChakraProvider value={system}>
         <MemoryRouter>
           <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
             <BrowseFeedsModal {...defaultProps} {...props} />
@@ -360,7 +361,7 @@ describe("BrowseFeedsModal", () => {
       expect(screen.getByRole("radio", { name: /Tech/ })).toHaveAttribute("aria-checked", "true");
 
       rerender(
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
               <BrowseFeedsModal {...defaultProps} initialCategory="tech" isOpen={false} />
@@ -370,7 +371,7 @@ describe("BrowseFeedsModal", () => {
       );
 
       rerender(
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
               <BrowseFeedsModal {...defaultProps} initialCategory="sports" isOpen />
@@ -389,7 +390,7 @@ describe("BrowseFeedsModal", () => {
       expect(screen.getByRole("radio", { name: /Gaming/ })).toHaveAttribute("aria-checked", "true");
 
       rerender(
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
               <BrowseFeedsModal {...defaultProps} initialCategory="gaming" isOpen={false} />
@@ -399,7 +400,7 @@ describe("BrowseFeedsModal", () => {
       );
 
       rerender(
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
               <BrowseFeedsModal {...defaultProps} initialCategory={undefined} isOpen />
@@ -632,7 +633,7 @@ describe("BrowseFeedsModal", () => {
       ).toBeInTheDocument();
 
       rerender(
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
               <BrowseFeedsModal
@@ -647,7 +648,7 @@ describe("BrowseFeedsModal", () => {
       );
 
       rerender(
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
               <BrowseFeedsModal

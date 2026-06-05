@@ -2,6 +2,7 @@ import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { vi } from "vitest";
+import { system } from "@/utils/theme";
 
 import { DiscordMessageDisplay } from "./index";
 
@@ -39,7 +40,7 @@ vi.mock("../DiscordView", () => ({
 
 // Wrapper with ChakraProvider for tests
 const renderWithChakra = (ui: React.ReactElement) => {
-  return render(<ChakraProvider>{ui}</ChakraProvider>);
+  return render(<ChakraProvider value={system}>{ui}</ChakraProvider>);
 };
 
 // eslint-disable-next-line no-bitwise

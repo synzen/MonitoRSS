@@ -1,4 +1,5 @@
-import { Alert, AlertIcon, Box, Flex } from "@chakra-ui/react";
+import { Box, Flex } from "@chakra-ui/react";
+import { Alert } from "@/components/ui/alert";
 import { Loading } from "../Loading";
 
 interface Props {
@@ -15,12 +16,7 @@ export const DashboardContentV2 = ({ loading, error, children }: Props) => (
           <Loading />
         </Box>
       )}
-      {error && (
-        <Alert status="error">
-          <AlertIcon />
-          {error.message}
-        </Alert>
-      )}
+      {error && <Alert status="error" title={error.message} />}
       {!loading && !error && children}
     </Box>
   </Flex>

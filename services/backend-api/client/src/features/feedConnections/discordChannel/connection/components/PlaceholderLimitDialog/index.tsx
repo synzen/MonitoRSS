@@ -1,32 +1,25 @@
-import {
-  Box,
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  NumberInput,
-  NumberInputField,
-  Stack,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { Box, Button, HStack, Stack, useDisclosure } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { cloneElement, useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, number, object, string } from "yup";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { ArticlePropertySelect } from "../ArticlePropertySelect";
 import { AutoResizeTextarea } from "@/components/AutoResizeTextarea";
 import { useUserFeedConnectionContext } from "@/features/feed";
 import { InlineErrorIncompleteFormAlert } from "@/components";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Field } from "@/components/ui/field";
+import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
 
 const formDataSchema = object({
   placeholder: string()
@@ -62,12 +55,12 @@ export const PlaceholderLimitDialog = ({
     resolver: yupResolver(formDataSchema),
     defaultValues,
   });
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
   const { t } = useTranslation();
 
   useEffect(() => {
     reset(defaultValues);
-  }, [isOpen, reset, defaultValues]);
+  }, [open, reset, defaultValues]);
 
   const onSubmit = async (data: FormData) => {
     parentOnSubmit(data);
@@ -92,12 +85,21 @@ export const PlaceholderLimitDialog = ({
           onOpen();
         },
       })}
-      <Modal isOpen={isOpen} onClose={onClose} initialFocusRef={initialRef}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{useTitle}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
+      <DialogRoot
+        open={open}
+        onOpenChange={(e) => {
+          if (!e.open) {
+            onClose();
+          }
+        }}
+        initialFocusEl={() => initialRef.current}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{useTitle}</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody>
             <form
               onSubmit={(e) => {
                 e.stopPropagation();
@@ -106,18 +108,29 @@ export const PlaceholderLimitDialog = ({
               }}
               id="placeholder-limit"
             >
-              <Stack spacing="4">
+              <Stack gap="4">
                 <Controller
                   name="placeholder"
                   control={control}
                   render={({ field }) => {
                     return (
-                      <FormControl isInvalid={!!errors.placeholder} isRequired>
-                        <FormLabel id="placeholder-label" htmlFor="placeholder-select">
+                      <Field
+                        invalid={!!errors.placeholder}
+                        required
+                        errorText={errors.placeholder?.message}
+                        helperText={
+                          !errors.placeholder
+                            ? t(
+                                "features.feedConnections.components.placeholderLimitDialog.placeholderInputDescription",
+                              )
+                            : undefined
+                        }
+                      >
+                        <label id="placeholder-label" htmlFor="placeholder-select">
                           {t(
                             "features.feedConnections.components.placeholderLimitDialog.placeholderInputLabel",
                           )}
-                        </FormLabel>
+                        </label>
                         <ArticlePropertySelect
                           inputId="placeholder-select"
                           ariaLabelledBy="placeholder-label"
@@ -129,17 +142,7 @@ export const PlaceholderLimitDialog = ({
                           value={field.value}
                           selectRef={initialRef}
                         />
-                        {!errors.placeholder && (
-                          <FormHelperText>
-                            {t(
-                              "features.feedConnections.components.placeholderLimitDialog.placeholderInputDescription",
-                            )}
-                          </FormHelperText>
-                        )}
-                        {errors.placeholder && (
-                          <FormErrorMessage>{errors.placeholder.message}</FormErrorMessage>
-                        )}
-                      </FormControl>
+                      </Field>
                     );
                   }}
                 />
@@ -148,34 +151,34 @@ export const PlaceholderLimitDialog = ({
                   control={control}
                   render={({ field }) => {
                     return (
-                      <FormControl isInvalid={!!errors.characterCount} isRequired>
-                        <FormLabel>
-                          {t(
-                            "features.feedConnections.components.placeholderLimitDialog.limitInputLabel",
-                          )}
-                        </FormLabel>
-                        <NumberInput
+                      <Field
+                        invalid={!!errors.characterCount}
+                        required
+                        label={t(
+                          "features.feedConnections.components.placeholderLimitDialog.limitInputLabel",
+                        )}
+                        errorText={errors.characterCount?.message}
+                        helperText={
+                          !errors.characterCount
+                            ? t(
+                                "features.feedConnections.components.placeholderLimitDialog.limitInputDescription",
+                              )
+                            : undefined
+                        }
+                      >
+                        <NumberInputRoot
                           inputMode="numeric"
-                          isInvalid={!!errors.characterCount}
                           min={1}
-                          isValidCharacter={(char) => /\d+/.test(char)}
-                          bg="gray.800"
-                          {...field}
-                          borderRadius="md"
+                          name={field.name}
+                          value={field.value != null ? String(field.value) : ""}
+                          onValueChange={(details) => field.onChange(details.valueAsNumber)}
+                          onBlur={field.onBlur}
+                          ref={field.ref}
+                          borderRadius="l3"
                         >
                           <NumberInputField />
-                        </NumberInput>
-                        {!errors.characterCount && (
-                          <FormHelperText>
-                            {t(
-                              "features.feedConnections.components.placeholderLimitDialog.limitInputDescription",
-                            )}
-                          </FormHelperText>
-                        )}
-                        {errors.characterCount && (
-                          <FormErrorMessage>{errors.characterCount.message}</FormErrorMessage>
-                        )}
-                      </FormControl>
+                        </NumberInputRoot>
+                      </Field>
                     );
                   }}
                 />
@@ -184,22 +187,18 @@ export const PlaceholderLimitDialog = ({
                   control={control}
                   render={({ field }) => {
                     return (
-                      <FormControl isInvalid={!!errors.appendString}>
-                        <FormLabel>
-                          {t(
-                            "features.feedConnections.components.placeholderLimitDialog.appendTextInputLabel",
-                          )}
-                        </FormLabel>
-                        <AutoResizeTextarea {...field} bg="gray.800" />
-                        <FormHelperText>
-                          {t(
-                            "features.feedConnections.components.placeholderLimitDialog.appendTextInputDescription",
-                          )}
-                        </FormHelperText>
-                        {errors.characterCount && (
-                          <FormErrorMessage>{errors.characterCount.message}</FormErrorMessage>
+                      <Field
+                        invalid={!!errors.appendString}
+                        label={t(
+                          "features.feedConnections.components.placeholderLimitDialog.appendTextInputLabel",
                         )}
-                      </FormControl>
+                        helperText={t(
+                          "features.feedConnections.components.placeholderLimitDialog.appendTextInputDescription",
+                        )}
+                        errorText={errors.characterCount?.message}
+                      >
+                        <AutoResizeTextarea {...field} />
+                      </Field>
                     );
                   }}
                 />
@@ -210,24 +209,23 @@ export const PlaceholderLimitDialog = ({
                 <InlineErrorIncompleteFormAlert fieldCount={errorLength} />
               </Box>
             )}
-          </ModalBody>
-          <ModalFooter>
+          </DialogBody>
+          <DialogFooter>
             <HStack>
               <Button variant="ghost" onClick={onClose}>
                 {t("common.buttons.cancel")}
               </Button>
-              <Button
+              <PrimaryActionButton
                 aria-disabled={isSubmitting}
-                colorScheme="blue"
                 type="submit"
                 form="placeholder-limit"
               >
                 {t("common.buttons.save")}
-              </Button>
+              </PrimaryActionButton>
             </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </>
   );
 };

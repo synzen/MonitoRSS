@@ -1,22 +1,10 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  Box,
-  Button,
-  Divider,
-  Flex,
-  Heading,
-  Hide,
-  HStack,
-  Show,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
-import { RepeatIcon } from "@chakra-ui/icons";
+import { Alert, Box, Flex, Heading, HStack, Separator, Stack, Text } from "@chakra-ui/react";
+import { FaArrowsRotate } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { useUserFeedContext } from "../../../contexts/UserFeedContext";
 import { pages } from "../../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../../constants/userFeedTabSearchParam";
@@ -144,7 +132,7 @@ export const DeliveryPreviewPresentational = ({
   const patternAlert = getPatternAlert(results, refreshRateSeconds, nextRetryAtIso);
 
   return (
-    <Stack spacing={4} mb={8} border="solid 1px" borderColor="gray.700" borderRadius="md">
+    <Stack gap={4} mb={8} border="solid 1px" borderColor="border" borderRadius="l3">
       <Box>
         <Flex
           px={4}
@@ -154,38 +142,38 @@ export const DeliveryPreviewPresentational = ({
           flexDirection={{ base: "column", md: "row" }}
           gap={3}
         >
-          <Stack spacing={1}>
+          <Stack gap={1}>
             <Heading as="h3" size="sm" m={0} id="delivery-preview-title">
               Delivery Preview
             </Heading>
-            <Text color="whiteAlpha.700" fontSize="sm">
+            <Text color="fg.muted" fontSize="sm">
               Preview how articles will be handled when your feed is next processed.
             </Text>
-            <Show below="md">
-              <Text fontSize="xs" color="whiteAlpha.600">
-                Preview generated: {lastCheckedFormatted}
-              </Text>
-            </Show>
+            <Text fontSize="xs" color="fg.muted" display={{ base: "block", md: "none" }}>
+              Preview generated: {lastCheckedFormatted}
+            </Text>
           </Stack>
-          <HStack spacing={2} flexShrink={0}>
-            <Hide below="md">
-              <Text fontSize="xs" color="whiteAlpha.600" whiteSpace="nowrap">
-                Preview generated: {lastCheckedFormatted}
-              </Text>
-            </Hide>
-            <Button
+          <HStack gap={2} flexShrink={0}>
+            <Text
+              fontSize="xs"
+              color="fg.muted"
+              whiteSpace="nowrap"
+              display={{ base: "none", md: "block" }}
+            >
+              Preview generated: {lastCheckedFormatted}
+            </Text>
+            <SafeLoadingButton
               size={{ base: "md", md: "sm" }}
-              leftIcon={<RepeatIcon />}
               onClick={onRefresh}
-              isLoading={isFetching}
+              loading={isFetching}
               variant="outline"
             >
-              Refresh
-            </Button>
+              <FaArrowsRotate /> Refresh
+            </SafeLoadingButton>
           </HStack>
         </Flex>
         <Box px={4}>
-          <Divider />
+          <Separator />
         </Box>
       </Box>
       <Box px={4} pb={4}>
@@ -194,30 +182,26 @@ export const DeliveryPreviewPresentational = ({
           <InlineErrorAlert title="Failed to load delivery preview" description={error.message} />
         )}
         {!isLoading && !error && hasNoConnections && (
-          <Alert status="info" borderRadius="md">
-            <AlertIcon />
-            <AlertDescription>
-              <Stack spacing={2}>
-                <Text>
-                  Add a connection to specify where articles should be delivered. Delivery previews
-                  will be available once you have at least one active connection.
-                </Text>
-                <Button
-                  as={Link}
-                  to={addConnectionUrl}
-                  colorScheme="blue"
-                  size="sm"
-                  width="fit-content"
-                >
-                  Add Connection
-                </Button>
-              </Stack>
-            </AlertDescription>
-          </Alert>
+          <Alert.Root status="info">
+            <Alert.Indicator />
+            <Alert.Content>
+              <Alert.Description>
+                <Stack gap={2}>
+                  <Text>
+                    Add a connection to specify where articles should be delivered. Delivery
+                    previews will be available once you have at least one active connection.
+                  </Text>
+                  <PrimaryActionButton asChild size="sm" width="fit-content">
+                    <Link to={addConnectionUrl}>Add Connection</Link>
+                  </PrimaryActionButton>
+                </Stack>
+              </Alert.Description>
+            </Alert.Content>
+          </Alert.Root>
         )}
         {!isLoading && !error && !hasNoConnections && hasNoData && (
           <Box py={4}>
-            <Text color="whiteAlpha.700">
+            <Text color="fg.muted">
               No articles found in the feed. Articles will appear here once the feed has content to
               analyze.
             </Text>
@@ -227,12 +211,14 @@ export const DeliveryPreviewPresentational = ({
           <FeedLevelStateDisplay feedState={feedState} />
         )}
         {!isLoading && !error && !hasNoConnections && !hasNoData && !hasFeedLevelState && (
-          <Stack spacing={4}>
+          <Stack gap={4}>
             {patternAlert && (
-              <Alert status={patternAlert.type} borderRadius="md">
-                <AlertIcon />
-                <AlertDescription>{patternAlert.message}</AlertDescription>
-              </Alert>
+              <Alert.Root status={patternAlert.type}>
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Description>{patternAlert.message}</Alert.Description>
+                </Alert.Content>
+              </Alert.Root>
             )}
             {isFetching && results.length === 0 ? (
               <DeliveryPreviewAccordionSkeleton />
@@ -245,18 +231,18 @@ export const DeliveryPreviewPresentational = ({
               />
             )}
             <Flex justifyContent="space-between" alignItems="center">
-              <Text fontSize="sm" color="whiteAlpha.600">
+              <Text fontSize="sm" color="fg.muted">
                 Showing {results.length} of {total} articles
               </Text>
               {hasMore && (
-                <Button
+                <SafeLoadingButton
                   size={{ base: "md", md: "sm" }}
                   onClick={onLoadMore}
-                  isLoading={isFetching}
+                  loading={isFetching}
                   variant="outline"
                 >
                   Load More
-                </Button>
+                </SafeLoadingButton>
               )}
             </Flex>
           </Stack>

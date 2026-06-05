@@ -41,7 +41,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
   columns = { base: 1, sm: 2, md: 3 },
 }) => {
   const totalItems = categories.length + 1;
-  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const buttonRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [focusedIndex, setFocusedIndex] = useState(0);
 
   const onKeyDown = useCallback(
@@ -77,7 +77,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
       role="radiogroup"
       aria-label="Feed categories"
       columns={columns}
-      spacing={4}
+      gap={4}
       onKeyDown={onKeyDown}
     >
       {categories.map((category, index) => {
@@ -87,7 +87,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
           <Flex
             as="button"
             key={category.id}
-            ref={(el: HTMLButtonElement | null) => {
+            ref={(el: HTMLDivElement | null) => {
               buttonRefs.current[index] = el;
             }}
             role="radio"
@@ -95,16 +95,16 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
             direction="column"
             align="center"
             w="100%"
-            bg="gray.800"
+            bg="bg.panel"
             borderWidth="1px"
-            borderColor="gray.600"
-            borderRadius="md"
+            borderColor="border"
+            borderRadius="l3"
             p={5}
             textAlign="center"
-            _hover={{ borderColor: "gray.400" }}
+            _hover={{ borderColor: "border.emphasized" }}
             _focus={{
               outline: "2px solid",
-              outlineColor: "blue.400",
+              outlineColor: "brand.focusRing",
               outlineOffset: "2px",
             }}
             tabIndex={focusedIndex === index ? 0 : -1}
@@ -123,7 +123,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
             <Text fontWeight="bold" mb={1}>
               {category.label}
             </Text>
-            <Text color="gray.400" fontSize="sm" noOfLines={2}>
+            <Text color="fg.muted" fontSize="sm" lineClamp={2}>
               {getCategoryPreviewText(category.id)}
             </Text>
           </Flex>
@@ -131,7 +131,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
       })}
       <Flex
         as="button"
-        ref={(el: HTMLButtonElement | null) => {
+        ref={(el: HTMLDivElement | null) => {
           buttonRefs.current[categories.length] = el;
         }}
         role="radio"
@@ -141,24 +141,24 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
         w="100%"
         borderWidth="1px"
         borderStyle="dashed"
-        borderColor="gray.600"
-        borderRadius="md"
+        borderColor="border"
+        borderRadius="l3"
         p={5}
         textAlign="center"
-        _hover={{ borderColor: "gray.400" }}
+        _hover={{ borderColor: "border.emphasized" }}
         _focus={{
           outline: "2px solid",
-          outlineColor: "blue.400",
+          outlineColor: "brand.focusRing",
           outlineOffset: "2px",
         }}
         tabIndex={focusedIndex === categories.length ? 0 : -1}
         onClick={() => onSelectCategory(undefined)}
       >
-        <Icon as={FaCompass} boxSize="40px" color="gray.400" mb={3} aria-hidden="true" />
+        <Icon as={FaCompass} boxSize="40px" color="fg.muted" mb={3} aria-hidden="true" />
         <Text fontWeight="bold" mb={1}>
           Browse All Categories
         </Text>
-        <Text color="gray.400" fontSize="sm">
+        <Text color="fg.muted" fontSize="sm">
           {totalFeedCount} popular feeds to explore &rarr;
         </Text>
       </Flex>

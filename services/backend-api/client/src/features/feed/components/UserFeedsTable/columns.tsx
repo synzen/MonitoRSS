@@ -1,8 +1,9 @@
-import { Button, Checkbox, Flex, Highlight, Link, Stack, Text } from "@chakra-ui/react";
-import { CheckIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { Button, Flex, Highlight, Link as ChakraLink, Stack, Text } from "@chakra-ui/react";
+import { FaCheck, FaChevronRight } from "react-icons/fa6";
 import { Link as RouterLink } from "react-router-dom";
 import { CellContext, ColumnDef, HeaderContext, createColumnHelper } from "@tanstack/react-table";
 import dayjs from "dayjs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RowData } from "./types";
 import { UserFeedComputedStatus } from "../../types";
 import { UserFeedStatusTag } from "./UserFeedStatusTag";
@@ -37,23 +38,20 @@ const columnConfigs: ColumnConfig[] = [
 
       if (!search) {
         return (
-          <Link
-            as={RouterLink}
-            to={pages.userFeed(feedId)}
-            color="blue.300"
-            _hover={{ textDecoration: "underline" }}
-          >
-            {value}
-          </Link>
+          <ChakraLink asChild color="text.link" _hover={{ textDecoration: "underline" }}>
+            <RouterLink to={pages.userFeed(feedId)}>{value}</RouterLink>
+          </ChakraLink>
         );
       }
 
       return (
-        <Link as={RouterLink} to={pages.userFeed(feedId)} _hover={{ textDecoration: "underline" }}>
-          <Highlight query={search} styles={{ bg: "orange.100" }}>
-            {value}
-          </Highlight>
-        </Link>
+        <ChakraLink asChild _hover={{ textDecoration: "underline" }}>
+          <RouterLink to={pages.userFeed(feedId)}>
+            <Highlight query={search} styles={{ bg: "orange.100" }}>
+              {value}
+            </Highlight>
+          </RouterLink>
+        </ChakraLink>
       );
     },
     sortable: true,
@@ -70,40 +68,40 @@ const columnConfigs: ColumnConfig[] = [
       if (!search) {
         return (
           <Stack>
-            <Link
+            <ChakraLink
               as="a"
               target="_blank"
               href={inputUrl || value}
               _hover={{ textDecoration: "underline" }}
-              color="blue.300"
+              color="text.link"
               title={inputUrl || value}
               onClick={(e) => e.stopPropagation()}
               overflow="hidden"
               textOverflow="ellipsis"
             >
               {inputUrl || value}
-            </Link>
+            </ChakraLink>
             {urlIsDifferentFromInput && (
               <Text
-                color="whiteAlpha.600"
+                color="fg.muted"
                 fontSize="sm"
                 display="inline"
                 overflow="hidden"
                 textOverflow="ellipsis"
               >
                 Resolved to{" "}
-                <Link
+                <ChakraLink
                   as="a"
                   fontSize="sm"
                   target="_blank"
                   href={value}
-                  color="whiteAlpha.600"
+                  color="fg.muted"
                   _hover={{ textDecoration: "underline" }}
                   title={value}
                   onClick={(e) => e.stopPropagation()}
                 >
                   {value}
-                </Link>
+                </ChakraLink>
               </Text>
             )}
           </Stack>
@@ -111,11 +109,11 @@ const columnConfigs: ColumnConfig[] = [
       }
 
       return (
-        <Link as="a" target="_blank" href={value} _hover={{ textDecoration: "underline" }}>
+        <ChakraLink as="a" target="_blank" href={value} _hover={{ textDecoration: "underline" }}>
           <Highlight query={search} styles={{ bg: "orange.100" }}>
             {value}
           </Highlight>
-        </Link>
+        </ChakraLink>
       );
     },
     sortable: true,
@@ -151,7 +149,7 @@ const columnConfigs: ColumnConfig[] = [
     cell: (info) => {
       const isOwnedByCurrentUser = info.getValue() as boolean;
 
-      return isOwnedByCurrentUser ? null : <CheckIcon />;
+      return isOwnedByCurrentUser ? null : <FaCheck />;
     },
     sortable: true,
   },
@@ -165,12 +163,11 @@ function createSelectColumn(): ColumnDef<RowData> {
         <Checkbox
           alignItems="center"
           width="min-content"
-          isChecked={table.getIsAllRowsSelected()}
-          onChange={(e) => {
-            e.stopPropagation();
-            table.getToggleAllRowsSelectedHandler()(e);
+          checked={table.getIsSomeRowsSelected() ? "indeterminate" : table.getIsAllRowsSelected()}
+          onCheckedChange={(details) => {
+            table.toggleAllRowsSelected(!!details.checked);
           }}
-          isIndeterminate={table.getIsSomeRowsSelected()}
+          onClick={(e) => e.stopPropagation()}
           cursor="pointer"
           aria-label="Check all currently loaded feeds for bulk actions"
         />
@@ -181,17 +178,15 @@ function createSelectColumn(): ColumnDef<RowData> {
         <Checkbox
           display="flex"
           alignItems="center"
-          isChecked={row.getIsSelected()}
+          checked={row.getIsSomeSelected() ? "indeterminate" : row.getIsSelected()}
           aria-disabled={!row.getCanSelect()}
-          onChange={(e) => {
+          onCheckedChange={(details) => {
             if (!row.getCanSelect()) return;
-            e.stopPropagation();
-            row.getToggleSelectedHandler()(e);
+            row.toggleSelected(!!details.checked);
           }}
-          isIndeterminate={row.getIsSomeSelected()}
           padding={3.5}
           cursor="pointer"
-          __css={{
+          css={{
             _hover: {
               background: "whiteAlpha.300",
               borderRadius: "full",
@@ -210,15 +205,16 @@ function createConfigureColumn(): ColumnDef<RowData> {
     header: () => null,
     cell: ({ row }) => (
       <Button
-        as={RouterLink}
-        to={pages.userFeed(row.original.id)}
+        asChild
         role="link"
         variant="ghost"
         size="sm"
-        rightIcon={<ChevronRightIcon boxSize={5} aria-hidden="true" />}
         aria-label={`Configure ${row.original.title}`}
       >
-        Configure
+        <RouterLink to={pages.userFeed(row.original.id)}>
+          Configure
+          <FaChevronRight aria-hidden="true" />
+        </RouterLink>
       </Button>
     ),
   });

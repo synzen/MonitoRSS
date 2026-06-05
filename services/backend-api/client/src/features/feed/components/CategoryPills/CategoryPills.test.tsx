@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi } from "vitest";
+import { system } from "@/utils/theme";
 import { CategoryPills } from "./index";
 
 const mockCategories = [
@@ -15,7 +16,7 @@ const renderPills = (props: Partial<React.ComponentProps<typeof CategoryPills>> 
   const user = userEvent.setup();
 
   const result = render(
-    <ChakraProvider>
+    <ChakraProvider value={system}>
       <CategoryPills
         categories={mockCategories}
         selectedCategory={undefined}

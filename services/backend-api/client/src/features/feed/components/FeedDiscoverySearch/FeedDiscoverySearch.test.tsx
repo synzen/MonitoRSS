@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { system } from "@/utils/theme";
 import { CuratedFeed } from "../../types";
 import { FeedDiscoverySearch } from "./index";
 
@@ -143,7 +144,7 @@ const renderSearch = (props: Partial<React.ComponentProps<typeof FeedDiscoverySe
   const user = userEvent.setup();
 
   const result = render(
-    <ChakraProvider>
+    <ChakraProvider value={system}>
       <MemoryRouter>
         <FeedDiscoverySearch {...defaultProps} {...props} />
       </MemoryRouter>

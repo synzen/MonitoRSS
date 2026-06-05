@@ -1,16 +1,4 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Badge,
-  Box,
-  Button,
-  Divider,
-  HStack,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { Alert, Badge, Box, Button, HStack, Separator, Stack, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import { ExternalContentError, ExternalContentErrorType } from "@/features/feed";
 import {
@@ -31,33 +19,33 @@ const ErrorItem = ({ error }: { error: ExternalContentError }) => {
   const errorType = error.errorType as ExternalContentErrorType;
 
   return (
-    <Box p={3} bg="gray.700" rounded="md">
-      <HStack spacing={2} mb={2} flexWrap="wrap">
+    <Box p={3} bg="bg.emphasized" rounded="l3">
+      <HStack gap={2} mb={2} flexWrap="wrap">
         <Text fontSize="sm" fontWeight="medium">
           &quot;{error.label}&quot;
         </Text>
         {error.statusCode && (
-          <Badge colorScheme="orange" fontSize="xs">
+          <Badge colorPalette="orange" fontSize="xs">
             HTTP {error.statusCode}
           </Badge>
         )}
         {errorType === ExternalContentErrorType.INVALID_CSS_SELECTOR && (
-          <Badge colorScheme="red" fontSize="xs">
+          <Badge colorPalette="red" fontSize="xs">
             {getErrorTypeLabel(errorType)}
           </Badge>
         )}
         {errorType === ExternalContentErrorType.NO_SELECTOR_MATCH && (
-          <Badge colorScheme="yellow" fontSize="xs">
+          <Badge colorPalette="yellow" fontSize="xs">
             {getErrorTypeLabel(errorType)}
           </Badge>
         )}
       </HStack>
       {error.message && (
-        <Text color="red.300" fontSize="xs" mt={1}>
+        <Text color="text.error" fontSize="xs" mt={1}>
           {error.message}
         </Text>
       )}
-      <Text fontSize="xs" color="gray.300" mt={2}>
+      <Text fontSize="xs" color="fg.muted" mt={2}>
         {getErrorGuidance(errorType, error.statusCode)}
       </Text>
       {errorType === ExternalContentErrorType.NO_SELECTOR_MATCH && error.pageHtml && (
@@ -82,8 +70,8 @@ const ErrorCategory = ({ title, errors }: { title: string; errors: ExternalConte
   }
 
   return (
-    <Stack spacing={2}>
-      <Text fontSize="sm" fontWeight="medium" color="gray.300">
+    <Stack gap={2}>
+      <Text fontSize="sm" fontWeight="medium" color="fg.muted">
         {title}
       </Text>
       {errors.map((error) => (
@@ -199,12 +187,12 @@ export const ExternalContentErrorsAlert = ({ errors }: Props) => {
   const showDividerAfterSelector = selectorWarnings.length > 0 && externalErrors.length > 0;
 
   return (
-    <Stack spacing={3}>
-      <Alert status={alertStatus} borderRadius="md">
-        <AlertIcon />
+    <Stack gap={3}>
+      <Alert.Root status={alertStatus}>
+        <Alert.Indicator />
         <Box flex="1">
-          <AlertTitle>{title}</AlertTitle>
-          <AlertDescription fontSize="sm">{description}</AlertDescription>
+          <Alert.Title>{title}</Alert.Title>
+          <Alert.Description fontSize="sm">{description}</Alert.Description>
         </Box>
         <Button
           size="sm"
@@ -214,17 +202,17 @@ export const ExternalContentErrorsAlert = ({ errors }: Props) => {
         >
           {isExpanded ? "Hide details" : "Show details"}
         </Button>
-      </Alert>
+      </Alert.Root>
       {isExpanded && (
-        <Box border="solid 1px" borderColor="gray.600" rounded="md" p={4} bg="gray.800">
-          <Stack spacing={4}>
+        <Box border="solid 1px" borderColor="border" rounded="l3" p={4} bg="bg.panel">
+          <Stack gap={4}>
             <ErrorCategory title="Configuration Errors (fix required)" errors={configErrors} />
-            {showDividerAfterConfig && <Divider borderColor="gray.600" />}
+            {showDividerAfterConfig && <Separator borderColor="border" />}
             <ErrorCategory
               title="Selector Issues (may need adjustment)"
               errors={selectorWarnings}
             />
-            {showDividerAfterSelector && <Divider borderColor="gray.600" />}
+            {showDividerAfterSelector && <Separator borderColor="border" />}
             <ErrorCategory title="Page Load Failures (may be temporary)" errors={externalErrors} />
           </Stack>
         </Box>

@@ -1,18 +1,9 @@
 import { useTranslation } from "react-i18next";
-import {
-  Menu,
-  MenuButton,
-  MenuDivider,
-  MenuItem,
-  MenuList,
-  useDisclosure,
-  IconButton,
-  Text,
-} from "@chakra-ui/react";
+import { IconButton, Text, useDisclosure } from "@chakra-ui/react";
 import { cloneElement, useRef } from "react";
-import { FaCopy, FaEllipsisVertical, FaGear, FaPause, FaPlay } from "react-icons/fa6";
+import { FaCopy, FaEllipsisVertical, FaGear, FaPause, FaPlay, FaTrash } from "react-icons/fa6";
 import { IoDuplicate } from "react-icons/io5";
-import { DeleteIcon } from "@chakra-ui/icons";
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 import {
   FeedConnectionDisabledCode,
   FeedConnectionType,
@@ -40,10 +31,10 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
     error,
     reset: resetErrorState,
   } = useUpdateDiscordChannelConnection();
-  const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const { open: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
   const { t } = useTranslation();
   const {
-    isOpen: isCopySettingsIsOpen,
+    open: isCopySettingsIsOpen,
     onClose: isCopySettingsOnClose,
     onOpen: isCopySettingsOnOpen,
   } = useDisclosure();
@@ -73,30 +64,41 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
         onClose={editOnClose}
         onCloseRef={actionsButtonRef}
       />
-      <Menu>
+      <MenuRoot lazyMount={false} unmountOnExit={false}>
         {trigger ? (
-          cloneElement(trigger, {
-            ref: actionsButtonRef,
-          })
+          <MenuTrigger asChild>
+            {cloneElement(trigger, {
+              ref: actionsButtonRef,
+            })}
+          </MenuTrigger>
         ) : (
-          <MenuButton
-            as={IconButton}
-            ref={actionsButtonRef}
-            aria-label={`${connection.name} connection actions`}
-            variant="ghost"
-            size="sm"
-            icon={<FaEllipsisVertical />}
-          />
+          <MenuTrigger asChild>
+            <IconButton
+              ref={actionsButtonRef}
+              aria-label={`${connection.name} connection actions`}
+              variant="ghost"
+              size="sm"
+            >
+              <FaEllipsisVertical />
+            </IconButton>
+          </MenuTrigger>
         )}
-        <MenuList>
-          <MenuItem aria-label="Edit" onClick={editOnOpen} icon={<FaGear />}>
+        <MenuContent>
+          <MenuItem value="configure" aria-label="Edit" onClick={editOnOpen}>
+            <FaGear />
             {t("common.buttons.configure")}
           </MenuItem>
-          <MenuItem aria-label="Edit" onClick={isCopySettingsOnOpen} icon={<FaCopy />}>
+          <MenuItem value="copy-settings" aria-label="Edit" onClick={isCopySettingsOnOpen}>
+            <FaCopy />
             Copy settings to...
           </MenuItem>
           <CloneDiscordConnectionCloneDialog
-            trigger={<MenuItem icon={<IoDuplicate />}>Clone</MenuItem>}
+            trigger={
+              <MenuItem value="clone">
+                <IoDuplicate />
+                Clone
+              </MenuItem>
+            }
             defaultValues={{
               name: `${connection.name} (Clone)`,
               targetFeedIds: [feedId],
@@ -111,7 +113,8 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
               description={t("pages.discordChannelConnection.manualDisableConfirmDescription")}
               error={error?.message}
               trigger={
-                <MenuItem isDisabled={updateStatus === "loading"} icon={<FaPause />}>
+                <MenuItem value="disable" disabled={updateStatus === "loading"}>
+                  <FaPause />
                   {t("common.buttons.disable")}
                 </MenuItem>
               }
@@ -134,7 +137,8 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
               description="Are you sure you want to re-enable this connection?"
               error={error?.message}
               trigger={
-                <MenuItem isDisabled={updateStatus === "loading"} icon={<FaPlay />}>
+                <MenuItem value="enable" disabled={updateStatus === "loading"}>
+                  <FaPlay />
                   Enable
                 </MenuItem>
               }
@@ -151,19 +155,20 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
               }}
             />
           )}
-          <MenuDivider />
+          <MenuSeparator />
           <DeleteConnectionButton
             connectionId={connection.id}
             feedId={feedId}
             type={FeedConnectionType.DiscordChannel}
             trigger={
-              <MenuItem icon={<DeleteIcon color="red.200" />}>
-                <Text color="red.200">{t("common.buttons.delete")}</Text>
+              <MenuItem value="delete" color="text.error" _icon={{ color: "text.error" }}>
+                <FaTrash />
+                <Text>{t("common.buttons.delete")}</Text>
               </MenuItem>
             }
           />
-        </MenuList>
-      </Menu>
+        </MenuContent>
+      </MenuRoot>
     </>
   );
 };

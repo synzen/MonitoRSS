@@ -1,33 +1,7 @@
-import {
-  Box,
-  Button,
-  Code,
-  HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Radio,
-  RadioGroup,
-  Spinner,
-  Stack,
-  Table,
-  TableContainer,
-  Tag,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  chakra,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { Box, Button, Code, HStack, Spinner, Stack, Table, Text, chakra } from "@chakra-ui/react";
 import { cloneElement, useEffect, useState } from "react";
-import { RepeatIcon, StarIcon } from "@chakra-ui/icons";
+import { FaArrowsRotate, FaStar } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import {
   SelectArticlePropertyType,
   useUserFeedArticles,
@@ -35,6 +9,18 @@ import {
 } from "@/features/feed";
 
 import { InlineErrorAlert } from "@/components";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Radio, RadioGroup } from "@/components/ui/radio";
+import { Tag } from "@/components/ui/tag";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 
 interface Props {
   trigger: React.ReactElement;
@@ -43,7 +29,7 @@ interface Props {
 
 const CreateExternalPropertyModal = ({ trigger, onSubmitted }: Props) => {
   const { userFeed, articleFormatOptions } = useUserFeedContext();
-  const { isOpen, onClose, onOpen } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("");
   const {
     data: articlesData,
@@ -61,7 +47,7 @@ const CreateExternalPropertyModal = ({ trigger, onSubmitted }: Props) => {
       random: true,
       formatOptions: articleFormatOptions,
     },
-    disabled: !isOpen,
+    disabled: !open,
   });
 
   // @ts-ignore
@@ -79,32 +65,38 @@ const CreateExternalPropertyModal = ({ trigger, onSubmitted }: Props) => {
   };
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!open) {
       setSelected("");
     }
-  }, [isOpen]);
+  }, [open]);
 
   useEffect(() => {
-    if (isOpen && linkExists && !selected) {
+    if (open && linkExists && !selected) {
       // setSelected("link");
     }
-  }, [linkExists, selected, isOpen]);
+  }, [linkExists, selected, open]);
 
   return (
     <>
-      {cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Create a new external property</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody tabIndex={-1}>
+      {cloneElement(trigger, { onClick: () => setOpen(true) })}
+      <DialogRoot
+        open={open}
+        onOpenChange={(e) => setOpen(e.open)}
+        size="cover"
+        scrollBehavior="inside"
+      >
+        <DialogContent>
+          <DialogHeader marginRight={4}>
+            <DialogTitle>Create a new external property</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody tabIndex={-1}>
             <Box srOnly aria-live="polite" aria-busy={status === "loading"}>
               {status === "success" && (
                 <span>Finished loading ${articleObjectEntries.length} article properties</span>
               )}
             </Box>
-            <Stack spacing={4} paddingBottom={4}>
+            <Stack gap={4} paddingBottom={4}>
               {error && (
                 <InlineErrorAlert
                   title="Failed to get article properties"
@@ -118,7 +110,7 @@ const CreateExternalPropertyModal = ({ trigger, onSubmitted }: Props) => {
                 </Stack>
               )}
               {status === "success" && !error && (
-                <Stack spacing={4}>
+                <Stack gap={4}>
                   <Text>
                     Select the source property containing the URL that references the page with the
                     desired content. If you don&apos;t see a property that fits, you can randomize
@@ -126,79 +118,83 @@ const CreateExternalPropertyModal = ({ trigger, onSubmitted }: Props) => {
                     recommended source property is the link property.
                   </Text>
                   <Box>
-                    <Button
-                      isLoading={fetchStatus === "fetching"}
+                    <SafeLoadingButton
+                      loading={fetchStatus === "fetching"}
                       aria-disabled={fetchStatus === "fetching"}
                       onClick={onClickRandomize}
-                      leftIcon={<RepeatIcon />}
                     >
+                      <FaArrowsRotate aria-hidden />
                       <span>Randomize sample article</span>
-                    </Button>
+                    </SafeLoadingButton>
                   </Box>
-                  <Box bg="gray.800" p={2} rounded="lg" overflow="auto">
+                  <Box
+                    bg="bg.subtle"
+                    borderWidth="1px"
+                    borderColor="border"
+                    p={2}
+                    rounded="lg"
+                    overflow="auto"
+                  >
                     <chakra.fieldset>
                       <chakra.legend srOnly>Source Property</chakra.legend>
-                      <RadioGroup onChange={setSelected} value={selected}>
-                        <TableContainer role="presentation">
-                          <Table size="sm">
-                            <Thead>
-                              <Tr>
-                                <Th>Article Property</Th>
-                                <Th>Sample Article Value</Th>
-                              </Tr>
-                            </Thead>
-                            <Tbody>
+                      <RadioGroup
+                        onValueChange={(details) => setSelected(details.value ?? "")}
+                        value={selected}
+                      >
+                        <Table.ScrollArea role="presentation">
+                          <Table.Root size="sm">
+                            <Table.Header>
+                              <Table.Row>
+                                <Table.ColumnHeader>Article Property</Table.ColumnHeader>
+                                <Table.ColumnHeader>Sample Article Value</Table.ColumnHeader>
+                              </Table.Row>
+                            </Table.Header>
+                            <Table.Body>
                               {articleObjectEntries.map(([field, value]) => {
                                 if (field === "id" || field === "idHash" || !value) {
                                   return null;
                                 }
 
                                 return (
-                                  <Tr key={field}>
-                                    <Td>
-                                      <Radio
-                                        value={field}
-                                        id={`field-${field}`}
-                                        aria-labelledby={`field-${field}-label`}
-                                        mr={2}
-                                      />
-                                      <chakra.label
-                                        htmlFor={`field-${field}`}
-                                        id={`field-${field}-label`}
-                                      >
+                                  <Table.Row key={field}>
+                                    <Table.Cell>
+                                      <Radio value={field} mr={2}>
                                         <Code>{field}</Code>
                                         {field === "link" && (
-                                          <Tag ml={3} colorScheme="green" size="sm">
-                                            <StarIcon mr={1} aria-hidden />
+                                          <Tag
+                                            ml={3}
+                                            colorPalette="green"
+                                            size="sm"
+                                            startElement={<FaStar aria-hidden />}
+                                          >
                                             Recommended source property
                                           </Tag>
                                         )}
-                                      </chakra.label>
-                                    </Td>
-                                    <Td whiteSpace="normal" wordBreak="break-all">
+                                      </Radio>
+                                    </Table.Cell>
+                                    <Table.Cell whiteSpace="normal" wordBreak="break-all">
                                       {value}
-                                    </Td>
-                                  </Tr>
+                                    </Table.Cell>
+                                  </Table.Row>
                                 );
                               })}
-                            </Tbody>
-                          </Table>
-                        </TableContainer>
+                            </Table.Body>
+                          </Table.Root>
+                        </Table.ScrollArea>
                       </RadioGroup>
                     </chakra.fieldset>
                   </Box>
                 </Stack>
               )}
             </Stack>
-          </ModalBody>
-          <ModalFooter>
+          </DialogBody>
+          <DialogFooter>
             <HStack>
-              <Button onClick={onClose} variant="ghost">
+              <Button onClick={() => setOpen(false)} variant="ghost">
                 Cancel
               </Button>
-              <Button
-                colorScheme="blue"
-                isDisabled={!selected}
+              <PrimaryActionButton
+                disabled={!selected}
                 aria-disabled={!selected}
                 onClick={() => {
                   if (!selected) {
@@ -206,15 +202,15 @@ const CreateExternalPropertyModal = ({ trigger, onSubmitted }: Props) => {
                   }
 
                   onSubmitted({ sourceField: selected });
-                  onClose();
+                  setOpen(false);
                 }}
               >
                 Create
-              </Button>
+              </PrimaryActionButton>
             </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </>
   );
 };

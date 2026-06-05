@@ -19,20 +19,16 @@ export const ComponentTreeToolbar: React.FC = () => {
   }
 
   return (
-    <Box p={3} borderBottom="1px" borderColor="gray.600">
+    <Box p={3} borderBottom="1px" borderColor="border">
       <HStack justify="space-between" align="center" flexWrap="wrap">
-        <VStack align="start" spacing={1}>
-          <Text fontSize="md" fontWeight="bold" color="white" as="h2">
+        <VStack align="start" gap={1}>
+          <Text fontSize="md" fontWeight="bold" color="fg" as="h2">
             Components
           </Text>
         </VStack>
-        <HStack spacing={2} flexWrap="wrap">
-          <Button
-            leftIcon={<VscCollapseAll />}
-            variant="ghost"
-            onClick={handleCollapseAll}
-            isDisabled={!messageComponent}
-          >
+        <HStack gap={2} flexWrap="wrap">
+          <Button variant="ghost" onClick={handleCollapseAll} disabled={!messageComponent}>
+            <VscCollapseAll />
             Collapse all
           </Button>
         </HStack>

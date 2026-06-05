@@ -15,7 +15,7 @@ export const CssSelectorFormattedOption = ({
       {!isSelected && (
         <chakra.span>
           <br />
-          <Text color="whiteAlpha.700">{description}</Text>
+          <Text color="fg.muted">{description}</Text>
         </chakra.span>
       )}
     </div>

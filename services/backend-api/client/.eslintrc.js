@@ -124,29 +124,50 @@ module.exports = {
      * Exempts: test files (many test cases), mocks (fixtures), large data files. */
     {
       files: ["src/**/*.{ts,tsx}"],
-      excludedFiles: [
-        "src/mocks/**",
-        "src/constants/emojis.ts",
-        "**/*.test.{ts,tsx}",
-      ],
+      excludedFiles: ["src/mocks/**", "src/constants/emojis.ts", "**/*.test.{ts,tsx}"],
       rules: {
-        "max-lines": [
-          "warn",
-          { max: 600, skipBlankLines: true, skipComments: true },
-        ],
+        "max-lines": ["warn", { max: 600, skipBlankLines: true, skipComments: true }],
       },
     },
     {
       files: ["src/**/*.{ts,tsx}"],
+      excludedFiles: ["src/mocks/**", "src/constants/emojis.ts", "**/*.test.{ts,tsx}"],
+      rules: {
+        "max-lines": ["error", { max: 1000, skipBlankLines: true, skipComments: true }],
+      },
+    },
+    /** ADR-007 rule #4: role-not-hue. A JSX color prop must name a semantic ROLE
+     * (fg, bg, border, text.link/error/..., brand, or an explicit status colorPalette),
+     * never a raw palette hue. Bans `color="gray.800"`, `bg="blue.300"`, `color="red.fg"`,
+     * etc. — both the numbered-shade and the `.fg`/`.solid` primitive-leak forms. Allowed:
+     * the semantic tokens (their prefix is a role — bg/fg/border/brand/text — not a hue) and
+     * the blackAlpha/whiteAlpha overlay scrims (sanctioned, not brand-tracking).
+     *
+     * Near-global ratchet: applied to all src JSX EXCEPT theme.ts (primitives legitimately
+     * live there), the Discord-emulation surfaces (must mimic Discord, never our brand —
+     * ADR-007), and a SHRINKING list of files that still carry pre-existing debt. Remove a
+     * file from `excludedFiles` as part of cleaning it. See
+     * client/docs/adr/007-styling-roles-tiers-contrast.md. */
+    {
+      files: ["src/**/*.tsx"],
       excludedFiles: [
-        "src/mocks/**",
-        "src/constants/emojis.ts",
-        "**/*.test.{ts,tsx}",
+        "**/*.test.tsx",
+        // theme.ts is where primitives legitimately live (semantic tokens resolve to them).
+        "src/utils/theme.ts",
+        // Discord-emulation: these mimic Discord's own UI and must NOT track our brand, so their
+        // raw hex/palette refs are sanctioned, not debt (ADR-007 § "the ONE exception that stays raw").
+        "**/DiscordMessageDisplay/**",
+        "**/DiscordView/**",
       ],
       rules: {
-        "max-lines": [
+        "no-restricted-syntax": [
           "error",
-          { max: 1000, skipBlankLines: true, skipComments: true },
+          {
+            selector:
+              "JSXAttribute[name.name=/^(color|bg|background|backgroundColor|borderColor|borderTopColor|borderBottomColor|borderLeftColor|borderRightColor|fill|stroke|outlineColor)$/] > Literal[value=/^(gray|blue|red|green|orange|yellow|purple|pink|cyan|teal)\\.(50|[0-9]{3}|fg|solid|muted|subtle|emphasized|focusRing|contrast)$/]",
+            message:
+              "Raw palette ref in a color prop. Name a semantic ROLE (fg/bg/border/text.* for text, brand/PrimaryActionButton for accent, explicit colorPalette for status), not a hue. See client/docs/adr/007-styling-roles-tiers-contrast.md.",
+          },
         ],
       },
     },

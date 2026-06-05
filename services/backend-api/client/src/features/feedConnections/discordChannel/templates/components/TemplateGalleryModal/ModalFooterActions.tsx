@@ -2,7 +2,10 @@
    Discriminated-union props (editor vs picker): variant-specific fields exist on only one
    union member, so they're read as props.X after a props.mode check, not destructured upfront. */
 import React from "react";
-import { ModalFooter, Button, Alert, AlertIcon, AlertDescription, HStack } from "@chakra-ui/react";
+import { Button, HStack } from "@chakra-ui/react";
+import { DialogFooter } from "@/components/ui/dialog";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { Alert } from "@/components/ui/alert";
 import { useBrandingContext } from "./BrandingContext";
 
 interface ModalFooterBaseProps {
@@ -39,21 +42,16 @@ export const ModalFooterActions = (props: ModalFooterActionsProps) => {
   const { webhooksAllowed, hasBrandingValues } = useBrandingContext();
 
   return (
-    <ModalFooter flexDirection="column" gap={3} alignItems="stretch">
-      {showTemplateError && (
-        <Alert status="error" borderRadius="md">
-          <AlertIcon />
-          <AlertDescription>Please select a template first.</AlertDescription>
-        </Alert>
-      )}
+    <DialogFooter flexDirection="column" gap={3} alignItems="stretch">
+      {showTemplateError && <Alert status="error">Please select a template first.</Alert>}
       {props.mode === "editor" ? (
         <HStack w="100%" justifyContent="space-between">
           <Button
-            variant="link"
-            colorScheme="gray"
+            variant="plain"
+            colorPalette="gray"
             onClick={onTertiaryAction}
-            color="gray.400"
-            _hover={{ color: "white" }}
+            color="fg.muted"
+            _hover={{ color: "fg" }}
           >
             {tertiaryActionLabel}
           </Button>
@@ -66,18 +64,17 @@ export const ModalFooterActions = (props: ModalFooterActionsProps) => {
                 <Button
                   variant="ghost"
                   onClick={props.onSaveWithoutBranding}
-                  isDisabled={props.isSaveLoading}
+                  disabled={props.isSaveLoading}
                 >
                   Save without branding
                 </Button>
-                <Button colorScheme="blue" onClick={onUpgrade}>
+                <PrimaryActionButton onClick={onUpgrade}>
                   Upgrade to save with branding
-                </Button>
+                </PrimaryActionButton>
               </>
             ) : (
-              <Button
+              <PrimaryActionButton
                 ref={saveButtonRef}
-                colorScheme="blue"
                 aria-disabled={props.isSaveLoading}
                 onClick={(e) => {
                   e.preventDefault();
@@ -90,7 +87,7 @@ export const ModalFooterActions = (props: ModalFooterActionsProps) => {
                 }}
               >
                 {props.isSaveLoading ? "Saving..." : "Save"}
-              </Button>
+              </PrimaryActionButton>
             )}
           </HStack>
         </HStack>
@@ -98,40 +95,39 @@ export const ModalFooterActions = (props: ModalFooterActionsProps) => {
         <HStack w="100%" justifyContent="flex-end">
           {tertiaryActionLabel && (
             <Button
-              variant="link"
-              colorScheme="gray"
+              variant="plain"
+              colorPalette="gray"
               mr="auto"
               onClick={onTertiaryAction}
-              color="gray.400"
-              _hover={{ color: "white" }}
+              color="fg.muted"
+              _hover={{ color: "fg" }}
             >
               {tertiaryActionLabel}
             </Button>
           )}
-          <Button variant="outline" mr={3} onClick={props.onSecondaryAction}>
+          <Button variant="outline" onClick={props.onSecondaryAction}>
             {props.secondaryActionLabel}
           </Button>
           {!webhooksAllowed && hasBrandingValues ? (
             <>
-              <Button variant="outline" mr={3} onClick={props.onPrimaryActionWithoutBranding}>
+              <Button variant="outline" onClick={props.onPrimaryActionWithoutBranding}>
                 Save without branding
               </Button>
-              <Button colorScheme="blue" onClick={onUpgrade}>
+              <PrimaryActionButton onClick={onUpgrade}>
                 Upgrade to save with branding
-              </Button>
+              </PrimaryActionButton>
             </>
           ) : (
-            <Button
+            <PrimaryActionButton
               ref={saveButtonRef}
-              colorScheme="blue"
-              isLoading={props.isPrimaryActionLoading}
+              loading={props.isPrimaryActionLoading}
               onClick={props.onPrimaryAction}
             >
               {props.primaryActionLabel}
-            </Button>
+            </PrimaryActionButton>
           )}
         </HStack>
       )}
-    </ModalFooter>
+    </DialogFooter>
   );
 };

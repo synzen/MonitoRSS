@@ -1,13 +1,4 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Box,
-  Button,
-  Flex,
-  HStack,
-  Stack,
-} from "@chakra-ui/react";
+import { Alert, Box, Button, Flex, HStack, Stack } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +10,7 @@ import ApiAdapterError from "../../../../utils/ApiAdapterError";
 import { pages } from "../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../constants/userFeedTabSearchParam";
 import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 import { UserFeedUrlRequestStatus } from "../../types/UserFeedUrlRequestStatus";
 
@@ -87,19 +79,22 @@ export const UserFeedHealthAlert = () => {
 
   return (
     <Stack>
-      <Alert status="warning" borderRadius="md">
+      <Alert.Root status="warning">
         <Box>
-          <AlertTitle>Requests are currently failing</AlertTitle>
-          <AlertDescription display="block">
+          <Alert.Title>Requests are currently failing</Alert.Title>
+          <Alert.Description display="block">
             <Flex flexDirection="column" gap={4}>
               We&apos;ve been unable to successfully fetch this feed. Attempts will continue
               automatically. The next earliest automatic attempt will be on{" "}
               {(nextRetryAt || fallbackNextRetryTimestamp).format("DD MMM YYYY, HH:mm:ss")}. You may
               also manually attempt a request via the button below.
               <HStack>
-                <Button isLoading={manualRequestStatus === "loading"} onClick={handleManualAttempt}>
+                <PrimaryActionButton
+                  loading={manualRequestStatus === "loading"}
+                  onClick={handleManualAttempt}
+                >
                   <span>Retry feed request</span>
-                </Button>
+                </PrimaryActionButton>
                 <Button
                   variant="outline"
                   onClick={() =>
@@ -114,9 +109,9 @@ export const UserFeedHealthAlert = () => {
                 </Button>
               </HStack>
             </Flex>
-          </AlertDescription>
+          </Alert.Description>
         </Box>
-      </Alert>
+      </Alert.Root>
       {firstStatusCode && RESOLVABLE_STATUS_CODES.includes(firstStatusCode) && (
         <FixFeedRequestsCTA url={userFeed.url} />
       )}

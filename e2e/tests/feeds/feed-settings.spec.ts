@@ -395,6 +395,61 @@ test.describe("Feed Settings", () => {
 
       await expect(page.getByText("Pending")).toBeVisible({ timeout: 10000 });
     });
+
+    test("can send a feed ownership transfer invite", async ({
+      page,
+      testFeedWithConnection,
+    }) => {
+      const serverName = getTestServerName();
+      const inviteUsername = getTestInviteUsername();
+
+      test.skip(
+        !serverName || !inviteUsername,
+        "serverName and inviteUsername must be configured in e2econfig.json",
+      );
+
+      const { feed } = testFeedWithConnection;
+
+      await page.goto(`/feeds/${feed.id}?view=settings`);
+      await expect(page.getByRole("heading", { name: feed.title })).toBeVisible(
+        { timeout: 10000 },
+      );
+
+      await expect(
+        page.getByRole("heading", { name: "Feed Management Invites" }),
+      ).toBeVisible({ timeout: 10000 });
+
+      await page.getByRole("button", { name: /Invite user to/i }).click();
+      await page.getByRole("menuitem", { name: "Transfer ownership" }).click();
+
+      await expect(
+        page.getByRole("dialog", { name: /Invite User to Transfer Ownership/i }),
+      ).toBeVisible({ timeout: 10000 });
+
+      await page.locator("#server-select").click();
+      await page
+        .locator('[role="option"]')
+        .filter({ hasText: serverName! })
+        .click();
+
+      await page.locator("#user-select").click();
+      await page.locator("#user-select").fill(inviteUsername!);
+      await page
+        .locator('[role="option"]')
+        .filter({ hasText: inviteUsername! })
+        .first()
+        .click({ timeout: 15000 });
+
+      await page
+        .getByRole("button", { name: /Invite User to Transfer Ownership/i })
+        .click();
+
+      await expect(
+        page.getByText("Successfully sent feed management invite"),
+      ).toBeVisible({ timeout: 10000 });
+
+      await expect(page.getByText("Pending")).toBeVisible({ timeout: 10000 });
+    });
   });
 
   test.describe("Copy Feed Settings", () => {

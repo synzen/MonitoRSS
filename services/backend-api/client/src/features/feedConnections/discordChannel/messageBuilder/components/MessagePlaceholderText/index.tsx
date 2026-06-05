@@ -1,6 +1,6 @@
 import { chakra, Code, Flex, IconButton } from "@chakra-ui/react";
 import { PropsWithChildren } from "react";
-import { CopyIcon } from "@chakra-ui/icons";
+import { FaCopy } from "react-icons/fa6";
 import { notifyInfo } from "@/utils/notifyInfo";
 import { notifyError } from "@/utils/notifyError";
 
@@ -55,12 +55,13 @@ const MessagePlaceholderText = ({
       {!withoutCopy && (
         <IconButton
           ml={1}
-          icon={<CopyIcon />}
           variant="outline"
           aria-label="Copy this placeholder"
           onClick={onCopy}
           size="xs"
-        />
+        >
+          <FaCopy />
+        </IconButton>
       )}
     </Flex>
   );

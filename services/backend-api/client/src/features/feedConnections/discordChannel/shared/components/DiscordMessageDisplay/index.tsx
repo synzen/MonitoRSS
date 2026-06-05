@@ -4,15 +4,17 @@ import {
   HStack,
   Text,
   Button,
-  useColorModeValue,
-  Avatar,
   Stack,
-  Progress,
-  Divider,
+  ProgressRoot,
+  ProgressTrack,
+  ProgressRange,
+  Separator,
   Image,
   SimpleGrid,
 } from "@chakra-ui/react";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
+import { FaUpRightFromSquare } from "react-icons/fa6";
+import { Avatar } from "@/components/ui/avatar";
+import { useColorModeValue } from "@/components/ui/color-mode";
 
 import DiscordView from "../DiscordView";
 // @ts-ignore - markdown utils lack TypeScript definitions (established pattern)
@@ -179,32 +181,40 @@ const renderButtonElement = (
     );
   }
 
+  const buttonProps = {
+    size: "sm" as const,
+    borderColor: colors.border,
+    borderWidth: "1px",
+    bg: colors.bg,
+    color: colors.color,
+    disabled: btn.disabled,
+    borderRadius: "6px",
+    fontWeight: "medium",
+    fontSize: "14px",
+    px: 3,
+    py: 1.5,
+    minH: "32px",
+    _hover: { opacity: btn.disabled ? 0.6 : 0.9 },
+    _disabled: { opacity: 0.6 },
+    _active: { transform: "translateY(0px)" },
+    textDecoration: "none",
+    _focus: { textDecoration: "none" },
+  };
+
+  if (isLinkButton) {
+    return (
+      <Button key={key} {...buttonProps} asChild>
+        <a href={btn.url ?? undefined} target="_blank" rel="noopener noreferrer">
+          {emojiElement}
+          {btn.label || (!btn.emoji ? "Button" : null)}
+          <FaUpRightFromSquare size={14} />
+        </a>
+      </Button>
+    );
+  }
+
   return (
-    <Button
-      key={key}
-      as={isLinkButton ? "a" : undefined}
-      href={isLinkButton ? (btn.url ?? undefined) : undefined}
-      target={isLinkButton ? "_blank" : undefined}
-      rel={isLinkButton ? "noopener noreferrer" : undefined}
-      size="sm"
-      borderColor={colors.border}
-      borderWidth="1px"
-      bg={colors.bg}
-      color={colors.color}
-      isDisabled={btn.disabled}
-      borderRadius="6px"
-      fontWeight="medium"
-      fontSize="14px"
-      px={3}
-      py={1.5}
-      minH="32px"
-      _hover={{ opacity: btn.disabled ? 0.6 : 0.9 }}
-      _disabled={{ opacity: 0.6 }}
-      _active={{ transform: "translateY(0px)" }}
-      rightIcon={styleName === "Link" ? <ExternalLinkIcon boxSize={4} /> : undefined}
-      textDecoration="none"
-      _focus={{ textDecoration: "none" }}
-    >
+    <Button key={key} {...buttonProps}>
       {emojiElement}
       {btn.label || (!btn.emoji ? "Button" : null)}
     </Button>
@@ -251,23 +261,9 @@ const renderApiAccessory = (
         <Image
           src={accessory.media?.url || ""}
           alt={accessory.description || "Thumbnail"}
-          objectFit="cover"
+          fit="cover"
           w="80px"
           h="80px"
-          fallback={
-            <Box
-              w="80px"
-              h="80px"
-              bg="gray.700"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              fontSize="xs"
-              color="gray.400"
-            >
-              No Image
-            </Box>
-          }
         />
       </Box>
     );
@@ -292,14 +288,8 @@ const renderApiComponent = (
 
   if (type === DISCORD_V2_COMPONENT_TYPE.Section) {
     return (
-      <HStack
-        spacing={2}
-        align="center"
-        justify="space-between"
-        width="100%"
-        key={`section-${index}`}
-      >
-        <VStack align="start" spacing={1} flex={1}>
+      <HStack gap={2} align="center" justify="space-between" width="100%" key={`section-${index}`}>
+        <VStack align="start" gap={1} flex={1}>
           {comp.components?.map((td, i) => (
             // eslint-disable-next-line react/no-array-index-key -- static preview render, never reordered
             <Box key={`text-${index}-${i}`} fontSize="sm" className="markup">
@@ -317,7 +307,7 @@ const renderApiComponent = (
   if (type === DISCORD_V2_COMPONENT_TYPE.ActionRow) {
     return (
       <Box key={`actionrow-${index}`}>
-        <HStack spacing={2}>
+        <HStack gap={2}>
           {comp.components?.map((btn, i) => renderApiButton(btn, `btn-${index}-${i}`))}
         </HStack>
       </Box>
@@ -330,7 +320,7 @@ const renderApiComponent = (
 
     return (
       <Box key={`separator-${index}`} my={`${spacing}px`}>
-        {showDivider && <Divider borderColor="hsl(240 calc(1*4%) 60.784%/0.2)" />}
+        {showDivider && <Separator borderColor="hsl(240 calc(1*4%) 60.784%/0.2)" />}
       </Box>
     );
   }
@@ -391,25 +381,11 @@ const renderApiComponent = (
         <Image
           src={item.media?.url || ""}
           alt={item.description || "Gallery image"}
-          objectFit="cover"
+          fit="cover"
           width="100%"
           height={height || "auto"}
           minHeight="60px"
           maxHeight={height ? undefined : "200px"}
-          fallback={
-            <Box
-              width="100%"
-              height={height || "80px"}
-              bg="gray.700"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              fontSize="xs"
-              color="gray.500"
-            >
-              {item.media?.url ? "Loading..." : "No image"}
-            </Box>
-          }
         />
       </Box>
     );
@@ -424,7 +400,7 @@ const renderApiComponent = (
           gap="4px"
           width="100%"
           maxWidth="600px"
-          sx={{
+          css={{
             aspectRatio: "3/2",
           }}
         >
@@ -569,7 +545,7 @@ const renderApiComponent = (
       <SimpleGrid
         key={`mediagallery-${index}`}
         columns={getColumns()}
-        spacing={1}
+        gap={1}
         width={width}
         maxWidth={maxWidth}
       >
@@ -622,7 +598,7 @@ const renderApiComponent = (
             SPOILER
           </Box>
         )}
-        <VStack align="stretch" spacing={2} pl={accentColor ? 2 : 0}>
+        <VStack align="stretch" gap={2} pl={accentColor ? 2 : 0}>
           {containerComp.components?.map((child, i) =>
             renderApiComponent(child, i, mentionResolvers),
           )}
@@ -661,7 +637,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
         overflow="auto"
         position="relative"
       >
-        <HStack align="flex-start" spacing={3}>
+        <HStack align="flex-start" gap={3}>
           <Avatar
             size="sm"
             src={avatarUrl || DISCORD_DEFAULT_AVATAR_URL}
@@ -670,8 +646,8 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
             w={10}
             h={10}
           />
-          <Stack spacing={1} flex={1} maxW="calc(100% - 40px - 0.75rem)">
-            <HStack spacing={2} align="center">
+          <Stack gap={1} flex={1} maxW="calc(100% - 40px - 0.75rem)">
+            <HStack gap={2} align="center">
               <Text fontSize="sm" fontWeight="semibold" color="white">
                 {username || MONITORSS_USERNAME}
               </Text>
@@ -740,19 +716,23 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
       position="relative"
     >
       {isLoading && (
-        <Progress
+        <ProgressRoot
           position="absolute"
           top={0}
           left={0}
           right={0}
           size="sm"
-          colorScheme="blue"
-          isIndeterminate
+          colorPalette="brand"
+          value={null}
           zIndex={2}
           aria-label="Updating message preview"
-        />
+        >
+          <ProgressTrack>
+            <ProgressRange />
+          </ProgressTrack>
+        </ProgressRoot>
       )}
-      <HStack align="flex-start" spacing={3}>
+      <HStack align="flex-start" gap={3}>
         <Avatar
           size="sm"
           src={avatarUrl || DISCORD_DEFAULT_AVATAR_URL}
@@ -761,8 +741,8 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
           w={10}
           h={10}
         />
-        <Stack spacing={1} flex={1} maxW="calc(100% - 40px - 0.75rem)">
-          <HStack spacing={2} align="center">
+        <Stack gap={1} flex={1} maxW="calc(100% - 40px - 0.75rem)">
+          <HStack gap={2} align="center">
             <Text fontSize="sm" fontWeight="semibold" color="white">
               {username || MONITORSS_USERNAME}
             </Text>
@@ -783,7 +763,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
             </Text>
           </HStack>
           <Box>
-            <VStack align="start" spacing={3} maxW="min(600px, 100%)">
+            <VStack align="start" gap={3} maxW="min(600px, 100%)">
               {legacyMessages.length > 0 && (
                 <DiscordView
                   darkTheme
@@ -796,7 +776,7 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
               )}
               {isV2Components && v2Components && v2Components.length > 0 && (
                 <Box width="fit-content" maxW="100%">
-                  <VStack align="stretch" spacing={2}>
+                  <VStack align="stretch" gap={2}>
                     {v2Components.map((comp, i) => renderApiComponent(comp, i, mentionResolvers))}
                   </VStack>
                 </Box>

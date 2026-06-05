@@ -29,6 +29,12 @@ export enum ComponentType {
 
 export const ROOT_COMPONENT_TYPES = [ComponentType.LegacyRoot, ComponentType.V2Root];
 
+/** Component types that can be added under a parent (everything except the two roots). */
+export type AddableComponentType = Exclude<
+  ComponentType,
+  ComponentType.LegacyRoot | ComponentType.V2Root
+>;
+
 export const PARENT_COMPONENT_TYPES = [
   ComponentType.LegacyRoot,
   ComponentType.LegacyEmbedContainer,

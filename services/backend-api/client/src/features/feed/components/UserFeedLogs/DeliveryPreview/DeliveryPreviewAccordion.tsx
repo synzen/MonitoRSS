@@ -1,15 +1,4 @@
-import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
-  Badge,
-  Box,
-  HStack,
-  Skeleton,
-  Text,
-} from "@chakra-ui/react";
+import { Accordion, Badge, Box, HStack, Skeleton, Text } from "@chakra-ui/react";
 import { ArticleDeliveryResult, ArticleDeliveryOutcome } from "../../../types/DeliveryPreview";
 import { ArticleDeliveryDetails } from "./ArticleDeliveryDetails";
 import { getOutcomeLabel, getOutcomeColorScheme, StatusBadgeContent } from "./deliveryPreviewUtils";
@@ -29,7 +18,7 @@ const getStatusBorderColor = (outcome: ArticleDeliveryOutcome): string => {
     case ArticleDeliveryOutcome.DuplicateId:
     case ArticleDeliveryOutcome.BlockedByComparison:
     case ArticleDeliveryOutcome.FeedUnchanged:
-      return "gray.500";
+      return "border.emphasized";
     case ArticleDeliveryOutcome.FilteredByDateCheck:
     case ArticleDeliveryOutcome.FilteredByMediumFilter:
       return "orange.400";
@@ -40,7 +29,7 @@ const getStatusBorderColor = (outcome: ArticleDeliveryOutcome): string => {
     case ArticleDeliveryOutcome.FeedError:
       return "red.400";
     default:
-      return "gray.500";
+      return "border.emphasized";
   }
 };
 
@@ -60,44 +49,50 @@ const DeliveryPreviewAccordionItem = ({
   cacheDurationMs,
 }: DeliveryPreviewAccordionItemProps) => {
   const displayOutcome = getOutcomeLabel(result.outcome);
-  const colorScheme = getOutcomeColorScheme(result.outcome);
+  const colorPalette = getOutcomeColorScheme(result.outcome);
   const borderColor = getStatusBorderColor(result.outcome);
 
   return (
-    <AccordionItem border="none" sx={getArticleListItemBorderProps(isFirst, borderColor)}>
-      <AccordionButton
+    <Accordion.Item
+      value={result.articleId}
+      border="none"
+      {...getArticleListItemBorderProps(isFirst, borderColor)}
+    >
+      <Accordion.ItemTrigger
         {...ARTICLE_LIST_ITEM_PADDING}
-        _hover={{ bg: "whiteAlpha.50" }}
-        _expanded={{ bg: "whiteAlpha.50" }}
+        _hover={{ bg: "bg.emphasized" }}
+        _open={{ bg: "bg.emphasized" }}
       >
-        <HStack flex="1" spacing={2} align="center">
-          <Badge colorScheme={colorScheme} fontSize="xs" flexShrink={0}>
+        <HStack flex="1" gap={2} align="center">
+          <Badge colorPalette={colorPalette} fontSize="xs" flexShrink={0}>
             <StatusBadgeContent outcome={result.outcome} label={displayOutcome} />
           </Badge>
           <Text
             fontSize="sm"
-            noOfLines={1}
+            lineClamp={1}
             textAlign="left"
             title={result.articleTitle || "Untitled"}
           >
             {result.articleTitle || (
-              <Text as="span" color="whiteAlpha.600" fontStyle="italic">
+              <Text as="span" color="fg.muted" fontStyle="italic">
                 (no title)
               </Text>
             )}
           </Text>
         </HStack>
-        <AccordionIcon ml={2} />
-      </AccordionButton>
-      <AccordionPanel p={0}>
-        <ArticleDeliveryDetails
-          result={result}
-          nextRetryAtIso={nextRetryAtIso}
-          nextRetryReason={nextRetryReason}
-          cacheDurationMs={cacheDurationMs}
-        />
-      </AccordionPanel>
-    </AccordionItem>
+        <Accordion.ItemIndicator ml={2} />
+      </Accordion.ItemTrigger>
+      <Accordion.ItemContent>
+        <Accordion.ItemBody p={0}>
+          <ArticleDeliveryDetails
+            result={result}
+            nextRetryAtIso={nextRetryAtIso}
+            nextRetryReason={nextRetryReason}
+            cacheDurationMs={cacheDurationMs}
+          />
+        </Accordion.ItemBody>
+      </Accordion.ItemContent>
+    </Accordion.Item>
   );
 };
 
@@ -115,7 +110,7 @@ export const DeliveryPreviewAccordion = ({
   cacheDurationMs,
 }: DeliveryPreviewAccordionProps) => (
   <Box {...ARTICLE_LIST_CONTAINER_PROPS}>
-    <Accordion allowMultiple>
+    <Accordion.Root multiple>
       {results.map((result, index) => (
         <DeliveryPreviewAccordionItem
           key={result.articleId}
@@ -126,7 +121,7 @@ export const DeliveryPreviewAccordion = ({
           cacheDurationMs={cacheDurationMs}
         />
       ))}
-    </Accordion>
+    </Accordion.Root>
   </Box>
 );
 

@@ -42,14 +42,14 @@ const FeedErrorDisplay = ({ errorInfo }: FeedErrorDisplayProps) => {
         gap={2}
         mb={3}
       >
-        <HStack spacing={2}>
+        <HStack gap={2}>
           <Icon as={StatusIcon} color={`${errorInfo.colorScheme}.400`} aria-hidden="true" />
-          <Text fontWeight="semibold" color="white">
+          <Text fontWeight="semibold" color="fg">
             {errorInfo.title}
           </Text>
         </HStack>
         <Badge
-          colorScheme={errorInfo.colorScheme}
+          colorPalette={errorInfo.colorScheme}
           variant={errorInfo.badgeVariant}
           fontSize="xs"
           fontFamily="mono"
@@ -57,9 +57,9 @@ const FeedErrorDisplay = ({ errorInfo }: FeedErrorDisplayProps) => {
           {errorInfo.badgeText}
         </Badge>
       </Flex>
-      <Stack spacing={2}>
-        <Text color="whiteAlpha.900">{errorInfo.explanation}</Text>
-        <Text fontSize="sm" color="whiteAlpha.800">
+      <Stack gap={2}>
+        <Text color="fg">{errorInfo.explanation}</Text>
+        <Text fontSize="sm" color="fg.muted">
           {errorInfo.action}
         </Text>
       </Stack>

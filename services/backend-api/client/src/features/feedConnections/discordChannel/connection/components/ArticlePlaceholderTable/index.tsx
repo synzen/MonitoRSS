@@ -3,14 +3,14 @@ import {
   HStack,
   Spinner,
   Stack,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
+  TableBody,
+  TableCell,
+  TableColumnHeader,
+  TableHeader,
+  TableRoot,
+  TableRow,
+  TableScrollArea,
   Text,
-  Th,
-  Thead,
-  Tr,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import MessagePlaceholderText from "../../../messageBuilder/components/MessagePlaceholderText";
@@ -36,21 +36,21 @@ const PlaceholderRow = ({
   withoutCopy?: boolean;
 }) => {
   return (
-    <Tr
-      _hover={{
-        ".copy-button": {
+    <TableRow
+      css={{
+        "&:hover .copy-button": {
           opacity: 1,
         },
       }}
     >
-      <Td>
+      <TableCell>
         <HStack width="auto">
           <MessagePlaceholderText withoutCopy={withoutCopy} withBrackets={withBrackets}>
             {placeholderKey}
           </MessagePlaceholderText>
         </HStack>
-      </Td>
-      <Td whiteSpace="normal">
+      </TableCell>
+      <TableCell whiteSpace="normal">
         <Box maxHeight={150} overflow="auto" tabIndex={0} minHeight="1.1rem">
           {value.split("\n").map((line, idx) => (
             // eslint-disable-next-line react/no-array-index-key
@@ -59,8 +59,8 @@ const PlaceholderRow = ({
             </span>
           ))}
         </Box>
-      </Td>
-    </Tr>
+      </TableCell>
+    </TableRow>
   );
 };
 
@@ -75,7 +75,7 @@ export const ArticlePlaceholderTable = ({
   const { t } = useTranslation();
 
   return (
-    <Stack position="relative" borderColor="gray.700" borderRadius="md" overflow="auto">
+    <Stack position="relative" borderColor="border" borderRadius="l3" overflow="auto">
       <Box>
         {isFetching && (
           <Stack alignItems="center">
@@ -86,11 +86,11 @@ export const ArticlePlaceholderTable = ({
           </Stack>
         )}
         {!isFetching && (
-          <TableContainer>
-            <Table size="sm">
-              <Thead>
-                <Tr>
-                  <Th>
+          <TableScrollArea>
+            <TableRoot size="sm">
+              <TableHeader>
+                <TableRow>
+                  <TableColumnHeader>
                     {asPlaceholders
                       ? t(
                           "features.feedConnections.components" +
@@ -100,16 +100,16 @@ export const ArticlePlaceholderTable = ({
                           "features.feedConnections.components" +
                             ".articlePlaceholderTable.columnHeaderProperty",
                         )}
-                  </Th>
-                  <Th>
+                  </TableColumnHeader>
+                  <TableColumnHeader>
                     {t(
                       "features.feedConnections.components" +
                         ".articlePlaceholderTable.columnHeaderValue",
                     )}
-                  </Th>
-                </Tr>
-              </Thead>
-              <Tbody>
+                  </TableColumnHeader>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {Object.entries(article).map(([key, value]) => {
                   const placeholderKey = key;
 
@@ -136,9 +136,9 @@ export const ArticlePlaceholderTable = ({
                     />
                   );
                 })}
-              </Tbody>
-            </Table>
-          </TableContainer>
+              </TableBody>
+            </TableRoot>
+          </TableScrollArea>
         )}
       </Box>
     </Stack>

@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { system } from "@/utils/theme";
 import { TestSendErrorPanel, TestSendErrorPanelProps } from "./index";
 import { SendTestArticleDeliveryStatus } from "@/types";
 import { TestSendFeedback } from "../../types";
@@ -11,7 +12,9 @@ interface TestWrapperProps {
   children: React.ReactNode;
 }
 
-const TestWrapper = ({ children }: TestWrapperProps) => <ChakraProvider>{children}</ChakraProvider>;
+const TestWrapper = ({ children }: TestWrapperProps) => (
+  <ChakraProvider value={system}>{children}</ChakraProvider>
+);
 
 const createFeedback = (overrides: Partial<TestSendFeedback> = {}): TestSendFeedback => ({
   status: "error",

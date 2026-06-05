@@ -2,19 +2,18 @@ import { useEffect, useRef } from "react";
 import {
   Box,
   Button,
-  Collapse,
+  Alert,
   Grid,
   Heading,
   HStack,
   Text,
   useDisclosure,
-  Alert,
-  AlertIcon,
   Flex,
 } from "@chakra-ui/react";
 import { FaExclamationTriangle, FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { TestSendFeedback } from "../../types";
-import getChakraColor from "@/utils/getChakraColor";
+import { Panel } from "@/components/Panel";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 
 export interface TestSendErrorPanelProps {
   feedback: TestSendFeedback;
@@ -29,7 +28,7 @@ const TestSendErrorPanel = ({
   onUseAnyway,
   isUseAnywayLoading,
 }: TestSendErrorPanelProps) => {
-  const { isOpen: isDetailsOpen, onToggle: onToggleDetails } = useDisclosure();
+  const { open: isDetailsOpen, onToggle: onToggleDetails } = useDisclosure();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const hasApiDetails = feedback.apiPayload || feedback.apiResponse;
@@ -46,22 +45,22 @@ const TestSendErrorPanel = ({
       aria-describedby="test-send-error-description"
       p={{ base: 4, md: 6 }}
     >
-      <HStack spacing={3} alignItems="center" mb={4}>
-        <Box color="orange.300" fontSize="xl">
+      <HStack gap={3} alignItems="center" mb={4}>
+        <Box color="text.warning" fontSize="xl">
           <FaExclamationTriangle />
         </Box>
         <Heading
           ref={headingRef}
           id="test-send-error-heading"
           size="md"
-          color="white"
+          color="fg"
           tabIndex={-1}
           outline="none"
         >
           Discord couldn&apos;t send this preview
         </Heading>
       </HStack>
-      <Text id="test-send-error-description" color="gray.300" mb={6}>
+      <Text id="test-send-error-description" color="fg.muted" mb={6}>
         {feedback.message}
       </Text>
       {hasApiDetails && (
@@ -70,42 +69,34 @@ const TestSendErrorPanel = ({
             variant="ghost"
             size="sm"
             onClick={onToggleDetails}
-            leftIcon={isDetailsOpen ? <FaChevronDown /> : <FaChevronRight />}
-            color="gray.400"
-            _hover={{ color: "white" }}
+            color="fg.muted"
+            _hover={{ color: "fg" }}
             mb={2}
             aria-expanded={isDetailsOpen}
             aria-controls="technical-details-section"
           >
+            {isDetailsOpen ? <FaChevronDown /> : <FaChevronRight />}
             Technical Details
           </Button>
-          <Collapse in={isDetailsOpen} animateOpacity>
-            <Box
-              id="technical-details-section"
-              bg="gray.700"
-              borderRadius="md"
-              border="1px solid"
-              borderColor="gray.600"
-              p={4}
-              overflow="hidden"
-            >
+          {isDetailsOpen && (
+            <Panel id="technical-details-section" p={4} overflow="hidden">
               <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={4}>
                 {feedback.apiPayload && (
                   <Box minW={0}>
-                    <Heading size="sm" color="gray.300" mb={2}>
+                    <Heading size="sm" color="fg.muted" mb={2}>
                       Request Sent to Discord
                     </Heading>
                     <Box
                       as="pre"
-                      bg={getChakraColor("gray.800")}
+                      bg="bg.emphasized"
                       p={{ base: 3, md: 4 }}
-                      borderRadius="md"
-                      border="1px solid"
-                      borderColor="gray.600"
+                      borderRadius="l3"
+                      borderWidth="1px"
+                      borderColor="border"
                       overflow="auto"
                       maxH={{ base: "150px", md: "250px" }}
                       fontSize="xs"
-                      color="gray.200"
+                      color="fg.muted"
                     >
                       {JSON.stringify(feedback.apiPayload, null, 2)}
                     </Box>
@@ -113,40 +104,40 @@ const TestSendErrorPanel = ({
                 )}
                 {feedback.apiResponse && (
                   <Box minW={0}>
-                    <Heading size="sm" color="gray.300" mb={2}>
+                    <Heading size="sm" color="fg.muted" mb={2}>
                       Discord&apos;s Response
                     </Heading>
                     <Box
                       as="pre"
-                      bg={getChakraColor("gray.800")}
+                      bg="bg.emphasized"
                       p={{ base: 3, md: 4 }}
-                      borderRadius="md"
-                      border="1px solid"
-                      borderColor="gray.600"
+                      borderRadius="l3"
+                      borderWidth="1px"
+                      borderColor="border"
                       overflow="auto"
                       maxH={{ base: "150px", md: "250px" }}
                       fontSize="xs"
-                      color="gray.200"
+                      color="fg.muted"
                     >
                       {JSON.stringify(feedback.apiResponse, null, 2)}
                     </Box>
                   </Box>
                 )}
               </Grid>
-            </Box>
-          </Collapse>
+            </Panel>
+          )}
         </Box>
       )}
-      <Alert status="info" borderRadius="md" mb={6}>
-        <AlertIcon />
-        <Box>
-          <Text fontWeight="semibold">Some articles may not deliver with this template</Text>
-          <Text fontSize="sm">
+      <Alert.Root status="info" mb={6}>
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Title>Some articles may not deliver with this template</Alert.Title>
+          <Alert.Description>
             If an article fails to send due to this error, the connection will pause until you
             adjust the format.
-          </Text>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
       <Flex
         direction={{ base: "column", sm: "row" }}
         justifyContent="center"
@@ -156,14 +147,14 @@ const TestSendErrorPanel = ({
         <Button variant="outline" onClick={onTryAnother} w={{ base: "100%", sm: "auto" }}>
           Try Another Template
         </Button>
-        <Button
-          colorScheme="blue"
+        <PrimaryActionButton
           onClick={onUseAnyway}
-          isLoading={isUseAnywayLoading}
+          loading={isUseAnywayLoading}
+          loadingText="Use this template"
           w={{ base: "100%", sm: "auto" }}
         >
           Use this template
-        </Button>
+        </PrimaryActionButton>
       </Flex>
     </Box>
   );

@@ -104,7 +104,7 @@ export const PageAlertContextOutlet = ({ containerProps }: PageAlertContextOutle
   return (
     <Stack
       hidden={alerts.length === 0}
-      spacing={2}
+      gap={2}
       position="sticky"
       top={0}
       zIndex={containerProps?.zIndex ?? 1}

@@ -1,7 +1,5 @@
 /* eslint-disable no-nested-ternary */
 import { GroupBase, StylesConfig } from "react-select";
-import { theme } from "@chakra-ui/react";
-import getChakraColor from "@/utils/getChakraColor";
 
 export interface SelectOption {
   value: string;
@@ -15,70 +13,72 @@ type SelectStyles = StylesConfig<SelectOption, false, GroupBase<SelectOption>> |
 export const REACT_SELECT_STYLES: (opts?: { invertBg?: boolean }) => SelectStyles = (opts) => ({
   menu: (provided) => ({
     ...provided,
-    backgroundColor: getChakraColor("gray.700"),
+    backgroundColor: "var(--app-bg-panel)",
     height: "40px",
   }),
   indicatorSeparator: (provided) => {
     return {
       ...provided,
-      // color: "green",
-      background: getChakraColor("gray.600"),
+      background: "var(--app-border)",
     };
   },
   dropdownIndicator: (provided, state) => {
     return {
       ...provided,
-      color: state.isFocused ? "gray.500" : "gray.400",
+      color: state.isFocused ? "var(--app-fg)" : "var(--app-fg-muted)",
       "&:hover": {
-        color: "gray.400",
+        color: "var(--app-fg)",
       },
     };
   },
   control: (provided, state) => ({
     ...provided,
-    background: opts?.invertBg ? getChakraColor("gray.700") : getChakraColor("gray.800"),
-    color: "white",
+    width: "100%",
+    background: opts?.invertBg ? "var(--app-bg-emphasized)" : "transparent",
+    color: "var(--app-fg)",
     height: "40px",
     paddingLeft: "8px",
     borderWidth: "1px",
-    borderColor: state.isFocused ? theme.colors.blue[300] : "none",
-    borderRadius: theme.radii.md,
+    // Parity with native inputs: the control edge uses the controlBorder role (>=3:1), not the quiet
+    // divider border. Mirrors the Chakra input/select recipe override (see
+    // docs/adr/007-styling-roles-tiers-contrast.md — the --app-* boundary keeps react-select in lockstep).
+    borderColor: state.isFocused ? "var(--app-accent-focus-ring)" : "var(--app-control-border)",
+    borderRadius: "var(--chakra-radii-md)",
     "&:hover": {
-      borderColor: "whiteAlpha.400",
+      borderColor: "var(--app-control-border)",
     },
-    boxShadow: state.isFocused ? `0 0 0 1px ${theme.colors.blue[300]}` : "none",
-    ...(opts?.invertBg ? { border: "none" } : {}),
+    boxShadow: state.isFocused ? "0 0 0 1px var(--app-accent-focus-ring)" : "none",
   }),
   input: (provided) => ({
     ...provided,
-    color: getChakraColor("gray.50"),
-    minWidth: "200px",
+    color: "var(--app-fg)",
   }),
   singleValue: (provided, state) => ({
     ...provided,
-    color: state.isDisabled ? getChakraColor("gray.500") : getChakraColor("gray.50"),
+    color: state.isDisabled ? "var(--app-fg-subtle)" : "var(--app-fg)",
   }),
   option: (provided, state) => ({
     ...provided,
-    color: "rgba(255,255,255,0.92)",
+    color: "var(--app-fg)",
     background:
       state.isFocused && !state.isSelected
-        ? getChakraColor("gray.600")
+        ? "var(--app-bg-emphasized)"
         : state.isSelected
-          ? getChakraColor("blue.500")
-          : getChakraColor("gray.800"),
+          ? "var(--app-accent-solid)"
+          : "var(--app-bg-panel)",
   }),
   container: (provided) => ({
     ...provided,
     borderStyle: "none",
+    width: "100%",
   }),
   menuList: (provided) => ({
     ...provided,
     borderWidth: "1px",
-    background: getChakraColor("gray.800"),
+    background: "var(--app-bg-panel)",
   }),
   placeholder: (provided) => ({
     ...provided,
-    color: getChakraColor("gray.400"),
+    color: "var(--app-fg-muted)",
   }),
 });

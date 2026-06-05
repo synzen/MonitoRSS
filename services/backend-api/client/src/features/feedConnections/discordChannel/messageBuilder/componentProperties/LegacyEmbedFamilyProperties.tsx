@@ -1,24 +1,11 @@
 import React from "react";
-import {
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  HStack,
-  IconButton,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  Radio,
-  RadioGroup,
-  Stack,
-  Switch,
-  Text,
-  VStack,
-} from "@chakra-ui/react";
-import { CloseIcon } from "@chakra-ui/icons";
+import { Button, HStack, IconButton, Stack, Text, VStack, Icon } from "@chakra-ui/react";
+import { FaXmark } from "react-icons/fa6";
 import { SketchPicker } from "react-color";
+import { Field } from "@/components/ui/field";
+import { PopoverRoot, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Radio, RadioGroup } from "@/components/ui/radio";
+import { Switch } from "@/components/ui/switch";
 import { InputWithInsertPlaceholder } from "../components/InputWithInsertPlaceholder";
 import { useMessageBuilderStateContext } from "../state";
 import getMessageBuilderFieldErrors from "../utils/getMessageBuilderFieldErrors";
@@ -46,15 +33,15 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
     ]);
 
     return (
-      <VStack align="stretch" spacing={6}>
-        <FormControl isInvalid={!!colorError}>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+      <VStack align="stretch" gap={6}>
+        <Field invalid={!!colorError} errorText={colorError?.message}>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Embed Color
-          </FormLabel>
+          </Text>
           <HStack>
             <HStack width="100%">
-              <Popover>
-                <PopoverTrigger>
+              <PopoverRoot>
+                <PopoverTrigger asChild>
                   <Button
                     backgroundColor={
                       (component as any).color
@@ -66,7 +53,7 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
                     flex={1}
                     borderStyle="solid"
                     borderWidth="1px"
-                    borderColor="whiteAlpha.400"
+                    borderColor="border"
                     aria-label="Pick color"
                     size="sm"
                     _hover={{
@@ -80,7 +67,7 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
                     }}
                   />
                 </PopoverTrigger>
-                <PopoverContent backgroundColor="gray.700" width="min-content">
+                <PopoverContent bg="bg.subtle" width="min-content">
                   <SketchPicker
                     presetColors={[]}
                     disableAlpha
@@ -103,23 +90,23 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
                     }}
                   />
                 </PopoverContent>
-              </Popover>
+              </PopoverRoot>
               <IconButton
                 size="sm"
                 aria-label="Clear color"
-                icon={<CloseIcon />}
-                isDisabled={!(component as any).color}
+                disabled={!(component as any).color}
                 onClick={() =>
                   onChange({
                     ...component,
                     color: undefined,
                   })
                 }
-              />
+              >
+                <Icon as={FaXmark} />
+              </IconButton>
             </HStack>
           </HStack>
-          {colorError && <FormErrorMessage>{colorError.message}</FormErrorMessage>}
-        </FormControl>
+        </Field>
       </VStack>
     );
   }
@@ -133,16 +120,16 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <InputWithInsertPlaceholder
           value={component.authorName || ""}
           onChange={(value) => onChange({ ...component, authorName: value })}
           label="Name"
           placeholder="Name"
           error={nameError?.message}
-          isInvalid={!!nameError}
+          invalid={!!nameError}
           as="input"
-          isRequired
+          required
           guildId={guildId}
         />
         <InputWithInsertPlaceholder
@@ -151,7 +138,7 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
           label="URL"
           placeholder="https://example.com"
           error={urlError?.message}
-          isInvalid={!!urlError}
+          invalid={!!urlError}
           as="input"
           guildId={guildId}
         />
@@ -161,7 +148,7 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
           label="Icon URL"
           placeholder="https://example.com/icon.png"
           error={iconUrlError?.message}
-          isInvalid={!!iconUrlError}
+          invalid={!!iconUrlError}
           as="input"
           guildId={guildId}
         />
@@ -178,16 +165,16 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <InputWithInsertPlaceholder
           value={component.title || ""}
           onChange={(value) => onChange({ ...component, title: value })}
           label="Text"
           placeholder="Embed title"
           error={titleError?.message}
-          isInvalid={!!titleError}
+          invalid={!!titleError}
           as="input"
-          isRequired
+          required
           guildId={guildId}
         />
         <InputWithInsertPlaceholder
@@ -196,7 +183,7 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
           label="URL"
           placeholder="https://example.com"
           error={titleUrlError?.message}
-          isInvalid={!!titleUrlError}
+          invalid={!!titleUrlError}
           as="input"
           guildId={guildId}
         />
@@ -213,17 +200,17 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <InputWithInsertPlaceholder
           value={component.description || ""}
           onChange={(value) => onChange({ ...component, description: value })}
           label="Description"
           placeholder="Embed description"
           error={descriptionError?.message}
-          isInvalid={!!descriptionError}
+          invalid={!!descriptionError}
           as="textarea"
           rows={3}
-          isRequired
+          required
           guildId={guildId}
         />
       </VStack>
@@ -236,16 +223,16 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
     ]);
 
     return (
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <InputWithInsertPlaceholder
           value={component.imageUrl || ""}
           onChange={(value) => onChange({ ...component, imageUrl: value })}
           label="Image URL"
           placeholder="https://example.com/image.png"
           error={imageUrlError?.message}
-          isInvalid={!!imageUrlError}
+          invalid={!!imageUrlError}
           as="input"
-          isRequired
+          required
           guildId={guildId}
         />
       </VStack>
@@ -261,16 +248,16 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <InputWithInsertPlaceholder
           value={component.thumbnailUrl || ""}
           onChange={(value) => onChange({ ...component, thumbnailUrl: value })}
           label="Image URL"
           placeholder="https://example.com/thumbnail.png"
           error={thumbnailUrlError?.message}
-          isInvalid={!!thumbnailUrlError}
+          invalid={!!thumbnailUrlError}
           as="input"
-          isRequired
+          required
           guildId={guildId}
         />
       </VStack>
@@ -286,14 +273,14 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <InputWithInsertPlaceholder
           value={component.footerText || ""}
           onChange={(value) => onChange({ ...component, footerText: value })}
           label="Text"
           placeholder="Footer text"
           error={footerTextError?.message}
-          isInvalid={!!footerTextError}
+          invalid={!!footerTextError}
           as="input"
           guildId={guildId}
         />
@@ -303,7 +290,7 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
           label="Icon URL"
           placeholder="https://example.com/icon.png"
           error={footerIconUrlError?.message}
-          isInvalid={!!footerIconUrlError}
+          invalid={!!footerIconUrlError}
           as="input"
           guildId={guildId}
         />
@@ -320,16 +307,16 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <InputWithInsertPlaceholder
           value={component.fieldName}
           onChange={(value) => onChange({ ...component, fieldName: value })}
           label="Field Name"
           placeholder="Field name"
           error={fieldNameError?.message}
-          isInvalid={!!fieldNameError}
+          invalid={!!fieldNameError}
           as="input"
-          isRequired
+          required
           guildId={guildId}
         />
         <InputWithInsertPlaceholder
@@ -338,26 +325,27 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
           label="Field Value"
           placeholder="Field value"
           error={fieldValueError?.message}
-          isInvalid={!!fieldValueError}
+          invalid={!!fieldValueError}
           as="textarea"
           rows={2}
-          isRequired
+          required
           guildId={guildId}
         />
-        <FormControl>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+        <Field>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Inline Field
-          </FormLabel>
+          </Text>
           <Switch
-            isChecked={component.inline || false}
-            onChange={(e) => onChange({ ...component, inline: e.target.checked })}
-            colorScheme="blue"
+            inputProps={{ "aria-label": "Inline Field" }}
+            checked={component.inline || false}
+            onCheckedChange={(e) => onChange({ ...component, inline: e.checked })}
+            colorPalette="brand"
           />
-          <FormHelperText>
+          <Text fontSize="sm" color="fg.muted" mt={2}>
             This will affect the layout of the fields to be either horizontal or vertical depending
             on how many fields are set to be inline.
-          </FormHelperText>
-        </FormControl>
+          </Text>
+        </Field>
       </VStack>
     );
   }
@@ -368,43 +356,42 @@ export const LegacyEmbedFamilyProperties: React.FC<Props> = ({ component, onChan
     ]);
 
     return (
-      <VStack align="stretch" spacing={6}>
-        <FormControl isInvalid={!!timestampError}>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200" id="timestamp-label">
+      <VStack align="stretch" gap={6}>
+        <Field invalid={!!timestampError} errorText={timestampError?.message}>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg" id="timestamp-label">
             Timestamp Value
-          </FormLabel>
+          </Text>
           <RadioGroup
             value={component.timestamp || ""}
-            onChange={(value) => onChange({ ...component, timestamp: value })}
+            onValueChange={(details) => onChange({ ...component, timestamp: details.value })}
             aria-labelledby="timestamp-label"
           >
             <Stack>
               <Radio value="">
                 None
                 <br />
-                <Text fontSize="xs" color="gray.400" margin="0">
+                <Text fontSize="xs" color="fg.muted" margin="0">
                   No timestamp will be displayed.
                 </Text>
               </Radio>
               <Radio value="article">
                 Article
                 <br />
-                <Text fontSize="xs" color="gray.400" margin="0">
+                <Text fontSize="xs" color="fg.muted" margin="0">
                   Use the article&apos;s published date.
                 </Text>
               </Radio>
               <Radio value="now">
                 Now
                 <br />
-                <Text fontSize="xs" color="gray.400" margin="0">
+                <Text fontSize="xs" color="fg.muted" margin="0">
                   Use the current date and time of when the article is delivered. Useful if article
                   has no published date.
                 </Text>
               </Radio>
             </Stack>
           </RadioGroup>
-          {timestampError && <FormErrorMessage>{timestampError.message}</FormErrorMessage>}
-        </FormControl>
+        </Field>
       </VStack>
     );
   }

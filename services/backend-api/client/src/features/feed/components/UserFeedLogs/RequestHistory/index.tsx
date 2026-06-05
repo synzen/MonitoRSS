@@ -1,37 +1,22 @@
 import {
-  Alert,
   Badge,
   Box,
   Button,
   Center,
-  Divider,
   Flex,
-  FormControl,
-  FormLabel,
   HStack,
   Heading,
   Input,
-  Popover,
-  PopoverArrow,
-  PopoverBody,
-  PopoverCloseButton,
-  PopoverContent,
-  PopoverTrigger,
+  Separator,
   Skeleton,
   Spinner,
   Stack,
   Table,
-  TableContainer,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
-  Tr,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
-import { QuestionOutlineIcon, Search2Icon } from "@chakra-ui/icons";
+import { FaCircleQuestion, FaMagnifyingGlass } from "react-icons/fa6";
 import { forwardRef, useEffect, useState } from "react";
 import { useUserFeedRequestsWithPagination } from "../../../hooks";
 import { UserFeedRequestStatus } from "../../../types";
@@ -40,9 +25,21 @@ import { useUserFeedContext } from "../../../contexts/UserFeedContext";
 import { RequestDetails } from "./RequestDetails";
 import { GetUserFeedRequestsInput } from "../../../api";
 import { DismissableAlert } from "../../../../../components/DismissableAlert";
+import { Alert } from "../../../../../components/ui/alert";
+import { Field } from "../../../../../components/ui/field";
+import {
+  PopoverArrow,
+  PopoverBody,
+  PopoverCloseTrigger,
+  PopoverContent,
+  PopoverRoot,
+  PopoverTrigger,
+} from "../../../../../components/ui/popover";
 
 const QuestionOutlineComponent = forwardRef<any>((props, ref) => (
-  <QuestionOutlineIcon fontSize={12} tabIndex={-1} ref={ref} aria-hidden {...props} />
+  <span ref={ref} style={{ display: "inline-flex" }} {...props}>
+    <FaCircleQuestion fontSize={12} tabIndex={-1} aria-hidden />
+  </span>
 ));
 
 const createStatusLabel = (
@@ -54,13 +51,13 @@ const createStatusLabel = (
   switch (status) {
     case UserFeedRequestStatus.OK:
       return (
-        <Badge fontSize="sm" colorScheme="green">
+        <Badge fontSize="sm" colorPalette="green">
           {status}
         </Badge>
       );
     case UserFeedRequestStatus.BAD_STATUS_CODE:
       return (
-        <Badge fontSize="sm" colorScheme="red">
+        <Badge fontSize="sm" colorPalette="red">
           {status}
           {response.statusCode ? ` (${response.statusCode})` : ""}
         </Badge>
@@ -71,13 +68,13 @@ const createStatusLabel = (
     case UserFeedRequestStatus.TIMED_OUT:
     case UserFeedRequestStatus.INVALID_SSL_CERTIFICATE:
       return (
-        <Badge fontSize="sm" colorScheme="red">
+        <Badge fontSize="sm" colorPalette="red">
           {status}
         </Badge>
       );
     case UserFeedRequestStatus.FETCH_TIMEOUT:
       return (
-        <Badge fontSize="sm" colorScheme="orange">
+        <Badge fontSize="sm" colorPalette="orange">
           {status}
         </Badge>
       );
@@ -135,28 +132,24 @@ export const RequestHistory = () => {
       }}
     >
       <HStack flexWrap="wrap">
-        <FormControl flex={1}>
-          <FormLabel>Start Date Range</FormLabel>
+        <Field label="Start Date Range" flex={1}>
           <Input
-            bg="gray.900"
             type="datetime-local"
             size="sm"
             onChange={(e) => {
               setStartDate(e.target.value);
             }}
           />
-        </FormControl>
-        <FormControl flex={1}>
-          <FormLabel>End Date Range</FormLabel>
+        </Field>
+        <Field label="End Date Range" flex={1}>
           <Input
-            bg="gray.900"
             type="datetime-local"
             size="sm"
             onChange={(e) => {
               setEndDate(e.target.value);
             }}
           />
-        </FormControl>
+        </Field>
       </HStack>
       {isInvalidDateRange && (
         <DismissableAlert
@@ -182,23 +175,23 @@ export const RequestHistory = () => {
   return (
     <Stack
       id="request-history"
-      spacing={4}
+      gap={4}
       mb={8}
       border="solid 1px"
-      borderColor="gray.700"
-      borderRadius="md"
+      borderColor="border"
+      borderRadius="l3"
     >
       <Box>
         <Stack px={4} py={4}>
           <Heading size="sm" as="h3" m={0} id="request-history-table-title">
             {t("features.userFeeds.components.requestsTable.title")}
           </Heading>
-          <Text color="whiteAlpha.700" fontSize="sm">
+          <Text color="fg.muted" fontSize="sm">
             Outgoing HTTP requests to the feed URL along with their response details.
           </Text>
         </Stack>
         <Box px={4}>
-          <Divider />
+          <Separator />
         </Box>
       </Box>
       <Box px={4} pb={4}>
@@ -231,7 +224,7 @@ export const RequestHistory = () => {
           />
         )}
         {data?.result.feedHostGlobalRateLimit && (
-          <Alert rounded="md">
+          <Alert rounded="l3">
             To stay in compliance with rate limits, MonitoRSS is forced to globally limit the number
             of requests made to this feed&apos;s host to have a maximum of{" "}
             {data.result.feedHostGlobalRateLimit.requestLimit} request(s) per{" "}
@@ -241,30 +234,34 @@ export const RequestHistory = () => {
         {hasNoData && (
           <Stack>
             {dateRangeForm}
-            <Text color="whiteAlpha.700">No requests found.</Text>
+            <Text color="fg.muted">No requests found.</Text>
           </Stack>
         )}
         {data && !hasNoData && (
           <Stack>
             {dateRangeForm}
             <Box>
-              <TableContainer>
-                <Table size="sm" variant="simple" aria-labelledby="request-history-table-title">
-                  <Thead>
-                    <Tr>
-                      <Th>{t("features.userFeeds.components.requestsTable.tableHeaderDate")}</Th>
-                      <Th>{t("features.userFeeds.components.requestsTable.tableHeaderStatus")}</Th>
-                      <Th>
+              <Table.ScrollArea>
+                <Table.Root size="sm" variant="line" aria-labelledby="request-history-table-title">
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.ColumnHeader>
+                        {t("features.userFeeds.components.requestsTable.tableHeaderDate")}
+                      </Table.ColumnHeader>
+                      <Table.ColumnHeader>
+                        {t("features.userFeeds.components.requestsTable.tableHeaderStatus")}
+                      </Table.ColumnHeader>
+                      <Table.ColumnHeader>
                         Cache Duration{" "}
-                        <Popover>
-                          <PopoverTrigger>
+                        <PopoverRoot>
+                          <PopoverTrigger asChild>
                             <Button variant="ghost" size="xs" aria-label="What is cache duration?">
                               <QuestionOutlineComponent />
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent>
                             <PopoverArrow />
-                            <PopoverCloseButton />
+                            <PopoverCloseTrigger />
                             <PopoverBody>
                               <Text
                                 fontFamily="var(--chakra-fonts-body)"
@@ -282,55 +279,51 @@ export const RequestHistory = () => {
                               </Text>
                             </PopoverBody>
                           </PopoverContent>
-                        </Popover>
-                      </Th>
-                      <Th>Details</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
+                        </PopoverRoot>
+                      </Table.ColumnHeader>
+                      <Table.ColumnHeader>Details</Table.ColumnHeader>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
                     {data?.result.requests.map((req) => (
-                      <Tr key={req.id}>
-                        <Td>
-                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                      <Table.Row key={req.id}>
+                        <Table.Cell>
+                          <Skeleton loading={fetchStatus !== "idle"}>
                             {dayjs.unix(req.createdAt).format("DD MMM YYYY, HH:mm:ss")}
                           </Skeleton>
-                        </Td>
-                        <Td>
-                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Skeleton loading={fetchStatus !== "idle"}>
                             {createStatusLabel(req.status, {
                               statusCode: req.response.statusCode,
                             })}
                           </Skeleton>
-                        </Td>
-                        <Td>
-                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Skeleton loading={fetchStatus !== "idle"}>
                             {req.freshnessLifetimeMs
                               ? dayjs.duration(req.freshnessLifetimeMs, "ms").humanize()
                               : "N/A"}
                           </Skeleton>
-                        </Td>
-                        <Td>
-                          <Skeleton isLoaded={fetchStatus === "idle"}>
+                        </Table.Cell>
+                        <Table.Cell>
+                          <Skeleton loading={fetchStatus !== "idle"}>
                             <RequestDetails
                               trigger={
-                                <Button
-                                  leftIcon={<Search2Icon />}
-                                  variant="outline"
-                                  size="xs"
-                                  onClick={() => {}}
-                                >
+                                <Button variant="outline" size="xs" onClick={() => {}}>
+                                  <FaMagnifyingGlass />
                                   View Details
                                 </Button>
                               }
                               request={req}
                             />
                           </Skeleton>
-                        </Td>
-                      </Tr>
+                        </Table.Cell>
+                      </Table.Row>
                     ))}
-                  </Tbody>
-                </Table>
-              </TableContainer>
+                  </Table.Body>
+                </Table.Root>
+              </Table.ScrollArea>
             </Box>
             <Flex pt={4}>
               <HStack>

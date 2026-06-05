@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertTitle, Box, Stack, Text } from "@chakra-ui/react";
+import { Alert, Box, Stack, Text } from "@chakra-ui/react";
 import { RedditLoginButton, useUserMe } from "../../../discordUser";
 
 interface Props {
@@ -23,10 +23,10 @@ export const FixFeedRequestsCTA = ({ url, onCorrected }: Props) => {
 
   return (
     <Stack>
-      <Alert status="success">
-        <Box>
-          <AlertTitle>Connect your Reddit account</AlertTitle>
-          <AlertDescription>
+      <Alert.Root status="success">
+        <Alert.Content>
+          <Alert.Title>Connect your Reddit account</Alert.Title>
+          <Alert.Description>
             <Stack gap={4}>
               <Text>
                 Reddit has stringent rate limits by default. With your account connected, you will
@@ -34,16 +34,16 @@ export const FixFeedRequestsCTA = ({ url, onCorrected }: Props) => {
               </Text>
               <Stack>
                 <Box>
-                  <RedditLoginButton size="md" colorScheme="green" onConnected={onCorrected} />
+                  <RedditLoginButton size="md" colorPalette="green" onConnected={onCorrected} />
                 </Box>
-                <Text color="whiteAlpha.700" fontSize="sm">
+                <Text color="fg.muted" fontSize="sm">
                   A window will pop up prompting for authorization.
                 </Text>
               </Stack>
             </Stack>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     </Stack>
   );
 };

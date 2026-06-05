@@ -1,37 +1,26 @@
-import {
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  Box,
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  HStack,
-  Input,
-  Link,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { Alert, Box, Button, HStack, Icon, Input, Link, Stack, Text } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { InferType, object, string } from "yup";
 import React, { useEffect, useRef } from "react";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
+import { FaUpRightFromSquare } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import {
   InlineErrorAlert,
   InlineErrorIncompleteFormAlert,
 } from "../../../../components/InlineErrorAlert";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Field } from "@/components/ui/field";
 
 const formSchema = object({
   title: string().optional(),
@@ -115,36 +104,43 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   const formErrorCount = Object.keys(errors).length;
 
   return (
-    <Modal
-      finalFocusRef={onCloseRef}
-      isOpen={isOpen}
-      onClose={onClose}
-      initialFocusRef={initialFocusRef}
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) {
+          onClose();
+        }
+      }}
+      initialFocusEl={() => initialFocusRef.current}
+      finalFocusEl={() => onCloseRef?.current ?? null}
     >
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>
-          {isConfirming
-            ? "Confirm feed link change"
-            : t("features.feed.components.updateUserFeedDialog.title")}
-        </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <Stack spacing={4}>
+      <DialogContent>
+        <DialogHeader marginRight={4}>
+          <DialogTitle>
+            {isConfirming
+              ? "Confirm feed link change"
+              : t("features.feed.components.updateUserFeedDialog.title")}
+          </DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
+          <Stack gap={4}>
             {isConfirming && (
-              <Stack spacing={4} role="alert">
-                <Alert status="warning" role={undefined}>
-                  <AlertIcon />
-                  <AlertTitle>
-                    The url you put in did not directly point to a valid feed.
-                  </AlertTitle>
-                </Alert>
-                <Stack spacing={4} aria-live="polite">
+              <Stack gap={4} role="alert">
+                <Alert.Root status="warning" role={undefined}>
+                  <Alert.Indicator />
+                  <Alert.Content>
+                    <Alert.Title>
+                      The url you put in did not directly point to a valid feed.
+                    </Alert.Title>
+                  </Alert.Content>
+                </Alert.Root>
+                <Stack gap={4} aria-live="polite">
                   <Box>
                     <Text display="inline">We found </Text>
                     <Link
                       display="inline"
-                      color="blue.300"
+                      color="text.link"
                       href={feedUrlValidationData.result.resolvedToUrl || "#"}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -153,7 +149,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                         <Text wordBreak="break-all" display="inline">
                           {feedUrlValidationData.result.resolvedToUrl}
                         </Text>
-                        <ExternalLinkIcon ml={1} />
+                        <Icon as={FaUpRightFromSquare} ml={1} />
                       </HStack>
                     </Link>{" "}
                     <Text display="inline">
@@ -169,7 +165,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                     <Text display="inline">Your original link </Text>
                     <Link
                       display="inline"
-                      color="blue.300"
+                      color="text.link"
                       href={urlFromForm || "#"}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -183,37 +179,33 @@ export const EditUserFeedDialog: React.FC<Props> = ({
               </Stack>
             )}
             {!isConfirming && (
-              <Stack spacing={4}>
-                <FormControl isInvalid={!!errors.title} isRequired>
-                  <FormLabel>
-                    {t("features.feed.components.addFeedDialog.formTitleLabel")}
-                  </FormLabel>
+              <Stack gap={4}>
+                <Field
+                  invalid={!!errors.title}
+                  required
+                  label={t("features.feed.components.addFeedDialog.formTitleLabel")}
+                  errorText={errors.title?.message}
+                  helperText={t("features.feed.components.addFeedDialog.formTitleDescription")}
+                >
                   <Controller
                     name="title"
                     control={control}
-                    render={({ field }) => (
-                      <Input {...field} tabIndex={0} ref={initialFocusRef} bg="gray.800" />
-                    )}
+                    render={({ field }) => <Input {...field} tabIndex={0} ref={initialFocusRef} />}
                   />
-                  {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
-                  <FormHelperText>
-                    {t("features.feed.components.addFeedDialog.formTitleDescription")}
-                  </FormHelperText>
-                </FormControl>
-                <FormControl isInvalid={!!errors.title} isRequired>
-                  <FormLabel>RSS Feed Link</FormLabel>
+                </Field>
+                <Field
+                  invalid={!!errors.url}
+                  required
+                  label="RSS Feed Link"
+                  errorText={errors.url?.message}
+                  helperText={t("features.feed.components.addFeedDialog.formLinkDescription")}
+                >
                   <Controller
                     name="url"
                     control={control}
-                    render={({ field }) => (
-                      <Input type="url" {...field} tabIndex={0} bg="gray.800" />
-                    )}
+                    render={({ field }) => <Input type="url" {...field} tabIndex={0} />}
                   />
-                  {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
-                  <FormHelperText>
-                    {t("features.feed.components.addFeedDialog.formLinkDescription")}
-                  </FormHelperText>
-                </FormControl>
+                </Field>
               </Stack>
             )}
             {error && (
@@ -223,13 +215,12 @@ export const EditUserFeedDialog: React.FC<Props> = ({
               <InlineErrorIncompleteFormAlert fieldCount={formErrorCount} />
             )}
           </Stack>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isSubmitting}>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
             <span>{t("common.buttons.cancel")}</span>
           </Button>
-          <Button
-            colorScheme="blue"
+          <PrimaryActionButton
             aria-disabled={isLoading}
             onClick={() => {
               if (isLoading) {
@@ -241,9 +232,9 @@ export const EditUserFeedDialog: React.FC<Props> = ({
           >
             <span>{isLoading && "Saving..."}</span>
             <span>{!isLoading && t("common.buttons.save")}</span>
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+          </PrimaryActionButton>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

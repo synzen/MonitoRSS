@@ -1,21 +1,11 @@
-import {
-  Code,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  Input,
-  Link,
-  Select,
-  Skeleton,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { Code, Input, Link, Skeleton, Stack, Text } from "@chakra-ui/react";
 import { Trans, useTranslation } from "react-i18next";
 import { useDebounce } from "@/hooks";
 import { useUserFeedDatePreview } from "../../hooks/useUserFeedDatePreview";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import DATE_LOCALES from "@/constants/dateLocales";
+import { Field } from "@/components/ui/field";
+import { NativeSelectRoot, NativeSelectField } from "@/components/ui/native-select";
 
 interface Props {
   values: {
@@ -83,17 +73,16 @@ export const DatePreferencesForm = ({
   };
 
   return (
-    <Stack spacing={4}>
+    <Stack gap={4}>
       {!disablePreview && (
-        <FormControl>
-          <FormLabel marginBottom={0}>
-            {t(
-              "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle",
-            )}
-          </FormLabel>
+        <Field
+          label={t(
+            "features.feedConnections.components.userFeedSettingsTabSection.dateSettingsPreviewTitle",
+          )}
+        >
           {!datePreviewError && (
-            <Skeleton isLoaded={!!datePreviewData}>
-              <Text fontSize="xl" color={datePreviewData?.result.valid ? "gray.400" : "red.400"}>
+            <Skeleton loading={!datePreviewData}>
+              <Text fontSize="xl" color={datePreviewData?.result.valid ? "fg.muted" : "text.error"}>
                 {datePreviewData?.result.valid && datePreviewData?.result.output}
                 {!datePreviewData?.result.valid &&
                   t(
@@ -108,51 +97,46 @@ export const DatePreferencesForm = ({
               description={datePreviewError.message}
             />
           )}
-        </FormControl>
+        </Field>
       )}
-      <FormControl isRequired={requiredFields?.includes("format")}>
-        <FormLabel>
-          {t("features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel")}
-        </FormLabel>
+      <Field
+        required={requiredFields?.includes("format")}
+        label={t(
+          "features.feedConnections.components.userFeedSettingsTabSection.dateFormatInputLabel",
+        )}
+        helperText={
+          !errors.format ? (
+            <>
+              This will dictate how the placeholders with dates will be formatted. For more
+              information on formatting, see{" "}
+              <Link
+                color="text.link"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://day.js.org/docs/en/display/format"
+              >
+                https://day.js.org/docs/en/display/format
+              </Link>
+            </>
+          ) : undefined
+        }
+        errorText={errors.format}
+      >
         <Input
-          bg="gray.800"
           size={size}
           spellCheck={false}
           autoComplete=""
           value={format || ""}
           onChange={onChangeFormat}
         />
-        {!errors.format && (
-          <FormHelperText>
-            This will dictate how the placeholders with dates will be formatted. For more
-            information on formatting, see{" "}
-            <Link
-              color="blue.300"
-              target="_blank"
-              rel="noopener noreferrer"
-              href="https://day.js.org/docs/en/display/format"
-            >
-              https://day.js.org/docs/en/display/format
-            </Link>
-          </FormHelperText>
+      </Field>
+      <Field
+        invalid={!!errors.timezone}
+        label={t(
+          "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel",
         )}
-        {errors.format && <FormErrorMessage>{errors.format}</FormErrorMessage>}
-      </FormControl>
-      <FormControl isInvalid={!!errors.timezone}>
-        <FormLabel>
-          {t(
-            "features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputLabel",
-          )}
-        </FormLabel>
-        <Input
-          bg="gray.800"
-          size={size}
-          spellCheck={false}
-          value={timezone || ""}
-          onChange={onChangeTimezone}
-        />
-        {!errors.timezone && (
-          <FormHelperText>
+        helperText={
+          !errors.timezone ? (
             <Trans
               i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
               components={[
@@ -160,50 +144,57 @@ export const DatePreferencesForm = ({
                   href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
                   target="_blank"
                   rel="noreferrer noopener"
-                  color="blue.300"
+                  color="text.link"
                 />,
               ]}
             />
-          </FormHelperText>
-        )}
-        {errors.timezone && (
-          <FormErrorMessage>
-            {errors.timezone} (
-            <Trans
-              i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
-              components={[
-                <Link
-                  href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  color="blue.300"
-                />,
-              ]}
-            />
-            )
-          </FormErrorMessage>
-        )}
-      </FormControl>
-      <FormControl>
-        <FormLabel>Date Format Locale</FormLabel>
-        <Select
-          bg="gray.800"
-          size={size}
-          placeholder="Select option"
-          value={locale || ""}
-          onChange={onChangeLocale}
-        >
-          {DATE_LOCALES.map(({ key, name }) => (
-            <option key={key} value={key}>
-              {name}
-            </option>
-          ))}
-        </Select>
-        <FormHelperText>
-          The locale to use for formatting dates. Leave blank to use the default (
-          <Code>English</Code>).
-        </FormHelperText>
-      </FormControl>
+          ) : undefined
+        }
+        errorText={
+          errors.timezone ? (
+            <>
+              {errors.timezone} (
+              <Trans
+                i18nKey="features.feedConnections.components.userFeedSettingsTabSection.dateTimezoneInputDescription"
+                components={[
+                  <Link
+                    href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    color="text.link"
+                  />,
+                ]}
+              />
+              )
+            </>
+          ) : undefined
+        }
+      >
+        <Input size={size} spellCheck={false} value={timezone || ""} onChange={onChangeTimezone} />
+      </Field>
+      <Field
+        label="Date Format Locale"
+        helperText={
+          <>
+            The locale to use for formatting dates. Leave blank to use the default (
+            <Code>English</Code>).
+          </>
+        }
+      >
+        <NativeSelectRoot size={size}>
+          <NativeSelectField
+            placeholder="Select option"
+            value={locale || ""}
+            onChange={onChangeLocale}
+          >
+            {DATE_LOCALES.map(({ key, name }) => (
+              <option key={key} value={key}>
+                {name}
+              </option>
+            ))}
+          </NativeSelectField>
+        </NativeSelectRoot>
+      </Field>
     </Stack>
   );
 };

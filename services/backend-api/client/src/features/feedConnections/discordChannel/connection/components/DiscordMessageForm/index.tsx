@@ -1,27 +1,22 @@
-import { AddIcon, LockIcon } from "@chakra-ui/icons";
+import { FaPlus, FaLock, FaCircleInfo } from "react-icons/fa6";
 import {
   Box,
   Button,
   Center,
+  chakra,
   Flex,
-  FormControl,
-  FormHelperText,
-  FormLabel,
   Heading,
-  Highlight,
   HStack,
+  Icon,
   Input,
   Spinner,
   Stack,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
   Tabs,
   Text,
+  VisuallyHidden,
 } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Suspense, useContext, useRef, useState } from "react";
+import { Suspense, useContext, useEffect, useRef, useState } from "react";
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { motion } from "motion/react";
@@ -51,11 +46,13 @@ import {
 import { SendTestArticleContext } from "../../../messageBuilder/contexts/SendTestArticleContext";
 
 import { useSendTestArticleDirect } from "../../hooks/useSendTestArticleDirect";
-import { AnimatedComponent } from "@/components";
+import { AnimatedComponent, UnsavedChangesBadge } from "@/components";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
+import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 import { DiscordMessageComponentsForm } from "./DiscordMessageComponentsForm";
 import { SuspenseErrorBoundary } from "@/components/SuspenseErrorBoundary";
 import { UserFeedConnectionProvider, useUserFeedConnectionContext } from "@/features/feed";
-import getChakraColor from "@/utils/getChakraColor";
 import { DiscordMessageChannelThreadForm } from "./DiscordMessageChannelThreadForm";
 import { lazyWithRetries } from "@/utils/lazyImportWithRetry";
 import {
@@ -63,6 +60,9 @@ import {
   PageAlertContextOutlet,
   PageAlertProvider,
 } from "@/contexts/PageAlertContext";
+import { Field } from "@/components/ui/field";
+
+const MotionDiv = chakra(motion.div);
 
 const DiscordMessageEmbedForm = lazyWithRetries(() =>
   import("./DiscordMessageEmbedForm").then(({ DiscordMessageEmbedForm: component }) => ({
@@ -300,6 +300,32 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
 
   const errorsExist = Object.keys(errors).length > 0;
 
+  const formRef = useRef<HTMLFormElement>(null);
+  const wasSubmitting = useRef(false);
+  const [savedAnnouncement, setSavedAnnouncement] = useState("");
+
+  useEffect(() => {
+    if (wasSubmitting.current && !isSubmitting && !isDirty && formRef.current) {
+      const form = formRef.current;
+
+      if (!form.hasAttribute("tabindex")) {
+        form.setAttribute("tabindex", "-1");
+      }
+
+      form.focus();
+      setSavedAnnouncement("Changes saved.");
+      const timer = setTimeout(() => setSavedAnnouncement(""), 1000);
+
+      wasSubmitting.current = isSubmitting;
+
+      return () => clearTimeout(timer);
+    }
+
+    wasSubmitting.current = isSubmitting;
+
+    return undefined;
+  }, [isSubmitting, isDirty]);
+
   return (
     <UserFeedConnectionProvider
       feedId={userFeed.id}
@@ -313,38 +339,32 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
       }}
     >
       <FormProvider {...formMethods}>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Stack spacing={24} mb={36}>
+        <form ref={formRef} onSubmit={handleSubmit(onSubmit)} aria-label="Message format settings">
+          <VisuallyHidden>
+            <div role="status" aria-live="polite" aria-atomic="true">
+              {savedAnnouncement}
+            </div>
+          </VisuallyHidden>
+          <Stack gap={24} mb={36}>
             <Stack as="aside" aria-labelledby="preview-message-format-title">
               <PageAlertProvider>
                 <PageAlertContext.Consumer>
                   {({ createErrorAlert, createInfoAlert, createSuccessAlert }) => (
                     <Stack isolation="isolate">
                       <HStack justifyContent="space-between" flexWrap="wrap" alignItems="center">
-                        <HStack spacing={4} alignItems="center" flexWrap="wrap">
+                        <HStack gap={4} alignItems="center" flexWrap="wrap">
                           <Heading as="h3" size="sm" id="preview-message-format-title">
                             {t("components.discordMessageForm.previewSectionTitle")}
                           </Heading>
                           {isDirty && (
-                            <Text fontSize="sm" fontWeight={600}>
-                              <Highlight
-                                query={t(
-                                  "components.discordMessageForm.previewSectionUnsavedWarning",
-                                )}
-                                styles={{
-                                  bg: "orange.200",
-                                  rounded: "full",
-                                  px: "2",
-                                  py: "1",
-                                }}
-                              >
-                                {t("components.discordMessageForm.previewSectionUnsavedWarning")}
-                              </Highlight>
-                            </Text>
+                            <UnsavedChangesBadge
+                              label={t(
+                                "components.discordMessageForm.previewSectionUnsavedWarning",
+                              )}
+                            />
                           )}
                         </HStack>
-                        <Button
-                          leftIcon={<FaDiscord fontSize={18} color={getChakraColor("gray.700")} />}
+                        <SafeLoadingButton
                           onClick={async () => {
                             if (
                               isSendingTestArticle ||
@@ -423,20 +443,19 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                             } catch (err) {}
                           }}
                           size="sm"
-                          colorScheme="blue"
-                          isLoading={
-                            isSendingTestArticle || sendTestArticleDirectMutation.isLoading
-                          }
+                          colorPalette="brand"
+                          loading={isSendingTestArticle || sendTestArticleDirectMutation.isLoading}
                           aria-disabled={
                             isSendingTestArticle ||
                             sendTestArticleDirectMutation.isLoading ||
                             !articleIdToPreview
                           }
                         >
+                          <FaDiscord fontSize={18} />
                           <span>
                             {t("components.discordMessageForm.sendPreviewToDiscordButtonText")}
                           </span>
-                        </Button>
+                        </SafeLoadingButton>
                       </HStack>
                       <PageAlertContextOutlet />
                       {/* {sendTestArticleError && (
@@ -477,52 +496,52 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                 )}
               </Box>
               <Stack
-                spacing={3}
+                gap={3}
                 mt={4}
                 p={!webhooksAllowed ? 3 : 0}
                 border={!webhooksAllowed ? "1px solid" : undefined}
-                borderColor={!webhooksAllowed ? "whiteAlpha.200" : undefined}
-                bg={!webhooksAllowed ? "gray.800" : undefined}
+                borderColor={!webhooksAllowed ? "border" : undefined}
+                bg={!webhooksAllowed ? "bg.subtle" : undefined}
                 borderRadius={!webhooksAllowed ? "md" : undefined}
               >
                 <Heading as="h4" size="xs">
                   Branding
                 </Heading>
                 {!webhooksAllowed && (
-                  <HStack spacing={2}>
-                    <LockIcon boxSize={3} color="whiteAlpha.700" />
-                    <Text fontSize="xs" color="whiteAlpha.800">
+                  <HStack gap={2}>
+                    <Icon as={FaLock} boxSize={3} color="fg.muted" />
+                    <Text fontSize="xs" color="fg.muted">
                       Upgrade to customize your branding. Preview it here first!
                     </Text>
                   </HStack>
                 )}
-                <HStack spacing={4} flexWrap="wrap">
-                  <FormControl flex={1} minW="200px">
-                    <FormLabel fontSize="sm">Display Name</FormLabel>
+                <HStack gap={4} flexWrap="wrap">
+                  <Field
+                    label="Display Name"
+                    helperText="The name shown as the message author"
+                    flex={1}
+                    minW="200px"
+                  >
                     <Input
                       size="sm"
-                      bg="gray.800"
                       placeholder="e.g. Gaming News"
                       value={webhookDisplayName}
                       onChange={(e) => setWebhookDisplayName(e.target.value)}
                     />
-                    <FormHelperText fontSize="xs">
-                      The name shown as the message author
-                    </FormHelperText>
-                  </FormControl>
-                  <FormControl flex={1} minW="200px">
-                    <FormLabel fontSize="sm">Avatar URL</FormLabel>
+                  </Field>
+                  <Field
+                    label="Avatar URL"
+                    helperText="The avatar shown next to the message"
+                    flex={1}
+                    minW="200px"
+                  >
                     <Input
                       size="sm"
-                      bg="gray.800"
                       placeholder="https://example.com/avatar.png"
                       value={webhookAvatarUrl}
                       onChange={(e) => setWebhookAvatarUrl(e.target.value)}
                     />
-                    <FormHelperText fontSize="xs">
-                      The avatar shown next to the message
-                    </FormHelperText>
-                  </FormControl>
+                  </Field>
                 </HStack>
               </Stack>
             </Stack>
@@ -553,49 +572,55 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                 {t("components.discordMessageForm.embedSectionTitle")}
               </Heading>
               <Text>{t("components.discordMessageForm.embedSectionDescription")}</Text>
-              <Tabs variant="solid-rounded" index={activeEmbedIndex} onChange={onEmbedTabChanged}>
+              <Tabs.Root
+                variant="line"
+                value={String(activeEmbedIndex)}
+                onValueChange={(e) => onEmbedTabChanged(Number(e.value))}
+              >
                 <HStack overflow="auto" flexWrap="wrap">
                   {!!embeds.length && (
-                    <TabList>
+                    <Tabs.List>
                       {embeds?.map((embed, index) => (
-                        <Tab key={embed.id}>Embed {index + 1}</Tab>
+                        <Tabs.Trigger key={embed.id} value={String(index)}>
+                          Embed {index + 1}
+                        </Tabs.Trigger>
                       ))}
-                    </TabList>
+                    </Tabs.List>
                   )}
                   {(embeds?.length ?? 0) < 10 && (
                     <Button
                       onClick={onAddEmbed}
                       aria-label="Add new embed"
-                      leftIcon={<AddIcon fontSize="sm" />}
+                      variant="outline"
+                      colorPalette="brand"
                     >
+                      <Icon as={FaPlus} fontSize="sm" />
                       Add new embed
                     </Button>
                   )}
                 </HStack>
-                <TabPanels>
+                <Tabs.ContentGroup>
                   {embeds?.map((embed, index) => (
-                    <TabPanel key={embed.id}>
+                    <Tabs.Content key={embed.id} value={String(index)}>
                       <SuspenseErrorBoundary>
                         <Suspense fallback={<Spinner />}>
-                          <Stack spacing={8}>
+                          <Stack gap={8}>
                             <Flex justifyContent="flex-end">
-                              <Button
-                                colorScheme="red"
+                              <DestructiveActionButton
                                 size="sm"
-                                variant="outline"
                                 onClick={() => onRemoveEmbed(index)}
                               >
                                 Delete embed {index + 1}
-                              </Button>
+                              </DestructiveActionButton>
                             </Flex>
                             <DiscordMessageEmbedForm index={index} />
                           </Stack>
                         </Suspense>
                       </SuspenseErrorBoundary>
-                    </TabPanel>
+                    </Tabs.Content>
                   ))}
-                </TabPanels>
-              </Tabs>
+                </Tabs.ContentGroup>
+              </Tabs.Root>
             </Stack>
             <Stack>
               <Heading size="sm" as="h3">
@@ -626,9 +651,9 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
             </Stack>
             <AnimatedComponent>
               {isDirty && (
-                <Flex
-                  as={motion.div}
-                  direction="row-reverse"
+                <MotionDiv
+                  display="flex"
+                  flexDirection="row-reverse"
                   position="fixed"
                   bottom="-100px"
                   left="50%"
@@ -636,53 +661,60 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                   zIndex={100}
                   transform="translate(-50%, -50%)"
                   width={["90%", "90%", "80%", "80%", "1200px"]}
-                  borderRadius="md"
+                  borderRadius="l3"
                   paddingX={4}
                   paddingY={2}
-                  bg="blue.600"
+                  bg="bg.emphasized"
+                  borderWidth="1px"
+                  borderColor="border.emphasized"
+                  borderLeftWidth="4px"
+                  borderLeftColor="brandSolid"
+                  boxShadow="xl"
                   animate={{ opacity: 1, bottom: "0px" }}
                   exit={{ opacity: 0, bottom: "-100px" }}
                 >
                   <HStack justifyContent="space-between" width="100%" flexWrap="wrap" gap={4}>
-                    <Text>You have unsaved changes on this page!</Text>
+                    <HStack gap={2}>
+                      <Icon as={FaCircleInfo} color="text.link" aria-hidden />
+                      <Text>You have unsaved changes on this page!</Text>
+                    </HStack>
                     <HStack flexWrap="wrap">
                       <Button
                         onClick={() => reset()}
                         variant="ghost"
-                        isDisabled={!isDirty || isSubmitting}
+                        disabled={!isDirty || isSubmitting}
                       >
                         <span>Discard all changes</span>
                       </Button>
                       {hasBrandingValues ? (
                         <>
-                          <Button
+                          <SafeLoadingButton
                             type="submit"
                             variant="outline"
-                            isDisabled={isSubmitting || !isDirty || errorsExist}
-                            isLoading={isSubmitting}
+                            disabled={!isDirty || errorsExist}
+                            loading={isSubmitting}
                             onClick={() => {
                               skipBrandingRef.current = true;
                             }}
                           >
                             <span>Save without branding</span>
-                          </Button>
-                          <Button colorScheme="blue" onClick={onOpenPricingDialog}>
+                          </SafeLoadingButton>
+                          <PrimaryActionButton onClick={onOpenPricingDialog}>
                             <span>Upgrade to save with branding</span>
-                          </Button>
+                          </PrimaryActionButton>
                         </>
                       ) : (
-                        <Button
+                        <PrimaryActionButton
                           type="submit"
-                          colorScheme="blue"
-                          isDisabled={isSubmitting || !isDirty || errorsExist}
-                          isLoading={isSubmitting}
+                          disabled={!isDirty || errorsExist}
+                          loading={isSubmitting}
                         >
                           <span>Save all changes</span>
-                        </Button>
+                        </PrimaryActionButton>
                       )}
                     </HStack>
                   </HStack>
-                </Flex>
+                </MotionDiv>
               )}
             </AnimatedComponent>
           </Stack>

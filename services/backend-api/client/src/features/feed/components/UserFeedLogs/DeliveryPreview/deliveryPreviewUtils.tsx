@@ -1,15 +1,15 @@
 import {
-  CheckIcon,
-  InfoIcon,
-  RepeatIcon,
-  WarningIcon,
-  TimeIcon,
-  CloseIcon,
-  WarningTwoIcon,
-  QuestionOutlineIcon,
-} from "@chakra-ui/icons";
+  FaCheck,
+  FaCircleInfo,
+  FaArrowsRotate,
+  FaTriangleExclamation,
+  FaClock,
+  FaXmark,
+  FaCircleQuestion,
+  FaBan,
+  FaLock,
+} from "react-icons/fa6";
 import { Icon } from "@chakra-ui/react";
-import { FaBan, FaLock } from "react-icons/fa";
 import { IconType } from "react-icons";
 import { ArticleDeliveryOutcome } from "../../../types/DeliveryPreview";
 
@@ -73,24 +73,24 @@ export const getOutcomeIcon = (outcome: ArticleDeliveryOutcome) => {
   switch (outcome) {
     case ArticleDeliveryOutcome.WouldDeliver:
     case ArticleDeliveryOutcome.WouldDeliverPassingComparison:
-      return CheckIcon;
+      return FaCheck;
     case ArticleDeliveryOutcome.FirstRunBaseline:
-      return InfoIcon;
+      return FaCircleInfo;
     case ArticleDeliveryOutcome.DuplicateId:
     case ArticleDeliveryOutcome.BlockedByComparison:
     case ArticleDeliveryOutcome.FeedUnchanged:
-      return RepeatIcon;
+      return FaArrowsRotate;
     case ArticleDeliveryOutcome.FilteredByDateCheck:
     case ArticleDeliveryOutcome.FilteredByMediumFilter:
-      return WarningIcon;
+      return FaTriangleExclamation;
     case ArticleDeliveryOutcome.RateLimitedFeed:
     case ArticleDeliveryOutcome.RateLimitedMedium:
     case ArticleDeliveryOutcome.MixedResults:
-      return TimeIcon;
+      return FaClock;
     case ArticleDeliveryOutcome.FeedError:
-      return CloseIcon;
+      return FaXmark;
     default:
-      return CloseIcon;
+      return FaXmark;
   }
 };
 
@@ -104,7 +104,7 @@ export const StatusBadgeContent = ({ outcome, label }: StatusBadgeContentProps) 
 
   return (
     <>
-      <Icon as={OutcomeIcon} boxSize={3} mr={1} />
+      <Icon as={OutcomeIcon} boxSize={3} />
       {label}
     </>
   );
@@ -120,7 +120,7 @@ export interface FeedErrorInfo {
   colorScheme: "orange" | "red" | "yellow" | "blue" | "gray";
   badgeText: string;
   badgeVariant: "solid" | "outline";
-  icon: typeof WarningIcon | IconType;
+  icon: IconType;
 }
 
 export function getHttpStatusMessage(statusCode: number): FeedErrorInfo {
@@ -157,7 +157,7 @@ export function getHttpStatusMessage(statusCode: number): FeedErrorInfo {
         colorScheme: "red",
         badgeText: `HTTP ${statusCode}`,
         badgeVariant: "solid",
-        icon: WarningTwoIcon,
+        icon: FaTriangleExclamation,
       };
     case 410:
       return {
@@ -169,7 +169,7 @@ export function getHttpStatusMessage(statusCode: number): FeedErrorInfo {
         colorScheme: "red",
         badgeText: `HTTP ${statusCode}`,
         badgeVariant: "solid",
-        icon: WarningTwoIcon,
+        icon: FaTriangleExclamation,
       };
     case 429:
       return {
@@ -181,7 +181,7 @@ export function getHttpStatusMessage(statusCode: number): FeedErrorInfo {
         colorScheme: "yellow",
         badgeText: `HTTP ${statusCode}`,
         badgeVariant: "outline",
-        icon: TimeIcon,
+        icon: FaClock,
       };
     case 500:
       return {
@@ -193,7 +193,7 @@ export function getHttpStatusMessage(statusCode: number): FeedErrorInfo {
         colorScheme: "blue",
         badgeText: `HTTP ${statusCode}`,
         badgeVariant: "outline",
-        icon: WarningIcon,
+        icon: FaTriangleExclamation,
       };
     case 502:
       return {
@@ -205,7 +205,7 @@ export function getHttpStatusMessage(statusCode: number): FeedErrorInfo {
         colorScheme: "blue",
         badgeText: `HTTP ${statusCode}`,
         badgeVariant: "outline",
-        icon: WarningIcon,
+        icon: FaTriangleExclamation,
       };
     case 503:
       return {
@@ -217,7 +217,7 @@ export function getHttpStatusMessage(statusCode: number): FeedErrorInfo {
         colorScheme: "blue",
         badgeText: `HTTP ${statusCode}`,
         badgeVariant: "outline",
-        icon: WarningIcon,
+        icon: FaTriangleExclamation,
       };
     case 504:
       return {
@@ -229,7 +229,7 @@ export function getHttpStatusMessage(statusCode: number): FeedErrorInfo {
         colorScheme: "blue",
         badgeText: `HTTP ${statusCode}`,
         badgeVariant: "outline",
-        icon: WarningIcon,
+        icon: FaTriangleExclamation,
       };
     default:
       return {
@@ -240,7 +240,7 @@ export function getHttpStatusMessage(statusCode: number): FeedErrorInfo {
         colorScheme: "gray",
         badgeText: `HTTP ${statusCode}`,
         badgeVariant: "outline",
-        icon: QuestionOutlineIcon,
+        icon: FaCircleQuestion,
       };
   }
 }
@@ -258,7 +258,7 @@ export function getGenericErrorMessage(feedState: string, errorType?: string): F
           colorScheme: "yellow",
           badgeText: "TIMEOUT",
           badgeVariant: "outline",
-          icon: TimeIcon,
+          icon: FaClock,
         };
       case "fetch":
         return {
@@ -271,7 +271,7 @@ export function getGenericErrorMessage(feedState: string, errorType?: string): F
           colorScheme: "blue",
           badgeText: "NETWORK",
           badgeVariant: "outline",
-          icon: WarningIcon,
+          icon: FaTriangleExclamation,
         };
       case "internal":
         return {
@@ -282,7 +282,7 @@ export function getGenericErrorMessage(feedState: string, errorType?: string): F
           colorScheme: "gray",
           badgeText: "ERROR",
           badgeVariant: "outline",
-          icon: QuestionOutlineIcon,
+          icon: FaCircleQuestion,
         };
       case "invalid-ssl-certificate":
         return {
@@ -307,7 +307,7 @@ export function getGenericErrorMessage(feedState: string, errorType?: string): F
           colorScheme: "gray",
           badgeText: "ERROR",
           badgeVariant: "outline",
-          icon: QuestionOutlineIcon,
+          icon: FaCircleQuestion,
         };
     }
   }
@@ -323,7 +323,7 @@ export function getGenericErrorMessage(feedState: string, errorType?: string): F
           colorScheme: "yellow",
           badgeText: "PARSE",
           badgeVariant: "outline",
-          icon: TimeIcon,
+          icon: FaClock,
         };
       case "invalid":
         return {
@@ -334,7 +334,7 @@ export function getGenericErrorMessage(feedState: string, errorType?: string): F
           colorScheme: "red",
           badgeText: "PARSE",
           badgeVariant: "solid",
-          icon: CloseIcon,
+          icon: FaXmark,
         };
       default:
         return {
@@ -346,7 +346,7 @@ export function getGenericErrorMessage(feedState: string, errorType?: string): F
           colorScheme: "gray",
           badgeText: "PARSE",
           badgeVariant: "outline",
-          icon: QuestionOutlineIcon,
+          icon: FaCircleQuestion,
         };
     }
   }
@@ -360,6 +360,6 @@ export function getGenericErrorMessage(feedState: string, errorType?: string): F
     colorScheme: "gray",
     badgeText: "ERROR",
     badgeVariant: "outline",
-    icon: QuestionOutlineIcon,
+    icon: FaCircleQuestion,
   };
 }

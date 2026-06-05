@@ -1,41 +1,28 @@
 /* eslint-disable no-nested-ternary */
-import { CheckIcon, CloseIcon, AddIcon, MinusIcon } from "@chakra-ui/icons";
+import { FaCheck, FaXmark, FaPlus, FaMinus } from "react-icons/fa6";
 import {
   Box,
   Button,
   Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
   Flex,
   HStack,
   Heading,
-  Modal,
-  ModalBody,
-  ModalContent,
-  ModalFooter,
-  ModalOverlay,
   SimpleGrid,
   Stack,
-  Switch,
   Text,
   Spinner,
   Link,
-  ModalCloseButton,
   Badge,
   IconButton,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Divider,
+  Separator,
   Skeleton,
+  Icon,
 } from "@chakra-ui/react";
-import { ChangeEvent, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { captureException } from "@sentry/react";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
+import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 import { FAQ } from "@/components/FAQ";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 import { pages, ProductKey, TIER_CONFIGS } from "@/constants";
@@ -45,6 +32,15 @@ import { useUserMe } from "@/features/discordUser";
 import { notifyInfo } from "@/utils/notifyInfo";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { usePricingData } from "@/features/subscriptionProducts";
+import { Switch } from "@/components/ui/switch";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogBody,
+  DialogFooter,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
 
 interface Props {
   isOpen: boolean;
@@ -98,8 +94,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     onClose();
   };
 
-  const onChangeInterval = (e: ChangeEvent<HTMLInputElement>) => {
-    changeInterval(e.target.checked ? "year" : "month");
+  const onChangeInterval = (e: { checked: boolean }) => {
+    changeInterval(e.checked ? "year" : "month");
   };
 
   const subscriptionId = userData?.result.subscription.subscriptionId;
@@ -222,27 +218,33 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
           if (reopenPricing) onOpen();
         }}
       />
-      <Modal
-        onClose={onClosePricingModal}
-        isOpen={isOpen}
-        isCentered
-        size="6xl"
-        motionPreset="slideInBottom"
+      <DialogRoot
+        onOpenChange={(e) => {
+          if (!e.open) onClosePricingModal();
+        }}
+        open={isOpen}
+        size="xl"
+        motionPreset="slide-in-bottom"
         scrollBehavior="inside"
       >
-        <ModalOverlay backdropFilter="blur(3px)" />
-        <ModalContent bg="none" shadow="none" maxHeight="100vh">
-          <ModalCloseButton />
-          <ModalBody bg="transparent" shadow="none" tabIndex={-1}>
+        <DialogContent
+          bg="none"
+          shadow="none"
+          maxHeight="100vh"
+          width="fit-content"
+          maxWidth={{ base: "100vw", xl: "1100px" }}
+        >
+          <DialogCloseTrigger />
+          <DialogBody bg="transparent" shadow="none" tabIndex={-1}>
             <Box mt={12}>
               <Stack>
                 <Flex alignItems="center" justifyContent="center">
-                  <Stack width="100%" alignItems="center" spacing={12} justifyContent="center">
+                  <Stack width="100%" alignItems="center" gap={12} justifyContent="center">
                     <Stack justifyContent="center" textAlign="center">
                       <Heading as="h1" tabIndex={-1}>
                         Pricing
                       </Heading>
-                      <Text color="whiteAlpha.800" fontSize="lg" fontWeight="light">
+                      <Text color="fg" fontSize="lg" fontWeight="light">
                         MonitoRSS is able to stay open-source and free thanks to its supporters.
                         <br />
                         Add in your support in exchange for some upgrades!
@@ -262,23 +264,23 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                     )}
                     {!hasError && products && userSubscription && (
                       <>
-                        <Stack alignItems="center" spacing={4}>
-                          <HStack alignItems="center" spacing={4}>
+                        <Stack alignItems="center" gap={4}>
+                          <HStack alignItems="center" gap={4}>
                             <Text fontSize="lg" fontWeight="semibold">
                               Monthly
                             </Text>
                             <Switch
                               size="lg"
-                              colorScheme="green"
-                              onChange={onChangeInterval}
-                              isChecked={interval === "year"}
+                              colorPalette="green"
+                              onCheckedChange={onChangeInterval}
+                              checked={interval === "year"}
                               aria-label="Switch to yearly pricing"
                             />
                             <Text fontSize="lg" fontWeight="semibold">
                               Yearly
                             </Text>
                           </HStack>
-                          <Badge fontSize="1rem" colorScheme="green" borderRadius="md" px={4}>
+                          <Badge fontSize="1rem" colorPalette="green" borderRadius="l3" px={4}>
                             Save 15% with a yearly plan!
                           </Badge>
                         </Stack>
@@ -293,7 +295,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                               "325px 325px 325px",
                               "325px 325px 325px",
                             ]}
-                            spacing={4}
+                            gap={4}
                             role="list"
                           >
                             {TIER_CONFIGS.map(
@@ -305,15 +307,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                 const price = getProductPrice(productId);
                                 const basePrice = price?.formattedPrice || "$0";
 
-                                const shorterProductPrice = basePrice.endsWith(".00") ? (
-                                  <Text fontSize={priceTextSize} fontWeight="bold">
-                                    {basePrice.slice(0, -3)}
-                                  </Text>
-                                ) : (
-                                  <Text fontSize={priceTextSize} fontWeight="bold">
-                                    {basePrice}
-                                  </Text>
-                                );
+                                const displayPrice = basePrice.endsWith(".00")
+                                  ? basePrice.slice(0, -3)
+                                  : basePrice;
 
                                 const isOnThisTier =
                                   userSubscription.product.key === productId &&
@@ -336,8 +332,13 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                     additionalFeedsQuantity;
 
                                 return (
-                                  <Card size="lg" shadow="lg" key={product?.name} role="listitem">
-                                    <CardHeader pb={0}>
+                                  <Card.Root
+                                    size="lg"
+                                    shadow="lg"
+                                    key={product?.name}
+                                    role="listitem"
+                                  >
+                                    <Card.Header pb={0}>
                                       <Stack>
                                         <HStack justifyContent="flex-start">
                                           <Heading size="md" fontWeight="semibold">
@@ -345,39 +346,48 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                           </Heading>
                                         </HStack>
                                       </Stack>
-                                    </CardHeader>
-                                    <CardBody pt={1}>
-                                      <Stack spacing="12">
-                                        <Box>
-                                          <Text fontSize={priceTextSize} fontWeight="bold">
-                                            {isLoading && (
+                                    </Card.Header>
+                                    <Card.Body pt={1}>
+                                      <Stack gap="12">
+                                        <Stack gap={1}>
+                                          <Text
+                                            fontSize={priceTextSize}
+                                            fontWeight="bold"
+                                            lineHeight="1"
+                                          >
+                                            {isLoading ? (
                                               <Spinner
-                                                colorScheme="blue"
-                                                color="blue.300"
+                                                colorPalette="brand"
+                                                color="text.link"
                                                 size="lg"
                                               />
+                                            ) : (
+                                              displayPrice || "N/A"
                                             )}
-                                            {!isLoading && (shorterProductPrice || "N/A")}
                                           </Text>
-                                          <Text fontSize="lg" color="whiteAlpha.600">
+                                          <Text fontSize="lg" color="fg.muted">
                                             {interval === "month" ? "per month" : "per year"}
                                           </Text>
-                                        </Box>
+                                        </Stack>
                                         <Stack as="ul" listStyleType="none">
                                           {features.map((f) => (
                                             <HStack key={f.name} as="li">
                                               {f.enabled ? (
                                                 <Flex
-                                                  bg="blue.500"
+                                                  bg="brandSolid"
                                                   rounded="full"
                                                   p={1}
                                                   aria-disabled
                                                 >
-                                                  <CheckIcon fontSize="md" width={3} height={3} />
+                                                  <Icon fontSize="md" width={3} height={3}>
+                                                    <FaCheck />
+                                                  </Icon>
                                                 </Flex>
                                               ) : (
-                                                <Flex bg="whiteAlpha.600" rounded="full" p={1.5}>
-                                                  <CloseIcon width={2} height={2} fontSize="sm" />
+                                                <Flex bg="bg.subtle" rounded="full" p={1.5}>
+                                                  <Icon width={2} height={2} fontSize="sm">
+                                                    <FaXmark />
+                                                  </Icon>
                                                 </Flex>
                                               )}
                                               <Text fontSize="lg">{f.description}</Text>
@@ -386,23 +396,22 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                         </Stack>
                                         {supportsAdditionalFeeds && (
                                           <Box>
-                                            <Divider my={4} />
-                                            <Stack spacing={3}>
+                                            <Separator my={4} />
+                                            <Stack gap={3}>
                                               <Text fontSize="md" fontWeight="semibold">
                                                 Additional Feeds
                                               </Text>
                                               {!baseAdditionalFeedsPrice ? (
                                                 <Skeleton height="18px" width="30px" />
                                               ) : (
-                                                <Text fontSize="sm" color="whiteAlpha.700">
+                                                <Text fontSize="sm" color="fg.muted">
                                                   Add more feeds for {baseAdditionalFeedsPrice} each
                                                   per month.
                                                 </Text>
                                               )}
-                                              <HStack spacing={2} alignItems="center">
+                                              <HStack gap={2} alignItems="center">
                                                 <IconButton
                                                   aria-label="Decrease additional feeds"
-                                                  icon={<MinusIcon />}
                                                   size="sm"
                                                   variant="outline"
                                                   onClick={() => {
@@ -412,13 +421,15 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                       );
                                                     }
                                                   }}
-                                                  isDisabled={!additionalFeedsQuantity}
-                                                />
-                                                <NumberInput
-                                                  value={additionalFeedsInput}
-                                                  onChange={(valueString) => {
+                                                  disabled={!additionalFeedsQuantity}
+                                                >
+                                                  <FaMinus />
+                                                </IconButton>
+                                                <NumberInputRoot
+                                                  value={String(additionalFeedsInput)}
+                                                  onValueChange={(details) => {
                                                     changeAdditionalFeedsInput(
-                                                      parseInt(valueString, 10),
+                                                      parseInt(details.value, 10),
                                                     );
                                                   }}
                                                   min={0}
@@ -427,14 +438,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                   size="sm"
                                                 >
                                                   <NumberInputField textAlign="center" />
-                                                  <NumberInputStepper>
-                                                    <NumberIncrementStepper />
-                                                    <NumberDecrementStepper />
-                                                  </NumberInputStepper>
-                                                </NumberInput>
+                                                </NumberInputRoot>
                                                 <IconButton
                                                   aria-label="Increase additional feeds"
-                                                  icon={<AddIcon />}
                                                   size="sm"
                                                   variant="outline"
                                                   onClick={() => {
@@ -442,11 +448,13 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                       additionalFeedsInput + 1,
                                                     );
                                                   }}
-                                                />
+                                                >
+                                                  <FaPlus />
+                                                </IconButton>
                                               </HStack>
                                               <Text
                                                 fontSize="sm"
-                                                color="blue.300"
+                                                color="text.link"
                                                 aria-live="polite"
                                                 aria-busy={
                                                   isLoadingAdditionalFeedsChange ||
@@ -480,8 +488,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                             aria-live="polite"
                                             aria-busy={isLoadingAdditionalFeedsChange}
                                           >
-                                            <Divider my={4} />
-                                            <Stack spacing={2}>
+                                            <Separator my={4} />
+                                            <Stack gap={2}>
                                               <Text fontSize="md" fontWeight="semibold">
                                                 Total
                                               </Text>
@@ -491,7 +499,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                 <Text
                                                   fontSize="lg"
                                                   fontWeight="bold"
-                                                  color="blue.300"
+                                                  color="text.link"
                                                 >
                                                   {chargePreview}
                                                   {interval === "month"
@@ -503,9 +511,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                           </Box>
                                         )}
                                       </Stack>
-                                    </CardBody>
-                                    <CardFooter justifyContent="center">
-                                      <Stack width="100%" spacing={0}>
+                                    </Card.Body>
+                                    <Card.Footer justifyContent="center">
+                                      <Stack width="100%" gap={0}>
                                         <Button
                                           aria-disabled={isOnThisTier && !isUpdate}
                                           width="100%"
@@ -525,9 +533,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                 ? "solid"
                                                 : "outline"
                                           }
-                                          colorScheme={
+                                          colorPalette={
                                             isAboveUserTier || (isOnThisTier && isUpdate)
-                                              ? "blue"
+                                              ? "brand"
                                               : isBelowUserTier
                                                 ? "red"
                                                 : undefined
@@ -543,8 +551,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                           )}
                                         </Button>
                                       </Stack>
-                                    </CardFooter>
-                                  </Card>
+                                    </Card.Footer>
+                                  </Card.Root>
                                 );
                               },
                             )}
@@ -561,7 +569,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         If you are having issues after clicking &quot;Upgrade&quot;, try using
                         incognito mode or a different browser. If you are still having issues,
                         please contact us at{" "}
-                        <Link color="blue.300" href="mailto:support@monitorss.xyz">
+                        <Link color="text.link" href="mailto:support@monitorss.xyz">
                           support@monitorss.xyz
                         </Link>
                         .
@@ -571,24 +579,24 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                       <Text>
                         Need a higher tier?{" "}
                         <Link
-                          color="blue.300"
+                          color="text.link"
                           href="mailto:support@monitorss.xyz?subject=Custom%20Plan%20Inquiry"
                         >
                           Let&apos;s chat!
                         </Link>
                       </Text>
                     </Box>
-                    <Text textAlign="center" color="whiteAlpha.600">
+                    <Text textAlign="center" color="fg.muted">
                       * External properties are currently limited to feeds with fewer than{" "}
                       {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles <br /> <br />
                       By proceeding to payment, you are agreeing to our{" "}
-                      <Link target="_blank" href="https://monitorss.xyz/terms" color="blue.300">
+                      <Link target="_blank" href="https://monitorss.xyz/terms" color="text.link">
                         terms and conditions
                       </Link>{" "}
                       as well as our{" "}
                       <Link
                         target="_blank"
-                        color="blue.300"
+                        color="text.link"
                         href="https://monitorss.xyz/privacy-policy"
                       >
                         privacy policy
@@ -601,27 +609,19 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                   </>
                 )}
                 {userSubscription?.product.key !== ProductKey.Free && (
-                  <Stack
-                    margin="auto"
-                    justifyContent="center"
-                    mt={8}
-                    textAlign="center"
-                    spacing={4}
-                  >
+                  <Stack margin="auto" justifyContent="center" mt={8} textAlign="center" gap={4}>
                     <Flex justifyContent="center">
-                      <Button
-                        colorScheme="red"
-                        variant="outline"
+                      <DestructiveActionButton
                         onClick={() => onClickPrice("free-monthly", ProductKey.Free, true)}
                       >
                         <span>Cancel Subscription</span>
-                      </Button>
+                      </DestructiveActionButton>
                     </Flex>
                   </Stack>
                 )}
               </Stack>
               <Stack justifyContent="center" width="100%" alignItems="center">
-                <Stack mt={16} spacing={8} maxW={1400} width="100%">
+                <Stack mt={16} gap={8} maxW={1400} width="100%">
                   <Heading size="md" as="h2" alignSelf="center">
                     Frequently Asked Questions
                   </Heading>
@@ -675,7 +675,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                             We may offer a refund on a case-by-case basis depending on the
                             situation. For more information, please see our{" "}
                             <Link
-                              color="blue.300"
+                              color="text.link"
                               target="_blank"
                               href="https://monitorss.xyz/terms"
                             >
@@ -722,7 +722,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                           <Text>
                             Please contact us at{" "}
                             <Link
-                              color="blue.300"
+                              color="text.link"
                               href="mailto:support@monitorss.xyz?subject=Custom%20Plan%20Inquiry"
                             >
                               support@monitorss.xyz
@@ -746,14 +746,14 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                 </Stack>
               </Stack>
             </Box>
-          </ModalBody>
-          <ModalFooter justifyContent="center" mt={6}>
+          </DialogBody>
+          <DialogFooter justifyContent="center" mt={6}>
             <Button onClick={onClose} width="lg" variant="outline">
               Close
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </Box>
   );
 };

@@ -1,34 +1,29 @@
-import { createStandaloneToast, UseToastOptions } from "@chakra-ui/react";
-import theme from "./theme";
-
-const { toast } = createStandaloneToast({
-  theme,
-});
+import { toaster } from "@/components/ui/toaster";
 
 interface Options {
-  toastOptions?: UseToastOptions;
+  // Position is now controlled globally by the Toaster placement (see components/ui/toaster).
+  position?: "top" | "top-right";
 }
 
 export const notifyError = (
   title: string,
   error: Error | string | React.ReactNode,
-  options?: Options,
+  _options?: Options,
 ) => {
-  let description: string | React.ReactNode = "";
+  let description: string | undefined;
 
   if (typeof error === "string") {
     description = error;
   } else if (error instanceof Error) {
     description = error.message;
-  } else {
-    description = error;
   }
 
-  toast({
+  toaster.create({
     title,
     description,
-    status: "error",
-    position: "top",
-    ...options,
+    type: "error",
+    duration: Number.POSITIVE_INFINITY,
   });
 };
+
+export default notifyError;

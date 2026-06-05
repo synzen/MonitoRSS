@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box } from "@chakra-ui/react";
+import { Alert, Box } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import {
   GetUserFeedArticlesOutput,
@@ -39,13 +39,13 @@ export const useGetUserFeedArticlesError = ({
     return {
       hasAlert: true,
       alertComponent: (
-        <Alert status="error">
-          <AlertIcon />
+        <Alert.Root status="error">
+          <Alert.Indicator />
           <Box>
-            <AlertTitle>{messageRef}</AlertTitle>
-            <AlertDescription>{description}</AlertDescription>
+            <Alert.Title>{messageRef}</Alert.Title>
+            <Alert.Description>{description}</Alert.Description>
           </Box>
-        </Alert>
+        </Alert.Root>
       ),
       messageRef,
       description,
@@ -74,10 +74,10 @@ export const useGetUserFeedArticlesError = ({
     return {
       hasAlert: true,
       alertComponent: (
-        <Alert status="error">
-          <AlertIcon />
+        <Alert.Root status="error">
+          <Alert.Indicator />
           {messageRef}
-        </Alert>
+        </Alert.Root>
       ),
       messageRef,
     };
@@ -89,10 +89,10 @@ export const useGetUserFeedArticlesError = ({
     return {
       hasAlert: true,
       alertComponent: (
-        <Alert status={alertStatus.status || "error"}>
-          <AlertIcon />
+        <Alert.Root status={alertStatus.status || "error"}>
+          <Alert.Indicator />
           {messageRef}
-        </Alert>
+        </Alert.Root>
       ),
       messageRef,
     };
@@ -104,10 +104,10 @@ export const useGetUserFeedArticlesError = ({
     return {
       hasAlert: true,
       alertComponent: (
-        <Alert status="info">
-          <AlertIcon />
+        <Alert.Root status="info">
+          <Alert.Indicator />
           {messageRef}
-        </Alert>
+        </Alert.Root>
       ),
       messageRef,
     };

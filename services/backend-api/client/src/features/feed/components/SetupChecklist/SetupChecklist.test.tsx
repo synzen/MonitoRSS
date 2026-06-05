@@ -1,8 +1,8 @@
 import "@testing-library/jest-dom";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { Provider } from "@/components/ui/provider";
 import { SetupChecklist } from "./index";
 import { SetupChecklistCard } from "./SetupChecklistCard";
 
@@ -12,7 +12,7 @@ vi.mock("../../../feedConnections/AddConnectionDialog", () => ({
 
 const renderWithChakra = (ui: React.ReactElement) => {
   const user = userEvent.setup();
-  const result = render(<ChakraProvider>{ui}</ChakraProvider>);
+  const result = render(<Provider>{ui}</Provider>);
 
   return { user, ...result };
 };

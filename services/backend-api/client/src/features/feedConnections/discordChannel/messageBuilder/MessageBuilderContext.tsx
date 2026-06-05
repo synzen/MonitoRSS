@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  AddableComponentType,
   Component,
   ComponentType,
   SectionComponent,
@@ -34,29 +35,7 @@ import { MessageBuilderStateProvider, useMessageBuilderStateContext } from "./st
 interface MessageBuilderContextType {
   addChildComponent: (
     parentId: string,
-    childType:
-      | ComponentType.LegacyText
-      | ComponentType.LegacyEmbedContainer
-      | ComponentType.LegacyEmbed
-      | ComponentType.LegacyEmbedAuthor
-      | ComponentType.LegacyEmbedTitle
-      | ComponentType.LegacyEmbedDescription
-      | ComponentType.LegacyEmbedImage
-      | ComponentType.LegacyEmbedThumbnail
-      | ComponentType.LegacyEmbedFooter
-      | ComponentType.LegacyEmbedField
-      | ComponentType.LegacyEmbedTimestamp
-      | ComponentType.LegacyActionRow
-      | ComponentType.LegacyButton
-      | ComponentType.V2TextDisplay
-      | ComponentType.V2ActionRow
-      | ComponentType.V2Button
-      | ComponentType.V2Section
-      | ComponentType.V2Divider
-      | ComponentType.V2Container
-      | ComponentType.V2MediaGallery
-      | ComponentType.V2MediaGalleryItem
-      | ComponentType.V2Thumbnail,
+    childType: AddableComponentType,
     isAccessory?: boolean,
   ) => Component | null;
   deleteComponent: (componentId: string) => void;

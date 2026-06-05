@@ -1,11 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
   Stack,
   Box,
   Text,
@@ -14,10 +8,16 @@ import {
   Heading,
   Skeleton,
   VisuallyHidden,
-  Alert,
-  AlertIcon,
-  AlertDescription,
 } from "@chakra-ui/react";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogCloseTrigger,
+  DialogBody,
+} from "@/components/ui/dialog";
+import { Alert } from "@/components/ui/alert";
 import { FeedCard } from "../FeedCard";
 import { FeedLimitBar } from "../FeedLimitBar";
 import {
@@ -178,19 +178,27 @@ export const BrowseFeedsModal = ({
   })();
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="6xl" initialFocusRef={searchInputRef}>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader as="h2">Add a Feed</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody ref={modalBodyRef} pb={6} overflowY="auto" maxH="70vh">
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) onClose();
+      }}
+      size="cover"
+      initialFocusEl={() => searchInputRef.current}
+    >
+      <DialogContent>
+        <DialogHeader marginRight={4}>
+          <DialogTitle as="h2">Add a Feed</DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody ref={modalBodyRef} pb={6} overflowY="auto" maxH="70vh">
           <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
             {categoryAnnouncement}
           </VisuallyHidden>
-          <Stack spacing={4}>
+          <Stack gap={4}>
             <FeedLimitBar />
             <FeedDiscoverySearchInput state={searchState} />
-            <Text fontSize="sm" color="gray.400">
+            <Text fontSize="sm" color="fg.muted">
               Don&apos;t see what you&apos;re looking for? Try pasting a website URL above - many
               sites have feeds we can detect.
             </Text>
@@ -206,22 +214,19 @@ export const BrowseFeedsModal = ({
             )}
             {isFetching && !isSearchActive && (
               <Box aria-busy="true" aria-hidden="true">
-                <Stack spacing={2}>
+                <Stack gap={2}>
                   {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <Skeleton key={i} height="64px" borderRadius="md" />
+                    <Skeleton key={i} height="64px" borderRadius="l3" />
                   ))}
                 </Stack>
               </Box>
             )}
             {!!error && !isFetching && (
               <Alert status="error">
-                <AlertIcon />
-                <AlertDescription>
-                  Failed to load feeds.{" "}
-                  <Button variant="link" onClick={() => refetch()} colorScheme="blue">
-                    Retry
-                  </Button>
-                </AlertDescription>
+                Failed to load feeds.{" "}
+                <Button variant="plain" onClick={() => refetch()} colorPalette="brand">
+                  Retry
+                </Button>
               </Alert>
             )}
             {/* key forces remount when search query or results change so Google Translate
@@ -247,7 +252,7 @@ export const BrowseFeedsModal = ({
                 opacity={isAtLimit ? 0.85 : 1}
               >
                 {selectedCategory === undefined ? (
-                  <Stack spacing={6}>
+                  <Stack gap={6}>
                     {highlights.map(({ category, feeds }) => {
                       const headingId = `highlights-heading-${category.id}`;
 
@@ -276,7 +281,7 @@ export const BrowseFeedsModal = ({
                             role="list"
                             aria-label={`${category.label} feeds`}
                             columns={{ base: 1, md: 3 }}
-                            spacing={4}
+                            gap={4}
                             gridColumn="1 / -1"
                             gridRow="2"
                             listStyleType="none"
@@ -308,7 +313,7 @@ export const BrowseFeedsModal = ({
                             })}
                           </SimpleGrid>
                           <Button
-                            variant="link"
+                            variant="plain"
                             size="sm"
                             gridColumn="2"
                             gridRow="1"
@@ -330,7 +335,7 @@ export const BrowseFeedsModal = ({
                         visibleCount,
                         totalFeeds,
                       )} of ${totalFeeds}`}
-                      spacing={2}
+                      gap={2}
                       listStyleType="none"
                     >
                       {visibleFeeds.map((feed, index) => {
@@ -362,7 +367,7 @@ export const BrowseFeedsModal = ({
                       <Text
                         aria-live="polite"
                         fontSize="sm"
-                        color="gray.400"
+                        color="fg.muted"
                         mt={3}
                         textAlign="center"
                       >
@@ -379,8 +384,8 @@ export const BrowseFeedsModal = ({
               </Box>
             )}
           </Stack>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+        </DialogBody>
+      </DialogContent>
+    </DialogRoot>
   );
 };

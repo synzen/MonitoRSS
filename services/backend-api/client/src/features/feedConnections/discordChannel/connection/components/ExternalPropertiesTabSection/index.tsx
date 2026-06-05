@@ -2,41 +2,38 @@ import {
   Box,
   Button,
   Code,
-  Divider,
+  Separator,
   Flex,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
   HStack,
   Heading,
-  Highlight,
+  Icon,
   Input,
-  ListItem,
-  OrderedList,
-  Popover,
-  PopoverArrow,
-  PopoverBody,
-  PopoverCloseButton,
-  PopoverContent,
-  PopoverHeader,
-  PopoverTrigger,
-  Portal,
+  List,
   Stack,
   Text,
-  theme,
 } from "@chakra-ui/react";
-import { AddIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
+import { useRef } from "react";
+import { FaPlus, FaTrash, FaPencil } from "react-icons/fa6";
 import { InferType, array, object, string } from "yup";
 import { Controller, FormProvider, useFieldArray, useForm, useFormContext } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { v4 } from "uuid";
 import { FiHelpCircle } from "react-icons/fi";
-import { motion } from "motion/react";
+import { motion, type Transition } from "motion/react";
 import CreatableSelect from "react-select/creatable";
+import { Field } from "@/components/ui/field";
+import {
+  PopoverRoot,
+  PopoverArrow,
+  PopoverBody,
+  PopoverCloseTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useUserFeedContext, useUpdateUserFeed } from "@/features/feed";
 import CreateExternalPropertyModal from "./CreateExternalPropertyModal";
-import { SavedUnsavedChangesPopupBar } from "@/components";
+import { Panel, SavedUnsavedChangesPopupBar, UnsavedChangesBadge } from "@/components";
 import { SubscriberBlockText, BlockableFeature } from "@/features/subscriptionProducts";
 
 import { ExternalPropertyPreview } from "./ExternalPropertyPreview";
@@ -109,25 +106,15 @@ const ExternalPropertyForm = ({
   const labelError = errors?.externalProperties?.[externalPropertyIndex]?.label?.message;
 
   return (
-    <Stack
-      border="solid 2px"
-      borderColor="gray.600"
-      bg="gray.700"
-      px={[4, 4, 6]}
-      pb={[4, 4, 6]}
-      pt={[4, 4, 4]}
-      rounded="lg"
-      spacing={0}
-      position="relative"
-    >
-      <Stack spacing={4} flexWrap="wrap">
+    <Panel px={[4, 4, 6]} pb={[4, 4, 6]} pt={[4, 4, 4]} rounded="lg" position="relative">
+      <Stack gap={4} flexWrap="wrap">
         <Flex justifyContent="space-between" flexWrap="wrap" gap={3}>
           <HStack>
             <Heading
               as="h3"
               size="md"
               fontWeight={600}
-              color={!externalProperty.label ? "whiteAlpha.700" : undefined}
+              color={!externalProperty.label ? "fg.muted" : undefined}
               fontStyle={!externalProperty.label ? "italic" : "normal"}
             >
               <Text display="inline" fontWeight={600}>
@@ -135,41 +122,27 @@ const ExternalPropertyForm = ({
               </Text>
               {externalProperty.label || "(unlabeled selector)"}
             </Heading>
-            {isNewSelector && (
-              <Highlight
-                query="Unsaved changes"
-                styles={{
-                  bg: "orange.200",
-                  rounded: "full",
-                  px: "2",
-                  py: "1",
-                  fontSize: "sm",
-                  fontWeight: 600,
-                }}
-              >
-                Unsaved changes
-              </Highlight>
-            )}
+            {isNewSelector && <UnsavedChangesBadge />}
           </HStack>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<DeleteIcon />}
-            onClick={() => onClickDelete()}
-          >
+          <Button variant="outline" size="sm" onClick={() => onClickDelete()}>
+            <FaTrash />
             Delete selector
           </Button>
         </Flex>
-        <Divider />
-        <FormControl isInvalid={!!labelError} isRequired>
-          <FormLabel>Placeholder Label</FormLabel>
+        <Separator />
+        <Field
+          invalid={!!labelError}
+          required
+          errorText={labelError}
+          label="Placeholder Label"
+          helperText="A label to reference as a placeholder within connections for customizations. Must be unique among all selectors."
+        >
           <Controller
             control={control}
             name={`externalProperties.${externalPropertyIndex}.label`}
             render={({ field }) => (
               <Input
                 {...field}
-                bg="gray.800"
                 autoComplete="off"
                 autoCapitalize="off"
                 autoCorrect="off"
@@ -177,17 +150,15 @@ const ExternalPropertyForm = ({
               />
             )}
           />
-          {labelError && <FormErrorMessage>{labelError}</FormErrorMessage>}
-          <FormHelperText>
-            A label to reference as a placeholder within connections for customizations. Must be
-            unique among all selectors.
-          </FormHelperText>
-        </FormControl>
+        </Field>
         <HStack>
-          <FormControl isInvalid={!!sourceFieldError} isRequired>
-            <FormLabel id={`source-property-label-${externalProperty.id}`}>
-              Source Property
-            </FormLabel>
+          <Field
+            invalid={!!sourceFieldError}
+            required
+            errorText={sourceFieldError}
+            label="Source Property"
+            helperText="The property containing the URL that references the page with the desired content."
+          >
             <Controller
               control={control}
               name={`externalProperties.${externalPropertyIndex}.sourceField`}
@@ -200,79 +171,71 @@ const ExternalPropertyForm = ({
                       variant="outline"
                       fontFamily="mono"
                       fontWeight="medium"
-                      bg="gray.800"
-                      rightIcon={<EditIcon />}
-                      aria-describedby={`source-property-label-${externalProperty.id}`}
+                      aria-label="Select source property"
                     >
                       {field.value}
+                      <Icon as={FaPencil} boxSize="4" />
                     </Button>
                   }
                   onSubmitted={({ sourceField }) => field.onChange(sourceField)}
                 />
               )}
             />
-            {sourceFieldError && <FormErrorMessage>{sourceFieldError}</FormErrorMessage>}
-            <FormHelperText>
-              The property containing the URL that references the page with the desired content.
-            </FormHelperText>
-          </FormControl>
+          </Field>
         </HStack>
-        <FormControl isInvalid={!!cssSelectorError} isRequired>
-          <Flex justifyContent="space-between">
-            <FormLabel
+        <Field
+          invalid={!!cssSelectorError}
+          required
+          errorText={cssSelectorError}
+          helperText="Target the elements on the external page that contains the desired content. Sample CSS selectors are provided for common use cases, but you may also input your own."
+        >
+          <Flex justifyContent="space-between" alignItems="center" w="full">
+            <label
               id={`css-selector-label-${externalProperty.id}`}
               htmlFor={`css-selector-input-${externalProperty.id}`}
             >
               CSS Selector
-            </FormLabel>
-            <Popover>
-              <PopoverTrigger>
-                <Button
-                  variant="link"
-                  fontWeight="medium"
-                  color="blue.300"
-                  fontSize="sm"
-                  leftIcon={<FiHelpCircle />}
-                >
+            </label>
+            <PopoverRoot>
+              <PopoverTrigger asChild>
+                <Button variant="plain" fontWeight="medium" color="text.link" fontSize="sm">
+                  <Icon as={FiHelpCircle} boxSize="3.5" />
                   What is a CSS Selector?
                 </Button>
               </PopoverTrigger>
-              <Portal>
-                <PopoverContent maxWidth={[350, 450, 500]} width="100%">
-                  <PopoverArrow />
-                  <PopoverHeader fontWeight="semibold">What is a CSS Selector?</PopoverHeader>
-                  <PopoverCloseButton />
-                  <PopoverBody>
-                    CSS selectors are like paths to target element(s) on a webpage. Some examples
-                    are:
-                    <br />
-                    <br />
-                    <Code colorScheme="black">img</Code> - targets all images
-                    <br />
-                    <Code colorScheme="black">a</Code> - target all anchors/links
-                    <br />
-                    <br />
-                    The more specific the selector, the more likely it is to be unique to the
-                    content you want to extract. You can use your browser&apos;s developer tools to
-                    find the CSS selector of an element on any page. To do so:
-                    <br />
-                    <br />
-                    <OrderedList>
-                      <ListItem>Click &quot;Show Preview&quot; in this form</ListItem>
-                      <ListItem>Open the external page in a new tab</ListItem>
-                      <ListItem>Right-click the element on the page you want to target</ListItem>
-                      <ListItem>Click &quot;Inspect&quot;</ListItem>
-                      <ListItem>
-                        Right-click the highlighted element in the developer tools and select
-                        &quot;Copy&quot; -&gt; &quot;Copy CSS selector&quot;
-                      </ListItem>
-                    </OrderedList>
-                    <br />
-                    The steps may vary depending on the browser you are using.
-                  </PopoverBody>
-                </PopoverContent>
-              </Portal>
-            </Popover>
+              <PopoverContent maxWidth={[350, 450, 500]} width="100%">
+                <PopoverArrow />
+                <PopoverHeader fontWeight="semibold">What is a CSS Selector?</PopoverHeader>
+                <PopoverCloseTrigger />
+                <PopoverBody>
+                  CSS selectors are like paths to target element(s) on a webpage. Some examples are:
+                  <br />
+                  <br />
+                  <Code>img</Code> - targets all images
+                  <br />
+                  <Code>a</Code> - target all anchors/links
+                  <br />
+                  <br />
+                  The more specific the selector, the more likely it is to be unique to the content
+                  you want to extract. You can use your browser&apos;s developer tools to find the
+                  CSS selector of an element on any page. To do so:
+                  <br />
+                  <br />
+                  <List.Root as="ol">
+                    <List.Item>Click &quot;Show Preview&quot; in this form</List.Item>
+                    <List.Item>Open the external page in a new tab</List.Item>
+                    <List.Item>Right-click the element on the page you want to target</List.Item>
+                    <List.Item>Click &quot;Inspect&quot;</List.Item>
+                    <List.Item>
+                      Right-click the highlighted element in the developer tools and select
+                      &quot;Copy&quot; -&gt; &quot;Copy CSS selector&quot;
+                    </List.Item>
+                  </List.Root>
+                  <br />
+                  The steps may vary depending on the browser you are using.
+                </PopoverBody>
+              </PopoverContent>
+            </PopoverRoot>
           </Flex>
           <Controller
             control={control}
@@ -303,7 +266,8 @@ const ExternalPropertyForm = ({
                     return {
                       ...provided,
                       ...REACT_SELECT_STYLES()?.input?.(provided, props),
-                      fontFamily: theme.fonts.mono,
+                      fontFamily:
+                        "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
                       "& input": {
                         font: "inherit",
                       },
@@ -346,14 +310,9 @@ const ExternalPropertyForm = ({
               />
             )}
           />
-          {cssSelectorError && <FormErrorMessage>{cssSelectorError}</FormErrorMessage>}
-          <FormHelperText>
-            Target the elements on the external page that contains the desired content. Sample CSS
-            selectors are provided for common use cases, but you may also input your own.
-          </FormHelperText>
-        </FormControl>
+        </Field>
       </Stack>
-      <Box bg="gray.800" rounded="lg" mt={6}>
+      <Box bg="bg.subtle" borderWidth="1px" borderColor="border" rounded="lg" mt={6}>
         <ExternalPropertyPreview
           externalProperties={
             !externalProperty
@@ -369,7 +328,7 @@ const ExternalPropertyForm = ({
           }
         />
       </Box>
-    </Stack>
+    </Panel>
   );
 };
 
@@ -398,6 +357,7 @@ export const ExternalPropertiesTabSection = () => {
     queryKeyStringsToIgnoreValidation: fields.map((f) => `external-property-preview-page-${f.id}`),
   });
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
+  const formFocusRef = useRef<HTMLFormElement>(null);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -422,9 +382,13 @@ export const ExternalPropertiesTabSection = () => {
 
   return (
     <FormProvider {...formData}>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={8} mb={24}>
-          <Stack spacing={4}>
+      <form
+        ref={formFocusRef}
+        onSubmit={handleSubmit(onSubmit)}
+        aria-label="External properties settings"
+      >
+        <Stack gap={8} mb={24}>
+          <Stack gap={4}>
             <Stack>
               <Heading as="h2" size="md">
                 External Properties
@@ -444,13 +408,12 @@ export const ExternalPropertiesTabSection = () => {
             />
           </Stack>
           {!!fields.length && (
-            <Stack spacing={8} role="list">
+            <Stack gap={8} role="list">
               {fields?.map((a, fieldIndex) => {
                 return (
-                  <Box
+                  <motion.div
                     role="listitem"
                     key={a.id}
-                    as={motion.div}
                     exit={{
                       opacity: 0,
                     }}
@@ -460,9 +423,7 @@ export const ExternalPropertiesTabSection = () => {
                     animate={{
                       opacity: 1,
                     }}
-                    transition={{
-                      type: "linear",
-                    }}
+                    transition={{ duration: 0.2, ease: "linear" } as Transition}
                   >
                     <ExternalPropertyForm
                       externalPropertyIndex={fieldIndex}
@@ -470,7 +431,7 @@ export const ExternalPropertiesTabSection = () => {
                         remove(fieldIndex);
                       }}
                     />
-                  </Box>
+                  </motion.div>
                 );
               })}
             </Stack>
@@ -478,7 +439,8 @@ export const ExternalPropertiesTabSection = () => {
           <Box>
             <CreateExternalPropertyModal
               trigger={
-                <Button leftIcon={<AddIcon fontSize={13} />}>
+                <Button>
+                  <FaPlus />
                   <span>Add new selector</span>
                 </Button>
               }
@@ -493,7 +455,7 @@ export const ExternalPropertiesTabSection = () => {
             />
           </Box>
         </Stack>
-        <SavedUnsavedChangesPopupBar useDirtyFormCheck />
+        <SavedUnsavedChangesPopupBar useDirtyFormCheck restoreFocusRef={formFocusRef} />
       </form>
     </FormProvider>
   );

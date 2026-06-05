@@ -1,14 +1,14 @@
 import React from "react";
+import { Button } from "@chakra-ui/react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
-  Button,
-} from "@chakra-ui/react";
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogCloseTrigger,
+  DialogBody,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { ComponentPropertiesPanel } from "./ComponentPropertiesPanel";
 import getMessageBuilderComponentLabel from "./utils/getMessageBuilderComponentLabel";
 import { useNavigableTreeContext } from "./contexts/NavigableTreeContext";
@@ -32,13 +32,17 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose,
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} motionPreset="slideInBottom" size="full">
-      <ModalOverlay />
-      <ModalContent
-        bg="gray.800"
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) onClose();
+      }}
+      size="full"
+    >
+      <DialogContent
         borderTop="1px solid"
         borderTopRadius="xl"
-        borderColor="gray.600"
+        borderColor="border"
         height="55vh"
         position="fixed"
         bottom={0}
@@ -48,19 +52,21 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose,
         boxShadow="0 -4px 25px 0 rgba(0, 0, 0, 0.4)"
         margin={0}
       >
-        <ModalHeader
+        <DialogHeader
           py={2}
           px={4}
           borderBottom="1px solid"
-          borderColor="gray.600"
+          borderColor="border"
           fontSize="md"
           fontWeight="semibold"
-          color="white"
+          color="fg"
         >
-          Configure {component ? getMessageBuilderComponentLabel(component.type) : "Component"}
-        </ModalHeader>
-        <ModalCloseButton color="gray.400" _hover={{ color: "white", bg: "gray.700" }} />
-        <ModalBody p={4} height="calc(100% - 120px)" overflowY="auto" bg="gray.800">
+          <DialogTitle>
+            Configure {component ? getMessageBuilderComponentLabel(component.type) : "Component"}
+          </DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger color="fg.muted" _hover={{ color: "fg", bg: "bg.emphasized" }} />
+        <DialogBody p={4} height="calc(100% - 120px)" overflowY="auto">
           {component && (
             <ComponentPropertiesPanel
               hideTitle
@@ -68,13 +74,13 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose,
               onDeleted={onDeleted}
             />
           )}
-        </ModalBody>
-        <ModalFooter borderTop="1px solid" borderColor="gray.600" bg="gray.800" p={4}>
-          <Button colorScheme="gray" onClick={onClose}>
+        </DialogBody>
+        <DialogFooter borderTop="1px solid" borderColor="border" p={4}>
+          <Button colorPalette="gray" onClick={onClose}>
             Close
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

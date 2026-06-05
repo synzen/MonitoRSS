@@ -1,6 +1,6 @@
 import { CSSProperties } from "react";
-import { HStack, Th } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
+import { HStack, Table } from "@chakra-ui/react";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa6";
 import { Header, flexRender } from "@tanstack/react-table";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -39,7 +39,7 @@ export const SortableTableHeader: React.FC<SortableTableHeaderProps> = ({ header
   }
 
   return (
-    <Th
+    <Table.ColumnHeader
       ref={setNodeRef}
       style={style}
       {...(isFixedColumn ? {} : attributes)}
@@ -52,9 +52,9 @@ export const SortableTableHeader: React.FC<SortableTableHeaderProps> = ({ header
         {header.isPlaceholder
           ? null
           : flexRender(header.column.columnDef.header, header.getContext())}
-        {isSorted === "desc" && <ChevronDownIcon aria-label="sorted descending" fontSize={16} />}
-        {isSorted === "asc" && <ChevronUpIcon aria-label="sorted ascending" fontSize={16} />}
+        {isSorted === "desc" && <FaChevronDown aria-label="sorted descending" size={16} />}
+        {isSorted === "asc" && <FaChevronUp aria-label="sorted ascending" size={16} />}
       </HStack>
-    </Th>
+    </Table.ColumnHeader>
   );
 };

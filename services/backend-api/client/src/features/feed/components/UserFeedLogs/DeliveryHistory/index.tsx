@@ -7,44 +7,41 @@ import {
   Flex,
   HStack,
   Heading,
+  Icon,
   Skeleton,
   Spinner,
   Stack,
   Table,
-  TableContainer,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
-  Tr,
   Link as ChakraLink,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
   chakra,
-  Tooltip,
-  Divider,
+  Separator,
 } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { Search2Icon } from "@chakra-ui/icons";
+import { FaMagnifyingGlass } from "react-icons/fa6";
 import { useUserFeedArticles, useUserFeedDeliveryLogsWithPagination } from "../../../hooks";
 import { UserFeedDeliveryLogStatus } from "../../../types";
 import { InlineErrorAlert } from "../../../../../components";
 import { pages } from "../../../../../constants";
 import { FeedConnectionType } from "../../../../../types";
 import { useUserFeedContext } from "../../../contexts/UserFeedContext";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogCloseTrigger,
+  DialogBody,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const createStatusLabel = ({ status }: { status: UserFeedDeliveryLogStatus }) => {
   if (status === UserFeedDeliveryLogStatus.DELIVERED) {
     return (
-      <Badge fontSize="sm" colorScheme="green">
+      <Badge fontSize="sm" colorPalette="green">
         Delivered
       </Badge>
     );
@@ -52,7 +49,7 @@ const createStatusLabel = ({ status }: { status: UserFeedDeliveryLogStatus }) =>
 
   if (status === UserFeedDeliveryLogStatus.PARTIALLY_DELIVERED) {
     return (
-      <Badge fontSize="sm" colorScheme="yellow">
+      <Badge fontSize="sm" colorPalette="yellow">
         Partially Delivered
       </Badge>
     );
@@ -60,7 +57,7 @@ const createStatusLabel = ({ status }: { status: UserFeedDeliveryLogStatus }) =>
 
   if (status === UserFeedDeliveryLogStatus.FAILED) {
     return (
-      <Badge fontSize="sm" colorScheme="red">
+      <Badge fontSize="sm" colorPalette="red">
         Internal Error
       </Badge>
     );
@@ -68,7 +65,7 @@ const createStatusLabel = ({ status }: { status: UserFeedDeliveryLogStatus }) =>
 
   if (status === UserFeedDeliveryLogStatus.ARTICLE_RATE_LIMITED) {
     return (
-      <Badge fontSize="sm" colorScheme="orange">
+      <Badge fontSize="sm" colorPalette="orange">
         Rate Limited (Article Daily Limit)
       </Badge>
     );
@@ -84,7 +81,7 @@ const createStatusLabel = ({ status }: { status: UserFeedDeliveryLogStatus }) =>
 
   if (status === UserFeedDeliveryLogStatus.REJECTED) {
     return (
-      <Badge fontSize="sm" colorScheme="red">
+      <Badge fontSize="sm" colorPalette="red">
         Failed
       </Badge>
     );
@@ -131,33 +128,42 @@ export const DeliveryHistory = () => {
   const hasNoData = data?.result.logs.length === 0 && skip === 0;
 
   return (
-    <Stack spacing={4} mb={16} border="solid 1px" borderColor="gray.700" borderRadius="md">
-      <Modal isOpen={!!detailsData} onClose={onCloseDetailsModal} size="6xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Delivery Details</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <chakra.pre overflow="auto" padding={2} bg="gray.800">
+    <Stack gap={4} mb={16} border="solid 1px" borderColor="border" borderRadius="l3">
+      <DialogRoot
+        open={!!detailsData}
+        onOpenChange={(e) => {
+          if (!e.open) {
+            onCloseDetailsModal();
+          }
+        }}
+        size="xl"
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delivery Details</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody>
+            <chakra.pre overflow="auto" padding={2} bg="bg.subtle">
               {detailsData}
             </chakra.pre>
-          </ModalBody>
-          <ModalFooter>
+          </DialogBody>
+          <DialogFooter>
             <Button onClick={onCloseDetailsModal}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
       <Box>
         <Stack px={4} py={4}>
           <Heading as="h3" size="sm" m={0} id="delivery-history-table-title">
             Article Delivery History
           </Heading>
-          <Text color="whiteAlpha.700" fontSize="sm">
+          <Text color="fg.muted" fontSize="sm">
             Delivery attempts for articles across all connections.
           </Text>
         </Stack>
         <Box px={4}>
-          <Divider />
+          <Separator />
         </Box>
       </Box>
       <Box px={4} pb={4}>
@@ -188,7 +194,7 @@ export const DeliveryHistory = () => {
         )}
         {hasNoData && (
           <Box>
-            <Text color="whiteAlpha.700">
+            <Text color="fg.muted">
               There have been no delivery attempts. Attempts will be logged as soon as new articles
               are found on the feed for delivery to enabled connections.
             </Text>
@@ -197,18 +203,18 @@ export const DeliveryHistory = () => {
         {data?.result && !hasNoData && (
           <Stack>
             <Box>
-              <TableContainer>
-                <Table size="sm" variant="simple" aria-labelledby="delivery-history-table-title">
-                  <Thead>
-                    <Tr>
-                      <Th>Date</Th>
-                      <Th>Connection</Th>
-                      <Th>Article Title</Th>
-                      <Th>Status</Th>
-                      <Th>Details</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
+              <Table.ScrollArea>
+                <Table.Root size="sm" variant="line" aria-labelledby="delivery-history-table-title">
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.ColumnHeader>Date</Table.ColumnHeader>
+                      <Table.ColumnHeader>Connection</Table.ColumnHeader>
+                      <Table.ColumnHeader>Article Title</Table.ColumnHeader>
+                      <Table.ColumnHeader>Status</Table.ColumnHeader>
+                      <Table.ColumnHeader>Details</Table.ColumnHeader>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
                     {data.result.logs.map((item) => {
                       const connection = userFeed.connections.find((c) => c.id === item.mediumId);
                       const matchedArticle = articles?.result.articles.find(
@@ -219,87 +225,88 @@ export const DeliveryHistory = () => {
                       const articleTitle = matchedArticle?.["title"] || item.articleData?.title;
 
                       return (
-                        <Tr key={item.id}>
-                          <Td>
-                            <Skeleton isLoaded={fetchStatus === "idle"}>
+                        <Table.Row key={item.id}>
+                          <Table.Cell>
+                            <Skeleton loading={fetchStatus !== "idle"}>
                               {dayjs(item.createdAt).format("DD MMM YYYY, HH:mm:ss")}
                             </Skeleton>
-                          </Td>
-                          <Td>
-                            <Skeleton isLoaded={fetchStatus === "idle"}>
+                          </Table.Cell>
+                          <Table.Cell>
+                            <Skeleton loading={fetchStatus !== "idle"}>
                               {!connection && (
-                                <Text color="whiteAlpha.700" fontStyle="italic">
+                                <Text color="fg.muted" fontStyle="italic">
                                   (deleted connection)
                                 </Text>
                               )}
                               {connection && (
-                                <ChakraLink
-                                  as={Link}
-                                  fontWeight="semibold"
-                                  to={pages.userFeedConnection({
-                                    feedId: userFeed.id,
-                                    connectionType: connection?.key as FeedConnectionType,
-                                    connectionId: item.mediumId,
-                                  })}
-                                  color="blue.300"
-                                >
-                                  {connection?.name || item.mediumId}
+                                <ChakraLink asChild fontWeight="semibold" color="text.link">
+                                  <Link
+                                    to={pages.userFeedConnection({
+                                      feedId: userFeed.id,
+                                      connectionType: connection?.key as FeedConnectionType,
+                                      connectionId: item.mediumId,
+                                    })}
+                                  >
+                                    {connection?.name || item.mediumId}
+                                  </Link>
                                 </ChakraLink>
                               )}
                             </Skeleton>
-                          </Td>
-                          <Td maxWidth="300px">
+                          </Table.Cell>
+                          <Table.Cell maxWidth="300px">
                             <Skeleton
                               overflow="hidden"
                               textOverflow="ellipsis"
-                              isLoaded={
-                                fetchStatus === "idle" &&
-                                !!(
-                                  matchedArticle ||
-                                  articlesError ||
-                                  (articlesFetchStatus === "idle" && !matchedArticle)
+                              loading={
+                                !(
+                                  fetchStatus === "idle" &&
+                                  !!(
+                                    matchedArticle ||
+                                    articlesError ||
+                                    (articlesFetchStatus === "idle" && !matchedArticle)
+                                  )
                                 )
                               }
                             >
                               {articleTitle || (
-                                <Tooltip label="The referenced article either no longer exists on the feed or has no title">
-                                  <Text color="whiteAlpha.700" fontStyle="italic">
+                                <Tooltip content="The referenced article either no longer exists on the feed or has no title">
+                                  <Text color="fg.muted" fontStyle="italic">
                                     (unknown article title)
                                   </Text>
                                 </Tooltip>
                               )}
                             </Skeleton>
-                          </Td>
-                          <Td>
-                            <Skeleton isLoaded={fetchStatus === "idle"}>
+                          </Table.Cell>
+                          <Table.Cell>
+                            <Skeleton loading={fetchStatus !== "idle"}>
                               {createStatusLabel({ status: item.status })}
                             </Skeleton>
-                          </Td>
-                          <Td>
-                            <Skeleton isLoaded={fetchStatus === "idle"}>
+                          </Table.Cell>
+                          <Table.Cell>
+                            <Skeleton loading={fetchStatus !== "idle"}>
                               <HStack>
                                 <span>{item.details?.message}</span>
                                 {item.details?.data && (
                                   <Button
-                                    leftIcon={<Search2Icon />}
                                     size="xs"
                                     variant="outline"
                                     onClick={() =>
                                       setDetailsData(JSON.stringify(item.details?.data, null, 2))
                                     }
                                   >
+                                    <Icon as={FaMagnifyingGlass} />
                                     View Details
                                   </Button>
                                 )}
                               </HStack>
                             </Skeleton>
-                          </Td>
-                        </Tr>
+                          </Table.Cell>
+                        </Table.Row>
                       );
                     })}
-                  </Tbody>
-                </Table>
-              </TableContainer>
+                  </Table.Body>
+                </Table.Root>
+              </Table.ScrollArea>
             </Box>
             <Flex pt={4}>
               <HStack>
@@ -327,7 +334,7 @@ export const DeliveryHistory = () => {
 
                     nextPage();
                   }}
-                  isDisabled={fetchStatus === "fetching" || data?.result.logs.length === 0}
+                  disabled={fetchStatus === "fetching" || data?.result.logs.length === 0}
                 >
                   <span>Next Page</span>
                 </Button>

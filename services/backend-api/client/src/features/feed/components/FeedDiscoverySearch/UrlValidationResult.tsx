@@ -1,16 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  Box,
-  Text,
-  Button,
-  Spinner,
-  HStack,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  VisuallyHidden,
-} from "@chakra-ui/react";
+import { Box, Text, Button, Spinner, HStack, Alert, VisuallyHidden } from "@chakra-ui/react";
+import { Panel } from "@/components/Panel";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { CreateUserFeedUrlValidationOutput } from "../../api/createUserFeedUrlValidation";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
@@ -128,11 +118,11 @@ export const UrlValidationResult = ({
   if (validationStatus === "loading") {
     return (
       <Box aria-live="polite" mt={3}>
-        <HStack spacing={2}>
+        <HStack gap={2}>
           <Spinner size="sm" />
           <Text>Checking URL...</Text>
         </HStack>
-        <Text fontSize="sm" color="gray.400">
+        <Text fontSize="sm" color="fg.muted">
           Verifying the feed at this address
         </Text>
       </Box>
@@ -198,33 +188,25 @@ export const UrlValidationResult = ({
     if (isNoFeedFound) {
       return (
         <Box mt={3}>
-          <Alert status="warning" variant="left-accent" borderRadius="md">
-            <AlertIcon />
+          <Alert.Root status="warning" variant="subtle">
+            <Alert.Indicator />
             <Box>
-              <AlertTitle>Couldn&apos;t find a feed</AlertTitle>
-              <AlertDescription>
+              <Alert.Title>Couldn&apos;t find a feed</Alert.Title>
+              <Alert.Description>
                 <Text fontSize="sm" mb={2}>
                   We couldn&apos;t detect a news feed at this URL. The site may not publish one.
                 </Text>
                 <Button size="sm" variant="outline" onClick={onTrySearchByName}>
                   Try searching by name instead
                 </Button>
-              </AlertDescription>
+              </Alert.Description>
             </Box>
-          </Alert>
-          <Box
-            mt={3}
-            borderWidth="1px"
-            borderColor="whiteAlpha.200"
-            borderRadius="md"
-            bg="gray.700"
-            px={4}
-            py={3}
-          >
+          </Alert.Root>
+          <Panel mt={3} px={4} py={3}>
             <Text as="h3" fontWeight="semibold" fontSize="sm" mb={2}>
               Tips for finding feeds
             </Text>
-            <Box as="ul" pl={4} fontSize="sm" color="gray.300">
+            <Box as="ul" pl={4} fontSize="sm" color="fg.subtle">
               <Box as="li" mb={1}>
                 Double-check the URL for typos or missing parts
               </Box>
@@ -233,7 +215,7 @@ export const UrlValidationResult = ({
               </Box>
               <Box as="li">Search Google for the site name + &quot;RSS feed&quot;</Box>
             </Box>
-          </Box>
+          </Panel>
         </Box>
       );
     }

@@ -2,30 +2,29 @@ import {
   Badge,
   Box,
   Button,
-  Divider,
+  Separator,
   Flex,
   Heading,
   HStack,
   Skeleton,
   Stack,
-  Switch,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
+  TableRoot,
+  TableScrollArea,
+  TableBody,
+  TableRow,
+  TableCell,
   Text,
-  Tr,
 } from "@chakra-ui/react";
 import { useLocation, Link as RouterLink } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { captureException } from "@sentry/react";
 import dayjs from "dayjs";
-import { ChevronLeftIcon } from "@chakra-ui/icons";
-import { FaCircleCheck } from "react-icons/fa6";
-import { BoxConstrained, DashboardContentV2 } from "@/components";
+import { FaChevronLeft, FaCircleCheck } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { Switch } from "@/components/ui/switch";
+import { BoxConstrained, DashboardContentV2, Panel } from "@/components";
 import { pages, ProductKey, PRICE_IDS, findProductKeyByPriceId } from "@/constants";
 import { useUserMe } from "@/features/discordUser";
-import getChakraColor from "@/utils/getChakraColor";
 import { usePaddleContext } from "../../contexts/PaddleContext";
 
 interface Props {
@@ -175,13 +174,15 @@ export const Checkout = ({ cancelUrl }: Props) => {
   return (
     <DashboardContentV2 error={error} loading={false}>
       <BoxConstrained.Wrapper>
-        <BoxConstrained.Container paddingTop={10} spacing={6} paddingBottom={32}>
+        <BoxConstrained.Container paddingTop={10} gap={6} paddingBottom={32}>
           <Stack alignItems="center">
             <Stack maxWidth="5xl" width="100%">
               <HStack
                 gap={0}
-                bg="gray.700"
-                rounded="md"
+                bg="bg.panel"
+                borderWidth="1px"
+                borderColor="border"
+                rounded="l3"
                 alignItems="flex-start"
                 flexWrap="wrap"
                 overflow="auto"
@@ -191,7 +192,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
                 {isSubscriptionCreated && (
                   <Stack
                     flex={1}
-                    spacing={4}
+                    gap={4}
                     px={8}
                     py={12}
                     textAlign="center"
@@ -199,48 +200,40 @@ export const Checkout = ({ cancelUrl }: Props) => {
                     alignItems="center"
                     h="100%"
                   >
-                    <FaCircleCheck color={getChakraColor("green.500")} fontSize={52} />
+                    <FaCircleCheck color="var(--app-text-success)" fontSize={52} />
                     <Heading ref={headingRef} fontWeight={600} fontSize="lg" as="h1" tabIndex={-1}>
                       Your benefits have been provisioned.
                     </Heading>
                     <Text>Thank you for supporting MonitoRSS!</Text>
-                    <Button
-                      as={RouterLink}
-                      to={cancelUrl || pages.userFeeds()}
-                      size="sm"
-                      colorScheme="blue"
-                    >
-                      {cancelUrl ? "Back to previous page" : "Back to Home"}
-                    </Button>
+                    <PrimaryActionButton asChild size="sm">
+                      <RouterLink to={cancelUrl || pages.userFeeds()}>
+                        {cancelUrl ? "Back to previous page" : "Back to Home"}
+                      </RouterLink>
+                    </PrimaryActionButton>
                   </Stack>
                 )}
                 {!isSubscriptionCreated && (
-                  <Stack flex={1} spacing={4} px={8} pb={8} pt={6}>
+                  <Stack flex={1} gap={4} px={8} pb={8} pt={6}>
                     <Box>
                       <Button
-                        as={RouterLink}
-                        to={cancelUrl || pages.userFeeds()}
+                        asChild
                         size="sm"
-                        leftIcon={<ChevronLeftIcon />}
                         variant="ghost"
                         aria-label={cancelUrl ? "Back to previous page" : "Back to Home"}
                       >
-                        Back
+                        <RouterLink to={cancelUrl || pages.userFeeds()}>
+                          <FaChevronLeft />
+                          Back
+                        </RouterLink>
                       </Button>
                     </Box>
                     <Heading fontWeight={600} fontSize="md" as="h1" tabIndex={-1}>
                       Checkout Summary
                     </Heading>
-                    <Stack
-                      spacing={4}
-                      borderColor="whiteAlpha.300"
-                      borderWidth={2}
-                      rounded="md"
-                      p={4}
-                    >
+                    <Panel surface="subtle" display="flex" flexDirection="column" gap={4} p={4}>
                       {/* Product Name Header */}
                       <HStack alignItems="center">
-                        <Skeleton isLoaded={isLoaded}>
+                        <Skeleton loading={!isLoaded}>
                           <Text fontSize="xl" fontWeight="semibold">
                             {topLevelProductCheckoutData?.productName} (
                             {topLevelProductCheckoutData?.interval === "year"
@@ -250,15 +243,15 @@ export const Checkout = ({ cancelUrl }: Props) => {
                           </Text>
                         </Skeleton>
                       </HStack>
-                      <Stack spacing={3}>
+                      <Stack gap={3}>
                         {/* Base Plan Cost */}
                         <HStack justifyContent="space-between" alignItems="flex-start">
-                          <Stack spacing={1}>
+                          <Stack gap={1}>
                             <Text fontSize="md" fontWeight="medium">
                               {topLevelProductCheckoutData?.productName}
                             </Text>
                           </Stack>
-                          <Skeleton isLoaded={isLoaded}>
+                          <Skeleton loading={!isLoaded}>
                             <Text fontSize="lg" fontWeight="semibold">
                               {formatCurrency(topLevelProductCheckoutData?.totals.subtotal)}
                             </Text>
@@ -267,12 +260,12 @@ export const Checkout = ({ cancelUrl }: Props) => {
                         {/* Additional Feeds Cost (if applicable) */}
                         {feedsCheckoutData && feedsQuantity > 0 && (
                           <HStack justifyContent="space-between" alignItems="flex-start">
-                            <Stack spacing={1}>
+                            <Stack gap={1}>
                               <Text fontSize="md" fontWeight="medium">
                                 Additional Feeds ({feedsQuantity})
                               </Text>
-                              <Skeleton isLoaded={isLoaded}>
-                                <Text fontSize="sm" color="whiteAlpha.700">
+                              <Skeleton loading={!isLoaded}>
+                                <Text fontSize="sm" color="fg.muted">
                                   {formatCurrency(
                                     (feedsCheckoutData?.totals.subtotal || 0) / feedsQuantity,
                                   )}{" "}
@@ -280,7 +273,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
                                 </Text>
                               </Skeleton>
                             </Stack>
-                            <Skeleton isLoaded={isLoaded}>
+                            <Skeleton loading={!isLoaded}>
                               <Text fontSize="lg" fontWeight="semibold">
                                 {formatCurrency(feedsCheckoutData?.totals.subtotal)}
                               </Text>
@@ -291,25 +284,24 @@ export const Checkout = ({ cancelUrl }: Props) => {
                       {/* Divider and Billing Toggle - Hidden when additional feeds are specified due to Paddle checkout update bug */}
                       {feedsQuantity === 0 && (
                         <>
-                          <Divider />
-                          <HStack py={2} bg="gray.800" rounded="md" px={3}>
+                          <Separator />
+                          <HStack py={2} bg="bg.emphasized" rounded="l3" px={3}>
                             <Switch
                               checked={topLevelProductCheckoutData?.interval === "year"}
-                              colorScheme="green"
+                              colorPalette="green"
                               aria-label="Toggle annual billing for 15% savings"
                               aria-disabled={!isLoaded}
-                              isChecked={topLevelProductCheckoutData?.interval === "year"}
-                              onChange={(e) => {
+                              onCheckedChange={(e) => {
                                 if (!isLoaded) {
                                   return;
                                 }
 
-                                onChangeInterval(e.target.checked ? "year" : "month");
+                                onChangeInterval(e.checked ? "year" : "month");
                                 setWaitingForUpdate(true);
                               }}
                             />
-                            <Skeleton isLoaded={isLoaded}>
-                              <Badge colorScheme="green">
+                            <Skeleton loading={!isLoaded}>
+                              <Badge colorPalette="green">
                                 <Text>Save 15%</Text>
                               </Badge>
                               <Text display="inline"> with annual billing</Text>
@@ -317,79 +309,75 @@ export const Checkout = ({ cancelUrl }: Props) => {
                           </HStack>
                         </>
                       )}
-                    </Stack>
-                    <TableContainer mt={6}>
-                      <Table variant="unstyled">
-                        <Tbody>
-                          <Tr>
-                            <Td py={2} px="0">
+                    </Panel>
+                    <TableScrollArea mt={6}>
+                      <TableRoot variant="line" css={{ "& tr": { background: "transparent" } }}>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell py={2} px="0">
                               Subtotal
-                            </Td>
-                            <Td py={2} isNumeric textAlign="end" px="0">
-                              <Skeleton isLoaded={isLoaded}>
+                            </TableCell>
+                            <TableCell py={2} textAlign="end" px="0">
+                              <Skeleton loading={!isLoaded}>
                                 {formatCurrency(checkoutData?.totals.subtotal) || "100"}
                               </Skeleton>
-                            </Td>
-                          </Tr>
-                          <Tr>
-                            <Td py={2} px="0">
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell py={2} px="0">
                               Tax
-                            </Td>
-                            <Td py={2} px="0" isNumeric textAlign="end">
-                              <Skeleton isLoaded={isLoaded}>
+                            </TableCell>
+                            <TableCell py={2} px="0" textAlign="end">
+                              <Skeleton loading={!isLoaded}>
                                 {formatCurrency(checkoutData?.totals.tax) || "100"}
                               </Skeleton>
-                            </Td>
-                          </Tr>
-                          <Tr>
-                            <Td py={2} px="0">
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell py={2} px="0">
                               Credits
-                            </Td>
-                            <Td py={2} px="0" isNumeric textAlign="end">
-                              <Skeleton isLoaded={isLoaded}>
+                            </TableCell>
+                            <TableCell py={2} px="0" textAlign="end">
+                              <Skeleton loading={!isLoaded}>
                                 {formatCurrency(checkoutData?.totals.credit) || "0"}
                               </Skeleton>
-                            </Td>
-                          </Tr>
-                          <Tr>
-                            <Td py={2} px="0">
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell py={2} px="0">
                               <strong>Total Due Today</strong>
-                            </Td>
-                            <Td py={2} px="0" isNumeric textAlign="end">
-                              <Skeleton isLoaded={isLoaded}>
+                            </TableCell>
+                            <TableCell py={2} px="0" textAlign="end">
+                              <Skeleton loading={!isLoaded}>
                                 <strong>
                                   {formatCurrency(checkoutData?.totals.balance) || "100"}
                                 </strong>
                               </Skeleton>
-                            </Td>
-                          </Tr>
-                          <Tr>
-                            <Td />
-                            <Td />
-                          </Tr>
-                          <Tr>
-                            <Td py={2} px="0">
-                              <Text fontSize="sm" color="whiteAlpha.700">
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell pt={5} pb={2} px="0">
+                              <Text fontSize="sm" color="fg.muted">
                                 Next charge on{" "}
-                                <Skeleton display="inline" isLoaded={isLoaded}>
+                                <Skeleton display="inline" loading={!isLoaded}>
                                   {expirationFormatted}
                                 </Skeleton>
                               </Text>
-                            </Td>
-                            <Td py={2} px="0" isNumeric textAlign="end">
-                              <Skeleton isLoaded={isLoaded}>
-                                <Text fontSize="sm" color="whiteAlpha.700">
+                            </TableCell>
+                            <TableCell pt={5} pb={2} px="0" textAlign="end">
+                              <Skeleton loading={!isLoaded}>
+                                <Text fontSize="sm" color="fg.muted">
                                   {/** Recurring total may not exist for cancelled subscriptions */}
                                   {checkoutData?.recurringTotals
                                     ? formatCurrency(checkoutData?.recurringTotals.total) || "100"
                                     : "Error"}
                                 </Text>
                               </Skeleton>
-                            </Td>
-                          </Tr>
-                        </Tbody>
-                      </Table>
-                    </TableContainer>
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </TableRoot>
+                    </TableScrollArea>
                   </Stack>
                 )}
                 <Flex
@@ -402,7 +390,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
                 />
               </HStack>
             </Stack>
-            <Text fontSize="sm" color="whiteAlpha.700" textAlign="center">
+            <Text fontSize="sm" color="fg.muted" textAlign="center">
               If the checkout form does not fully load, please try refreshing the page or using a
               different browser.
             </Text>

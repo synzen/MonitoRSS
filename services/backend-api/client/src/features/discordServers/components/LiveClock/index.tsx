@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
-import getChakraColor from "@/utils/getChakraColor";
 
 interface Props {
   dateFormat?: string;
@@ -47,7 +46,7 @@ export const LiveClock: React.FC<Props> = ({ dateFormat, timezone }) => {
   return (
     <span
       style={{
-        color: getChakraColor("red.500"),
+        color: "var(--app-text-error)",
       }}
     >
       {t("features.discordServers.components.liveClock.invalidSettings")}

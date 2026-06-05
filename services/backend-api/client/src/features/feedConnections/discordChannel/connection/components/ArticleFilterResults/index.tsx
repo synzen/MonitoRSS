@@ -6,8 +6,9 @@ import {
   Heading,
   Spinner,
   Stack,
-  TableHeadProps,
+  TableHeaderProps,
   Text,
+  chakra,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -29,7 +30,7 @@ interface Props {
   title?: React.ReactNode | undefined;
   filters?: LogicalFilterExpression | null;
   tableContainer?: {
-    theadProps?: TableHeadProps;
+    theadProps?: TableHeaderProps;
   };
 }
 
@@ -99,7 +100,7 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
   }, [feedArticlePropertiesResult?.result.properties]);
 
   return (
-    <Stack spacing={4}>
+    <Stack gap={4}>
       <Flex justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={6}>
         {title || (
           <Heading as="h2" size="sm">
@@ -108,14 +109,13 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
         )}
         {!alertComponent && (
           <HStack alignItems="center" flexWrap="wrap">
-            <Text
-              as="label"
+            <chakra.label
               whiteSpace="nowrap"
               id="article-property-select-label"
               htmlFor="article-property-select"
             >
               Display article property:
-            </Text>
+            </chakra.label>
             <Box width={{ md: "250px", lg: "350px" }}>
               <ThemedSelect
                 options={
@@ -128,7 +128,7 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
                 isDisabled={feedArticlePropertiesStatus === "loading"}
                 loading={feedArticlePropertiesStatus === "loading"}
                 value={useArticleProperty}
-                onChange={onChangeFeedArticleProperty}
+                onChange={(value: string) => onChangeFeedArticleProperty(value)}
                 isInvalid={false}
                 selectProps={{
                   inputId: "article-property-select",

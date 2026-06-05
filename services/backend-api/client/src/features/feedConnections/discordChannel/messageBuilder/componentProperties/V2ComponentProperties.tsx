@@ -1,22 +1,6 @@
 import React from "react";
-import {
-  Button,
-  Checkbox,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  HStack,
-  IconButton,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  Select,
-  Switch,
-  Text,
-  VStack,
-} from "@chakra-ui/react";
-import { CloseIcon } from "@chakra-ui/icons";
+import { Button, HStack, IconButton, Text, VStack, Icon } from "@chakra-ui/react";
+import { FaXmark } from "react-icons/fa6";
 import { SketchPicker } from "react-color";
 import { InputWithInsertPlaceholder } from "../components/InputWithInsertPlaceholder";
 import { EmojiPicker } from "../components/EmojiPicker";
@@ -24,6 +8,11 @@ import { useMessageBuilderStateContext } from "../state";
 import getMessageBuilderFieldErrors from "../utils/getMessageBuilderFieldErrors";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
 import { Component, ComponentType } from "../types";
+import { Field } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { PopoverRoot, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { NativeSelectRoot, NativeSelectField } from "@/components/ui/native-select";
 
 interface Props {
   component: Component;
@@ -45,8 +34,8 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
         onChange={(value) => onChange({ ...component, content: value })}
         label="Text Content"
         error={contentError?.message}
-        isInvalid={!!contentError}
-        isRequired
+        invalid={!!contentError}
+        required
         guildId={guildId}
       />
     );
@@ -61,47 +50,48 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <InputWithInsertPlaceholder
           value={component.label}
           onChange={(value) => onChange({ ...component, label: value })}
           label="Button Label"
           placeholder="Enter button label"
           error={labelError?.message}
-          isInvalid={!!labelError}
+          invalid={!!labelError}
           as="input"
-          isRequired={!component.emoji}
+          required={!component.emoji}
           guildId={guildId}
         />
-        <FormControl>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+        <Field>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Emoji
-          </FormLabel>
+          </Text>
           <EmojiPicker
             value={component.emoji}
             onChange={(emoji) => onChange({ ...component, emoji })}
             guildId={guildId}
           />
-        </FormControl>
-        <FormControl isInvalid={!!styleError} isRequired>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+        </Field>
+        <Field invalid={!!styleError} errorText={styleError?.message} required>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Button Style
-          </FormLabel>
-          <Select
-            value={component.style}
-            onChange={(e) =>
-              onChange({ ...component, style: e.target.value as DiscordButtonStyle })
-            }
-            bg="gray.700"
-          >
-            <option value={DiscordButtonStyle.Primary}>Primary</option>
-            <option value={DiscordButtonStyle.Secondary}>Secondary</option>
-            <option value={DiscordButtonStyle.Success}>Success</option>
-            <option value={DiscordButtonStyle.Danger}>Danger</option>
-            <option value={DiscordButtonStyle.Link}>Link</option>
-          </Select>
-          {styleError && <FormErrorMessage>{styleError.message}</FormErrorMessage>}
-        </FormControl>
+          </Text>
+          <NativeSelectRoot>
+            <NativeSelectField
+              aria-label="Button Style"
+              value={component.style}
+              onChange={(e) =>
+                onChange({ ...component, style: e.target.value as DiscordButtonStyle })
+              }
+            >
+              <option value={DiscordButtonStyle.Primary}>Primary</option>
+              <option value={DiscordButtonStyle.Secondary}>Secondary</option>
+              <option value={DiscordButtonStyle.Success}>Success</option>
+              <option value={DiscordButtonStyle.Danger}>Danger</option>
+              <option value={DiscordButtonStyle.Link}>Link</option>
+            </NativeSelectField>
+          </NativeSelectRoot>
+        </Field>
         {component.style === DiscordButtonStyle.Link && (
           <InputWithInsertPlaceholder
             value={component.href || ""}
@@ -109,21 +99,21 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
             label="Link URL"
             placeholder="https://example.com"
             error={hrefError?.message}
-            isInvalid={!!hrefError}
+            invalid={!!hrefError}
             as="input"
             guildId={guildId}
           />
         )}
-        <FormControl>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+        <Field>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Is Disabled?
-          </FormLabel>
+          </Text>
           <Switch
-            isChecked={component.disabled}
-            onChange={(e) => onChange({ ...component, disabled: e.target.checked })}
-            colorScheme="blue"
+            checked={component.disabled}
+            onCheckedChange={(e) => onChange({ ...component, disabled: e.checked })}
+            colorPalette="brand"
           />
-        </FormControl>
+        </Field>
       </VStack>
     );
   }
@@ -137,38 +127,37 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
-        <FormControl isInvalid={!!spacingError}>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+      <VStack align="stretch" gap={6}>
+        <Field invalid={!!spacingError} errorText={spacingError?.message}>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Spacing
-          </FormLabel>
-          <Select
-            value={component.spacing ?? 1}
-            onChange={(e) =>
-              onChange({ ...component, spacing: parseInt(e.target.value, 10) as 1 | 2 })
-            }
-            bg="gray.700"
-          >
-            <option value={1}>Small padding</option>
-            <option value={2}>Large padding</option>
-          </Select>
-          {spacingError && <FormErrorMessage>{spacingError.message}</FormErrorMessage>}
-        </FormControl>
-        <FormControl>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+          </Text>
+          <NativeSelectRoot>
+            <NativeSelectField
+              value={component.spacing ?? 1}
+              onChange={(e) =>
+                onChange({ ...component, spacing: parseInt(e.target.value, 10) as 1 | 2 })
+              }
+            >
+              <option value={1}>Small padding</option>
+              <option value={2}>Large padding</option>
+            </NativeSelectField>
+          </NativeSelectRoot>
+        </Field>
+        <Field invalid={!!visualError} errorText={visualError?.message}>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Visual Divider
-          </FormLabel>
+          </Text>
           <Checkbox
-            isChecked={component.visual ?? true}
-            onChange={(e) => onChange({ ...component, visual: e.target.checked })}
-            colorScheme="blue"
+            checked={component.visual ?? true}
+            onCheckedChange={(e) => onChange({ ...component, visual: e.checked })}
+            colorPalette="brand"
           >
-            <Text fontSize="sm" color="gray.300">
+            <Text fontSize="sm" color="fg">
               Show visual divider line
             </Text>
           </Checkbox>
-          {visualError && <FormErrorMessage>{visualError.message}</FormErrorMessage>}
-        </FormControl>
+        </Field>
       </VStack>
     );
   }
@@ -182,16 +171,16 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <InputWithInsertPlaceholder
           value={component.mediaUrl || ""}
           onChange={(value) => onChange({ ...component, mediaUrl: value })}
           label="Image URL"
           placeholder="https://example.com/image.png"
           error={mediaUrlError?.message}
-          isInvalid={!!mediaUrlError}
+          invalid={!!mediaUrlError}
           as="input"
-          isRequired
+          required
           guildId={guildId}
         />
         <InputWithInsertPlaceholder
@@ -200,27 +189,24 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
           label="Description (Alt Text)"
           placeholder="Description for the thumbnail"
           error={descriptionError?.message}
-          isInvalid={!!descriptionError}
+          invalid={!!descriptionError}
           as="input"
           guildId={guildId}
         />
-        <FormControl>
-          <FormHelperText color="gray.400" fontSize="xs">
-            Description is used for accessibility and is displayed when the image cannot be loaded.
-          </FormHelperText>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+        <Field helperText="Description is used for accessibility and is displayed when the image cannot be loaded.">
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Spoiler
-          </FormLabel>
+          </Text>
           <Checkbox
-            isChecked={component.spoiler ?? false}
-            onChange={(e) => onChange({ ...component, spoiler: e.target.checked })}
-            colorScheme="blue"
+            checked={component.spoiler ?? false}
+            onCheckedChange={(e) => onChange({ ...component, spoiler: e.checked })}
+            colorPalette="brand"
           >
-            <Text fontSize="sm" color="gray.300">
+            <Text fontSize="sm" color="fg">
               Blur image until clicked
             </Text>
           </Checkbox>
-        </FormControl>
+        </Field>
       </VStack>
     );
   }
@@ -234,15 +220,19 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
-        <FormControl isInvalid={!!accentColorError}>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+      <VStack align="stretch" gap={6}>
+        <Field
+          invalid={!!accentColorError}
+          errorText={accentColorError?.message}
+          helperText="A colored bar on the left side of the container."
+        >
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Accent Color
-          </FormLabel>
+          </Text>
           <HStack>
             <HStack width="100%">
-              <Popover>
-                <PopoverTrigger>
+              <PopoverRoot>
+                <PopoverTrigger asChild>
                   <Button
                     backgroundColor={
                       (component as any).accentColor
@@ -254,7 +244,7 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
                     flex={1}
                     borderStyle="solid"
                     borderWidth="1px"
-                    borderColor="whiteAlpha.400"
+                    borderColor="border"
                     aria-label="Pick accent color"
                     size="sm"
                     _hover={{
@@ -268,7 +258,7 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
                     }}
                   />
                 </PopoverTrigger>
-                <PopoverContent backgroundColor="gray.700" width="min-content">
+                <PopoverContent width="min-content">
                   <SketchPicker
                     presetColors={[]}
                     disableAlpha
@@ -288,48 +278,45 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
                     }}
                   />
                 </PopoverContent>
-              </Popover>
+              </PopoverRoot>
               <IconButton
                 size="sm"
                 aria-label="Clear accent color"
-                icon={<CloseIcon />}
-                isDisabled={!(component as any).accentColor}
+                disabled={!(component as any).accentColor}
                 onClick={() =>
                   onChange({
                     ...component,
                     accentColor: undefined,
                   })
                 }
-              />
+              >
+                <Icon as={FaXmark} />
+              </IconButton>
             </HStack>
           </HStack>
-          <FormHelperText color="gray.400" fontSize="xs">
-            A colored bar on the left side of the container.
-          </FormHelperText>
-          {accentColorError && <FormErrorMessage>{accentColorError.message}</FormErrorMessage>}
-        </FormControl>
-        <FormControl>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+        </Field>
+        <Field>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Spoiler
-          </FormLabel>
+          </Text>
           <Checkbox
-            isChecked={component.spoiler ?? false}
-            onChange={(e) => onChange({ ...component, spoiler: e.target.checked })}
-            colorScheme="blue"
+            checked={component.spoiler ?? false}
+            onCheckedChange={(e) => onChange({ ...component, spoiler: e.checked })}
+            colorPalette="brand"
           >
-            <Text fontSize="sm" color="gray.300">
+            <Text fontSize="sm" color="fg">
               Blur container content until clicked
             </Text>
           </Checkbox>
-        </FormControl>
+        </Field>
       </VStack>
     );
   }
 
   if (component.type === ComponentType.V2MediaGallery) {
     return (
-      <VStack align="stretch" spacing={6}>
-        <Text fontSize="sm" color="gray.400">
+      <VStack align="stretch" gap={6}>
+        <Text fontSize="sm" color="fg.muted">
           Add gallery items as children using the + button in the component tree. Each item can
           display an image with an optional description.
         </Text>
@@ -346,16 +333,16 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
     );
 
     return (
-      <VStack align="stretch" spacing={6}>
+      <VStack align="stretch" gap={6}>
         <InputWithInsertPlaceholder
           value={(component as any).mediaUrl || ""}
           onChange={(value) => onChange({ ...component, mediaUrl: value })}
           label="Media URL"
           placeholder="https://example.com/image.png"
           error={mediaUrlError?.message}
-          isInvalid={!!mediaUrlError}
+          invalid={!!mediaUrlError}
           as="input"
-          isRequired
+          required
           helperText="Items with empty URLs are removed. If all items are empty, the gallery is omitted."
           guildId={guildId}
         />
@@ -365,24 +352,24 @@ export const V2ComponentProperties: React.FC<Props> = ({ component, onChange, gu
           label="Description"
           placeholder="Optional image description"
           error={descriptionError?.message}
-          isInvalid={!!descriptionError}
+          invalid={!!descriptionError}
           as="input"
           guildId={guildId}
         />
-        <FormControl>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={2} color="gray.200">
+        <Field>
+          <Text fontSize="sm" fontWeight="medium" mb={2} color="fg">
             Spoiler
-          </FormLabel>
+          </Text>
           <Checkbox
-            isChecked={(component as any).spoiler ?? false}
-            onChange={(e) => onChange({ ...component, spoiler: e.target.checked })}
-            colorScheme="blue"
+            checked={(component as any).spoiler ?? false}
+            onCheckedChange={(e) => onChange({ ...component, spoiler: e.checked })}
+            colorPalette="brand"
           >
-            <Text fontSize="sm" color="gray.300">
+            <Text fontSize="sm" color="fg">
               Blur image until clicked
             </Text>
           </Checkbox>
-        </FormControl>
+        </Field>
       </VStack>
     );
   }

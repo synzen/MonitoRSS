@@ -1,3 +1,40 @@
+/*
+ * App-level semantic color layer. The ONLY place that references Chakra's internal
+ * --chakra-colors-* vars for JS-styled / third-party surfaces (e.g. react-select). Components
+ * consume var(--app-*) and stay ignorant of Chakra's token namespace, so a Chakra version bump
+ * that renames its vars is a one-file change here.
+ */
+:root {
+  --app-fg: var(--chakra-colors-fg);
+  --app-fg-muted: var(--chakra-colors-fg-muted);
+  --app-fg-subtle: var(--chakra-colors-fg-subtle);
+  --app-border: var(--chakra-colors-border);
+  --app-border-emphasized: var(--chakra-colors-border-emphasized);
+  /* Control / interactive-boundary edge — mirrors the `controlBorder` theme role so JS-styled
+     controls (react-select) match native inputs at WCAG 1.4.11 >=3:1, not the quiet divider border. */
+  --app-control-border: var(--chakra-colors-control-border);
+  --app-bg-panel: var(--chakra-colors-bg-panel);
+  --app-bg-emphasized: var(--chakra-colors-bg-emphasized);
+  /* Brand accent by role (the `brandSolid` theme token), not a literal palette name. */
+  --app-accent-solid: var(--chakra-colors-brand-solid);
+  --app-accent-focus-ring: var(--chakra-colors-brand-focus-ring);
+  --app-error: var(--chakra-colors-red-focus-ring);
+  /* Semantic TEXT roles — mirror the `fg.link` / `fg.error` / `fg.success` / `fg.warning` theme roles
+     so JS-styled / non-Chakra surfaces reference the same role as Chakra components (link by role, not
+     `blue`; status by meaning). A rebrand edits theme.ts; these vars follow automatically. */
+  --app-text-link: var(--chakra-colors-text-link);
+  --app-text-error: var(--chakra-colors-text-error);
+  --app-text-success: var(--chakra-colors-text-success);
+  --app-text-warning: var(--chakra-colors-text-warning);
+  /* Status SOLID surfaces (a filled status header/banner bg, WHITE text on top) — distinct from the
+     text roles above. For JS-styled status surfaces (e.g. test-send result modal headers). The shade
+     is chosen so white text clears WCAG AA: red.solid #dc2626 = 4.83:1; orange.solid (#f97316) is too
+     light for white (2.8:1 — fails even large-text 3:1), so warning uses the darker orange.700 #c2410c
+     = 5.18:1. Do NOT point warning at orange.solid. */
+  --app-status-error-bg: var(--chakra-colors-red-solid);
+  --app-status-warning-bg: var(--chakra-colors-orange-700);
+}
+
 body {
   margin: 0;
   font-family:
@@ -13,8 +50,8 @@ code {
 }
 
 .sketch-picker {
-  background: #2d3748 !important;
-  border: solid 1px rgba(255, 255, 255, 0.24);
+  background: var(--app-bg-emphasized) !important;
+  border: solid 1px var(--app-border-emphasized);
 }
 
 .sketch-picker > div:last-child {

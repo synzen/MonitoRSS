@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertTitle, Box, Stack } from "@chakra-ui/react";
+import { Alert as ChakraAlert, Box, Stack } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { ThemedSelect } from "@/components";
 import { useDiscordServerActiveThreads } from "../../hooks";
@@ -55,27 +55,31 @@ export const DiscordActiveThreadDropdown: React.FC<Props> = ({
         onBlur={onBlur}
         value={value}
         isClearable={isClearable}
-        selectProps={{
-          inputId,
-          "aria-labelledby": ariaLabelledBy,
-          "aria-busy": isFetching,
-          openMenuOnClick: !isFetching,
-          openMenuOnFocus: !isFetching,
-        }}
+        selectProps={
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          {
+            inputId,
+            "aria-labelledby": ariaLabelledBy,
+            "aria-busy": isFetching,
+            openMenuOnClick: !isFetching,
+            openMenuOnFocus: !isFetching,
+          } as any
+        }
         isInvalid={isInvalid}
         placeholder={placeholder}
       />
       {serverId && error && (
-        <Alert status="error">
+        <ChakraAlert.Root status="error">
+          <ChakraAlert.Indicator />
           <Box>
-            <AlertTitle>
+            <ChakraAlert.Title>
               {t(
                 "features.feed.components.addDiscordChannelThreadConnectionDialog.failedToGetThreads",
               )}
-            </AlertTitle>
-            <AlertDescription>{error?.message}</AlertDescription>
+            </ChakraAlert.Title>
+            <ChakraAlert.Description>{error?.message}</ChakraAlert.Description>
           </Box>
-        </Alert>
+        </ChakraAlert.Root>
       )}
     </Stack>
   );

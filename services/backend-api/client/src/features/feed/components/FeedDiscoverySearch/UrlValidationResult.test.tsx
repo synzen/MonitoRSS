@@ -5,6 +5,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { system } from "@/utils/theme";
 import { UrlValidationResult } from "./UrlValidationResult";
 import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage copy";
 import ApiAdapterError from "@/utils/ApiAdapterError";
@@ -54,7 +55,7 @@ const renderComponent = (props: Partial<React.ComponentProps<typeof UrlValidatio
 
   const result = render(
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider>
+      <ChakraProvider value={system}>
         <MemoryRouter>
           <UrlValidationResult {...defaultProps} {...props} />
         </MemoryRouter>

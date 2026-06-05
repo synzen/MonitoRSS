@@ -1,28 +1,23 @@
 /* eslint-disable react/destructuring-assignment */
 /* eslint-disable react/jsx-props-no-spreading */
-import {
-  Button,
-  Divider,
-  FormControl,
-  HStack,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { Button, HStack, Input, Separator, Stack, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useCallback, useEffect } from "react";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useDiscordUserMe } from "../../hooks";
 import { updateDiscordMeSupporter } from "../../api";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { useDiscordServers } from "@/features/discordServers";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
 
 interface FormValues {
   serverIds: string[];
@@ -86,50 +81,54 @@ export const UserSettingsDialog: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>{t("features.discordUsers.components.settingsDialog.title")}</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("features.discordUsers.components.settingsDialog.title")}</DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
           {userMe && userMe.supporter && (
-            <Stack spacing="4">
+            <Stack gap="4">
               <Text>{t("features.discordUsers.components.settingsDialog.description")}</Text>
               <form id="supporter-servers" onSubmit={handleSubmit(onSubmit)}>
                 <Stack>
                   {fields.map((field, index) => (
-                    <FormControl key={field.id}>
-                      <Input
-                        {...register(`serverIds.${index}`)}
-                        placeholder={t(
-                          "features.discordUsers.components.settingsDialog.serverInputPlaceholder",
-                        )}
-                      />
-                    </FormControl>
+                    <Input
+                      key={field.id}
+                      {...register(`serverIds.${index}`)}
+                      placeholder={t(
+                        "features.discordUsers.components.settingsDialog.serverInputPlaceholder",
+                      )}
+                    />
                   ))}
                 </Stack>
-                <Divider />
+                <Separator />
               </form>
             </Stack>
           )}
-        </ModalBody>
-        <ModalFooter>
+        </DialogBody>
+        <DialogFooter>
           <HStack>
-            <Button onClick={onReset} variant="ghost" isDisabled={formState.isSubmitting}>
+            <Button onClick={onReset} variant="ghost" disabled={formState.isSubmitting}>
               <span>Cancel</span>
             </Button>
-            <Button
-              colorScheme="blue"
+            <PrimaryActionButton
               form="supporter-servers"
               type="submit"
-              isDisabled={!formState.isDirty || formState.isSubmitting}
-              isLoading={formState.isSubmitting}
+              disabled={!formState.isDirty}
+              loading={formState.isSubmitting}
             >
               <span>Save</span>
-            </Button>
+            </PrimaryActionButton>
           </HStack>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

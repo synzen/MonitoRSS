@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box } from "@chakra-ui/react";
+import { Alert } from "@chakra-ui/react";
 import { ReactNode, useEffect, useRef } from "react";
 
 interface Props {
@@ -23,13 +23,13 @@ export const InlineErrorAlert = ({
   }, [ref.current, scrollIntoViewOnMount]);
 
   return (
-    <Alert status="error" ref={ref}>
-      {!hideIcon && <AlertIcon />}
-      <Box>
-        <AlertTitle display="block">{title}</AlertTitle>
-        <AlertDescription display="block">{description}</AlertDescription>
-      </Box>
-    </Alert>
+    <Alert.Root role="alert" status="error" ref={ref}>
+      {!hideIcon && <Alert.Indicator />}
+      <Alert.Content>
+        <Alert.Title display="block">{title}</Alert.Title>
+        <Alert.Description display="block">{description}</Alert.Description>
+      </Alert.Content>
+    </Alert.Root>
   );
 };
 

@@ -1,16 +1,15 @@
 import {
-  Avatar,
   Button,
   Flex,
   HStack,
   IconButton,
   Spinner,
   Stack,
-  Tag,
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { AddIcon, SettingsIcon } from "@chakra-ui/icons";
+import { FaGear, FaPlus } from "react-icons/fa6";
+import { Avatar } from "@/components/ui/avatar";
 import { LogicalFilterExpression } from "../../types";
 import { useDiscordServerRoles } from "@/features/discordServers";
 import { DiscordMentionSettingsDialog } from "./DiscordMentionSettingsDialog";
@@ -65,51 +64,45 @@ const MentionCheckbox = ({
   const userName = userData?.result.username || id;
 
   return (
-    <Flex>
-      <Tag key={id} variant="solid" size={small ? "md" : "lg"} paddingRight={0} bg="gray.700">
-        {type === "user" && userData?.result.avatarUrl && (
-          <Avatar
-            src={userData.result.avatarUrl}
-            name={userData.result.username}
-            size="xs"
-            marginRight={2}
-          />
-        )}
-        {type === "role" && (
-          <Avatar size="xs" marginRight={2} name={role?.name} background={role?.color} />
-        )}
-        <HStack width="100%">
-          <Flex
-            flex={1}
-            justifyContent="center"
-            alignItems="center"
-            height="100%"
-            padding="2px 4px"
-          >
-            {type === "role" && isFetchingRoles && <Spinner size="xs" />}
-            {type === "user" && isFetchingUser && <Spinner size="xs" />}
-            {type === "role" && !isFetchingRoles && <Text height="100%">{roleName}</Text>}
-            {type === "user" && !isFetchingUser && <Text height="100%">{userName}</Text>}
-          </Flex>
-          <DiscordMentionSettingsDialog
-            onRemoved={onDelete}
-            onFiltersUpdated={async (newFilters) => {
-              onChangeFilters(newFilters);
-            }}
-            filters={filters}
-            trigger={
-              <IconButton
-                icon={<SettingsIcon fontSize="sm" />}
-                aria-label="Mention settings"
-                size={small ? "sm" : "md"}
-                variant="ghost"
-                borderLeftRadius={0}
-              />
-            }
-          />
-        </HStack>
-      </Tag>
-    </Flex>
+    <HStack
+      gap={2}
+      alignItems="center"
+      bg="bg.emphasized"
+      color="fg"
+      borderRadius="full"
+      paddingLeft={2}
+      paddingRight={1}
+      height={small ? 8 : 9}
+    >
+      {type === "user" && userData?.result.avatarUrl && (
+        <Avatar src={userData.result.avatarUrl} name={userData.result.username} size="2xs" />
+      )}
+      {type === "role" && <Avatar size="2xs" name={role?.name} background={role?.color} />}
+      {type === "role" && isFetchingRoles && <Spinner size="xs" />}
+      {type === "user" && isFetchingUser && <Spinner size="xs" />}
+      {type === "role" && !isFetchingRoles && (
+        <Text fontSize="sm" whiteSpace="nowrap">
+          {roleName}
+        </Text>
+      )}
+      {type === "user" && !isFetchingUser && (
+        <Text fontSize="sm" whiteSpace="nowrap">
+          {userName}
+        </Text>
+      )}
+      <DiscordMentionSettingsDialog
+        onRemoved={onDelete}
+        onFiltersUpdated={async (newFilters) => {
+          onChangeFilters(newFilters);
+        }}
+        filters={filters}
+        trigger={
+          <IconButton aria-label="Mention settings" size="2xs" variant="ghost">
+            <FaGear fontSize="sm" />
+          </IconButton>
+        }
+      />
+    </HStack>
   );
 };
 
@@ -120,7 +113,7 @@ export const DiscordMessageMentionForm = ({
   excludeDescription,
   smallButton,
 }: Props) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
 
   const handleMentionSelected = (mention: SelectedMention) => {
     if (mention.type === "channel") return;
@@ -139,7 +132,7 @@ export const DiscordMessageMentionForm = ({
   };
 
   return (
-    <Stack spacing={4}>
+    <Stack gap={4}>
       {!excludeDescription && (
         <Text>
           Roles and users that will be mentioned in the
@@ -190,14 +183,16 @@ export const DiscordMessageMentionForm = ({
         })}
         <Button
           onClick={onOpen}
-          leftIcon={<AddIcon fontSize="sm" />}
           size={smallButton ? "sm" : undefined}
+          variant="outline"
+          colorPalette="brand"
         >
+          <FaPlus fontSize="sm" />
           Add Mention
         </Button>
         {guildId && (
           <InsertMentionDialog
-            isOpen={isOpen}
+            isOpen={open}
             onClose={onClose}
             onSelected={handleMentionSelected}
             guildId={guildId}

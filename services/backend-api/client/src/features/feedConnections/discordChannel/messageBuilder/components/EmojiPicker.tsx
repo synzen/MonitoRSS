@@ -6,23 +6,15 @@ import {
   IconButton,
   Image,
   Input,
-  Popover,
-  PopoverBody,
-  PopoverContent,
-  PopoverTrigger,
   SimpleGrid,
   Skeleton,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
   Tabs,
   Text,
-  useDisclosure,
   VisuallyHidden,
   VStack,
 } from "@chakra-ui/react";
-import { CloseIcon } from "@chakra-ui/icons";
+import { FaXmark } from "react-icons/fa6";
+import { PopoverBody, PopoverContent, PopoverRoot, PopoverTrigger } from "@/components/ui/popover";
 import { useDiscordServerEmojis } from "@/features/discordServers";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import emojis from "@/constants/emojis";
@@ -46,7 +38,7 @@ const CATEGORIES = [
 type EmojiCategory = (typeof CATEGORIES)[number]["key"];
 
 export const EmojiPicker: React.FC<EmojiPickerProps> = ({ value, onChange, guildId }) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<EmojiCategory>("people");
@@ -59,7 +51,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ value, onChange, guild
     refetch,
   } = useDiscordServerEmojis({
     serverId: guildId,
-    disabled: !isOpen,
+    disabled: !open,
   });
 
   const filteredDefaultEmojis = useMemo(() => {
@@ -82,7 +74,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ value, onChange, guild
     const selected: ButtonEmoji = { name: emoji.surrogates };
     onChange(selected);
     setAnnouncement(`Selected ${emoji.names[0].replace(/_/g, " ")} emoji`);
-    onClose();
+    setOpen(false);
     setSearch("");
   };
 
@@ -94,7 +86,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ value, onChange, guild
     };
     onChange(selected);
     setAnnouncement(`Selected ${emoji.name.replace(/_/g, " ")} emoji`);
-    onClose();
+    setOpen(false);
     setSearch("");
   };
 
@@ -108,31 +100,31 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ value, onChange, guild
     : "Choose emoji for button";
 
   return (
-    <HStack spacing={2}>
-      <Popover
-        isOpen={isOpen}
-        onOpen={onOpen}
-        onClose={() => {
-          onClose();
-          setSearch("");
+    <HStack gap={2}>
+      <PopoverRoot
+        open={open}
+        onOpenChange={(e) => {
+          setOpen(e.open);
+
+          if (!e.open) {
+            setSearch("");
+          }
         }}
-        initialFocusRef={searchRef}
-        placement="bottom-start"
-        isLazy
+        positioning={{ placement: "bottom-start" }}
+        initialFocusEl={() => searchRef.current}
+        lazyMount
       >
-        <PopoverTrigger>
+        <PopoverTrigger asChild>
           <Button
             variant="outline"
+            colorPalette="brand"
             size="sm"
             aria-label={triggerLabel}
-            aria-expanded={isOpen}
+            aria-expanded={open}
             aria-haspopup="dialog"
-            borderColor="gray.600"
-            color="gray.200"
-            _hover={{ bg: "gray.600" }}
           >
             {value ? (
-              <HStack spacing={1}>
+              <HStack gap={1}>
                 {value.id ? (
                   <Image
                     src={`https://cdn.discordapp.com/emojis/${value.id}.${
@@ -155,74 +147,76 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ value, onChange, guild
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent
-          role="dialog"
-          aria-label="Emoji picker"
-          bg="gray.800"
-          borderColor="gray.600"
-          w="320px"
-        >
+        <PopoverContent role="dialog" aria-label="Emoji picker" borderColor="border" w="320px">
           <PopoverBody p={3}>
             <VisuallyHidden aria-live="assertive" aria-atomic="true">
               {announcement}
             </VisuallyHidden>
-            <Tabs variant="soft-rounded" size="sm">
-              <TabList mb={2}>
-                <Tab fontSize="xs" color="gray.300" _selected={{ color: "white", bg: "blue.600" }}>
+            <Tabs.Root defaultValue="default" variant="subtle" size="sm">
+              <Tabs.List mb={2}>
+                <Tabs.Trigger
+                  value="default"
+                  fontSize="xs"
+                  color="fg.muted"
+                  _selected={{ color: "fg", bg: "brandSolid" }}
+                >
                   Default
-                </Tab>
-                <Tab fontSize="xs" color="gray.300" _selected={{ color: "white", bg: "blue.600" }}>
+                </Tabs.Trigger>
+                <Tabs.Trigger
+                  value="server"
+                  fontSize="xs"
+                  color="fg.muted"
+                  _selected={{ color: "fg", bg: "brandSolid" }}
+                >
                   Server
-                </Tab>
-              </TabList>
+                </Tabs.Trigger>
+              </Tabs.List>
               <Input
                 ref={searchRef}
                 placeholder="Search emojis..."
                 size="sm"
                 mb={2}
-                bg="gray.700"
-                borderColor="gray.600"
+                borderColor="border"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 aria-label="Search emojis"
               />
-              <TabPanels>
-                <TabPanel p={0}>
-                  <DefaultEmojiTab
-                    categories={CATEGORIES}
-                    activeCategory={activeCategory}
-                    onCategoryChange={setActiveCategory}
-                    emojis={filteredDefaultEmojis}
-                    onSelect={handleSelectDefault}
-                    search={search}
-                  />
-                </TabPanel>
-                <TabPanel p={0}>
-                  <ServerEmojiTab
-                    emojis={filteredServerEmojis}
-                    status={status}
-                    error={error}
-                    onSelect={handleSelectServer}
-                    onRetry={() => refetch()}
-                    search={search}
-                  />
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
+              <Tabs.Content value="default" p={0}>
+                <DefaultEmojiTab
+                  categories={CATEGORIES}
+                  activeCategory={activeCategory}
+                  onCategoryChange={setActiveCategory}
+                  emojis={filteredDefaultEmojis}
+                  onSelect={handleSelectDefault}
+                  search={search}
+                />
+              </Tabs.Content>
+              <Tabs.Content value="server" p={0}>
+                <ServerEmojiTab
+                  emojis={filteredServerEmojis}
+                  status={status}
+                  error={error}
+                  onSelect={handleSelectServer}
+                  onRetry={() => refetch()}
+                  search={search}
+                />
+              </Tabs.Content>
+            </Tabs.Root>
           </PopoverBody>
         </PopoverContent>
-      </Popover>
+      </PopoverRoot>
       {value && (
         <IconButton
           aria-label="Remove selected emoji"
-          icon={<CloseIcon />}
           size="sm"
           variant="ghost"
-          colorScheme="red"
+          colorPalette="red"
           minW="24px"
           minH="24px"
           onClick={handleClear}
-        />
+        >
+          <FaXmark />
+        </IconButton>
       )}
     </HStack>
   );
@@ -246,13 +240,13 @@ const DefaultEmojiTab: React.FC<DefaultEmojiTabProps> = ({
   search,
 }) => {
   return (
-    <VStack align="stretch" spacing={0}>
+    <VStack align="stretch" gap={0}>
       <HStack
         role="toolbar"
         aria-label="Filter by emoji group"
-        spacing={1}
+        gap={1}
         borderBottom="1px solid"
-        borderColor="gray.600"
+        borderColor="border"
         pb={2}
         mb={2}
       >
@@ -264,20 +258,22 @@ const DefaultEmojiTab: React.FC<DefaultEmojiTabProps> = ({
             aria-label={cat.label}
             aria-pressed={activeCategory === cat.key}
             onClick={() => onCategoryChange(cat.key)}
-            bg={activeCategory === cat.key ? "gray.600" : "transparent"}
+            bg={activeCategory === cat.key ? "bg.emphasized" : "transparent"}
+            borderWidth="1px"
+            borderColor={activeCategory === cat.key ? "brandSolid" : "transparent"}
             fontSize="lg"
             px={1.5}
             minW="32px"
             h="32px"
-            borderRadius="md"
-            _hover={{ bg: "gray.600" }}
+            borderRadius="l3"
+            _hover={{ bg: "bg.emphasized" }}
           >
             {cat.icon}
           </Button>
         ))}
       </HStack>
       {emojiList.length === 0 ? (
-        <Text color="gray.300" fontSize="sm" textAlign="center" py={4}>
+        <Text color="fg.muted" fontSize="sm" textAlign="center" py={4}>
           {search ? "No emojis match your search" : "No emojis in this category"}
         </Text>
       ) : (
@@ -286,15 +282,22 @@ const DefaultEmojiTab: React.FC<DefaultEmojiTabProps> = ({
           aria-label="Default emojis"
           maxH="240px"
           overflowY="scroll"
-          sx={{
+          css={{
             scrollbarWidth: "thin",
-            scrollbarColor: "#718096 #2D3748",
+            scrollbarColor:
+              "var(--chakra-colors-border-emphasized) var(--chakra-colors-bg-emphasized)",
             "&::-webkit-scrollbar": { width: "8px" },
-            "&::-webkit-scrollbar-track": { bg: "#2D3748", borderRadius: "4px" },
-            "&::-webkit-scrollbar-thumb": { bg: "#718096", borderRadius: "4px" },
+            "&::-webkit-scrollbar-track": {
+              bg: "var(--chakra-colors-bg-emphasized)",
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              bg: "var(--chakra-colors-border-emphasized)",
+              borderRadius: "4px",
+            },
           }}
         >
-          <SimpleGrid columns={8} spacing={0}>
+          <SimpleGrid columns={8} gap={0}>
             {emojiList.map((emoji) => (
               <Button
                 key={emoji.surrogates}
@@ -308,8 +311,8 @@ const DefaultEmojiTab: React.FC<DefaultEmojiTabProps> = ({
                 minW="36px"
                 h="36px"
                 onClick={() => onSelect(emoji)}
-                _hover={{ bg: "gray.600" }}
-                borderRadius="md"
+                _hover={{ bg: "bg.emphasized" }}
+                borderRadius="l3"
               >
                 {emoji.surrogates}
               </Button>
@@ -340,10 +343,10 @@ const ServerEmojiTab: React.FC<ServerEmojiTabProps> = ({
 }) => {
   if (status === "pending") {
     return (
-      <SimpleGrid columns={4} spacing={2} aria-busy="true">
+      <SimpleGrid columns={4} gap={2} aria-busy="true">
         {Array.from({ length: 8 }).map((_, i) => (
           // eslint-disable-next-line react/no-array-index-key -- fixed-length loading skeletons
-          <Skeleton key={i} h="48px" borderRadius="md" />
+          <Skeleton key={i} h="48px" borderRadius="l3" />
         ))}
       </SimpleGrid>
     );
@@ -351,7 +354,7 @@ const ServerEmojiTab: React.FC<ServerEmojiTabProps> = ({
 
   if (error) {
     return (
-      <VStack spacing={2} py={4}>
+      <VStack gap={2} py={4}>
         <InlineErrorAlert title="Could not load server emojis" />
         <Button size="sm" onClick={onRetry}>
           Retry
@@ -363,18 +366,18 @@ const ServerEmojiTab: React.FC<ServerEmojiTabProps> = ({
   if (emojiList.length === 0) {
     if (search) {
       return (
-        <Text color="gray.300" fontSize="sm" textAlign="center" py={4}>
+        <Text color="fg.muted" fontSize="sm" textAlign="center" py={4}>
           No server emojis match your search
         </Text>
       );
     }
 
     return (
-      <VStack py={4} spacing={1}>
-        <Text color="gray.300" fontSize="sm" textAlign="center">
+      <VStack py={4} gap={1}>
+        <Text color="fg.muted" fontSize="sm" textAlign="center">
           No custom emojis
         </Text>
-        <Text color="gray.400" fontSize="xs" textAlign="center">
+        <Text color="fg.muted" fontSize="xs" textAlign="center">
           This server doesn&apos;t have any custom emojis. You can add them in Discord Server
           Settings.
         </Text>
@@ -383,8 +386,26 @@ const ServerEmojiTab: React.FC<ServerEmojiTabProps> = ({
   }
 
   return (
-    <Box maxH="240px" overflowY="auto" role="listbox" aria-label="Server emojis">
-      <SimpleGrid columns={4} spacing={2}>
+    <Box
+      maxH="240px"
+      overflowY="auto"
+      role="listbox"
+      aria-label="Server emojis"
+      css={{
+        scrollbarWidth: "thin",
+        scrollbarColor: "var(--chakra-colors-border-emphasized) var(--chakra-colors-bg-emphasized)",
+        "&::-webkit-scrollbar": { width: "8px" },
+        "&::-webkit-scrollbar-track": {
+          bg: "var(--chakra-colors-bg-emphasized)",
+          borderRadius: "4px",
+        },
+        "&::-webkit-scrollbar-thumb": {
+          bg: "var(--chakra-colors-border-emphasized)",
+          borderRadius: "4px",
+        },
+      }}
+    >
+      <SimpleGrid columns={4} gap={2}>
         {emojiList.map((emoji) => (
           <Button
             key={emoji.id}
@@ -396,8 +417,8 @@ const ServerEmojiTab: React.FC<ServerEmojiTabProps> = ({
             h="auto"
             p={2}
             onClick={() => onSelect(emoji)}
-            _hover={{ bg: "gray.600" }}
-            borderRadius="md"
+            _hover={{ bg: "bg.emphasized" }}
+            borderRadius="l3"
             flexDirection="column"
           >
             <Image
@@ -415,7 +436,7 @@ const ServerEmojiTab: React.FC<ServerEmojiTabProps> = ({
                 }
               }}
             />
-            <Text fontSize="11px" color="gray.300" mt={1} noOfLines={1} maxW="60px">
+            <Text fontSize="11px" color="fg.muted" mt={1} lineClamp={1} maxW="60px">
               {emoji.animated ? "▶ " : ""}
               {emoji.name}
             </Text>

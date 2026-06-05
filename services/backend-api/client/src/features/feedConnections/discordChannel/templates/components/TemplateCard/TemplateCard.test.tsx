@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ChakraProvider, useRadioGroup, HStack } from "@chakra-ui/react";
+import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
+import React, { useState } from "react";
 import { describe, it, expect, vi } from "vitest";
 import { TemplateCard } from "./index";
 import { Template, TemplateRequiredField } from "../../types";
@@ -40,32 +41,31 @@ const TestWrapper = ({
   disabledTemplates = [],
   disabledReason,
 }: TestWrapperProps) => {
-  const { getRootProps, getRadioProps } = useRadioGroup({
-    name: "template",
-    defaultValue,
-    onChange,
-  });
+  const [selectedValue, setSelectedValue] = useState<string | undefined>(defaultValue);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target;
+    setSelectedValue(value);
+    onChange(value);
+  };
 
   return (
-    <ChakraProvider>
-      <HStack {...getRootProps()}>
-        {templates.map((template) => {
-          const radio = getRadioProps({
-            value: template.id,
-            isDisabled: disabledTemplates.includes(template.id),
-          });
-
-          return (
-            <TemplateCard
-              key={template.id}
-              template={template}
-              disabledReason={disabledReason}
-              testId={`template-card-${template.id}`}
-              {...radio}
-            />
-          );
-        })}
-      </HStack>
+    <ChakraProvider value={defaultSystem}>
+      <div role="radiogroup">
+        {templates.map((template) => (
+          <TemplateCard
+            key={template.id}
+            template={template}
+            disabledReason={disabledReason}
+            testId={`template-card-${template.id}`}
+            value={template.id}
+            checked={selectedValue === template.id}
+            disabled={disabledTemplates.includes(template.id)}
+            onChange={handleChange}
+            name="template"
+          />
+        ))}
+      </div>
     </ChakraProvider>
   );
 };

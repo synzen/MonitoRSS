@@ -8,6 +8,8 @@ The repo-root `docs/adr/` and the backend's `services/backend-api/docs/adr/` cap
 
 ADR-001 through ADR-006 were authored and Accepted on 2026-05-28 after maintainer review. Changes from the initial drafts are recorded in each ADR's "Decisions locked in" section. The restructuring they describe has since been carried out in the codebase.
 
+ADR-007 was authored and Accepted on 2026-06-05. It is the durable, self-contained successor to the `client/docs/chakra-v3-visual-audit/` working folder (a Chakra v3 migration scaffold, now deleted); the role system, theming mechanism, contrast gate, and `--app-*` boundary it describes are live in the codebase.
+
 ## Format
 
 Each ADR follows the [Michael Nygard one-pager template](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions):
@@ -28,6 +30,7 @@ Each ADR follows the [Michael Nygard one-pager template](https://cognitect.com/b
 | [004](004-destination-extensibility.md) | Destination extensibility: keep the FeedConnectionType shell honest via destination sub-features | Accepted |
 | [005](005-team-scoping.md) | Team scoping: `team` / `teamId`, implicit `/me` + opaque `/teams/:teamId/...` | Accepted |
 | [006](006-fitness-functions.md) | Frontend fitness functions: three ESLint architecture rules | Accepted |
+| [007](007-styling-roles-tiers-contrast.md) | Styling: a semantic role system, encoding mechanisms, and a contrast gate | Accepted |
 
 ## When to write a new frontend ADR
 

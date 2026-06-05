@@ -1,4 +1,4 @@
-import { Box, FormErrorMessage, FormHelperText } from "@chakra-ui/react";
+import { Box, Field } from "@chakra-ui/react";
 import { ThemedSelect } from "@/components";
 import { getChannelIcon } from "@/features/feedConnections";
 import { useDiscordServerChannels } from "../../hooks";
@@ -38,7 +38,7 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
     })) || [];
 
   return (
-    <Box>
+    <Box w="100%">
       <ThemedSelect
         loading={isFetching}
         isDisabled={isDisabled || !!error}
@@ -50,16 +50,15 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
         selectProps={{
           inputId,
           "aria-labelledby": ariaLabelledBy,
-          "aria-busy": isFetching,
           openMenuOnClick: !isFetching,
           openMenuOnFocus: !isFetching,
         }}
         placeholder={!serverId ? "Must select a Discord server first" : "Select a channel"}
       />
       {(!serverId || !error) && (
-        <FormHelperText>Only channels that the bot can view will appear.</FormHelperText>
+        <Field.HelperText>Only channels that the bot can view will appear.</Field.HelperText>
       )}
-      {serverId && error && <FormErrorMessage>{error?.message}</FormErrorMessage>}
+      {serverId && error && <Field.ErrorText>{error?.message}</Field.ErrorText>}
     </Box>
   );
 };

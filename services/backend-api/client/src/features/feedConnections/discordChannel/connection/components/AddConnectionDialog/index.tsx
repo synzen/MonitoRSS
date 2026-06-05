@@ -1,25 +1,11 @@
 /* eslint-disable no-nested-ternary */
 import {
   Alert,
-  AlertDescription,
-  AlertIcon,
   Box,
   Button,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
+  Field as ChakraField,
   HStack,
   Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Radio,
-  RadioGroup,
   Stack,
   Text,
   chakra,
@@ -55,6 +41,17 @@ import { TemplateGalleryModal } from "../../../templates/components/TemplateGall
 import convertMessageBuilderStateToConnectionUpdate from "../../../messageBuilder/utils/convertMessageBuilderStateToConnectionUpdate";
 import { ConnectionDialogErrorDisplay } from "./ConnectionDialogErrorDisplay";
 import { useIsFeatureAllowed, BlockableFeature } from "@/features/subscriptionProducts";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { Radio, RadioGroup } from "@/components/ui/radio";
 
 enum DiscordCreateChannelThreadMethod {
   Existing = "EXISTING",
@@ -504,30 +501,36 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      closeOnOverlayClick={!isSubmitting}
-      initialFocusRef={initialFocusRef}
-      finalFocusRef={finalFocusRef}
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) {
+          handleClose();
+        }
+      }}
+      closeOnInteractOutside={!isSubmitting}
+      initialFocusEl={() => initialFocusRef.current}
+      finalFocusEl={() => finalFocusRef?.current ?? null}
     >
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>
-          {connection ? "Edit Discord Connection" : "Add Discord Connection"}
-        </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <Stack spacing={4}>
+      <DialogContent>
+        <DialogHeader marginRight={8}>
+          <DialogTitle>
+            {connection ? "Edit Discord Connection" : "Add Discord Connection"}
+          </DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
+          <Stack gap={4}>
             <Text>Send articles as a message to a Discord channel or forum.</Text>
             <form id="add-text-channel-connection" onSubmit={handleSubmit(onSubmit)}>
-              <Stack spacing={6}>
-                <FormControl isInvalid={!!errors.serverId} isRequired>
-                  <FormLabel id="server-select-label" htmlFor="server-select">
+              <Stack gap={6}>
+                <ChakraField.Root invalid={!!errors.serverId} required>
+                  <ChakraField.Label id="server-select-label" htmlFor="server-select">
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formServerLabel",
                     )}
-                  </FormLabel>
+                    <ChakraField.RequiredIndicator />
+                  </ChakraField.Label>
                   <Controller
                     name="serverId"
                     control={control}
@@ -538,26 +541,27 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                         value={field.value}
                         inputRef={initialFocusRef}
                         alertOnArticleEligibility
-                        isInvalid={!!errors.serverId}
-                        isDisabled={isSubmitting}
+                        invalid={!!errors.serverId}
+                        disabled={isSubmitting}
                         inputId="server-select"
                         ariaLabelledBy="server-select-label"
                       />
                     )}
                   />
-                  <FormHelperText>
+                  <ChakraField.HelperText>
                     Only servers where you have server-wide Manage Channels permission will appear.
                     If you don&apos;t have this permission, you may ask someone who does to add the
                     feed and share it with you.
-                  </FormHelperText>
-                  <FormErrorMessage>{errors.serverId?.message}</FormErrorMessage>
-                </FormControl>
-                <FormControl isInvalid={!!errors.channelId} isRequired>
-                  <FormLabel id="channel-select-label" htmlFor="channel-select">
+                  </ChakraField.HelperText>
+                  <ChakraField.ErrorText>{errors.serverId?.message}</ChakraField.ErrorText>
+                </ChakraField.Root>
+                <ChakraField.Root invalid={!!errors.channelId} required>
+                  <ChakraField.Label id="channel-select-label" htmlFor="channel-select">
                     {t(
                       "features.feed.components.addDiscordChannelConnectionDialog.formChannelLabel",
                     )}
-                  </FormLabel>
+                    <ChakraField.RequiredIndicator />
+                  </ChakraField.Label>
                   <Controller
                     name="channelId"
                     control={control}
@@ -599,11 +603,13 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                       />
                     )}
                   />
-                  <FormErrorMessage>{errors.channelId?.message}</FormErrorMessage>
-                </FormControl>
+                  <ChakraField.ErrorText>{errors.channelId?.message}</ChakraField.ErrorText>
+                </ChakraField.Root>
                 {isForumChannel ? (
-                  <FormControl>
-                    <FormLabel id="forum-thread-label">Send to an existing thread</FormLabel>
+                  <ChakraField.Root>
+                    <ChakraField.Label id="forum-thread-label">
+                      Send to an existing thread
+                    </ChakraField.Label>
                     <Controller
                       name="threadId"
                       control={control}
@@ -637,27 +643,28 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                         />
                       )}
                     />
-                    <FormHelperText>
+                    <ChakraField.HelperText>
                       By default, each article creates a new thread in this forum. Select a thread
                       here to send all articles to one thread instead.
-                    </FormHelperText>
-                  </FormControl>
+                    </ChakraField.HelperText>
+                  </ChakraField.Root>
                 ) : (
                   <Controller
                     name="createThreadMethod"
                     control={control}
                     render={({ field: createThreadMethodField }) => (
                       <fieldset>
-                        <FormControl isRequired isInvalid={!!errors.createThreadMethod}>
-                          <FormLabel as="legend" id="thread-kind-label">
+                        <ChakraField.Root required invalid={!!errors.createThreadMethod}>
+                          <ChakraField.Label as="legend" id="thread-kind-label">
                             Thread behavior
-                          </FormLabel>
-                          <FormHelperText id="thread-kind-help" mb={2}>
+                            <ChakraField.RequiredIndicator />
+                          </ChakraField.Label>
+                          <ChakraField.HelperText id="thread-kind-help" mb={2}>
                             Choose how articles are delivered to this channel
-                          </FormHelperText>
+                          </ChakraField.HelperText>
                           <RadioGroup
-                            onChange={(value) => {
-                              createThreadMethodField.onChange(value);
+                            onValueChange={(details) => {
+                              createThreadMethodField.onChange(details.value);
                             }}
                             value={createThreadMethodField.value}
                             aria-labelledby="thread-kind-label"
@@ -670,12 +677,13 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                               <Box>
                                 <Radio
                                   value={DiscordCreateChannelThreadMethod.New}
-                                  aria-describedby={
-                                    createThreadMethodField.value ===
-                                    DiscordCreateChannelThreadMethod.New
-                                      ? "new-thread-constraint"
-                                      : undefined
-                                  }
+                                  inputProps={{
+                                    "aria-describedby":
+                                      createThreadMethodField.value ===
+                                      DiscordCreateChannelThreadMethod.New
+                                        ? "new-thread-constraint"
+                                        : undefined,
+                                  }}
                                 >
                                   Create a new thread for each new article
                                 </Radio>
@@ -692,21 +700,20 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                                   ml={2}
                                   mt={2}
                                   borderLeft="solid 2px"
-                                  borderColor="gray.600"
+                                  borderColor="border.emphasized"
                                 >
-                                  <Alert
+                                  <Alert.Root
                                     id="new-thread-constraint"
                                     status="info"
                                     fontSize="sm"
-                                    borderRadius="md"
                                   >
-                                    <AlertIcon />
-                                    <AlertDescription>
+                                    <Alert.Indicator />
+                                    <Alert.Description>
                                       Messages in new threads will appear under the MonitoRSS name.
                                       The display name and avatar can&apos;t be customized with this
                                       option.
-                                    </AlertDescription>
-                                  </Alert>
+                                    </Alert.Description>
+                                  </Alert.Root>
                                 </Box>
                               </Box>
                               <Box>
@@ -722,17 +729,30 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                                   Use an existing thread for each new article
                                 </Radio>
                                 <fieldset>
-                                  <chakra.legend srOnly>Existing thread information</chakra.legend>
-                                  <FormControl
+                                  <chakra.legend
+                                    srOnly
+                                    position="absolute"
+                                    width="1px"
+                                    height="1px"
+                                    padding={0}
+                                    margin="-1px"
+                                    overflow="hidden"
+                                    clip="rect(0, 0, 0, 0)"
+                                    whiteSpace="nowrap"
+                                    borderWidth={0}
+                                  >
+                                    Existing thread information
+                                  </chakra.legend>
+                                  <ChakraField.Root
                                     id="channel-thread-select-container"
                                     display={
                                       createThreadMethodField.value ===
                                       DiscordCreateChannelThreadMethod.Existing
-                                        ? "block"
+                                        ? "flex"
                                         : "none"
                                     }
-                                    isInvalid={!!errors.threadId}
-                                    isRequired={
+                                    invalid={!!errors.threadId}
+                                    required={
                                       createThreadMethodField.value ===
                                       DiscordCreateChannelThreadMethod.Existing
                                     }
@@ -740,14 +760,15 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                                     ml={2}
                                     mt={2}
                                     borderLeft="solid 2px"
-                                    borderColor="gray.600"
+                                    borderColor="border.emphasized"
                                   >
-                                    <FormLabel
+                                    <ChakraField.Label
                                       id="channel-thread-label"
                                       htmlFor="channel-thread-select"
                                     >
                                       Discord Channel Thread
-                                    </FormLabel>
+                                      <ChakraField.RequiredIndicator />
+                                    </ChakraField.Label>
                                     <Controller
                                       name="threadId"
                                       control={control}
@@ -775,57 +796,60 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                                         />
                                       )}
                                     />
-                                    <FormErrorMessage>{errors.threadId?.message}</FormErrorMessage>
-                                    <FormHelperText>
+                                    <ChakraField.ErrorText>
+                                      {errors.threadId?.message}
+                                    </ChakraField.ErrorText>
+                                    <ChakraField.HelperText>
                                       {t(
                                         "features.feed.components" +
                                           ".addDiscordChannelThreadConnectionDialog.formThreadDescripton",
                                       )}
-                                    </FormHelperText>
-                                  </FormControl>
+                                    </ChakraField.HelperText>
+                                  </ChakraField.Root>
                                 </fieldset>
                               </Box>
                             </Stack>
                           </RadioGroup>
-                        </FormControl>
+                        </ChakraField.Root>
                       </fieldset>
                     )}
                   />
                 )}
-                <FormControl isInvalid={!!errors.name} isRequired>
-                  <FormLabel>
+                <ChakraField.Root invalid={!!errors.name} required>
+                  <ChakraField.Label>
                     {t(
                       "features.feed.components.addDiscordChannelThreadConnectionDialog.formNameLabel",
                     )}
-                  </FormLabel>
+                    <ChakraField.RequiredIndicator />
+                  </ChakraField.Label>
                   <Controller
                     name="name"
                     control={control}
-                    render={({ field }) => (
-                      <Input {...field} value={field.value || ""} bg="gray.800" />
-                    )}
+                    render={({ field }) => <Input {...field} value={field.value || ""} />}
                   />
-                  {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
-                  <FormHelperText>
+                  {errors.name && (
+                    <ChakraField.ErrorText>{errors.name.message}</ChakraField.ErrorText>
+                  )}
+                  <ChakraField.HelperText>
                     {t(
                       "features.feed.components" +
                         ".addDiscordChannelThreadConnectionDialog.formNameDescription",
                     )}
-                  </FormHelperText>
-                </FormControl>
+                  </ChakraField.HelperText>
+                </ChakraField.Root>
                 {isEditing && (
                   <fieldset>
                     <chakra.legend fontWeight="semibold" fontSize="md" mb={2}>
                       Branding
                     </chakra.legend>
                     {!brandingAllowed && (
-                      <Text fontSize="sm" color="orange.500" mb={2}>
+                      <Text fontSize="sm" color="text.warning" mb={2}>
                         Upgrade to a paid plan to use custom branding on this connection.
                       </Text>
                     )}
-                    <Stack spacing={4} opacity={!brandingAllowed ? 0.5 : 1}>
-                      <FormControl isDisabled={!brandingAllowed || !!brandingDisabledReason}>
-                        <FormLabel>Display Name</FormLabel>
+                    <Stack gap={4} opacity={!brandingAllowed ? 0.5 : 1}>
+                      <ChakraField.Root disabled={!brandingAllowed || !!brandingDisabledReason}>
+                        <ChakraField.Label>Display Name</ChakraField.Label>
                         <Controller
                           name="brandingDisplayName"
                           control={control}
@@ -833,18 +857,17 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                             <Input
                               {...field}
                               value={field.value || ""}
-                              bg="gray.800"
                               placeholder="Optional"
-                              isDisabled={!brandingAllowed || !!brandingDisabledReason}
+                              disabled={!brandingAllowed || !!brandingDisabledReason}
                             />
                           )}
                         />
-                        <FormHelperText>
+                        <ChakraField.HelperText>
                           The display name that will appear on delivered messages.
-                        </FormHelperText>
-                      </FormControl>
-                      <FormControl isDisabled={!brandingAllowed || !!brandingDisabledReason}>
-                        <FormLabel>Avatar URL</FormLabel>
+                        </ChakraField.HelperText>
+                      </ChakraField.Root>
+                      <ChakraField.Root disabled={!brandingAllowed || !!brandingDisabledReason}>
+                        <ChakraField.Label>Avatar URL</ChakraField.Label>
                         <Controller
                           name="brandingAvatarUrl"
                           control={control}
@@ -852,20 +875,19 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
                             <Input
                               {...field}
                               value={field.value || ""}
-                              bg="gray.800"
                               placeholder="Optional"
                               type="url"
-                              isDisabled={!brandingAllowed || !!brandingDisabledReason}
+                              disabled={!brandingAllowed || !!brandingDisabledReason}
                             />
                           )}
                         />
-                        <FormHelperText>
+                        <ChakraField.HelperText>
                           A URL for the avatar image that will appear on delivered messages.
-                        </FormHelperText>
-                      </FormControl>
+                        </ChakraField.HelperText>
+                      </ChakraField.Root>
                     </Stack>
                     {brandingDisabledReason && (
-                      <Text fontSize="sm" color="whiteAlpha.600" mt={2}>
+                      <Text fontSize="sm" color="fg.muted" mt={2}>
                         {brandingDisabledReason}
                       </Text>
                     )}
@@ -879,30 +901,29 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
               formErrorCount={errorCount}
             />
           </Stack>
-        </ModalBody>
-        <ModalFooter>
+        </DialogBody>
+        <DialogFooter>
           <HStack>
-            <Button variant="ghost" mr={3} onClick={handleClose} isDisabled={isSubmitting}>
+            <Button variant="ghost" mr={3} onClick={handleClose} disabled={isSubmitting}>
               <span>{t("common.buttons.cancel")}</span>
             </Button>
             {connection ? (
-              <Button
-                colorScheme="blue"
+              <PrimaryActionButton
                 type="submit"
                 form="add-text-channel-connection"
-                isLoading={isSubmitting}
+                loading={isSubmitting}
                 aria-disabled={isSubmitting || !isValid}
               >
                 <span>{t("common.buttons.save")}</span>
-              </Button>
+              </PrimaryActionButton>
             ) : (
-              <Button colorScheme="blue" onClick={handleNextStep} isDisabled={isSubmitting}>
+              <PrimaryActionButton onClick={handleNextStep} disabled={isSubmitting}>
                 <span>Next: Choose Template</span>
-              </Button>
+              </PrimaryActionButton>
             )}
           </HStack>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

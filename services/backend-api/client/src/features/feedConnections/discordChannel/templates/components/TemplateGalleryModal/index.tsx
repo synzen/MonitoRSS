@@ -2,21 +2,16 @@
    Discriminated-union props (editor vs picker): variant-specific fields exist on only one
    union member, so they're read as props.X after a props.mode check, not destructured upfront. */
 import React, { useState, useEffect, useRef } from "react";
+import { VStack, Box, Text, VisuallyHidden } from "@chakra-ui/react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  VStack,
-  Box,
-  Text,
-  Alert,
-  AlertIcon,
-  VisuallyHidden,
-  useRadioGroup,
-} from "@chakra-ui/react";
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Alert } from "@/components/ui/alert";
 import { useTemplatePreview } from "./useTemplatePreview";
 import { useCurrentFormatPreview } from "./useCurrentFormatPreview";
 import { TemplateCard } from "../TemplateCard";
@@ -206,12 +201,6 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
       setShowTemplateError(false);
     }
   }, [isOpen]);
-
-  const { getRootProps, getRadioProps } = useRadioGroup({
-    name: "template-selection",
-    value: selectedTemplateId || "",
-    onChange: onTemplateSelect,
-  });
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
 
@@ -407,7 +396,7 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
     if (isLoadingArticles) {
       return (
         <>
-          <Text color="gray.400" mb={4}>
+          <Text color="fg.muted" mb={4}>
             {TEMPLATE_GALLERY_HELPER_TEXT}
           </Text>
           <TemplateGalleryLoadingSkeleton />
@@ -417,21 +406,21 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
 
     return (
       <>
-        <Text color="gray.400" mb={4}>
+        <Text color="fg.muted" mb={4}>
           {TEMPLATE_GALLERY_HELPER_TEXT}
         </Text>
         {hasNoFeedFields && (
-          <Alert status="info" mb={4} borderRadius="md">
-            <AlertIcon />
-            Your feed has no articles yet. You can proceed with Simple Text now, or wait for
-            articles to unlock more template options.
-          </Alert>
+          <Alert
+            status="info"
+            mb={4}
+            title="Your feed has no articles yet. You can proceed with Simple Text now, or wait for articles to unlock more template options."
+          />
         )}
         <TemplateGalleryLayout
           templateList={
             <Box as="fieldset">
               <VisuallyHidden as="legend">Choose a template</VisuallyHidden>
-              <VStack {...getRootProps()} spacing={3} align="stretch" p={1}>
+              <VStack role="radiogroup" gap={3} align="stretch" p={1}>
                 {[...templates]
                   .sort((a, b) => {
                     const aCompatible = isTemplateCompatible(a, feedFields, detectedFields);
@@ -445,9 +434,6 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
                   .map((template) => {
                     const isCompatible = isTemplateCompatible(template, feedFields, detectedFields);
                     const disabledReason = getDisabledReason(template, feedFields, detectedFields);
-                    const radio = getRadioProps({
-                      value: template.id,
-                    });
 
                     return (
                       <TemplateCard
@@ -455,7 +441,10 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
                         template={template}
                         disabledReason={disabledReason}
                         isDisabled={!isCompatible}
-                        {...radio}
+                        value={template.id}
+                        isChecked={template.id === selectedTemplateId}
+                        onChange={() => onTemplateSelect(template.id)}
+                        name="template-selection"
                       />
                     );
                   })}
@@ -524,22 +513,26 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size={{ base: "full", md: "xl", lg: "6xl" }}
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) onClose();
+      }}
+      size={{ base: "full", md: "xl" }}
       scrollBehavior="inside"
-      closeOnOverlayClick
-      closeOnEsc={modalView === "editor"}
-      finalFocusRef={finalFocusRef}
+      closeOnInteractOutside
+      closeOnEscape={modalView === "editor"}
+      finalFocusEl={finalFocusRef ? () => finalFocusRef.current : undefined}
       trapFocus={!isPaddleCheckoutOpen}
     >
-      <ModalOverlay />
-      <ModalContent
-        maxH={{ base: "100dvh", lg: "90vh" }}
-        height={{ base: "100dvh", md: "auto" }}
+      <DialogContent
+        maxW={{ lg: "1080px" }}
+        // The `full` size (mobile) sets `minH: 100dvh` and zeroes the dialog margin; Chakra's
+        // responsive `size` overrides per-property and `xl` re-declares neither, so both leak to md+.
+        // Reset them to get the standard top-placed, content-height dialog (like every `size="xl"` one).
+        minH={{ base: "100dvh", md: "0" }}
+        my={{ base: "0", md: 16 }}
         data-testid={testId}
-        aria-labelledby="template-gallery-modal-header"
         onKeyDown={(e) => {
           if (e.key === "Escape" && modalView === "upgrade") {
             e.stopPropagation();
@@ -547,14 +540,16 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
           }
         }}
       >
-        <ModalHeader id="template-gallery-modal-header">
-          {modalTitle || "Choose a Message Format Template"}
-        </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>{renderModalBodyContent()}</ModalBody>
+        <DialogHeader>
+          <DialogTitle id="template-gallery-modal-header">
+            {modalTitle || "Choose a Message Format Template"}
+          </DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>{renderModalBodyContent()}</DialogBody>
         {renderFooter()}
-      </ModalContent>
-    </Modal>
+      </DialogContent>
+    </DialogRoot>
   );
 };
 

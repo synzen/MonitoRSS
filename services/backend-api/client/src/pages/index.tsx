@@ -141,7 +141,7 @@ const Pages: React.FC = () => (
           <SuspenseErrorBoundary>
             <Suspense
               fallback={
-                <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
+                <Stack alignItems="center" justifyContent="center" height="100%" gap="2rem">
                   <Loading size="xl" />
                   <Heading>Loading Message Builder...</Heading>
                 </Stack>

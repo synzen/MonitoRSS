@@ -1,22 +1,12 @@
 import {
   Button,
-  Checkbox,
   HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Stack,
   chakra,
   Text,
   Badge,
-  Divider,
+  Separator,
   Box,
-  FormControl,
-  FormErrorMessage,
   Spinner,
   Center,
 } from "@chakra-ui/react";
@@ -25,12 +15,28 @@ import { array, InferType, mixed, number, object, string } from "yup";
 import { Controller, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useEffect } from "react";
-import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "../../../../components";
+import {
+  InlineErrorAlert,
+  InlineErrorIncompleteFormAlert,
+  Panel,
+  PrimaryActionButton,
+} from "../../../../components";
 import { useCreateUserFeedCopySettings } from "../../hooks/useCreateUserFeedCopySettings";
 import { CopyableUserFeedSettings } from "../../constants/copyableUserFeedSettings";
 import { SelectableUserFeedList } from "./SelectableUserFeedList";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 import { useUserFeed } from "../../hooks";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field } from "@/components/ui/field";
 
 enum CopyCategory {
   Comparisons = "Comparisons",
@@ -254,22 +260,21 @@ export const CopyUserFeedSettingsDialog = ({
               <chakra.legend srOnly>{category}</chakra.legend>
               <Stack>
                 <Checkbox
-                  isChecked={allCategorySettingsAreChecked}
-                  isIndeterminate={!allCategorySettingsAreChecked && !noCategorySettingsAreChecked}
-                  onChange={(e) => {
+                  checked={
+                    !allCategorySettingsAreChecked && !noCategorySettingsAreChecked
+                      ? "indeterminate"
+                      : allCategorySettingsAreChecked
+                  }
+                  onCheckedChange={(e) => {
                     const newSettings = calculateNewCheckedSettingsForCategory(
                       field.value,
                       category,
-                      e.target.checked,
+                      !!e.checked,
                     );
 
                     field.onChange(newSettings);
                   }}
                   inputProps={{
-                    "aria-checked":
-                      !allCategorySettingsAreChecked && !noCategorySettingsAreChecked
-                        ? "mixed"
-                        : allCategorySettingsAreChecked,
                     "aria-controls": allCategorySettings.join(" "),
                   }}
                 >
@@ -286,16 +291,16 @@ export const CopyUserFeedSettingsDialog = ({
                         <chakra.li pl={6} key={setting}>
                           <Checkbox
                             id={setting}
-                            onChange={(e) => {
+                            onCheckedChange={(e) => {
                               const newSettings = calculateNewCheckedSettings(
                                 field.value,
                                 setting as CopyableUserFeedSettings,
-                                e.target.checked,
+                                !!e.checked,
                               );
 
                               field.onChange(newSettings);
                             }}
-                            isChecked={field.value.includes(setting as CopyableUserFeedSettings)}
+                            checked={field.value.includes(setting as CopyableUserFeedSettings)}
                           >
                             {description}
                           </Checkbox>
@@ -317,80 +322,93 @@ export const CopyUserFeedSettingsDialog = ({
   });
 
   return (
-    <Modal size="xl" isOpen={isOpen} onClose={onClose} finalFocusRef={onCloseRef}>
-      <ModalOverlay />
+    <DialogRoot
+      size="xl"
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) {
+          onClose();
+        }
+      }}
+      finalFocusEl={onCloseRef ? () => onCloseRef.current : undefined}
+    >
       <form onSubmit={handleSubmit(onSubmit)}>
-        <ModalContent>
-          <ModalHeader>Copy feed settings</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Copy feed settings</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody>
             {!feed && (
               <Center>
                 <Spinner />
               </Center>
             )}
             {feed && (
-              <Stack spacing={6}>
+              <Stack gap={6}>
                 <Text>
                   Copy settings from the source feed to another. This will overwrite the settings of
                   the target feeds.
                 </Text>
-                <Stack py={4} px={4} bg="gray.800" rounded="md">
-                  <Badge bg="none" p={0}>
-                    Source Feed
-                  </Badge>
-                  <Divider />
-                  <Box>
-                    <Text>{feed.title}</Text>
-                    <Text fontSize="sm" color="whiteAlpha.700" wordBreak="break-all">
-                      {feed.url}
-                    </Text>
-                  </Box>
-                </Stack>
+                <Panel py={4} px={4}>
+                  <Stack>
+                    <Badge bg="none" p={0}>
+                      Source Feed
+                    </Badge>
+                    <Separator />
+                    <Box>
+                      <Text>{feed.title}</Text>
+                      <Text fontSize="sm" color="fg.muted" wordBreak="break-all">
+                        {feed.url}
+                      </Text>
+                    </Box>
+                  </Stack>
+                </Panel>
                 <fieldset>
                   <Controller
                     name="checkedSettings"
                     control={control}
                     render={({ field }) => (
-                      <FormControl isInvalid={!!errors.checkedSettings}>
-                        <Stack spacing={2}>
-                          <legend>
-                            <Text size="sm" fontWeight="semibold">
-                              Settings to Copy
-                            </Text>
-                          </legend>
-                          <Stack>
-                            {otherSettings.map((setting) => {
-                              const settingDescription = CopyableSettingDescriptions[setting];
+                      <Stack gap={2}>
+                        <legend>
+                          <Text textStyle="sm" fontWeight="semibold">
+                            Settings to Copy
+                          </Text>
+                        </legend>
+                        <Stack>
+                          {otherSettings.map((setting) => {
+                            const settingDescription = CopyableSettingDescriptions[setting];
 
-                              return (
-                                <Checkbox
-                                  onChange={(e) => {
-                                    const newSettings = calculateNewCheckedSettings(
-                                      field.value,
-                                      setting,
-                                      e.target.checked,
-                                    );
-                                    field.onChange(newSettings);
-                                  }}
-                                  isChecked={field.value.includes(setting)}
-                                  key={setting}
-                                >
-                                  {settingDescription.description}
-                                  <br />
-                                  {settingDescription.hint && (
-                                    <chakra.span color="whiteAlpha.600" fontSize={14}>
-                                      {settingDescription.hint}
-                                    </chakra.span>
-                                  )}
-                                </Checkbox>
-                              );
-                            })}
-                            {checkboxesByCategories}
-                          </Stack>
+                            return (
+                              <Checkbox
+                                onCheckedChange={(e) => {
+                                  const newSettings = calculateNewCheckedSettings(
+                                    field.value,
+                                    setting,
+                                    !!e.checked,
+                                  );
+                                  field.onChange(newSettings);
+                                }}
+                                checked={field.value.includes(setting)}
+                                key={setting}
+                              >
+                                {settingDescription.description}
+                                <br />
+                                {settingDescription.hint && (
+                                  <chakra.span color="fg.muted" fontSize={14}>
+                                    {settingDescription.hint}
+                                  </chakra.span>
+                                )}
+                              </Checkbox>
+                            );
+                          })}
+                          {checkboxesByCategories}
                         </Stack>
-                        <FormErrorMessage>{errors.checkedSettings?.message}</FormErrorMessage>
-                      </FormControl>
+                        <Field
+                          invalid={!!errors.checkedSettings}
+                          errorText={errors.checkedSettings?.message}
+                        />
+                      </Stack>
                     )}
                   />
                 </fieldset>
@@ -399,40 +417,39 @@ export const CopyUserFeedSettingsDialog = ({
                     name="userFeedSelection"
                     control={control}
                     render={({ field }) => (
-                      <FormControl isInvalid={!!errors.userFeedSelection}>
-                        <Stack spacing={2}>
-                          <SelectableUserFeedList
-                            onSelectedIdsChange={(ids) =>
-                              field.onChange({
-                                ...field.value,
-                                type: "selected",
-                                selectedFeeds: ids,
-                                total: ids.length,
-                              })
-                            }
-                            selectedIds={field.value.selectedFeeds || []}
-                            excludedIds={field.value.excludedFeeds || []}
-                            onExcludedIdsChange={(ids) =>
-                              field.onChange({ ...field.value, excludedFeeds: ids })
-                            }
-                            description="The feeds that will have their settings overwritten with the selected settings from the source feed."
-                            isSelectedAll={field.value.type === "all"}
-                            onSelectAll={(totalCount, search, isChecked) => {
-                              field.onChange({
-                                ...field.value,
-                                type: isChecked ? "all" : "selected",
-                                selectedFeeds: field.value.selectedFeeds,
-                                excludedFeeds: [],
-                                total: totalCount,
-                                searchTerm: search,
-                              });
-                            }}
-                          />
-                          <FormErrorMessage>
-                            {errors.userFeedSelection?.selectedFeeds?.message}
-                          </FormErrorMessage>
-                        </Stack>
-                      </FormControl>
+                      <Stack gap={2}>
+                        <SelectableUserFeedList
+                          onSelectedIdsChange={(ids) =>
+                            field.onChange({
+                              ...field.value,
+                              type: "selected",
+                              selectedFeeds: ids,
+                              total: ids.length,
+                            })
+                          }
+                          selectedIds={field.value.selectedFeeds || []}
+                          excludedIds={field.value.excludedFeeds || []}
+                          onExcludedIdsChange={(ids) =>
+                            field.onChange({ ...field.value, excludedFeeds: ids })
+                          }
+                          description="The feeds that will have their settings overwritten with the selected settings from the source feed."
+                          isSelectedAll={field.value.type === "all"}
+                          onSelectAll={(totalCount, search, isChecked) => {
+                            field.onChange({
+                              ...field.value,
+                              type: isChecked ? "all" : "selected",
+                              selectedFeeds: field.value.selectedFeeds,
+                              excludedFeeds: [],
+                              total: totalCount,
+                              searchTerm: search,
+                            });
+                          }}
+                        />
+                        <Field
+                          invalid={!!errors.userFeedSelection}
+                          errorText={errors.userFeedSelection?.selectedFeeds?.message}
+                        />
+                      </Stack>
                     )}
                   />
                 </fieldset>
@@ -451,15 +468,13 @@ export const CopyUserFeedSettingsDialog = ({
                 <InlineErrorIncompleteFormAlert fieldCount={formErrorCount} />
               </Box>
             )}
-          </ModalBody>
-          <ModalFooter>
+          </DialogBody>
+          <DialogFooter>
             <HStack>
               <Button variant="ghost" onClick={onClose}>
                 <span>Cancel</span>
               </Button>
-              <Button
-                colorScheme="blue"
-                mr={3}
+              <PrimaryActionButton
                 aria-disabled={isSubmitting}
                 onClick={() => {
                   if (isSubmitting) {
@@ -478,11 +493,11 @@ export const CopyUserFeedSettingsDialog = ({
                     } matching feeds`}
                 </span>
                 <span>{isSubmitting && "Copying..."}</span>
-              </Button>
+              </PrimaryActionButton>
             </HStack>
-          </ModalFooter>
-        </ModalContent>
+          </DialogFooter>
+        </DialogContent>
       </form>
-    </Modal>
+    </DialogRoot>
   );
 };

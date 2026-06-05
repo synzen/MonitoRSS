@@ -1,25 +1,25 @@
 import React, { useState } from "react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
   VStack,
   HStack,
   Input,
   InputGroup,
-  InputLeftElement,
   Text,
   Button,
   Box,
   Spinner,
   Badge,
-  FormLabel,
-  FormControl,
 } from "@chakra-ui/react";
-import { SearchIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { FaMagnifyingGlass, FaChevronRight } from "react-icons/fa6";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Field } from "@/components/ui/field";
 import { ArticlePropertySelect } from "../connection/components/ArticlePropertySelect";
 import {
   useUserFeedConnectionContext,
@@ -119,37 +119,35 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl">
-      <ModalOverlay bg="blackAlpha.600" />
-      <ModalContent bg="gray.800" color="white" maxH="80vh" role="dialog">
-        <ModalHeader
-          borderBottom="1px solid"
-          borderColor="gray.600"
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) {
+          onClose();
+        }
+      }}
+      size="xl"
+    >
+      <DialogContent color="fg" maxH="80vh" role="dialog">
+        <DialogHeader
+          borderBottomWidth="1px"
+          borderColor="border"
           fontSize="lg"
           fontWeight="semibold"
         >
-          Select Article
-        </ModalHeader>
-        <ModalCloseButton aria-label="Close article selection dialog" size="lg" />
-        <ModalBody p={0}>
+          <DialogTitle>Select Article</DialogTitle>
+          <DialogCloseTrigger aria-label="Close article selection dialog" />
+        </DialogHeader>
+        <DialogBody p={0}>
           {/* Search and Controls Section */}
-          <Box p={4} borderBottom="1px solid" borderColor="gray.600" role="region">
-            <Text fontSize="sm" color="gray.400" mb={3} id="article-selection-description">
+          <Box p={4} borderBottomWidth="1px" borderColor="border" role="region">
+            <Text fontSize="sm" color="fg.muted" mb={3} id="article-selection-description">
               Select an article from the list below to preview. Choose a property to display and
               search within. Use Tab to navigate between controls and Enter or Space to select
               articles.
             </Text>
-            <VStack spacing={4} align="stretch">
-              <FormControl w="full" mt={2}>
-                <FormLabel
-                  fontSize="sm"
-                  color="gray.400"
-                  id="display-property-label"
-                  as="label"
-                  htmlFor="display-property-select"
-                >
-                  Display Property
-                </FormLabel>
+            <VStack gap={4} align="stretch">
+              <Field label="Display Property" w="full" mt={2}>
                 <ArticlePropertySelect
                   customPlaceholders={connection.customPlaceholders || []}
                   value={displayProperty}
@@ -159,44 +157,32 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                   ariaLabelledBy="display-property-label"
                   inputId="display-property-select"
                   isRequired={false}
-                  invertBg
                 />
-              </FormControl>
-              <FormControl w="full">
-                <FormLabel
-                  fontSize="sm"
-                  color="gray.400"
-                  mb={2}
-                  as="label"
-                  htmlFor="search-articles-input"
+              </Field>
+              <Field label="Search Articles" w="full">
+                <InputGroup
+                  startElement={<FaMagnifyingGlass color="fg.muted" aria-hidden />}
+                  w="full"
                 >
-                  Search Articles
-                </FormLabel>
-                <InputGroup>
-                  <InputLeftElement pointerEvents="none">
-                    <SearchIcon color="gray.400" aria-hidden="true" />
-                  </InputLeftElement>
                   <Input
                     id="search-articles-input"
                     placeholder={displayProperty ? `Search by ${displayProperty}...` : "Search..."}
                     value={searchQuery}
                     onChange={handleSearchChange}
-                    bg="gray.700"
-                    border="none"
                     aria-label={`Search articles by ${displayProperty}`}
                     aria-describedby="search-description"
                     aria-disabled={!displayProperty || !!error}
                   />
                 </InputGroup>
-                <Text id="search-description" fontSize="xs" color="gray.500" mt={1} srOnly>
+                <Text id="search-description" fontSize="xs" color="fg.muted" mt={1} srOnly>
                   Type to filter articles by the selected property. Results update automatically as
                   you type.
                 </Text>
-              </FormControl>
+              </Field>
             </VStack>
           </Box>
           {/* Content Section */}
-          <VStack spacing={0} align="stretch" aria-label="Article list">
+          <VStack gap={0} align="stretch" aria-label="Article list">
             {/* Loading State */}
             {isLoading && (
               <Box
@@ -205,11 +191,11 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                 role="status"
                 aria-live="polite"
                 aria-label="Loading articles"
-                bg="gray.800"
+                bg="bg.panel"
               >
-                <VStack spacing={4}>
-                  <Spinner color="blue.400" size="lg" thickness="4px" />
-                  <Text color="gray.300" fontWeight="medium">
+                <VStack gap={4}>
+                  <Spinner color="text.link" size="lg" borderWidth="4px" />
+                  <Text color="fg.muted" fontWeight="medium">
                     Loading Articles...
                   </Text>
                 </VStack>
@@ -218,11 +204,11 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
             {/* Error State */}
             {!isLoading && error && (
               <Box p={6} textAlign="center" role="alert" aria-live="assertive" aria-atomic="true">
-                <VStack spacing={4}>
-                  <Text color="red.400" fontWeight="medium">
+                <VStack gap={4}>
+                  <Text color="text.error" fontWeight="medium">
                     Failed to Load Articles
                   </Text>
-                  <Text color="gray.400" fontSize="sm" textAlign="center">
+                  <Text color="fg.muted" fontSize="sm" textAlign="center">
                     {error}
                   </Text>
                 </VStack>
@@ -231,7 +217,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
             {/* Empty State */}
             {!isLoading && !error && articles.length === 0 && (
               <Box p={6} textAlign="center" role="status" aria-live="polite">
-                <Text color="gray.400" fontStyle="italic">
+                <Text color="fg.muted" fontStyle="italic">
                   {debouncedSearchQuery
                     ? `No articles found matching '${debouncedSearchQuery}'`
                     : "No articles available."}
@@ -243,11 +229,11 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
               <>
                 {/* Articles List Header */}
                 <VStack
-                  spacing={0}
+                  gap={0}
                   align="stretch"
                   role="list"
                   maxHeight={400}
-                  bg="gray.800"
+                  bg="bg.panel"
                   h="100%"
                   overflow="auto"
                   hidden={fetchStatus === "fetching"}
@@ -274,24 +260,24 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                             ? "1px solid"
                             : undefined
                         }
-                        borderColor="gray.600"
+                        borderColor="border"
                         bg="transparent"
                         _hover={{
-                          bg: "gray.700",
+                          bg: "bg.emphasized",
                         }}
                         _focus={{
-                          bg: "gray.700",
+                          bg: "bg.emphasized",
                           outline: "2px solid",
-                          outlineColor: "blue.400",
+                          outlineColor: "brand.focusRing",
                           outlineOffset: "-2px",
                         }}
                         onClick={() => handleSelectArticle(article)}
                         onKeyDown={(e) => handleKeyDown(e, article)}
                       >
-                        <VStack align="start" spacing={isSelected ? 2 : 0} flex={1} w="full">
+                        <VStack align="start" gap={isSelected ? 2 : 0} flex={1} w="full">
                           {isSelected && (
-                            <HStack spacing={2} aria-hidden="true">
-                              <Badge size="sm" colorScheme="blue" fontSize="xs">
+                            <HStack gap={2} aria-hidden="true">
+                              <Badge size="sm" colorPalette="brand" fontSize="xs">
                                 Currently selected
                               </Badge>
                             </HStack>
@@ -303,7 +289,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                             w="full"
                             wordBreak="break-word"
                             whiteSpace="pre-wrap"
-                            noOfLines={displayProperty === "content" ? 4 : 2}
+                            lineClamp={displayProperty === "content" ? 4 : 2}
                             fontStyle={
                               getDisplayValue(article).startsWith("[") ? "italic" : "normal"
                             }
@@ -311,12 +297,11 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                             {getDisplayValue(article)}
                           </Text>
                         </VStack>
-                        <ChevronRightIcon
-                          color="gray.400"
+                        <FaChevronRight
+                          color="fg.muted"
                           fontSize="lg"
-                          ml={2}
-                          flexShrink={0}
-                          aria-hidden="true"
+                          style={{ marginLeft: "0.5rem", flexShrink: 0 }}
+                          aria-hidden
                         />
                       </Button>
                     );
@@ -324,25 +309,25 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                 </VStack>
                 {/* Pagination Section */}
                 {totalPages > 1 && (
-                  <Box p={4} borderTop="1px solid" borderColor="gray.600" bg="gray.800">
+                  <Box p={4} borderTop="1px solid" borderColor="border" bg="bg.panel">
                     <HStack justify="space-between" align="center" w="full">
                       {/* Article Count Info - Left Side */}
-                      <Text fontSize="sm" color="gray.400" aria-live="polite">
+                      <Text fontSize="sm" color="fg.muted" aria-live="polite">
                         Showing {startIndex + 1}-
                         {Math.min(startIndex + ITEMS_PER_PAGE, totalArticles)} of {totalArticles}
                         {debouncedSearchQuery && (
-                          <Text as="span" color="gray.500">
+                          <Text as="span" color="fg.muted">
                             {" "}
                             (filtered)
                           </Text>
                         )}
                       </Text>
                       {/* Pagination Controls - Right Side */}
-                      <HStack spacing={2}>
+                      <HStack gap={2}>
                         <Button
                           size="sm"
                           variant="outline"
-                          colorScheme="gray"
+                          colorPalette="gray"
                           aria-disabled={currentPage === 1 || fetchStatus === "fetching"}
                           onClick={() => {
                             if (currentPage === 1 || fetchStatus === "fetching") {
@@ -358,7 +343,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          colorScheme="gray"
+                          colorPalette="gray"
                           aria-disabled={currentPage === totalPages || fetchStatus === "fetching"}
                           onClick={() => {
                             if (currentPage === totalPages || fetchStatus === "fetching") {
@@ -378,8 +363,8 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
               </>
             )}
           </VStack>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+        </DialogBody>
+      </DialogContent>
+    </DialogRoot>
   );
 };
