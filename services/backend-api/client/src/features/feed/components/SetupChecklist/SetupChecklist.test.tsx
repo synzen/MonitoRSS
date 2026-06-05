@@ -123,7 +123,7 @@ describe("SetupChecklist", () => {
     await user.click(screen.getByRole("button", { name: /3 feeds need delivery connections/ }));
 
     await waitFor(() => {
-      expect(screen.queryByText("Feed One")).not.toBeVisible();
+      expect(screen.queryByText("Feed One")).not.toBeInTheDocument();
     });
   });
 

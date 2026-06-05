@@ -232,8 +232,6 @@ describe("DiscordMessageDisplay", () => {
     });
 
     it("renders MediaGallery component without crashing", () => {
-      // MediaGallery renders a grid with image containers
-      // In test environment, images may show fallback UI since URLs don't load
       const { container } = renderWithChakra(
         <DiscordMessageDisplay messages={[mockV2WithMediaGallery]} />,
       );
@@ -241,8 +239,9 @@ describe("DiscordMessageDisplay", () => {
       // Verify the component renders (doesn't throw)
       expect(container.querySelector(".chakra-stack")).toBeInTheDocument();
 
-      // MediaGallery items show fallback text when images don't load
-      expect(screen.getAllByText(/Loading|No image/i).length).toBeGreaterThanOrEqual(1);
+      // MediaGallery renders one image per item, labelled by its description.
+      expect(screen.getByAltText("Image 1")).toBeInTheDocument();
+      expect(screen.getByAltText("Image 2")).toBeInTheDocument();
     });
 
     it("renders Separator/Divider", () => {
@@ -318,7 +317,9 @@ describe("DiscordMessageDisplay", () => {
     it("renders MonitoRSS avatar", () => {
       renderWithChakra(<DiscordMessageDisplay messages={[mockV2Message]} />);
 
-      const avatar = screen.getByRole("img", { name: "MonitoRSS" });
+      // The avatar image stays hidden until it loads (it never loads in JSDOM), which makes
+      // its computed accessible name empty, so assert on the alt text screen readers announce.
+      const avatar = screen.getByAltText("MonitoRSS");
 
       expect(avatar).toBeInTheDocument();
     });

@@ -355,7 +355,7 @@ describe("BrowseFeedsModal", () => {
       expect(screen.queryByRole("heading", { level: 3 })).not.toBeInTheDocument();
     });
 
-    it("re-opening with a different initialCategory selects the new category", () => {
+    it("re-opening with a different initialCategory selects the new category", async () => {
       const { rerender } = renderModal({ initialCategory: "tech" });
 
       expect(screen.getByRole("radio", { name: /Tech/ })).toHaveAttribute("aria-checked", "true");
@@ -380,7 +380,10 @@ describe("BrowseFeedsModal", () => {
         </ChakraProvider>,
       );
 
-      expect(screen.getByRole("radio", { name: /Sports/ })).toHaveAttribute("aria-checked", "true");
+      expect(await screen.findByRole("radio", { name: /Sports/ })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
       expect(screen.getByRole("radio", { name: /Tech/ })).toHaveAttribute("aria-checked", "false");
     });
 
@@ -409,7 +412,10 @@ describe("BrowseFeedsModal", () => {
         </ChakraProvider>,
       );
 
-      expect(screen.getByRole("radio", { name: /All/ })).toHaveAttribute("aria-checked", "true");
+      expect(await screen.findByRole("radio", { name: /All/ })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
       expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(8);
     });
   });
@@ -620,7 +626,7 @@ describe("BrowseFeedsModal", () => {
       ).toBeInTheDocument();
     });
 
-    it("re-opening modal preserves Added states in category view", () => {
+    it("re-opening modal preserves Added states in category view", async () => {
       const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       const feedActionStates = {
         [firstFeed.id]: { status: "added" as const, settingsUrl: "/feeds/1", feedId: "1" },
@@ -663,7 +669,9 @@ describe("BrowseFeedsModal", () => {
       );
 
       expect(
-        screen.getByRole("button", { name: `Go to feed settings for ${firstFeed.title}` }),
+        await screen.findByRole("button", {
+          name: `Go to feed settings for ${firstFeed.title}`,
+        }),
       ).toBeInTheDocument();
     });
   });

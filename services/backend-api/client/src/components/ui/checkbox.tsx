@@ -10,10 +10,15 @@ export interface CheckboxProps extends ChakraCheckbox.RootProps {
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   function Checkbox(props, ref) {
     const { icon, children, inputProps, rootRef, ...rest } = props;
+    const isIndeterminate = rest.checked === "indeterminate";
 
     return (
       <ChakraCheckbox.Root ref={rootRef} {...rest}>
-        <ChakraCheckbox.HiddenInput ref={ref} {...inputProps} />
+        <ChakraCheckbox.HiddenInput
+          ref={ref}
+          {...inputProps}
+          aria-checked={isIndeterminate ? "mixed" : inputProps?.["aria-checked"]}
+        />
         <ChakraCheckbox.Control>{icon || <ChakraCheckbox.Indicator />}</ChakraCheckbox.Control>
         {children != null && <ChakraCheckbox.Label>{children}</ChakraCheckbox.Label>}
       </ChakraCheckbox.Root>
