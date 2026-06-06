@@ -193,10 +193,15 @@ export const UrlValidationResult = ({
             <Box>
               <Alert.Title>Couldn&apos;t find a feed</Alert.Title>
               <Alert.Description>
-                <Text fontSize="sm" mb={2}>
+                <Text fontSize="sm" mb={2} color="fg">
                   We couldn&apos;t detect a news feed at this URL. The site may not publish one.
                 </Text>
-                <Button size="sm" variant="outline" onClick={onTrySearchByName}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  borderColor="colorPalette.solid"
+                  onClick={onTrySearchByName}
+                >
                   Try searching by name instead
                 </Button>
               </Alert.Description>
@@ -206,7 +211,14 @@ export const UrlValidationResult = ({
             <Text as="h3" fontWeight="semibold" fontSize="sm" mb={2}>
               Tips for finding feeds
             </Text>
-            <Box as="ul" pl={4} fontSize="sm" color="fg.subtle">
+            <Box
+              as="ul"
+              pl={5}
+              fontSize="sm"
+              color="fg.muted"
+              listStyleType="disc"
+              listStylePosition="outside"
+            >
               <Box as="li" mb={1}>
                 Double-check the URL for typos or missing parts
               </Box>

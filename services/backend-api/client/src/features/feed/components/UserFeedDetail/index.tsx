@@ -668,7 +668,7 @@ export const UserFeedDetail: React.FC = () => {
                         </Alert>
                       </Stack>
                     )}
-                    {feed?.connections.length && (
+                    {!!feed?.connections.length && (
                       <SimpleGrid
                         gap={4}
                         templateColumns={[
@@ -713,7 +713,7 @@ export const UserFeedDetail: React.FC = () => {
                         </SimpleGrid>
                       </Stack>
                     ) : null}
-                    {feed?.connections.length && addConnectionButtons}
+                    {!!feed?.connections.length && addConnectionButtons}
                   </Stack>
                 </TabContentContainer>
               </BoxConstrained.Container>
