@@ -61,13 +61,19 @@ The Paddle checkout E2E tests (`14-paddle-checkout.spec.ts`, `15-paddle-branding
    ```bash
    winget install cloudflare.cloudflared
    ```
-2. **`BACKEND_API_PADDLE_KEY`** environment variable set in `.env.local` (or `.env`) at the repo root. This is the Paddle sandbox API key used to manage notification URLs and cancel subscriptions.
+2. **`BACKEND_API_PADDLE_KEY`** environment variable set in `e2e/.env` (or `.env.local` at the repo root). This is the Paddle sandbox API key used to create the notification setting, manage notification URLs, and cancel subscriptions.
+
+> **Your local dev notification setting is never touched.** Earlier this suite repointed a *shared* notification setting's `destination` at the tunnel, which hijacked local dev's webhook delivery. Now `e2e-mock.sh` **creates an ephemeral notification setting per run** (via the Paddle API), exports its signing secret as `BACKEND_API_PADDLE_WEBHOOK_SECRET` **before the backend boots** (so HMAC verification matches), and **deletes the setting on teardown**. By default, do not set `BACKEND_API_PADDLE_WEBHOOK_SECRET` in `e2e/.env` — the script provides it.
+>
+> **Bring your own setting (optional).** If you'd rather use a notification setting you manage, set `E2E_PADDLE_NOTIFICATION_SETTING_ID` in `e2e/.env` along with that setting's own `BACKEND_API_PADDLE_WEBHOOK_SECRET`. The script then skips create/delete and leaves your setting in place, only repointing its `destination` at the tunnel during setup. (Use a setting dedicated to E2E, not your local dev one — setup will overwrite its destination.)
 
 ### How It Works
 
-1. **Setup** (`tests/paddle.setup.ts`):
+1. **Before stack boot** (`e2e-mock.sh`): if `E2E_PADDLE_NOTIFICATION_SETTING_ID` is already set, it's used as-is; otherwise, when `BACKEND_API_PADDLE_KEY` is set, the script creates an ephemeral Paddle notification setting, captures its `endpoint_secret_key`, exports it as `BACKEND_API_PADDLE_WEBHOOK_SECRET` and the new setting's id as `E2E_PADDLE_NOTIFICATION_SETTING_ID`, then brings up the stack so the backend boots already knowing the secret. The trap deletes only a setting the script itself created.
+
+2. **Setup** (`tests/paddle.setup.ts`):
    - Starts a Cloudflare Tunnel to expose the backend with a public URL
-   - Updates the Paddle notification setting to point the webhook at the tunnel URL
+   - Points the ephemeral E2E notification setting's `destination` at the tunnel URL
 
 2. **Tests**: Navigate to checkout pages, fill Paddle iframes with test card credentials (`4242 4242 4242 4242`), and submit. Wait for webhook processing and benefit provisioning.
 

@@ -427,18 +427,53 @@ export class UserMongooseRepository
     userIds?: string[];
     feedIds?: string[];
   }): AsyncIterable<{ feedId: string }> {
-    const cursor = this.model
+    const cursor = this.connection
+      .collection("userfeeds")
       .aggregate([
         {
           $match: {
-            ...(options?.userIds?.length && {
+            feedRequestLookupKey: { $exists: true },
+            url: REDDIT_URL_REGEX,
+            ...(options?.feedIds?.length && {
               _id: {
-                $in: options.userIds.map((id) => this.stringToObjectId(id)),
+                $in: options.feedIds.map((id) => this.stringToObjectId(id)),
               },
             }),
-            $or: [
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "user.discordUserId",
+            foreignField: "discordUserId",
+            as: "owner",
+          },
+        },
+        {
+          $set: {
+            owner: { $arrayElemAt: ["$owner", 0] },
+          },
+        },
+        ...(options?.userIds?.length
+          ? [
               {
-                externalCredentials: {
+                $match: {
+                  "owner._id": {
+                    $in: options.userIds.map((id) =>
+                      this.stringToObjectId(id),
+                    ),
+                  },
+                },
+              },
+            ]
+          : []),
+        {
+          $match: {
+            owner: { $ne: null },
+            $or: [
+              { "owner.externalCredentials.0": { $exists: false } },
+              {
+                "owner.externalCredentials": {
                   $elemMatch: {
                     type: UserExternalCredentialType.Reddit,
                     expireAt: { $lte: new Date() },
@@ -446,47 +481,23 @@ export class UserMongooseRepository
                 },
               },
               {
-                externalCredentials: {
+                "owner.externalCredentials": {
                   $elemMatch: {
                     type: UserExternalCredentialType.Reddit,
                     status: UserExternalCredentialStatus.Revoked,
                   },
                 },
               },
-              {
-                "externalCredentials.0": { $exists: false },
-              },
             ],
           },
         },
         {
-          $lookup: {
-            from: "userfeeds",
-            localField: "discordUserId",
-            foreignField: "user.discordUserId",
-            as: "feeds",
-          },
-        },
-        { $unwind: { path: "$feeds" } },
-        {
-          $match: {
-            "feeds.url": REDDIT_URL_REGEX,
-            "feeds.feedRequestLookupKey": { $exists: true },
-            ...(options?.feedIds?.length && {
-              "feeds._id": {
-                $in: options.feedIds.map((id) => this.stringToObjectId(id)),
-              },
-            }),
-          },
-        },
-        {
           $project: {
-            feedId: "$feeds._id",
+            feedId: "$_id",
             _id: 0,
           },
         },
-      ])
-      .cursor();
+      ]);
 
     for await (const doc of cursor) {
       yield {

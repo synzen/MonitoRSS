@@ -3,11 +3,12 @@ import { writeFileSync } from "fs";
 import { join } from "path";
 import { startTunnel } from "../../helpers/tunnel";
 import { updateNotificationUrl } from "../../helpers/paddle-api";
+import { instanceSuffix } from "../../helpers/instance";
 
 const REQUIRED_ENV_VARS = [
   "BACKEND_API_PADDLE_KEY",
   "BACKEND_API_PADDLE_URL",
-  "BACKEND_API_PADDLE_WEBHOOK_SECRET",
+  "E2E_PADDLE_NOTIFICATION_SETTING_ID",
 ] as const;
 
 const BACKEND_PORT = parseInt(
@@ -15,7 +16,10 @@ const BACKEND_PORT = parseInt(
   10,
 );
 const WEBHOOK_PATH = "/api/v1/subscription-products/paddle-webhook";
-const PADDLE_STATE_PATH = join(process.cwd(), ".paddle-state.json");
+const PADDLE_STATE_PATH = join(
+  process.cwd(),
+  `.paddle-state${instanceSuffix}.json`,
+);
 
 setup("start tunnel and configure Paddle", async () => {
   setup.setTimeout(120_000);

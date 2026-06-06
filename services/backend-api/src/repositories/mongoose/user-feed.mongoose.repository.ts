@@ -191,7 +191,6 @@ UserFeedSchema.index({
   url: 1,
 });
 UserFeedSchema.index({ userRefreshRateSeconds: 1, refreshRateSeconds: 1 });
-UserFeedSchema.index({ "user.discordUserId": 1 });
 UserFeedSchema.index({
   refreshRateSeconds: 1,
   slotOffsetMs: 1,
@@ -201,6 +200,16 @@ UserFeedSchema.index({
   userRefreshRateSeconds: 1,
   slotOffsetMs: 1,
   disabledCode: 1,
+});
+UserFeedSchema.index(
+  { debug: 1 },
+  { partialFilterExpression: { debug: true } },
+);
+UserFeedSchema.index({ "user.discordUserId": 1, createdAt: -1 });
+UserFeedSchema.index({
+  "shareManageOptions.invites.discordUserId": 1,
+  "shareManageOptions.invites.status": 1,
+  createdAt: -1,
 });
 
 type UserFeedDoc = InferSchemaType<typeof UserFeedSchema>;
