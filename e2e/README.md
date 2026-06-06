@@ -8,9 +8,22 @@ The E2E Docker stack (defined in `docker-compose.e2e.yml`) provides all required
 
 ## Running Tests
 
+`e2e-mock.sh` is the canonical wrapper: it brings up the full Docker stack (`up -d --build --wait`), runs Playwright, and tears the stack down on exit. **Any arguments after the script name are forwarded straight to `playwright test`**, so you can scope a run to a single file and/or project. Always go through this script (or the `npm run e2e*` aliases) rather than starting the stack and Playwright by hand — `--build` is required because the `web-api` source is baked into its image (no bind mount), so backend changes won't take effect otherwise.
+
+The script writes two logs to `e2e/logs/` (gitignored) that outlive the torn-down stack:
+
+- `logs/playwright.log` — the full Playwright run output.
+- `logs/docker-stack.log` — `docker compose logs` for all services, captured just before teardown. This is the only place to inspect container-side behaviour after a run, e.g. inbound Paddle webhooks in `web-api` ("Paddle webhook received" / "Invalid signature received for paddle webhook event").
+
 ```bash
-# Run all regular (non-paddle) tests via Docker stack
+# Run all regular (non-paddle) tests via Docker stack (defaults to --project=e2e-web)
 npm run e2e
+
+# Run a single web spec file
+bash e2e-mock.sh --project=e2e-web tests/feeds/bulk-delete-feeds.spec.ts
+
+# Run a single paddle spec (requires cloudflared on PATH + Paddle keys in e2e/.env)
+bash e2e-mock.sh --project=e2e-paddle tests/billing/paddle-retain-cancellation.spec.ts
 
 # Run only regular (non-paddle) tests (assumes Docker stack is already running)
 npx playwright test --project=e2e-web
@@ -24,6 +37,8 @@ npm run e2e:ui
 # View test report
 npm run e2e:report
 ```
+
+> **Which project does my spec belong to?** Anything matching `tests/billing/paddle-*.spec.ts` or `branding-paddle-overlay.spec.ts` is in the `e2e-paddle` project (see `PADDLE_CHECKOUT_TESTS` in `playwright.config.ts`), which depends on `e2e-paddle-setup` (starts a cloudflared tunnel + configures the Paddle sandbox webhook). Everything else is `e2e-web`. Paddle specs require `cloudflared` on PATH and `BACKEND_API_PADDLE_KEY` / `_URL` / `_WEBHOOK_SECRET` in `e2e/.env` — even ones that mock the request under test, because their setup still provisions a real sandbox subscription.
 
 ## Project Structure
 
@@ -46,13 +61,19 @@ The Paddle checkout E2E tests (`14-paddle-checkout.spec.ts`, `15-paddle-branding
    ```bash
    winget install cloudflare.cloudflared
    ```
-2. **`BACKEND_API_PADDLE_KEY`** environment variable set in `.env.local` (or `.env`) at the repo root. This is the Paddle sandbox API key used to manage notification URLs and cancel subscriptions.
+2. **`BACKEND_API_PADDLE_KEY`** environment variable set in `e2e/.env` (or `.env.local` at the repo root). This is the Paddle sandbox API key used to create the notification setting, manage notification URLs, and cancel subscriptions.
+
+> **Your local dev notification setting is never touched.** Earlier this suite repointed a *shared* notification setting's `destination` at the tunnel, which hijacked local dev's webhook delivery. Now `e2e-mock.sh` **creates an ephemeral notification setting per run** (via the Paddle API), exports its signing secret as `BACKEND_API_PADDLE_WEBHOOK_SECRET` **before the backend boots** (so HMAC verification matches), and **deletes the setting on teardown**. By default, do not set `BACKEND_API_PADDLE_WEBHOOK_SECRET` in `e2e/.env` — the script provides it.
+>
+> **Bring your own setting (optional).** If you'd rather use a notification setting you manage, set `E2E_PADDLE_NOTIFICATION_SETTING_ID` in `e2e/.env` along with that setting's own `BACKEND_API_PADDLE_WEBHOOK_SECRET`. The script then skips create/delete and leaves your setting in place, only repointing its `destination` at the tunnel during setup. (Use a setting dedicated to E2E, not your local dev one — setup will overwrite its destination.)
 
 ### How It Works
 
-1. **Setup** (`tests/paddle.setup.ts`):
+1. **Before stack boot** (`e2e-mock.sh`): if `E2E_PADDLE_NOTIFICATION_SETTING_ID` is already set, it's used as-is; otherwise, when `BACKEND_API_PADDLE_KEY` is set, the script creates an ephemeral Paddle notification setting, captures its `endpoint_secret_key`, exports it as `BACKEND_API_PADDLE_WEBHOOK_SECRET` and the new setting's id as `E2E_PADDLE_NOTIFICATION_SETTING_ID`, then brings up the stack so the backend boots already knowing the secret. The trap deletes only a setting the script itself created.
+
+2. **Setup** (`tests/paddle.setup.ts`):
    - Starts a Cloudflare Tunnel to expose the backend with a public URL
-   - Updates the Paddle notification setting to point the webhook at the tunnel URL
+   - Points the ephemeral E2E notification setting's `destination` at the tunnel URL
 
 2. **Tests**: Navigate to checkout pages, fill Paddle iframes with test card credentials (`4242 4242 4242 4242`), and submit. Wait for webhook processing and benefit provisioning.
 
