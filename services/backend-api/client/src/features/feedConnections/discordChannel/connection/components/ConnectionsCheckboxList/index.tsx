@@ -1,4 +1,5 @@
-import { chakra, Box, Checkbox, Stack } from "@chakra-ui/react";
+import { chakra, Box, Stack } from "@chakra-ui/react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FeedConnectionType } from "@/types";
 import { UserFeed } from "@/features/feed";
 import { getPrettyConnectionName } from "../../utils/getPrettyConnectionName";
@@ -16,7 +17,7 @@ export const ConnectionsCheckboxList = ({
   onCheckConnectionChange,
 }: Props) => {
   return (
-    <Stack as="ul" listStyleType="none" spacing={1}>
+    <Stack as="ul" listStyleType="none" gap={1}>
       {feed?.connections
         .filter((c) => c.key === FeedConnectionType.DiscordChannel)
         .map((c) => {
@@ -24,26 +25,26 @@ export const ConnectionsCheckboxList = ({
 
           return (
             <Box
-              bg="gray.800"
+              bg="bg.panel"
               borderWidth="2px"
-              borderColor={checkedConnectionIds.includes(c.id) ? "blue.400" : "transparent"}
-              rounded="md"
+              borderColor={checkedConnectionIds.includes(c.id) ? "brandSolid" : "transparent"}
+              rounded="l3"
             >
               <Checkbox
                 px={4}
                 py={3}
-                onChange={(e) => {
-                  if (e.target.checked && !checkedConnectionIds.includes(c.id)) {
+                onCheckedChange={(e) => {
+                  if (e.checked && !checkedConnectionIds.includes(c.id)) {
                     onCheckConnectionChange([...checkedConnectionIds, c.id]);
-                  } else if (!e.target.checked && checkedConnectionIds.includes(c.id)) {
+                  } else if (!e.checked && checkedConnectionIds.includes(c.id)) {
                     onCheckConnectionChange(checkedConnectionIds.filter((id) => id !== c.id));
                   }
                 }}
-                isChecked={checkedConnectionIds.includes(c.id)}
+                checked={checkedConnectionIds.includes(c.id)}
                 width="100%"
               >
                 <chakra.span ml={4} display="inline-block">
-                  <chakra.span color="gray.400" fontSize="sm">
+                  <chakra.span color="fg.muted" fontSize="sm">
                     {getPrettyConnectionName(c as never)}
                   </chakra.span>
                   {connectionDetail ? (

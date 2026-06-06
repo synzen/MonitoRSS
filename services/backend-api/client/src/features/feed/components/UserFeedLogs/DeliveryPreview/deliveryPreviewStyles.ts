@@ -2,7 +2,7 @@ import { BoxProps } from "@chakra-ui/react";
 
 export const ARTICLE_LIST_CONTAINER_PROPS: BoxProps = {
   border: "1px solid",
-  borderColor: "gray.700",
+  borderColor: "border",
   borderRadius: "md",
   overflow: "hidden",
 };
@@ -14,10 +14,10 @@ export const ARTICLE_LIST_ITEM_PADDING = {
 
 export const getArticleListItemBorderProps = (
   isFirst: boolean,
-  leftBorderColor: string = "gray.500",
+  leftBorderColor: string = "border.emphasized",
 ): BoxProps => ({
   borderTop: isFirst ? "none" : "1px solid",
-  borderTopColor: "gray.700",
+  borderTopColor: "border",
   borderLeft: "3px solid",
   borderLeftColor: leftBorderColor,
 });

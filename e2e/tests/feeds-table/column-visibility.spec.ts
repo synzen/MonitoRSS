@@ -11,6 +11,12 @@ const COLUMNS = [
 ] as const;
 
 test.describe("Column Visibility", () => {
+  // v3 menus animate on open; under parallel load that animation runs long
+  // enough that the menu item is still moving when the test clicks it, so the
+  // Ark checkbox item never registers the toggle. Reduced motion skips the
+  // animation, keeping the item stable for deterministic interaction.
+  test.use({ contextOptions: { reducedMotion: "reduce" } });
+
   async function setupColumnTest(page: Page) {
     const feed = await createFeed(page, {
       title: "Column Visibility Test Feed",
@@ -63,7 +69,17 @@ test.describe("Column Visibility", () => {
       .locator(`[role="menuitemcheckbox"]:has-text("${columnLabel}")`)
       .first();
     await checkbox.waitFor({ state: "visible", timeout: 10000 });
-    await checkbox.click({ force: true });
+    // Toggle via Ark's own keyboard navigation rather than a pointer click.
+    // Under parallel load the open menu keeps animating/repositioning, so a
+    // pointer click lands on a moving target and the Ark checkbox item never
+    // registers the toggle. ArrowDown highlights items through Ark's focus
+    // manager (position-independent); Enter then toggles the highlighted item.
+    const index = COLUMNS.findIndex((c) => c.label === columnLabel);
+    for (let i = 0; i <= index; i += 1) {
+      await page.keyboard.press("ArrowDown");
+      await page.waitForTimeout(50);
+    }
+    await page.keyboard.press("Enter");
     await page.waitForTimeout(500);
   }
 

@@ -204,9 +204,9 @@ test.describe("Clone Feed", () => {
 
       // Verify connection custom placeholders
       await page.getByRole("tab", { name: "Custom Placeholders" }).click();
-      await expect(page.getByText("clonedFeedPlaceholder").first()).toBeVisible(
-        { timeout: 10000 },
-      );
+      await expect(
+        page.getByRole("tabpanel").getByText("clonedFeedPlaceholder").first(),
+      ).toBeVisible({ timeout: 10000 });
     } finally {
       // Clean up cloned feed
       if (clonedFeedId) {

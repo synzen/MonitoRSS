@@ -1,6 +1,7 @@
 /* eslint-disable react/jsx-no-useless-fragment */
 import { useMemo } from "react";
-import { Text, Tooltip } from "@chakra-ui/react";
+import { Text } from "@chakra-ui/react";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Loading } from "@/components";
 import { useDiscordServerRoles } from "../../hooks";
 
@@ -29,8 +30,11 @@ export const DiscordRoleName: React.FC<Props> = ({ serverId, roleId }) => {
 
   if (error) {
     return (
-      <Tooltip placement="bottom-start" label={`Unable to get role name (${error?.message})`}>
-        <Text color="orange.500">{roleId}</Text>
+      <Tooltip
+        positioning={{ placement: "bottom-start" }}
+        content={`Unable to get role name (${error?.message})`}
+      >
+        <Text color="text.warning">{roleId}</Text>
       </Tooltip>
     );
   }

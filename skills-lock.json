@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "skills": {
+    "chakra-ui-builder": {
+      "source": "chakra-ui/chakra-ui",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/chakra-ui-builder/SKILL.md",
+      "computedHash": "49bf331b98d9f0ce1634e55c95a83e1cdf394a0b9af0dfd9a5d58fddd3208042"
+    },
+    "chakra-ui-migrate": {
+      "source": "chakra-ui/chakra-ui",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/chakra-ui-migrate/SKILL.md",
+      "computedHash": "8c3da167bac9a2ce018085e1ebc51c4bd3bbcb88313e63eb2873f17db3f0cca2"
+    },
+    "chakra-ui-refactor": {
+      "source": "chakra-ui/chakra-ui",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/chakra-ui-refactor/SKILL.md",
+      "computedHash": "9c6bdd94e0c36455ac4a8623bd3e9e23e357ad8c066fbf3e458fe09ed02668d5"
+    }
+  }
+}

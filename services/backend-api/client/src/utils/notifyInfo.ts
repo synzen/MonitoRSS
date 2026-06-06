@@ -1,25 +1,12 @@
-import { createStandaloneToast, UseToastOptions } from "@chakra-ui/react";
-import theme from "./theme";
+import { toaster } from "@/components/ui/toaster";
 
-const { toast } = createStandaloneToast({
-  theme,
-});
-
-interface Options {
-  toastOptions?: UseToastOptions;
-}
-
-export const notifyInfo = (
-  title: string,
-  description?: string | React.ReactNode,
-  options?: Options,
-) => {
-  toast({
+export const notifyInfo = (title: string, description?: string) => {
+  toaster.create({
     title,
     description,
-    status: "info",
-    position: "top",
-    isClosable: true,
-    ...options,
+    type: "info",
+    duration: 5000,
   });
 };
+
+export default notifyInfo;

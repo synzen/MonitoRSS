@@ -1,15 +1,7 @@
 import React from "react";
-import {
-  VStack,
-  HStack,
-  FormControl,
-  FormHelperText,
-  FormLabel,
-  Switch,
-  Box,
-  chakra,
-  Text,
-} from "@chakra-ui/react";
+import { VStack, HStack, Box, chakra, Text } from "@chakra-ui/react";
+import { Field } from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
 import { InputWithInsertPlaceholder } from "../components/InputWithInsertPlaceholder";
 import { Component, LegacyTextComponent } from "../types";
 import getMessageBuilderFieldErrors from "../utils/getMessageBuilderFieldErrors";
@@ -35,13 +27,13 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
   const [contentError] = getMessageBuilderFieldErrors(errors, root, component.id, ["content"]);
 
   return (
-    <VStack align="stretch" spacing={4}>
+    <VStack align="stretch" gap={4}>
       <InputWithInsertPlaceholder
         value={component.content}
         onChange={(value) => onChange({ ...component, content: value })}
         label="Text Content"
         error={contentError?.message}
-        isInvalid={!!contentError}
+        invalid={!!contentError}
         helperText={
           <Text>
             A special placeholder,{" "}
@@ -52,51 +44,58 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
         }
         guildId={guildId}
       />
-      <FormControl>
+      <Field
+        helperText={
+          <Text fontSize="sm" color="fg.muted">
+            If enabled, image links will be wrapped with arrow brackets to prevent Discord from
+            creating previews for them.
+          </Text>
+        }
+      >
         <HStack justify="space-between" align="center" mb={2}>
-          <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+          <Text fontSize="sm" fontWeight="medium" color="fg">
             Disable Image Link Previews
-          </FormLabel>
+          </Text>
           <Switch
-            isChecked={!!component.disableImageLinkPreviews}
-            onChange={(e) => onChange({ ...component, disableImageLinkPreviews: e.target.checked })}
-            colorScheme="blue"
+            checked={!!component.disableImageLinkPreviews}
+            onCheckedChange={(e) => onChange({ ...component, disableImageLinkPreviews: e.checked })}
+            colorPalette="brand"
           />
         </HStack>
-        <FormHelperText fontSize="sm" color="gray.400">
-          If enabled, image links will be wrapped with arrow brackets to prevent Discord from
-          creating previews for them.
-        </FormHelperText>
-      </FormControl>
-      <FormControl>
+      </Field>
+      <Field
+        helperText={
+          <Text fontSize="sm" color="fg.muted" mb={3}>
+            If enabled, the message will be split into multiple messages if it is too long.
+            Otherwise, it will attempt to be sent as one message with the maximum possible number of
+            characters.
+          </Text>
+        }
+      >
         <HStack justify="space-between" align="center" mb={2}>
-          <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+          <Text fontSize="sm" fontWeight="medium" color="fg">
             Split Content
-          </FormLabel>
+          </Text>
           <Switch
-            isChecked={!!component.splitOptions?.isEnabled}
-            onChange={(e) =>
+            checked={!!component.splitOptions?.isEnabled}
+            onCheckedChange={(e) =>
               onChange({
                 ...component,
                 splitOptions: {
                   ...component.splitOptions,
-                  isEnabled: e.target.checked,
+                  isEnabled: e.checked,
                 },
               })
             }
-            colorScheme="blue"
+            colorPalette="brand"
             aria-expanded={component.splitOptions?.isEnabled ? "true" : "false"}
             aria-controls="split-content-options"
           />
         </HStack>
-        <FormHelperText fontSize="sm" color="gray.400" mb={3}>
-          If enabled, the message will be split into multiple messages if it is too long. Otherwise,
-          it will attempt to be sent as one message with the maximum possible number of characters.
-        </FormHelperText>
         <fieldset hidden={!component.splitOptions?.isEnabled} id="split-content-options">
           <chakra.legend srOnly>Split Content Options</chakra.legend>
-          <Box borderLeft="2px solid" borderColor="gray.600" pl={4} ml={0}>
-            <VStack spacing={4} align="stretch">
+          <Box borderLeft="2px solid" borderColor="border" pl={4} ml={0}>
+            <VStack gap={4} align="stretch">
               <InputWithInsertPlaceholder
                 value={component.splitOptions?.splitChar || ""}
                 onChange={(value) =>
@@ -151,7 +150,7 @@ export const LegacyTextProperties: React.FC<LegacyTextPropertiesProps> = ({
             </VStack>
           </Box>
         </fieldset>
-      </FormControl>
+      </Field>
     </VStack>
   );
 };

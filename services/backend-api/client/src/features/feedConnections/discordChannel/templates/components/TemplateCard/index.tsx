@@ -1,6 +1,6 @@
 import React from "react";
-import { Box, VStack, HStack, Text, Badge, Icon, useRadio, UseRadioProps } from "@chakra-ui/react";
-import { CheckCircleIcon, InfoOutlineIcon, ViewIcon } from "@chakra-ui/icons";
+import { Box, VStack, HStack, Text, Badge, Icon } from "@chakra-ui/react";
+import { FaCircleCheck, FaCircleInfo, FaEye } from "react-icons/fa6";
 import { Template } from "../../types";
 
 const FIELD_EXPLANATIONS: Record<string, string> = {
@@ -22,10 +22,14 @@ const getExplanationForMissingFields = (disabledReason: string): string => {
   return FIELD_EXPLANATIONS[missingFieldsStr] || DEFAULT_EXPLANATION;
 };
 
-export interface TemplateCardProps extends UseRadioProps {
+export interface TemplateCardProps extends React.InputHTMLAttributes<HTMLInputElement> {
   template: Template;
   disabledReason?: string;
   testId?: string;
+  /** v2 compat: isChecked is accepted as an alias for checked */
+  isChecked?: boolean;
+  /** v2 compat: isDisabled is accepted as an alias for disabled */
+  isDisabled?: boolean;
 }
 
 const getThumbnailContent = (template: Template) => {
@@ -35,33 +39,43 @@ const getThumbnailContent = (template: Template) => {
 
   if (template.thumbnail) {
     return (
-      <Box as="img" src={template.thumbnail} alt="" maxH="100%" maxW="100%" objectFit="contain" />
+      <img
+        src={template.thumbnail}
+        alt=""
+        style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }}
+      />
     );
   }
 
-  return <Icon as={ViewIcon} color="gray.500" boxSize={8} aria-hidden="true" />;
+  return <Icon as={FaEye} color="fg.subtle" boxSize={8} aria-hidden="true" />;
 };
 
 const getBorderColor = (isChecked: boolean, isDisabled: boolean) => {
   if (isChecked) {
-    return "blue.500";
+    return "brand.solid";
   }
 
   if (isDisabled) {
-    return "gray.700";
+    return "border";
   }
 
-  return "gray.600";
+  return "border.emphasized";
 };
 
 const TemplateCardComponent = (props: TemplateCardProps) => {
-  const { template, disabledReason = "Needs articles", testId, ...radioProps } = props;
-  const { getInputProps, getRootProps, state } = useRadio(radioProps);
+  const {
+    template,
+    disabledReason = "Needs articles",
+    testId,
+    isChecked: isCheckedProp,
+    isDisabled: isDisabledProp,
+    checked: checkedProp,
+    disabled: disabledProp,
+    ...inputProps
+  } = props;
 
-  const input = getInputProps();
-  const rootProps = getRootProps();
-
-  const { isChecked, isDisabled } = state;
+  const isChecked = isCheckedProp ?? checkedProp ?? false;
+  const isDisabled = isDisabledProp ?? disabledProp ?? false;
 
   const needsArticles = disabledReason === "Needs articles";
   const explanation = needsArticles
@@ -72,23 +86,38 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
     <Box
       as="label"
       data-testid={testId}
-      _focusWithin={{
-        "> div": {
+      css={{
+        "&:focus-within > div": {
           outline: "2px solid",
-          outlineColor: "blue.300",
+          outlineColor: "brand.focusRing",
           outlineOffset: "2px",
         },
       }}
     >
-      <input {...input} />
+      <input
+        type="radio"
+        checked={isChecked}
+        disabled={isDisabled}
+        style={{
+          position: "absolute",
+          width: "1px",
+          height: "1px",
+          padding: 0,
+          margin: "-1px",
+          overflow: "hidden",
+          clip: "rect(0,0,0,0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+        {...inputProps}
+      />
       <Box
-        {...rootProps}
         position="relative"
         borderWidth="2px"
-        borderColor={getBorderColor(isChecked, isDisabled ?? false)}
+        borderColor={getBorderColor(isChecked, isDisabled)}
         borderStyle={isDisabled ? "dashed" : "solid"}
-        borderRadius="md"
-        bg={isChecked ? "blue.900" : "gray.800"}
+        borderRadius="l3"
+        bg={isChecked ? "brand.subtle" : "bg.subtle"}
         p={3}
         cursor={isDisabled ? "not-allowed" : "pointer"}
         transition="background 0.2s, border-color 0.2s"
@@ -96,14 +125,14 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
         _hover={
           !isDisabled && !isChecked
             ? {
-                borderColor: "blue.400",
-                bg: "gray.700",
+                borderColor: "brand.solid",
+                bg: "bg.emphasized",
               }
             : undefined
         }
         _checked={{
-          borderColor: "blue.500",
-          bg: "blue.900",
+          borderColor: "brand.solid",
+          bg: "brand.subtle",
         }}
         _disabled={{
           opacity: 1,
@@ -112,18 +141,18 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
       >
         {isChecked && (
           <Icon
-            as={CheckCircleIcon}
+            as={FaCircleCheck}
             position="absolute"
             top={2}
             right={2}
-            color="blue.400"
+            color="brand.solid"
             boxSize={5}
             aria-hidden="true"
           />
         )}
-        <HStack spacing={4} align="center">
+        <HStack gap={4} align="center">
           <Box
-            bg="gray.900"
+            bg="bg"
             borderRadius="sm"
             w="120px"
             h="60px"
@@ -137,24 +166,24 @@ const TemplateCardComponent = (props: TemplateCardProps) => {
           >
             {getThumbnailContent(template)}
           </Box>
-          <VStack align="start" spacing={1} flex={1} minW={0}>
-            <HStack spacing={2} w="100%" flexWrap="wrap">
-              <Text fontWeight="medium" fontSize="sm" color={isDisabled ? "gray.400" : "white"}>
+          <VStack align="start" gap={1} flex={1} minW={0}>
+            <HStack gap={2} w="100%" flexWrap="wrap">
+              <Text fontWeight="medium" fontSize="sm" color={isDisabled ? "fg.muted" : "fg"}>
                 {template.name}
               </Text>
               {isDisabled && (
-                <Badge colorScheme="orange" variant="subtle" fontSize="xs" flexShrink={0}>
+                <Badge colorPalette="orange" variant="subtle" fontSize="xs" flexShrink={0}>
                   {disabledReason}
                 </Badge>
               )}
             </HStack>
-            <Text fontSize="sm" color="gray.400">
+            <Text fontSize="sm" color="fg.muted">
               {template.description}
             </Text>
             {isDisabled && (
-              <HStack spacing={1} align="center">
-                <Icon as={InfoOutlineIcon} boxSize={3} color="gray.400" aria-hidden="true" />
-                <Text fontSize="xs" color="gray.400">
+              <HStack gap={1} align="center">
+                <Icon as={FaCircleInfo} boxSize={3} color="fg.muted" aria-hidden="true" />
+                <Text fontSize="xs" color="fg.muted">
                   {explanation}
                 </Text>
               </HStack>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Collapse, HStack, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
-import { CheckCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
+import { Box, Button, HStack, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
+import { FaCircleCheck, FaChevronDown, FaChevronUp } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { AddConnectionDialog } from "../../../feedConnections/AddConnectionDialog";
 import { SetupChecklistCard } from "./SetupChecklistCard";
 
@@ -86,29 +87,29 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
         ref={sectionRef}
         role="region"
         aria-label="Feed delivery setup"
-        bg="gray.700"
+        bg="bg.panel"
         borderWidth="1px"
-        borderColor="gray.600"
+        borderColor="border"
         borderLeftWidth="4px"
-        borderLeftColor="blue.300"
-        borderRadius="md"
+        borderLeftColor="brandSolid"
+        borderRadius="l3"
         p={4}
         mt={2}
       >
         {isComplete ? (
           <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
-            <HStack spacing={2}>
-              <CheckCircleIcon color="green.300" aria-hidden="true" />
+            <HStack gap={2}>
+              <FaCircleCheck color="text.success" aria-hidden="true" />
               <Text>All feeds are delivering</Text>
             </HStack>
-            <Button ref={doneButtonRef} size="sm" colorScheme="blue" onClick={onDismiss}>
+            <PrimaryActionButton ref={doneButtonRef} size="sm" onClick={onDismiss}>
               Done
-            </Button>
+            </PrimaryActionButton>
           </HStack>
         ) : (
           <>
             <Button
-              variant="unstyled"
+              variant="plain"
               display="flex"
               alignItems="center"
               width="100%"
@@ -120,43 +121,44 @@ export const SetupChecklist = ({ feeds, onConnectionCreated, onDismiss }: SetupC
               aria-expanded={isExpanded}
               aria-controls={cardListId}
             >
-              <HStack spacing={2} flex={1}>
+              <HStack gap={2} flex={1}>
                 <Box flex={1}>
                   <Text fontWeight="semibold">
                     {feeds.length} feed{feeds.length !== 1 ? "s" : ""} need
                     {feeds.length === 1 ? "s" : ""} delivery connections
                   </Text>
-                  <Text color="gray.400" fontSize="sm">
+                  <Text color="fg.muted" fontSize="sm">
                     Choose where each feed&apos;s articles are delivered.
                   </Text>
                 </Box>
                 <Box flexShrink={0} aria-hidden="true">
-                  {isExpanded ? <ChevronUpIcon boxSize={5} /> : <ChevronDownIcon boxSize={5} />}
+                  {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
                 </Box>
               </HStack>
             </Button>
-            <Collapse in={isExpanded} animateOpacity>
-              <Stack
-                id={cardListId}
-                spacing={3}
-                mt={4}
-                mb={2}
-                aria-label="Feeds needing delivery setup"
-                role="region"
-                aria-hidden={!isExpanded}
-              >
-                {sortedFeeds.map((feed) => (
-                  <SetupChecklistCard
-                    key={feed.id}
-                    feed={feed}
-                    onAddConnection={handleAddConnection}
-                  />
-                ))}
-              </Stack>
-              <Text color="gray.400" fontSize="sm" aria-hidden="true">
-                {remainingLabel}
-              </Text>
-            </Collapse>
+            {isExpanded && (
+              <>
+                <Stack
+                  id={cardListId}
+                  gap={3}
+                  mt={4}
+                  mb={2}
+                  aria-label="Feeds needing delivery setup"
+                  role="region"
+                >
+                  {sortedFeeds.map((feed) => (
+                    <SetupChecklistCard
+                      key={feed.id}
+                      feed={feed}
+                      onAddConnection={handleAddConnection}
+                    />
+                  ))}
+                </Stack>
+                <Text color="fg.muted" fontSize="sm" aria-hidden="true">
+                  {remainingLabel}
+                </Text>
+              </>
+            )}
           </>
         )}
         <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">

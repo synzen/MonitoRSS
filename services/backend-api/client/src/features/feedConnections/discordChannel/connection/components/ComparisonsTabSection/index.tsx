@@ -1,17 +1,4 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Button,
-  Divider,
-  Flex,
-  Heading,
-  HStack,
-  Spinner,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { Alert, Flex, Heading, HStack, Separator, Spinner, Stack, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import { FiMousePointer } from "react-icons/fi";
@@ -27,6 +14,7 @@ import { AddComparisonSelect } from "./AddComparisonSelect";
 import { ComparisonTag } from "./ComparisonTag";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
 import { InlineErrorAlert } from "@/components";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
 
 interface Props {
@@ -163,40 +151,32 @@ export const ComparisonsTabSection = ({
       : null;
 
   const parseErrorAlert = alertStatus && (
-    <Alert status={alertStatus.status || "error"}>
-      <AlertIcon />
-      {t(alertStatus.ref)}
-    </Alert>
+    <Alert.Root status={alertStatus.status || "error"}>{t(alertStatus.ref)}</Alert.Root>
   );
   const fetchErrorAlert = userFeedArticlesStatus === "error" && (
-    <Alert status="error">
-      <AlertIcon />
-      {t("common.errors.somethingWentWrong")}
-    </Alert>
+    <Alert.Root status="error">{t("common.errors.somethingWentWrong")}</Alert.Root>
   );
 
   const noArticlesAlert = userFeedArticles?.result.articles.length === 0 && (
-    <Alert status="info">
-      <AlertIcon />
+    <Alert.Root status="info">
       {t("features.feedConnections.components.articlePlaceholderTable.noArticles")}
-    </Alert>
+    </Alert.Root>
   );
 
   const hasAlert = !!(fetchErrorAlert || parseErrorAlert || noArticlesAlert);
 
   return (
-    <Stack spacing={12} marginBottom={16}>
+    <Stack gap={12} marginBottom={16}>
       {error && (
-        <Stack spacing={4}>
-          <Alert status="error">
-            <AlertIcon />
-            <AlertTitle>
+        <Stack gap={4}>
+          <Alert.Root status="error">
+            <Alert.Title>
               {t(
                 "features.feedConnections.components.comparisonsTabSection.errorFailedToGetPropertiesTitle",
               )}
-            </AlertTitle>
-            <AlertDescription>{error.message}</AlertDescription>
-          </Alert>
+            </Alert.Title>
+            <Alert.Description>{error.message}</Alert.Description>
+          </Alert.Root>
         </Stack>
       )}
       <Stack>
@@ -209,8 +189,8 @@ export const ComparisonsTabSection = ({
           delivered.
         </Text>
       </Stack>
-      <Stack spacing={8}>
-        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" padding={4}>
+      <Stack gap={8}>
+        <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" padding={4}>
           <Stack>
             <Heading size="sm" as="h3">
               {t(
@@ -228,7 +208,7 @@ export const ComparisonsTabSection = ({
               Current passing comparisons
             </Heading>
             {!passingComparisons?.length && (
-              <Text color="whiteAlpha.700">You currently have no passing comparisons created.</Text>
+              <Text color="fg.muted">You currently have no passing comparisons created.</Text>
             )}
             {!!passingComparisons?.length && (
               <HStack
@@ -247,7 +227,7 @@ export const ComparisonsTabSection = ({
                 ))}
               </HStack>
             )}
-            <Divider my={2} />
+            <Separator my={2} />
             <AddComparisonSelect
               isDisabled={status !== "success"}
               isLoading={status === "loading" || fetchStatus === "fetching"}
@@ -260,7 +240,7 @@ export const ComparisonsTabSection = ({
             <InlineErrorAlert title={t("common.errors.failedToSave")} description={updateError} />
           )}
         </Stack>
-        <Stack spacing={4} border="1px solid" borderColor="gray.700" borderRadius="md" padding={4}>
+        <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" padding={4}>
           <Stack>
             <Heading size="sm" as="h3">
               {t(
@@ -278,9 +258,7 @@ export const ComparisonsTabSection = ({
               Current blocking comparisons
             </Heading>
             {!blockingComparisons?.length && (
-              <Text color="whiteAlpha.700">
-                You currently have no blocking comparisons created.
-              </Text>
+              <Text color="fg.muted">You currently have no blocking comparisons created.</Text>
             )}
             {!!blockingComparisons?.length && (
               <HStack
@@ -299,7 +277,7 @@ export const ComparisonsTabSection = ({
                 ))}
               </HStack>
             )}
-            <Divider my={2} />
+            <Separator my={2} />
             <AddComparisonSelect
               isDisabled={status !== "success"}
               isLoading={status === "loading" || fetchStatus === "fetching"}
@@ -313,9 +291,9 @@ export const ComparisonsTabSection = ({
           )}
         </Stack>
         <Stack
-          background="gray.700"
+          bg="bg.subtle"
           padding={4}
-          borderRadius="md"
+          borderRadius="l3"
           as="aside"
           aria-labelledby="preview-article-props"
         >
@@ -330,14 +308,14 @@ export const ComparisonsTabSection = ({
             </Stack>
             <ArticleSelectDialog
               trigger={
-                <Button
-                  leftIcon={<FiMousePointer />}
-                  isLoading={!!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
-                  isDisabled={userFeedArticlesFetchStatus === "fetching"}
+                <SafeLoadingButton
+                  loading={!!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
+                  aria-disabled={userFeedArticlesFetchStatus === "fetching"}
                   size="sm"
                 >
+                  <FiMousePointer />
                   <span>Select article to preview</span>
-                </Button>
+                </SafeLoadingButton>
               }
               feedId={feedId}
               onArticleSelected={onSelectedArticle}
@@ -347,19 +325,13 @@ export const ComparisonsTabSection = ({
           </Flex>
           {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
           {userFeedArticlesStatus === "loading" && (
-            <Stack borderRadius="lg" background="gray.800" padding={4} alignItems="center">
+            <Stack borderRadius="lg" bg="bg.panel" padding={4} alignItems="center">
               <Spinner size="md" />
               <Text>Loading article...</Text>
             </Stack>
           )}
           {!hasAlert && userFeedArticles?.result.articles.length && (
-            <Stack
-              maxHeight={400}
-              overflow="auto"
-              borderRadius="lg"
-              background="gray.800"
-              padding={4}
-            >
+            <Stack maxHeight={400} overflow="auto" borderRadius="lg" bg="bg.panel" padding={4}>
               <ArticlePlaceholderTable
                 article={userFeedArticles?.result.articles[0]}
                 searchText=""

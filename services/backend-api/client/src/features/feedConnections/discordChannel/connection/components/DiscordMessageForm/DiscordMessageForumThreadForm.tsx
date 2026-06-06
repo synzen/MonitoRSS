@@ -1,22 +1,16 @@
 import {
   Box,
   Center,
-  Checkbox,
-  Divider,
+  Field as ChakraField,
   Flex,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
   HStack,
   IconButton,
   Input,
+  Separator,
   Spinner,
   Stack,
-  StackDivider,
-  Tag,
+  Tag as ChakraTag,
   Text,
-  Tooltip,
 } from "@chakra-ui/react";
 import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -29,6 +23,8 @@ import { useDiscordWebhook } from "@/features/discordWebhooks";
 import { useUserFeedConnectionContext } from "@/features/feed";
 import { FeedDiscordChannelConnection } from "@/types";
 import MessagePlaceholderText from "../../../messageBuilder/components/MessagePlaceholderText";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const TagCheckbox = ({
   emojiName,
@@ -51,53 +47,58 @@ const TagCheckbox = ({
 
   return (
     <Tooltip
-      isDisabled={hasPermissionToUse}
-      label={t("components.discordMessageForumThreadForm.threadTagMissingPermissions")}
+      disabled={hasPermissionToUse}
+      content={t("components.discordMessageForumThreadForm.threadTagMissingPermissions")}
     >
-      <Tag
+      <ChakraTag.Root
         key={id}
         borderRadius="full"
         variant="solid"
         size="lg"
         paddingX="4"
         paddingY="2"
-        bg="gray.700"
+        bg="bg.emphasized"
       >
-        <HStack divider={<Divider orientation="vertical" height="5" />}>
-          <Checkbox
-            value={id}
-            isDisabled={!isChecked && !hasPermissionToUse}
-            isChecked={isChecked}
-            onChange={(e) => {
-              onChange(e.target.checked, filters);
-            }}
-          >
-            <HStack>
-              <Box aria-hidden>{emojiName}</Box>
-              <Text>{name || "(no tag name)"}</Text>
-            </HStack>
-          </Checkbox>
-          {isChecked && (
-            <DiscordForumTagFiltersDialog
-              tagName={`${emojiName || ""} ${name || ""}`.trim()}
-              onFiltersUpdated={async (newFilters) => {
-                onChange(isChecked, newFilters);
-              }}
-              filters={filters}
-              trigger={
-                <IconButton
-                  icon={<FiFilter />}
-                  aria-label="Tag filters"
-                  size="xs"
-                  borderRadius="full"
-                  variant="ghost"
-                  isDisabled={!hasPermissionToUse || !isChecked}
+        <ChakraTag.Label asChild>
+          <HStack gap={2}>
+            <HStack gap={2} divideX="1px">
+              <Checkbox
+                value={id}
+                disabled={!isChecked && !hasPermissionToUse}
+                checked={isChecked}
+                onCheckedChange={(e) => {
+                  onChange(!!e.checked, filters);
+                }}
+              >
+                <HStack>
+                  <Box aria-hidden>{emojiName}</Box>
+                  <Text>{name || "(no tag name)"}</Text>
+                </HStack>
+              </Checkbox>
+              {isChecked && (
+                <DiscordForumTagFiltersDialog
+                  tagName={`${emojiName || ""} ${name || ""}`.trim()}
+                  onFiltersUpdated={async (newFilters) => {
+                    onChange(isChecked, newFilters);
+                  }}
+                  filters={filters}
+                  trigger={
+                    <IconButton
+                      aria-label="Tag filters"
+                      size="xs"
+                      borderRadius="full"
+                      variant="ghost"
+                      disabled={!hasPermissionToUse || !isChecked}
+                    >
+                      <FiFilter />
+                    </IconButton>
+                  }
                 />
-              }
-            />
-          )}
-        </HStack>
-      </Tag>
+              )}
+            </HStack>
+          </HStack>
+        </ChakraTag.Label>
+      </ChakraTag.Root>
     </Tooltip>
   );
 };
@@ -125,64 +126,50 @@ export const DiscordMessageForumThreadForm = () => {
   );
 
   return (
-    <Stack spacing={8} divider={<StackDivider />}>
-      <FormControl isInvalid={!!errors.forumThreadTitle}>
+    <Stack gap={8} separator={<Separator />}>
+      <ChakraField.Root invalid={!!errors.forumThreadTitle}>
         <Stack
           direction={{ base: "column", md: "row" }}
-          spacing={{ base: "1.5", md: "8" }}
+          gap={{ base: "1.5", md: "8" }}
           justify="space-between"
         >
           <Box>
-            <FormLabel>{t("components.discordMessageForumThreadForm.threadTitleLabel")}</FormLabel>
-            <FormHelperText>
+            <ChakraField.Label>
+              {t("components.discordMessageForumThreadForm.threadTitleLabel")}
+            </ChakraField.Label>
+            <ChakraField.HelperText>
               The title of the thread that will be created per new article. You may use
               placeholders. The default is{" "}
               <MessagePlaceholderText withoutCopy>title</MessagePlaceholderText>.
-            </FormHelperText>
+            </ChakraField.HelperText>
           </Box>
-          <Stack
-            spacing={8}
-            width="100%"
-            maxW={{ md: "3xl" }}
-            minW={{ md: "md", lg: "lg", xl: "3xl" }}
-          >
+          <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "md", lg: "lg", xl: "3xl" }}>
             <Controller
               name="forumThreadTitle"
               control={control}
               render={({ field }) => (
-                <Input
-                  size="sm"
-                  aria-label="Forum thread title"
-                  spellCheck={false}
-                  {...field}
-                  bg="gray.900"
-                />
+                <Input size="sm" aria-label="Forum thread title" spellCheck={false} {...field} />
               )}
             />
             {errors.forumThreadTitle && (
-              <FormErrorMessage>{errors.forumThreadTitle.message}</FormErrorMessage>
+              <ChakraField.ErrorText>{errors.forumThreadTitle.message}</ChakraField.ErrorText>
             )}
           </Stack>
         </Stack>
-      </FormControl>
+      </ChakraField.Root>
       <Box>
         <Stack
           direction={{ base: "column", md: "row" }}
-          spacing={{ base: "1.5", md: "8" }}
+          gap={{ base: "1.5", md: "8" }}
           justify="space-between"
         >
           <Stack>
             <Text>{t("components.discordMessageForumThreadForm.threadTagsLabel")}</Text>
-            <Text color="whiteAlpha.600" fontSize="sm">
+            <Text color="fg.muted" fontSize="sm">
               {t("components.discordMessageForumThreadForm.threadTagsDescription")}
             </Text>
           </Stack>
-          <Stack
-            spacing={8}
-            width="100%"
-            maxW={{ md: "3xl" }}
-            minW={{ md: "md", lg: "lg", xl: "3xl" }}
-          >
+          <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "md", lg: "lg", xl: "3xl" }}>
             {status === "loading" && (
               <Center height="100%">
                 <Spinner />
@@ -261,7 +248,9 @@ export const DiscordMessageForumThreadForm = () => {
                 }}
               />
             )}
-            {errors.content && <FormErrorMessage>{errors.content.message}</FormErrorMessage>}
+            {errors.content && (
+              <ChakraField.ErrorText>{errors.content.message}</ChakraField.ErrorText>
+            )}
           </Stack>
         </Stack>
       </Box>

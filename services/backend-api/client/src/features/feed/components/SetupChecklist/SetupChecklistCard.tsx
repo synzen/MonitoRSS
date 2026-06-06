@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Box, HStack, Stack, Text, Button } from "@chakra-ui/react";
-import { AddIcon, CheckIcon, WarningIcon } from "@chakra-ui/icons";
+import { FaPlus, FaCheck, FaTriangleExclamation } from "react-icons/fa6";
 import { getAvatarColor } from "@/utils/getAvatarColor";
+import { Panel } from "@/components/Panel";
 
 interface SetupChecklistCardProps {
   feed: {
@@ -35,13 +36,17 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
     : `Add connection to ${feed.title}`;
 
   const statusIndicator = (
-    <HStack spacing={1}>
+    <HStack gap={1}>
       {isConfigured ? (
-        <CheckIcon color="green.300" boxSize={3} aria-hidden="true" />
+        <FaCheck color="var(--chakra-colors-green-300)" size={12} aria-hidden="true" />
       ) : (
-        <WarningIcon color="orange.300" boxSize={3} aria-hidden="true" />
+        <FaTriangleExclamation
+          color="var(--chakra-colors-orange-300)"
+          size={12}
+          aria-hidden="true"
+        />
       )}
-      <Text color={isConfigured ? "green.300" : "orange.300"} fontSize="sm">
+      <Text color={isConfigured ? "text.success" : "text.warning"} fontSize="sm">
         {connectionText}
       </Text>
     </HStack>
@@ -50,31 +55,21 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
   const connectionButton = (width?: string) => (
     <Button
       size="sm"
-      colorScheme={isConfigured ? undefined : "blue"}
+      colorPalette={isConfigured ? undefined : "brand"}
       variant={isConfigured ? "ghost" : "solid"}
       width={width}
       aria-label={buttonLabel}
-      leftIcon={<AddIcon fontSize="xs" />}
       onClick={() => onAddConnection(feed.id)}
     >
+      <FaPlus />
       {isConfigured ? "Add another" : "Add connection"}
     </Button>
   );
 
   return (
-    <Box
-      as="article"
-      data-feed-card
-      tabIndex={-1}
-      bg="gray.800"
-      borderWidth="1px"
-      borderColor="gray.600"
-      borderRadius="md"
-      p={3}
-      aria-label={feed.title}
-    >
-      <Stack spacing={3}>
-        <HStack spacing={3}>
+    <Panel as="article" data-feed-card tabIndex={-1} p={3} aria-label={feed.title}>
+      <Stack gap={3}>
+        <HStack gap={3}>
           <Box flexShrink={0}>
             {imgError ? (
               <Box
@@ -86,13 +81,7 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
                 alignItems="center"
                 justifyContent="center"
               >
-                <Text
-                  color="white"
-                  fontSize="sm"
-                  fontWeight="bold"
-                  lineHeight="1"
-                  aria-hidden="true"
-                >
+                <Text color="fg" fontSize="sm" fontWeight="bold" lineHeight="1" aria-hidden="true">
                   {feed.title.charAt(0).toUpperCase()}
                 </Text>
               </Box>
@@ -100,7 +89,7 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
               <Box
                 w="32px"
                 h="32px"
-                borderRadius="md"
+                borderRadius="l3"
                 bg="white"
                 display="flex"
                 alignItems="center"
@@ -118,14 +107,14 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
             )}
           </Box>
           <Box flex={1} minW={0}>
-            <Text fontWeight="bold" noOfLines={1} title={feed.title}>
+            <Text fontWeight="bold" lineClamp={1} title={feed.title}>
               {feed.title}
             </Text>
-            <Text color="gray.400" fontSize="xs" noOfLines={1}>
+            <Text color="fg.muted" fontSize="xs" lineClamp={1}>
               {domain}
             </Text>
           </Box>
-          <HStack spacing={3} flexShrink={0} display={{ base: "none", md: "flex" }}>
+          <HStack gap={3} flexShrink={0} display={{ base: "none", md: "flex" }}>
             {statusIndicator}
             {connectionButton()}
           </HStack>
@@ -135,6 +124,6 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
           {connectionButton("full")}
         </Box>
       </Stack>
-    </Box>
+    </Panel>
   );
 };

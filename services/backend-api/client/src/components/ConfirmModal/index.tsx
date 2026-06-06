@@ -1,32 +1,32 @@
-import {
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogOverlay,
-  Button,
-  Stack,
-  Text,
-  ThemingProps,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { Button, Stack, Text } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { InlineErrorAlert } from "../InlineErrorAlert";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 
 interface Props {
   onConfirm: () => void;
-  trigger: React.ReactElement;
+  trigger?: React.ReactElement;
   title?: string;
   error?: string;
   description?: string;
   descriptionNode?: React.ReactNode;
   cancelText?: string;
   okText?: string;
-  colorScheme?: ThemingProps["colorScheme"];
-  size?: ThemingProps["size"];
+  colorScheme?: string;
+  size?: string;
   onClosed?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const ConfirmModal = ({
@@ -41,10 +41,19 @@ export const ConfirmModal = ({
   descriptionNode,
   size,
   onClosed,
+  open: controlledOpen,
+  onOpenChange,
 }: Props) => {
-  const { isOpen, onClose, onOpen } = useDisclosure({
-    onClose: onClosed,
-  });
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) {
+      setUncontrolledOpen(next);
+    }
+
+    onOpenChange?.(next);
+  };
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -54,47 +63,57 @@ export const ConfirmModal = ({
 
     try {
       await onConfirm();
-      onClose();
-      onClosed?.();
+      setOpen(false);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
-      {React.cloneElement(trigger, { onClick: onOpen })}
-      <AlertDialog isOpen={isOpen} onClose={onClose} size={size} leastDestructiveRef={cancelRef}>
-        <AlertDialogOverlay />
-        <AlertDialogContent>
-          {title && <AlertDialogHeader marginRight={4}>{title}</AlertDialogHeader>}
-          <AlertDialogBody>
-            <Stack spacing={4}>
-              {description && !descriptionNode && <Text>{description}</Text>}
-              {descriptionNode && !description && descriptionNode}
-              {error && (
-                <InlineErrorAlert
-                  title={t("common.errors.somethingWentWrong")}
-                  description={error}
-                />
-              )}
-            </Stack>
-          </AlertDialogBody>
-          <AlertDialogFooter>
-            <Button ref={cancelRef} variant="ghost" mr={3} onClick={onClose}>
-              <span>{cancelText || t("common.buttons.cancel")}</span>
-            </Button>
-            <Button
-              isLoading={loading}
-              colorScheme={colorScheme}
-              variant="solid"
-              onClick={onClickConfirm}
-            >
-              <span>{okText || t("common.buttons.confirm")}</span>
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    <DialogRoot
+      role="alertdialog"
+      open={open}
+      onOpenChange={(e) => {
+        setOpen(e.open);
+
+        if (!e.open) {
+          onClosed?.();
+        }
+      }}
+      size={size as never}
+      onRequestDismiss={(e) => e.preventDefault()}
+      initialFocusEl={() => cancelRef.current}
+    >
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent>
+        {title && (
+          <DialogHeader marginRight={4}>
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
+        )}
+        <DialogBody>
+          <Stack gap={4}>
+            {description && !descriptionNode && <Text>{description}</Text>}
+            {descriptionNode && !description && descriptionNode}
+            {error && (
+              <InlineErrorAlert title={t("common.errors.somethingWentWrong")} description={error} />
+            )}
+          </Stack>
+        </DialogBody>
+        <DialogFooter>
+          <Button ref={cancelRef} variant="ghost" onClick={() => setOpen(false)}>
+            <span>{cancelText || t("common.buttons.cancel")}</span>
+          </Button>
+          <SafeLoadingButton
+            loading={loading}
+            colorPalette={colorScheme}
+            variant="solid"
+            onClick={onClickConfirm}
+          >
+            <span>{okText || t("common.buttons.confirm")}</span>
+          </SafeLoadingButton>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

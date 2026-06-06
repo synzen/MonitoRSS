@@ -1,29 +1,21 @@
 import {
   Button,
-  Checkbox,
   HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Stack,
   chakra,
   Heading,
   Text,
   Badge,
-  Divider,
+  Separator,
   Box,
-  FormControl,
-  FormErrorMessage,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { array, InferType, object, string } from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useEffect } from "react";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { Panel } from "@/components/Panel";
 import { useUserFeed, UserFeed } from "@/features/feed";
 import { FeedDiscordChannelConnection } from "@/types";
 import { getPrettyConnectionName } from "../../utils/getPrettyConnectionName";
@@ -33,6 +25,17 @@ import { getPrettyConnectionDetail } from "../../utils/getPrettyConnectionDetail
 import { ConnectionsCheckboxList } from "../ConnectionsCheckboxList";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "@/components";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field } from "@/components/ui/field";
 
 enum CopyCategory {
   Message = "Message Format",
@@ -311,23 +314,22 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
               <chakra.legend srOnly>{category}</chakra.legend>
               <Stack>
                 <Checkbox
-                  isChecked={allCategorySettingsAreChecked}
-                  isIndeterminate={!allCategorySettingsAreChecked && !noCategorySettingsAreChecked}
-                  onChange={(e) => {
+                  checked={
+                    !allCategorySettingsAreChecked && !noCategorySettingsAreChecked
+                      ? "indeterminate"
+                      : allCategorySettingsAreChecked
+                  }
+                  onCheckedChange={(e) => {
                     const newSettings = calculateNewCheckedSettingsFromCategory(
                       field.value,
                       category,
-                      e.target.checked,
+                      !!e.checked,
                     );
 
                     field.onChange(newSettings);
                   }}
                   inputProps={{
                     "aria-controls": allCategorySettings.join(" "),
-                    "aria-checked":
-                      !allCategorySettings && !noCategorySettingsAreChecked
-                        ? "mixed"
-                        : allCategorySettingsAreChecked,
                   }}
                 >
                   {category}
@@ -369,16 +371,16 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                         key={setting}
                         id={setting}
                         pl={6}
-                        onChange={(e) => {
+                        onCheckedChange={(e) => {
                           const newSettings = calculateNewCheckedSettings(
                             field.value,
                             setting as CopyableConnectionDiscordChannelSettings,
-                            e.target.checked,
+                            !!e.checked,
                           );
 
                           field.onChange(newSettings);
                         }}
-                        isChecked={field.value.includes(
+                        checked={field.value.includes(
                           setting as CopyableConnectionDiscordChannelSettings,
                         )}
                       >
@@ -405,124 +407,132 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
   const formErrorLength = Object.keys(errors).length;
 
   return (
-    <Modal size="xl" isOpen={isOpen} onClose={onClose} finalFocusRef={onCloseRef}>
-      <ModalOverlay />
-      <ModalContent>
+    <DialogRoot
+      size="xl"
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) {
+          onClose();
+        }
+      }}
+      onRequestDismiss={(e) => e.preventDefault()}
+      finalFocusEl={onCloseRef ? () => onCloseRef.current : undefined}
+    >
+      <DialogContent>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Copy connection settings</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Stack spacing={6}>
+          <DialogHeader>
+            <DialogTitle>Copy connection settings</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody>
+            <Stack gap={6}>
               <Text>
                 Mass-copy settings from the source connection to another. This will overwrite the
                 settings of the target connections.
               </Text>
-              <Stack py={4} px={4} bg="gray.800" rounded="md">
+              <Panel as={Stack} surface="subtle" p={4}>
                 <Badge bg="none" p={0}>
                   Source Connection
                 </Badge>
-                <Divider />
+                <Separator />
                 <Box>
-                  <Text fontSize="sm" color="gray.400">
+                  <Text fontSize="sm" color="fg.muted">
                     {getPrettyConnectionName(connection as never)}
                   </Text>
                   {connectionDetail ? <Box>{connectionDetail}</Box> : null}
                   <chakra.span fontWeight={600}>{connection?.name}</chakra.span>
                 </Box>
-              </Stack>
+              </Panel>
               <fieldset>
-                <FormControl isInvalid={!!errors.properties}>
-                  <Stack spacing={2}>
-                    <legend>
-                      <Stack spacing={2}>
-                        <Heading size="sm" as="h2">
-                          Settings to Copy
-                        </Heading>
-                        <Text>Settings to copy from the source connection.</Text>
-                      </Stack>
-                    </legend>
-                    <Stack>
-                      {checkboxesByCategories}
-                      <Controller
-                        name="properties"
-                        control={control}
-                        render={({ field }) => {
-                          return (
-                            <>
-                              {otherSettings.map((setting) => {
-                                const settingDescription = CopyableSettingDescriptions[setting];
-
-                                return (
-                                  <Checkbox
-                                    onChange={(e) => {
-                                      const newSettings = calculateNewCheckedSettings(
-                                        field.value,
-                                        setting,
-                                        e.target.checked,
-                                      );
-                                      field.onChange(newSettings);
-                                    }}
-                                    isChecked={field.value.includes(setting)}
-                                    key={setting}
-                                  >
-                                    {settingDescription.description}
-                                    <br />
-                                    {settingDescription.hint && (
-                                      <chakra.span color="whiteAlpha.700" fontSize={14}>
-                                        {settingDescription.hint}
-                                      </chakra.span>
-                                    )}
-                                  </Checkbox>
-                                );
-                              })}
-                            </>
-                          );
-                        }}
-                      />
+                <Stack gap={2}>
+                  <legend>
+                    <Stack gap={2}>
+                      <Heading size="sm" as="h2">
+                        Settings to Copy
+                      </Heading>
+                      <Text>Settings to copy from the source connection.</Text>
                     </Stack>
-                    <FormErrorMessage>{errors.properties?.message}</FormErrorMessage>
+                  </legend>
+                  <Stack>
+                    {checkboxesByCategories}
+                    <Controller
+                      name="properties"
+                      control={control}
+                      render={({ field }) => {
+                        return (
+                          <>
+                            {otherSettings.map((setting) => {
+                              const settingDescription = CopyableSettingDescriptions[setting];
+
+                              return (
+                                <Checkbox
+                                  onCheckedChange={(e) => {
+                                    const newSettings = calculateNewCheckedSettings(
+                                      field.value,
+                                      setting,
+                                      !!e.checked,
+                                    );
+                                    field.onChange(newSettings);
+                                  }}
+                                  checked={field.value.includes(setting)}
+                                  key={setting}
+                                >
+                                  {settingDescription.description}
+                                  <br />
+                                  {settingDescription.hint && (
+                                    <chakra.span color="fg.muted" fontSize={14}>
+                                      {settingDescription.hint}
+                                    </chakra.span>
+                                  )}
+                                </Checkbox>
+                              );
+                            })}
+                          </>
+                        );
+                      }}
+                    />
                   </Stack>
-                </FormControl>
+                  <Field invalid={!!errors.properties} errorText={errors.properties?.message} />
+                </Stack>
               </fieldset>
               <Controller
                 name="targetDiscordChannelConnectionIds"
                 control={control}
                 render={({ field }) => (
                   <fieldset>
-                    <FormControl isInvalid={!!errors.targetDiscordChannelConnectionIds}>
-                      <Stack spacing={2}>
-                        <legend>
-                          <Heading size="sm" as="h2">
-                            Target Connections
-                          </Heading>
-                          <Text>
-                            The connections that will have their settings overwritten with the
-                            selected settings from the source connection.
-                          </Text>
-                        </legend>
-                        <HStack>
-                          <Button
-                            size="sm"
-                            onClick={() => field.onChange(feed?.connections.map((c) => c.id))}
-                          >
-                            Select all connections as targets
-                          </Button>
-                          <Button size="sm" onClick={() => field.onChange([])}>
-                            Clear {checkedConnectionsLength} target connection selections
-                          </Button>
-                        </HStack>
-                        <Stack>
-                          <ConnectionsCheckboxList
-                            checkedConnectionIds={field.value}
-                            onCheckConnectionChange={field.onChange}
-                            feed={feed as UserFeed}
-                          />
-                        </Stack>
+                    <Stack gap={2}>
+                      <legend>
+                        <Heading size="sm" as="h2">
+                          Target Connections
+                        </Heading>
+                        <Text>
+                          The connections that will have their settings overwritten with the
+                          selected settings from the source connection.
+                        </Text>
+                      </legend>
+                      <HStack>
+                        <Button
+                          size="sm"
+                          onClick={() => field.onChange(feed?.connections.map((c) => c.id))}
+                        >
+                          Select all connections as targets
+                        </Button>
+                        <Button size="sm" onClick={() => field.onChange([])}>
+                          Clear {checkedConnectionsLength} target connection selections
+                        </Button>
+                      </HStack>
+                      <Stack>
+                        <ConnectionsCheckboxList
+                          checkedConnectionIds={field.value}
+                          onCheckConnectionChange={field.onChange}
+                          feed={feed as UserFeed}
+                        />
                       </Stack>
-                      <FormErrorMessage>
-                        {errors.targetDiscordChannelConnectionIds?.message}
-                      </FormErrorMessage>
-                    </FormControl>
+                      <Field
+                        invalid={!!errors.targetDiscordChannelConnectionIds}
+                        errorText={errors.targetDiscordChannelConnectionIds?.message}
+                      />
+                    </Stack>
                   </fieldset>
                 )}
               />
@@ -540,17 +550,15 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                 <InlineErrorIncompleteFormAlert fieldCount={formErrorLength} />
               </Box>
             )}
-          </ModalBody>
-          <ModalFooter>
+          </DialogBody>
+          <DialogFooter>
             <HStack>
               <Button variant="ghost" onClick={onClose}>
                 <span>Cancel</span>
               </Button>
-              <Button
-                colorScheme="blue"
-                mr={3}
+              <PrimaryActionButton
                 type="submit"
-                isLoading={status === "loading"}
+                loading={status === "loading"}
                 aria-disabled={isSubmitting || !isValid}
               >
                 <span>
@@ -559,11 +567,11 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                     ? "1 connection"
                     : `${checkedConnectionsLength} connections`}
                 </span>
-              </Button>
+              </PrimaryActionButton>
             </HStack>
-          </ModalFooter>
+          </DialogFooter>
         </form>
-      </ModalContent>
-    </Modal>
+      </DialogContent>
+    </DialogRoot>
   );
 };

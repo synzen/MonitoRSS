@@ -1,22 +1,8 @@
-import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
-  Box,
-  Button,
-  Code,
-  HStack,
-  Heading,
-  Highlight,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { Accordion, Box, Button, Code, HStack, Heading, Stack, Text } from "@chakra-ui/react";
 import { FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useState } from "react";
-import { AddIcon } from "@chakra-ui/icons";
+import { useState, useRef } from "react";
+import { FaPlus } from "react-icons/fa6";
 import { v4 as uuidv4 } from "uuid";
 import {
   CustomPlaceholdersFormData,
@@ -24,7 +10,7 @@ import {
 } from "./constants/CustomPlaceholderFormSchema";
 import { CustomPlaceholderForm } from "./CustomPlaceholderForm";
 import { useUpdateConnection } from "../../hooks";
-import { SavedUnsavedChangesPopupBar } from "@/components";
+import { SavedUnsavedChangesPopupBar, UnsavedChangesBadge } from "@/components";
 import { BlockableFeature, SubscriberBlockText } from "@/features/subscriptionProducts";
 import { CustomPlaceholderStepType, SupporterTier } from "@/constants";
 
@@ -62,7 +48,8 @@ export const CustomPlaceholdersTabSection = () => {
     name: "customPlaceholders",
     keyName: "hookKey",
   });
-  const [activeIndex, setActiveIndex] = useState<number | number[] | undefined>();
+  const [activeValues, setActiveValues] = useState<string[]>([]);
+  const formFocusRef = useRef<HTMLFormElement>(null);
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
 
   const onSubmit = async ({ customPlaceholders }: CustomPlaceholdersFormData) => {
@@ -100,6 +87,7 @@ export const CustomPlaceholdersTabSection = () => {
   };
 
   const onAddCustomPlaceholder = () => {
+    const newIndex = fields.length;
     append({
       id: uuidv4(),
       steps: [
@@ -115,16 +103,16 @@ export const CustomPlaceholdersTabSection = () => {
       sourcePlaceholder: "",
       isNew: true,
     });
-    setActiveIndex(fields.length);
+    setActiveValues([String(newIndex)]);
   };
 
   const onDeleteCustomPlaceholder = async (index: number) => {
     remove(index);
-    setActiveIndex(-1);
+    setActiveValues([]);
   };
 
   return (
-    <Stack spacing={8} mb={24}>
+    <Stack gap={8} mb={24}>
       <Stack>
         <Heading as="h2" size="md" id="custom-placeholders-title">
           Custom Placeholders
@@ -141,73 +129,66 @@ export const CustomPlaceholdersTabSection = () => {
           have this feature applied during delivery. Consider supporting MonitoRSS's free services and open-source development!`}
       />
       <FormProvider {...formMethods}>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Stack spacing={4}>
-            <Stack spacing={4} role="list" aria-labelledby="custom-placeholders-title">
-              {fields.length && (
-                <Accordion
-                  allowToggle
+        <form
+          ref={formFocusRef}
+          onSubmit={handleSubmit(onSubmit)}
+          aria-label="Custom placeholders settings"
+        >
+          <Stack gap={4}>
+            <Stack gap={4} role="list" aria-labelledby="custom-placeholders-title">
+              {fields.length > 0 && (
+                <Accordion.Root
+                  collapsible
                   role="listitem"
-                  index={activeIndex}
-                  onChange={(newIndex) => setActiveIndex(newIndex)}
+                  value={activeValues}
+                  onValueChange={(details) => setActiveValues(details.value)}
                 >
                   {fields.map((item, index) => {
                     const hasUnsavedChanges = dirtyFields.customPlaceholders?.[index];
 
                     return (
-                      <AccordionItem key={item.id}>
-                        <AccordionButton>
-                          <HStack width="100%" spacing={4}>
-                            <AccordionIcon />
+                      <Accordion.Item key={item.id} value={String(index)}>
+                        <Accordion.ItemTrigger>
+                          <HStack width="100%" gap={4}>
+                            <Accordion.ItemIndicator />
                             <HStack flexWrap="wrap">
                               <Box as="span" flex="1" textAlign="left" paddingY={2}>
                                 {!item.referenceName && (
-                                  <Text color="gray.500">Unnamed custom placeholder</Text>
+                                  <Text color="fg.muted">Unnamed custom placeholder</Text>
                                 )}
                                 {item.referenceName && (
                                   <Code>{`{{custom::${item.referenceName}}}`}</Code>
                                 )}
                               </Box>
-                              {hasUnsavedChanges && (
-                                <Text fontSize="sm" fontWeight={600}>
-                                  <Highlight
-                                    query="Unsaved changes"
-                                    styles={{
-                                      bg: "orange.200",
-                                      rounded: "full",
-                                      px: "2",
-                                      py: "1",
-                                    }}
-                                  >
-                                    Unsaved changes
-                                  </Highlight>
-                                </Text>
-                              )}
+                              {hasUnsavedChanges && <UnsavedChangesBadge />}
                             </HStack>
                           </HStack>
-                        </AccordionButton>
-                        <AccordionPanel pb={4}>
-                          <Stack>
-                            <CustomPlaceholderForm
-                              isExpanded={activeIndex === index}
-                              onDelete={() => onDeleteCustomPlaceholder(index)}
-                              index={index}
-                            />
-                          </Stack>
-                        </AccordionPanel>
-                      </AccordionItem>
+                        </Accordion.ItemTrigger>
+                        <Accordion.ItemContent>
+                          <Accordion.ItemBody pb={4}>
+                            <Stack>
+                              <CustomPlaceholderForm
+                                isExpanded={activeValues.includes(String(index))}
+                                onDelete={() => onDeleteCustomPlaceholder(index)}
+                                index={index}
+                              />
+                            </Stack>
+                          </Accordion.ItemBody>
+                        </Accordion.ItemContent>
+                      </Accordion.Item>
                     );
                   })}
-                </Accordion>
+                </Accordion.Root>
               )}
             </Stack>
             <Box>
-              <Button onClick={onAddCustomPlaceholder} leftIcon={<AddIcon fontSize={13} />}>
+              <Button onClick={onAddCustomPlaceholder}>
+                <FaPlus fontSize={13} />
                 Add Custom Placeholder
               </Button>
             </Box>
           </Stack>
-          <SavedUnsavedChangesPopupBar />
+          <SavedUnsavedChangesPopupBar restoreFocusRef={formFocusRef} />
         </form>
       </FormProvider>
     </Stack>

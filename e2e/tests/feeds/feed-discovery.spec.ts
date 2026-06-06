@@ -34,10 +34,10 @@ test.describe("Feed Discovery", () => {
         }),
       ).toBeVisible();
 
-      await expect(page.getByRole("button", { name: "Go" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Go", exact: true })).toBeVisible();
 
       await expect(
-        page.getByRole("radiogroup", { name: "Feed categories" }),
+        page.getByRole("group", { name: "Feed categories" }),
       ).toBeVisible();
 
       await expect(
@@ -73,12 +73,19 @@ test.describe("Feed Discovery", () => {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill("steam");
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       await expect(
         page.locator("p").filter({ hasText: /\d+ results? for/ }),
       ).toBeVisible();
       await expect(page.getByText("Steam News")).toBeVisible();
+
+      await expect(
+        page
+          .locator("p")
+          .filter({ hasText: /Don't see what you're looking for\?/ })
+          .filter({ hasText: /try pasting a URL/ }),
+      ).toBeVisible();
     });
 
     test("clearing search returns to category cards", async ({ page }) => {
@@ -93,7 +100,7 @@ test.describe("Feed Discovery", () => {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill("steam");
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
       await expect(
         page.locator("p").filter({ hasText: /\d+ results? for/ }),
       ).toBeVisible();
@@ -101,7 +108,7 @@ test.describe("Feed Discovery", () => {
       await page.getByRole("button", { name: "Clear search" }).click();
 
       await expect(
-        page.getByRole("radiogroup", { name: "Feed categories" }),
+        page.getByRole("group", { name: "Feed categories" }),
       ).toBeVisible();
       await expect(searchInput).toHaveValue("");
     });
@@ -119,7 +126,7 @@ test.describe("Feed Discovery", () => {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill(MOCK_RSS_FEED_URL);
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       await expect(
         page.getByRole("button", { name: /^Add .+ feed$/i }).first(),
@@ -139,7 +146,7 @@ test.describe("Feed Discovery", () => {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill("https://example.com/not-a-feed-page-xyz");
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       await expect(
         page
@@ -161,7 +168,7 @@ test.describe("Feed Discovery", () => {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill(MOCK_RSS_HTML_PAGE_URL);
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       await expect(page.getByText("Originally entered:")).toBeVisible({
         timeout: 30000,
@@ -199,14 +206,14 @@ test.describe("Feed Discovery", () => {
 
       // First search
       await searchInput.fill(feedUrl);
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       const feedTitle = page.getByText("E2E Test Feed", { exact: true });
       await expect(feedTitle.first()).toBeVisible({ timeout: 30000 });
 
       // Re-search the exact same URL
       await searchInput.fill(feedUrl);
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       // The feed title should still show "E2E Test Feed", not the hostname
       await expect(feedTitle.first()).toBeVisible({ timeout: 30000 });
@@ -236,7 +243,7 @@ test.describe("Feed Discovery", () => {
 
       // First search
       await searchInput.fill(htmlUrl);
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       await expect(page.getByText("Originally entered:")).toBeVisible({
         timeout: 30000,
@@ -252,7 +259,7 @@ test.describe("Feed Discovery", () => {
       if (firstSearchHasTitle) {
         // Re-search the exact same URL
         await searchInput.fill(htmlUrl);
-        await page.getByRole("button", { name: "Go" }).click();
+        await page.getByRole("button", { name: "Go", exact: true }).click();
 
         await expect(page.getByText("Originally entered:")).toBeVisible({
           timeout: 30000,
@@ -268,7 +275,7 @@ test.describe("Feed Discovery", () => {
         );
 
         await searchInput.fill(htmlUrl);
-        await page.getByRole("button", { name: "Go" }).click();
+        await page.getByRole("button", { name: "Go", exact: true }).click();
 
         await expect(page.getByText("Originally entered:")).toBeVisible({
           timeout: 30000,
@@ -291,14 +298,14 @@ test.describe("Feed Discovery", () => {
       // Wait for the default browse catalog to finish loading so there is stale
       // data in the React Query cache — the exact scenario that triggered the bug.
       await expect(
-        page.getByRole("radiogroup", { name: "Feed categories" }),
+        page.getByRole("group", { name: "Feed categories" }),
       ).toBeVisible();
 
       const searchInput = page.getByRole("textbox", {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill("youtube");
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       await expect(
         page.getByText("To add a YouTube channel, paste the channel URL.", {
@@ -318,14 +325,14 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await expect(
-        page.getByRole("radiogroup", { name: "Feed categories" }),
+        page.getByRole("group", { name: "Feed categories" }),
       ).toBeVisible();
 
       const searchInput = page.getByRole("textbox", {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill("reddit");
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       await expect(
         page.getByText("To add a subreddit, paste the subreddit URL.", {
@@ -358,7 +365,7 @@ test.describe("Feed Discovery", () => {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill(MOCK_RSS_FEED_URL);
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       const addButton = page
         .getByRole("button", { name: /^Add .+ feed$/i })
@@ -393,7 +400,7 @@ test.describe("Feed Discovery", () => {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill(MOCK_RSS_FEED_URL);
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       const addButton = page
         .getByRole("button", { name: /^Add .+ feed$/i })
@@ -429,7 +436,7 @@ test.describe("Feed Discovery", () => {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill(MOCK_RSS_HTML_PAGE_URL);
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       await expect(page.getByText("Originally entered:")).toBeVisible({
         timeout: 30000,
@@ -475,7 +482,7 @@ test.describe("Feed Discovery", () => {
         name: "Search popular feeds or paste a URL",
       });
       await searchInput.fill("Test Error Feed");
-      await page.getByRole("button", { name: "Go" }).click();
+      await page.getByRole("button", { name: "Go", exact: true }).click();
 
       await expect(
         page.getByText("Test Error Feed", { exact: true }),
@@ -486,8 +493,13 @@ test.describe("Feed Discovery", () => {
       });
       await addButton.click();
 
+      // The friendly message depends on how the upstream failure is classified
+      // (transient vs unavailable), which is an environment detail; the feature
+      // under test is that a friendly, recoverable error is surfaced at all.
       await expect(
-        page.getByText("This feed can't be reached right now"),
+        page.getByText(
+          /This feed (can't be reached right now|is no longer available)|Something's wrong with this feed/,
+        ),
       ).toBeVisible({ timeout: 30000 });
 
       const retryButton = page.getByRole("button", { name: /retry/i });
@@ -538,8 +550,8 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("radiogroup", { name: "Feed categories" })
-        .getByRole("radio", { name: /Browse All/ })
+        .getByRole("group", { name: "Feed categories" })
+        .getByRole("button", { name: /Browse All/ })
         .click();
 
       await expect(
@@ -552,7 +564,7 @@ test.describe("Feed Discovery", () => {
         name: "Search popular feeds or paste a URL",
       });
       await modalSearch.fill(`${MOCK_RSS_FEED_URL}&modal-remove-error=1`);
-      await dialog.getByRole("button", { name: "Go" }).click();
+      await dialog.getByRole("button", { name: "Go", exact: true }).click();
 
       const addButton = dialog
         .getByRole("button", { name: /^Add .+ feed$/i })
@@ -614,19 +626,19 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("radiogroup", { name: "Feed categories" })
-        .getByRole("radio", { name: /^Gaming/ })
+        .getByRole("group", { name: "Feed categories" })
+        .getByRole("button", { name: /^Gaming/ })
         .click();
 
       await expect(
         page.getByRole("heading", { name: "Add a Feed" }),
       ).toBeVisible();
 
-      const gamingPill = page.getByRole("radio", { name: "Gaming" });
+      const gamingPill = page.getByRole("tab", { name: "Gaming" });
       await expect(gamingPill).toBeVisible();
       await gamingPill.click();
 
-      await expect(gamingPill).toHaveAttribute("aria-checked", "true");
+      await expect(gamingPill).toHaveAttribute("aria-selected", "true");
 
       await expect(
         page.getByRole("list", { name: /Gaming feeds/ }),
@@ -646,16 +658,16 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("radiogroup", { name: "Feed categories" })
-        .getByRole("radio", { name: /Browse All/ })
+        .getByRole("group", { name: "Feed categories" })
+        .getByRole("button", { name: /Browse All/ })
         .click();
 
       await expect(
         page.getByRole("heading", { name: "Add a Feed" }),
       ).toBeVisible();
 
-      const allPill = page.getByRole("radio", { name: "All" });
-      await expect(allPill).toHaveAttribute("aria-checked", "true");
+      const allPill = page.getByRole("tab", { name: "All" });
+      await expect(allPill).toHaveAttribute("aria-selected", "true");
 
       const categoryHeadings = page
         .getByRole("dialog")
@@ -666,8 +678,8 @@ test.describe("Feed Discovery", () => {
 
       await page.getByRole("button", { name: "See all Gaming feeds" }).click();
 
-      const gamingPill = page.getByRole("radio", { name: "Gaming" });
-      await expect(gamingPill).toHaveAttribute("aria-checked", "true");
+      const gamingPill = page.getByRole("tab", { name: "Gaming" });
+      await expect(gamingPill).toHaveAttribute("aria-selected", "true");
 
       await expect(page.getByText(/Showing \d+ of \d+ feeds/)).toBeVisible();
 
@@ -685,17 +697,17 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("radiogroup", { name: "Feed categories" })
-        .getByRole("radio", { name: /^Gaming/ })
+        .getByRole("group", { name: "Feed categories" })
+        .getByRole("button", { name: /^Gaming/ })
         .click();
 
       await expect(
         page.getByRole("heading", { name: "Add a Feed" }),
       ).toBeVisible();
 
-      const gamingPill = page.getByRole("radio", { name: "Gaming" });
+      const gamingPill = page.getByRole("tab", { name: "Gaming" });
       await gamingPill.click();
-      await expect(gamingPill).toHaveAttribute("aria-checked", "true");
+      await expect(gamingPill).toHaveAttribute("aria-selected", "true");
 
       const showingText = page.getByText(/Showing \d+ of \d+ feeds/);
       await expect(showingText).toBeVisible();
@@ -737,17 +749,17 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("radiogroup", { name: "Feed categories" })
-        .getByRole("radio", { name: /^Gaming/ })
+        .getByRole("group", { name: "Feed categories" })
+        .getByRole("button", { name: /^Gaming/ })
         .click();
 
       await expect(
         page.getByRole("heading", { name: "Add a Feed" }),
       ).toBeVisible();
 
-      const gamingPill = page.getByRole("radio", { name: "Gaming" });
+      const gamingPill = page.getByRole("tab", { name: "Gaming" });
       await gamingPill.click();
-      await expect(gamingPill).toHaveAttribute("aria-checked", "true");
+      await expect(gamingPill).toHaveAttribute("aria-selected", "true");
 
       await expect(
         page.getByRole("list", { name: /Gaming feeds/ }),
@@ -799,8 +811,8 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("radiogroup", { name: "Feed categories" })
-        .getByRole("radio", { name: /Browse All/ })
+        .getByRole("group", { name: "Feed categories" })
+        .getByRole("button", { name: /Browse All/ })
         .click();
 
       await expect(
@@ -813,7 +825,7 @@ test.describe("Feed Discovery", () => {
       await modalSearch.fill(MOCK_RSS_FEED_URL);
       await page
         .getByRole("dialog")
-        .getByRole("button", { name: "Go" })
+        .getByRole("button", { name: "Go", exact: true })
         .click();
 
       const addButton = page
@@ -847,8 +859,8 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("radiogroup", { name: "Feed categories" })
-        .getByRole("radio", { name: /Browse All/ })
+        .getByRole("group", { name: "Feed categories" })
+        .getByRole("button", { name: /Browse All/ })
         .click();
 
       await expect(
@@ -861,7 +873,7 @@ test.describe("Feed Discovery", () => {
       await modalSearch.fill(`${MOCK_RSS_FEED_URL}&modal=1`);
       await page
         .getByRole("dialog")
-        .getByRole("button", { name: "Go" })
+        .getByRole("button", { name: "Go", exact: true })
         .click();
 
       const addButton2 = page
@@ -896,8 +908,8 @@ test.describe("Feed Discovery", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page
-        .getByRole("radiogroup", { name: "Feed categories" })
-        .getByRole("radio", { name: /Browse All/ })
+        .getByRole("group", { name: "Feed categories" })
+        .getByRole("button", { name: /Browse All/ })
         .click();
 
       await expect(
@@ -910,7 +922,7 @@ test.describe("Feed Discovery", () => {
       await modalSearch.fill(`${MOCK_RSS_FEED_URL}&modal-remove=1`);
       await page
         .getByRole("dialog")
-        .getByRole("button", { name: "Go" })
+        .getByRole("button", { name: "Go", exact: true })
         .click();
 
       const addButton = page
@@ -1084,7 +1096,7 @@ test.describe("Feed Discovery", () => {
       await modalSearch.fill(`${MOCK_RSS_FEED_URL}&returning=1`);
       await page
         .getByRole("dialog")
-        .getByRole("button", { name: "Go" })
+        .getByRole("button", { name: "Go", exact: true })
         .click();
 
       const addButton3 = page

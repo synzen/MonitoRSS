@@ -1,4 +1,6 @@
-import { Avatar, Box, chakra, HStack, Text, useColorModeValue as mode } from "@chakra-ui/react";
+import { Box, chakra, HStack, Text } from "@chakra-ui/react";
+import { useColorModeValue as mode } from "@/components/ui/color-mode";
+import { Avatar } from "@/components/ui/avatar";
 
 interface MenuItemProps {
   title: string;
@@ -11,8 +13,8 @@ export const MenuItem: React.FC<MenuItemProps> = (props: MenuItemProps) => {
   const { title, children, icon, onClick } = props;
 
   return (
-    <chakra.a
-      as="button"
+    <chakra.button
+      type="button"
       display="block"
       px="5"
       py="3"
@@ -23,15 +25,15 @@ export const MenuItem: React.FC<MenuItemProps> = (props: MenuItemProps) => {
       textAlign="left"
       _hover={{ bg: mode("gray.50", "gray.600") }}
     >
-      <HStack spacing={4}>
-        {icon && <Avatar name="Dan" aria-hidden src={icon} />}
+      <HStack gap={4}>
+        {icon && <Avatar name={title} aria-hidden src={icon} />}
         <Box>
           <Text
             display="inline-block"
             textAlign="left"
             fontWeight="semibold"
             transition="0.2s all"
-            _groupHover={{ color: "blue.500" }}
+            _groupHover={{ color: "brand.fg" }}
           >
             {title}
           </Text>
@@ -40,6 +42,6 @@ export const MenuItem: React.FC<MenuItemProps> = (props: MenuItemProps) => {
           </Text>
         </Box>
       </HStack>
-    </chakra.a>
+    </chakra.button>
   );
 };

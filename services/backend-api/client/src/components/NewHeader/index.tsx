@@ -1,23 +1,12 @@
-import {
-  Alert,
-  Avatar,
-  Box,
-  Button,
-  Flex,
-  HStack,
-  Menu,
-  MenuButton,
-  MenuDivider,
-  MenuItem,
-  MenuList,
-  Text,
-  chakra,
-} from "@chakra-ui/react";
+import { Box, Button, Flex, HStack, Text, chakra } from "@chakra-ui/react";
 import { Link, useNavigate } from "react-router-dom";
-import { SettingsIcon, InfoIcon } from "@chakra-ui/icons";
+import { FaGear, FaCircleInfo } from "react-icons/fa6";
 
 import { pages } from "../../constants";
 import { Loading } from "../Loading";
+import { Alert } from "@/components/ui/alert";
+import { Avatar } from "@/components/ui/avatar";
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 
 interface Props {
   invertBackground?: boolean;
@@ -41,10 +30,10 @@ export const NewHeader = ({
   const navigate = useNavigate();
 
   return (
-    <chakra.header width="full" borderBottom="solid 1px" borderColor="gray.700">
+    <chakra.header width="full" borderBottom="solid 1px" borderColor="border">
       <Box
         width="100%"
-        background={invertBackground ? "gray.700" : "none"}
+        background={invertBackground ? "bg.subtle" : "none"}
         display="flex"
         justifyContent="center"
       >
@@ -84,23 +73,25 @@ export const NewHeader = ({
                   <Loading />
                 </Box>
               )}
-              {botError && <Alert status="error">{botError.message}</Alert>}
+              {botError && <Alert status="error" title={botError.message} />}
             </Flex>
             <HStack>{searchSlot}</HStack>
           </HStack>
           <Flex alignItems="center" paddingY="4">
-            <Menu placement="bottom-end">
-              <MenuButton as={Button} size="sm" variant="link" aria-label="Account settings">
-                <Avatar
-                  src={user?.iconUrl}
-                  size="sm"
-                  name={user?.username}
-                  backgroundColor="gray.600"
-                  title={user?.username}
-                  aria-hidden
-                />
-              </MenuButton>
-              <MenuList>
+            <MenuRoot positioning={{ placement: "bottom-end" }}>
+              <MenuTrigger asChild>
+                <Button size="sm" variant="ghost" aria-label="Account settings">
+                  <Avatar
+                    src={user?.iconUrl}
+                    size="sm"
+                    name={user?.username}
+                    backgroundColor="bg.emphasized"
+                    title={user?.username}
+                    aria-hidden
+                  />
+                </Button>
+              </MenuTrigger>
+              <MenuContent>
                 <Box overflow="hidden" paddingX={2} title={user?.username}>
                   <Text
                     overflow="hidden"
@@ -110,26 +101,28 @@ export const NewHeader = ({
                   >
                     {user?.username}
                   </Text>
-                  <Text fontSize="sm" color="whiteAlpha.600">
+                  <Text fontSize="sm" color="fg.muted">
                     Discord ID: {user?.id}
                   </Text>
                 </Box>
-                <MenuDivider />
-                <MenuItem icon={<SettingsIcon />} onClick={() => navigate(pages.userSettings())}>
+                <MenuSeparator />
+                <MenuItem value="account-settings" onClick={() => navigate(pages.userSettings())}>
+                  <FaGear />
                   Account Settings
                 </MenuItem>
                 <MenuItem
+                  value="discord-support"
                   alignItems="center"
-                  icon={<InfoIcon />}
                   onClick={() => {
                     window.open("https://discord.gg/pudv7Rx", "_blank");
                   }}
                 >
+                  <FaCircleInfo />
                   Discord Support Server
                 </MenuItem>
                 {logoutSlot}
-              </MenuList>
-            </Menu>
+              </MenuContent>
+            </MenuRoot>
           </Flex>
         </Flex>
       </Box>

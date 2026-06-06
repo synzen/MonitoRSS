@@ -5,7 +5,7 @@ import { DeliveryPreview } from "./DeliveryPreview";
 
 export const UserFeedLogs = () => {
   return (
-    <Stack spacing={8}>
+    <Stack gap={8}>
       <Heading size="md" as="h2">
         Logs
       </Heading>

@@ -1,16 +1,6 @@
-import {
-  Alert,
-  AlertDescription,
-  Badge,
-  Box,
-  Code,
-  Divider,
-  HStack,
-  SkeletonText,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
+import { Badge, Box, Code, HStack, Separator, SkeletonText, Stack, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
+import { Alert } from "@/components/ui/alert";
 import { CustomPlaceholder } from "@/types/CustomPlaceholder";
 import { useCreateConnectionPreview } from "../../hooks";
 import { InlineErrorAlert } from "@/components";
@@ -110,7 +100,7 @@ export const CustomPlaceholderPreview = ({
   if (error?.statusCode === 422) {
     if (error.errorCode === "INVALID_CUSTOM_PLACEHOLDERS_REGEX_PREVIEW_INPUT") {
       errorComponent = (
-        <Text fontSize={13} color="red.300" fontWeight={600}>
+        <Text fontSize={13} color="text.error" fontWeight={600}>
           Invalid regex search in current or previous steps
         </Text>
       );
@@ -125,12 +115,12 @@ export const CustomPlaceholderPreview = ({
   const showLoading = isFetchingNewPreview && placeholderIsComplete;
 
   return (
-    <Stack spacing={4} flex={1}>
+    <Stack gap={4} flex={1}>
       <Box
-        bg="whiteAlpha.200"
+        bg="bg.subtle"
         borderStyle="solid"
         borderWidth="1px"
-        borderColor="whiteAlpha.300"
+        borderColor="border"
         py={4}
         px={4}
         rounded="lg"
@@ -144,17 +134,17 @@ export const CustomPlaceholderPreview = ({
           </Badge>
           <Code fontSize={12} display="inline-block">{`{{custom::${referenceName}}}`}</Code>
         </HStack>
-        <Divider mt={1} mb={3} />
-        {showLoading && <SkeletonText noOfLines={7} spacing="2" skeletonHeight="6" />}
+        <Separator mt={1} mb={3} />
+        {showLoading && <SkeletonText lineClamp={7} gap="2" />}
         {!selectedArticleId && placeholderIsComplete && !isFetchingNewPreview && (
-          <Text color="gray.400">
+          <Text color="fg.muted">
             <em>No article selected for preview</em>
           </Text>
         )}
         {!isFetchingNewPreview && placeholderIsComplete && previews && (
           <Box>
             {!contentToDisplay && (
-              <Text color="gray.400">
+              <Text color="fg.muted">
                 <em>(empty)</em>
               </Text>
             )}
@@ -174,14 +164,12 @@ export const CustomPlaceholderPreview = ({
           dataPreview?.result &&
           !dataPreview?.result.messages.length && (
             <Alert status="warning">
-              <AlertDescription>
-                <span>No article found for preview</span>
-              </AlertDescription>
+              <span>No article found for preview</span>
             </Alert>
           )}
         {errorComponent}
         {!error && !placeholderIsComplete && (
-          <Text fontSize={13} color="red.300" fontWeight="600">
+          <Text fontSize={13} color="text.error" fontWeight="600">
             Incomplete inputs in one or more steps
           </Text>
         )}

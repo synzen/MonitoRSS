@@ -1,15 +1,5 @@
-import {
-  Button,
-  Card,
-  CardFooter,
-  CardHeader,
-  Badge,
-  Box,
-  HStack,
-  Stack,
-  Text,
-} from "@chakra-ui/react";
-import { ChevronRightIcon } from "@chakra-ui/icons";
+import { Button, Card, Badge, Box, HStack, Stack, Text } from "@chakra-ui/react";
+import { FaChevronRight } from "react-icons/fa6";
 import { Link as RouterLink } from "react-router-dom";
 import { UserFeed } from "@/features/feed";
 import {
@@ -17,7 +7,6 @@ import {
   FeedConnectionType,
   FeedDiscordChannelConnection,
 } from "@/types";
-import getChakraColor from "@/utils/getChakraColor";
 import { pages } from "@/constants";
 import { DiscordChannelConnectionSettings } from "./DiscordChannelConnectionSettings";
 import { getPrettyConnectionName } from "../../utils/getPrettyConnectionName";
@@ -42,72 +31,77 @@ export const ConnectionCard = ({ feedId, connection }: Props) => {
   let cardLeftBorder = "";
 
   if (isError) {
-    cardLeftBorder = `solid 3px ${getChakraColor("red.400")}`;
+    cardLeftBorder = "solid 3px var(--app-text-error)";
   } else if (connection.disabledCode === FeedConnectionDisabledCode.Manual) {
-    cardLeftBorder = `solid 3px ${getChakraColor("gray.400")}`;
+    cardLeftBorder = "solid 3px var(--app-fg-muted)";
   }
 
   const connectionDetail = getPrettyConnectionDetail(connection as never);
 
   return (
-    <Card
+    <Card.Root
       key={connection.id}
       variant="elevated"
       size="sm"
       borderLeft={cardLeftBorder}
       rounded="lg"
       paddingX={1}
-      as="article"
+      asChild
     >
-      <CardHeader>
-        <HStack justifyContent="space-between" alignItems="flex-start">
-          <Stack spacing="1">
-            <Box>
-              <Text color="gray.400" fontSize="sm">
-                {getPrettyConnectionName(connection as never)}
-              </Text>
-              {connectionDetail ? <Box> {connectionDetail}</Box> : null}
-            </Box>
-            <HStack>
-              <Text fontWeight={600} as="h3" id={connection.id}>
-                {connection.name}
-              </Text>
-              {connection.disabledCode === FeedConnectionDisabledCode.Manual && (
-                <Badge fontSize="x-small" colorScheme="gray">
-                  Disabled
-                </Badge>
-              )}
-              {isError && (
-                <Badge fontSize="x-small" colorScheme="red">
-                  Error
-                </Badge>
-              )}
-            </HStack>
-          </Stack>
-          {connection.key === FeedConnectionType.DiscordChannel && (
-            <DiscordChannelConnectionSettings
-              connection={connection as FeedDiscordChannelConnection}
-              feedId={feedId}
-            />
-          )}
-        </HStack>
-      </CardHeader>
-      <CardFooter justifyContent="space-between">
-        <Box />
-        <Button
-          as={RouterLink}
-          to={pages.userFeedConnection({
-            feedId: feedId as string,
-            connectionType: connection.key,
-            connectionId: connection.id,
-          })}
-          rightIcon={<ChevronRightIcon />}
-          aria-labelledby={`manage-${connection.id} ${connection.id}`}
-          id={`manage-${connection.id}`}
-        >
-          Manage
-        </Button>
-      </CardFooter>
-    </Card>
+      <article>
+        <Card.Header>
+          <HStack justifyContent="space-between" alignItems="flex-start">
+            <Stack gap="1">
+              <Box>
+                <Text color="fg.muted" fontSize="sm">
+                  {getPrettyConnectionName(connection as never)}
+                </Text>
+                {connectionDetail ? <Box> {connectionDetail}</Box> : null}
+              </Box>
+              <HStack>
+                <Text fontWeight={600} as="h3" id={connection.id}>
+                  {connection.name}
+                </Text>
+                {connection.disabledCode === FeedConnectionDisabledCode.Manual && (
+                  <Badge fontSize="x-small" colorPalette="gray">
+                    Disabled
+                  </Badge>
+                )}
+                {isError && (
+                  <Badge fontSize="x-small" colorPalette="red">
+                    Error
+                  </Badge>
+                )}
+              </HStack>
+            </Stack>
+            {connection.key === FeedConnectionType.DiscordChannel && (
+              <DiscordChannelConnectionSettings
+                connection={connection as FeedDiscordChannelConnection}
+                feedId={feedId}
+              />
+            )}
+          </HStack>
+        </Card.Header>
+        <Card.Footer justifyContent="space-between">
+          <Box />
+          <Button
+            asChild
+            aria-labelledby={`manage-${connection.id} ${connection.id}`}
+            id={`manage-${connection.id}`}
+          >
+            <RouterLink
+              to={pages.userFeedConnection({
+                feedId: feedId as string,
+                connectionType: connection.key,
+                connectionId: connection.id,
+              })}
+            >
+              Manage
+              <FaChevronRight />
+            </RouterLink>
+          </Button>
+        </Card.Footer>
+      </article>
+    </Card.Root>
   );
 };

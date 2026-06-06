@@ -1,6 +1,6 @@
-import { MenuItem } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { FaRightFromBracket } from "react-icons/fa6";
+import { MenuItem } from "@/components/ui/menu";
 import { LogoutButton } from "@/features/auth";
 import { useDiscordBot, useDiscordUserMe } from "@/features/discordUser";
 import { SearchFeedsModal } from "@/features/feed";
@@ -30,7 +30,8 @@ export const AppHeader = ({ invertBackground }: Props) => {
       logoutSlot={
         <LogoutButton
           trigger={
-            <MenuItem icon={<FaRightFromBracket />}>
+            <MenuItem value="logout">
+              <FaRightFromBracket />
               {t("components.pageContentV2.logout")}
             </MenuItem>
           }

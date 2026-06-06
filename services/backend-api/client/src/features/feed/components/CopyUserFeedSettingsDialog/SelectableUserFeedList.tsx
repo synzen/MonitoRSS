@@ -2,23 +2,21 @@ import {
   Box,
   Button,
   Center,
-  Checkbox,
   Flex,
   HStack,
   IconButton,
   Input,
   InputGroup,
-  InputLeftElement,
-  InputRightElement,
   Spinner,
   Stack,
   Text,
   chakra,
 } from "@chakra-ui/react";
-import { CloseIcon, SearchIcon } from "@chakra-ui/icons";
+import { FaMagnifyingGlass, FaXmark } from "react-icons/fa6";
 import { useEffect, useState } from "react";
 import { useUserFeedsInfinite } from "../../hooks/useUserFeedsInfinite";
-import { InlineErrorAlert } from "../../../../components";
+import { InlineErrorAlert, Panel } from "../../../../components";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Props {
   selectedIds: string[];
@@ -59,9 +57,7 @@ export const SelectableUserFeedList = ({
 
   const fetchedSoFarCount = data?.pages.reduce((acc, page) => acc + page.results.length, 0) ?? 0;
 
-  const isMasterIndeterminate = isSelectedAll
-    ? excludedIds.length > 0
-    : selectedIds.length > 0;
+  const isMasterIndeterminate = isSelectedAll ? excludedIds.length > 0 : selectedIds.length > 0;
 
   useEffect(() => {
     if (isSelectedAll) {
@@ -70,29 +66,44 @@ export const SelectableUserFeedList = ({
   }, [isSelectedAll, totalCount, search]);
 
   return (
-    <Stack spacing={2}>
+    <Stack gap={2}>
       <legend>
-        <Stack spacing={2}>
-          <Text fontWeight="semibold" size="sm">
+        <Stack gap={2}>
+          <Text fontWeight="semibold" textStyle="sm">
             Target Feeds
           </Text>
           <Text>{description}</Text>
         </Stack>
       </legend>
-      <Stack spacing={1} mt={1}>
+      <Stack gap={1} mt={1}>
         <HStack>
-          <InputGroup>
-            <InputLeftElement>
-              <SearchIcon />
-            </InputLeftElement>
+          <InputGroup
+            startElement={<FaMagnifyingGlass />}
+            endElement={
+              search && !isFetching ? (
+                <IconButton
+                  aria-label="Clear search"
+                  size="sm"
+                  variant="plain"
+                  color="fg.muted"
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearch("");
+                  }}
+                >
+                  <FaXmark />
+                </IconButton>
+              ) : search && isFetching ? (
+                <Spinner size="sm" />
+              ) : undefined
+            }
+          >
             <Input
-              bg="gray.800"
               placeholder="Search for target feeds"
               onChange={(e) => setSearchInput(e.target.value)}
               value={searchInput}
               aria-label="Search for target feeds"
-              isInvalid={false}
-              isRequired={false}
+              required={false}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -100,28 +111,8 @@ export const SelectableUserFeedList = ({
                 }
               }}
             />
-            {search && !isFetching && (
-              <InputRightElement>
-                <IconButton
-                  aria-label="Clear search"
-                  icon={<CloseIcon color="gray.400" />}
-                  size="sm"
-                  variant="link"
-                  onClick={() => {
-                    setSearchInput("");
-                    setSearch("");
-                  }}
-                />
-              </InputRightElement>
-            )}
-            {search && isFetching && (
-              <InputRightElement>
-                <Spinner size="sm" />
-              </InputRightElement>
-            )}
           </InputGroup>
           <Button
-            leftIcon={<SearchIcon />}
             onClick={() => {
               if (isFetching) {
                 return;
@@ -132,118 +123,109 @@ export const SelectableUserFeedList = ({
             aria-disabled={isFetching}
             aria-busy={isFetching}
           >
+            <FaMagnifyingGlass />
             Search
           </Button>
         </HStack>
-        <Stack
-          pb={3}
-          borderRadius="md"
-          maxHeight={350}
-          border="1px"
-          borderColor="gray.700"
-          overflow="auto"
-          bg="gray.800"
-        >
-          <Box bg="blue.700" py={2} px={4} position="sticky" top={0} zIndex={1}>
-            <Checkbox
-              w="full"
-              onChange={(e) =>
-                onSelectAll(totalCount || 0, search, (e.target as HTMLInputElement).checked)
-              }
-              isChecked={isSelectedAll}
-              isIndeterminate={isMasterIndeterminate}
-              inputProps={{
-                "aria-checked": isMasterIndeterminate ? "mixed" : isSelectedAll,
-              }}
-            >
-              Select all {totalCount || 0} matching feeds
-            </Checkbox>
-          </Box>
-          <Stack as="ul" listStyleType="none" gap={4} px={4}>
-            {data?.pages.map((page) => {
-              if (!page.results.length) {
-                return null;
-              }
-
-              return (
-                <>
-                  {page.results.map((userFeed) => (
-                    <Box key={`feed-${userFeed.id}`} as="li">
-                      <Checkbox
-                        width="100%"
-                        onChange={(e) => {
-                          if (isSelectedAll) {
-                            if (!e.target.checked && !excludedIds.includes(userFeed.id)) {
-                              onExcludedIdsChange([...excludedIds, userFeed.id]);
-                            } else if (e.target.checked && excludedIds.includes(userFeed.id)) {
-                              onExcludedIdsChange(excludedIds.filter((id) => id !== userFeed.id));
-                            }
-                          } else if (e.target.checked && !selectedIds.includes(userFeed.id)) {
-                            onSelectedIdsChange([...selectedIds, userFeed.id]);
-                          } else if (!e.target.checked && selectedIds.includes(userFeed.id)) {
-                            onSelectedIdsChange(selectedIds.filter((id) => id !== userFeed.id));
-                          }
-                        }}
-                        isChecked={
-                          isSelectedAll
-                            ? !excludedIds.includes(userFeed.id)
-                            : selectedIds.includes(userFeed.id)
-                        }
-                        isRequired={false}
-                      >
-                        <chakra.span ml={2} display="block" fontSize="sm" fontWeight={600}>
-                          {userFeed.title}
-                        </chakra.span>
-                        <chakra.span
-                          ml={2}
-                          display="block"
-                          color="whiteAlpha.700"
-                          fontSize="sm"
-                          whiteSpace="break-spaces"
-                          wordBreak="break-all"
-                        >
-                          {userFeed.url}
-                        </chakra.span>
-                      </Checkbox>
-                    </Box>
-                  ))}
-                </>
-              );
-            })}
-          </Stack>
-          {status === "loading" && (
-            <Center px={4} py={3}>
-              <Spinner margin={4} />
-            </Center>
-          )}
-          {error && (
-            <Box px={4} py={3}>
-              <InlineErrorAlert title="Failed to list feeds" description={error.message} />
+        <Panel maxHeight={350} overflow="auto">
+          <Stack pb={3}>
+            <Box bg="bg.emphasized" py={2} px={4} position="sticky" top={0} zIndex={1}>
+              <Checkbox
+                w="full"
+                onCheckedChange={(details) =>
+                  onSelectAll(totalCount || 0, search, !!details.checked)
+                }
+                checked={isMasterIndeterminate ? "indeterminate" : isSelectedAll}
+              >
+                Select all {totalCount || 0} matching feeds
+              </Checkbox>
             </Box>
-          )}
-          {totalCount !== undefined && totalCount > 0 && (
-            <Text color="whiteAlpha.700" fontSize="sm" textAlign="center" mt={6} px={4}>
-              Viewed {fetchedSoFarCount} of {totalCount} feeds
-            </Text>
-          )}
-          {totalCount !== undefined && totalCount === 0 && (
-            <Text color="whiteAlpha.700" fontSize="sm" textAlign="center" mt={0} px={4} py={3}>
-              No feeds found
-            </Text>
-          )}
-          <Flex width="full" px={4}>
-            <Button
-              hidden={!hasNextPage}
-              onClick={() => fetchNextPage()}
-              variant="outline"
-              size="sm"
-              width="full"
-              aria-disabled={isFetchingNextPage || !hasNextPage}
-            >
-              <span>View more feeds</span>
-            </Button>
-          </Flex>
-        </Stack>
+            <Stack as="ul" listStyleType="none" gap={4} px={4}>
+              {data?.pages.map((page) => {
+                if (!page.results.length) {
+                  return null;
+                }
+
+                return (
+                  <>
+                    {page.results.map((userFeed) => (
+                      <Box key={`feed-${userFeed.id}`} as="li">
+                        <Checkbox
+                          width="100%"
+                          onCheckedChange={(details) => {
+                            if (isSelectedAll) {
+                              if (!details.checked && !excludedIds.includes(userFeed.id)) {
+                                onExcludedIdsChange([...excludedIds, userFeed.id]);
+                              } else if (details.checked && excludedIds.includes(userFeed.id)) {
+                                onExcludedIdsChange(excludedIds.filter((id) => id !== userFeed.id));
+                              }
+                            } else if (details.checked && !selectedIds.includes(userFeed.id)) {
+                              onSelectedIdsChange([...selectedIds, userFeed.id]);
+                            } else if (!details.checked && selectedIds.includes(userFeed.id)) {
+                              onSelectedIdsChange(selectedIds.filter((id) => id !== userFeed.id));
+                            }
+                          }}
+                          checked={
+                            isSelectedAll
+                              ? !excludedIds.includes(userFeed.id)
+                              : selectedIds.includes(userFeed.id)
+                          }
+                          required={false}
+                        >
+                          <chakra.span ml={2} display="block" fontSize="sm" fontWeight={600}>
+                            {userFeed.title}
+                          </chakra.span>
+                          <chakra.span
+                            ml={2}
+                            display="block"
+                            color="fg.muted"
+                            fontSize="sm"
+                            whiteSpace="break-spaces"
+                            wordBreak="break-all"
+                          >
+                            {userFeed.url}
+                          </chakra.span>
+                        </Checkbox>
+                      </Box>
+                    ))}
+                  </>
+                );
+              })}
+            </Stack>
+            {status === "loading" && (
+              <Center px={4} py={3}>
+                <Spinner margin={4} />
+              </Center>
+            )}
+            {error && (
+              <Box px={4} py={3}>
+                <InlineErrorAlert title="Failed to list feeds" description={error.message} />
+              </Box>
+            )}
+            {totalCount !== undefined && totalCount > 0 && (
+              <Text color="fg.muted" fontSize="sm" textAlign="center" mt={6} px={4}>
+                Viewed {fetchedSoFarCount} of {totalCount} feeds
+              </Text>
+            )}
+            {totalCount !== undefined && totalCount === 0 && (
+              <Text color="fg.muted" fontSize="sm" textAlign="center" mt={0} px={4} py={3}>
+                No feeds found
+              </Text>
+            )}
+            <Flex width="full" px={4}>
+              <Button
+                hidden={!hasNextPage}
+                onClick={() => fetchNextPage()}
+                variant="outline"
+                size="sm"
+                width="full"
+                aria-disabled={isFetchingNextPage || !hasNextPage}
+              >
+                <span>View more feeds</span>
+              </Button>
+            </Flex>
+          </Stack>
+        </Panel>
       </Stack>
     </Stack>
   );

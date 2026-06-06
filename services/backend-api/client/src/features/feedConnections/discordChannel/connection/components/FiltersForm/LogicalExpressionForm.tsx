@@ -1,18 +1,13 @@
-import { ChevronDownIcon, ChevronUpIcon, DeleteIcon } from "@chakra-ui/icons";
+import { FaChevronDown, FaChevronUp, FaTrash } from "react-icons/fa6";
 import {
   Box,
-  BoxProps,
   Button,
-  Divider,
   Flex,
-  FormControl,
-  FormErrorMessage,
   HStack,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
+  Icon,
+  Separator,
   Stack,
+  StackProps,
   Text,
   chakra,
 } from "@chakra-ui/react";
@@ -38,14 +33,15 @@ import {
   NavigableTreeItemGroup,
 } from "../../../messageBuilder/components/NavigableTree";
 import { useNavigableTreeItemContext } from "../../../messageBuilder/contexts/NavigableTreeItemContext";
-import getChakraColor from "@/utils/getChakraColor";
 import { getAriaLabelForExpressionGroup } from "./utils/getAriaLabelForExpressionGroup";
 import { getAriaLabelForExpression } from "./utils/getAriaLableForExpression";
+import { Field } from "@/components/ui/field";
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 
 interface Props {
   onDeleted: () => void;
   prefix?: string;
-  containerProps?: BoxProps;
+  containerProps?: StackProps;
 }
 
 export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }: Props) => {
@@ -148,17 +144,17 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
   return (
     <Stack {...containerProps}>
       <Box
-        border="solid"
+        borderStyle="solid"
         borderWidth="1px"
-        borderColor="gray.700"
-        borderRadius="md"
+        borderColor="border.emphasized"
+        borderRadius="l3"
         width="100%"
-        bg={isFocused ? "blackAlpha.500" : undefined}
+        bg={isFocused ? "bg.subtle" : undefined}
         outlineOffset={4}
-        outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
+        outline={isFocused ? "2px solid var(--app-accent-focus-ring)" : undefined}
         _hover={{
-          outline: `2px solid ${getChakraColor("blue.50")} !important`,
-          background: "blackAlpha.500",
+          outline: "2px solid var(--app-accent-focus-ring) !important",
+          background: "bg.subtle",
         }}
       >
         <NavigableTreeItemExpandButton>
@@ -171,28 +167,28 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
                 textAlign="left"
                 onClick={onClick}
                 width="100%"
-                borderRadius="md"
+                borderRadius="l3"
               >
                 <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
                   <HStack>
                     {isExpanded ? (
-                      <ChevronUpIcon fontSize="lg" />
+                      <Icon as={FaChevronUp} fontSize="lg" />
                     ) : (
-                      <ChevronDownIcon fontSize="lg" />
+                      <Icon as={FaChevronDown} fontSize="lg" />
                     )}
                     <Text>Condition Group</Text>
                   </HStack>
                   <Button
                     variant="ghost"
-                    colorScheme="red"
+                    colorPalette="red"
                     size="sm"
                     tabIndex={isFocused ? 0 : -1}
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleted();
                     }}
-                    leftIcon={<DeleteIcon />}
                   >
+                    <Icon as={FaTrash} />
                     Delete Condition Group
                   </Button>
                 </HStack>
@@ -200,7 +196,7 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
             );
           }}
         </NavigableTreeItemExpandButton>
-        <Divider />
+        <Separator />
         {isExpanded && (
           <Flex justifyContent="space-between" px={4} pt={4}>
             <Box width="100%" flex={1}>
@@ -261,27 +257,31 @@ export const LogicalExpressionForm = ({ onDeleted, prefix = "", containerProps }
                 })}
               </NavigableTreeItemGroup>
             )}
-            <FormControl isInvalid={childrenError?.type === "required"}>
-              <FormErrorMessage my={4}>At least one condition is required.</FormErrorMessage>
-            </FormControl>
+            <Field
+              invalid={childrenError?.type === "required"}
+              errorText={
+                childrenError?.type === "required"
+                  ? "At least one condition is required."
+                  : undefined
+              }
+            />
             <HStack justifyContent="space-between" pb={2}>
-              <Menu>
-                <MenuButton
-                  as={Button}
-                  rightIcon={<ChevronDownIcon />}
-                  tabIndex={isFocused ? 0 : -1}
-                >
-                  {t("features.feedConnections.components.filtersForm.addButtonText")}
-                </MenuButton>
-                <MenuList>
-                  <MenuItem onClick={onAddRelational}>
+              <MenuRoot>
+                <MenuTrigger asChild>
+                  <Button tabIndex={isFocused ? 0 : -1}>
+                    {t("features.feedConnections.components.filtersForm.addButtonText")}
+                    <Icon as={FaChevronDown} />
+                  </Button>
+                </MenuTrigger>
+                <MenuContent>
+                  <MenuItem value="add-relational" onClick={onAddRelational}>
                     {t("features.feedConnections.components.filtersForm.addRelationalButtonText")}
                   </MenuItem>
-                  <MenuItem onClick={onAddLogical}>
+                  <MenuItem value="add-logical" onClick={onAddLogical}>
                     {t("features.feedConnections.components.filtersForm.addLogicalButtonText")}
                   </MenuItem>
-                </MenuList>
-              </Menu>
+                </MenuContent>
+              </MenuRoot>
               {/* <Button
                 onClick={onDeleted}
                 leftIcon={<DeleteIcon />}

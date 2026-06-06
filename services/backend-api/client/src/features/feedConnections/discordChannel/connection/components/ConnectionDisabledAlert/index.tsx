@@ -1,15 +1,8 @@
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Box,
-  Button,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { Alert, Box, Icon, useDisclosure } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { useContext, useRef } from "react";
-import { ArrowLeftIcon } from "@chakra-ui/icons";
+import { FaArrowUp } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { FeedConnectionDisabledCode, FeedDiscordChannelConnection } from "@/types";
 import { useUpdateDiscordChannelConnection } from "../../hooks";
 import { useUserFeedConnectionContext } from "@/features/feed";
@@ -23,7 +16,7 @@ export const ConnectionDisabledAlert = () => {
   const { mutateAsync, status } = useUpdateDiscordChannelConnection();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
-  const { isOpen: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const { open: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
   const configureButtonRef = useRef<HTMLButtonElement>(null);
   const { disabledCode } = connection;
 
@@ -49,40 +42,38 @@ export const ConnectionDisabledAlert = () => {
 
   if (disabledCode === FeedConnectionDisabledCode.Manual) {
     return (
-      <Alert status="info" borderRadius="md" alignItems="flex-start">
-        <AlertIcon />
-        <Box>
-          <AlertTitle>
+      <Alert.Root status="info">
+        <Alert.Content>
+          <Alert.Title>
             {t("features.feedConnections.components.connectionDisabledAlert.manuallyDisabledTitle")}
-          </AlertTitle>
-          <AlertDescription display="block">
+          </Alert.Title>
+          <Alert.Description display="block">
             {t(
               "features.feedConnections.components.connectionDisabledAlert.manuallyDisabledDescription",
             )}
             <Box marginTop="1rem">
-              <Button isLoading={status === "loading"} onClick={onClickEnable}>
+              <PrimaryActionButton loading={status === "loading"} onClick={onClickEnable}>
                 <span>{t("common.buttons.reEnable")}</span>
-              </Button>
+              </PrimaryActionButton>
             </Box>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
   if (disabledCode === FeedConnectionDisabledCode.BadFormat) {
     return (
-      <Alert status="error" borderRadius="md" alignItems="flex-start">
-        <AlertIcon />
-        <Box>
-          <AlertTitle>
+      <Alert.Root status="error">
+        <Alert.Content>
+          <Alert.Title>
             {t("features.feedConnections.components.connectionDisabledAlert.badFormatTitle")}
-          </AlertTitle>
-          <AlertDescription display="block">
+          </Alert.Title>
+          <Alert.Description display="block">
             {t("features.feedConnections.components.connectionDisabledAlert.badFormatDescription")}
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
@@ -95,74 +86,68 @@ export const ConnectionDisabledAlert = () => {
           onClose={editOnClose}
           onCloseRef={configureButtonRef}
         />
-        <Alert status="error" borderRadius="md" alignItems="flex-start">
-          <AlertIcon />
-          <Box>
-            <AlertTitle>
+        <Alert.Root status="error">
+          <Alert.Content>
+            <Alert.Title>
               {t("features.feedConnections.components.connectionDisabledAlert.missingMediumTitle")}
-            </AlertTitle>
-            <AlertDescription display="block">
+            </Alert.Title>
+            <Alert.Description display="block">
               {t(
                 "features.feedConnections.components.connectionDisabledAlert.missingMediumDescription",
               )}
               <Box marginTop="1rem">
-                <Button ref={configureButtonRef} onClick={editOnOpen}>
+                <PrimaryActionButton ref={configureButtonRef} onClick={editOnOpen}>
                   <span>{t("common.buttons.configure")}</span>
-                </Button>
+                </PrimaryActionButton>
               </Box>
-            </AlertDescription>
-          </Box>
-        </Alert>
+            </Alert.Description>
+          </Alert.Content>
+        </Alert.Root>
       </>
     );
   }
 
   if (disabledCode === FeedConnectionDisabledCode.MissingPermissions) {
     return (
-      <Alert status="error" borderRadius="md" alignItems="flex-start">
-        <AlertIcon />
-        <Box>
-          <AlertTitle>
+      <Alert.Root status="error">
+        <Alert.Content>
+          <Alert.Title>
             {t(
               "features.feedConnections.components.connectionDisabledAlert.missingPermissionsTitle",
             )}
-          </AlertTitle>
-          <AlertDescription display="block">
+          </Alert.Title>
+          <Alert.Description display="block">
             {t(
               "features.feedConnections.components.connectionDisabledAlert.missingPermissionsDescription",
             )}
             <Box marginTop="1rem">
-              <Button isLoading={status === "loading"} onClick={onClickEnable}>
+              <PrimaryActionButton loading={status === "loading"} onClick={onClickEnable}>
                 <span>Attempt to re-enable</span>
-              </Button>
+              </PrimaryActionButton>
             </Box>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
   if (disabledCode === FeedConnectionDisabledCode.NotPaidSubscriber) {
     return (
-      <Alert status="warning" borderRadius="md" alignItems="flex-start">
-        <AlertIcon />
-        <Box>
-          <AlertTitle>Your branded delivery is paused</AlertTitle>
-          <AlertDescription display="block">
+      <Alert.Root status="warning">
+        <Alert.Content>
+          <Alert.Title>Your branded delivery is paused</Alert.Title>
+          <Alert.Description display="block">
             Articles are still being delivered, but without your custom name and avatar. Resubscribe
             to restore your branded delivery and make your content stand out.
             <Box marginTop="1rem">
-              <Button
-                colorScheme="blue"
-                leftIcon={<ArrowLeftIcon transform="rotate(90deg)" />}
-                onClick={onOpenPricingDialog}
-              >
+              <PrimaryActionButton onClick={onOpenPricingDialog}>
+                <Icon as={FaArrowUp} transform="rotate(90deg)" />
                 Restore branded delivery
-              </Button>
+              </PrimaryActionButton>
             </Box>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 

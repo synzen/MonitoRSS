@@ -1,13 +1,13 @@
 import React, { useCallback, useRef } from "react";
 import { chakra, Box, Button, Flex, HStack, Text, useDisclosure } from "@chakra-ui/react";
-import { RepeatIcon, DeleteIcon } from "@chakra-ui/icons";
+import { FaArrowsRotate, FaTrash } from "react-icons/fa6";
 import { SelectFeedModal } from "../SelectFeedModal";
 import { useSourceFeed, useSetSourceFeedWithData } from "../../contexts/SourceFeedContext";
 
 export const SourceFeedSelector: React.FC = () => {
   const { sourceFeed } = useSourceFeed();
   const setSourceFeedWithData = useSetSourceFeedWithData();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
   const changeSourceFeedButton = useRef<HTMLButtonElement>(null);
   const selectSourceFeedButton = useRef<HTMLButtonElement>(null);
 
@@ -35,40 +35,39 @@ export const SourceFeedSelector: React.FC = () => {
       <Box
         hidden={!!sourceFeed}
         p={3}
-        bg="whiteAlpha.50"
-        borderRadius="md"
+        bg="bg.subtle"
+        borderRadius="l3"
         borderLeft="4px solid"
-        borderLeftColor="gray.500"
+        borderLeftColor="border"
       >
         <Text fontWeight="semibold" fontSize="md" mb={2}>
           No Source Feed Selected
         </Text>
         <Flex direction="column" gap={3}>
           <Box>
-            <Text fontSize="sm" color="whiteAlpha.700">
+            <Text fontSize="sm" color="fg.muted">
               No source feed selected. Setting a source feed will copy its settings to new feeds.
             </Text>
           </Box>
           <Button
             size="sm"
-            leftIcon={<RepeatIcon />}
             onClick={onOpen}
             variant="solid"
             alignSelf="flex-start"
             aria-label="Select source feed to copy all settings from"
             ref={selectSourceFeedButton}
           >
-            Select source feed
+            <FaArrowsRotate aria-hidden="true" /> Select source feed
           </Button>
         </Flex>
       </Box>
       <Box
         hidden={!sourceFeed}
         p={3}
-        bg="whiteAlpha.100"
-        borderRadius="md"
+        bg="bg.subtle"
+        borderRadius="l3"
         borderLeft="4px solid"
-        borderLeftColor="blue.400"
+        borderLeftColor="brandSolid"
       >
         <Text fontWeight="semibold" fontSize="md" mb={2}>
           Selected Source Feed
@@ -78,50 +77,43 @@ export const SourceFeedSelector: React.FC = () => {
             <chakra.span srOnly id="source-feed-title">
               Title:
             </chakra.span>
-            <Text fontWeight="medium" noOfLines={1} aria-labelledby="source-feed-title">
+            <Text fontWeight="medium" lineClamp={1} aria-labelledby="source-feed-title">
               {sourceFeed?.title || "Loading..."}
             </Text>
             <chakra.span srOnly id="source-feed-url">
               URL:
             </chakra.span>
             {sourceFeed?.url && (
-              <Text
-                fontSize="sm"
-                color="whiteAlpha.700"
-                noOfLines={1}
-                aria-labelledby="source-feed-url"
-              >
+              <Text fontSize="sm" color="fg.muted" lineClamp={1} aria-labelledby="source-feed-url">
                 {sourceFeed.url}
               </Text>
             )}
           </Box>
-          <HStack spacing={3} pt={1}>
+          <HStack gap={3} pt={1}>
             <Button
               size="sm"
-              leftIcon={<RepeatIcon />}
               onClick={onOpen}
-              colorScheme="blue"
+              colorPalette="brand"
               variant="outline"
               ref={changeSourceFeedButton}
               aria-label="Change source feed"
             >
-              Change
+              <FaArrowsRotate aria-hidden="true" /> Change
             </Button>
             <Button
               size="sm"
-              leftIcon={<DeleteIcon />}
               onClick={handleRemoveFeed}
               variant="ghost"
-              colorScheme="red"
+              colorPalette="red"
               aria-label="Remove source feed"
             >
-              Remove
+              <FaTrash aria-hidden="true" /> Remove
             </Button>
           </HStack>
         </Flex>
       </Box>
       <SelectFeedModal
-        isOpen={isOpen}
+        isOpen={open}
         onClose={onClose}
         onFeedSelected={handleFeedSelected}
         finalFocusRef={changeSourceFeedButton}

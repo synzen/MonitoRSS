@@ -1,50 +1,42 @@
 /* eslint-disable no-await-in-loop */
 import {
-  AlertDescription,
-  AlertIcon,
+  Alert,
   Box,
   Button,
-  FormControl,
-  FormHelperText,
-  FormLabel,
   Heading,
   HStack,
   Link,
+  List,
   Stack,
   Table,
-  TableContainer,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
-  Tr,
-  UnorderedList,
-  ListItem,
-  Divider,
+  Separator,
   Textarea,
   Spinner,
-  Progress,
-  CloseButton,
-  AlertTitle,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  Flex,
-  AccordionIcon,
-  AccordionPanel,
-  StackDivider,
-  FormErrorMessage,
-  Checkbox,
-  Breadcrumb,
+  ProgressRoot,
+  ProgressTrack,
+  ProgressRange,
+  BreadcrumbRoot,
+  BreadcrumbList,
   BreadcrumbItem,
   BreadcrumbLink,
-  Alert,
+  BreadcrumbCurrentLink,
+  BreadcrumbSeparator,
+  Flex,
 } from "@chakra-ui/react";
-import { ArrowLeftIcon, CheckIcon, CloseIcon, ExternalLinkIcon, TimeIcon } from "@chakra-ui/icons";
+import {
+  FaArrowUp,
+  FaCheck,
+  FaXmark,
+  FaUpRightFromSquare,
+  FaClock,
+  FaChevronRight,
+} from "react-icons/fa6";
 import { RefObject, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import { BoxConstrained } from "../components";
+import { Panel } from "@/components/Panel";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { AutoResizeTextarea } from "../components/AutoResizeTextarea";
 import { pages, ProductKey } from "../constants";
 import { ensureUrlScheme, useCreateUserFeed, useUserFeeds } from "../features/feed";
@@ -54,6 +46,15 @@ import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { SourceFeedContext, SourceFeedProvider, SourceFeedSelector } from "@/features/feed";
 import { useCreateUserFeedDeduplicatedUrls } from "../features/feed/hooks/useCreateUserFeedDeduplicatedUrls";
 import { notifyInfo } from "../utils/notifyInfo";
+import { CloseButton } from "@/components/ui/close-button";
+import { Field } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AccordionRoot,
+  AccordionItem,
+  AccordionItemTrigger,
+  AccordionItemContent,
+} from "@/components/ui/accordion";
 
 interface RowData {
   url: string;
@@ -66,68 +67,68 @@ interface RowData {
 
 const ResultTableRow = ({ title, url, status, error, alternateUrl, controlPaneLink }: RowData) => {
   return (
-    <Tr>
-      <Td whiteSpace="break-spaces">
+    <Table.Row>
+      <Table.Cell whiteSpace="break-spaces">
         {controlPaneLink ? (
           <Box>
             <Link
               href={controlPaneLink}
               target="_blank"
-              color="blue.300"
+              color="text.link"
               display="flex"
               alignItems="center"
             >
               {title}
-              <ExternalLinkIcon ml={1} />
+              <FaUpRightFromSquare style={{ marginLeft: "4px" }} />
             </Link>
           </Box>
         ) : (
           title || "-"
         )}
-      </Td>
-      <Td wordBreak="break-all" whiteSpace="break-spaces">
+      </Table.Cell>
+      <Table.Cell wordBreak="break-all" whiteSpace="break-spaces">
         {url}
-      </Td>
-      <Td whiteSpace="break-spaces">
+      </Table.Cell>
+      <Table.Cell whiteSpace="break-spaces">
         {status === "success" && (
           <HStack alignItems="center">
-            <CheckIcon color="green.400" />
-            <Text color="green.400">Succeeded</Text>
+            <FaCheck color="text.success" />
+            <Text color="text.success">Succeeded</Text>
           </HStack>
         )}
         {status === "failed" && (
           <HStack alignItems="center">
-            <CloseIcon color="red.400" />
-            <Text color="red.400">Failed</Text>
+            <FaXmark color="text.error" />
+            <Text color="text.error">Failed</Text>
           </HStack>
         )}
         {status === "prompt-url-change" && (
           <HStack alignItems="center">
-            <CloseIcon color="red.400" />
-            <Text color="red.400">Failed, but found alternate feed</Text>
+            <FaXmark color="text.error" />
+            <Text color="text.error">Failed, but found alternate feed</Text>
           </HStack>
         )}
         {status === "pending" && (
           <HStack alignItems="center">
-            <TimeIcon color="gray.400" />
-            <Text color="gray.400">Pending</Text>
+            <FaClock color="fg.muted" />
+            <Text color="fg.muted">Pending</Text>
           </HStack>
         )}
-      </Td>
+      </Table.Cell>
       {alternateUrl && (
-        <Td whiteSpace="break-spaces">
+        <Table.Cell whiteSpace="break-spaces">
           <Stack>
             <Text>
               Invalid feed, but an alternate valid feed was found:{" "}
-              <Link href={alternateUrl} target="_blank" color="blue.300">
-                {alternateUrl} <ExternalLinkIcon aria-hidden />
+              <Link href={alternateUrl} target="_blank" color="text.link">
+                {alternateUrl} <FaUpRightFromSquare aria-hidden />
               </Link>
             </Text>
           </Stack>
-        </Td>
+        </Table.Cell>
       )}
-      {!alternateUrl && <Td whiteSpace="break-spaces">{error || "-"}</Td>}
-    </Tr>
+      {!alternateUrl && <Table.Cell whiteSpace="break-spaces">{error || "-"}</Table.Cell>}
+    </Table.Row>
   );
 };
 
@@ -155,34 +156,38 @@ const ProgressAlert = ({
   };
 
   return (
-    <Alert status={hasCompleted ? "success" : "info"} borderRadius="md" hidden={!isOpen}>
+    <Alert.Root status={hasCompleted ? "success" : "info"} hidden={!isOpen}>
       <HStack gap={4} width="100%">
-        {!hasCompleted ? <Spinner size="md" /> : <CheckIcon fontSize={18} />}
-        <Stack flex={1} spacing={1}>
-          <AlertTitle id="processing-feeds">
+        {!hasCompleted ? <Spinner size="md" /> : <FaCheck fontSize={18} />}
+        <Stack flex={1} gap={1}>
+          <Alert.Title id="processing-feeds">
             {!hasCompleted
               ? `Processing ${total} feeds...`
               : `Successfully processed ${total} feeds`}
-          </AlertTitle>
-          <AlertDescription flex={1}>
+          </Alert.Title>
+          <Alert.Description flex={1}>
             {hasCompleted && <Text>See Summary for results</Text>}
             {!hasCompleted && (
               <Text>Do not navigate away from this page until processing is complete</Text>
             )}
             <HStack alignItems="center">
-              <Progress
+              <ProgressRoot
                 value={Math.round(percentCompleted)}
-                borderRadius="md"
+                borderRadius="l3"
                 flex={1}
-                colorScheme={hasCompleted ? "green" : "blue"}
+                colorPalette={hasCompleted ? "green" : "brand"}
                 aria-labelledby="processing-feeds"
                 aria-valuetext={`${Math.round(
                   percentCompleted,
                 )}%, ${feedsRemaining} feeds remaining`}
-              />
+              >
+                <ProgressTrack>
+                  <ProgressRange />
+                </ProgressTrack>
+              </ProgressRoot>
               <Text>{Math.round(percentCompleted)}%</Text>
             </HStack>
-          </AlertDescription>
+          </Alert.Description>
         </Stack>
       </HStack>
       <CloseButton
@@ -194,7 +199,7 @@ const ProgressAlert = ({
         aria-disabled={!hasCompleted}
         aria-label="Close progress alert"
       />
-    </Alert>
+    </Alert.Root>
   );
 };
 
@@ -321,7 +326,7 @@ const UploadProgressView = ({
   }, [hasCompleted]);
 
   return (
-    <Stack spacing={6}>
+    <Stack gap={6}>
       <Box>
         <Heading ref={headingRef} as="h1" tabIndex={-1} aria-busy={isInProgress}>
           Add Feeds {isInProgress ? "In Progress" : "Complete"}
@@ -332,46 +337,46 @@ const UploadProgressView = ({
         completed={totalSucceeded + totalFailed}
         closeFocusRef={headingRef}
       />
-      <Stack spacing={6} aria-busy={isInProgress}>
-        <Alert status="info" role={undefined} borderRadius="md">
-          <AlertIcon />
-          <AlertDescription>
+      <Stack gap={6} aria-busy={isInProgress}>
+        <Alert.Root status="info" role={undefined}>
+          <Alert.Indicator />
+          <Alert.Description>
             After you navigate away from this page, the following information will no longer be
             available.
-          </AlertDescription>
-        </Alert>
-        <Stack mb={4} spacing={6}>
+          </Alert.Description>
+        </Alert.Root>
+        <Stack mb={4} gap={6}>
           <Heading as="h2" size="lg">
             Summary
           </Heading>
-          <Box bg="gray.900" borderStyle="solid" borderWidth={1} borderRadius="md" p={4}>
-            <UnorderedList listStyleType="none" margin={0} display="flex" gap={16}>
-              <ListItem>
+          <Panel p={4}>
+            <List.Root listStyleType="none" margin={0} display="flex" gap={16}>
+              <List.Item>
                 <Text fontWeight="semibold">Succeeded</Text>
                 <HStack alignItems="center">
-                  {isInProgress && <TimeIcon color="gray.400" aria-label="In progress" />}
+                  {isInProgress && <FaClock color="fg.muted" aria-label="In progress" />}
                   {hasCompleted && totalSucceeded > 0 && (
-                    <CheckIcon color="green.400" aria-hidden />
+                    <FaCheck color="text.success" aria-hidden />
                   )}
-                  <Text color={hasCompleted && totalSucceeded > 0 ? "green.400" : ""}>
+                  <Text color={hasCompleted && totalSucceeded > 0 ? "text.success" : ""}>
                     {totalSucceeded} ({percentSucceeded}%)
                   </Text>
                 </HStack>
-              </ListItem>
-              <ListItem>
+              </List.Item>
+              <List.Item>
                 <Text fontWeight="semibold">Failed</Text>
                 <HStack alignItems="center">
-                  {isInProgress && <TimeIcon color="gray.400" aria-label="In progress" />}
-                  {hasCompleted && totalFailed > 0 && <CloseIcon color="red.400" aria-hidden />}
-                  <Text color={hasCompleted && totalFailed > 0 ? "red.400" : ""}>
+                  {isInProgress && <FaClock color="fg.muted" aria-label="In progress" />}
+                  {hasCompleted && totalFailed > 0 && <FaXmark color="text.error" aria-hidden />}
+                  <Text color={hasCompleted && totalFailed > 0 ? "text.error" : ""}>
                     {totalFailed} ({percentFailed}%)
                   </Text>
                 </HStack>
-              </ListItem>
-            </UnorderedList>
+              </List.Item>
+            </List.Root>
             {alternateUrls.length > 0 && hasCompleted && (
               <>
-                <Divider my={4} />
+                <Separator my={4} />
                 <Stack>
                   <Heading as="h3" size="md">
                     {alternateUrls.length} Alternate Feeds Found
@@ -382,9 +387,8 @@ const UploadProgressView = ({
                     choose to copy and use these feed links instead if they contain the content you
                     are looking for.
                   </Text>
-                  <FormControl mt={4}>
-                    <FormLabel>Alternate Feed Links</FormLabel>
-                    <Textarea rows={6} value={alternateUrls.join("\n")} isReadOnly />
+                  <Field mt={4} label="Alternate Feed Links">
+                    <Textarea rows={6} value={alternateUrls.join("\n")} readOnly />
                     <Button
                       mt={2}
                       onClick={() => {
@@ -394,13 +398,13 @@ const UploadProgressView = ({
                     >
                       Copy Links
                     </Button>
-                  </FormControl>
+                  </Field>
                 </Stack>
               </>
             )}
-          </Box>
+          </Panel>
         </Stack>
-        <Stack spacing={6}>
+        <Stack gap={6}>
           <Stack>
             <Heading as="h2" size="lg" id="feed-results">
               Feed Results
@@ -412,29 +416,25 @@ const UploadProgressView = ({
               connections to multiple feeds.
             </Text>
           </Stack>
-          <TableContainer
-            borderStyle="solid"
-            borderWidth={1}
-            borderColor="gray.700"
-            borderRadius="md"
-            bg="gray.900"
-          >
-            <Table size="sm" aria-labelledby="feed-results">
-              <Thead>
-                <Tr>
-                  <Th>Control Panel Link</Th>
-                  <Th>Feed Link</Th>
-                  <Th>Status</Th>
-                  <Th>Details</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {allResults.map((data) => (
-                  <ResultTableRow {...data} key={data.url} />
-                ))}
-              </Tbody>
-            </Table>
-          </TableContainer>
+          <Panel overflow="hidden">
+            <Table.ScrollArea>
+              <Table.Root size="sm" aria-labelledby="feed-results">
+                <Table.Header>
+                  <Table.Row>
+                    <Table.ColumnHeader>Control Panel Link</Table.ColumnHeader>
+                    <Table.ColumnHeader>Feed Link</Table.ColumnHeader>
+                    <Table.ColumnHeader>Status</Table.ColumnHeader>
+                    <Table.ColumnHeader>Details</Table.ColumnHeader>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {allResults.map((data) => (
+                    <ResultTableRow {...data} key={data.url} />
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            </Table.ScrollArea>
+          </Panel>
         </Stack>
         <HStack justifyContent="flex-end">
           <Button
@@ -449,9 +449,8 @@ const UploadProgressView = ({
           >
             Add more feeds
           </Button>
-          <Button
+          <PrimaryActionButton
             aria-disabled={firstPendingIndex > -1}
-            colorScheme="blue"
             onClick={() => {
               if (firstPendingIndex > -1) {
                 return;
@@ -461,7 +460,7 @@ const UploadProgressView = ({
             }}
           >
             Close
-          </Button>
+          </PrimaryActionButton>
         </HStack>
       </Stack>
     </Stack>
@@ -536,18 +535,23 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
 
   return (
     <Stack>
-      <Breadcrumb>
-        <BreadcrumbItem>
-          <BreadcrumbLink as={RouterLink} to={pages.userFeeds()}>
-            Feeds
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbItem isCurrentPage>
-          <BreadcrumbLink href="#">Add Feeds</BreadcrumbLink>
-        </BreadcrumbItem>
-      </Breadcrumb>
+      <BreadcrumbRoot>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <RouterLink to={pages.userFeeds()}>Feeds</RouterLink>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator>
+            <FaChevronRight />
+          </BreadcrumbSeparator>
+          <BreadcrumbItem>
+            <BreadcrumbCurrentLink>Add Feeds</BreadcrumbCurrentLink>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </BreadcrumbRoot>
       <form onSubmit={onSubmit}>
-        <Stack spacing={6}>
+        <Stack gap={6}>
           <HStack alignItems="center" justifyContent="space-between" flexWrap="wrap">
             <Box>
               <Heading as="h1" tabIndex={-1}>
@@ -558,13 +562,13 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
           <Stack gap={4}>
             <Stack
               flex={1}
-              spacing={4}
+              gap={4}
               px={4}
               py={4}
               borderStyle="solid"
               borderWidth={1}
-              borderRadius="md"
-              borderColor="gray.700"
+              borderRadius="l3"
+              borderColor="border"
               as="aside"
             >
               <HStack
@@ -577,22 +581,19 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                 <Heading as="h2" size="md" id="limits">
                   Limits
                 </Heading>
-                <Button
-                  variant="outline"
-                  leftIcon={<ArrowLeftIcon transform="rotate(90deg)" />}
-                  onClick={onOpenPricingDialog}
-                >
+                <Button variant="outline" onClick={onOpenPricingDialog}>
+                  <FaArrowUp />
                   Increase Limits
                 </Button>
               </HStack>
-              <HStack divider={<StackDivider />}>
+              <HStack separator={<Separator orientation="vertical" />}>
                 <Stack flex={1}>
                   <Heading as="h3" size="sm" fontWeight="semibold">
                     Feed Limit
                   </Heading>
                   <Text
                     hidden={!userFeedsResults || !discordUserMe}
-                    color={isAtFeedLimit ? "red.400" : undefined}
+                    color={isAtFeedLimit ? "text.error" : undefined}
                   >
                     {userFeedsResults?.total}/{discordUserMe?.maxUserFeeds}
                   </Text>
@@ -614,25 +615,24 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
               as="aside"
               aria-labelledby="faq-accordion"
               flex={1}
-              spacing={6}
+              gap={6}
               p={4}
               borderStyle="solid"
               borderWidth={1}
-              borderRadius="md"
-              borderColor="gray.700"
+              borderRadius="l3"
+              borderColor="border"
             >
               <Heading as="h2" size="md" id="faq-accordion">
                 Frequently Asked Questions
               </Heading>
-              <Accordion allowToggle role="list">
-                <AccordionItem role="listitem">
-                  <AccordionButton>
+              <AccordionRoot collapsible role="list">
+                <AccordionItem value="what-is-rss" role="listitem">
+                  <AccordionItemTrigger>
                     <Flex flex="1" gap={4} alignItems="center" textAlign="left">
-                      <AccordionIcon />
                       What is an RSS feed link?
                     </Flex>
-                  </AccordionButton>
-                  <AccordionPanel>
+                  </AccordionItemTrigger>
+                  <AccordionItemContent>
                     <Text>
                       An RSS feed link is a link to a specially-formatted webpage with XML text
                       that&apos;s designed to contain news articles. An example of an RSS feed link
@@ -640,7 +640,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                       <Link
                         href="https://www.ign.com/rss/articles/feed"
                         rel="noopener noreferrer"
-                        color="blue.300"
+                        color="text.link"
                         target="_blank"
                       >
                         https://www.ign.com/rss/articles/feed
@@ -651,16 +651,15 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                       To see if a link is a valid RSS feed, you may search for &quot;online feed
                       validators&quot; and input feed URLs to test.
                     </Text>
-                  </AccordionPanel>
+                  </AccordionItemContent>
                 </AccordionItem>
-                <AccordionItem role="listitem">
-                  <AccordionButton>
+                <AccordionItem value="how-to-find-rss" role="listitem">
+                  <AccordionItemTrigger>
                     <Flex flex="1" gap={4} alignItems="center" textAlign="left">
-                      <AccordionIcon />
                       How do I find RSS feed links?
                     </Flex>
-                  </AccordionButton>
-                  <AccordionPanel>
+                  </AccordionItemTrigger>
+                  <AccordionItemContent>
                     <Text>
                       You can find links to RSS feed pages by searching for what you&apos;re looking
                       for, plus &quot;RSS feed&quot;, such as &quot;podcast RSS feeds&quot;. You may
@@ -669,7 +668,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                       <Link
                         href="https://www.ign.com/rss/articles/feed"
                         rel="noopener noreferrer"
-                        color="blue.300"
+                        color="text.link"
                         target="_blank"
                       >
                         https://www.ign.com/rss/articles/feed
@@ -680,16 +679,15 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                       You may also try submitting links to regular webpages and MonitoRSS will
                       attempt to find RSS feeds related to the webpage.
                     </Text>
-                  </AccordionPanel>
+                  </AccordionItemContent>
                 </AccordionItem>
-                <AccordionItem role="listitem">
-                  <AccordionButton>
+                <AccordionItem value="how-to-deliver" role="listitem">
+                  <AccordionItemTrigger>
                     <Flex flex="1" gap={4} alignItems="center" textAlign="left">
-                      <AccordionIcon />
                       How do I specify where articles get delivered to?
                     </Flex>
-                  </AccordionButton>
-                  <AccordionPanel>
+                  </AccordionItemTrigger>
+                  <AccordionItemContent>
                     <Text>
                       After a feed has been added, you can navigate to the feed&apos;s control panel
                       link and add connections. Connections are destinations where articles are sent
@@ -699,76 +697,65 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                       You can also copy a feed&apos;s connections to other feed to avoid having to
                       manually add the same connections to multiple feeds.
                     </Text>
-                  </AccordionPanel>
+                  </AccordionItemContent>
                 </AccordionItem>
-                <AccordionItem role="listitem">
-                  <AccordionButton>
+                <AccordionItem value="when-delivered" role="listitem">
+                  <AccordionItemTrigger>
                     <Flex flex="1" gap={4} alignItems="center" textAlign="left">
-                      <AccordionIcon />
                       When do new articles get delivered?
                     </Flex>
-                  </AccordionButton>
-                  <AccordionPanel>
+                  </AccordionItemTrigger>
+                  <AccordionItemContent>
                     <Text>
                       With RSS, article delivery is not instant. New articles are checked on a
                       regular interval (every 20 minutes by default for free). Once new articles are
                       found, they are automatically delivered.
                     </Text>
-                  </AccordionPanel>
+                  </AccordionItemContent>
                 </AccordionItem>
-              </Accordion>
+              </AccordionRoot>
             </Stack>
           </Stack>
-          <FormControl isInvalid={error === "EMPTY"} isRequired>
-            <FormLabel>RSS Feed Links</FormLabel>
-            <FormHelperText mb={3}>
-              Add one RSS feed link per line. Feed titles will be automatically generated. Duplicate
-              links will be ignored.
-            </FormHelperText>
-            <AutoResizeTextarea
-              aria-invalid={!!error}
-              bg="gray.900"
-              minRows={10}
-              onChange={onChange}
-            />
+          <Stack gap={2}>
+            <Field
+              invalid={error === "EMPTY"}
+              required
+              label="RSS Feed Links"
+              errorText={error === "EMPTY" ? "At least one feed link is required" : undefined}
+              helperText={
+                <Text mb={3}>
+                  Add one RSS feed link per line. Feed titles will be automatically generated.
+                  Duplicate links will be ignored.
+                </Text>
+              }
+            >
+              <AutoResizeTextarea aria-invalid={!!error} minRows={10} onChange={onChange} />
+            </Field>
             <Checkbox
-              mt={2}
               w="100%"
-              onChange={(e) => setIgnoreExisting(e.target.checked)}
+              onCheckedChange={(details) => setIgnoreExisting(!!details.checked)}
               py={3}
               px={4}
-              isRequired={false}
+              required={false}
               borderStyle="solid"
               borderWidth={1}
-              borderColor={ignoreExisting ? "blue.300" : "whiteAlpha.300"}
-              borderRadius="md"
-              bg="gray.900"
+              borderColor={ignoreExisting ? "brand.focusRing" : "border"}
+              borderRadius="l3"
+              bg="bg.panel"
             >
               <Box ml={2}>
                 <Text>Ignore feed links that are already added</Text>
-                <Text fontSize="sm" color="gray.400">
+                <Text fontSize="sm" color="fg.muted">
                   If any of the input links have the same link as any of your existing feeds, they
                   will be ignored.
                 </Text>
               </Box>
             </Checkbox>
-            {/* <Checkbox onChange={(e) => setIgnoreExisting(e.target.checked)}>
-              <Box ml={2}>
-                <Text>Ignore feed links that that are the same link as any existing feeds</Text>
-              </Box>
-            </Checkbox> */}
-            <FormErrorMessage>
-              {error === "EMPTY" && "At least one feed link is required"}
-              {/* {error === "WILL_EXCEED_LIMIT" &&
-                `You can only add ${remainingFeedsAllowed} more feeds with your current limits. You are attempting to add ${
-                  urls?.length || 0
-                } feeds.`} */}
-            </FormErrorMessage>
-          </FormControl>
-          <Stack spacing={4}>
+          </Stack>
+          <Stack gap={4}>
             <Box>
               <Text>Source Feed</Text>
-              <Text color="whiteAlpha.700">
+              <Text color="fg.muted">
                 Optionally copy settings from an existing feed that will be applied to the new
                 feeds.
               </Text>
@@ -778,44 +765,40 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
             </Box>
           </Stack>
           {error === "WILL_EXCEED_LIMIT" && (
-            <Alert status="error">
-              <AlertIcon />
+            <Alert.Root status="error">
+              <Alert.Indicator />
               <Stack>
-                <AlertTitle>
+                <Alert.Title>
                   You can only add {remainingFeedsAllowed} more feeds with your current limits. You
                   are attempting to add {urls?.length || 0} feeds.
-                </AlertTitle>
-                <AlertDescription>
+                </Alert.Title>
+                <Alert.Description>
                   <Text>
                     You can increase your limits by choosing to support MonitoRSS&apos;s open-source
                     development and upgrading your plan.
                   </Text>
-                  <Button
-                    leftIcon={<ArrowLeftIcon transform="rotate(90deg)" />}
-                    mt={2}
-                    onClick={onOpenPricingDialog}
-                  >
+                  <Button mt={2} onClick={onOpenPricingDialog}>
+                    <FaArrowUp />
                     Upgrade Plan
                   </Button>
-                </AlertDescription>
+                </Alert.Description>
               </Stack>
-            </Alert>
+            </Alert.Root>
           )}
           {deduplicateError && (
-            <Alert status="error">
-              <AlertIcon />
-              <AlertDescription>
+            <Alert.Root status="error">
+              <Alert.Indicator />
+              <Alert.Description>
                 Failed to deduplicate feed links due to internal error: {deduplicateError.message}.
                 Try again later, or try disabling deduplication.
-              </AlertDescription>
-            </Alert>
+              </Alert.Description>
+            </Alert.Root>
           )}
           <HStack justifyContent="flex-end">
             <Button variant="ghost" onClick={() => navigate(pages.userFeeds())}>
               Cancel
             </Button>
-            <Button
-              colorScheme="blue"
+            <PrimaryActionButton
               type="submit"
               aria-disabled={deduplicateStatus === "loading"}
               aria-busy={deduplicateStatus === "loading"}
@@ -823,7 +806,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
               {deduplicateStatus === "loading" || deduplicateStatus === "success"
                 ? "Deduplicating links..."
                 : `Add ${urls?.length || 0} feeds`}
-            </Button>
+            </PrimaryActionButton>
           </HStack>
         </Stack>
       </form>
@@ -853,7 +836,7 @@ const AddUserFeeds = () => {
     <SourceFeedProvider>
       <Box>
         <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
-          <BoxConstrained.Container paddingTop={6} spacing={6} height="100%" mb={12}>
+          <BoxConstrained.Container paddingTop={6} gap={6} height="100%" mb={12}>
             {urls.length === 0 && <AddFormView onSubmitted={setUrls} />}
             {urls.length > 0 && (
               <UploadProgressView urls={urls} onClickAddMoreFeeds={onClickAddMoreFeeds} />

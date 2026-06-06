@@ -10,11 +10,13 @@ import {
   Spinner,
   Skeleton,
 } from "@chakra-ui/react";
-import { InfoIcon, RepeatIcon, WarningIcon } from "@chakra-ui/icons";
 import { FaRss, FaDiscord } from "react-icons/fa";
+import { FaCircleInfo, FaArrowsRotate, FaTriangleExclamation } from "react-icons/fa6";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { ArticleSelectionDialog } from "./ArticleSelectionDialog";
 import { SendTestArticleContext } from "./contexts/SendTestArticleContext";
+import { Panel } from "@/components/Panel";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useUserFeedConnectionContext, useUserFeedContext } from "@/features/feed";
 import { CreateDiscordChannelConnectionPreviewInput } from "../connection/api";
 import { getConnectionWebhookChannelId } from "../connection/utils";
@@ -120,28 +122,26 @@ export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
 
   if (error) {
     return (
-      <Box
-        bg="gray.700"
-        borderRadius="md"
+      <Panel
+        surface="subtle"
+        accent={!hasNoArticles ? "error" : "info"}
         mb={4}
         overflow="hidden"
-        borderTopWidth="4px"
-        borderTopColor={!hasNoArticles ? "red.400" : "blue.400"}
         aria-live={hasNoArticles ? undefined : "polite"}
         data-tour-target="article-banner"
       >
-        <VStack spacing={0} bg={!hasNoArticles ? "red.800" : "blue.800"}>
-          <HStack justify="space-between" align="center" p={3} w="full" flexWrap="wrap" spacing={2}>
-            <HStack spacing={2}>
+        <VStack gap={0} bg={!hasNoArticles ? "red.subtle" : "blue.subtle"}>
+          <HStack justify="space-between" align="center" p={3} w="full" flexWrap="wrap" gap={2}>
+            <HStack gap={2}>
               {!hasNoArticles && (
                 <>
-                  <Icon as={WarningIcon} color="white" />
+                  <Icon as={FaTriangleExclamation} color="text.error" />
                   <Text fontWeight="sm">Failed to load preview articles.</Text>
                 </>
               )}
               {hasNoArticles && (
                 <>
-                  <Icon as={InfoIcon} color="white" />
+                  <Icon as={FaCircleInfo} color="text.link" />
                   <Text fontWeight="sm">
                     This feed currently does not have any articles to preview.
                   </Text>
@@ -155,47 +155,37 @@ export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
             </HStack>
           </Box>
         </VStack>
-      </Box>
+      </Panel>
     );
   }
 
   if (isLoading) {
     return (
-      <Box
-        bg="gray.700"
-        borderRadius="md"
-        mb={4}
-        overflow="hidden"
-        borderTopWidth="4px"
-        borderTopColor="blue.400"
-        aria-live="polite"
-      >
-        <VStack spacing={0}>
-          <HStack justify="space-between" align="center" p={3} w="full" flexWrap="wrap" spacing={2}>
-            <HStack spacing={2}>
-              <Spinner size="sm" color="blue.400" />
-              <Text fontSize="xs" color="gray.400" fontWeight="medium">
+      <Panel surface="subtle" accent="brand" mb={4} overflow="hidden" aria-live="polite">
+        <VStack gap={0}>
+          <HStack justify="space-between" align="center" p={3} w="full" flexWrap="wrap" gap={2}>
+            <HStack gap={2}>
+              <Spinner size="sm" color="brand.solid" />
+              <Text fontSize="xs" color="fg.muted" fontWeight="medium">
                 Fetching Article...
               </Text>
             </HStack>
           </HStack>
           <Box px={3} pb={3} w="full">
-            <Skeleton height="40px" borderRadius="md" />
+            <Skeleton height="40px" borderRadius="l3" />
           </Box>
         </VStack>
-      </Box>
+      </Panel>
     );
   }
 
   return (
     <>
-      <Box
-        bg="gray.700"
-        borderRadius="md"
+      <Panel
+        surface="subtle"
+        accent="brand"
         mb={4}
         overflow="hidden"
-        borderTopWidth="4px"
-        borderTopColor="blue.400"
         data-tour-target="article-banner"
       >
         <Box aria-live="polite" srOnly>
@@ -207,44 +197,37 @@ export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
               `Previewing article: ${currentArticle.title || "No title"}`}
           </span>
         </Box>
-        <VStack spacing={0}>
-          <HStack justify="space-between" align="center" p={3} w="full" flexWrap="wrap" spacing={2}>
+        <VStack gap={0}>
+          <HStack justify="space-between" align="center" p={3} w="full" flexWrap="wrap" gap={2}>
             <Stack>
-              <HStack spacing={2}>
+              <HStack gap={2}>
                 {isFetchingDifferentArticle ? (
-                  <Spinner size="sm" color="blue.400" />
+                  <Spinner size="sm" color="brand.solid" />
                 ) : (
-                  <Icon as={FaRss} color="blue.400" />
+                  <Icon as={FaRss} color="brand.solid" />
                 )}
-                <Text fontSize="xs" color="gray.400" fontWeight="medium">
+                <Text fontSize="xs" color="fg.muted" fontWeight="medium">
                   {isFetchingDifferentArticle ? "Loading Article..." : "Previewing Article"}
                 </Text>
               </HStack>
               <Text
                 fontSize="sm"
-                color="white"
+                color="fg"
                 fontWeight="medium"
-                noOfLines={2}
+                lineClamp={2}
                 fontStyle={!currentArticle?.title ? "italic" : "normal"}
               >
                 {currentArticle?.title || "[No title]"}
               </Text>
             </Stack>
-            <HStack spacing={2}>
-              <Button
-                size="sm"
-                variant="outline"
-                color="gray.200"
-                leftIcon={<RepeatIcon />}
-                onClick={() => setIsDialogOpen(true)}
-              >
+            <HStack gap={2}>
+              <Button size="sm" variant="outline" onClick={() => setIsDialogOpen(true)}>
+                <FaArrowsRotate />
                 Change Article
               </Button>
-              <Button
+              <PrimaryActionButton
                 size="sm"
                 variant="solid"
-                colorScheme="blue"
-                leftIcon={<Icon as={FaDiscord} />}
                 aria-disabled={!currentArticle || isSendingTestArticle}
                 onClick={() => {
                   if (!currentArticle || isSendingTestArticle) {
@@ -254,12 +237,13 @@ export const ArticlePreviewBanner: React.FC<ArticlePreviewBannerProps> = ({
                   handleSendToDiscord();
                 }}
               >
+                <Icon as={FaDiscord} />
                 <span>{isSendingTestArticle ? "Sending to Discord..." : "Send to Discord"}</span>
-              </Button>
+              </PrimaryActionButton>
             </HStack>
           </HStack>
         </VStack>
-      </Box>
+      </Panel>
       <ArticleSelectionDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}

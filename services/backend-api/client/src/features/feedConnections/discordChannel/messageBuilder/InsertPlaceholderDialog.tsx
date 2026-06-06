@@ -1,11 +1,5 @@
 import React from "react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
   VStack,
   Text,
   Button,
@@ -13,14 +7,21 @@ import {
   Code,
   Input,
   InputGroup,
-  InputLeftElement,
   Spinner,
   Link as ChakraLink,
   HStack,
 } from "@chakra-ui/react";
-import { ChevronRightIcon, ExternalLinkIcon, SearchIcon } from "@chakra-ui/icons";
+import { FaChevronRight, FaUpRightFromSquare, FaMagnifyingGlass } from "react-icons/fa6";
 import { Virtuoso } from "react-virtuoso";
 import { Link } from "react-router-dom";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { useUserFeedConnectionContext } from "@/features/feed";
 import { pages } from "@/constants";
@@ -61,8 +62,8 @@ const PlaceholderItem: React.FC<PlaceholderItemProps> = ({
       w="100%"
       borderRadius={0}
       borderBottom={index < totalCount - 1 ? "1px solid" : undefined}
-      borderColor="gray.600"
-      _hover={{ bg: "gray.700" }}
+      borderColor="border"
+      _hover={{ bg: "bg.emphasized" }}
       aria-label={`Insert ${placeholder.tag} placeholder. Preview: ${placeholder.content.slice(
         0,
         100,
@@ -74,18 +75,18 @@ const PlaceholderItem: React.FC<PlaceholderItemProps> = ({
         alignItems="flex-start"
         wordBreak="break-word"
       >
-        <VStack align="start" spacing={2} flex={1} w="full" mr={4}>
-          <Code colorScheme="blue" fontSize="sm" fontWeight="bold" userSelect="text">
+        <VStack align="start" gap={2} flex={1} w="full" mr={4}>
+          <Code colorPalette="brand" fontSize="sm" fontWeight="bold" userSelect="text">
             {placeholder.tag}
           </Code>
           <Text
             fontSize="sm"
-            color="gray.300"
+            color="fg.muted"
             fontStyle={placeholder.content.startsWith("[") ? "italic" : "normal"}
             textAlign="left"
             w="full"
             whiteSpace="normal"
-            noOfLines={5}
+            lineClamp={5}
             userSelect="text"
             aria-hidden="true"
           >
@@ -99,14 +100,14 @@ const PlaceholderItem: React.FC<PlaceholderItemProps> = ({
         </VStack>
         <Button
           size="sm"
-          colorScheme="blue"
+          colorPalette="brand"
           variant="outline"
           onClick={() => handleSelectTag(placeholder.tag)}
           flexShrink={0}
-          rightIcon={<ChevronRightIcon />}
-          _focus={{ outline: "2px solid", outlineColor: "blue.400" }}
+          _focus={{ outline: "2px solid", outlineColor: "brand.focusRing" }}
         >
           Select
+          <FaChevronRight />
         </Button>
       </Box>
     </Box>
@@ -170,42 +171,40 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
   }, [isOpen]);
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="2xl"
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) {
+          onClose();
+        }
+      }}
+      size="xl"
       scrollBehavior="inside"
-      finalFocusRef={onCloseFocusRef}
+      finalFocusEl={onCloseFocusRef ? () => onCloseFocusRef.current : undefined}
     >
-      <ModalOverlay />
-      <ModalContent
-        bg="gray.800"
-        color="white"
+      <DialogContent
+        color="fg"
         onClick={(e) => {
           e.stopPropagation();
         }}
       >
-        <ModalHeader borderBottom="1px solid" borderColor="gray.600">
-          Insert Placeholder
-        </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody p={0}>
-          <Box p={4} borderBottom="1px solid" borderColor="gray.600">
-            <Text fontSize="sm" color="gray.400" mb={3}>
+        <DialogHeader borderBottom="1px solid" borderColor="border">
+          <DialogTitle>Insert Placeholder</DialogTitle>
+          <DialogCloseTrigger />
+        </DialogHeader>
+        <DialogBody p={0}>
+          <Box p={4} borderBottom="1px solid" borderColor="border">
+            <Text fontSize="sm" color="fg.muted" mb={3}>
               Placeholders represent article content for the currently-selected article when being
               previewed or published. Select a placeholder to insert into your text content.
             </Text>
-            <InputGroup>
-              <InputLeftElement pointerEvents="none">
-                <SearchIcon color="gray.400" aria-hidden="true" />
-              </InputLeftElement>
+            <InputGroup startElement={<FaMagnifyingGlass color="fg.muted" aria-hidden />}>
               <Input
                 ref={searchInputRef}
                 placeholder="Search placeholders..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                bg="gray.700"
-                isDisabled={!!error || !!isLoading}
+                disabled={!!error || !!isLoading}
                 aria-label="Search placeholders"
                 aria-describedby="search-results-count"
               />
@@ -214,7 +213,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
               <Text
                 id="search-results-count"
                 fontSize="xs"
-                color="gray.500"
+                color="fg.muted"
                 mt={2}
                 aria-live="polite"
                 aria-atomic="true"
@@ -227,9 +226,9 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
           <Box>
             {isLoading && (
               <Box p={6} textAlign="center" role="status" aria-live="polite">
-                <VStack spacing={4}>
-                  <Spinner color="blue.400" size="lg" thickness="4px" aria-hidden="true" />
-                  <Text color="gray.300" fontWeight="medium">
+                <VStack gap={4}>
+                  <Spinner color="text.link" size="lg" borderWidth="4px" aria-hidden="true" />
+                  <Text color="fg.muted" fontWeight="medium">
                     Loading Placeholders...
                   </Text>
                 </VStack>
@@ -237,11 +236,11 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
             )}
             {!isLoading && error && (
               <Box p={6} textAlign="center" role="alert" aria-live="assertive">
-                <VStack spacing={4}>
-                  <Text color="red.400" fontWeight="medium">
+                <VStack gap={4}>
+                  <Text color="text.error" fontWeight="medium">
                     Failed to Load Placeholders
                   </Text>
-                  <Text color="gray.400" fontSize="sm" textAlign="center">
+                  <Text color="fg.muted" fontSize="sm" textAlign="center">
                     Placeholders are unavailable because the article data could not be loaded. Try
                     refreshing the page or refetching preview articles in the preview section.
                   </Text>
@@ -250,7 +249,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
             )}
             {!isLoading && !error && filteredPlaceholders.length === 0 && (
               <Box p={6} textAlign="center" role="status">
-                <Text color="gray.400" fontStyle="italic">
+                <Text color="fg.muted" fontStyle="italic">
                   No placeholders found matching &apos;{searchTerm}&apos;
                 </Text>
               </Box>
@@ -264,37 +263,40 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
               />
             )}
           </Box>
-          <Box p={4} borderTop="1px solid" borderColor="gray.600" bg="gray.750">
-            <HStack spacing={2} justify="center" flexWrap="wrap">
-              <Text fontSize="sm" color="gray.400">
+          <Box p={4} borderTopWidth="1px" borderColor="border" bg="bg.subtle">
+            <HStack gap={2} justify="center" flexWrap="wrap">
+              <Text fontSize="sm" color="fg.muted">
                 Need to customize placeholder content?
               </Text>
               <ChakraLink
-                as={Link}
-                to={pages.userFeedConnection(
-                  {
-                    feedId: userFeed.id,
-                    connectionId: connection.id,
-                    connectionType: connection.key,
-                  },
-                  {
-                    tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
-                  },
-                )}
-                color="blue.300"
+                asChild
+                color="text.link"
                 fontSize="sm"
                 fontWeight="medium"
                 display="inline-flex"
                 alignItems="center"
-                _hover={{ color: "blue.200" }}
+                _hover={{ color: "text.link" }}
               >
-                Use Custom Placeholders
-                <ExternalLinkIcon ml={1} boxSize={3} />
+                <Link
+                  to={pages.userFeedConnection(
+                    {
+                      feedId: userFeed.id,
+                      connectionId: connection.id,
+                      connectionType: connection.key,
+                    },
+                    {
+                      tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
+                    },
+                  )}
+                >
+                  Use Custom Placeholders
+                  <FaUpRightFromSquare style={{ marginLeft: "0.25rem" }} />
+                </Link>
               </ChakraLink>
             </HStack>
           </Box>
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+        </DialogBody>
+      </DialogContent>
+    </DialogRoot>
   );
 };

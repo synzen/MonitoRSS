@@ -1,30 +1,26 @@
-import { SearchIcon } from "@chakra-ui/icons";
 import {
   Box,
   Button,
   Center,
   Heading,
   HStack,
+  Icon,
   IconButton,
   Input,
   InputGroup,
-  InputLeftElement,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalOverlay,
   Spinner,
   Stack,
   Text,
-  Tooltip,
 } from "@chakra-ui/react";
+import { FaMagnifyingGlass } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUserFeeds } from "../../hooks/useUserFeeds";
 import { useUserFeedsInfinite } from "../../hooks/useUserFeedsInfinite";
 import { parseSearchInputAsUrl } from "../../utils/normalizeUrlInput";
 import { pages } from "@/constants";
+import { DialogRoot, DialogContent, DialogBody, DialogCloseTrigger } from "@/components/ui/dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const LIMIT = 20;
 
@@ -162,41 +158,37 @@ export const SearchFeedsModal = () => {
 
   return (
     <>
-      <Tooltip label={`Go to feed (${isMac ? "Cmd" : "Ctrl"}+K)`}>
+      <Tooltip content={`Go to feed (${isMac ? "Cmd" : "Ctrl"}+K)`}>
         <IconButton
           ref={triggerButtonRef}
           variant="ghost"
           aria-label="Search your feeds and go to one"
-          icon={<SearchIcon />}
-          color="whiteAlpha.600"
+          color="fg.muted"
           // _hover={{ color: "whiteAlpha.900", bg: "whiteAlpha.200" }}
           // _focus={{ color: "whiteAlpha.900", bg: "whiteAlpha.200" }}
           size={{ base: "sm", lg: "md" }}
           onClick={() => setIsOpen(true)}
-        />
+        >
+          <Icon as={FaMagnifyingGlass} />
+        </IconButton>
       </Tooltip>
-      <Modal
-        isOpen={isOpen}
-        onClose={() => setIsOpen(false)}
+      <DialogRoot
+        open={isOpen}
+        onOpenChange={(e) => setIsOpen(e.open)}
         size="xl"
-        initialFocusRef={searchInputRef}
-        finalFocusRef={triggerButtonRef}
+        initialFocusEl={() => searchInputRef.current}
       >
-        <ModalOverlay />
-        <ModalContent aria-labelledby="feed-nav-title">
-          <ModalBody py={0} px={0}>
+        <DialogContent aria-labelledby="feed-nav-title">
+          <DialogCloseTrigger />
+          <DialogBody py={0} px={0}>
             <Stack>
               <HStack>
                 <Heading as="h2" id="feed-nav-title" size="sm" fontWeight="semibold" px={4} pt={4}>
                   Go to feed
                 </Heading>
-                <ModalCloseButton />
               </HStack>
               <HStack pl={4} pr={4}>
-                <InputGroup size="lg">
-                  <InputLeftElement>
-                    <SearchIcon />
-                  </InputLeftElement>
+                <InputGroup flex={1} startElement={<Icon as={FaMagnifyingGlass} />}>
                   <Input
                     ref={searchInputRef}
                     variant="flushed"
@@ -217,8 +209,8 @@ export const SearchFeedsModal = () => {
               <Box
                 px={4}
                 pb={4}
-                bg="gray.700"
-                rounded="md"
+                bg="bg.subtle"
+                rounded="l3"
                 aria-live="polite"
                 overflow="auto"
                 maxHeight={500}
@@ -226,7 +218,7 @@ export const SearchFeedsModal = () => {
                 <Stack>
                   {fetchStatus === "fetching" && (
                     <Center py={4}>
-                      <Spinner label="Loading feeds" />
+                      <Spinner aria-label="Loading feeds" />
                     </Center>
                   )}
                   {fetchStatus === "idle" && !isEmpty && (
@@ -239,23 +231,23 @@ export const SearchFeedsModal = () => {
                           aria-selected={index === activeIndex}
                           px={4}
                           py={4}
-                          bg="whiteAlpha.200"
-                          borderRadius="md"
+                          bg="bg.subtle"
+                          borderRadius="l3"
                           mt={3}
                           cursor="pointer"
                           onClick={() => navigateToFeed(feed.id)}
                           outline={index === activeIndex ? "3px solid" : undefined}
-                          outlineColor={index === activeIndex ? "blue.500" : undefined}
+                          outlineColor={index === activeIndex ? "brand.focusRing" : undefined}
                           _hover={{
                             outline: "3px solid",
-                            outlineColor: "blue.500",
+                            outlineColor: "brand.focusRing",
                           }}
                         >
                           <Box overflow="hidden">
                             <Text fontWeight={600}>{feed.title}</Text>
                             <Text
                               fontSize="sm"
-                              color="whiteAlpha.700"
+                              color="fg.muted"
                               whiteSpace="nowrap"
                               overflow="hidden"
                               textOverflow="ellipsis"
@@ -268,17 +260,17 @@ export const SearchFeedsModal = () => {
                     </Box>
                   )}
                   {fetchStatus === "idle" && isEmpty && (
-                    <Stack py={4} spacing={3} align="center">
-                      <Text color="whiteAlpha.700">No feeds found.</Text>
+                    <Stack py={4} gap={3} align="center">
+                      <Text color="fg.muted">No feeds found.</Text>
                       {searchInput.trim() &&
                         (parseSearchInputAsUrl(searchInput).isUrl ? (
-                          <Stack spacing={1} align="center">
-                            <Text fontSize="sm" color="whiteAlpha.700">
+                          <Stack gap={1} align="center">
+                            <Text fontSize="sm" color="fg.muted">
                               This looks like a feed URL.
                             </Text>
                             <Button
-                              variant="link"
-                              colorScheme="blue"
+                              variant="plain"
+                              colorPalette="brand"
                               size="sm"
                               onClick={handleAddFeedRedirect}
                             >
@@ -286,13 +278,13 @@ export const SearchFeedsModal = () => {
                             </Button>
                           </Stack>
                         ) : (
-                          <Stack spacing={1} align="center">
-                            <Text fontSize="sm" color="whiteAlpha.700">
+                          <Stack gap={1} align="center">
+                            <Text fontSize="sm" color="fg.muted">
                               Can&apos;t find what you&apos;re looking for?
                             </Text>
                             <Button
-                              variant="link"
-                              colorScheme="blue"
+                              variant="plain"
+                              colorPalette="brand"
                               size="sm"
                               onClick={handleAddFeedRedirect}
                             >
@@ -304,7 +296,7 @@ export const SearchFeedsModal = () => {
                   )}
                   {fetchStatus === "idle" && allFeeds.length === LIMIT && (
                     <Center>
-                      <Text color="whiteAlpha.700" fontSize="sm" mt={2}>
+                      <Text color="fg.muted" fontSize="sm" mt={2}>
                         Only the first {LIMIT} results are shown. Refine your search for better
                         results.
                       </Text>
@@ -313,9 +305,9 @@ export const SearchFeedsModal = () => {
                 </Stack>
               </Box>
             </Stack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+          </DialogBody>
+        </DialogContent>
+      </DialogRoot>
     </>
   );
 };

@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { system } from "@/utils/theme";
 import { FeedCard } from "./index";
 import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
 
@@ -32,7 +33,7 @@ const defaultFeed = {
 
 const renderCard = (props: Partial<React.ComponentProps<typeof FeedCard>> = {}) => {
   return render(
-    <ChakraProvider>
+    <ChakraProvider value={system}>
       <MemoryRouter>
         <FeedCard feed={defaultFeed} state="default" onAdd={() => {}} {...props} />
       </MemoryRouter>
@@ -417,7 +418,7 @@ describe("FeedCard", () => {
   describe("Accessibility announcements", () => {
     it("announces feed removed when state transitions from removing to default", () => {
       const { rerender } = render(
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <FeedCard feed={defaultFeed} state="removing" onAdd={() => {}} onRemove={() => {}} />
           </MemoryRouter>
@@ -425,7 +426,7 @@ describe("FeedCard", () => {
       );
 
       rerender(
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <FeedCard feed={defaultFeed} state="default" onAdd={() => {}} onRemove={() => {}} />
           </MemoryRouter>
@@ -438,7 +439,7 @@ describe("FeedCard", () => {
 
     it("announces feed added when state transitions from adding to added", () => {
       const { rerender } = render(
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <FeedCard feed={defaultFeed} state="adding" onAdd={() => {}} />
           </MemoryRouter>
@@ -446,7 +447,7 @@ describe("FeedCard", () => {
       );
 
       rerender(
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <FeedCard feed={defaultFeed} state="added" onAdd={() => {}} />
           </MemoryRouter>

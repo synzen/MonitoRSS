@@ -15,7 +15,7 @@ export const PricingDialogContext = createContext<ContextProps>({
 export const PricingDialogProvider = ({ children }: PropsWithChildren<{}>) => {
   const [searchParams] = useSearchParams();
   const priceId = searchParams.get("priceId");
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export const PricingDialogProvider = ({ children }: PropsWithChildren<{}>) => {
 
   return (
     <PricingDialogContext.Provider value={value}>
-      <PricingDialog isOpen={isOpen} onOpen={onOpen} onClose={onClose} />
+      <PricingDialog isOpen={open} onOpen={onOpen} onClose={onClose} />
       {children}
     </PricingDialogContext.Provider>
   );

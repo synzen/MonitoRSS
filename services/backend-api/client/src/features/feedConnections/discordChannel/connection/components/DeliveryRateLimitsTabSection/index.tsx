@@ -1,26 +1,9 @@
-import {
-  Box,
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  HStack,
-  Heading,
-  NumberDecrementStepper,
-  NumberIncrementStepper,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  Stack,
-  Text,
-  chakra,
-} from "@chakra-ui/react";
+import { Box, Button, HStack, Heading, Icon, Stack, Text, chakra } from "@chakra-ui/react";
 import { Controller, FormProvider, useFieldArray, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
+import { FaPlus, FaTrash } from "react-icons/fa6";
 import { useUpdateConnection } from "../../hooks";
 import { SavedUnsavedChangesPopupBar } from "@/components";
 import {
@@ -29,6 +12,8 @@ import {
 } from "./constants/DeliveryRateLimitsFormSchema";
 import { useUserFeedConnectionContext } from "@/features/feed";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
+import { Field } from "@/components/ui/field";
+import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
 
 export const DeliveryRateLimitsTabSection = () => {
   const { userFeed, connection } = useUserFeedConnectionContext();
@@ -53,6 +38,7 @@ export const DeliveryRateLimitsTabSection = () => {
   });
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
   const currentData = connection?.rateLimits;
+  const formFocusRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (currentData) {
@@ -96,7 +82,7 @@ export const DeliveryRateLimitsTabSection = () => {
   };
 
   return (
-    <Stack spacing={8} mb={24}>
+    <Stack gap={8} mb={24}>
       <Stack>
         <Heading as="h2" size="md">
           Delivery Rate Limits
@@ -110,98 +96,95 @@ export const DeliveryRateLimitsTabSection = () => {
         </Text>
       </Stack>
       <FormProvider {...formMethods}>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Stack spacing={4}>
-            <Stack spacing={4} role="list">
+        <form
+          ref={formFocusRef}
+          onSubmit={handleSubmit(onSubmit)}
+          aria-label="Delivery rate limits settings"
+        >
+          <Stack gap={4}>
+            <Stack gap={4} role="list">
               {fields.map((item, index) => {
                 return (
                   <HStack
                     role="listitem"
                     key={item.id}
                     borderStyle="solid"
-                    borderColor="gray.700"
+                    borderColor="border"
                     borderWidth={1}
                     p={4}
                     rounded="lg"
                     shadow="lg"
                     flexWrap="wrap"
                   >
-                    <FormControl isInvalid={!!errors.rateLimits?.[index]?.limit} isRequired>
-                      <FormLabel>Article Limit</FormLabel>
+                    <Field
+                      invalid={!!errors.rateLimits?.[index]?.limit}
+                      required
+                      label="Article Limit"
+                      errorText={errors.rateLimits?.[index]?.limit?.message}
+                      helperText={
+                        !errors.rateLimits?.[index]?.limit
+                          ? "The maximum number of articles to allow for delivery."
+                          : undefined
+                      }
+                    >
                       <Controller
                         name={`rateLimits.${index}.limit`}
                         control={control}
-                        render={({ field }) => (
-                          <NumberInput
+                        render={({
+                          field: { onChange: _onChange, onBlur, value, ...fieldRest },
+                        }) => (
+                          <NumberInputRoot
                             min={0}
                             max={10000}
-                            {...field}
-                            onChange={(str, num) => field.onChange(num)}
+                            {...fieldRest}
+                            value={String(value)}
+                            onValueChange={(details) => _onChange(details.valueAsNumber)}
                           >
-                            <NumberInputField />
-                            <NumberInputStepper>
-                              <NumberIncrementStepper />
-                              <NumberDecrementStepper />
-                            </NumberInputStepper>
-                          </NumberInput>
+                            <NumberInputField onBlur={onBlur} />
+                          </NumberInputRoot>
                         )}
                       />
-                      {!errors.rateLimits?.[index]?.limit && (
-                        <FormHelperText>
-                          The maximum number of articles to allow for delivery.
-                        </FormHelperText>
-                      )}
-                      {errors.rateLimits?.[index]?.limit && (
-                        <FormErrorMessage>
-                          {errors.rateLimits?.[index]?.limit?.message}
-                        </FormErrorMessage>
-                      )}
-                    </FormControl>
-                    <FormControl
-                      isInvalid={!!errors.rateLimits?.[index]?.timeWindowSeconds}
-                      isRequired
+                    </Field>
+                    <Field
+                      invalid={!!errors.rateLimits?.[index]?.timeWindowSeconds}
+                      required
+                      label="Time Window (seconds)"
+                      errorText={errors.rateLimits?.[index]?.timeWindowSeconds?.message}
+                      helperText={
+                        !errors.rateLimits?.[index]?.timeWindowSeconds
+                          ? "The duration of the time window this rate limit applies to in seconds."
+                          : undefined
+                      }
                     >
-                      <FormLabel>Time Window (seconds)</FormLabel>
                       <Controller
                         name={`rateLimits.${index}.timeWindowSeconds`}
                         control={control}
-                        render={({ field }) => {
+                        render={({
+                          field: { onChange: _onChange, onBlur, value, ...fieldRest },
+                        }) => {
                           return (
-                            <NumberInput
+                            <NumberInputRoot
                               min={0}
                               max={2592000}
-                              {...field}
-                              onChange={(str, num) => field.onChange(num)}
+                              {...fieldRest}
+                              value={String(value)}
+                              onValueChange={(details) => _onChange(details.valueAsNumber)}
                             >
-                              <NumberInputField />
-                              <NumberInputStepper>
-                                <NumberIncrementStepper />
-                                <NumberDecrementStepper />
-                              </NumberInputStepper>
-                            </NumberInput>
+                              <NumberInputField onBlur={onBlur} />
+                            </NumberInputRoot>
                           );
                         }}
                       />
-                      {!errors.rateLimits?.[index]?.timeWindowSeconds && (
-                        <FormHelperText>
-                          The duration of the time window this rate limit applies to in seconds.
-                        </FormHelperText>
-                      )}
-                      {errors.rateLimits?.[index]?.timeWindowSeconds && (
-                        <FormErrorMessage>
-                          {errors.rateLimits?.[index]?.timeWindowSeconds?.message}
-                        </FormErrorMessage>
-                      )}
-                    </FormControl>
+                    </Field>
                     <Box>
                       <Button
                         variant="ghost"
-                        colorScheme="red"
+                        colorPalette="red"
                         onClick={() => onDelete(index)}
                         size="sm"
                       >
                         <HStack>
-                          <DeleteIcon />
+                          <Icon as={FaTrash} />
                           <Text>Delete rate limit</Text>
                         </HStack>
                       </Button>
@@ -212,16 +195,13 @@ export const DeliveryRateLimitsTabSection = () => {
               })}
             </Stack>
             <Box>
-              <Button
-                leftIcon={<AddIcon fontSize={13} />}
-                onClick={onAddRateLimit}
-                isDisabled={fields.length >= 10}
-              >
+              <Button onClick={onAddRateLimit} disabled={fields.length >= 10}>
+                <Icon as={FaPlus} fontSize={13} />
                 Add rate limit
               </Button>
             </Box>
           </Stack>
-          <SavedUnsavedChangesPopupBar />
+          <SavedUnsavedChangesPopupBar restoreFocusRef={formFocusRef} />
         </form>
       </FormProvider>
     </Stack>

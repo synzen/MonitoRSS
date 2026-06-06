@@ -1,16 +1,5 @@
-import { CheckIcon, CloseIcon } from "@chakra-ui/icons";
-import {
-  Box,
-  Skeleton,
-  Table,
-  TableContainer,
-  TableHeadProps,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from "@chakra-ui/react";
+﻿import { FaCheck, FaXmark } from "react-icons/fa6";
+import { Box, Icon, Skeleton, Table, TableHeaderProps } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 
 interface Props {
@@ -21,7 +10,7 @@ interface Props {
     passedFilters?: boolean;
   }>;
   isLoading?: boolean;
-  theadProps?: TableHeadProps;
+  theadProps?: TableHeaderProps;
 }
 
 export const ArticleFilterResultsView = ({
@@ -33,58 +22,66 @@ export const ArticleFilterResultsView = ({
   const { t } = useTranslation();
 
   return (
-    <Box position="relative" rounded="md">
-      <Box position="relative" border="solid 1px" borderColor="gray.700" rounded="md">
-        <Box maxHeight="sm" overflow="auto" rounded="md">
-          <TableContainer rounded="md">
-            <Table size="sm" rounded="md">
-              <Thead borderTopLeftRadius="md" {...theadProps}>
-                <Tr>
-                  <Th>
+    <Box position="relative" rounded="l3">
+      <Box
+        position="relative"
+        borderWidth="1px"
+        borderStyle="solid"
+        borderColor="border.emphasized"
+        rounded="l3"
+      >
+        <Box maxHeight="sm" overflow="auto" rounded="l3">
+          <Table.ScrollArea>
+            <Table.Root size="sm">
+              <Table.Header borderTopLeftRadius="md" {...theadProps}>
+                <Table.Row>
+                  <Table.ColumnHeader>
                     {t(
                       "features.feedConnections.components" +
                         ".articleFilterResultsTable.columnHeaderPassedFilters",
                     )}
-                  </Th>
-                  <Th width="100%">Article {displayPropertyName}</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
+                  </Table.ColumnHeader>
+                  <Table.ColumnHeader width="100%">
+                    Article {displayPropertyName}
+                  </Table.ColumnHeader>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
                 {articles.map(({ passedFilters, propertyValue, id }) => {
-                  let valueColor: string | undefined;
+                  let rowBg: string | undefined;
 
                   if (isLoading) {
-                    valueColor = undefined;
+                    rowBg = undefined;
                   } else if (passedFilters === true) {
-                    valueColor = "rgba(23, 99, 27, 0.5)";
+                    rowBg = "green.subtle";
                   } else if (passedFilters === false) {
-                    valueColor = "rgba(99, 23, 27, 0.5)";
+                    rowBg = "red.subtle";
                   }
 
                   return (
-                    <Tr key={id} bg={valueColor}>
-                      <Td>
-                        <Skeleton isLoaded={!isLoading}>
+                    <Table.Row key={id} bg={rowBg}>
+                      <Table.Cell>
+                        <Skeleton loading={isLoading}>
                           {passedFilters === true && (
-                            <CheckIcon aria-label="passed" color="green.500" />
+                            <Icon as={FaCheck} aria-label="passed" color="text.success" />
                           )}
                           {passedFilters === false && (
-                            <CloseIcon aria-label="blocked" color="red.500" />
+                            <Icon as={FaXmark} aria-label="blocked" color="text.error" />
                           )}
                           {passedFilters === undefined && <span>?</span>}
                         </Skeleton>
-                      </Td>
-                      <Td>
-                        <Skeleton isLoaded={!isLoading}>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <Skeleton loading={isLoading}>
                           {isLoading ? "loading..." : propertyValue}
                         </Skeleton>
-                      </Td>
-                    </Tr>
+                      </Table.Cell>
+                    </Table.Row>
                   );
                 })}
-              </Tbody>
-            </Table>
-          </TableContainer>
+              </Table.Body>
+            </Table.Root>
+          </Table.ScrollArea>
         </Box>
       </Box>
     </Box>

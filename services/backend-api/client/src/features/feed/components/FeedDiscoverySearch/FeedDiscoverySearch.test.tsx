@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { system } from "@/utils/theme";
 import { CuratedFeed } from "../../types";
 import { FeedDiscoverySearch } from "./index";
 
@@ -143,7 +144,7 @@ const renderSearch = (props: Partial<React.ComponentProps<typeof FeedDiscoverySe
   const user = userEvent.setup();
 
   const result = render(
-    <ChakraProvider>
+    <ChakraProvider value={system}>
       <MemoryRouter>
         <FeedDiscoverySearch {...defaultProps} {...props} />
       </MemoryRouter>
@@ -235,6 +236,40 @@ describe("FeedDiscoverySearch", () => {
       renderSearch();
 
       expect(screen.queryByRole("button", { name: "Clear search" })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Search-your-own-feed hint", () => {
+    it("shows the paste-a-URL hint below results when there are matches", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "IGN{Enter}");
+
+      expect(screen.getByText("IGN")).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          (_, element) =>
+            element?.tagName === "P" &&
+            /Don't see what you're looking for\?/.test(element.textContent ?? "") &&
+            /try pasting a URL/.test(element.textContent ?? ""),
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("does not show the paste-a-URL hint when there are no matches", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "zzzznonexistent{Enter}");
+
+      expect(
+        screen.queryByText(
+          (_, element) =>
+            element?.tagName === "P" &&
+            /Don't see what you're looking for\?/.test(element.textContent ?? ""),
+        ),
+      ).not.toBeInTheDocument();
     });
   });
 

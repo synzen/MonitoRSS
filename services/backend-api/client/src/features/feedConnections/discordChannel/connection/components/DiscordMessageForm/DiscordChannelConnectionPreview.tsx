@@ -141,7 +141,7 @@ export const DiscordChannelConnectionPreview = ({
           p={8}
           textAlign="center"
         >
-          <Text color="red.400">
+          <Text color="text.error">
             Some inputs are invalid. Please ensure all fields are valid for a preview to be
             displayed.
           </Text>

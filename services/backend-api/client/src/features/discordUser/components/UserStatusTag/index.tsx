@@ -1,33 +1,41 @@
 /* eslint-disable react/destructuring-assignment */
 /* eslint-disable react/jsx-props-no-spreading */
-import { HStack, IconButton, Tag, Text, useDisclosure } from "@chakra-ui/react";
+import { IconButton, useDisclosure } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { SettingsIcon } from "@chakra-ui/icons";
+import { FaGear } from "react-icons/fa6";
+import { Tag } from "@/components/ui/tag";
 import { useDiscordUserMe } from "../../hooks";
 import { UserSettingsDialog } from "../UserSettingsDialog";
 
 interface Props {}
 
 export const UserStatusTag: React.FC<Props> = () => {
-  const { isOpen, onClose, onOpen } = useDisclosure();
+  const { open, onClose, onOpen } = useDisclosure();
   const { data: userMe } = useDiscordUserMe();
   const { t } = useTranslation();
 
   return (
     <>
-      <UserSettingsDialog isOpen={isOpen} onClose={onClose} />
+      <UserSettingsDialog isOpen={open} onClose={onClose} />
       {userMe && userMe.supporter && (
-        <Tag marginTop="4" colorScheme="purple" size="sm" marginRight="0" paddingRight={0}>
-          <HStack>
-            <Text>{t("components.sidebar.supporterUserTag")}</Text>
+        <Tag
+          marginTop="4"
+          colorPalette="purple"
+          size="sm"
+          marginRight="0"
+          paddingRight={0}
+          endElement={
             <IconButton
               size="xs"
               borderLeftRadius={0}
-              icon={<SettingsIcon fontSize="xs" />}
               aria-label="Supporter settings"
               onClick={onOpen}
-            />
-          </HStack>
+            >
+              <FaGear fontSize="xs" />
+            </IconButton>
+          }
+        >
+          {t("components.sidebar.supporterUserTag")}
         </Tag>
       )}
       {userMe && !userMe.supporter && (

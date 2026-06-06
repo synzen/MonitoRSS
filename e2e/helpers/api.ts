@@ -98,6 +98,29 @@ export async function bulkDeleteFeeds(
   }
 }
 
+export async function bulkDisableFeeds(
+  page: Page,
+  feedIds: string[],
+): Promise<void> {
+  if (!feedIds.length) {
+    return;
+  }
+
+  const response = await page.request.patch("/api/v1/user-feeds", {
+    data: {
+      op: "bulk-disable",
+      data: { feeds: feedIds.map((id) => ({ id })) },
+    },
+  });
+
+  if (!response.ok()) {
+    const text = await response.text();
+    throw new Error(
+      `Failed to bulk-disable feeds: ${response.status()} - ${text}`,
+    );
+  }
+}
+
 export async function createConnection(
   page: Page,
   feedId: string,

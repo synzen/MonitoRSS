@@ -1,28 +1,11 @@
-import {
-  Box,
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  HStack,
-  Input,
-  Link,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { Box, Button, HStack, Input, Link, Stack, Icon } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { cloneElement, useEffect, useRef } from "react";
+import { cloneElement, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { InferType, object, string } from "yup";
 import { useTranslation } from "react-i18next";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
+import { FaUpRightFromSquare } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useCreateUserFeedClone } from "../../hooks";
 import {
   InlineErrorAlert,
@@ -30,6 +13,16 @@ import {
 } from "../../../../components/InlineErrorAlert";
 import { usePageAlertContext } from "../../../../contexts/PageAlertContext";
 import { pages } from "../../../../constants";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "../../../../components/ui/dialog";
+import { Field } from "../../../../components/ui/field";
 
 const formSchema = object({
   title: string().required("Title is required"),
@@ -59,7 +52,7 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) =
     resolver: yupResolver(formSchema),
     defaultValues,
   });
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const initialRef = useRef<HTMLInputElement>(null);
   const { mutateAsync, error, reset: resetError } = useCreateUserFeedClone();
   const { t } = useTranslation();
@@ -68,7 +61,7 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) =
   useEffect(() => {
     reset(defaultValues);
     resetError();
-  }, [isOpen]);
+  }, [open]);
 
   useEffect(() => {
     reset(defaultValues);
@@ -88,19 +81,19 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) =
         title: `Successfully cloned feed to: ${title}.`,
         description: (
           <Box mt={2}>
-            <Button
-              as={Link}
-              href={pages.userFeed(id)}
-              target="_blank"
-              rightIcon={<ExternalLinkIcon />}
-            >
-              View cloned feed
+            <Button asChild>
+              <Link href={pages.userFeed(id)} target="_blank">
+                View cloned feed
+                <Icon>
+                  <FaUpRightFromSquare />
+                </Icon>
+              </Link>
             </Button>
           </Box>
         ),
       });
 
-      onClose();
+      setOpen(false);
       reset({ title });
     } catch (err) {}
   };
@@ -109,34 +102,46 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) =
 
   return (
     <>
-      {cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose} initialFocusRef={initialRef}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Clone feed</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Stack spacing={4}>
+      {cloneElement(trigger, { onClick: () => setOpen(true) })}
+      <DialogRoot
+        open={open}
+        onOpenChange={(e) => setOpen(e.open)}
+        onRequestDismiss={(e) => e.preventDefault()}
+        initialFocusEl={() => initialRef.current}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clone feed</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody>
+            <Stack gap={4}>
               <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
-                <Stack spacing={4}>
-                  <FormControl isInvalid={!!errors.title} isRequired>
-                    <FormLabel>Title</FormLabel>
+                <Stack gap={4}>
+                  <Field
+                    label="Title"
+                    invalid={!!errors.title}
+                    required
+                    errorText={errors.title?.message}
+                  >
                     <Controller
                       name="title"
                       control={control}
-                      render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
+                      render={({ field }) => <Input {...field} ref={initialRef} />}
                     />
-                    {errors.title && <FormErrorMessage>{errors.title.message}</FormErrorMessage>}
-                  </FormControl>
-                  <FormControl isInvalid={!!errors.url} isRequired>
-                    <FormLabel>Feed Link</FormLabel>
+                  </Field>
+                  <Field
+                    label="Feed Link"
+                    invalid={!!errors.url}
+                    required
+                    errorText={errors.url?.message}
+                  >
                     <Controller
                       name="url"
                       control={control}
-                      render={({ field }) => <Input type="url" {...field} bg="gray.800" />}
+                      render={({ field }) => <Input type="url" {...field} />}
                     />
-                    {errors.url && <FormErrorMessage>{errors.url.message}</FormErrorMessage>}
-                  </FormControl>
+                  </Field>
                 </Stack>
               </form>
               {error && (
@@ -149,14 +154,13 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) =
                 <InlineErrorIncompleteFormAlert fieldCount={formErrorCount} />
               )}
             </Stack>
-          </ModalBody>
-          <ModalFooter>
+          </DialogBody>
+          <DialogFooter>
             <HStack>
-              <Button variant="ghost" onClick={onClose}>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
                 <span>Cancel</span>
               </Button>
-              <Button
-                colorScheme="blue"
+              <PrimaryActionButton
                 aria-disabled={isSubmitting}
                 onClick={() => {
                   if (isSubmitting) {
@@ -168,11 +172,11 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) =
               >
                 <span>{!isSubmitting && "Clone"}</span>
                 <span>{isSubmitting && "Cloning..."}</span>
-              </Button>
+              </PrimaryActionButton>
             </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </>
   );
 };

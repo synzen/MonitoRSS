@@ -1,7 +1,6 @@
 import { Flex } from "@chakra-ui/react";
 import { DiscordChannelName, DiscordServerName } from "@/features/discordServers";
 import { FeedConnectionType, FeedDiscordChannelConnection } from "@/types";
-import getChakraColor from "@/utils/getChakraColor";
 
 export const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnection) => {
   const { key } = connection;
@@ -18,19 +17,19 @@ export const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnecti
           serverId={useServerId}
           textStyle={{
             fontSize: 14,
-            color: getChakraColor("whiteAlpha.800"),
+            color: "var(--app-fg)",
           }}
         />
       );
     }
 
     return (
-      <Flex alignItems="center" fontSize={14} gap={1} color="whiteAlpha.800">
+      <Flex alignItems="center" fontSize={14} gap={1} color="fg">
         <DiscordServerName
           serverId={useServerId}
           textStyle={{
             fontSize: 14,
-            color: getChakraColor("whiteAlpha.800"),
+            color: "var(--app-fg)",
           }}
         />
         <span> </span>
@@ -41,7 +40,7 @@ export const getPrettyConnectionDetail = (connection: FeedDiscordChannelConnecti
             serverId={useServerId}
             textProps={{
               fontSize: 14,
-              color: getChakraColor("whiteAlpha.800"),
+              color: "var(--app-fg)",
             }}
           />
           )

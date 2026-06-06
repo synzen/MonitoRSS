@@ -1,6 +1,5 @@
 import "./utils/i18n";
 import React from "react";
-import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
 import "./index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
@@ -12,9 +11,9 @@ import {
   useNavigationType,
 } from "react-router-dom";
 import * as Sentry from "@sentry/react";
-import theme from "./utils/theme";
 import setupMockBrowserWorker from "./mocks/browser";
-import { ForceDarkMode } from "./components/ForceDarkMode";
+import { Provider } from "./components/ui/provider";
+import { Toaster } from "./components/ui/toaster";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import App from "./App";
 import { PricingDialogProvider, PaddleContextProvider } from "@/features/subscriptionProducts";
@@ -141,20 +140,19 @@ prepare().then(() => {
     <BrowserRouter>
       {/** Disable support widget since the iframe sometimes blocks forms */}
       {/* <SupportWidget /> */}
-      <ChakraProvider theme={theme}>
-        <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+      {/* Dark-only for now: forcedTheme replaces the v2 ForceDarkMode + ColorModeScript. */}
+      <Provider forcedTheme="dark" defaultTheme="dark">
         <QueryClientProvider client={queryClient}>
-          <ForceDarkMode>
-            <GlobalErrorBoundary>
-              <PaddleContextProvider>
-                <PricingDialogProvider>
-                  <App />
-                </PricingDialogProvider>
-              </PaddleContextProvider>
-            </GlobalErrorBoundary>
-          </ForceDarkMode>
+          <GlobalErrorBoundary>
+            <PaddleContextProvider>
+              <PricingDialogProvider>
+                <App />
+              </PricingDialogProvider>
+            </PaddleContextProvider>
+          </GlobalErrorBoundary>
         </QueryClientProvider>
-      </ChakraProvider>
+        <Toaster />
+      </Provider>
     </BrowserRouter>,
     // </React.StrictMode>,
   );

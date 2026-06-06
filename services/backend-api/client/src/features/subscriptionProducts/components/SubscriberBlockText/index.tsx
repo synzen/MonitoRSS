@@ -1,6 +1,7 @@
-import { Alert, AlertDescription, AlertIcon, Box, Button, Stack, Text } from "@chakra-ui/react";
+import { Alert, Box, Button, Stack, Text } from "@chakra-ui/react";
 import { useContext } from "react";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
+import { FaUpRightFromSquare } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { ProductKey, SupporterTier } from "@/constants";
 import { BlockableFeature } from "@/features/subscriptionProducts";
 import { PricingDialogContext } from "../../contexts/PricingDialogContext";
@@ -95,34 +96,39 @@ export const SubscriberBlockText = ({ alternateText, onClick, feature, supporter
 
   return (
     <Stack>
-      <Alert rounded="md" status="warning" role={undefined}>
-        <AlertIcon />
-        <AlertDescription>
-          <Box>
-            <Text>
-              {alternateText ||
-                `Upgrade to a paid plan to deliver articles with your own custom name and avatar — so your feed looks like a natural part of your server.`}
-            </Text>
-            {userMeData?.result.enableBilling && (
-              <Button mt={4} onClick={onClickBecomeSupporter}>
-                {buttonText}
-              </Button>
-            )}
-            {!userMeData?.result.enableBilling && (
-              <Button
-                as="a"
-                mt={4}
-                href="https://www.patreon.com/monitorss"
-                target="_blank"
-                rel="noreferrer noopener"
-                rightIcon={<ExternalLinkIcon />}
-              >
-                Become a supporter
-              </Button>
-            )}
-          </Box>
-        </AlertDescription>
-      </Alert>
+      <Alert.Root status="warning" role={undefined}>
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Description>
+            <Box>
+              <Text>
+                {alternateText ||
+                  `Upgrade to a paid plan to deliver articles with your own custom name and avatar — so your feed looks like a natural part of your server.`}
+              </Text>
+              {userMeData?.result.enableBilling && (
+                <PrimaryActionButton mt={4} onClick={onClickBecomeSupporter}>
+                  {buttonText}
+                </PrimaryActionButton>
+              )}
+              {/* Raw Button (not PrimaryActionButton) below: asChild merges into the <a>, but
+                  PrimaryActionButton wraps children via SafeLoadingButton's Loader + click guard,
+                  which doesn't compose with asChild. Keep the explicit solid+brand pair here. */}
+              {!userMeData?.result.enableBilling && (
+                <Button asChild variant="solid" colorPalette="brand" mt={4}>
+                  <a
+                    href="https://www.patreon.com/monitorss"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    Become a supporter
+                    <FaUpRightFromSquare />
+                  </a>
+                </Button>
+              )}
+            </Box>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     </Stack>
   );
 };

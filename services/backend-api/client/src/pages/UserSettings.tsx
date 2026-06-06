@@ -1,37 +1,23 @@
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
   Badge,
   Box,
   Button,
-  Divider,
   Flex,
-  FormControl,
-  FormHelperText,
-  FormLabel,
   HStack,
   Heading,
   Input,
   Link,
-  ListItem,
-  OrderedList,
+  List,
+  Separator,
   Stack,
-  Switch,
   Text,
   chakra,
 } from "@chakra-ui/react";
-import { RepeatIcon } from "@chakra-ui/icons";
+import { FaArrowsRotate } from "react-icons/fa6";
 import { InferType, bool, object, string } from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, FormProvider, useForm } from "react-hook-form";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
 import { captureException } from "@sentry/react";
@@ -42,10 +28,12 @@ import {
   DashboardContentV2,
   SavedUnsavedChangesPopupBar,
 } from "../components";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { useLogin } from "../hooks";
 import { useCreateSubscriptionResume } from "../features/subscriptionProducts/hooks/useCreateSubscriptionResume";
 import { ProductKey } from "../constants";
-import getChakraColor from "../utils/getChakraColor";
+
 import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
 import { PricingDialogContext, usePaddleContext } from "@/features/subscriptionProducts";
 import { DatePreferencesForm } from "@/features/feed";
@@ -57,6 +45,15 @@ import {
   PageAlertProvider,
   usePageAlertContext,
 } from "../contexts/PageAlertContext";
+import {
+  AccordionRoot,
+  AccordionItem,
+  AccordionItemTrigger,
+  AccordionItemContent,
+} from "@/components/ui/accordion";
+import { Alert } from "@/components/ui/alert";
+import { Field } from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
 
 const formSchema = object({
   alertOnDisabledFeeds: bool(),
@@ -142,10 +139,10 @@ const ChangePaymentMethodUrlButton = () => {
 
   return (
     <Box>
-      <Button
+      <SafeLoadingButton
         size="sm"
         variant="outline"
-        isLoading={fetchStatus === "fetching"}
+        loading={fetchStatus === "fetching"}
         onClick={() => {
           if (error) {
             return;
@@ -154,12 +151,12 @@ const ChangePaymentMethodUrlButton = () => {
           onClick();
         }}
         aria-disabled={!!error}
-        colorScheme={error ? "red" : undefined}
+        colorPalette={error ? "red" : undefined}
       >
         <span>
           {error ? "Failed to load change payment method button" : "Change Payment Method"}
         </span>
-      </Button>
+      </SafeLoadingButton>
     </Box>
   );
 };
@@ -183,7 +180,7 @@ export const UserSettings = () => {
             }}
           />
           <BoxConstrained.Wrapper>
-            <BoxConstrained.Container paddingTop={4} spacing={6} paddingBottom={120}>
+            <BoxConstrained.Container paddingTop={4} gap={6} paddingBottom={120}>
               <UserSettingsInner />
             </BoxConstrained.Container>
           </BoxConstrained.Wrapper>
@@ -210,6 +207,7 @@ const UserSettingsInner = () => {
     formState: { isSubmitting, errors },
     reset,
   } = formMethods;
+  const formFocusRef = useRef<HTMLFormElement>(null);
   const { mutateAsync: removeRedditLogin, status: removeRedditLoginStatus } =
     useRemoveRedditLogin();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
@@ -352,202 +350,200 @@ const UserSettingsInner = () => {
   const redditConnected = data?.result.externalAccounts?.some((a) => a.type === "reddit");
 
   return (
-    <Stack spacing={8}>
+    <Stack gap={8}>
       <Stack justifyContent="flex-start" width="100%">
         <Heading as="h1">Account Settings</Heading>
       </Stack>
-      <Stack spacing={8}>
-        <FormControl isReadOnly>
-          <FormLabel fontWeight={600} color="whiteAlpha.700">
-            Email
-          </FormLabel>
+      <Stack gap={8}>
+        <Field
+          readOnly
+          label={
+            <chakra.span fontWeight={600} color="fg.muted">
+              Email
+            </chakra.span>
+          }
+        >
           <Flex justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={4}>
             <Box>
-              <Input isReadOnly value={data?.result.email || "(no email available)"} />
+              <Input readOnly value={data?.result.email || "(no email available)"} />
             </Box>
-            <Button
-              variant="link"
-              color="blue.300"
-              leftIcon={<RepeatIcon />}
-              onClick={onClickGrantEmailAccess}
-            >
+            <Button variant="plain" color="text.link" onClick={onClickGrantEmailAccess}>
+              <FaArrowsRotate />
               <span>Refresh Email</span>
             </Button>
           </Flex>
-        </FormControl>
+        </Field>
       </Stack>
       {data?.result.enableBilling && (
         <>
-          <Divider />
-          <Stack spacing={8}>
+          <Separator />
+          <Stack gap={8}>
             <Stack>
               <Heading as="h2" size="md">
                 Billing
               </Heading>
             </Stack>
             {!hasEmailAvailable && (
-              <Alert status="warning" borderRadius="md" role={undefined}>
-                <Stack>
-                  <AlertTitle>
-                    To enable billing for subscriptions, your email is required
-                  </AlertTitle>
-                  <AlertDescription>
-                    <Button variant="solid" colorScheme="blue" onClick={onClickGrantEmailAccess}>
-                      <span>Grant email access</span>
-                    </Button>
-                  </AlertDescription>
-                </Stack>
+              <Alert
+                status="warning"
+                role={undefined}
+                title="To enable billing for subscriptions, your email is required"
+              >
+                <PrimaryActionButton variant="solid" onClick={onClickGrantEmailAccess}>
+                  <span>Grant email access</span>
+                </PrimaryActionButton>
               </Alert>
             )}
             {hasEmailAvailable && (
               <Stack>
                 {data && (
-                  <Stack spacing={8}>
+                  <Stack gap={8}>
                     {data.result.isOnPatreon && (
-                      <Alert status="info" borderRadius="md" role={undefined}>
+                      <Alert
+                        status="info"
+                        role={undefined}
+                        title="You are currently still on a legacy Patreon plan!"
+                      >
                         <Stack width="100%">
-                          <AlertTitle>You are currently still on a legacy Patreon plan!</AlertTitle>
-                          <AlertDescription>
-                            <Text>
-                              Subscriptions have moved off of Patreon. You are advised (but not
-                              required) to move your pledge off of Patreon so that you may:
-                            </Text>
-                            <br />
-                            <OrderedList>
-                              <ListItem>
-                                Optionally pay upfront for a year at a 15% discount
-                              </ListItem>
-                              <ListItem>Start your subscription on any day of the month</ListItem>
-                              <ListItem>
-                                Get localized pricing in your currency (there are now 14 more
-                                currencies available)
-                              </ListItem>
-                              <ListItem>
-                                Get credit that can be rolled over when changing plans, minimizing
-                                your costs
-                              </ListItem>
-                              <ListItem>Manage your subscription on this control panel</ListItem>
-                            </OrderedList>
-                            <br />
-                            <Text>
-                              Be sure to manually cancel your Patreon pledge to avoid double
-                              charges. To cancel your pledge, visit{" "}
-                              <Link
-                                href="https://www.patreon.com/monitorss"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                color="blue.300"
+                          <Text>
+                            Subscriptions have moved off of Patreon. You are advised (but not
+                            required) to move your pledge off of Patreon so that you may:
+                          </Text>
+                          <br />
+                          <List.Root as="ol">
+                            <List.Item>
+                              Optionally pay upfront for a year at a 15% discount
+                            </List.Item>
+                            <List.Item>Start your subscription on any day of the month</List.Item>
+                            <List.Item>
+                              Get localized pricing in your currency (there are now 14 more
+                              currencies available)
+                            </List.Item>
+                            <List.Item>
+                              Get credit that can be rolled over when changing plans, minimizing
+                              your costs
+                            </List.Item>
+                            <List.Item>Manage your subscription on this control panel</List.Item>
+                          </List.Root>
+                          <br />
+                          <Text>
+                            Be sure to manually cancel your Patreon pledge to avoid double charges.
+                            To cancel your pledge, visit{" "}
+                            <Link
+                              href="https://www.patreon.com/monitorss"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              color="text.link"
+                            >
+                              Patreon
+                            </Link>
+                            .
+                          </Text>
+                          <Separator mt={4} mb={4} />
+                          <Stack gap={4}>
+                            <Text fontWeight={600}>Frequently Asked Questions</Text>
+                            <AccordionRoot collapsible>
+                              <AccordionItem
+                                value="why-moving"
+                                border="none"
+                                borderLeft="solid 1px var(--app-accent-solid)"
                               >
-                                Patreon
-                              </Link>
-                              .
-                            </Text>
-                            <Divider mt={4} mb={4} />
-                            <Stack spacing={4}>
-                              <Text fontWeight={600}>Frequently Asked Questions</Text>
-                              <Accordion allowToggle>
-                                <AccordionItem
-                                  border="none"
-                                  borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
-                                >
-                                  <AccordionButton border="none">
-                                    <Flex
-                                      flex="1"
-                                      gap={4}
-                                      fontSize={13}
-                                      color="blue.200"
-                                      alignItems="center"
-                                      textAlign="left"
-                                    >
-                                      Why are subscriptions moving off of Patreon?
-                                      <AccordionIcon />
-                                    </Flex>
-                                  </AccordionButton>
-                                  <AccordionPanel>
-                                    <Text fontSize={13}>
-                                      Patreon has very high fees, its API has had limitations that
-                                      both disallowed yearly plans, prevented subscriptions from
-                                      starting on any day of the month, and made tax compliance
-                                      difficult. While it has worked well enough in the past, it is
-                                      not viable for sustaining the public service that MonitoRSS
-                                      provides in the long run.
-                                    </Text>
-                                  </AccordionPanel>
-                                </AccordionItem>
-                                <AccordionItem
-                                  border="none"
-                                  borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
-                                >
-                                  <AccordionButton border="none">
-                                    <Flex
-                                      flex="1"
-                                      gap={4}
-                                      fontSize={13}
-                                      color="blue.200"
-                                      alignItems="center"
-                                      textAlign="left"
-                                    >
-                                      Has pricing changed?
-                                      <AccordionIcon />
-                                    </Flex>
-                                  </AccordionButton>
-                                  <AccordionPanel>
-                                    <Text fontSize={13}>
-                                      In a way, yes. Unfortunately, the original Patreon tiers 1 and
-                                      2 are no longer available due to the disproportionate load
-                                      they place on the bot when compared to the revenue they
-                                      generate. As a result, they have been discontinued to ensure
-                                      that MonitoRSS can continue to be hosted for free.
-                                      <br />
-                                      <br /> On the upside, yearly plans are now available at a 15%
-                                      discount, and there are a total of 30 currencies that are now
-                                      supported (instead of just 16 on Patreon).
-                                    </Text>
-                                  </AccordionPanel>
-                                </AccordionItem>
-                                <AccordionItem
-                                  border="none"
-                                  borderLeft={`solid 1px ${getChakraColor("blue.200")}`}
-                                >
-                                  <AccordionButton border="none">
-                                    <Flex
-                                      flex="1"
-                                      gap={4}
-                                      fontSize={13}
-                                      color="blue.200"
-                                      alignItems="center"
-                                      textAlign="left"
-                                    >
-                                      Why does it say I&apos;m on the free plan if I&apos;m on
-                                      Patreon?
-                                      <AccordionIcon />
-                                    </Flex>
-                                  </AccordionButton>
-                                  <AccordionPanel>
-                                    <Text fontSize={13}>
-                                      If you are still on Patreon, you are technically not on the
-                                      new billing model and thus is a free user. You can continue
-                                      referencing Patreon for your pledge status, but you will not
-                                      be able to manage or view your pledge on this control panel.
-                                    </Text>
-                                  </AccordionPanel>
-                                </AccordionItem>
-                              </Accordion>
-                            </Stack>
-                          </AlertDescription>
+                                <AccordionItemTrigger>
+                                  <Flex
+                                    flex="1"
+                                    gap={4}
+                                    fontSize={13}
+                                    color="text.link"
+                                    alignItems="center"
+                                    textAlign="left"
+                                  >
+                                    Why are subscriptions moving off of Patreon?
+                                  </Flex>
+                                </AccordionItemTrigger>
+                                <AccordionItemContent>
+                                  <Text fontSize={13}>
+                                    Patreon has very high fees, its API has had limitations that
+                                    both disallowed yearly plans, prevented subscriptions from
+                                    starting on any day of the month, and made tax compliance
+                                    difficult. While it has worked well enough in the past, it is
+                                    not viable for sustaining the public service that MonitoRSS
+                                    provides in the long run.
+                                  </Text>
+                                </AccordionItemContent>
+                              </AccordionItem>
+                              <AccordionItem
+                                value="pricing-changed"
+                                border="none"
+                                borderLeft="solid 1px var(--app-accent-solid)"
+                              >
+                                <AccordionItemTrigger>
+                                  <Flex
+                                    flex="1"
+                                    gap={4}
+                                    fontSize={13}
+                                    color="text.link"
+                                    alignItems="center"
+                                    textAlign="left"
+                                  >
+                                    Has pricing changed?
+                                  </Flex>
+                                </AccordionItemTrigger>
+                                <AccordionItemContent>
+                                  <Text fontSize={13}>
+                                    In a way, yes. Unfortunately, the original Patreon tiers 1 and 2
+                                    are no longer available due to the disproportionate load they
+                                    place on the bot when compared to the revenue they generate. As
+                                    a result, they have been discontinued to ensure that MonitoRSS
+                                    can continue to be hosted for free.
+                                    <br />
+                                    <br /> On the upside, yearly plans are now available at a 15%
+                                    discount, and there are a total of 30 currencies that are now
+                                    supported (instead of just 16 on Patreon).
+                                  </Text>
+                                </AccordionItemContent>
+                              </AccordionItem>
+                              <AccordionItem
+                                value="free-plan"
+                                border="none"
+                                borderLeft="solid 1px var(--app-accent-solid)"
+                              >
+                                <AccordionItemTrigger>
+                                  <Flex
+                                    flex="1"
+                                    gap={4}
+                                    fontSize={13}
+                                    color="text.link"
+                                    alignItems="center"
+                                    textAlign="left"
+                                  >
+                                    Why does it say I&apos;m on the free plan if I&apos;m on
+                                    Patreon?
+                                  </Flex>
+                                </AccordionItemTrigger>
+                                <AccordionItemContent>
+                                  <Text fontSize={13}>
+                                    If you are still on Patreon, you are technically not on the new
+                                    billing model and thus is a free user. You can continue
+                                    referencing Patreon for your pledge status, but you will not be
+                                    able to manage or view your pledge on this control panel.
+                                  </Text>
+                                </AccordionItemContent>
+                              </AccordionItem>
+                            </AccordionRoot>
+                          </Stack>
                         </Stack>
                       </Alert>
                     )}
                     {data.result.subscription.product.key !== ProductKey.Free && (
                       <Stack>
-                        <Text as="h3" fontWeight={600} color="whiteAlpha.700">
+                        <Text as="h3" fontWeight={600} color="fg.muted">
                           Credit Balance
                         </Text>
                         <Text>
                           Credit is provided as pro-rata refunds when changing plans. It is
                           automatically applied on future transactions.
                         </Text>
-                        <Stack spacing={3}>
+                        <Stack gap={3}>
                           <Text fontSize="xl" fontWeight="semibold">
                             {data.result.creditBalance.availableFormatted}
                           </Text>
@@ -555,39 +551,33 @@ const UserSettingsInner = () => {
                       </Stack>
                     )}
                     <Stack>
-                      <Text as="h3" fontWeight={600} color="whiteAlpha.700">
+                      <Text as="h3" fontWeight={600} color="fg.muted">
                         Current Tier
                       </Text>
-                      <Stack spacing={3}>
+                      <Stack gap={3}>
                         {subscriptionText}
                         {isPastDue && subscription?.pastDueGracePeriodEndDate && (
-                          <Alert status="warning" borderRadius="md">
-                            <AlertIcon />
-                            <Stack width="100%">
-                              <AlertTitle>Your payment is past due</AlertTitle>
-                              <AlertDescription>
-                                <Text>
-                                  Benefits will be suspended on{" "}
-                                  <chakra.span fontWeight={600}>
-                                    {new Date(
-                                      subscription.pastDueGracePeriodEndDate,
-                                    ).toLocaleDateString(undefined, {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })}
-                                  </chakra.span>{" "}
-                                  unless payment is updated. Please check your email for further
-                                  instructions.
-                                </Text>
-                                <Box mt={3}>
-                                  <PageAlertProvider>
-                                    <ChangePaymentMethodUrlButton />
-                                    <PageAlertContextOutlet />
-                                  </PageAlertProvider>
-                                </Box>
-                              </AlertDescription>
-                            </Stack>
+                          <Alert status="warning" title="Your payment is past due">
+                            <Text>
+                              Benefits will be suspended on{" "}
+                              <chakra.span fontWeight={600}>
+                                {new Date(
+                                  subscription.pastDueGracePeriodEndDate,
+                                ).toLocaleDateString(undefined, {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                })}
+                              </chakra.span>{" "}
+                              unless payment is updated. Please check your email for further
+                              instructions.
+                            </Text>
+                            <Box mt={3}>
+                              <PageAlertProvider>
+                                <ChangePaymentMethodUrlButton />
+                                <PageAlertContextOutlet />
+                              </PageAlertProvider>
+                            </Box>
                           </Alert>
                         )}
                         <HStack flexWrap="wrap">
@@ -595,9 +585,9 @@ const UserSettingsInner = () => {
                             <Box>
                               <ConfirmModal
                                 trigger={
-                                  <Button size="sm" variant="solid" colorScheme="blue">
+                                  <PrimaryActionButton size="sm" variant="solid">
                                     <span>Resume subscription</span>
-                                  </Button>
+                                  </PrimaryActionButton>
                                 }
                                 onConfirm={onClickResumeSubscription}
                                 okText="Resume subscription"
@@ -626,8 +616,8 @@ const UserSettingsInner = () => {
           </Stack>
         </>
       )}
-      <Divider />
-      <Stack spacing={6}>
+      <Separator />
+      <Stack gap={6}>
         <Heading as="h2" size="md">
           Integrations
         </Heading>
@@ -636,20 +626,20 @@ const UserSettingsInner = () => {
           borderStyle="solid"
           alignItems="flex-start"
           borderWidth={1}
-          borderColor="gray.700"
-          rounded="md"
+          borderColor="border"
+          rounded="l3"
           p={4}
           gap={4}
           flexWrap="wrap"
         >
           <Stack>
-            <Stack spacing={1}>
+            <Stack gap={1}>
               <HStack alignItems="center" gap={2}>
                 <Text fontWeight={600}>Reddit</Text>
-                {redditConnected && <Badge colorScheme="green">Connected</Badge>}
+                {redditConnected && <Badge colorPalette="green">Connected</Badge>}
                 {!redditConnected && <Badge>Not Connected</Badge>}
               </HStack>
-              <Text color="whiteAlpha.600" fontSize="sm">
+              <Text color="fg.muted" fontSize="sm">
                 Allows MonitoRSS to use rate limits specific to your Reddit account, which has much
                 higher rate limit quotas than the global rate limits. All Reddit feeds will
                 automatically use your Reddit account if connected.
@@ -659,59 +649,53 @@ const UserSettingsInner = () => {
           <HStack>
             <RedditLoginButton />
             {redditConnected && (
-              <Button
-                colorScheme="red"
+              <SafeLoadingButton
+                colorPalette="red"
                 variant="ghost"
                 size="sm"
-                isLoading={removeRedditLoginStatus === "loading"}
+                loading={removeRedditLoginStatus === "loading"}
                 onClick={() => {
                   onClickRemoveRedditLogin();
                 }}
               >
                 <span>Disconnect</span>
-              </Button>
+              </SafeLoadingButton>
             )}
           </HStack>
         </HStack>
       </Stack>
-      <Divider />
+      <Separator />
       <FormProvider {...formMethods}>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Stack spacing={6}>
+        <form onSubmit={handleSubmit(onSubmit)} ref={formFocusRef} aria-label="Account settings">
+          <Stack gap={6}>
             <Heading as="h2" size="md" id="preferences-title">
               Preferences
             </Heading>
-            <Stack spacing={12}>
-              <Stack spacing={4}>
+            <Stack gap={12}>
+              <Stack gap={4}>
                 <Heading as="h3" size="sm" id="notifications">
                   Notifications
                 </Heading>
                 {!hasEmailAvailable && (
-                  <Alert status="warning" borderRadius="md" role={undefined}>
-                    <Stack>
-                      <AlertTitle>To enable notifications, your email is required</AlertTitle>
-                      <AlertDescription>
-                        <Button
-                          variant="solid"
-                          colorScheme="blue"
-                          onClick={onClickGrantEmailAccess}
-                        >
-                          <span>Grant email access</span>
-                        </Button>
-                      </AlertDescription>
-                    </Stack>
+                  <Alert
+                    status="warning"
+                    role={undefined}
+                    title="To enable notifications, your email is required"
+                  >
+                    <PrimaryActionButton variant="solid" onClick={onClickGrantEmailAccess}>
+                      <span>Grant email access</span>
+                    </PrimaryActionButton>
                   </Alert>
                 )}
                 <Box role="list" aria-labelledby="notifications preferences-title">
                   {hasEmailAvailable && (
-                    <Stack spacing={4} role="listitem">
-                      <FormControl as={Flex} justifyContent="space-between" flexWrap="wrap" gap={4}>
+                    <Stack gap={4} role="listitem">
+                      <Flex as="div" justifyContent="space-between" flexWrap="wrap" gap={4}>
                         <Box>
-                          <FormLabel>Disabled feed or feed connections</FormLabel>
-                          <FormHelperText>
-                            Whenever feed or feed connections automatically get disabled due to
-                            issues while processing.
-                          </FormHelperText>
+                          <Field
+                            label="Disabled feed or feed connections"
+                            helperText="Whenever feed or feed connections automatically get disabled due to issues while processing."
+                          />
                         </Box>
                         <Controller
                           name="alertOnDisabledFeeds"
@@ -720,19 +704,19 @@ const UserSettingsInner = () => {
                             return (
                               <Switch
                                 size="lg"
-                                isDisabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
-                                isChecked={!!field.value}
-                                onChange={(e) => field.onChange(e.target.checked)}
+                                disabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
+                                checked={!!field.value}
+                                onCheckedChange={(e) => field.onChange(e.checked)}
                               />
                             );
                           }}
                         />
-                      </FormControl>
+                      </Flex>
                     </Stack>
                   )}
                 </Box>
               </Stack>
-              <Stack spacing={4}>
+              <Stack gap={4}>
                 <Stack mb={2}>
                   <Heading as="h3" size="sm" id="date-preferences">
                     Date Placeholders
@@ -772,7 +756,7 @@ const UserSettingsInner = () => {
               </Stack>
             </Stack>
           </Stack>
-          <SavedUnsavedChangesPopupBar />
+          <SavedUnsavedChangesPopupBar restoreFocusRef={formFocusRef} />
         </form>
       </FormProvider>
     </Stack>

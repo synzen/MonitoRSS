@@ -1,10 +1,9 @@
-import { Button } from "@chakra-ui/react";
 import { useContext } from "react";
 import { FaDiscord } from "react-icons/fa";
 import { ArticleSelectDialog, useUserFeedConnectionContext } from "@/features/feed";
 import { SendTestArticleContext } from "../../../messageBuilder/contexts/SendTestArticleContext";
-import getChakraColor from "@/utils/getChakraColor";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 
 export const SendConnectionTestArticleButton = () => {
   const { userFeed, connection, articleFormatOptions } = useUserFeedConnectionContext();
@@ -64,15 +63,10 @@ export const SendConnectionTestArticleButton = () => {
       articleFormatOptions={articleFormatOptions}
       feedId={userFeed.id}
       trigger={
-        <Button
-          variant="solid"
-          colorScheme="blue"
-          isLoading={isFetching}
-          leftIcon={<FaDiscord fontSize={24} />}
-          color={getChakraColor("gray.700")}
-        >
+        <PrimaryActionButton variant="solid" loading={isFetching}>
+          <FaDiscord fontSize={24} />
           <span>Send Article to Discord</span>
-        </Button>
+        </PrimaryActionButton>
       }
       onArticleSelected={onClick}
       onClickRandomArticle={onClick}

@@ -15,3 +15,7 @@ export * from "./NewHeader";
 export * from "./SaveUnsavedChangesPopupBar";
 export * from "./FAQ";
 export * from "./ResizablePanel";
+export * from "./Panel";
+export * from "./PrimaryActionButton";
+export * from "./DestructiveActionButton";
+export * from "./UnsavedChangesBadge";

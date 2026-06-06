@@ -1,6 +1,6 @@
-import { Button } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { cloneElement, useState } from "react";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { notifyError } from "@/utils/notifyError";
 import { getLogout } from "../api";
 
@@ -31,18 +31,17 @@ export const LogoutButton = ({ trigger }: Props) => {
   }
 
   return (
-    <Button
+    <SafeLoadingButton
       marginBottom="8"
       justifySelf="flex-end"
       marginTop="4"
       variant="ghost"
       mx="6"
       minHeight="40px"
-      isLoading={loggingOut}
-      isDisabled={loggingOut}
+      loading={loggingOut}
       onClick={onClickLogout}
     >
       <span>Logout</span>
-    </Button>
+    </SafeLoadingButton>
   );
 };

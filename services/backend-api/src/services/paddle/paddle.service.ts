@@ -3,6 +3,7 @@ import {
   TransactionBalanceTooLowException,
   CannotRenewSubscriptionBeforeRenewal,
   AddressLocationNotAllowedException,
+  SubscriptionAlreadyCancelledException,
 } from "../../shared/exceptions/paddle.exceptions";
 import type {
   SubscriptionProductKey,
@@ -151,6 +152,13 @@ export class PaddleService {
         "address_location_not_allowed"
       ) {
         throw new AddressLocationNotAllowedException();
+      }
+
+      if (
+        (responseJson?.error as Record<string, unknown>)?.code ===
+        "subscription_update_when_canceled"
+      ) {
+        throw new SubscriptionAlreadyCancelledException();
       }
 
       throw new Error(

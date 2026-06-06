@@ -21,10 +21,10 @@ export const AnyAllSelector = ({ value, onChange }: Props) => {
   };
 
   return (
-    <ButtonGroup size="sm" isAttached variant="outline" aria-label="Any or all condition selector">
+    <ButtonGroup size="sm" attached variant="outline" aria-label="Any or all condition selector">
       <Button
         onClick={onSelectAnd}
-        colorScheme={value === And ? "blue" : undefined}
+        colorPalette={value === And ? "brand" : undefined}
         variant={value === And ? "solid" : "outline"}
         aria-label="All conditions must match"
         tabIndex={isFocused ? 0 : -1}
@@ -33,7 +33,7 @@ export const AnyAllSelector = ({ value, onChange }: Props) => {
       </Button>
       <Button
         onClick={onSelectOr}
-        colorScheme={value === Or ? "blue" : undefined}
+        colorPalette={value === Or ? "brand" : undefined}
         variant={value === Or ? "solid" : "outline"}
         aria-label="Any condition can match"
         tabIndex={isFocused ? 0 : -1}

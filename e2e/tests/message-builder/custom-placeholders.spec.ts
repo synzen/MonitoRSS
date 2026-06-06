@@ -22,10 +22,16 @@ async function selectSourcePlaceholder(
 ) {
   const selectInput = page.locator("#source-placeholder-select").first();
   await selectInput.scrollIntoViewIfNeeded();
+  // Type to filter the (long) react-select list down to the target so the
+  // option is rendered at the top of the menu and within the viewport. Clicking
+  // an unfiltered option relies on react-select's internal scroll position,
+  // which races with Playwright's scroll and intermittently leaves the option
+  // outside the viewport.
   await selectInput.click();
+  await selectInput.fill(source);
   const option = page.getByRole("option", { name: source, exact: true });
-  await option.scrollIntoViewIfNeeded();
-  await option.click({ force: true });
+  await expect(option).toBeVisible();
+  await option.click();
 }
 
 async function addPlaceholder(

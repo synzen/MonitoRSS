@@ -1,9 +1,10 @@
 import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ChakraProvider } from "@chakra-ui/react";
+import { ChakraProvider, Tabs } from "@chakra-ui/react";
 import { describe, it, expect, vi } from "vitest";
-import { CategoryPills } from "./index";
+import { system } from "@/utils/theme";
+import { CategoryPills, ALL_TAB_VALUE } from "./index";
 
 const mockCategories = [
   { id: "gaming", label: "Gaming", count: 3 },
@@ -11,17 +12,28 @@ const mockCategories = [
   { id: "news", label: "News", count: 5 },
 ];
 
-const renderPills = (props: Partial<React.ComponentProps<typeof CategoryPills>> = {}) => {
+const renderPills = (
+  props: Partial<React.ComponentProps<typeof CategoryPills>> & {
+    value?: string;
+    onValueChange?: (value: string) => void;
+  } = {},
+) => {
   const user = userEvent.setup();
+  const { value = ALL_TAB_VALUE, onValueChange, ...pillProps } = props;
 
   const result = render(
-    <ChakraProvider>
-      <CategoryPills
-        categories={mockCategories}
-        selectedCategory={undefined}
-        onSelect={() => {}}
-        {...props}
-      />
+    <ChakraProvider value={system}>
+      <Tabs.Root
+        value={value}
+        onValueChange={(e) => onValueChange?.(e.value)}
+        activationMode="manual"
+      >
+        <CategoryPills categories={mockCategories} {...pillProps} />
+        <Tabs.Content value={ALL_TAB_VALUE}>All panel</Tabs.Content>
+        <Tabs.Content value="gaming">Gaming panel</Tabs.Content>
+        <Tabs.Content value="tech">Tech panel</Tabs.Content>
+        <Tabs.Content value="news">News panel</Tabs.Content>
+      </Tabs.Root>
     </ChakraProvider>,
   );
 
@@ -30,168 +42,130 @@ const renderPills = (props: Partial<React.ComponentProps<typeof CategoryPills>> 
 
 describe("CategoryPills", () => {
   describe("Rendering", () => {
-    it("renders all category pills including All", () => {
+    it("renders all category tabs including All", () => {
       renderPills();
 
-      expect(screen.getByText("All")).toBeInTheDocument();
-      expect(screen.getByText("Gaming")).toBeInTheDocument();
-      expect(screen.getByText("Tech")).toBeInTheDocument();
-      expect(screen.getByText("News")).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "All" })).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "Gaming" })).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "Tech" })).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "News" })).toBeInTheDocument();
     });
 
-    it("selected pill has aria-checked true", () => {
-      renderPills({ selectedCategory: "gaming" });
+    it("selected tab has aria-selected true", () => {
+      renderPills({ value: "gaming" });
 
-      expect(screen.getByText("Gaming").closest("[role='radio']")).toHaveAttribute(
-        "aria-checked",
-        "true",
-      );
+      expect(screen.getByRole("tab", { name: "Gaming" })).toHaveAttribute("aria-selected", "true");
     });
 
-    it("unselected pills have aria-checked false", () => {
-      renderPills({ selectedCategory: "gaming" });
+    it("unselected tabs have aria-selected false", () => {
+      renderPills({ value: "gaming" });
 
-      expect(screen.getByText("All").closest("[role='radio']")).toHaveAttribute(
-        "aria-checked",
-        "false",
-      );
-      expect(screen.getByText("Tech").closest("[role='radio']")).toHaveAttribute(
-        "aria-checked",
-        "false",
-      );
+      expect(screen.getByRole("tab", { name: "All" })).toHaveAttribute("aria-selected", "false");
+      expect(screen.getByRole("tab", { name: "Tech" })).toHaveAttribute("aria-selected", "false");
     });
 
-    it("container has role radiogroup with aria-label", () => {
+    it("container has tablist role with aria-label", () => {
       renderPills();
 
-      const group = screen.getByRole("radiogroup", { name: "Feed categories" });
-      expect(group).toBeInTheDocument();
+      expect(screen.getByRole("tablist", { name: "Feed categories" })).toBeInTheDocument();
+    });
+
+    it("the selected tab controls its panel via aria-controls", () => {
+      renderPills({ value: "gaming" });
+
+      const gamingTab = screen.getByRole("tab", { name: "Gaming" });
+      const controlledId = gamingTab.getAttribute("aria-controls");
+      expect(controlledId).toBeTruthy();
+      expect(document.getElementById(controlledId!)).toHaveTextContent("Gaming panel");
     });
   });
 
   describe("Interactions", () => {
-    it("clicking a pill calls onSelect with category id", async () => {
-      const onSelect = vi.fn();
-      const { user } = renderPills({ onSelect });
+    it("clicking a tab calls onValueChange with the category id", async () => {
+      const onValueChange = vi.fn();
+      const { user } = renderPills({ onValueChange });
 
-      await user.click(screen.getByText("Gaming"));
-      expect(onSelect).toHaveBeenCalledWith("gaming");
+      await user.click(screen.getByRole("tab", { name: "Gaming" }));
+      expect(onValueChange).toHaveBeenCalledWith("gaming");
     });
 
-    it("clicking All calls onSelect with undefined", async () => {
-      const onSelect = vi.fn();
-      const { user } = renderPills({ selectedCategory: "gaming", onSelect });
+    it("clicking All calls onValueChange with the all value", async () => {
+      const onValueChange = vi.fn();
+      const { user } = renderPills({ value: "gaming", onValueChange });
 
-      await user.click(screen.getByText("All"));
-      expect(onSelect).toHaveBeenCalledWith(undefined);
+      await user.click(screen.getByRole("tab", { name: "All" }));
+      expect(onValueChange).toHaveBeenCalledWith(ALL_TAB_VALUE);
     });
   });
 
-  describe("Keyboard navigation", () => {
-    it("tab focuses the active pill only", async () => {
+  describe("Keyboard navigation (manual activation)", () => {
+    it("only the selected tab is in the tab sequence", async () => {
       const { user } = renderPills();
 
       await user.tab();
 
-      const allPill = screen.getByText("All").closest("button")!;
-      expect(allPill).toHaveFocus();
-      expect(allPill).toHaveAttribute("tabindex", "0");
-
-      const gamingPill = screen.getByText("Gaming").closest("button")!;
-      expect(gamingPill).toHaveAttribute("tabindex", "-1");
+      expect(screen.getByRole("tab", { name: "All" })).toHaveFocus();
     });
 
-    it("ArrowRight moves focus and selects next pill", async () => {
-      const onSelect = vi.fn();
-      const { user } = renderPills({ onSelect });
+    it("ArrowRight moves focus without selecting", async () => {
+      const onValueChange = vi.fn();
+      const { user } = renderPills({ onValueChange });
 
       await user.tab();
       await user.keyboard("{ArrowRight}");
 
-      expect(screen.getByText("Gaming").closest("button")).toHaveFocus();
-      expect(onSelect).toHaveBeenCalledWith("gaming");
+      expect(screen.getByRole("tab", { name: "Gaming" })).toHaveFocus();
+      expect(onValueChange).not.toHaveBeenCalled();
     });
 
-    it("ArrowLeft moves focus and selects previous pill", async () => {
-      const onSelect = vi.fn();
-      const { user } = renderPills({ selectedCategory: "tech", onSelect });
+    it("ArrowLeft moves focus without selecting", async () => {
+      const onValueChange = vi.fn();
+      const { user } = renderPills({ value: "tech", onValueChange });
 
       await user.tab();
       await user.keyboard("{ArrowLeft}");
 
-      expect(screen.getByText("Gaming").closest("button")).toHaveFocus();
-      expect(onSelect).toHaveBeenCalledWith("gaming");
+      expect(screen.getByRole("tab", { name: "Gaming" })).toHaveFocus();
+      expect(onValueChange).not.toHaveBeenCalled();
     });
 
-    it("ArrowRight on last pill wraps to first pill", async () => {
-      const onSelect = vi.fn();
-      const { user } = renderPills({ selectedCategory: "news", onSelect });
+    it("Enter selects the focused tab", async () => {
+      const onValueChange = vi.fn();
+      const { user } = renderPills({ onValueChange });
 
       await user.tab();
       await user.keyboard("{ArrowRight}");
+      await user.keyboard("{Enter}");
 
-      expect(screen.getByText("All").closest("button")).toHaveFocus();
-      expect(onSelect).toHaveBeenCalledWith(undefined);
+      expect(onValueChange).toHaveBeenCalledWith("gaming");
     });
 
-    it("ArrowLeft on first pill wraps to last pill", async () => {
-      const onSelect = vi.fn();
-      const { user } = renderPills({ onSelect });
+    it("Space selects the focused tab", async () => {
+      const onValueChange = vi.fn();
+      const { user } = renderPills({ onValueChange });
 
       await user.tab();
-      await user.keyboard("{ArrowLeft}");
+      await user.keyboard("{ArrowRight}{ArrowRight}");
+      await user.keyboard(" ");
 
-      expect(screen.getByText("News").closest("button")).toHaveFocus();
-      expect(onSelect).toHaveBeenCalledWith("news");
-    });
-
-    it("Home moves focus and selects first pill", async () => {
-      const onSelect = vi.fn();
-      const { user } = renderPills({ selectedCategory: "news", onSelect });
-
-      await user.tab();
-      await user.keyboard("{Home}");
-
-      expect(screen.getByText("All").closest("button")).toHaveFocus();
-      expect(onSelect).toHaveBeenCalledWith(undefined);
-    });
-
-    it("End moves focus and selects last pill", async () => {
-      const onSelect = vi.fn();
-      const { user } = renderPills({ onSelect });
-
-      await user.tab();
-      await user.keyboard("{End}");
-
-      expect(screen.getByText("News").closest("button")).toHaveFocus();
-      expect(onSelect).toHaveBeenCalledWith("news");
+      expect(onValueChange).toHaveBeenCalledWith("tech");
     });
   });
 
   describe("Search-active state", () => {
-    it("selected pill retains aria-checked and tabindex during search", () => {
-      renderPills({ selectedCategory: "gaming", isSearchActive: true });
-
-      const gamingPill = screen.getByText("Gaming").closest("[role='radio']")!;
-      expect(gamingPill).toHaveAttribute("aria-checked", "true");
-      expect(gamingPill).toHaveAttribute("tabindex", "0");
-    });
-
-    it("radiogroup has aria-description when search is active", () => {
+    it("tablist has aria-description when search is active", () => {
       renderPills({ isSearchActive: true });
 
-      const group = screen.getByRole("radiogroup");
-      expect(group).toHaveAttribute(
+      expect(screen.getByRole("tablist")).toHaveAttribute(
         "aria-description",
         "Search is filtering results. Select a category to clear search.",
       );
     });
 
-    it("radiogroup has no aria-description when search is not active", () => {
+    it("tablist has no aria-description when search is not active", () => {
       renderPills({ isSearchActive: false });
 
-      const group = screen.getByRole("radiogroup");
-      expect(group).not.toHaveAttribute("aria-description");
+      expect(screen.getByRole("tablist")).not.toHaveAttribute("aria-description");
     });
   });
 });

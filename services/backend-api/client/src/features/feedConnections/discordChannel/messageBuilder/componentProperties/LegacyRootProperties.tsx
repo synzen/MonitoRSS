@@ -4,35 +4,21 @@ import {
   HStack,
   Text,
   Button,
-  FormControl,
-  FormHelperText,
-  FormLabel,
-  Switch,
   Stack,
   Code,
   Center,
   Spinner,
-  Tag,
-  Tooltip,
   Flex,
-  Divider,
-  Checkbox,
+  Separator,
   Box,
   IconButton,
   Heading,
-  AlertDialog,
-  AlertDialogOverlay,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogBody,
-  AlertDialogFooter,
-  useDisclosure,
-  useRadioGroup,
-  useRadio,
-  UseRadioProps,
+  Icon,
+  RadioCard,
 } from "@chakra-ui/react";
-import { CheckIcon, InfoIcon } from "@chakra-ui/icons";
+import { FaCircleInfo } from "react-icons/fa6";
 import { FiFilter } from "react-icons/fi";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { InputWithInsertPlaceholder } from "../components/InputWithInsertPlaceholder";
 import { HelpDialog } from "@/components";
 import MessagePlaceholderText from "../components/MessagePlaceholderText";
@@ -47,6 +33,19 @@ import { ComponentType } from "../types";
 import { DiscordMessageMentionForm } from "../../connection/components/DiscordMessageForm/DiscordMessageMentionForm";
 import { DiscordMessagePlaceholderLimitsForm } from "../../connection/components/DiscordMessageForm/DiscordMessagePlaceholderLimitsForm";
 import { useMessageBuilderStateContext } from "../state";
+import { Tooltip } from "@/components/ui/tooltip";
+import { Tag } from "@/components/ui/tag";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Field } from "@/components/ui/field";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const TagCheckbox = ({
   emojiName,
@@ -66,7 +65,7 @@ const TagCheckbox = ({
   hasPermissionToUse: boolean;
 }) => {
   return (
-    <Tooltip isDisabled={hasPermissionToUse} label="Missing permissions to use this tag">
+    <Tooltip disabled={hasPermissionToUse} content="Missing permissions to use this tag">
       <Tag
         key={id}
         borderRadius="full"
@@ -74,15 +73,15 @@ const TagCheckbox = ({
         size="lg"
         paddingX="4"
         paddingY="2"
-        bg="gray.700"
+        bg="bg.emphasized"
       >
-        <HStack divider={<Divider orientation="vertical" height="5" />} spacing={2}>
+        <HStack separator={<Separator orientation="vertical" height="5" />} gap={2}>
           <Checkbox
             value={id}
-            isDisabled={!isChecked && !hasPermissionToUse}
-            isChecked={isChecked}
-            onChange={(e) => {
-              onChange(e.target.checked, filters);
+            disabled={!isChecked && !hasPermissionToUse}
+            checked={isChecked}
+            onCheckedChange={(e) => {
+              onChange(!!e.checked, filters);
             }}
           >
             <HStack>
@@ -99,13 +98,14 @@ const TagCheckbox = ({
               filters={filters}
               trigger={
                 <IconButton
-                  icon={<FiFilter />}
                   aria-label="Tag filters"
                   size="xs"
                   borderRadius="full"
                   variant="ghost"
-                  isDisabled={!hasPermissionToUse || !isChecked}
-                />
+                  disabled={!hasPermissionToUse || !isChecked}
+                >
+                  <FiFilter />
+                </IconButton>
               }
             />
           )}
@@ -115,73 +115,43 @@ const TagCheckbox = ({
   );
 };
 
-interface FormatRadioCardProps extends UseRadioProps {
+interface FormatRadioCardProps {
   title: string;
   description: string;
   badge?: string;
   badgeColor?: string;
+  value: string;
 }
 
 const FormatRadioCard: React.FC<FormatRadioCardProps> = (props) => {
-  const { title, description, badge, badgeColor = "green", ...radioProps } = props;
-  const { getInputProps, getRadioProps, state } = useRadio(radioProps);
+  const { title, description, badge, badgeColor = "green", value } = props;
 
   return (
-    <Box as="label" width="100%" cursor="pointer">
-      <input {...getInputProps()} />
-      <Box
-        {...getRadioProps()}
-        p={4}
-        borderRadius="md"
-        borderWidth="2px"
-        borderColor={state.isChecked ? "blue.400" : "gray.600"}
-        bg={state.isChecked ? "blue.900" : "gray.800"}
-        _hover={{
-          borderColor: state.isChecked ? "blue.400" : "gray.500",
-          bg: state.isChecked ? "blue.900" : "gray.700",
-        }}
-        _focusVisible={{
-          outline: "2px solid",
-          outlineColor: "blue.400",
-          outlineOffset: "2px",
-        }}
-        transition="all 0.2s"
-      >
-        <HStack spacing={3} align="flex-start">
-          <Box
-            bg={state.isChecked ? "blue.400" : "transparent"}
-            borderWidth="2px"
-            borderColor={state.isChecked ? "blue.400" : "gray.500"}
-            borderRadius="full"
-            p={1}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            flexShrink={0}
-            width="22px"
-            height="22px"
-            mt={0.5}
-          >
-            {state.isChecked && <CheckIcon boxSize={2.5} color="white" />}
-          </Box>
-          <Box flex={1}>
-            <HStack mb={2} spacing={2}>
-              <Text fontWeight="bold" color="white" fontSize="md">
-                {title}
+    <RadioCard.Item value={value} width="100%">
+      <RadioCard.ItemHiddenInput />
+      <RadioCard.ItemControl p={4} borderRadius="l3" borderWidth="2px">
+        <RadioCard.ItemContent>
+          <HStack gap={3} align="flex-start">
+            <RadioCard.ItemIndicator />
+            <Box flex={1}>
+              <HStack mb={2} gap={2}>
+                <Text fontWeight="bold" color="fg" fontSize="md">
+                  {title}
+                </Text>
+                {badge && (
+                  <Tag size="sm" colorPalette={badgeColor} variant="solid">
+                    {badge}
+                  </Tag>
+                )}
+              </HStack>
+              <Text fontSize="sm" color="fg.muted">
+                {description}
               </Text>
-              {badge && (
-                <Tag size="sm" colorScheme={badgeColor} variant="solid">
-                  {badge}
-                </Tag>
-              )}
-            </HStack>
-            <Text fontSize="sm" color="gray.300">
-              {description}
-            </Text>
-          </Box>
-        </HStack>
-      </Box>
-    </Box>
+            </Box>
+          </HStack>
+        </RadioCard.ItemContent>
+      </RadioCard.ItemControl>
+    </RadioCard.Item>
   );
 };
 
@@ -191,20 +161,21 @@ export const LegacyRootProperties: React.FC = () => {
   const isForumChannel = component?.isForumChannel;
 
   // Root type switching confirmation dialog
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const [pendingRootType, setPendingRootType] = useState<
     ComponentType.LegacyRoot | ComponentType.V2Root | null
   >(null);
 
-  const handleRootTypeChange = (value: string) => {
-    const targetType = value as ComponentType.LegacyRoot | ComponentType.V2Root;
+  const handleRootTypeChange = (details: { value: string | null }) => {
+    if (!details.value) return;
+    const targetType = details.value as ComponentType.LegacyRoot | ComponentType.V2Root;
     if (component?.type === targetType) return;
 
     // Check if there are children that would be lost
     if (component?.children && component.children.length > 0) {
       setPendingRootType(targetType);
-      onOpen();
+      setOpen(true);
     } else {
       switchRootType(targetType);
     }
@@ -216,7 +187,7 @@ export const LegacyRootProperties: React.FC = () => {
       setPendingRootType(null);
     }
 
-    onClose();
+    setOpen(false);
   };
 
   // Get connection information for forum tags
@@ -237,82 +208,89 @@ export const LegacyRootProperties: React.FC = () => {
   );
   const showChannelNewThreadOptions = connection.details.channel?.type === "new-thread";
 
-  const { getRootProps, getRadioProps } = useRadioGroup({
-    name: "messageFormat",
-    value: component?.type || ComponentType.LegacyRoot,
-    onChange: handleRootTypeChange,
-  });
-
-  const rootProps = getRootProps();
-
   if (!component) {
     return null;
   }
 
   return (
-    <VStack align="stretch" spacing={6}>
+    <VStack align="stretch" gap={6}>
       {/* Root Type Selector */}
-      <FormControl as="fieldset">
-        <FormLabel as="legend" fontSize="sm" fontWeight="medium" color="gray.200" mb={1}>
-          Message Format
-        </FormLabel>
-        <FormHelperText color="gray.400" mb={3} mt={0}>
+      <Field label="Message Format">
+        <Text fontSize="sm" color="fg.muted" mb={3}>
           The message format affects the types of components available when customizing your
           message.
-        </FormHelperText>
-        <VStack spacing={3} align="stretch" {...rootProps}>
-          <FormatRadioCard
-            {...getRadioProps({ value: ComponentType.LegacyRoot })}
-            title="Components V1"
-            description="Simpler and text-focused. Allows text content to be split across multiple messages."
-            badge="Classic"
-            badgeColor="gray"
-          />
-          <FormatRadioCard
-            {...getRadioProps({ value: ComponentType.V2Root })}
-            title="Components V2"
-            description="More focused on visuals with greater customization of message layout. Does not allow text content to be split across multiple messages."
-            badge="New"
-          />
-        </VStack>
-      </FormControl>
+        </Text>
+        <RadioCard.Root
+          name="messageFormat"
+          value={component?.type || ComponentType.LegacyRoot}
+          onValueChange={handleRootTypeChange}
+          width="100%"
+        >
+          <VStack gap={3} align="stretch">
+            <FormatRadioCard
+              value={ComponentType.LegacyRoot}
+              title="Components V1"
+              description="Simpler and text-focused. Allows text content to be split across multiple messages."
+              badge="Classic"
+              badgeColor="gray"
+            />
+            <FormatRadioCard
+              value={ComponentType.V2Root}
+              title="Components V2"
+              description="More focused on visuals with greater customization of message layout. Does not allow text content to be split across multiple messages."
+              badge="New"
+            />
+          </VStack>
+        </RadioCard.Root>
+      </Field>
       {/* Confirmation Dialog */}
-      <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
-        <AlertDialogOverlay>
-          <AlertDialogContent bg="gray.800">
-            <AlertDialogHeader color="white" fontSize="lg">
+      <DialogRoot
+        role="alertdialog"
+        open={open}
+        onOpenChange={(e) => setOpen(e.open)}
+        initialFocusEl={() => cancelRef.current}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle color="fg" fontSize="lg">
               Switch to{" "}
               {pendingRootType === ComponentType.V2Root ? "Components V2" : "Components V1"}?
-            </AlertDialogHeader>
-            <AlertDialogBody>
-              <VStack align="stretch" spacing={4}>
-                <HStack bg="orange.900" p={3} borderRadius="md" spacing={3}>
-                  <InfoIcon color="orange.300" />
-                  <Text fontSize="sm" color="orange.100">
-                    All your{" "}
-                    {pendingRootType === ComponentType.V2Root ? "Components V1" : "Components V2"}{" "}
-                    components will be removed because each format uses different component types.
-                    Your{" "}
-                    {pendingRootType === ComponentType.V2Root ? "Components V1" : "Components V2"}{" "}
-                    properties will be kept.
-                  </Text>
-                </HStack>
-                <Text fontSize="sm" color="gray.400">
-                  You can use the Discard Changes button to undo this before saving.
+            </DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <VStack align="stretch" gap={4}>
+              <HStack
+                colorPalette="orange"
+                bg="colorPalette.subtle"
+                p={3}
+                borderRadius="l3"
+                gap={3}
+              >
+                <Icon as={FaCircleInfo} color="text.warning" />
+                <Text fontSize="sm" color="fg">
+                  All your{" "}
+                  {pendingRootType === ComponentType.V2Root ? "Components V1" : "Components V2"}{" "}
+                  components will be removed because each format uses different component types.
+                  Your{" "}
+                  {pendingRootType === ComponentType.V2Root ? "Components V1" : "Components V2"}{" "}
+                  properties will be kept.
                 </Text>
-              </VStack>
-            </AlertDialogBody>
-            <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onClose} variant="ghost">
-                Cancel
-              </Button>
-              <Button colorScheme="blue" onClick={confirmSwitch} ml={3}>
-                Switch Format
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
+              </HStack>
+              <Text fontSize="sm" color="fg.muted">
+                You can use the Discard Changes button to undo this before saving.
+              </Text>
+            </VStack>
+          </DialogBody>
+          <DialogFooter>
+            <Button ref={cancelRef} onClick={() => setOpen(false)} variant="ghost">
+              Cancel
+            </Button>
+            <PrimaryActionButton onClick={confirmSwitch} ml={3}>
+              Switch Format
+            </PrimaryActionButton>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
       {isForumChannel && (
         <>
           <Heading as="h3" size="sm" mb={-2}>
@@ -335,8 +313,8 @@ export const LegacyRootProperties: React.FC = () => {
             }
             guildId={guildId}
           />
-          <FormControl>
-            <Text fontSize="sm" mb={2} color="gray.200">
+          <Field>
+            <Text fontSize="sm" mb={2} color="fg">
               Forum Thread Tags
             </Text>
             {forumTagsStatus === "loading" && (
@@ -345,14 +323,14 @@ export const LegacyRootProperties: React.FC = () => {
               </Center>
             )}
             {forumTagsStatus === "success" && !availableTags?.length && (
-              <Text fontSize="sm" color="gray.400">
+              <Text fontSize="sm" color="fg.muted">
                 No tags found in this channel.
               </Text>
             )}
-            <FormHelperText fontSize="sm" color="gray.400" mb={2}>
+            <Text fontSize="sm" color="fg.muted" mb={2}>
               Select tags to apply to forum threads created for new articles. You may optionally
               define article filters to only attach certain tags for certain articles.
-            </FormHelperText>
+            </Text>
             {forumTagsStatus === "success" && availableTags && availableTags.length > 0 && (
               <Flex gap={4} flexWrap="wrap">
                 {availableTags.map(({ id, name, hasPermissionToUse, emojiName }) => {
@@ -410,7 +388,7 @@ export const LegacyRootProperties: React.FC = () => {
                 })}
               </Flex>
             )}
-          </FormControl>
+          </Field>
         </>
       )}
       {showChannelNewThreadOptions && (
@@ -438,28 +416,29 @@ export const LegacyRootProperties: React.FC = () => {
             }
             guildId={guildId}
           />
-          <FormControl>
+          <Field>
             <HStack justify="space-between" align="center" mb={2}>
-              <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+              <Text fontSize="sm" fontWeight="medium" color="fg">
                 Hide Message in Channel
-              </FormLabel>
+              </Text>
               <Switch
-                isChecked={!!component.channelNewThreadExcludesPreview}
-                onChange={(e) =>
+                inputProps={{ "aria-label": "Hide Message in Channel" }}
+                checked={!!component.channelNewThreadExcludesPreview}
+                onCheckedChange={(e) =>
                   dispatch({
                     type: "UPDATE_ROOT_FIELD",
                     field: "channelNewThreadExcludesPreview",
-                    value: e.target.checked,
+                    value: e.checked,
                   })
                 }
-                colorScheme="blue"
+                colorPalette="brand"
               />
             </HStack>
-            <FormHelperText fontSize="sm" color="gray.400">
+            <Text fontSize="sm" color="fg.muted">
               If enabled, the message contents will only be shown inside the thread. Only the thread
               title will be shown in the channel.
-            </FormHelperText>
-          </FormControl>
+            </Text>
+          </Field>
         </>
       )}
       {/* Text Content settings - shared between Legacy and V2 */}
@@ -467,94 +446,98 @@ export const LegacyRootProperties: React.FC = () => {
         <Heading as="h3" size="sm" mb={-2}>
           Text Content
         </Heading>
-        <FormControl>
+        <Field>
           <HStack justify="space-between" align="center" mb={2}>
-            <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+            <Text fontSize="sm" fontWeight="medium" color="fg">
               Format Tables
-            </FormLabel>
+            </Text>
             <Switch
-              isChecked={!!component.formatTables}
-              onChange={(e) =>
+              inputProps={{ "aria-label": "Format Tables" }}
+              checked={!!component.formatTables}
+              onCheckedChange={(e) =>
                 dispatch({
                   type: "UPDATE_ROOT_FIELD",
                   field: "formatTables",
-                  value: e.target.checked,
+                  value: e.checked,
                 })
               }
-              colorScheme="blue"
+              colorPalette="brand"
             />
           </HStack>
-          <FormHelperText fontSize="sm" color="gray.400">
+          <Text fontSize="sm" color="fg.muted">
             If enabled, tables will be formatted to ensure uniform spacing. This is done by wrapping
             the table with triple backticks (```table here``` for example).
-          </FormHelperText>
-        </FormControl>
-        <FormControl>
+          </Text>
+        </Field>
+        <Field>
           <HStack justify="space-between" align="center" mb={2}>
-            <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+            <Text fontSize="sm" fontWeight="medium" color="fg">
               Strip Images
-            </FormLabel>
+            </Text>
             <Switch
-              isChecked={!!component.stripImages}
-              onChange={(e) =>
+              inputProps={{ "aria-label": "Strip Images" }}
+              checked={!!component.stripImages}
+              onCheckedChange={(e) =>
                 dispatch({
                   type: "UPDATE_ROOT_FIELD",
                   field: "stripImages",
-                  value: e.target.checked,
+                  value: e.checked,
                 })
               }
-              colorScheme="blue"
+              colorPalette="brand"
             />
           </HStack>
-          <FormHelperText fontSize="sm" color="gray.400">
+          <Text fontSize="sm" color="fg.muted">
             If enabled, all images with &quot;src&quot; attributes found in{" "}
             {component?.type === ComponentType.V2Root
               ? "Text Display components"
               : "the message content"}{" "}
             will be removed.
-          </FormHelperText>
-        </FormControl>
-        <FormControl>
+          </Text>
+        </Field>
+        <Field>
           <HStack justify="space-between" align="center" mb={2}>
-            <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+            <Text fontSize="sm" fontWeight="medium" color="fg">
               Ignore New Lines
-            </FormLabel>
+            </Text>
             <Switch
-              isChecked={!!component.ignoreNewLines}
-              onChange={(e) =>
+              inputProps={{ "aria-label": "Ignore New Lines" }}
+              checked={!!component.ignoreNewLines}
+              onCheckedChange={(e) =>
                 dispatch({
                   type: "UPDATE_ROOT_FIELD",
                   field: "ignoreNewLines",
-                  value: e.target.checked,
+                  value: e.checked,
                 })
               }
-              colorScheme="blue"
+              colorPalette="brand"
             />
           </HStack>
-          <FormHelperText fontSize="sm" color="gray.400">
+          <Text fontSize="sm" color="fg.muted">
             Prevents excessive new lines from being added to{" "}
             {component?.type === ComponentType.V2Root ? "Text Display components" : "the message"}{" "}
             if the text content within placeholder content have new lines.
-          </FormHelperText>
-        </FormControl>
-        <FormControl>
+          </Text>
+        </Field>
+        <Field>
           <HStack justify="space-between" align="center" mb={2}>
-            <FormLabel fontSize="sm" fontWeight="medium" color="gray.200" mb={0}>
+            <Text fontSize="sm" fontWeight="medium" color="fg">
               Placeholder Fallback
-            </FormLabel>
+            </Text>
             <Switch
-              isChecked={!!component.enablePlaceholderFallback}
-              onChange={(e) =>
+              inputProps={{ "aria-label": "Placeholder Fallback" }}
+              checked={!!component.enablePlaceholderFallback}
+              onCheckedChange={(e) =>
                 dispatch({
                   type: "UPDATE_ROOT_FIELD",
                   field: "enablePlaceholderFallback",
-                  value: e.target.checked,
+                  value: e.checked,
                 })
               }
-              colorScheme="blue"
+              colorPalette="brand"
             />
           </HStack>
-          <FormHelperText fontSize="sm" color="gray.400">
+          <Text fontSize="sm" color="fg.muted">
             <Stack>
               <Text>
                 Support falling back on alternate values within a placeholder if there is no
@@ -565,8 +548,8 @@ export const LegacyRootProperties: React.FC = () => {
                   <Button
                     display="inline"
                     fontSize="sm"
-                    colorScheme="blue"
-                    variant="link"
+                    colorPalette="brand"
+                    variant="plain"
                     whiteSpace="initial"
                     textAlign="left"
                     mb={2}
@@ -576,7 +559,7 @@ export const LegacyRootProperties: React.FC = () => {
                 }
                 title="Using Placeholder Fallbacks"
                 body={
-                  <Stack spacing={6}>
+                  <Stack gap={6}>
                     <Text>
                       To use placeholder fallbacks, separate each placeholder with <Code>||</Code>{" "}
                       within the curly braces. For example, if you use{" "}
@@ -593,23 +576,20 @@ export const LegacyRootProperties: React.FC = () => {
                 }
               />
             </Stack>
-          </FormHelperText>
-        </FormControl>
+          </Text>
+        </Field>
       </>
 
       {/* Shared options for both root types */}
       <Heading as="h3" size="sm" mb={-2}>
         Additional Settings
       </Heading>
-      <FormControl>
-        <FormLabel fontSize="sm" fontWeight="medium" color="gray.200">
-          Mentions
-        </FormLabel>
-        <FormHelperText fontSize="sm" color="gray.400" mb={2}>
+      <Field label="Mentions">
+        <Text fontSize="sm" color="fg.muted" mb={2}>
           Roles and users that will be mentioned when articles are delivered. Use the{" "}
           <MessagePlaceholderText withBrackets>discord::mentions</MessagePlaceholderText>{" "}
           placeholder in your message content to include these mentions.
-        </FormHelperText>
+        </Text>
         <DiscordMessageMentionForm
           smallButton
           excludeDescription
@@ -617,21 +597,18 @@ export const LegacyRootProperties: React.FC = () => {
           value={component.mentions}
           onChange={(v) => onChange({ ...component, mentions: v })}
         />
-      </FormControl>
-      <FormControl>
-        <FormLabel fontSize="sm" fontWeight="medium" color="gray.200">
-          Placeholder Limits
-        </FormLabel>
-        <FormHelperText mb={2}>
+      </Field>
+      <Field label="Placeholder Limits">
+        <Text fontSize="sm" color="fg.muted" mb={2}>
           Apply character limits to placeholders to shorten messages.
-        </FormHelperText>
+        </Text>
         <DiscordMessagePlaceholderLimitsForm
           excludeDescription
           small
           value={component.placeholderLimits ?? []}
           onChange={(v) => onChange({ ...component, placeholderLimits: v })}
         />
-      </FormControl>
+      </Field>
     </VStack>
   );
 };

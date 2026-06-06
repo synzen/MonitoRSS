@@ -3,21 +3,24 @@ import {
   Box,
   Button,
   Grid,
+  HStack,
+  Icon,
   Stack,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
+  TableBody,
+  TableCell,
+  TableColumnHeader,
+  TableHeader,
+  TableRoot,
+  TableRow,
+  TableScrollArea,
   Text,
-  Th,
-  Thead,
-  Tooltip,
-  Tr,
+  chakra,
   useDisclosure,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { ExternalLinkIcon } from "@chakra-ui/icons";
+import { FaUpRightFromSquare } from "react-icons/fa6";
 import dayjs from "dayjs";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   ArticleDeliveryOutcome,
   ArticleDeliveryResult,
@@ -134,37 +137,37 @@ const ConnectionResultRow = ({ mediumResult }: ConnectionResultRowProps) => {
   const connectionName = connection?.name || mediumResult.mediumId;
 
   return (
-    <Tr>
-      <Td>
-        <Badge colorScheme={getOutcomeColorScheme(mediumResult.outcome)} fontSize="xs">
+    <TableRow>
+      <TableCell>
+        <Badge colorPalette={getOutcomeColorScheme(mediumResult.outcome)} fontSize="xs">
           {getOutcomeLabel(mediumResult.outcome)}
         </Badge>
-      </Td>
-      <Td>
+      </TableCell>
+      <TableCell>
         {connection ? (
-          <Button
-            as={Link}
-            to={pages.userFeedConnection({
-              feedId: userFeed.id,
-              connectionType: connection.key as FeedConnectionType,
-              connectionId: mediumResult.mediumId,
-            })}
-            target="_blank"
-            variant="link"
-            color="blue.300"
-            fontWeight="semibold"
-            size="sm"
-            rightIcon={<ExternalLinkIcon />}
-          >
-            {connectionName}
+          <Button asChild variant="plain" color="text.link" fontWeight="semibold" size="sm">
+            <Link
+              to={pages.userFeedConnection({
+                feedId: userFeed.id,
+                connectionType: connection.key as FeedConnectionType,
+                connectionId: mediumResult.mediumId,
+              })}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <HStack gap={1}>
+                <span>{connectionName}</span>
+                <Icon as={FaUpRightFromSquare} boxSize={3} />
+              </HStack>
+            </Link>
           </Button>
         ) : (
-          <Text color="whiteAlpha.700" fontStyle="italic">
+          <Text color="fg.muted" fontStyle="italic">
             (deleted connection)
           </Text>
         )}
-      </Td>
-    </Tr>
+      </TableCell>
+    </TableRow>
   );
 };
 
@@ -175,7 +178,7 @@ export const ArticleDeliveryDetails = ({
   cacheDurationMs,
 }: Props) => {
   const { userFeed } = useUserFeedContext();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
 
   const isLearningPhase = result.outcome === ArticleDeliveryOutcome.FirstRunBaseline;
   const connectionCount = result.mediumResults.length;
@@ -213,13 +216,13 @@ export const ArticleDeliveryDetails = ({
   };
 
   return (
-    <Box bg="gray.800" px={6} py={4} mx={4} mb={4} borderRadius="md">
-      <Stack spacing={4}>
+    <Box bg="bg.panel" px={6} py={4} mx={4} mt={2} mb={4} borderRadius="l3">
+      <Stack gap={4}>
         <Box>
           <Text fontWeight="semibold" mb={1}>
             Details
           </Text>
-          <Text color="whiteAlpha.800" fontSize="sm">
+          <Text color="fg" fontSize="sm">
             {getDisplayText()}
           </Text>
         </Box>
@@ -228,41 +231,40 @@ export const ArticleDeliveryDetails = ({
             Dates
           </Text>
           <Grid as="dl" templateColumns="140px 1fr" gap={1} fontSize="sm" m={0}>
-            <Text as="dt" color="gray.400">
+            <Text as="dt" color="fg.muted">
               Published
             </Text>
             <Box as="dd" ml={0}>
               {result.articlePublishedDate ? (
                 <Tooltip
-                  label={dayjs(result.articlePublishedDate).format("DD MMM YYYY, HH:mm:ss")}
-                  hasArrow
+                  content={dayjs(result.articlePublishedDate).format("DD MMM YYYY, HH:mm:ss")}
+                  showArrow
                 >
-                  <Text
-                    as="time"
+                  <chakra.time
                     dateTime={result.articlePublishedDate}
                     tabIndex={0}
                     cursor="default"
-                    color="gray.300"
+                    color="fg.muted"
                     display="inline"
                     borderBottom="1px dashed"
-                    borderColor="whiteAlpha.300"
-                    sx={{ cursor: "help" }}
+                    borderColor="border"
+                    css={{ cursor: "help" }}
                   >
                     {dayjs(result.articlePublishedDate).fromNow()}
-                  </Text>
+                  </chakra.time>
                 </Tooltip>
               ) : (
                 <Tooltip
-                  label="This feed does not include a published date for this article"
-                  hasArrow
+                  content="This feed does not include a published date for this article"
+                  showArrow
                 >
                   <Text
                     tabIndex={0}
-                    color="gray.400"
+                    color="fg.muted"
                     display="inline"
                     borderBottom="1px dashed"
-                    borderColor="whiteAlpha.200"
-                    sx={{ cursor: "help" }}
+                    borderColor="border"
+                    css={{ cursor: "help" }}
                     aria-label="Not available. This feed does not include a published date for this article."
                   >
                     --
@@ -270,38 +272,37 @@ export const ArticleDeliveryDetails = ({
                 </Tooltip>
               )}
             </Box>
-            <Text as="dt" color="gray.400">
+            <Text as="dt" color="fg.muted">
               First detected
             </Text>
             <Box as="dd" ml={0}>
               {result.articleStoredDate ? (
                 <Tooltip
-                  label={dayjs(result.articleStoredDate).format("DD MMM YYYY, HH:mm:ss")}
-                  hasArrow
+                  content={dayjs(result.articleStoredDate).format("DD MMM YYYY, HH:mm:ss")}
+                  showArrow
                 >
-                  <Text
-                    as="time"
+                  <chakra.time
                     dateTime={result.articleStoredDate}
                     tabIndex={0}
                     cursor="default"
-                    color="gray.300"
+                    color="fg.muted"
                     display="inline"
                     borderBottom="1px dashed"
-                    borderColor="whiteAlpha.300"
-                    sx={{ cursor: "help" }}
+                    borderColor="border"
+                    css={{ cursor: "help" }}
                   >
                     {dayjs(result.articleStoredDate).fromNow()}
-                  </Text>
+                  </chakra.time>
                 </Tooltip>
               ) : (
-                <Tooltip label="This article has not been stored yet" hasArrow>
+                <Tooltip content="This article has not been stored yet" showArrow>
                   <Text
                     tabIndex={0}
-                    color="gray.400"
+                    color="fg.muted"
                     display="inline"
                     borderBottom="1px dashed"
-                    borderColor="whiteAlpha.200"
-                    sx={{ cursor: "help" }}
+                    borderColor="border"
+                    css={{ cursor: "help" }}
                     aria-label="Not available. This article has not been stored yet."
                   >
                     --
@@ -316,21 +317,21 @@ export const ArticleDeliveryDetails = ({
             <Text fontWeight="semibold" mb={2}>
               Connections
             </Text>
-            <TableContainer>
-              <Table size="sm" variant="simple" sx={{ tableLayout: "fixed" }}>
-                <Thead>
-                  <Tr>
-                    <Th width="300px">Status</Th>
-                    <Th>Name</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
+            <TableScrollArea>
+              <TableRoot size="sm" variant="outline" css={{ tableLayout: "fixed" }}>
+                <TableHeader>
+                  <TableRow>
+                    <TableColumnHeader width="300px">Status</TableColumnHeader>
+                    <TableColumnHeader>Name</TableColumnHeader>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {result.mediumResults.map((mediumResult) => (
                     <ConnectionResultRow key={mediumResult.mediumId} mediumResult={mediumResult} />
                   ))}
-                </Tbody>
-              </Table>
-            </TableContainer>
+                </TableBody>
+              </TableRoot>
+            </TableScrollArea>
           </Box>
         )}
         <Box>
@@ -339,7 +340,7 @@ export const ArticleDeliveryDetails = ({
           </Button>
         </Box>
       </Stack>
-      <DeliveryChecksModal isOpen={isOpen} onClose={onClose} result={result} />
+      <DeliveryChecksModal isOpen={open} onClose={onClose} result={result} />
     </Box>
   );
 };

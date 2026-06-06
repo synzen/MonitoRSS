@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { system } from "@/utils/theme";
 import { SelectableUserFeedList } from "./SelectableUserFeedList";
 
 const FEED_A = { id: "feed-a", title: "Feed A", url: "https://a.example.com/rss" };
@@ -45,7 +46,7 @@ function renderList(opts: RenderOptions = {}) {
 
   render(
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider>
+      <ChakraProvider value={system}>
         <SelectableUserFeedList
           selectedIds={opts.selectedIds ?? []}
           onSelectedIdsChange={opts.onSelectedIdsChange ?? vi.fn()}

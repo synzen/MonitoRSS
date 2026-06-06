@@ -2,6 +2,7 @@ import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import { createSupporterSubscriptionsHarness } from "../helpers/supporter-subscriptions.harness";
 import { SubscriptionProductKey } from "../../src/services/paddle/types";
+import { SubscriptionAlreadyCancelledException } from "../../src/shared/exceptions/paddle.exceptions";
 import type {
   PaddlePricingPreviewResponse,
   PaddleSubscriptionPreviewResponse,
@@ -465,6 +466,40 @@ describe("SupporterSubscriptionsService", { concurrency: true }, () => {
         {
           message: "No existing subscription for user found",
         },
+      );
+    });
+
+    it("clears local subscription state when already cancelled at Paddle", async () => {
+      const ctx = harness.createContext({
+        supportersService: {
+          getSupporterSubscription: async () => ({
+            discordUserId: "user-1",
+            customer: { id: "cust-1", currencyCode: "USD" },
+            subscription: {
+              id: "sub-123",
+              currencyCode: "USD",
+              updatedAt: new Date(),
+              cancellationDate: null,
+            },
+          }),
+        },
+        paddleService: {
+          executeApiCall: async <T>(): Promise<T> => {
+            throw new SubscriptionAlreadyCancelledException();
+          },
+        },
+      });
+
+      await ctx.service.cancelSubscription({ discordUserId: "user-1" });
+
+      assert.strictEqual(
+        ctx.supporterRepository.nullifySubscriptionBySubscriptionId.mock.callCount(),
+        1,
+      );
+      assert.strictEqual(
+        ctx.supporterRepository.nullifySubscriptionBySubscriptionId.mock
+          .calls[0]?.arguments[0],
+        "sub-123",
       );
     });
   });

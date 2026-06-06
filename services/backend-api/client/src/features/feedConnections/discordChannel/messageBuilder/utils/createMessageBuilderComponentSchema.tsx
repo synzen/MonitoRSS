@@ -1,6 +1,19 @@
 import * as yup from "yup";
 import { Component, ComponentType } from "../types";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
+import { getMaxForChildType, getMaxTotalChildren } from "../constants/componentChildRules";
+
+const MAX_LEGACY_EMBEDS = getMaxTotalChildren(ComponentType.LegacyEmbedContainer)!;
+const MAX_LEGACY_EMBED_FIELDS = getMaxForChildType(
+  ComponentType.LegacyEmbed,
+  ComponentType.LegacyEmbedField,
+)!;
+const MAX_LEGACY_ACTION_ROW_BUTTONS = getMaxTotalChildren(ComponentType.LegacyActionRow)!;
+const MAX_V2_ACTION_ROW_BUTTONS = getMaxTotalChildren(ComponentType.V2ActionRow)!;
+const MAX_V2_ROOT_CHILDREN = getMaxTotalChildren(ComponentType.V2Root)!;
+const MAX_V2_CONTAINER_CHILDREN = getMaxTotalChildren(ComponentType.V2Container)!;
+const MAX_V2_SECTION_CHILDREN = getMaxTotalChildren(ComponentType.V2Section)!;
+const MAX_V2_MEDIA_GALLERY_ITEMS = getMaxTotalChildren(ComponentType.V2MediaGallery)!;
 
 // Recursive schema for component validation
 const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
@@ -93,7 +106,7 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
           children: yup
             .array()
             .of(createMessageBuilderComponentSchema())
-            .max(9, "Expected fewer than 10 embeds")
+            .max(MAX_LEGACY_EMBEDS, `Expected fewer than ${MAX_LEGACY_EMBEDS + 1} embeds`)
             .default([]),
         });
       case ComponentType.LegacyEmbed:
@@ -101,14 +114,18 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
           children: yup
             .array()
             .of(createMessageBuilderComponentSchema())
-            .test("max-embed-fields", "Expected fewer than 25 embed fields", (children) => {
-              if (!children) return true;
-              const fieldCount = children.filter(
-                (child) => child.type === ComponentType.LegacyEmbedField,
-              ).length;
+            .test(
+              "max-embed-fields",
+              `Expected at most ${MAX_LEGACY_EMBED_FIELDS} embed fields`,
+              (children) => {
+                if (!children) return true;
+                const fieldCount = children.filter(
+                  (child) => child.type === ComponentType.LegacyEmbedField,
+                ).length;
 
-              return fieldCount <= 25;
-            })
+                return fieldCount <= MAX_LEGACY_EMBED_FIELDS;
+              },
+            )
             .default([]),
         });
 
@@ -164,7 +181,10 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
             .array()
             .of(createMessageBuilderComponentSchema())
             .min(1, "Expected Action Row to have at least one child component")
-            .max(5, "Expected Action Row to have at most 5 child components")
+            .max(
+              MAX_LEGACY_ACTION_ROW_BUTTONS,
+              `Expected Action Row to have at most ${MAX_LEGACY_ACTION_ROW_BUTTONS} child components`,
+            )
             .required("Expected Action Row to have at least one child component"),
         });
       case ComponentType.LegacyButton:
@@ -189,7 +209,10 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
             .array()
             .of(createMessageBuilderComponentSchema())
             .min(1, "Expected Action Row to have at least one child component")
-            .max(5, "Expected Action Row to have at most 5 child components"),
+            .max(
+              MAX_V2_ACTION_ROW_BUTTONS,
+              `Expected Action Row to have at most ${MAX_V2_ACTION_ROW_BUTTONS} child components`,
+            ),
         });
       case ComponentType.V2Root:
         return baseSchema.shape({
@@ -197,7 +220,11 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
             .array()
             .of(createMessageBuilderComponentSchema())
             .default([])
-            .min(1, "Add at least one component to your message"),
+            .min(1, "Add at least one component to your message")
+            .max(
+              MAX_V2_ROOT_CHILDREN,
+              `Expected message to have at most ${MAX_V2_ROOT_CHILDREN} components`,
+            ),
         });
       case ComponentType.V2Section:
         return baseSchema.shape({
@@ -206,7 +233,10 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
             .of(createMessageBuilderComponentSchema())
             .default([])
             .min(1, "Expected Section to have at least 1 child component")
-            .max(3, "Expected Section to have at fewer than 4 child components"),
+            .max(
+              MAX_V2_SECTION_CHILDREN,
+              `Expected Section to have fewer than ${MAX_V2_SECTION_CHILDREN + 1} child components`,
+            ),
           accessory: yup
             .mixed()
             .test(
@@ -266,6 +296,10 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
             .array()
             .of(createMessageBuilderComponentSchema())
             .min(1, "Expected Container to have at least 1 child component")
+            .max(
+              MAX_V2_CONTAINER_CHILDREN,
+              `Expected Container to have at most ${MAX_V2_CONTAINER_CHILDREN} child components`,
+            )
             .required("Expected Container to have at least 1 child component"),
           accentColor: yup.number().nullable(),
           spoiler: yup.boolean(),
@@ -276,7 +310,10 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
             .array()
             .of(createMessageBuilderComponentSchema())
             .min(1, "Expected Media Gallery to have at least 1 item")
-            .max(10, "Expected Media Gallery to have at most 10 items")
+            .max(
+              MAX_V2_MEDIA_GALLERY_ITEMS,
+              `Expected Media Gallery to have at most ${MAX_V2_MEDIA_GALLERY_ITEMS} items`,
+            )
             .required("Expected Media Gallery to have at least 1 item"),
         });
       case ComponentType.V2MediaGalleryItem:

@@ -1,45 +1,27 @@
-import { ChevronRightIcon, RepeatIcon, SearchIcon } from "@chakra-ui/icons";
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
+  Alert,
   Box,
   Button,
   Card,
-  CardBody,
-  CardHeader,
   Center,
-  Checkbox,
-  Divider,
   HStack,
   Heading,
+  Icon,
   IconButton,
   Input,
   InputGroup,
-  InputLeftElement,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
+  Separator,
   Spinner,
   Stack,
   Text,
-  useDisclosure,
   Link as ChakraLink,
   Badge,
-  Alert,
-  AlertTitle,
-  AlertDescription,
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { FiMousePointer } from "react-icons/fi";
 import { useState } from "react";
 import { FaExpandAlt } from "react-icons/fa";
+import { FaChevronRight, FaArrowsRotate, FaMagnifyingGlass } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 import { DiscordMessageFormData } from "@/types/discord";
 import {
@@ -49,13 +31,30 @@ import {
 } from "@/features/feed";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
 import { DiscordMessageForm, SaveExtra } from "../DiscordMessageForm";
-import getChakraColor from "@/utils/getChakraColor";
 import { pages } from "@/constants";
 import { UserFeedConnectionTabSearchParam } from "@/constants/userFeedConnectionTabSearchParam";
 import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
 import { useGetUserFeedArticlesError } from "../../hooks";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
 import { FeedDiscordChannelConnection } from "@/types";
+import {
+  AccordionRoot,
+  AccordionItem,
+  AccordionItemTrigger,
+  AccordionItemContent,
+} from "@/components/ui/accordion";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { PrimaryActionButton } from "../../../../../../components";
 
 interface Props {
   onMessageUpdated: (data: DiscordMessageFormData, extra?: SaveExtra) => Promise<void>;
@@ -65,7 +64,9 @@ interface Props {
 export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
   const { userFeed, connection, articleFormatOptions } =
     useUserFeedConnectionContext<FeedDiscordChannelConnection>();
-  const { isOpen, onClose, onOpen } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
+  const onOpen = () => setIsOpen(true);
+  const onClose = () => setIsOpen(false);
   const [selectedArticleId, setSelectedArticleId] = useState<string | undefined>();
 
   // Check if V2 components are configured
@@ -131,21 +132,21 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
 
   const accordionPanelContent = (
     <Stack flex={1}>
-      <Stack bg="gray.800" position="sticky" top={0} zIndex={10} pt={4}>
+      <Stack bg="bg.subtle" position="sticky" top={0} zIndex={10} pt={4}>
         <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
-          <InputGroup maxWidth={["100%", "100%", "400px"]}>
-            <InputLeftElement pointerEvents="none">
-              <SearchIcon color="gray.300" />
-            </InputLeftElement>
+          <InputGroup
+            maxWidth={["100%", "100%", "400px"]}
+            startElement={<Icon as={FaMagnifyingGlass} color="fg.subtle" />}
+          >
             <Input
-              isDisabled={userFeedArticlesFetchStatus === "fetching"}
+              disabled={userFeedArticlesFetchStatus === "fetching"}
               placeholder={t(
                 "features.feedConnections.components.articlePlaceholderTable.searchInputPlaceholder",
               )}
               onChange={(e) => setPlaceholderTableSearch(e.target.value.toLowerCase())}
             />
           </InputGroup>
-          <Checkbox onChange={(e) => setHideEmptyPlaceholders(e.target.checked)}>
+          <Checkbox onCheckedChange={(e) => setHideEmptyPlaceholders(!!e.checked)}>
             <Text whiteSpace="nowrap">
               {t(
                 "features.feedConnections.components.articlePlaceholderTable.hideEmptyPlaceholdersLabel",
@@ -153,7 +154,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
             </Text>
           </Checkbox>
         </HStack>
-        <Divider />
+        <Separator />
       </Stack>
       <Stack>
         {userFeedArticlesStatus === "loading" && (
@@ -178,51 +179,54 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
   );
 
   return (
-    <Stack spacing={12}>
-      <Modal isOpen={isOpen} onClose={onClose} size="full" scrollBehavior="inside">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Placeholders</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody as={Stack} paddingTop={0}>
-            <Stack bg="gray.800" flex={1} borderRadius="md" pb={4} pl={4} pr={4}>
+    <Stack gap={12}>
+      <DialogRoot
+        open={isOpen}
+        onOpenChange={(e) => setIsOpen(e.open)}
+        size="full"
+        scrollBehavior="inside"
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Placeholders</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody as={Stack} paddingTop={0}>
+            <Stack flex={1} pb={4} pl={4} pr={4}>
               {accordionPanelContent}
             </Stack>
-          </ModalBody>
-          <ModalFooter>
-            <Button mr={3} onClick={onClose}>
-              Close
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogBody>
+          <DialogFooter>
+            <Button onClick={onClose}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
       <Stack>
         <Heading size="md" as="h2">
           Message Format
         </Heading>
         <Text>Customize how your feed&apos;s articles are displayed in your Discord messages.</Text>
       </Stack>
-      <Alert
+      <Alert.Root
         role={undefined}
         flexDirection="column"
         alignItems="flex-start"
-        borderRadius="md"
         overflow="visible"
-        colorScheme="blue"
+        colorPalette="brand"
       >
-        <Stack spacing={4}>
-          <Stack spacing={2}>
+        <Stack gap={4}>
+          <Stack gap={2}>
             <HStack>
-              <Badge colorScheme="green">NEW!</Badge>
-              <AlertTitle display="block">Try the Message Builder with Components V2!</AlertTitle>
+              <Badge colorPalette="green">NEW!</Badge>
+              <Alert.Title display="block">Try the Message Builder with Components V2!</Alert.Title>
             </HStack>
-            <AlertDescription display="block">
+            <Alert.Description display="block">
               Design and preview your Discord messages with the Message Builder. Now with Components
               V2 support for richer layouts including containers, media galleries, sections with
               thumbnails, and more.
-            </AlertDescription>
+            </Alert.Description>
             {hasComponentsV2 && (
-              <Text fontSize="sm" color="blue.200" mt={2}>
+              <Text fontSize="sm" color="text.link" mt={2}>
                 This connection has been configured using Components V2 in the Message Builder
                 already. The legacy message form has been hidden because it is only compatible with
                 Components V1.
@@ -230,23 +234,24 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
             )}
           </Stack>
           <Box>
-            <Button
-              as={Link}
-              to={pages.messageBuilder({
-                feedId: userFeed.id,
-                connectionId: connection.id,
-                connectionType: connection.key,
-              })}
-              rightIcon={<ChevronRightIcon />}
-            >
-              {hasComponentsV2 ? "Open Message Builder" : "Check it out"}
-            </Button>
+            <PrimaryActionButton asChild>
+              <Link
+                to={pages.messageBuilder({
+                  feedId: userFeed.id,
+                  connectionId: connection.id,
+                  connectionType: connection.key,
+                })}
+              >
+                <span>{hasComponentsV2 ? "Open Message Builder" : "Check it out"}</span>
+                <FaChevronRight />
+              </Link>
+            </PrimaryActionButton>
           </Box>
         </Stack>
-      </Alert>
+      </Alert.Root>
       {!hasComponentsV2 && (
         <>
-          <Stack spacing={4} as="aside" aria-labelledby="placeholders-title">
+          <Stack gap={4} as="aside" aria-labelledby="placeholders-title">
             <Stack>
               <Heading as="h3" size="sm" id="placeholders-title">
                 Article Placeholders Reference
@@ -264,26 +269,22 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
               </Center>
             )}
             {!alertComponent && firstArticle && (
-              <Card size="md" overflow="auto">
-                <CardHeader padding={0} margin={5}>
+              <Card.Root size="md" overflow="auto">
+                <Card.Header padding={0} margin={5}>
                   <Heading size="xs" as="h4" textTransform="uppercase">
                     Selected Article
                   </Heading>
-                </CardHeader>
-                <CardBody padding={0} margin={5} mt={0}>
-                  <Stack spacing={4}>
+                </Card.Header>
+                <Card.Body padding={0} margin={5} mt={0}>
+                  <Stack gap={4}>
                     <HStack justifyContent="space-between" flexWrap="wrap">
                       <Box>
-                        {firstArticleDate && <Text color="gray.400">{firstArticleDate}</Text>}
-                        <Text size="md" fontWeight="semibold">
+                        {firstArticleDate && <Text color="fg.muted">{firstArticleDate}</Text>}
+                        <Text textStyle="md" fontWeight="semibold">
                           {firstArticleTitle || (
-                            <span
-                              style={{
-                                color: `${getChakraColor("gray.400")}`,
-                              }}
-                            >
+                            <Text as="span" color="fg.muted">
                               (no title available)
-                            </span>
+                            </Text>
                           )}
                         </Text>
                       </Box>
@@ -291,29 +292,26 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                         <ArticleSelectDialog
                           articleFormatOptions={articleFormatOptions}
                           trigger={
-                            <Button
-                              leftIcon={<FiMousePointer />}
-                              isLoading={
+                            <SafeLoadingButton
+                              loading={
                                 !!selectedArticleId && userFeedArticlesFetchStatus === "fetching"
                               }
                               aria-disabled={userFeedArticlesFetchStatus === "fetching"}
                             >
+                              <FiMousePointer />
                               <span>
                                 {t(
                                   "features.feedConnections.components.articlePlaceholderTable.selectArticle",
                                 )}
                               </span>
-                            </Button>
+                            </SafeLoadingButton>
                           }
                           feedId={userFeed.id}
                           onArticleSelected={onSelectedArticle}
                           onClickRandomArticle={onClickRandomFeedArticle}
                         />
-                        <Button
-                          leftIcon={<RepeatIcon />}
-                          isLoading={
-                            !selectedArticleId && userFeedArticlesFetchStatus === "fetching"
-                          }
+                        <SafeLoadingButton
+                          loading={!selectedArticleId && userFeedArticlesFetchStatus === "fetching"}
                           aria-disabled={userFeedArticlesFetchStatus === "fetching"}
                           onClick={() => {
                             if (userFeedArticlesFetchStatus === "fetching") {
@@ -323,85 +321,80 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                             onClickRandomFeedArticle();
                           }}
                         >
+                          <FaArrowsRotate />
                           <span>
                             {t(
                               "features.feedConnections.components.articlePlaceholderTable.randomButton",
                             )}
                           </span>
-                        </Button>
+                        </SafeLoadingButton>
                       </HStack>
                     </HStack>
-                    <Accordion allowToggle borderRadius="md">
-                      <AccordionItem bg="gray.800" borderRadius="md" alignItems="center">
-                        <AccordionButton
+                    <AccordionRoot collapsible>
+                      <AccordionItem value="placeholders" borderBottomWidth="0" alignItems="center">
+                        <AccordionItemTrigger
                           fontSize="sm"
                           fontWeight={600}
                           minHeight="50px"
-                          color="blue.300"
+                          color="text.link"
+                          indicatorPlacement="start"
+                          borderBottomWidth={{ base: "0px", _open: "1px" }}
+                          borderColor="border"
                         >
                           <HStack justifyContent="space-between" width="100%">
-                            <HStack spacing={2}>
-                              <Text>View Placeholders</Text>
-                              <AccordionIcon />
-                            </HStack>
+                            <Text>View Placeholders</Text>
                             <IconButton
-                              icon={<FaExpandAlt />}
                               aria-label="Open dialog listing all placeholders" // adding just to satisfy lint
                               variant="ghost"
                               size="sm"
-                              color="blue.300"
+                              color="text.link"
                               onClick={onClickExpand}
-                            />
+                            >
+                              <FaExpandAlt />
+                            </IconButton>
                           </HStack>
-                        </AccordionButton>
-                        <AccordionPanel
-                          bg="gray.800"
-                          borderRadius="md"
-                          maxHeight="sm"
-                          overflow="auto"
-                          paddingTop={0}
-                          mt={-4}
-                        >
+                        </AccordionItemTrigger>
+                        <AccordionItemContent maxHeight="sm" overflow="auto" paddingTop={0}>
                           {accordionPanelContent}
                           <Center mt={4}>
-                            <Text fontSize="sm" color="whiteAlpha.600">
+                            <Text fontSize="sm" color="fg.muted">
                               Don&apos;t see the content that you need? You can transform
                               placeholder content through{" "}
-                              <ChakraLink
-                                as={Link}
-                                color="blue.400"
-                                to={pages.userFeedConnection(
-                                  {
-                                    feedId: userFeed.id,
-                                    connectionId: connection.id,
-                                    connectionType: connection.key,
-                                  },
-                                  {
-                                    tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
-                                  },
-                                )}
-                              >
-                                Custom Placeholders
+                              <ChakraLink asChild color="text.link">
+                                <Link
+                                  to={pages.userFeedConnection(
+                                    {
+                                      feedId: userFeed.id,
+                                      connectionId: connection.id,
+                                      connectionType: connection.key,
+                                    },
+                                    {
+                                      tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
+                                    },
+                                  )}
+                                >
+                                  Custom Placeholders
+                                </Link>
                               </ChakraLink>
                               , or get additional ones with{" "}
-                              <ChakraLink
-                                color="blue.400"
-                                as={Link}
-                                to={pages.userFeed(userFeed.id, {
-                                  tab: UserFeedTabSearchParam.ExternalProperties,
-                                })}
-                              >
-                                External Properties
+                              <ChakraLink asChild color="text.link">
+                                <Link
+                                  to={pages.userFeed(userFeed.id, {
+                                    tab: UserFeedTabSearchParam.ExternalProperties,
+                                  })}
+                                >
+                                  External Properties
+                                </Link>
                               </ChakraLink>
                               .
                             </Text>
                           </Center>
-                        </AccordionPanel>
+                        </AccordionItemContent>
                       </AccordionItem>
-                    </Accordion>
+                    </AccordionRoot>
                   </Stack>
-                </CardBody>
-              </Card>
+                </Card.Body>
+              </Card.Root>
             )}
           </Stack>
           <DiscordMessageForm

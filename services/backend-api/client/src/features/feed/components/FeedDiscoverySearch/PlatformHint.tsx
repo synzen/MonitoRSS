@@ -60,11 +60,19 @@ export const PlatformHint = ({ query }: { query: string }) => {
 
   if (hint) {
     return (
-      <Box borderWidth="1px" borderColor="blue.700" borderRadius="md" bg="blue.900" px={4} py={3}>
-        <Text fontSize="sm" color="gray.100">
+      <Box
+        borderWidth="1px"
+        borderColor="colorPalette.emphasized"
+        borderRadius="l3"
+        bg="colorPalette.subtle"
+        colorPalette="brand"
+        px={4}
+        py={3}
+      >
+        <Text fontSize="sm" color="fg">
           {hint.description}
         </Text>
-        <Text fontSize="sm" color="gray.300" mt={2}>
+        <Text fontSize="sm" color="fg.muted" mt={2}>
           For example:{" "}
           <Text as="code" fontFamily="mono">
             {hint.example}
@@ -75,9 +83,16 @@ export const PlatformHint = ({ query }: { query: string }) => {
   }
 
   return (
-    <Text color="gray.400">
+    <Text color="fg.muted">
       No results for &ldquo;{query}&rdquo;. Many websites have feeds - try pasting a URL (e.g., a
       YouTube channel or news site) and we&apos;ll check automatically.
     </Text>
   );
 };
+
+export const SearchOwnFeedHint = () => (
+  <Text fontSize="sm" color="fg.muted">
+    Don&apos;t see what you&apos;re looking for? Many websites have feeds - try pasting a URL (e.g.,
+    a YouTube channel or news site) above and we&apos;ll check automatically.
+  </Text>
+);

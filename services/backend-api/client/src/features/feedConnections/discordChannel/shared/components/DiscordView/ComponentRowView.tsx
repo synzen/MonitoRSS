@@ -1,5 +1,5 @@
 import { Box, Flex, chakra } from "@chakra-ui/react";
-import uniqueId from "lodash/uniqueId";
+import { uniqueId } from "lodash";
 
 interface Props {
   components: Array<{

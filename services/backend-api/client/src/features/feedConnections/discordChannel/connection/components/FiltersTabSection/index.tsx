@@ -10,7 +10,7 @@ interface Props {
 
 export const FiltersTabSection = ({ filters, onFiltersUpdated }: Props) => {
   return (
-    <Stack spacing={8} mb={24}>
+    <Stack gap={8} mb={24}>
       <Stack>
         <Heading as="h2" size="md">
           Article Filters
@@ -22,7 +22,7 @@ export const FiltersTabSection = ({ filters, onFiltersUpdated }: Props) => {
             target="_blank"
             rel="noopener noreferrer"
             href="https://regex101.com/"
-            color="blue.400"
+            color="text.link"
           >
             https://regex101.com/
           </Link>{" "}

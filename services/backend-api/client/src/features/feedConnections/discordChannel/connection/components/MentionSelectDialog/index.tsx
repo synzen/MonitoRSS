@@ -1,30 +1,22 @@
-import {
-  Avatar,
-  Button,
-  ButtonGroup,
-  Flex,
-  FormControl,
-  FormLabel,
-  HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  Tag,
-  TagLabel,
-  Text,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { Button, ButtonGroup, chakra, Flex, HStack, Icon, Stack, Text } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AddIcon } from "@chakra-ui/icons";
+import { FaPlus } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useDiscordServerMembers, useDiscordServerRoles } from "@/features/discordServers";
 import { InlineErrorAlert, ThemedSelect } from "@/components";
 import { useDebounce } from "@/hooks";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+  DialogFooter,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Tag } from "@/components/ui/tag";
+import { Avatar } from "@/components/ui/avatar";
 
 interface OptionData {
   id: string;
@@ -43,14 +35,14 @@ export const MentionSelectDialog = ({ guildId, onAdded, smallButton }: Props) =>
   const [selectedType, setSelectedType] = useState<"user" | "role">("role");
   const [currentInput, setCurrentInput] = useState("");
   const [selectedMention, setSelectedMention] = useState<OptionData>();
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const {
     data: roles,
     error: rolesError,
     isFetching,
   } = useDiscordServerRoles({
     serverId: guildId,
-    disabled: selectedType !== "role" || !isOpen,
+    disabled: selectedType !== "role" || !open,
   });
   const debouncedSearch = useDebounce(currentInput, 500);
   const {
@@ -59,7 +51,7 @@ export const MentionSelectDialog = ({ guildId, onAdded, smallButton }: Props) =>
     isFetching: isFetchingUsers,
   } = useDiscordServerMembers({
     serverId: guildId,
-    disabled: selectedType !== "user" || !isOpen || !debouncedSearch,
+    disabled: selectedType !== "user" || !open || !debouncedSearch,
     data: {
       limit: 25,
       search: debouncedSearch,
@@ -86,7 +78,7 @@ export const MentionSelectDialog = ({ guildId, onAdded, smallButton }: Props) =>
   const onClickSave = () => {
     if (selectedMention) {
       onAdded({ id: selectedMention.id, type: selectedType });
-      onClose();
+      setOpen(false);
     }
   };
 
@@ -129,29 +121,27 @@ export const MentionSelectDialog = ({ guildId, onAdded, smallButton }: Props) =>
 
   return (
     <>
-      <Button
-        onClick={onOpen}
-        leftIcon={<AddIcon fontSize="sm" />}
-        size={smallButton ? "sm" : undefined}
-      >
+      <Button onClick={() => setOpen(true)} size={smallButton ? "sm" : undefined}>
+        <Icon as={FaPlus} fontSize="sm" />
         {t("components.discordMessageMentionForm.addMentionButton")}
       </Button>
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader> {t("components.discordMessageMentionForm.addMentionTitle")}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Stack spacing={8}>
+      <DialogRoot open={open} onOpenChange={(e) => setOpen(e.open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("components.discordMessageMentionForm.addMentionTitle")}</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody>
+            <Stack gap={8}>
               <Text>{t("components.discordMessageMentionForm.addMentionDescription")}</Text>
-              <Stack spacing={2}>
-                <FormControl>
+              <Stack gap={2}>
+                <div>
                   {/* <FormLabel>Type</FormLabel> */}
-                  <ButtonGroup width="100%" isAttached variant="outline">
+                  <ButtonGroup width="100%" attached variant="outline">
                     <Button
                       onClick={onClickType("role")}
                       width="100%"
-                      colorScheme={selectedType === "role" ? "blue" : undefined}
+                      colorPalette={selectedType === "role" ? "brand" : undefined}
                       aria-label="Role type"
                     >
                       {t("components.discordMessageMentionForm.addRoleButton")}
@@ -159,17 +149,17 @@ export const MentionSelectDialog = ({ guildId, onAdded, smallButton }: Props) =>
                     <Button
                       onClick={onClickType("user")}
                       width="100%"
-                      colorScheme={selectedType === "user" ? "blue" : undefined}
+                      colorPalette={selectedType === "user" ? "brand" : undefined}
                       aria-label="User type"
                     >
                       {t("components.discordMessageMentionForm.addUserButton")}
                     </Button>
                   </ButtonGroup>
-                </FormControl>
-                <FormControl>
-                  <FormLabel htmlFor="mention-search" id="mention-label" srOnly>
+                </div>
+                <div>
+                  <chakra.label srOnly htmlFor="mention-search" id="mention-label">
                     Select a {selectedType}
-                  </FormLabel>
+                  </chakra.label>
                   <ThemedSelect
                     isInvalid={selectedType === "role" ? !!rolesError : !!usersError}
                     loading={isFetching || isFetchingUsers}
@@ -193,13 +183,17 @@ export const MentionSelectDialog = ({ guildId, onAdded, smallButton }: Props) =>
                       inputId: "mention-search",
                     }}
                   />
-                </FormControl>
+                </div>
                 {selectedMention && (
                   <Flex justifyContent="center">
-                    <Tag size="lg">
-                      {selectedMention.icon &&
-                        React.cloneElement(selectedMention.icon, { size: "xs" })}
-                      <TagLabel ml={2}>{selectedMention.name}</TagLabel>
+                    <Tag
+                      size="lg"
+                      startElement={
+                        selectedMention.icon &&
+                        React.cloneElement(selectedMention.icon, { size: "xs" })
+                      }
+                    >
+                      {selectedMention.name}
                     </Tag>
                   </Flex>
                 )}
@@ -211,19 +205,19 @@ export const MentionSelectDialog = ({ guildId, onAdded, smallButton }: Props) =>
                 )}
               </Stack>
             </Stack>
-          </ModalBody>
-          <ModalFooter>
+          </DialogBody>
+          <DialogFooter>
             <HStack>
-              <Button variant="ghost" onClick={onClose}>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
                 {t("common.buttons.cancel")}
               </Button>
-              <Button colorScheme="blue" mr={3} onClick={onClickSave} isDisabled={!selectedMention}>
+              <PrimaryActionButton mr={3} onClick={onClickSave} disabled={!selectedMention}>
                 {t("common.buttons.save")}
-              </Button>
+              </PrimaryActionButton>
             </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </>
   );
 };

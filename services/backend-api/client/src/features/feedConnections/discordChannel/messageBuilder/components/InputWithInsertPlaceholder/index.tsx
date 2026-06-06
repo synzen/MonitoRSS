@@ -1,16 +1,7 @@
 import React, { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import {
-  VStack,
-  Textarea,
-  Input,
-  Button,
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
-  FormHelperText,
-  HStack,
-} from "@chakra-ui/react";
-import { AddIcon, AtSignIcon } from "@chakra-ui/icons";
+import { VStack, Textarea, Input, Button, HStack } from "@chakra-ui/react";
+import { FaPlus, FaAt } from "react-icons/fa6";
+import { Field } from "@/components/ui/field";
 import { InsertPlaceholderDialog } from "../../InsertPlaceholderDialog";
 import { InsertMentionDialog } from "../../InsertMentionDialog";
 
@@ -22,9 +13,9 @@ interface Props {
   error?: string;
   helperText?: ReactNode;
   rows?: number;
-  isInvalid?: boolean;
+  invalid?: boolean;
   as?: "input" | "textarea";
-  isRequired?: boolean;
+  required?: boolean;
   guildId?: string;
 }
 
@@ -38,9 +29,9 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
   error,
   helperText,
   rows = 4,
-  isInvalid = false,
+  invalid = false,
   as = "textarea",
-  isRequired,
+  required,
   guildId,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -151,11 +142,30 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
 
   return (
     <>
-      <VStack align="stretch" spacing={2}>
-        <FormControl isInvalid={isInvalid} isRequired={isRequired}>
-          <FormLabel fontSize="sm" fontWeight="medium" color="gray.200">
-            {label}
-          </FormLabel>
+      <VStack align="stretch" gap={2}>
+        <Field
+          invalid={invalid}
+          required={required}
+          label={
+            <span
+              style={{
+                fontSize: "0.875rem",
+                fontWeight: "medium",
+                color: "var(--chakra-colors-gray-200)",
+              }}
+            >
+              {label}
+            </span>
+          }
+          helperText={
+            helperText ? (
+              <span style={{ fontSize: "0.875rem", color: "var(--chakra-colors-gray-400)" }}>
+                {helperText}
+              </span>
+            ) : undefined
+          }
+          errorText={error}
+        >
           {as === "textarea" ? (
             <Textarea
               ref={inputRef as React.RefObject<HTMLTextAreaElement>}
@@ -164,7 +174,6 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
               onBlur={handleBlur}
               placeholder={placeholder}
               rows={rows}
-              bg="gray.700"
               color="white"
               fontFamily="mono"
             />
@@ -175,42 +184,31 @@ export const InputWithInsertPlaceholder: React.FC<Props> = ({
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder={placeholder}
-              bg="gray.700"
               color="white"
               fontFamily="mono"
             />
           )}
-          <HStack mt={2} spacing={2}>
+          <HStack mt={2} gap={2}>
             <Button
-              leftIcon={<AddIcon />}
               size="sm"
-              variant="outline"
-              colorScheme="blue"
               onClick={() => setIsDialogOpen(true)}
               aria-label={`Insert placeholder into ${label}`}
             >
+              <FaPlus />
               Insert Placeholder
             </Button>
             {guildId && (
               <Button
-                leftIcon={<AtSignIcon />}
                 size="sm"
-                variant="outline"
-                colorScheme="blue"
                 onClick={() => setIsMentionDialogOpen(true)}
                 aria-label={`Insert mention into ${label}`}
               >
+                <FaAt />
                 Insert Mention
               </Button>
             )}
           </HStack>
-          {helperText && (
-            <FormHelperText fontSize="sm" color="gray.400">
-              {helperText}
-            </FormHelperText>
-          )}
-          {error && <FormErrorMessage>{error}</FormErrorMessage>}
-        </FormControl>
+        </Field>
       </VStack>
       <InsertPlaceholderDialog
         isOpen={isDialogOpen}

@@ -1,5 +1,6 @@
-import { Alert, AlertDescription, AlertTitle, Box, Button } from "@chakra-ui/react";
+import { Alert, Box } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useUpdateUserFeed } from "../../hooks";
 import { UserFeedDisabledCode } from "../../types";
 import { UpdateUserFeedInput } from "../../api";
@@ -41,14 +42,14 @@ export const UserFeedDisabledAlert = () => {
 
   if (disabledCode === UserFeedDisabledCode.Manual) {
     return (
-      <Alert status="info" borderRadius="md">
-        <Box>
-          <AlertTitle>{t("pages.userFeed.manuallyDisabledTitle")}</AlertTitle>
-          <AlertDescription display="block">
+      <Alert.Root status="info">
+        <Alert.Content>
+          <Alert.Title>{t("pages.userFeed.manuallyDisabledTitle")}</Alert.Title>
+          <Alert.Description display="block">
             {t("pages.userFeed.manuallyDisabledDescription")}
             <Box marginTop="1rem">
-              <Button
-                isLoading={updatingStatus === "loading"}
+              <PrimaryActionButton
+                loading={updatingStatus === "loading"}
                 onClick={() =>
                   onUpdateFeed({
                     disabledCode: null,
@@ -56,109 +57,109 @@ export const UserFeedDisabledAlert = () => {
                 }
               >
                 <span>{t("pages.userFeed.manuallyDisabledEnableButtonText")}</span>
-              </Button>
+              </PrimaryActionButton>
             </Box>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
   if (disabledCode === UserFeedDisabledCode.InvalidFeed) {
     return (
-      <Alert status="error" borderRadius="md">
-        <Box>
-          <AlertTitle>{t("pages.userFeed.invalidFeedFailureTitle")}</AlertTitle>
-          <AlertDescription display="block">
+      <Alert.Root status="error">
+        <Alert.Content>
+          <Alert.Title>{t("pages.userFeed.invalidFeedFailureTitle")}</Alert.Title>
+          <Alert.Description display="block">
             <span>{t("pages.userFeed.invalidFeedFailureText")}</span>
             <Box marginTop="1rem">
               <RefreshUserFeedButton />
             </Box>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
   if (disabledCode === UserFeedDisabledCode.BadFormat) {
     return (
-      <Alert status="error" borderRadius="md">
-        <Box>
-          <AlertTitle>{t("pages.userFeed.invalidFeedFailureTitle")}</AlertTitle>
-          <AlertDescription display="block">
+      <Alert.Root status="error">
+        <Alert.Content>
+          <Alert.Title>{t("pages.userFeed.invalidFeedFailureTitle")}</Alert.Title>
+          <Alert.Description display="block">
             <span>{t("pages.userFeed.invalidFeedFailureText")}</span>
             <Box marginTop="1rem">
               <RefreshUserFeedButton />
             </Box>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
   if (disabledCode === UserFeedDisabledCode.FailedRequests) {
     return (
-      <Alert status="error" borderRadius="md">
-        <Box>
-          <AlertTitle>{t("pages.userFeed.connectionFailureTitle")}</AlertTitle>
-          <AlertDescription display="block">
+      <Alert.Root status="error">
+        <Alert.Content>
+          <Alert.Title>{t("pages.userFeed.connectionFailureTitle")}</Alert.Title>
+          <Alert.Description display="block">
             <span>{t("pages.userFeed.connectionFailureText")}</span>
             <Box marginTop="1rem">
               <RefreshUserFeedButton />
             </Box>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
   if (disabledCode === UserFeedDisabledCode.ExceededFeedLimit) {
     return (
-      <Alert status="error" borderRadius="md">
-        <Box>
-          <AlertTitle>{t("pages.userFeed.exceededFeedLimitTitle")}</AlertTitle>
-          <AlertDescription display="block">
+      <Alert.Root status="error">
+        <Alert.Content>
+          <Alert.Title>{t("pages.userFeed.exceededFeedLimitTitle")}</Alert.Title>
+          <Alert.Description display="block">
             <span>{t("pages.userFeed.exceededFeedLimitText")}</span>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
   if (disabledCode === UserFeedDisabledCode.FeedTooLarge) {
     return (
-      <Alert status="error" borderRadius="md">
-        <Box>
-          <AlertTitle>{t("pages.userFeed.feedTooLargeTitle")}</AlertTitle>
-          <AlertDescription display="block">
+      <Alert.Root status="error">
+        <Alert.Content>
+          <Alert.Title>{t("pages.userFeed.feedTooLargeTitle")}</Alert.Title>
+          <Alert.Description display="block">
             <span>{t("pages.userFeed.feedTooLargeText")}</span>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
   if (disabledCode === UserFeedDisabledCode.ExcessivelyActive) {
     return (
-      <Alert status="error" borderRadius="md">
-        <Box>
-          <AlertTitle>{t("pages.userFeed.adminDisabledTitle")}</AlertTitle>
-          <AlertDescription display="block">
+      <Alert.Root status="error">
+        <Alert.Content>
+          <Alert.Title>{t("pages.userFeed.adminDisabledTitle")}</Alert.Title>
+          <Alert.Description display="block">
             <span>{t("pages.userFeed.adminDisabledText")}</span>
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
   return (
-    <Alert status="error" borderRadius="md">
-      <Box>
-        <AlertTitle>{t("pages.userFeed.unknownTitle")}</AlertTitle>
-        <AlertDescription display="block">
+    <Alert.Root status="error">
+      <Alert.Content>
+        <Alert.Title>{t("pages.userFeed.unknownTitle")}</Alert.Title>
+        <Alert.Description display="block">
           <span>{t("pages.userFeed.unknownText")}</span>
-        </AlertDescription>
-      </Box>
-    </Alert>
+        </Alert.Description>
+      </Alert.Content>
+    </Alert.Root>
   );
 };

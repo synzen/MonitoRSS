@@ -1,32 +1,22 @@
 import {
   Alert,
-  AlertDescription,
-  AlertTitle,
   Box,
   Button,
   Center,
-  FormControl,
-  FormLabel,
   HStack,
   Link,
-  ListItem,
-  Select,
+  List,
   Skeleton,
   Spinner,
   Stack,
   Table,
-  TableContainer,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
-  Tr,
-  UnorderedList,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { ExternalLinkIcon, RepeatIcon } from "@chakra-ui/icons";
+import { FaUpRightFromSquare, FaArrowsRotate } from "react-icons/fa6";
 import { Link as RouterLink } from "react-router-dom";
+import { Field } from "@/components/ui/field";
+import { NativeSelectRoot, NativeSelectField } from "@/components/ui/native-select";
 import {
   useUserFeedContext,
   UserFeedConnectionContext,
@@ -105,9 +95,9 @@ const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?
 
   if (status === "loading" || !data) {
     return (
-      <Center flexDir="column" gap={2} bg="gray.800" rounded="lg" p={4}>
+      <Center flexDir="column" gap={2} bg="bg.subtle" rounded="lg" p={4}>
         <Spinner />
-        <Text color="whiteAlpha.700" fontSize="sm" aria-live="polite">
+        <Text color="fg.muted" fontSize="sm" aria-live="polite">
           Loading preview...this might take a while
         </Text>
       </Center>
@@ -116,9 +106,11 @@ const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?
 
   if (!article) {
     return (
-      <Alert status="info" rounded="lg">
-        <AlertTitle>No articles were found in the feed to preview</AlertTitle>
-      </Alert>
+      <Alert.Root status="info" rounded="lg">
+        <Alert.Content>
+          <Alert.Title>No articles were found in the feed to preview</Alert.Title>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
@@ -129,7 +121,7 @@ const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?
       <Text display="block" fontSize="sm">
         Content scraped from:
       </Text>
-      <UnorderedList>
+      <List.Root>
         {externalProperties.map(({ sourceField, id }) => {
           const href = article[sourceField];
 
@@ -138,32 +130,31 @@ const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?
           }
 
           return (
-            <ListItem key={id}>
+            <List.Item key={id}>
               <Link
                 key={id}
                 gap={2}
-                isExternal
                 target="_blank"
                 href={href || undefined}
                 rel="noopener noreferrer"
-                color="blue.300"
+                color="text.link"
               >
                 {href}
-                <ExternalLinkIcon paddingLeft={1} />
+                <FaUpRightFromSquare style={{ paddingLeft: 1, display: "inline" }} />
               </Link>
-            </ListItem>
+            </List.Item>
           );
         })}
-      </UnorderedList>
+      </List.Root>
     </Stack>
   );
 
   if (!articleEntries.length) {
     if (fetchStatus === "fetching") {
       return (
-        <Center flexDir="column" gap={2} bg="gray.800" rounded="lg" p={4}>
+        <Center flexDir="column" gap={2} bg="bg.subtle" rounded="lg" p={4}>
           <Spinner />
-          <Text color="whiteAlpha.700" fontSize="sm">
+          <Text color="fg.muted" fontSize="sm">
             Loading preview...
           </Text>
         </Center>
@@ -180,12 +171,14 @@ const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?
     }
 
     return (
-      <Alert status="info" justifyContent="center">
-        <AlertDescription>
-          No external placeholders were generated for this article. If this is unexpected, consider
-          adjusting your CSS selector or select a different preview article.
-        </AlertDescription>
-      </Alert>
+      <Alert.Root status="info" justifyContent="center">
+        <Alert.Content>
+          <Alert.Description>
+            No external placeholders were generated for this article. If this is unexpected,
+            consider adjusting your CSS selector or select a different preview article.
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
@@ -199,38 +192,38 @@ const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?
       </Box>
       <Box padding={2} rounded="lg" maxHeight={300} overflow="scroll">
         {externalLinksSection}
-        <TableContainer>
-          <Table size="sm" variant="simple">
-            <Thead>
-              <Tr>
-                <Th>Generated Placeholder</Th>
-                <Th>Value</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
+        <Table.ScrollArea>
+          <Table.Root size="sm" variant="line">
+            <Table.Header>
+              <Table.Row>
+                <Table.ColumnHeader>Generated Placeholder</Table.ColumnHeader>
+                <Table.ColumnHeader>Value</Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {articleEntries.map(([key, value]) => {
                 return (
-                  <Tr key={key}>
-                    <Td>
-                      <Skeleton isLoaded={fetchStatus === "idle"}>
+                  <Table.Row key={key}>
+                    <Table.Cell>
+                      <Skeleton loading={fetchStatus !== "idle"}>
                         <MessagePlaceholderText withBrackets>{key}</MessagePlaceholderText>
                       </Skeleton>
-                    </Td>
-                    <Td>
-                      <Skeleton isLoaded={fetchStatus === "idle"}>{value}</Skeleton>
-                    </Td>
-                  </Tr>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <Skeleton loading={fetchStatus !== "idle"}>{value}</Skeleton>
+                    </Table.Cell>
+                  </Table.Row>
                 );
               })}
-            </Tbody>
-          </Table>
-        </TableContainer>
+            </Table.Body>
+          </Table.Root>
+        </Table.ScrollArea>
       </Box>
       {externalContentErrors.length > 0 && (
         <ExternalContentErrorsAlert errors={externalContentErrors} />
       )}
       <Stack>
-        <Text fontSize="sm" color="whiteAlpha.700" textAlign="center">
+        <Text fontSize="sm" color="fg.muted" textAlign="center">
           These generated placeholders may be used while creating custom message formats per
           connection.
         </Text>
@@ -279,33 +272,37 @@ export const ExternalPropertyPreview = ({ externalProperties: inputExternalPrope
 
   if (isIncomplete) {
     return (
-      <Alert status="warning" justifyContent="center" rounded="lg">
-        <AlertDescription>
-          The preview is disabled because one or more input fields are incomplete. Please fill in
-          all required fields.
-        </AlertDescription>
-      </Alert>
+      <Alert.Root status="warning" justifyContent="center" rounded="lg">
+        <Alert.Content>
+          <Alert.Description>
+            The preview is disabled because one or more input fields are incomplete. Please fill in
+            all required fields.
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
   if (!userFeed.connections.length) {
     return (
-      <Alert status="warning" justifyContent="center" rounded="lg">
-        <AlertDescription>
-          The preview is disabled because there are no connections within this feed to preview with.
-          To create connections, visit the{" "}
-          <Link
-            as={RouterLink}
-            color="blue.300"
-            to={pages.userFeed(userFeed.id, {
-              tab: UserFeedTabSearchParam.Connections,
-            })}
-          >
-            Connections
-          </Link>{" "}
-          page.
-        </AlertDescription>
-      </Alert>
+      <Alert.Root status="warning" justifyContent="center" rounded="lg">
+        <Alert.Content>
+          <Alert.Description>
+            The preview is disabled because there are no connections within this feed to preview
+            with. To create connections, visit the{" "}
+            <Link asChild color="text.link">
+              <RouterLink
+                to={pages.userFeed(userFeed.id, {
+                  tab: UserFeedTabSearchParam.Connections,
+                })}
+              >
+                Connections
+              </RouterLink>
+            </Link>{" "}
+            page.
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     );
   }
 
@@ -319,53 +316,54 @@ export const ExternalPropertyPreview = ({ externalProperties: inputExternalPrope
           {(connectionContext) => {
             return (
               <>
-                <HStack>
-                  <FormControl flex={1}>
-                    <FormLabel
-                      id={`preview-connection-${inputExternalProperties.map((p) => p.id)}`}
-                    >
-                      Preview Connection
-                    </FormLabel>
-                    <HStack flexWrap="wrap">
-                      <Select
-                        size="sm"
-                        width="auto"
-                        flex={1}
-                        minWidth={200}
-                        onChange={(e) => onChangeSelectedConnection(e.target.value)}
-                        aria-labelledby={`preview-connection-${inputExternalProperties.map(
-                          (p) => p.id,
-                        )}`}
-                      >
-                        {userFeed.connections.map((con) => (
-                          <option key={con.id} value={con.id}>
-                            {con.name}
-                          </option>
-                        ))}
-                      </Select>
-                      {connectionContext && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          as={Link}
-                          href={pages.userFeedConnection({
-                            feedId: userFeed.id,
-                            connectionId: connectionContext.connection.id,
-                            connectionType: connectionContext.connection.key,
-                          })}
-                          target="_blank"
-                          rightIcon={<ExternalLinkIcon />}
+                <HStack w="full">
+                  <Field
+                    flex={1}
+                    label={
+                      <span id={`preview-connection-${inputExternalProperties.map((p) => p.id)}`}>
+                        Preview Connection
+                      </span>
+                    }
+                  >
+                    <HStack flexWrap="wrap" w="full">
+                      <NativeSelectRoot size="sm" width="auto" flex={1} minWidth={200}>
+                        <NativeSelectField
+                          onChange={(e) => onChangeSelectedConnection(e.target.value)}
+                          aria-labelledby={`preview-connection-${inputExternalProperties.map(
+                            (p) => p.id,
+                          )}`}
                         >
-                          Manage Connection
+                          {userFeed.connections.map((con) => (
+                            <option key={con.id} value={con.id}>
+                              {con.name}
+                            </option>
+                          ))}
+                        </NativeSelectField>
+                      </NativeSelectRoot>
+                      {connectionContext && (
+                        <Button size="sm" variant="ghost" asChild>
+                          <a
+                            href={pages.userFeedConnection({
+                              feedId: userFeed.id,
+                              connectionId: connectionContext.connection.id,
+                              connectionType: connectionContext.connection.key,
+                            })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Manage Connection
+                            <FaUpRightFromSquare />
+                          </a>
                         </Button>
                       )}
                     </HStack>
-                  </FormControl>
+                  </Field>
                 </HStack>
                 <ArticlesSection externalProperties={externalProperties} articleId={articleId} />
                 <ArticleSelectDialog
                   trigger={
-                    <Button size="sm" leftIcon={<RepeatIcon />} mt={4}>
+                    <Button size="sm" mt={4}>
+                      <FaArrowsRotate />
                       Change Preview Article
                     </Button>
                   }

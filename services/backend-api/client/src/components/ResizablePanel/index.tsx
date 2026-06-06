@@ -69,7 +69,7 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
       {side === "right" && showHandle && (
         <Box
           w="6px"
-          bg="gray.700"
+          bg="bg.emphasized"
           cursor="col-resize"
           _hover={{ bg: "gray.600" }}
           onMouseDown={handleResizeStart}
@@ -94,7 +94,7 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
       {side === "left" && showHandle && (
         <Box
           w="6px"
-          bg="gray.700"
+          bg="bg.emphasized"
           cursor="col-resize"
           _hover={{ bg: "gray.600" }}
           onMouseDown={handleResizeStart}

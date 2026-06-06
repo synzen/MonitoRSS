@@ -9,29 +9,30 @@ import {
 } from "react";
 import {
   Alert,
-  AlertDescription,
-  AlertIcon,
   Box,
   HStack,
   Text,
   Input,
   InputGroup,
-  InputLeftElement,
-  InputRightElement,
   IconButton,
   Button,
   Skeleton,
   Stack,
   VisuallyHidden,
 } from "@chakra-ui/react";
-import { SearchIcon, CloseIcon } from "@chakra-ui/icons";
+import { FaMagnifyingGlass, FaXmark } from "react-icons/fa6";
 import { FeedCard } from "../FeedCard";
 import { useCuratedFeeds } from "../../hooks";
 import type { CuratedFeed } from "../../types";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 import { UrlValidationResult } from "./UrlValidationResult";
 import type { FeedActionState } from "../../types/FeedActionState";
-import { PlatformHint, getNoResultsAnnouncement, getPlatformHint } from "./PlatformHint";
+import {
+  PlatformHint,
+  SearchOwnFeedHint,
+  getNoResultsAnnouncement,
+  getPlatformHint,
+} from "./PlatformHint";
 import { getFeedCardPropsFromState } from "../../types/FeedActionState";
 import { createDiscoverySearchEvent } from "../../api/createDiscoverySearchEvent";
 import { parseSearchInputAsUrl } from "../../utils/normalizeUrlInput";
@@ -281,29 +282,29 @@ export const FeedDiscoverySearchInput = ({ state }: { state: SearchStateReturn }
     </VisuallyHidden>
     <form role="search" onSubmit={state.handleSearch}>
       <HStack>
-        <InputGroup>
-          <InputLeftElement pointerEvents="none">
-            <SearchIcon color="gray.400" />
-          </InputLeftElement>
+        <InputGroup
+          flex={1}
+          startElement={<FaMagnifyingGlass color="fg.muted" />}
+          endElement={
+            state.inputValue ? (
+              <IconButton
+                aria-label="Clear search"
+                size="xs"
+                variant="ghost"
+                onClick={state.handleClear}
+              >
+                <FaXmark />
+              </IconButton>
+            ) : undefined
+          }
+        >
           <Input
             ref={state.setInputRef}
             value={state.inputValue}
             onChange={(e) => state.setInputValue(e.target.value)}
             placeholder="Search popular feeds or paste a URL"
             aria-label="Search popular feeds or paste a URL"
-            bg="gray.800"
           />
-          {state.inputValue && (
-            <InputRightElement>
-              <IconButton
-                aria-label="Clear search"
-                icon={<CloseIcon />}
-                size="xs"
-                variant="ghost"
-                onClick={state.handleClear}
-              />
-            </InputRightElement>
-          )}
         </InputGroup>
         <Button type="submit">Go</Button>
       </HStack>
@@ -317,9 +318,9 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
   if (state.isSearching) {
     return (
       <Box mt={3} aria-busy="true" aria-hidden="true">
-        <Stack spacing={2}>
+        <Stack gap={2}>
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} height="64px" borderRadius="md" />
+            <Skeleton key={i} height="64px" borderRadius="l3" />
           ))}
         </Stack>
       </Box>
@@ -328,15 +329,15 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
 
   if (state.hasCuratedError) {
     return (
-      <Alert status="error" mt={3} borderRadius="md">
-        <AlertIcon />
-        <AlertDescription>
+      <Alert.Root status="error" mt={3}>
+        <Alert.Indicator />
+        <Alert.Description>
           Failed to load search results.{" "}
-          <Button variant="link" colorScheme="blue" onClick={() => state.refetchCurated()}>
+          <Button variant="plain" colorPalette="brand" onClick={() => state.refetchCurated()}>
             Retry
           </Button>
-        </AlertDescription>
-      </Alert>
+        </Alert.Description>
+      </Alert.Root>
     );
   }
 
@@ -344,7 +345,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
     <>
       {state.totalResults > 0 && (
         <Box mt={3}>
-          <Text fontSize="sm" color="gray.400">
+          <Text fontSize="sm" color="fg.muted">
             {state.totalResults} result{state.totalResults !== 1 ? "s" : ""} for &ldquo;
             {state.activeQuery}&rdquo;
           </Text>
@@ -359,7 +360,7 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
               state.visibleCount,
               state.totalResults,
             )} of ${state.totalResults}`}
-            spacing={2}
+            gap={2}
             listStyleType="none"
           >
             {state.visibleResults.map((feed, index) => {
@@ -410,6 +411,11 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
         <Button mt={3} onClick={state.handleShowMore} variant="outline" width="full">
           Show more
         </Button>
+      )}
+      {state.totalResults > 0 && (
+        <Box mt={4}>
+          <SearchOwnFeedHint />
+        </Box>
       )}
     </>
   );

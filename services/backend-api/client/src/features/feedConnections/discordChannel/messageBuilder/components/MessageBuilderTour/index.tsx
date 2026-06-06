@@ -9,17 +9,20 @@ import {
   Heading,
   Icon,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
 } from "@chakra-ui/react";
 import { motion } from "motion/react";
-import { FaArrowRight, FaArrowLeft, FaTimes } from "react-icons/fa";
-import { FaScrewdriverWrench } from "react-icons/fa6";
+import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
+import { FaScrewdriverWrench, FaXmark } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
 import { useIsMessageBuilderMobile } from "../../hooks";
 
 export const TOUR_STORAGE_KEY = "message-builder-tour-completed";
@@ -114,6 +117,25 @@ interface TourState {
   targetRect: DOMRect | null;
   hasScrolledIntoView?: boolean;
 }
+
+// A tour target selector can match several elements when the same control is
+// rendered (hidden) on multiple rows — e.g. the add-component button exists on
+// every component tree row but is only shown for the selected one. Resolve the
+// first match that is actually laid out (non-zero rect) so the tour positions
+// itself against the visible instance instead of a hidden duplicate.
+const findVisibleTarget = (selector: string): Element | null => {
+  const matches = document.querySelectorAll(selector);
+
+  for (const match of matches) {
+    const rect = match.getBoundingClientRect();
+
+    if (rect.width > 0 && rect.height > 0) {
+      return match;
+    }
+  }
+
+  return matches[0] ?? null;
+};
 
 interface TourTooltipProps {
   tourState: TourState;
@@ -306,7 +328,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
           height="100%"
           borderRadius="lg"
           border="4px solid"
-          borderColor="blue.400"
+          borderColor="brandSolid"
           bg="rgba(59, 130, 246, 0.05)"
           position="relative"
         >
@@ -345,14 +367,14 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
         }}
       >
         <Box
-          bg="gray.700"
-          color="white"
+          bg="bg.panel"
+          color="fg"
           p={4}
-          borderRadius="md"
+          borderRadius="l3"
           shadow="xl"
           maxWidth="320px"
           border="2px solid"
-          borderColor="blue.300"
+          borderColor="brandSolid"
           role="dialog"
           aria-modal="true"
           aria-labelledby="tour-step-title"
@@ -360,9 +382,9 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
           aria-live="polite"
           aria-atomic="true"
         >
-          <VStack align="start" spacing={3}>
+          <VStack align="start" gap={3}>
             <HStack justify="space-between" width="100%">
-              <Heading id="tour-step-title" size="sm" color="white">
+              <Heading id="tour-step-title" size="sm" color="fg">
                 {step.title}
               </Heading>
               <Button
@@ -372,7 +394,7 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                 aria-label={`Close tour. Currently on step ${stepIndex + 1} of ${totalSteps}.`}
                 ref={closeButtonRef}
               >
-                <Icon as={FaTimes} />
+                <Icon as={FaXmark} />
               </Button>
             </HStack>
             <Text id="tour-step-content" fontSize="sm" lineHeight="1.5">
@@ -384,29 +406,27 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
               ))}
             </Text>
             <HStack justify="space-between" width="100%">
-              <Text fontSize="xs" color="gray.300" aria-live="polite" role="status">
+              <Text fontSize="xs" color="fg.subtle" aria-live="polite" role="status">
                 Step {stepIndex + 1} of {totalSteps}
               </Text>
-              <HStack spacing={2}>
+              <HStack gap={2}>
                 {stepIndex > 0 && (
                   <Button
                     size="sm"
                     variant="outline"
-                    leftIcon={<Icon as={FaArrowLeft} />}
                     onClick={onPrevious}
                     aria-label={`Go to previous step: ${
                       MESSAGE_BUILDER_TOUR_STEPS[stepIndex - 1]?.title || "Previous"
                     }. Currently step ${stepIndex + 1} of ${totalSteps}.`}
                   >
+                    <Icon as={FaArrowLeft} />
                     Back
                   </Button>
                 )}
-                <Button
+                <PrimaryActionButton
                   size="sm"
-                  rightIcon={stepIndex < totalSteps - 1 ? <Icon as={FaArrowRight} /> : undefined}
                   onClick={onNext}
                   tabIndex={0}
-                  colorScheme="blue"
                   aria-label={
                     stepIndex < totalSteps - 1
                       ? `Continue to next step: ${
@@ -418,7 +438,8 @@ const TourTooltip: React.FC<TourTooltipProps> = ({
                   }
                 >
                   {stepIndex < totalSteps - 1 ? "Next" : "Finish"}
-                </Button>
+                  {stepIndex < totalSteps - 1 && <Icon as={FaArrowRight} />}
+                </PrimaryActionButton>
               </HStack>
             </HStack>
           </VStack>
@@ -440,7 +461,7 @@ export const MessageBuilderTour: React.FC<MessageBuilderTourProps> = ({
   const [tourState, setTourState] = useState<TourState | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open, onOpen, onClose } = useDisclosure();
   const isMobile = useIsMessageBuilderMobile();
 
   // Check if user has completed the tour
@@ -593,7 +614,7 @@ export const MessageBuilderTour: React.FC<MessageBuilderTourProps> = ({
       }
 
       const { step } = tourState;
-      const element = document.querySelector(step.target);
+      const element = findVisibleTarget(step.target);
 
       if (element) {
         const rect = element.getBoundingClientRect();
@@ -641,7 +662,7 @@ export const MessageBuilderTour: React.FC<MessageBuilderTourProps> = ({
       } else {
         // If element not found, try again after a short delay
         setTimeout(() => {
-          const retryElement = document.querySelector(step.target);
+          const retryElement = findVisibleTarget(step.target);
 
           if (retryElement) {
             const rect = retryElement.getBoundingClientRect();
@@ -693,34 +714,41 @@ export const MessageBuilderTour: React.FC<MessageBuilderTourProps> = ({
   return (
     <>
       {/* Welcome Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="md" closeOnOverlayClick={false}>
-        <ModalOverlay />
-        <ModalContent
-          bg="gray.800"
-          color="white"
+      <DialogRoot
+        open={open}
+        onOpenChange={(e) => {
+          if (!e.open) onClose();
+        }}
+        size="md"
+        closeOnInteractOutside={false}
+      >
+        <DialogContent
+          color="fg"
           role="dialog"
           aria-modal="true"
           aria-labelledby="tour-modal-title"
           aria-describedby="tour-modal-description"
         >
-          <ModalHeader>
-            <HStack>
-              <Icon as={FaScrewdriverWrench} aria-hidden="true" />
-              <Text id="tour-modal-title" color="white" pl={2}>
-                Welcome to your Message Builder!
-              </Text>
-            </HStack>
-          </ModalHeader>
-          <ModalCloseButton aria-label="Close welcome dialog" />
-          <ModalBody>
-            <VStack align="start" spacing={4} id="tour-modal-description">
-              <Text color="gray.200" lineHeight="1.6">
+          <DialogHeader>
+            <DialogTitle>
+              <HStack>
+                <Icon as={FaScrewdriverWrench} aria-hidden="true" />
+                <Text id="tour-modal-title" color="fg" pl={2}>
+                  Welcome to your Message Builder!
+                </Text>
+              </HStack>
+            </DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger aria-label="Close welcome dialog" />
+          <DialogBody>
+            <VStack align="start" gap={4} id="tour-modal-description">
+              <Text color="fg" lineHeight="1.6">
                 Would you like a quick tour to learn how to customize your message?
               </Text>
             </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <HStack spacing={3}>
+          </DialogBody>
+          <DialogFooter>
+            <HStack gap={3}>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -735,21 +763,16 @@ export const MessageBuilderTour: React.FC<MessageBuilderTourProps> = ({
               >
                 Skip Tour
               </Button>
-              <Button
-                colorScheme="blue"
-                // bg="blue.500"
-                // color="white"
-                // _hover={{ bg: "blue.600" }}
-                // _active={{ bg: "blue.700" }}
+              <PrimaryActionButton
                 onClick={startTour}
                 aria-label="Start the interactive tour to learn message builder features"
               >
                 Start Tour
-              </Button>
+              </PrimaryActionButton>
             </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
       {/* Tour Tooltip */}
       {isActive && tourState && (tourState.targetRect || isTransitioning) && (
         <TourTooltip

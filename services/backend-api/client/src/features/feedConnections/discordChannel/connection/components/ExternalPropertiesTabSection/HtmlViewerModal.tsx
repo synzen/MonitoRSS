@@ -1,25 +1,16 @@
-import {
-  Alert,
-  AlertIcon,
-  Box,
-  Button,
-  Code,
-  HStack,
-  IconButton,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  Text,
-  useDisclosure,
-  useToast,
-} from "@chakra-ui/react";
+import { Alert, Box, Button, Code, HStack, Icon, IconButton, Stack, Text } from "@chakra-ui/react";
 import { cloneElement, useState } from "react";
-import { CopyIcon } from "@chakra-ui/icons";
+import { FaCopy } from "react-icons/fa6";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { toaster } from "@/components/ui/toaster";
 
 interface Props {
   trigger: React.ReactElement;
@@ -31,9 +22,8 @@ interface Props {
 const MAX_INITIAL_DISPLAY = 50 * 1024; // 50KB initial display
 
 export const HtmlViewerModal = ({ trigger, html, isTruncated, cssSelector }: Props) => {
-  const { isOpen, onClose, onOpen } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const [showFull, setShowFull] = useState(false);
-  const toast = useToast();
 
   const displayHtml = showFull ? html : html.substring(0, MAX_INITIAL_DISPLAY);
   const canShowMore = html.length > MAX_INITIAL_DISPLAY && !showFull;
@@ -41,60 +31,62 @@ export const HtmlViewerModal = ({ trigger, html, isTruncated, cssSelector }: Pro
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(html);
-      toast({
+      toaster.create({
         title: "Copied to clipboard",
-        status: "success",
+        type: "success",
         duration: 2000,
-        isClosable: true,
       });
     } catch {
-      toast({
+      toaster.create({
         title: "Failed to copy",
-        status: "error",
+        type: "error",
         duration: 2000,
-        isClosable: true,
       });
     }
   };
 
   return (
     <>
-      {cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose} size="6xl" scrollBehavior="inside">
-        <ModalOverlay />
-        <ModalContent maxHeight="85vh">
-          <ModalHeader>
-            <Stack spacing={1}>
-              <Text>Page Source</Text>
-              <Text fontSize="sm" fontWeight="normal" color="gray.400">
-                Selector: <Code fontSize="sm">{cssSelector}</Code>
-              </Text>
-            </Stack>
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Stack spacing={4}>
-              <Alert status="info" borderRadius="md">
-                <AlertIcon />
+      {cloneElement(trigger, { onClick: () => setOpen(true) })}
+      <DialogRoot open={open} onOpenChange={(e) => setOpen(e.open)} size="xl">
+        <DialogContent maxHeight="85vh">
+          <DialogHeader marginRight={4}>
+            <DialogTitle>
+              <Stack gap={1}>
+                <Text>Page Source</Text>
+                <Text fontSize="sm" fontWeight="normal" color="fg.muted">
+                  Selector: <Code fontSize="sm">{cssSelector}</Code>
+                </Text>
+              </Stack>
+            </DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody>
+            <Stack gap={4}>
+              <Alert.Root status="info">
+                <Alert.Indicator />
                 <Text fontSize="sm">
                   Script tags have been removed to condense content.
                   {isTruncated && " HTML was also truncated to 50KB for display."}
                 </Text>
-              </Alert>
+              </Alert.Root>
               <HStack justify="flex-end">
                 <IconButton
                   aria-label="Copy HTML to clipboard"
-                  icon={<CopyIcon />}
                   size="sm"
                   variant="ghost"
                   onClick={handleCopy}
-                />
+                >
+                  <Icon as={FaCopy} />
+                </IconButton>
               </HStack>
               <Box
                 as="pre"
-                bg="gray.900"
+                bg="bg.subtle"
+                borderWidth="1px"
+                borderColor="border"
                 p={4}
-                borderRadius="md"
+                borderRadius="l3"
                 overflow="auto"
                 fontSize="xs"
                 fontFamily="mono"
@@ -112,12 +104,12 @@ export const HtmlViewerModal = ({ trigger, html, isTruncated, cssSelector }: Pro
                 </HStack>
               )}
             </Stack>
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onClose}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogBody>
+          <DialogFooter>
+            <Button onClick={() => setOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </>
   );
 };

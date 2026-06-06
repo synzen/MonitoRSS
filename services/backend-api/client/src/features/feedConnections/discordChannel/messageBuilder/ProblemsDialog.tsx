@@ -1,24 +1,17 @@
 import React from "react";
-import {
-  AlertDialog,
-  AlertDialogOverlay,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogBody,
-  AlertDialogFooter,
-  Button,
-  VStack,
-  Text,
-  Box,
-  HStack,
-  UnorderedList,
-  ListItem,
-  Icon,
-} from "@chakra-ui/react";
-import { WarningIcon } from "@chakra-ui/icons";
+import { Button, VStack, Text, Box, HStack, List, Icon } from "@chakra-ui/react";
 import { FaExclamationCircle, FaExclamationTriangle } from "react-icons/fa";
+import { FaTriangleExclamation } from "react-icons/fa6";
 import type { MessageBuilderProblem } from "./types";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ProblemsDialogProps {
   isOpen: boolean;
@@ -43,89 +36,92 @@ export const ProblemsDialog: React.FC<ProblemsDialogProps> = ({
   };
 
   return (
-    <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose} size="lg">
-      <AlertDialogOverlay>
-        <AlertDialogContent maxHeight="80vh">
-          <AlertDialogHeader fontSize="lg" fontWeight="bold">
-            <HStack spacing={2}>
-              <WarningIcon color="red.400" />
-              <Text>Failed to Save Changes</Text>
-            </HStack>
-          </AlertDialogHeader>
-          <AlertDialogBody overflowY="auto">
-            <VStack align="stretch" spacing={4}>
-              <Text>
-                Your message has {problems.length} problem
-                {problems.length === 1 ? "" : "s"} that must be fixed before saving:
-              </Text>
-              <Box
-                borderRadius="md"
-                border="1px"
-                borderColor="gray.600"
-                bg="gray.50"
-                _dark={{ bg: "gray.800" }}
-                maxHeight="300px"
-                overflowY="auto"
-              >
-                <Box p={4}>
-                  <UnorderedList spacing={3} styleType="none" ml={0}>
-                    {problems.map((problem) => {
-                      const isWarning = problem.severity === "warning";
+    <DialogRoot
+      role="alertdialog"
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) onClose();
+      }}
+      size="lg"
+      initialFocusEl={() => cancelRef.current}
+    >
+      <DialogContent maxHeight="80vh">
+        <DialogHeader fontSize="lg" fontWeight="bold">
+          <HStack gap={2}>
+            <Icon as={FaTriangleExclamation} color="text.error" />
+            <DialogTitle>Failed to Save Changes</DialogTitle>
+          </HStack>
+        </DialogHeader>
+        <DialogBody overflowY="auto">
+          <VStack align="stretch" gap={4}>
+            <Text>
+              Your message has {problems.length} problem
+              {problems.length === 1 ? "" : "s"} that must be fixed before saving:
+            </Text>
+            <Box
+              borderRadius="l3"
+              border="1px"
+              borderColor="border"
+              bg="bg.panel"
+              maxHeight="300px"
+              overflowY="auto"
+            >
+              <Box p={4}>
+                <List.Root gap={3} listStyle="none" ml={0}>
+                  {problems.map((problem) => {
+                    const isWarning = problem.severity === "warning";
 
-                      return (
-                        <ListItem key={`${problem.message}-${problem.path}`}>
-                          <VStack align="stretch" spacing={1}>
-                            <HStack spacing={2} align="center">
-                              <Icon
-                                as={isWarning ? FaExclamationTriangle : FaExclamationCircle}
-                                color={isWarning ? "orange.400" : "red.400"}
-                                flexShrink={0}
-                                size="sm"
-                                aria-hidden
-                              />
-                              <Text fontSize="sm" color="gray.900" _dark={{ color: "white" }}>
-                                {problem.message}
-                              </Text>
-                            </HStack>
-                            <Text
-                              fontSize="xs"
-                              color="blue.500"
-                              _dark={{ color: "blue.300" }}
-                              fontFamily="mono"
-                              ml={6}
-                              cursor="pointer"
-                              _hover={{
-                                color: "blue.600",
-                                _dark: { color: "blue.200" },
-                                textDecoration: "underline",
-                              }}
-                              onClick={() => handleProblemClick(problem.componentId)}
-                              role="button"
-                              tabIndex={0}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  handleProblemClick(problem.componentId);
-                                }
-                              }}
-                            >
-                              {problem.path}
+                    return (
+                      <List.Item key={`${problem.message}-${problem.path}`}>
+                        <VStack align="stretch" gap={1}>
+                          <HStack gap={2} align="center">
+                            <Icon
+                              as={isWarning ? FaExclamationTriangle : FaExclamationCircle}
+                              color={isWarning ? "text.warning" : "text.error"}
+                              flexShrink={0}
+                              size="sm"
+                              aria-hidden
+                            />
+                            <Text fontSize="sm" color="fg">
+                              {problem.message}
                             </Text>
-                          </VStack>
-                        </ListItem>
-                      );
-                    })}
-                  </UnorderedList>
-                </Box>
+                          </HStack>
+                          <Text
+                            fontSize="xs"
+                            color="text.link"
+                            fontFamily="mono"
+                            ml={6}
+                            cursor="pointer"
+                            _hover={{
+                              color: "text.link",
+                              textDecoration: "underline",
+                            }}
+                            onClick={() => handleProblemClick(problem.componentId)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                handleProblemClick(problem.componentId);
+                              }
+                            }}
+                          >
+                            {problem.path}
+                          </Text>
+                        </VStack>
+                      </List.Item>
+                    );
+                  })}
+                </List.Root>
               </Box>
-            </VStack>
-          </AlertDialogBody>
-          <AlertDialogFooter>
-            <Button ref={cancelRef} onClick={onClose}>
-              Close
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialogOverlay>
-    </AlertDialog>
+            </Box>
+          </VStack>
+        </DialogBody>
+        <DialogFooter>
+          <Button ref={cancelRef} onClick={onClose}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

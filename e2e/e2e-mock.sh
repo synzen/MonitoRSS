@@ -12,19 +12,55 @@ fi
 COMPOSE_PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 COMPOSE_FILE="$COMPOSE_PROJECT_DIR/docker-compose.e2e.yml"
 
+STRIDE=1000
+
+# True if something is already listening on the given TCP port (any owner: the dev
+# stack, a leaked mock-server from a prior run, or another e2e instance). Uses bash's
+# /dev/tcp so it needs no lsof/netstat and behaves the same on Git Bash and Linux CI.
+port_in_use() {
+  (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && exec 3>&- && return 0
+  return 1
+}
+
+# Every host port a given instance would bind. The mock-rss (3001) / mock-discord
+# (3002) servers are started by Playwright on the HOST, so they must be checked here
+# too — checking only the compose project name let instance 0 collide with whatever
+# already held 3001/3002.
+instance_ports() {
+  local off=$(($1 * STRIDE))
+  echo "$((8100 + off)) $((3100 + off)) $((27019 + off)) $((3001 + off)) $((3002 + off))"
+}
+
+instance_is_free() {
+  local candidate="$1"
+  local project="monitorss-e2e$([ "$candidate" = 0 ] && echo '' || echo "-$candidate")"
+  if echo "$USED_COMPOSE_PROJECTS" | grep -qx "$project"; then
+    return 1
+  fi
+  local port
+  for port in $(instance_ports "$candidate"); do
+    if port_in_use "$port"; then
+      return 1
+    fi
+  done
+  return 0
+}
+
 # A single integer (E2E_INSTANCE) isolates a run so multiple suites can run at once.
-# When unset, pick the lowest instance whose compose project isn't already running.
-# Instance 0 uses today's ports/names verbatim, so default behavior is unchanged.
+# When unset, pick the lowest instance whose compose project AND all host ports are
+# free, so a run can never collide with the dev stack, a leaked mock server, or
+# another concurrent e2e run. Instance 0 uses today's ports/names verbatim.
+USED_COMPOSE_PROJECTS="$(docker compose ls --format json 2>/dev/null \
+  | grep -oE 'monitorss-e2e(-[0-9]+)?' || true)"
 if [ -z "${E2E_INSTANCE:-}" ]; then
-  used="$(docker compose ls --format json 2>/dev/null \
-    | grep -oE 'monitorss-e2e(-[0-9]+)?' || true)"
   E2E_INSTANCE=0
-  while echo "$used" | grep -qx "monitorss-e2e$([ "$E2E_INSTANCE" = 0 ] && echo '' || echo "-$E2E_INSTANCE")"; do
+  while ! instance_is_free "$E2E_INSTANCE"; do
     E2E_INSTANCE=$((E2E_INSTANCE + 1))
   done
+elif ! instance_is_free "$E2E_INSTANCE"; then
+  echo "WARNING: E2E_INSTANCE=$E2E_INSTANCE has a busy compose project or port ($(instance_ports "$E2E_INSTANCE")); the run may fail." >&2
 fi
 
-STRIDE=1000
 OFF=$((E2E_INSTANCE * STRIDE))
 export E2E_INSTANCE
 export E2E_BACKEND_PORT=$((8100 + OFF))

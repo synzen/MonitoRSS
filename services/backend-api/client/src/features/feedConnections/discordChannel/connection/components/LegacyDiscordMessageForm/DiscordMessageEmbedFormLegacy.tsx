@@ -1,26 +1,13 @@
-import {
-  Box,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  HStack,
-  IconButton,
-  Input,
-  Radio,
-  RadioGroup,
-  Stack,
-  StackDivider,
-  Textarea,
-  Text,
-} from "@chakra-ui/react";
+import { Box, HStack, IconButton, Input, Separator, Stack, Textarea, Text } from "@chakra-ui/react";
 import { useEffect } from "react";
 import { Controller, FieldError, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { CloseIcon } from "@chakra-ui/icons";
+import { FaXmark } from "react-icons/fa6";
 import { getNestedField } from "@/utils/getNestedField";
 import { EMBED_REQUIRES_ONE_OF, EMBED_REQUIRES_ONE_OF_ERROR_KEY } from "./constants";
 import { DiscordMessageFormDataLegacy } from "@/types/discord/DiscordMessageFormDataLegacy";
+import { Field } from "@/components/ui/field";
+import { Radio, RadioGroup } from "@/components/ui/radio";
 
 interface Props {
   index: number;
@@ -89,16 +76,16 @@ export const DiscordMessageEmbedFormLegacy = ({ index }: Props) => {
   const urlError = getEmbedError("url");
 
   return (
-    <Stack spacing={8}>
-      <Stack spacing={8} divider={<StackDivider />}>
-        <FormControl isInvalid={!!colorError}>
+    <Stack gap={8}>
+      <Stack gap={8} separator={<Separator />}>
+        <Field invalid={!!colorError} errorText={colorError}>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <FormLabel>Color</FormLabel>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <label>Color</label>
+            <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
               <Controller
                 name={`embeds.${index}.color`}
                 control={control}
@@ -129,106 +116,95 @@ export const DiscordMessageEmbedFormLegacy = ({ index }: Props) => {
                       <IconButton
                         size="xs"
                         aria-label="Clear color"
-                        icon={<CloseIcon />}
-                        isDisabled={!field.value}
+                        disabled={!field.value}
                         onClick={() => field.onChange("")}
-                      />
+                      >
+                        <FaXmark />
+                      </IconButton>
                     </HStack>
                   );
                 }}
               />
-              {colorError && <FormErrorMessage>{colorError}</FormErrorMessage>}
             </Stack>
           </Stack>
-        </FormControl>
+        </Field>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Author
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
-              <FormControl isInvalid={!!authorNameError}>
-                <FormLabel variant="inline">Name</FormLabel>
+            <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+              <Field invalid={!!authorNameError} errorText={authorNameError} label="Name">
                 <Controller
                   name={`embeds.${index}.author.name`}
                   control={control}
                   defaultValue=""
                   render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {authorNameError && <FormErrorMessage>{authorNameError}</FormErrorMessage>}
-              </FormControl>
-              <FormControl isInvalid={!!authorUrlError}>
-                <FormLabel variant="inline">URL</FormLabel>
+              </Field>
+              <Field invalid={!!authorUrlError} errorText={authorUrlError} label="URL">
                 <Controller
                   name={`embeds.${index}.author.url`}
                   control={control}
                   defaultValue=""
                   render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {authorUrlError && <FormErrorMessage>{authorUrlError}</FormErrorMessage>}
-              </FormControl>
-              <FormControl isInvalid={!!authorIconUrlError}>
-                <FormLabel variant="inline">Icon URL</FormLabel>
+              </Field>
+              <Field invalid={!!authorIconUrlError} errorText={authorIconUrlError} label="Icon URL">
                 <Controller
                   name={`embeds.${index}.author.iconUrl`}
                   control={control}
                   defaultValue=""
                   render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {authorIconUrlError && <FormErrorMessage>{authorIconUrlError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Title
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
-              <FormControl isInvalid={!!titleError}>
-                <FormLabel variant="inline">Text</FormLabel>
+            <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+              <Field invalid={!!titleError} errorText={titleError} label="Text">
                 <Controller
                   name={`embeds.${index}.title`}
                   control={control}
                   defaultValue=""
                   render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {titleError && <FormErrorMessage>{titleError}</FormErrorMessage>}
-              </FormControl>
-              <FormControl isInvalid={!!urlError}>
-                <FormLabel variant="inline">URL</FormLabel>
+              </Field>
+              <Field invalid={!!urlError} errorText={urlError} label="URL">
                 <Controller
                   name={`embeds.${index}.url`}
                   control={control}
                   defaultValue=""
                   render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {urlError && <FormErrorMessage>{urlError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Description
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
-              <FormControl isInvalid={!!descriptionError}>
-                <FormLabel variant="inline">Text</FormLabel>
+            <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+              <Field invalid={!!descriptionError} errorText={descriptionError} label="Text">
                 <Controller
                   name={`embeds.${index}.description`}
                   control={control}
@@ -237,137 +213,131 @@ export const DiscordMessageEmbedFormLegacy = ({ index }: Props) => {
                     <Textarea size="sm" {...field} value={field.value || ""} />
                   )}
                 />
-                {descriptionError && <FormErrorMessage>{descriptionError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Image
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
-              <FormControl isInvalid={!!imageUrlError}>
-                <FormLabel variant="inline">Image URL</FormLabel>
+            <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+              <Field invalid={!!imageUrlError} errorText={imageUrlError} label="Image URL">
                 <Controller
                   name={`embeds.${index}.image.url`}
                   control={control}
                   defaultValue=""
                   render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {imageUrlError && <FormErrorMessage>{imageUrlError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Thumbnail
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
-              <FormControl isInvalid={!!thumbnailUrlError}>
-                <FormLabel variant="inline">Image URL</FormLabel>
+            <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+              <Field invalid={!!thumbnailUrlError} errorText={thumbnailUrlError} label="Image URL">
                 <Controller
                   name={`embeds.${index}.thumbnail.url`}
                   control={control}
                   defaultValue=""
                   render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {thumbnailUrlError && <FormErrorMessage>{thumbnailUrlError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Footer
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
-              <FormControl isInvalid={!!footerTextError}>
-                <FormLabel variant="inline">Text</FormLabel>
+            <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+              <Field invalid={!!footerTextError} errorText={footerTextError} label="Text">
                 <Controller
                   name={`embeds.${index}.footer.text`}
                   control={control}
                   defaultValue=""
                   render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {footerTextError && <FormErrorMessage>{footerTextError}</FormErrorMessage>}
-              </FormControl>
-              <FormControl isInvalid={!!footerIconUrlError}>
-                <FormLabel variant="inline">Icon URL</FormLabel>
+              </Field>
+              <Field invalid={!!footerIconUrlError} errorText={footerIconUrlError} label="Icon URL">
                 <Controller
                   name={`embeds.${index}.footer.iconUrl`}
                   control={control}
                   defaultValue=""
                   render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {footerIconUrlError && <FormErrorMessage>{footerIconUrlError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Timestamp
             </Text>
-            <Stack spacing={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
+            <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
               <Controller
                 name={`embeds.${index}.timestamp`}
                 control={control}
                 render={({ field }) => (
-                  <FormControl>
-                    <RadioGroup {...field} value={field.value || ""}>
-                      <Stack spacing={4}>
+                  <Field>
+                    <RadioGroup
+                      value={field.value || ""}
+                      onValueChange={(details) => field.onChange(details.value)}
+                    >
+                      <Stack gap={4}>
                         <Radio value="" defaultChecked>
                           {t("features.feedConnections.components.embedForm.timestampNone")}
                           <br />
-                          <FormHelperText margin="0">
+                          <Text as="span" fontSize="sm" color="fg.muted" margin="0">
                             {t(
                               "features.feedConnections.components.embedForm.timestampNoneHelperText",
                             )}
-                          </FormHelperText>
+                          </Text>
                         </Radio>
                         <Radio value="article">
                           {t("features.feedConnections.components.embedForm.timestampArticle")}
                           <br />
-                          <FormHelperText margin="0">
+                          <Text as="span" fontSize="sm" color="fg.muted" margin="0">
                             {t(
                               "features.feedConnections.components.embedForm.timestampArticleHelperText",
                             )}
-                          </FormHelperText>
+                          </Text>
                         </Radio>
                         <Radio value="now">
                           {t("features.feedConnections.components.embedForm.timestampNow")}
                           <br />
-                          <FormHelperText margin="0">
+                          <Text as="span" fontSize="sm" color="fg.muted" margin="0">
                             {t(
                               "features.feedConnections.components.embedForm.timestampNowHelperText",
                             )}
-                          </FormHelperText>
+                          </Text>
                         </Radio>
                       </Stack>
                     </RadioGroup>
-                  </FormControl>
+                  </Field>
                 )}
               />
             </Stack>

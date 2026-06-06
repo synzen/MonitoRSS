@@ -1,43 +1,30 @@
 import {
   Box,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
   IconButton,
   Input,
-  Radio,
-  RadioGroup,
+  Separator,
   Stack,
-  StackDivider,
   Textarea,
   Text,
   HStack,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
   Button,
-  TableContainer,
   Table,
-  Thead,
-  Tr,
-  Th,
-  Tbody,
-  Td,
-  Switch,
 } from "@chakra-ui/react";
 import { useEffect } from "react";
 import { Controller, FieldError, useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { ChevronDownIcon, ChevronUpIcon, CloseIcon, DeleteIcon } from "@chakra-ui/icons";
+import { FaChevronDown, FaChevronUp, FaXmark, FaTrash } from "react-icons/fa6";
 import { SketchPicker } from "react-color";
 import { motion } from "motion/react";
-import uniqueId from "lodash/uniqueId";
+import { uniqueId } from "lodash";
 import { DiscordMessageFormData } from "@/types/discord";
 import { getNestedField } from "@/utils/getNestedField";
 import { EMBED_REQUIRES_ONE_OF, EMBED_REQUIRES_ONE_OF_ERROR_KEY } from "./constants";
-import getChakraColor from "@/utils/getChakraColor";
 import { AnimatedComponent } from "@/components";
+import { Field } from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
+import { Radio, RadioGroup } from "@/components/ui/radio";
+import { PopoverRoot, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 interface Props {
   index: number;
@@ -117,17 +104,17 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
   const urlError = getEmbedError("url");
 
   return (
-    <Stack spacing={8}>
-      <Stack spacing={8} divider={<StackDivider />}>
-        <FormControl isInvalid={!!colorError}>
+    <Stack gap={8}>
+      <Stack gap={8} separator={<Separator />}>
+        <Field invalid={!!colorError} errorText={colorError}>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <FormLabel>Color</FormLabel>
+            <label>Color</label>
             <Stack
-              spacing={8}
+              gap={8}
               width="100%"
               maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
               minW={{ md: "md", lg: "2xl", xl: "3xl" }}
@@ -143,20 +130,20 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                   return (
                     <HStack>
                       <HStack width="100%">
-                        <Popover>
-                          <PopoverTrigger>
+                        <PopoverRoot>
+                          <PopoverTrigger asChild>
                             <Button
                               // height="40px"
                               backgroundColor={!hexValue ? "black" : `${hexValue}`}
                               flex={1}
                               borderStyle="solid"
                               borderWidth="1px"
-                              borderColor="whiteAlpha.400"
+                              borderColor="border.emphasized"
                               aria-label="Pick color"
                               size={["sm", "sm", "md"]}
                               _hover={{
                                 background: !hexValue ? "black" : hexValue,
-                                outline: `solid 2px ${getChakraColor("blue.300")}`,
+                                outline: "solid 2px var(--app-accent-focus-ring)",
                                 transition: "outline 0.2s",
                               }}
                             />
@@ -176,402 +163,381 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                               }}
                             />
                           </PopoverContent>
-                        </Popover>
+                        </PopoverRoot>
                         <IconButton
                           size={["sm", "sm", "md"]}
                           aria-label="Clear color"
-                          icon={<CloseIcon />}
-                          isDisabled={!field.value}
+                          disabled={!field.value}
                           onClick={() => field.onChange("")}
-                        />
+                        >
+                          <FaXmark />
+                        </IconButton>
                       </HStack>
                     </HStack>
                   );
                 }}
               />
-              {colorError && <FormErrorMessage>{colorError}</FormErrorMessage>}
             </Stack>
           </Stack>
-        </FormControl>
+        </Field>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Author
             </Text>
             <Stack
-              spacing={8}
+              gap={8}
               width="100%"
               maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
               minW={{ md: "md", lg: "2xl", xl: "3xl" }}
             >
-              <FormControl isInvalid={!!authorNameError}>
-                <FormLabel variant="inline">Author Name</FormLabel>
+              <Field invalid={!!authorNameError} errorText={authorNameError} label="Author Name">
                 <Controller
                   name={`embeds.${index}.author.name`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => (
-                    <Input size="sm" {...field} value={field.value || ""} bg="gray.900" />
-                  )}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {authorNameError && <FormErrorMessage>{authorNameError}</FormErrorMessage>}
-              </FormControl>
-              <FormControl isInvalid={!!authorUrlError}>
-                <FormLabel variant="inline">Author URL</FormLabel>
+              </Field>
+              <Field invalid={!!authorUrlError} errorText={authorUrlError} label="Author URL">
                 <Controller
                   name={`embeds.${index}.author.url`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => (
-                    <Input size="sm" {...field} value={field.value || ""} bg="gray.900" />
-                  )}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {authorUrlError && <FormErrorMessage>{authorUrlError}</FormErrorMessage>}
-              </FormControl>
-              <FormControl isInvalid={!!authorIconUrlError}>
-                <FormLabel variant="inline">Author Icon URL</FormLabel>
+              </Field>
+              <Field
+                invalid={!!authorIconUrlError}
+                errorText={authorIconUrlError}
+                label="Author Icon URL"
+              >
                 <Controller
                   name={`embeds.${index}.author.iconUrl`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => (
-                    <Input size="sm" {...field} value={field.value || ""} bg="gray.900" />
-                  )}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {authorIconUrlError && <FormErrorMessage>{authorIconUrlError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Title
             </Text>
             <Stack
-              spacing={8}
+              gap={8}
               width="100%"
               maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
               minW={{ md: "md", lg: "2xl", xl: "3xl" }}
             >
-              <FormControl isInvalid={!!titleError}>
-                <FormLabel variant="inline">Title Text</FormLabel>
+              <Field invalid={!!titleError} errorText={titleError} label="Title Text">
                 <Controller
                   name={`embeds.${index}.title`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => (
-                    <Input size="sm" {...field} value={field.value || ""} bg="gray.900" />
-                  )}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {titleError && <FormErrorMessage>{titleError}</FormErrorMessage>}
-              </FormControl>
-              <FormControl isInvalid={!!urlError}>
-                <FormLabel variant="inline">Title URL</FormLabel>
+              </Field>
+              <Field invalid={!!urlError} errorText={urlError} label="Title URL">
                 <Controller
                   name={`embeds.${index}.url`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => (
-                    <Input size="sm" {...field} value={field.value || ""} bg="gray.900" />
-                  )}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {urlError && <FormErrorMessage>{urlError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Description
             </Text>
             <Stack
-              spacing={8}
+              gap={8}
               width="100%"
               maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
               minW={{ md: "md", lg: "2xl", xl: "3xl" }}
             >
-              <FormControl isInvalid={!!descriptionError}>
-                <FormLabel variant="inline">Description Text</FormLabel>
+              <Field
+                invalid={!!descriptionError}
+                errorText={descriptionError}
+                label="Description Text"
+              >
                 <Controller
                   name={`embeds.${index}.description`}
                   control={control}
                   defaultValue=""
                   render={({ field }) => (
-                    <Textarea size="sm" {...field} value={field.value || ""} bg="gray.900" />
+                    <Textarea size="sm" {...field} value={field.value || ""} />
                   )}
                 />
-                {descriptionError && <FormErrorMessage>{descriptionError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Image
             </Text>
             <Stack
-              spacing={8}
+              gap={8}
               width="100%"
               maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
               minW={{ md: "md", lg: "2xl", xl: "3xl" }}
             >
-              <FormControl isInvalid={!!imageUrlError}>
-                <FormLabel variant="inline">Image URL</FormLabel>
+              <Field invalid={!!imageUrlError} errorText={imageUrlError} label="Image URL">
                 <Controller
                   name={`embeds.${index}.image.url`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => (
-                    <Input size="sm" {...field} value={field.value || ""} bg="gray.900" />
-                  )}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {imageUrlError && <FormErrorMessage>{imageUrlError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Thumbnail
             </Text>
             <Stack
-              spacing={8}
+              gap={8}
               width="100%"
               maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
               minW={{ md: "md", lg: "2xl", xl: "3xl" }}
             >
-              <FormControl isInvalid={!!thumbnailUrlError}>
-                <FormLabel variant="inline">Thumbnail Image URL</FormLabel>
+              <Field
+                invalid={!!thumbnailUrlError}
+                errorText={thumbnailUrlError}
+                label="Thumbnail Image URL"
+              >
                 <Controller
                   name={`embeds.${index}.thumbnail.url`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => (
-                    <Input size="sm" {...field} value={field.value || ""} bg="gray.900" />
-                  )}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {thumbnailUrlError && <FormErrorMessage>{thumbnailUrlError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Footer
             </Text>
             <Stack
-              spacing={8}
+              gap={8}
               width="100%"
               maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
               minW={{ md: "md", lg: "2xl", xl: "3xl" }}
             >
-              <FormControl isInvalid={!!footerTextError}>
-                <FormLabel variant="inline">Footer Text</FormLabel>
+              <Field invalid={!!footerTextError} errorText={footerTextError} label="Footer Text">
                 <Controller
                   name={`embeds.${index}.footer.text`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => (
-                    <Input size="sm" {...field} value={field.value || ""} bg="gray.900" />
-                  )}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {footerTextError && <FormErrorMessage>{footerTextError}</FormErrorMessage>}
-              </FormControl>
-              <FormControl isInvalid={!!footerIconUrlError}>
-                <FormLabel variant="inline">Footer Icon URL</FormLabel>
+              </Field>
+              <Field
+                invalid={!!footerIconUrlError}
+                errorText={footerIconUrlError}
+                label="Footer Icon URL"
+              >
                 <Controller
                   name={`embeds.${index}.footer.iconUrl`}
                   control={control}
                   defaultValue=""
-                  render={({ field }) => (
-                    <Input size="sm" {...field} value={field.value || ""} bg="gray.900" />
-                  )}
+                  render={({ field }) => <Input size="sm" {...field} value={field.value || ""} />}
                 />
-                {footerIconUrlError && <FormErrorMessage>{footerIconUrlError}</FormErrorMessage>}
-              </FormControl>
+              </Field>
             </Stack>
           </Stack>
         </Box>
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400}>
+            <Text textStyle="sm" fontWeight={400}>
               Fields
             </Text>
             <Stack
-              spacing={8}
+              gap={8}
               width="100%"
               maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
               minW={{ md: "md", lg: "2xl", xl: "3xl" }}
             >
               <Stack>
-                <TableContainer>
-                  <Table size="sm">
-                    <Thead>
-                      <Tr>
-                        <Th>Field Name</Th>
-                        <Th>Field Value</Th>
-                        <Th>Is Field Inline?</Th>
-                        <Th isNumeric>Actions</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
+                <Table.ScrollArea>
+                  <Table.Root size="sm">
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.ColumnHeader>Field Name</Table.ColumnHeader>
+                        <Table.ColumnHeader>Field Value</Table.ColumnHeader>
+                        <Table.ColumnHeader>Is Field Inline?</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign="right">Actions</Table.ColumnHeader>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
                       <AnimatedComponent>
                         {embed.fields?.map((f, fieldIndex) => {
                           return (
-                            <Tr
-                              as={motion.tr}
-                              key={f.id}
-                              exit={{
-                                opacity: 0,
-                              }}
-                              initial={{
-                                opacity: 0,
-                              }}
-                              animate={{
-                                opacity: 1,
-                              }}
-                            >
-                              <Td
-                                border={
-                                  errors.embeds?.[index]?.fields?.[fieldIndex]?.name
-                                    ? `solid 2px ${getChakraColor("red.300")}`
-                                    : ""
-                                }
-                                borderRadius="md"
+                            <Table.Row key={f.id} asChild>
+                              <motion.tr
+                                exit={{
+                                  opacity: 0,
+                                }}
+                                initial={{
+                                  opacity: 0,
+                                }}
+                                animate={{
+                                  opacity: 1,
+                                }}
                               >
-                                <Input
-                                  size="sm"
-                                  bg="gray.900"
-                                  value={f.name}
-                                  placeholder="Field name"
-                                  onChange={(e) =>
-                                    setValue(
-                                      `embeds.${index}.fields.${fieldIndex}.name`,
-                                      e.target.value.trim(),
-                                      {
-                                        shouldDirty: true,
-                                        shouldTouch: true,
-                                      },
-                                    )
+                                <Table.Cell
+                                  border={
+                                    errors.embeds?.[index]?.fields?.[fieldIndex]?.name
+                                      ? "solid 2px var(--app-error)"
+                                      : ""
                                   }
-                                />
-                              </Td>
-                              <Td
-                                border={
-                                  errors.embeds?.[index]?.fields?.[fieldIndex]?.value
-                                    ? `solid 2px ${getChakraColor("red.300")}`
-                                    : ""
-                                }
-                                borderRadius="md"
-                              >
-                                <Input
-                                  size="sm"
-                                  bg="gray.900"
-                                  value={f.value}
-                                  placeholder="Field value"
-                                  onChange={(e) =>
-                                    setValue(
-                                      `embeds.${index}.fields.${fieldIndex}.value`,
-                                      e.target.value.trim(),
-                                      {
-                                        shouldDirty: true,
-                                        shouldTouch: true,
-                                      },
-                                    )
+                                  borderRadius="l3"
+                                >
+                                  <Input
+                                    size="sm"
+                                    value={f.name}
+                                    placeholder="Field name"
+                                    onChange={(e) =>
+                                      setValue(
+                                        `embeds.${index}.fields.${fieldIndex}.name`,
+                                        e.target.value.trim(),
+                                        {
+                                          shouldDirty: true,
+                                          shouldTouch: true,
+                                        },
+                                      )
+                                    }
+                                  />
+                                </Table.Cell>
+                                <Table.Cell
+                                  border={
+                                    errors.embeds?.[index]?.fields?.[fieldIndex]?.value
+                                      ? "solid 2px var(--app-error)"
+                                      : ""
                                   }
-                                />
-                              </Td>
-                              <Td>
-                                <Switch
-                                  isChecked={!!f.inline}
-                                  aria-label={`Is field ${fieldIndex + 1} inline?`}
-                                  onChange={(e) =>
-                                    setValue(
-                                      `embeds.${index}.fields.${fieldIndex}.inline`,
-                                      e.target.checked,
-                                      {
-                                        shouldDirty: true,
-                                        shouldTouch: true,
-                                      },
-                                    )
-                                  }
-                                />
-                              </Td>
-                              <Td isNumeric>
-                                <HStack justifyContent="flex-end">
-                                  <IconButton
-                                    aria-label={`Move field ${fieldIndex + 1} from position ${
-                                      fieldIndex + 1
-                                    } to position ${fieldIndex <= 0 ? 1 : fieldIndex}`}
-                                    icon={<ChevronUpIcon />}
-                                    variant="ghost"
+                                  borderRadius="l3"
+                                >
+                                  <Input
                                     size="sm"
-                                    isDisabled={fieldIndex === 0}
-                                    onClick={() => moveField(fieldIndex, fieldIndex - 1)}
+                                    value={f.value}
+                                    placeholder="Field value"
+                                    onChange={(e) =>
+                                      setValue(
+                                        `embeds.${index}.fields.${fieldIndex}.value`,
+                                        e.target.value.trim(),
+                                        {
+                                          shouldDirty: true,
+                                          shouldTouch: true,
+                                        },
+                                      )
+                                    }
                                   />
-                                  <IconButton
-                                    aria-label={`Move field ${fieldIndex + 1} from position ${
-                                      fieldIndex + 1
-                                    } to position ${
-                                      fieldIndex + 1 === embedFields.length
-                                        ? embedFields.length
-                                        : fieldIndex + 2
-                                    }`}
-                                    icon={<ChevronDownIcon />}
-                                    variant="ghost"
-                                    size="sm"
-                                    isDisabled={fieldIndex === embedFields.length - 1}
-                                    onClick={() => moveField(fieldIndex, fieldIndex + 1)}
+                                </Table.Cell>
+                                <Table.Cell>
+                                  <Switch
+                                    checked={!!f.inline}
+                                    aria-label={`Is field ${fieldIndex + 1} inline?`}
+                                    onCheckedChange={(e) =>
+                                      setValue(
+                                        `embeds.${index}.fields.${fieldIndex}.inline`,
+                                        e.checked,
+                                        {
+                                          shouldDirty: true,
+                                          shouldTouch: true,
+                                        },
+                                      )
+                                    }
                                   />
-                                  <IconButton
-                                    aria-label={`Delete field ${fieldIndex + 1}`}
-                                    icon={<DeleteIcon />}
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeField(fieldIndex)}
-                                  />
-                                </HStack>
-                              </Td>
-                            </Tr>
+                                </Table.Cell>
+                                <Table.Cell textAlign="right">
+                                  <HStack justifyContent="flex-end">
+                                    <IconButton
+                                      aria-label={`Move field ${fieldIndex + 1} from position ${
+                                        fieldIndex + 1
+                                      } to position ${fieldIndex <= 0 ? 1 : fieldIndex}`}
+                                      variant="ghost"
+                                      size="sm"
+                                      disabled={fieldIndex === 0}
+                                      onClick={() => moveField(fieldIndex, fieldIndex - 1)}
+                                    >
+                                      <FaChevronUp />
+                                    </IconButton>
+                                    <IconButton
+                                      aria-label={`Move field ${fieldIndex + 1} from position ${
+                                        fieldIndex + 1
+                                      } to position ${
+                                        fieldIndex + 1 === embedFields.length
+                                          ? embedFields.length
+                                          : fieldIndex + 2
+                                      }`}
+                                      variant="ghost"
+                                      size="sm"
+                                      disabled={fieldIndex === embedFields.length - 1}
+                                      onClick={() => moveField(fieldIndex, fieldIndex + 1)}
+                                    >
+                                      <FaChevronDown />
+                                    </IconButton>
+                                    <IconButton
+                                      aria-label={`Delete field ${fieldIndex + 1}`}
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeField(fieldIndex)}
+                                    >
+                                      <FaTrash />
+                                    </IconButton>
+                                  </HStack>
+                                </Table.Cell>
+                              </motion.tr>
+                            </Table.Row>
                           );
                         })}
                       </AnimatedComponent>
-                    </Tbody>
-                  </Table>
-                </TableContainer>
+                    </Table.Body>
+                  </Table.Root>
+                </Table.ScrollArea>
                 <Button
                   size="sm"
                   onClick={() =>
@@ -592,14 +558,14 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
         <Box>
           <Stack
             direction={{ base: "column", md: "row" }}
-            spacing={{ base: "1.5", md: "8" }}
+            gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
-            <Text size="sm" fontWeight={400} id="timestamp-label">
+            <Text textStyle="sm" fontWeight={400} id="timestamp-label">
               Timestamp
             </Text>
             <Stack
-              spacing={8}
+              gap={8}
               width="100%"
               maxW={{ md: "md", lg: "2xl", xl: "3xl" }}
               minW={{ md: "md", lg: "2xl", xl: "3xl" }}
@@ -608,43 +574,43 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                 name={`embeds.${index}.timestamp`}
                 control={control}
                 render={({ field }) => (
-                  <FormControl>
+                  <Field>
                     <RadioGroup
-                      {...field}
                       value={field.value || ""}
+                      onValueChange={(details) => field.onChange(details.value)}
                       aria-labelledby="timestamp-label"
                     >
-                      <Stack spacing={4}>
+                      <Stack gap={4}>
                         <Radio value="" defaultChecked>
                           {t("features.feedConnections.components.embedForm.timestampNone")}
                           <br />
-                          <FormHelperText margin="0">
+                          <Text as="span" fontSize="sm" color="fg.muted" margin="0">
                             {t(
                               "features.feedConnections.components.embedForm.timestampNoneHelperText",
                             )}
-                          </FormHelperText>
+                          </Text>
                         </Radio>
                         <Radio value="article">
                           {t("features.feedConnections.components.embedForm.timestampArticle")}
                           <br />
-                          <FormHelperText margin="0">
+                          <Text as="span" fontSize="sm" color="fg.muted" margin="0">
                             {t(
                               "features.feedConnections.components.embedForm.timestampArticleHelperText",
                             )}
-                          </FormHelperText>
+                          </Text>
                         </Radio>
                         <Radio value="now">
                           {t("features.feedConnections.components.embedForm.timestampNow")}
                           <br />
-                          <FormHelperText margin="0">
+                          <Text as="span" fontSize="sm" color="fg.muted" margin="0">
                             {t(
                               "features.feedConnections.components.embedForm.timestampNowHelperText",
                             )}
-                          </FormHelperText>
+                          </Text>
                         </Radio>
                       </Stack>
                     </RadioGroup>
-                  </FormControl>
+                  </Field>
                 )}
               />
             </Stack>

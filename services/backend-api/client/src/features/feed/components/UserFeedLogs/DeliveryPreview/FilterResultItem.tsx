@@ -49,16 +49,18 @@ export const FilterResultItem = ({ detail, matched = false }: FilterResultItemPr
     <Box
       py={3}
       px={4}
-      bg="whiteAlpha.50"
+      bg="bg.subtle"
+      border="1px solid"
+      borderColor="border"
       borderLeft="3px solid"
       borderLeftColor={borderColor}
-      borderRadius="md"
+      borderRadius="l3"
     >
       <Text fontSize="sm" mb={3}>
         {explanation}
       </Text>
-      <Box bg="blackAlpha.300" p={2} borderRadius="sm">
-        <Text fontSize="xs" color="gray.400" mb={1}>
+      <Box bg="bg.emphasized" p={2} borderRadius="sm">
+        <Text fontSize="xs" color="fg.muted" mb={1}>
           {fieldName}:
         </Text>
         <Text fontFamily="mono" fontSize="sm" wordBreak="break-word">
@@ -67,7 +69,7 @@ export const FilterResultItem = ({ detail, matched = false }: FilterResultItemPr
               {truncatedReferenceValue}
             </Highlight>
           ) : (
-            <Text as="span" color="gray.500">
+            <Text as="span" color="fg.muted">
               (empty)
             </Text>
           )}

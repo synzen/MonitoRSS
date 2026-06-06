@@ -1,27 +1,7 @@
-import {
-  Box,
-  Button,
-  Code,
-  Flex,
-  HStack,
-  IconButton,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  Stack,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-} from "@chakra-ui/react";
+import { Box, Button, Code, Flex, HStack, IconButton, Stack, Table, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { AddIcon } from "@chakra-ui/icons";
-import { FaEllipsisVertical } from "react-icons/fa6";
+import { FaPlus, FaEllipsisVertical } from "react-icons/fa6";
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { PlaceholderLimitDialog } from "../PlaceholderLimitDialog";
 import MessagePlaceholderText from "../../../messageBuilder/components/MessagePlaceholderText";
 
@@ -63,7 +43,7 @@ export const DiscordMessagePlaceholderLimitsForm = ({
   };
 
   return (
-    <Stack spacing={4}>
+    <Stack gap={4}>
       {!excludeDescription && (
         <HStack justifyContent="space-between">
           <Text>
@@ -74,62 +54,60 @@ export const DiscordMessagePlaceholderLimitsForm = ({
         </HStack>
       )}
       {value.length > 0 && (
-        <Box borderStyle="solid" borderWidth="1px" borderRadius="md">
-          <TableContainer bg="gray.900" rounded="md">
-            <Table size={small ? "sm" : undefined}>
-              <Thead>
-                <Tr>
-                  <Th>
+        <Box borderStyle="solid" borderWidth="1px" borderRadius="l3">
+          <Table.ScrollArea bg="bg.subtle" rounded="l3">
+            <Table.Root size={small ? "sm" : undefined}>
+              <Table.Header>
+                <Table.Row>
+                  <Table.ColumnHeader>
                     {t(
                       "features.feedConnections.components.discordMessagePlaceholderLimitsForm.placeholderColumnLabel",
                     )}
-                  </Th>
-                  <Th>
+                  </Table.ColumnHeader>
+                  <Table.ColumnHeader>
                     {t(
                       "features.feedConnections.components.discordMessagePlaceholderLimitsForm.upperCharacterLimitColumnLabel",
                     )}
-                  </Th>
-                  <Th>
+                  </Table.ColumnHeader>
+                  <Table.ColumnHeader>
                     {t(
                       "features.feedConnections.components.discordMessagePlaceholderLimitsForm.appendTextColumnLabel",
                     )}
-                  </Th>
-                  <Th isNumeric>Actions</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
+                  </Table.ColumnHeader>
+                  <Table.ColumnHeader textAlign="end">Actions</Table.ColumnHeader>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
                 {value.map((fieldData, index) => {
                   return (
-                    <Tr key={fieldData.placeholder}>
-                      <Td>
+                    <Table.Row key={fieldData.placeholder}>
+                      <Table.Cell>
                         <MessagePlaceholderText withBrackets>
                           {fieldData.placeholder}
                         </MessagePlaceholderText>
-                      </Td>
-                      <Td>{fieldData.characterCount}</Td>
-                      <Td>
+                      </Table.Cell>
+                      <Table.Cell>{fieldData.characterCount}</Table.Cell>
+                      <Table.Cell>
                         {fieldData.appendString === "\n" && (
-                          <Text color="gray.400">
+                          <Text color="fg.muted">
                             <em>(new line)</em>
                           </Text>
                         )}
                         {fieldData.appendString !== "\n" && (
                           <Code>{fieldData.appendString || ""}</Code>
                         )}
-                      </Td>
-                      <Td isNumeric>
-                        <Menu>
-                          <MenuButton
-                            as={IconButton}
-                            aria-label="Placeholder options"
-                            icon={<FaEllipsisVertical />}
-                            size="sm"
-                            variant="ghost"
-                          />
-                          <MenuList>
+                      </Table.Cell>
+                      <Table.Cell textAlign="end">
+                        <MenuRoot>
+                          <MenuTrigger asChild>
+                            <IconButton aria-label="Placeholder options" size="sm" variant="ghost">
+                              <FaEllipsisVertical />
+                            </IconButton>
+                          </MenuTrigger>
+                          <MenuContent>
                             <PlaceholderLimitDialog
                               mode="update"
-                              trigger={<MenuItem>Update</MenuItem>}
+                              trigger={<MenuItem value="update">Update</MenuItem>}
                               onSubmit={(limit) => {
                                 const copy = [...value];
                                 copy[index] = limit;
@@ -142,27 +120,29 @@ export const DiscordMessagePlaceholderLimitsForm = ({
                               }}
                             />
                             <MenuItem
+                              value="delete"
                               onClick={() => {
                                 onChange(value.filter((_, i) => i !== index));
                               }}
                             >
                               Delete
                             </MenuItem>
-                          </MenuList>
-                        </Menu>
-                      </Td>
-                    </Tr>
+                          </MenuContent>
+                        </MenuRoot>
+                      </Table.Cell>
+                    </Table.Row>
                   );
                 })}
-              </Tbody>
-            </Table>
-          </TableContainer>
+              </Table.Body>
+            </Table.Root>
+          </Table.ScrollArea>
         </Box>
       )}
       <Flex>
         <PlaceholderLimitDialog
           trigger={
-            <Button size={small ? "sm" : undefined} leftIcon={<AddIcon fontSize="sm" />}>
+            <Button size={small ? "sm" : undefined} variant="outline" colorPalette="brand">
+              <FaPlus fontSize="sm" />
               Add placeholder limit
             </Button>
           }

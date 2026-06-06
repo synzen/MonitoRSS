@@ -1,6 +1,6 @@
 import { useContext } from "react";
-import { HStack, Text, Button, VisuallyHidden } from "@chakra-ui/react";
-import { WarningIcon } from "@chakra-ui/icons";
+import { HStack, Text, Button, VisuallyHidden, Icon } from "@chakra-ui/react";
+import { FaTriangleExclamation } from "react-icons/fa6";
 import { useUserFeeds } from "../../hooks";
 import { useDiscordUserMe } from "../../../discordUser";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
@@ -34,8 +34,8 @@ export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarPr
     return (
       <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
         <HStack role="status">
-          <WarningIcon color="red.300" aria-hidden="true" />
-          <Text color="red.300" fontWeight="semibold">
+          <Icon as={FaTriangleExclamation} color="text.error" aria-hidden="true" />
+          <Text color="text.error" fontWeight="semibold">
             Feed limit reached ({currentCount}/{maxCount})
           </Text>
         </HStack>
@@ -50,8 +50,8 @@ export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarPr
     return (
       <HStack justifyContent="space-between" flexWrap="wrap" gap={2}>
         <HStack role="status">
-          <WarningIcon color="yellow.400" aria-hidden="true" />
-          <Text color="yellow.400" fontWeight="semibold">
+          <Icon as={FaTriangleExclamation} color="text.warning" aria-hidden="true" />
+          <Text color="text.warning" fontWeight="semibold">
             <VisuallyHidden>Warning:</VisuallyHidden>
             Feed Limit: {currentCount}/{maxCount} · {remaining} remaining
           </Text>

@@ -1,4 +1,4 @@
-import { Alert, AlertIcon, Box, Center, Stack, Table, Td, Thead, Tr, Text } from "@chakra-ui/react";
+import { Box, Center, Stack, Table, Text } from "@chakra-ui/react";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -19,7 +19,9 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToHorizontalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
+import { Alert } from "@/components/ui/alert";
 import { Loading } from "@/components";
+import { Panel } from "@/components/Panel";
 import { UserFeedComputedStatus } from "../../types";
 import { UserFeedStatusFilterContext } from "../../contexts/UserFeedStatusFilterContext";
 import { useMultiSelectUserFeedContext } from "../../contexts/MultiSelectUserFeedContext";
@@ -218,16 +220,11 @@ export const UserFeedsTable: React.FC = () => {
   }, [onSearchClear, onStatusSelect]);
 
   if (status === "error") {
-    return (
-      <Alert status="error">
-        <AlertIcon />
-        {error?.message}
-      </Alert>
-    );
+    return <Alert status="error" title={error?.message} />;
   }
 
   return (
-    <Stack spacing={4}>
+    <Stack gap={4}>
       <Box srOnly aria-live="polite">
         <Text>{tableAnnouncement}</Text>
       </Box>
@@ -269,26 +266,17 @@ export const UserFeedsTable: React.FC = () => {
         />
       )}
       <Stack hidden={isInitiallyLoading || isFilteredEmpty}>
-        <Box
-          boxShadow="lg"
-          background="gray.850"
-          borderColor="whiteAlpha.300"
-          borderWidth="1px"
-          borderStyle="solid"
-          borderRadius="md"
-          width="100%"
-          overflowX="auto"
-        >
-          <Table
+        <Panel boxShadow="lg" width="100%" overflowX="auto">
+          <Table.Root
             whiteSpace="nowrap"
             position="relative"
-            variant="simple"
+            variant="line"
             overflow="auto"
             width="100%"
           >
-            <Thead>
+            <Table.Header>
               {getHeaderGroups().map((headerGroup) => (
-                <Tr key={headerGroup.id} zIndex={1}>
+                <Table.Row key={headerGroup.id} zIndex={1}>
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -308,14 +296,14 @@ export const UserFeedsTable: React.FC = () => {
                       ))}
                     </SortableContext>
                   </DndContext>
-                </Tr>
+                </Table.Row>
               ))}
-            </Thead>
-            <tbody>
+            </Table.Header>
+            <Table.Body>
               {getRowModel().rows.map((row) => (
-                <Tr key={row.id}>
+                <Table.Row key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <Td
+                    <Table.Cell
                       paddingY={2}
                       paddingX="24px"
                       key={cell.id}
@@ -324,13 +312,13 @@ export const UserFeedsTable: React.FC = () => {
                       textOverflow="ellipsis"
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </Td>
+                    </Table.Cell>
                   ))}
-                </Tr>
+                </Table.Row>
               ))}
-            </tbody>
-          </Table>
-        </Box>
+            </Table.Body>
+          </Table.Root>
+        </Panel>
       </Stack>
       {!isInitiallyLoading && !isFilteredEmpty && (
         <LoadMoreSection

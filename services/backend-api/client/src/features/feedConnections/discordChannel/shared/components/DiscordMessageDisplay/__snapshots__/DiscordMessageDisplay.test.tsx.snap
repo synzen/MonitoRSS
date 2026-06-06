@@ -3,55 +3,73 @@
 exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for MediaGallery 1`] = `
 <div>
   <div
-    class="css-1xfxy4"
+    class="css-1ta5rkp"
   >
     <div
-      class="chakra-stack css-met7i8"
+      class="chakra-stack css-8kld4w"
     >
-      <span
-        class="chakra-avatar css-rx5axe"
+      <div
+        class="chakra-avatar__root css-86j4qn"
+        data-part="root"
+        data-scope="avatar"
+        dir="ltr"
+        id="avatar::rs:"
       >
-        <div
-          aria-label="MonitoRSS"
-          class="chakra-avatar__initials css-1ebyn6"
-          role="img"
+        <span
+          class="chakra-avatar__fallback css-1cuxwyn"
+          data-part="fallback"
+          data-scope="avatar"
+          data-state="visible"
+          dir="ltr"
+          id="avatar::rs::fallback"
         >
           M
-        </div>
-      </span>
+        </span>
+        <img
+          alt="MonitoRSS"
+          class="chakra-avatar__image css-1odw0y2"
+          data-part="image"
+          data-scope="avatar"
+          data-state="hidden"
+          dir="ltr"
+          draggable="false"
+          hidden=""
+          id="avatar::rs::image"
+          referrerpolicy="no-referrer"
+          src="https://cdn.discordapp.com/embed/avatars/0.png"
+        />
+      </div>
       <div
-        class="chakra-stack css-5yi6ba"
+        class="chakra-stack css-9md26w"
       >
         <div
-          class="chakra-stack css-1uodvt1"
+          class="chakra-stack css-1x0y7ph"
         >
           <p
-            class="chakra-text css-qs00kd"
+            class="css-fkgboc"
           >
             MonitoRSS
           </p>
           <div
-            class="css-slgk8p"
+            class="css-ikklon"
           >
             ✓ APP
           </div>
           <p
-            class="chakra-text css-ev7024"
+            class="css-o89y2q"
           >
             Today at 12:04 PM
           </p>
         </div>
-        <div
-          class="css-0"
-        >
+        <div>
           <div
-            class="chakra-stack css-leaw1b"
+            class="chakra-stack css-1noy1c3"
           >
             <div
               class="css-j6odf0"
             >
               <div
-                class="chakra-stack css-wpcv6r"
+                class="chakra-stack css-1iapwb6"
               >
                 <div
                   class="css-1j7eqwl"
@@ -60,26 +78,26 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for MediaGall
                     class="css-in21zj"
                   >
                     <div
-                      class="css-mbp9te"
+                      class="css-qqpge4"
                     >
-                      <div
-                        class="css-1si198d"
-                      >
-                        Loading...
-                      </div>
+                      <img
+                        alt="Image 1"
+                        class="chakra-image css-6ta4dw"
+                        src="https://example.com/img1.jpg"
+                      />
                     </div>
                   </div>
                   <div
                     class="css-in21zj"
                   >
                     <div
-                      class="css-mbp9te"
+                      class="css-qqpge4"
                     >
-                      <div
-                        class="css-1si198d"
-                      >
-                        Loading...
-                      </div>
+                      <img
+                        alt="Image 2"
+                        class="chakra-image css-6ta4dw"
+                        src="https://example.com/img2.jpg"
+                      />
                     </div>
                   </div>
                 </div>
@@ -90,77 +108,91 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for MediaGall
       </div>
     </div>
   </div>
-  <span
-    hidden=""
-    id="__chakra_env"
-  />
 </div>
 `;
 
 exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 message 1`] = `
 <div>
   <div
-    class="css-1xfxy4"
+    class="css-1ta5rkp"
   >
     <div
-      class="chakra-stack css-met7i8"
+      class="chakra-stack css-8kld4w"
     >
-      <span
-        class="chakra-avatar css-rx5axe"
+      <div
+        class="chakra-avatar__root css-86j4qn"
+        data-part="root"
+        data-scope="avatar"
+        dir="ltr"
+        id="avatar::rp:"
       >
-        <div
-          aria-label="MonitoRSS"
-          class="chakra-avatar__initials css-1ebyn6"
-          role="img"
+        <span
+          class="chakra-avatar__fallback css-1cuxwyn"
+          data-part="fallback"
+          data-scope="avatar"
+          data-state="visible"
+          dir="ltr"
+          id="avatar::rp::fallback"
         >
           M
-        </div>
-      </span>
+        </span>
+        <img
+          alt="MonitoRSS"
+          class="chakra-avatar__image css-1odw0y2"
+          data-part="image"
+          data-scope="avatar"
+          data-state="hidden"
+          dir="ltr"
+          draggable="false"
+          hidden=""
+          id="avatar::rp::image"
+          referrerpolicy="no-referrer"
+          src="https://cdn.discordapp.com/embed/avatars/0.png"
+        />
+      </div>
       <div
-        class="chakra-stack css-5yi6ba"
+        class="chakra-stack css-9md26w"
       >
         <div
-          class="chakra-stack css-1uodvt1"
+          class="chakra-stack css-1x0y7ph"
         >
           <p
-            class="chakra-text css-qs00kd"
+            class="css-fkgboc"
           >
             MonitoRSS
           </p>
           <div
-            class="css-slgk8p"
+            class="css-ikklon"
           >
             ✓ APP
           </div>
           <p
-            class="chakra-text css-ev7024"
+            class="css-o89y2q"
           >
             Today at 12:04 PM
           </p>
         </div>
-        <div
-          class="css-0"
-        >
+        <div>
           <div
-            class="chakra-stack css-leaw1b"
+            class="chakra-stack css-1noy1c3"
           >
             <div
               class="css-j6odf0"
             >
               <div
-                class="chakra-stack css-wpcv6r"
+                class="chakra-stack css-1iapwb6"
               >
                 <div
-                  class="css-13tbf25"
+                  class="css-nyn9xe"
                 >
                   <div
-                    class="css-1ptozdn"
+                    class="css-17ym289"
                   />
                   <div
-                    class="chakra-stack css-czdqmm"
+                    class="chakra-stack css-1pdgsbf"
                   >
                     <div
-                      class="markup css-itvw0n"
+                      class="markup css-l0zmib"
                     >
                       <p
                         style="margin: 0px;"
@@ -171,13 +203,13 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 messag
                       </p>
                     </div>
                     <div
-                      class="chakra-stack css-pks1rh"
+                      class="chakra-stack css-1a6xjqz"
                     >
                       <div
-                        class="chakra-stack css-18x5s7b"
+                        class="chakra-stack css-lnabcd"
                       >
                         <div
-                          class="markup css-itvw0n"
+                          class="markup css-l0zmib"
                         >
                           <p
                             style="margin: 0px;"
@@ -189,64 +221,50 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 messag
                       <div
                         class="css-g4rt53"
                       >
-                        <div
-                          class="css-123lip0"
-                        >
-                          No Image
-                        </div>
+                        <img
+                          alt="Thumbnail image"
+                          class="chakra-image css-1c578vb"
+                          src="https://example.com/thumb.jpg"
+                        />
                       </div>
                     </div>
                     <div
-                      class="css-1j9oeic"
+                      class="css-cn4wc1"
                     >
-                      <hr
+                      <span
                         aria-orientation="horizontal"
-                        class="chakra-divider css-565ulb"
+                        class="chakra-separator css-jqdwse"
+                        role="separator"
                       />
                     </div>
-                    <div
-                      class="css-0"
-                    >
+                    <div>
                       <div
-                        class="chakra-stack css-1uodvt1"
+                        class="chakra-stack css-1x0y7ph"
                       >
                         <a
-                          class="chakra-button css-yxvja0"
+                          class="chakra-button css-jr843j"
                           href="https://example.com"
                           rel="noopener noreferrer"
                           target="_blank"
+                          type="button"
                         >
                           Read More
-                          <span
-                            class="chakra-button__icon css-1hzyiq5"
+                          <svg
+                            fill="currentColor"
+                            height="14"
+                            stroke="currentColor"
+                            stroke-width="0"
+                            viewBox="0 0 512 512"
+                            width="14"
+                            xmlns="http://www.w3.org/2000/svg"
                           >
-                            <svg
-                              aria-hidden="true"
-                              class="chakra-icon css-1pckyyl"
-                              focusable="false"
-                              viewBox="0 0 24 24"
-                            >
-                              <g
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-linecap="round"
-                                stroke-width="2"
-                              >
-                                <path
-                                  d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-                                />
-                                <path
-                                  d="M15 3h6v6"
-                                />
-                                <path
-                                  d="M10 14L21 3"
-                                />
-                              </g>
-                            </svg>
-                          </span>
+                            <path
+                              d="M352 0c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9L370.7 96 201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L416 141.3l41.4 41.4c9.2 9.2 22.9 11.9 34.9 6.9s19.8-16.6 19.8-29.6l0-128c0-17.7-14.3-32-32-32L352 0zM80 32C35.8 32 0 67.8 0 112L0 432c0 44.2 35.8 80 80 80l320 0c44.2 0 80-35.8 80-80l0-112c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 112c0 8.8-7.2 16-16 16L80 448c-8.8 0-16-7.2-16-16l0-320c0-8.8 7.2-16 16-16l112 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 32z"
+                            />
+                          </svg>
                         </a>
                         <button
-                          class="chakra-button css-1ssv207"
+                          class="chakra-button css-r3twdk"
                           type="button"
                         >
                           Subscribe
@@ -262,121 +280,149 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 messag
       </div>
     </div>
   </div>
-  <span
-    hidden=""
-    id="__chakra_env"
-  />
 </div>
 `;
 
 exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for empty state 1`] = `
 <div>
   <div
-    class="css-1xfxy4"
+    class="css-1ta5rkp"
   >
     <div
-      class="chakra-stack css-met7i8"
+      class="chakra-stack css-8kld4w"
     >
-      <span
-        class="chakra-avatar css-rx5axe"
+      <div
+        class="chakra-avatar__root css-86j4qn"
+        data-part="root"
+        data-scope="avatar"
+        dir="ltr"
+        id="avatar::rq:"
       >
-        <div
-          aria-label="MonitoRSS"
-          class="chakra-avatar__initials css-1ebyn6"
-          role="img"
+        <span
+          class="chakra-avatar__fallback css-1cuxwyn"
+          data-part="fallback"
+          data-scope="avatar"
+          data-state="visible"
+          dir="ltr"
+          id="avatar::rq::fallback"
         >
           M
-        </div>
-      </span>
+        </span>
+        <img
+          alt="MonitoRSS"
+          class="chakra-avatar__image css-1odw0y2"
+          data-part="image"
+          data-scope="avatar"
+          data-state="hidden"
+          dir="ltr"
+          draggable="false"
+          hidden=""
+          id="avatar::rq::image"
+          referrerpolicy="no-referrer"
+          src="https://cdn.discordapp.com/embed/avatars/0.png"
+        />
+      </div>
       <div
-        class="chakra-stack css-5yi6ba"
+        class="chakra-stack css-9md26w"
       >
         <div
-          class="chakra-stack css-1uodvt1"
+          class="chakra-stack css-1x0y7ph"
         >
           <p
-            class="chakra-text css-qs00kd"
+            class="css-fkgboc"
           >
             MonitoRSS
           </p>
           <div
-            class="css-slgk8p"
+            class="css-ikklon"
           >
             ✓ APP
           </div>
           <p
-            class="chakra-text css-ev7024"
+            class="css-o89y2q"
           >
             Today at 12:04 PM
           </p>
         </div>
         <p
-          class="chakra-text css-jz8g4j"
+          class="css-1gqgcqc"
         >
           No components added yet
         </p>
       </div>
     </div>
   </div>
-  <span
-    hidden=""
-    id="__chakra_env"
-  />
 </div>
 `;
 
 exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for loading state 1`] = `
 <div>
   <div
-    class="css-1xfxy4"
+    class="css-1ta5rkp"
   >
     <div
-      class="chakra-stack css-met7i8"
+      class="chakra-stack css-8kld4w"
     >
-      <span
-        class="chakra-avatar css-rx5axe"
+      <div
+        class="chakra-avatar__root css-86j4qn"
+        data-part="root"
+        data-scope="avatar"
+        dir="ltr"
+        id="avatar::rr:"
       >
-        <div
-          aria-label="MonitoRSS"
-          class="chakra-avatar__initials css-1ebyn6"
-          role="img"
+        <span
+          class="chakra-avatar__fallback css-1cuxwyn"
+          data-part="fallback"
+          data-scope="avatar"
+          data-state="visible"
+          dir="ltr"
+          id="avatar::rr::fallback"
         >
           M
-        </div>
-      </span>
+        </span>
+        <img
+          alt="MonitoRSS"
+          class="chakra-avatar__image css-1odw0y2"
+          data-part="image"
+          data-scope="avatar"
+          data-state="hidden"
+          dir="ltr"
+          draggable="false"
+          hidden=""
+          id="avatar::rr::image"
+          referrerpolicy="no-referrer"
+          src="https://cdn.discordapp.com/embed/avatars/0.png"
+        />
+      </div>
       <div
-        class="chakra-stack css-5yi6ba"
+        class="chakra-stack css-9md26w"
       >
         <div
-          class="chakra-stack css-1uodvt1"
+          class="chakra-stack css-1x0y7ph"
         >
           <p
-            class="chakra-text css-qs00kd"
+            class="css-fkgboc"
           >
             MonitoRSS
           </p>
           <div
-            class="css-slgk8p"
+            class="css-ikklon"
           >
             ✓ APP
           </div>
           <p
-            class="chakra-text css-ev7024"
+            class="css-o89y2q"
           >
             Today at 12:04 PM
           </p>
         </div>
         <p
-          class="chakra-text css-jz8g4j"
+          class="css-1gqgcqc"
         >
           No components added yet
         </p>
       </div>
     </div>
   </div>
-  <span
-    hidden=""
-    id="__chakra_env"
-  />
 </div>
 `;

@@ -699,11 +699,95 @@ const handlers = [
 
   http.post("/api/v1/user-feeds/:feedId/get-articles", async ({ request, params }) => {
     const { feedId } = params;
-    const { skip, limit, filters } = (await request.json()) as {
+    const body = (await request.json()) as {
       skip: number;
       limit: number;
       filters: Record<string, unknown>;
+      selectPropertyTypes?: string[];
+      formatter?: {
+        externalProperties?: Array<{
+          id: string;
+          sourceField: string;
+          label: string;
+          cssSelector: string;
+        }>;
+      };
     };
+    const { skip, limit, filters } = body;
+
+    // External-property preview path (External Properties tab). Each selector card asks for
+    // `externalInjections` with ONLY its own selectors; the mock reads `body.formatter.externalProperties`
+    // (the API client renames `formatOptions` -> `formatter` on the wire) and decides per selector:
+    //   - cssSelector contains "error" / label ends in error-ish keyword  -> INVALID_CSS_SELECTOR
+    //   - cssSelector contains "notfound"                                 -> NO_SELECTOR_MATCH (+ pageHtml)
+    //   - cssSelector contains "404" / "fetchfail"                        -> FETCH_FAILED (404)
+    //   - otherwise -> success, synthesizing keys shaped `external::<sourceField>::<label>::<n>`.
+    // So typing e.g. `#error` or `#notfound` as a CSS selector drives each error state with no flag.
+    const externalProperties = body.formatter?.externalProperties;
+
+    if (body.selectPropertyTypes?.includes("externalInjections") && externalProperties?.length) {
+      await delay(800);
+
+      const errorTypeForSelector = (cssSelector: string): string | null => {
+        const s = cssSelector.toLowerCase();
+
+        if (s.includes("notfound") || s.includes("nomatch")) return "NO_SELECTOR_MATCH";
+        if (s.includes("404") || s.includes("fetchfail")) return "FETCH_FAILED";
+        if (s.includes("error") || s.includes("invalid")) return "INVALID_CSS_SELECTOR";
+
+        return null;
+      };
+
+      const failing = externalProperties.filter((p) => errorTypeForSelector(p.cssSelector));
+      const passing = externalProperties.filter((p) => !errorTypeForSelector(p.cssSelector));
+
+      const article: Record<string, string> = {
+        id: "1",
+        idHash: "1",
+        url: "https://www.nytimes.com/sample-article",
+      };
+      passing.forEach((p) => {
+        [1, 2, 3].forEach((n) => {
+          article[`external::${p.sourceField}::${p.label}::${n}`] =
+            `Sample value for ${p.label} (${n})`;
+        });
+      });
+
+      const externalContentErrors = failing.map((p) => {
+        const errorType = errorTypeForSelector(p.cssSelector) as string;
+
+        return {
+          articleId: "1",
+          sourceField: p.sourceField,
+          label: p.label,
+          cssSelector: p.cssSelector,
+          errorType,
+          message:
+            errorType === "INVALID_CSS_SELECTOR"
+              ? `"${p.cssSelector}" is not a valid CSS selector`
+              : undefined,
+          statusCode: errorType === "FETCH_FAILED" ? 404 : undefined,
+          pageHtml:
+            errorType === "NO_SELECTOR_MATCH"
+              ? "<html><body><article><h1>Sample article</h1>" +
+                "<p>The element your selector targets was not found.</p></article></body></html>"
+              : undefined,
+          pageHtmlTruncated: false,
+        };
+      });
+
+      return HttpResponse.json<GetUserFeedArticlesOutput>({
+        result: {
+          articles: [article as Record<string, string> & { id: string; idHash: string }],
+          totalArticles: 1,
+          requestStatus: UserFeedArticleRequestStatus.Success,
+          response: { statusCode: 200 },
+          filterStatuses: [],
+          selectedProperties: Object.keys(article),
+          externalContentErrors,
+        },
+      });
+    }
 
     // Return empty articles when feedId contains "empty" (for testing empty feed state)
     if (typeof feedId === "string" && feedId.includes("empty")) {

@@ -4,32 +4,17 @@ import {
   Code,
   Flex,
   HStack,
+  Icon,
   Link,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Radio,
-  RadioGroup,
   Skeleton,
   Stack,
   Table,
-  TableContainer,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
-  Tooltip,
-  Tr,
   chakra,
-  useDisclosure,
 } from "@chakra-ui/react";
 import { cloneElement, useEffect, useState } from "react";
-import { ExternalLinkIcon, RepeatIcon } from "@chakra-ui/icons";
+import { FaUpRightFromSquare, FaArrowsRotate } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import {
   SelectArticlePropertyType,
   useUserFeedArticles,
@@ -37,6 +22,18 @@ import {
 } from "@/features/feed";
 
 import { InlineErrorAlert } from "@/components";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Tooltip } from "@/components/ui/tooltip";
+import { Radio, RadioGroup } from "@/components/ui/radio";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 
 interface Props {
   defaultValue: string;
@@ -46,7 +43,7 @@ interface Props {
 
 const UpdateExternalPropertyModal = ({ trigger, onSubmitted, defaultValue }: Props) => {
   const { userFeed, articleFormatOptions } = useUserFeedContext();
-  const { isOpen, onClose, onOpen } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("");
   const {
     data: articlesData,
@@ -73,21 +70,27 @@ const UpdateExternalPropertyModal = ({ trigger, onSubmitted, defaultValue }: Pro
   };
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!open) {
       setSelected("");
     }
-  }, [isOpen]);
+  }, [open]);
 
   return (
     <>
-      {cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose} size="5xl" scrollBehavior="inside">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Update source property</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody tabIndex={-1}>
-            <Stack spacing={4} paddingBottom={4}>
+      {cloneElement(trigger, { onClick: () => setOpen(true) })}
+      <DialogRoot
+        open={open}
+        onOpenChange={(e) => setOpen(e.open)}
+        size="cover"
+        scrollBehavior="inside"
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update source property</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody tabIndex={-1}>
+            <Stack gap={4} paddingBottom={4}>
               <Text>
                 Select the source property that contains the URL that references the page with the
                 desired content.
@@ -99,105 +102,104 @@ const UpdateExternalPropertyModal = ({ trigger, onSubmitted, defaultValue }: Pro
                 />
               )}
               {!error && (
-                <Box bg="gray.800" p={2} rounded="lg">
-                  <RadioGroup onChange={setSelected} value={selected || defaultValue}>
-                    <TableContainer overflow="auto">
-                      <Table size="sm">
-                        <Thead>
-                          <Tr>
-                            <Th />
-                            <Th>Article Property</Th>
-                            <Th>
+                <Box bg="bg.subtle" borderWidth="1px" borderColor="border" p={2} rounded="lg">
+                  <RadioGroup
+                    onValueChange={(details) => setSelected(details.value ?? "")}
+                    value={selected || defaultValue}
+                  >
+                    <Table.ScrollArea overflow="auto">
+                      <Table.Root size="sm">
+                        <Table.Header>
+                          <Table.Row>
+                            <Table.ColumnHeader />
+                            <Table.ColumnHeader>Article Property</Table.ColumnHeader>
+                            <Table.ColumnHeader>
                               <span>Sample Article Value</span>
-                              <Tooltip label="See another random article's values">
-                                <Button
+                              <Tooltip content="See another random article's values">
+                                <SafeLoadingButton
                                   size="xs"
                                   ml={2}
-                                  isLoading={fetchStatus === "fetching"}
+                                  loading={fetchStatus === "fetching"}
                                   onClick={onClickRandomize}
                                   variant="outline"
-                                  leftIcon={<RepeatIcon />}
                                   aria-label="See another random article's values"
                                 >
+                                  <Icon as={FaArrowsRotate} />
                                   <span>Randomize sample article</span>
-                                </Button>
+                                </SafeLoadingButton>
                               </Tooltip>
-                            </Th>
-                          </Tr>
-                        </Thead>
-                        <Tbody>
+                            </Table.ColumnHeader>
+                          </Table.Row>
+                        </Table.Header>
+                        <Table.Body>
                           {articleObjectEntries.map(([field, value]) => {
                             if (field === "id" || field === "idHash" || !value) {
                               return null;
                             }
 
                             return (
-                              <Tr key={field}>
-                                <Td width="min-content">
+                              <Table.Row key={field}>
+                                <Table.Cell width="min-content">
                                   <Radio
                                     value={field}
                                     id={`field-${field}`}
-                                    name="field"
-                                    isDisabled={fetchStatus !== "idle"}
+                                    inputProps={{ name: "field" }}
+                                    disabled={fetchStatus !== "idle"}
                                   />
-                                </Td>
-                                <Td>
-                                  <Skeleton isLoaded={fetchStatus === "idle"}>
+                                </Table.Cell>
+                                <Table.Cell>
+                                  <Skeleton loading={fetchStatus !== "idle"}>
                                     <chakra.label htmlFor={`field-${field}`}>
                                       <Code>{field}</Code>
                                     </chakra.label>
                                   </Skeleton>
-                                </Td>
-                                <Td whiteSpace="nowrap">
-                                  <Skeleton isLoaded={fetchStatus === "idle"}>
-                                    <Flex
-                                      as={chakra.label}
-                                      alignItems="center"
-                                      htmlFor={`field-${field}`}
-                                      gap={2}
-                                    >
-                                      {value}
-                                      <Link
-                                        color="blue.300"
-                                        href={value}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        <ExternalLinkIcon />
-                                      </Link>
+                                </Table.Cell>
+                                <Table.Cell whiteSpace="nowrap">
+                                  <Skeleton loading={fetchStatus !== "idle"}>
+                                    <Flex asChild alignItems="center" gap={2}>
+                                      <chakra.label htmlFor={`field-${field}`}>
+                                        {value}
+                                        <Link
+                                          color="text.link"
+                                          href={value}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          <Icon as={FaUpRightFromSquare} />
+                                        </Link>
+                                      </chakra.label>
                                     </Flex>
                                   </Skeleton>
-                                </Td>
-                              </Tr>
+                                </Table.Cell>
+                              </Table.Row>
                             );
                           })}
-                        </Tbody>
-                      </Table>
-                    </TableContainer>
+                        </Table.Body>
+                      </Table.Root>
+                    </Table.ScrollArea>
                   </RadioGroup>
                 </Box>
               )}
             </Stack>
-          </ModalBody>
-          <ModalFooter>
+          </DialogBody>
+          <DialogFooter>
             <HStack>
-              <Button onClick={onClose} variant="ghost">
+              <Button onClick={() => setOpen(false)} variant="ghost">
                 Cancel
               </Button>
-              <Button
-                colorScheme="blue"
-                isDisabled={!selected}
+              <PrimaryActionButton
+                disabled={!selected}
                 onClick={() => {
                   onSubmitted({ sourceField: selected });
-                  onClose();
+                  setOpen(false);
                 }}
               >
                 Update
-              </Button>
+              </PrimaryActionButton>
             </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </>
   );
 };

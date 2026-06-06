@@ -63,7 +63,7 @@ export const ArticlePropertySelect = ({
   }, [status]);
 
   return (
-    <Stack onKeyDown={(e) => e.stopPropagation()}>
+    <Stack w="full" onKeyDown={(e) => e.stopPropagation()}>
       <ThemedSelect
         isDisabled={fetchStatus === "fetching" || !!error}
         loading={fetchStatus === "fetching"}

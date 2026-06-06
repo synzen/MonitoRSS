@@ -6,26 +6,18 @@ import {
   Text,
   Stack,
   Button,
-  Link as ChakraLink,
   Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  MenuDivider,
+  Link as ChakraLink,
   IconButton,
   Portal,
   Skeleton,
   SimpleGrid,
+  Icon,
 } from "@chakra-ui/react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AddIcon, CheckCircleIcon, ChevronDownIcon, DeleteIcon } from "@chakra-ui/icons";
+import { FaPlus, FaCircleCheck, FaChevronDown, FaTrash, FaCopy } from "react-icons/fa6";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { FaCopy } from "react-icons/fa6";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { IoDuplicate } from "react-icons/io5";
 import { useUserMe, useDiscordUserMe } from "../features/discordUser";
@@ -53,7 +45,8 @@ import { useDeleteUserFeed } from "../features/feed/hooks/useDeleteUserFeed";
 import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage copy";
 import ApiAdapterError from "../utils/ApiAdapterError";
 import { pages } from "../constants";
-import { BoxConstrained, ConfirmModal } from "../components";
+import { BoxConstrained, ConfirmModal, Panel } from "../components";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { UserFeedStatusFilterContext, useMultiSelectUserFeedContext } from "@/features/feed";
 
 import {
@@ -65,11 +58,12 @@ import { CopyUserFeedSettingsDialog } from "../features/feed/components/CopyUser
 import { SetupChecklist } from "../features/feed/components/SetupChecklist";
 import { useUnconfiguredFeeds } from "../features/feed/hooks/useUnconfiguredFeeds";
 import { ReducedLimitAlert } from "@/features/subscriptionProducts";
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 
 export const UserFeeds = () => {
   return (
     <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
-      <BoxConstrained.Container spacing={6} height="100%">
+      <BoxConstrained.Container gap={6} height="100%">
         <PageAlertProvider>
           <UserFeedsInner />
         </PageAlertProvider>
@@ -89,7 +83,8 @@ const CopyUserFeedSettingsMenuItem = ({
 
   return (
     <>
-      <MenuItem isDisabled={!selectedFeedId} icon={<FaCopy />} onClick={() => setIsOpen(true)}>
+      <MenuItem disabled={!selectedFeedId} value="copy-settings" onClick={() => setIsOpen(true)}>
+        <FaCopy />
         Copy settings to...
       </MenuItem>
       <Portal>
@@ -103,6 +98,8 @@ const CopyUserFeedSettingsMenuItem = ({
     </>
   );
 };
+
+type BulkAction = "enable" | "disable" | "delete";
 
 const UserFeedsInner: React.FC = () => {
   const { t } = useTranslation();
@@ -148,6 +145,7 @@ const UserFeedsInner: React.FC = () => {
     string | undefined
   >();
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [pendingBulkAction, setPendingBulkAction] = useState<BulkAction | null>(null);
   const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
   const limitAlertShownRef = useRef(false);
   const addFeedParamConsumed = useRef(false);
@@ -458,8 +456,8 @@ const UserFeedsInner: React.FC = () => {
 
   return (
     <>
-      <Stack spacing={4}>
-        <Stack spacing={2}>
+      <Stack gap={4}>
+        <Stack gap={2}>
           <PageAlertContextOutlet
             containerProps={{
               mt: 4,
@@ -467,20 +465,20 @@ const UserFeedsInner: React.FC = () => {
           />
           <ReducedLimitAlert />
           {totalFeedsRequiringAttention !== undefined && totalFeedsRequiringAttention > 0 && (
-            <Alert status="warning" mt={2}>
-              <AlertIcon />
+            <Alert.Root status="warning" mt={2}>
+              <Alert.Indicator />
               <Box>
-                <AlertTitle>
+                <Alert.Title>
                   {totalFeedsRequiringAttention} feed
                   {totalFeedsRequiringAttention > 1 ? "s" : ""} require
                   {totalFeedsRequiringAttention > 1 ? "" : "s"} your attention!
-                </AlertTitle>
-                <AlertDescription>
+                </Alert.Title>
+                <Alert.Description>
                   Article delivery may be fully or partially paused.{" "}
                   <ChakraLink
                     textAlign="left"
                     as="button"
-                    color="blue.300"
+                    color="text.link"
                     onClick={onApplyRequiresAttentionFilters}
                   >
                     Click here to apply filters and see which ones they are.
@@ -489,43 +487,36 @@ const UserFeedsInner: React.FC = () => {
                     <>
                       {" "}
                       You can also{" "}
-                      <ChakraLink as={Link} to={pages.userSettings()} color="blue.300">
-                        get notified when failures occur
+                      <ChakraLink asChild color="text.link">
+                        <Link to={pages.userSettings()}>get notified when failures occur</Link>
                       </ChakraLink>
                       .
                     </>
                   )}
-                </AlertDescription>
+                </Alert.Description>
               </Box>
-            </Alert>
+            </Alert.Root>
           )}
-          <Alert hidden={!totalManagementInvites} mt={2}>
-            <HStack
-              justifyContent="space-between"
-              alignItems="center"
-              flexWrap="wrap"
-              gap={4}
-              w="100%"
-            >
-              <Flex>
-                <AlertIcon />
-                <AlertTitle flex={1}>
-                  You have {totalManagementInvites} pending feed management invites
-                </AlertTitle>
-              </Flex>
-              <AlertDescription>
-                <Flex>
-                  <FeedManagementInvitesDialog
-                    trigger={
-                      <Button variant="outline">
-                        <span>View pending management invites</span>
-                      </Button>
-                    }
-                  />
-                </Flex>
-              </AlertDescription>
-            </HStack>
-          </Alert>
+          <Alert.Root
+            hidden={!totalManagementInvites}
+            mt={2}
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            gap={4}
+          >
+            <Alert.Indicator />
+            <Alert.Title flex={1}>
+              You have {totalManagementInvites} pending feed management invites
+            </Alert.Title>
+            <FeedManagementInvitesDialog
+              trigger={
+                <Button variant="outline" colorPalette="gray">
+                  <span>View pending management invites</span>
+                </Button>
+              }
+            />
+          </Alert.Root>
           {isInDiscoveryMode === false && showSetupChecklist && (
             <SetupChecklist
               feeds={(unconfiguredFeedsData?.results ?? []).map((f) => ({
@@ -556,60 +547,49 @@ const UserFeedsInner: React.FC = () => {
                 </Heading>
               </Flex>
               <HStack flexWrap="wrap">
-                <Menu>
-                  <MenuButton
-                    as={Button}
-                    rightIcon={<ChevronDownIcon />}
-                    variant="outline"
-                    // isDisabled={selectedFeeds.length === 0}
-                  >
-                    Feed Actions
-                  </MenuButton>
-                  <MenuList zIndex={2}>
-                    <ConfirmModal
-                      trigger={
-                        <MenuItem
-                          isDisabled={
-                            !selectedFeeds.length ||
-                            !selectedFeeds.some(
-                              (f) => f.disabledCode === UserFeedDisabledCode.Manual,
-                            )
-                          }
-                          icon={<FaPlay />}
-                        >
-                          Enable
-                        </MenuItem>
+                <MenuRoot>
+                  <MenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      aria-disabled={selectedFeeds.length === 0}
+                      data-disabled={selectedFeeds.length === 0 ? "" : undefined}
+                    >
+                      Feed Actions
+                      <FaChevronDown />
+                    </Button>
+                  </MenuTrigger>
+                  <MenuContent zIndex={2}>
+                    <MenuItem
+                      disabled={
+                        !selectedFeeds.length ||
+                        !selectedFeeds.some((f) => f.disabledCode === UserFeedDisabledCode.Manual)
                       }
-                      title={`Are you sure you want to enable ${selectedFeeds.length} feed(s)?`}
-                      description="Only feeds that were manually disabled will be enabled."
-                      onConfirm={onEnableSelectedFeeds}
-                      colorScheme="blue"
-                    />
-                    <ConfirmModal
-                      trigger={
-                        <MenuItem
-                          isDisabled={
-                            !selectedFeeds.length ||
-                            selectedFeeds.every(
-                              (r) =>
-                                !!r.disabledCode &&
-                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
-                            )
-                          }
-                          icon={<FaPause />}
-                        >
-                          Disable
-                        </MenuItem>
+                      value="enable"
+                      onClick={() => setPendingBulkAction("enable")}
+                    >
+                      <FaPlay />
+                      Enable
+                    </MenuItem>
+                    <MenuItem
+                      disabled={
+                        !selectedFeeds.length ||
+                        selectedFeeds.every(
+                          (r) =>
+                            !!r.disabledCode &&
+                            r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
+                        )
                       }
-                      title={`Are you sure you want to disable ${selectedFeeds.length} feed(s)?`}
-                      description="Only feeds that are not currently disabled will be affected."
-                      onConfirm={onDisableSelectedFeeds}
-                      colorScheme="blue"
-                    />
+                      value="disable"
+                      onClick={() => setPendingBulkAction("disable")}
+                    >
+                      <FaPause />
+                      Disable
+                    </MenuItem>
                     <CloneUserFeedDialog
                       feedId={selectedFeeds[0]?.id}
                       trigger={
-                        <MenuItem isDisabled={selectedFeeds.length !== 1} icon={<IoDuplicate />}>
+                        <MenuItem disabled={selectedFeeds.length !== 1} value="clone">
+                          <IoDuplicate />
                           Clone
                         </MenuItem>
                       }
@@ -624,51 +604,74 @@ const UserFeedsInner: React.FC = () => {
                         clearSelection();
                       }}
                     />
-                    <MenuDivider />
-                    <ConfirmModal
-                      trigger={
-                        <MenuItem
-                          icon={<DeleteIcon color="red.200" />}
-                          isDisabled={!selectedFeeds.length}
-                        >
-                          <Text color="red.200">Delete</Text>
-                        </MenuItem>
-                      }
-                      title={`Are you sure you want to delete ${selectedFeeds.length} feed(s)?`}
-                      description="This action cannot be undone."
-                      onConfirm={onDeleteSelectedFeeds}
-                      colorScheme="red"
-                      okText={t("common.buttons.delete")}
-                    />
-                  </MenuList>
-                </Menu>
+                    <MenuSeparator />
+                    <MenuItem
+                      value="delete"
+                      disabled={!selectedFeeds.length}
+                      onClick={() => setPendingBulkAction("delete")}
+                    >
+                      <FaTrash color="text.error" />
+                      <Text color="text.error">Delete</Text>
+                    </MenuItem>
+                  </MenuContent>
+                </MenuRoot>
+                <ConfirmModal
+                  open={pendingBulkAction === "enable"}
+                  onOpenChange={(open) => !open && setPendingBulkAction(null)}
+                  title={`Are you sure you want to enable ${selectedFeeds.length} feed(s)?`}
+                  description="Only feeds that were manually disabled will be enabled."
+                  onConfirm={onEnableSelectedFeeds}
+                  colorScheme="blue"
+                />
+                <ConfirmModal
+                  open={pendingBulkAction === "disable"}
+                  onOpenChange={(open) => !open && setPendingBulkAction(null)}
+                  title={`Are you sure you want to disable ${selectedFeeds.length} feed(s)?`}
+                  description="Only feeds that are not currently disabled will be affected."
+                  onConfirm={onDisableSelectedFeeds}
+                  colorScheme="blue"
+                />
+                <ConfirmModal
+                  open={pendingBulkAction === "delete"}
+                  onOpenChange={(open) => !open && setPendingBulkAction(null)}
+                  title={`Are you sure you want to delete ${selectedFeeds.length} feed(s)?`}
+                  description="This action cannot be undone."
+                  onConfirm={onDeleteSelectedFeeds}
+                  colorScheme="red"
+                  okText={t("common.buttons.delete")}
+                />
                 <HStack gap={1}>
-                  <Button
-                    colorScheme="blue"
-                    leftIcon={<AddIcon />}
+                  <PrimaryActionButton
                     borderRightRadius={0}
                     onClick={() => handleOpenBrowseModal(undefined)}
                   >
+                    <FaPlus />
                     Add Feed
-                  </Button>
-                  <Menu>
-                    <MenuButton
-                      as={IconButton}
-                      colorScheme="blue"
-                      icon={<ChevronDownIcon fontSize={24} />}
-                      aria-label="Additional add feed options"
-                      borderLeftRadius={0}
-                    />
-                    <MenuList>
-                      <MenuItem icon={<AddIcon />} as={Link} to={pages.addFeeds()}>
-                        Add multiple feeds
+                  </PrimaryActionButton>
+                  <MenuRoot>
+                    <MenuTrigger asChild>
+                      <IconButton
+                        variant="solid"
+                        colorPalette="brand"
+                        aria-label="Additional add feed options"
+                        borderLeftRadius={0}
+                      >
+                        <FaChevronDown fontSize={24} />
+                      </IconButton>
+                    </MenuTrigger>
+                    <MenuContent>
+                      <MenuItem value="add-multiple" asChild>
+                        <Link to={pages.addFeeds()}>
+                          <FaPlus />
+                          Add multiple feeds
+                        </Link>
                       </MenuItem>
-                    </MenuList>
-                  </Menu>
+                    </MenuContent>
+                  </MenuRoot>
                 </HStack>
               </HStack>
             </Flex>
-            <HStack spacing={6}>
+            <HStack gap={6}>
               <Text>
                 Every feed represents a news source that you can subscribe to. After adding a feed,
                 you may then specify where you want articles for that feed to be sent to.
@@ -679,47 +682,45 @@ const UserFeedsInner: React.FC = () => {
       </Stack>
       {isInDiscoveryMode && (
         <Box>
-          <Stack spacing={6} py={8}>
-            <Stack textAlign="center" spacing={2} role="status" aria-live="polite">
+          <Stack gap={6} py={8}>
+            <Stack textAlign="center" gap={2} role="status" aria-live="polite">
               {addedFeedKeys.length > 0 ? (
-                <Stack
+                <Panel
+                  display="flex"
+                  flexDirection="column"
                   textAlign="center"
-                  spacing={3}
-                  bg="gray.800"
-                  borderWidth="1px"
-                  borderColor="whiteAlpha.200"
-                  borderRadius="md"
+                  gap={3}
                   p={6}
                   alignItems="center"
                 >
-                  <CheckCircleIcon color="green.400" boxSize={8} aria-hidden="true" />
+                  <Icon as={FaCircleCheck} color="text.success" boxSize={8} aria-hidden="true" />
                   <Heading as="h2" size="lg">
                     {addedFeedKeys.length} feed{addedFeedKeys.length !== 1 ? "s" : ""} added!
                   </Heading>
-                  <Text color="gray.400">
+                  <Text color="fg.muted">
                     Add more feeds below, or view your feeds to set up delivery.
                   </Text>
                   <Box>
-                    <Button colorScheme="blue" size="sm" onClick={handleExitDiscovery}>
+                    <PrimaryActionButton size="sm" onClick={handleExitDiscovery}>
                       View your feeds{" "}
                       <Box as="span" aria-hidden="true">
                         &rarr;
                       </Box>
-                    </Button>
+                    </PrimaryActionButton>
                   </Box>
-                </Stack>
+                </Panel>
               ) : (
                 <>
                   <Heading as="h2" size="lg">
                     Get news delivered to your Discord
                   </Heading>
-                  <Text color="gray.400">
+                  <Text color="fg.muted">
                     Browse popular feeds to get started, or paste a URL to check any website.
                   </Text>
                 </>
               )}
             </Stack>
-            <Stack spacing={2}>
+            <Stack gap={2}>
               <FeedDiscoverySearch
                 feedActionStates={feedActionStates}
                 isAtLimit={isAtLimit}
@@ -730,7 +731,7 @@ const UserFeedsInner: React.FC = () => {
                 onFeedRemoved={handleUrlFeedRemoved}
               />
               {!isSearchActive && (
-                <Text color="gray.400" fontSize="sm" textAlign="center">
+                <Text color="fg.muted" fontSize="sm" textAlign="center">
                   Many websites support feeds - try pasting a YouTube channel, subreddit, blog, or
                   news site URL
                 </Text>
@@ -738,22 +739,27 @@ const UserFeedsInner: React.FC = () => {
               <FeedLimitBar showOnlyWhenConstrained />
             </Stack>
             {curatedLoading && !isSearchActive && (
-              <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
+              <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} gap={4}>
                 {Array.from({ length: 8 }, (_, i) => (
-                  <Skeleton key={i} height="80px" borderRadius="md" />
+                  <Skeleton key={i} height="80px" borderRadius="l3" />
                 ))}
               </SimpleGrid>
             )}
             {!!curatedError && !curatedLoading && (
-              <Alert status="error">
-                <AlertIcon />
-                <AlertDescription>
+              <Alert.Root status="error">
+                <Alert.Indicator />
+                <Alert.Description>
                   Failed to load feeds.{" "}
-                  <Button variant="link" onClick={() => curatedRefetch()} colorScheme="blue">
+                  <Button
+                    variant="plain"
+                    textDecoration="underline"
+                    onClick={() => curatedRefetch()}
+                    colorPalette="brand"
+                  >
                     Retry
                   </Button>
-                </AlertDescription>
-              </Alert>
+                </Alert.Description>
+              </Alert.Root>
             )}
             {!isSearchActive && curatedData && !curatedLoading && curatedData.feeds.length > 0 && (
               <CategoryGrid

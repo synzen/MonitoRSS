@@ -1,30 +1,24 @@
 import {
   Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
   Box,
   Button,
   Code,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
+  Field,
   HStack,
+  Icon,
+  Separator,
   Stack,
-  StackDivider,
-  Switch,
   Text,
   Textarea,
 } from "@chakra-ui/react";
 import { Controller, useFormContext, useWatch } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
-import { SettingsIcon } from "@chakra-ui/icons";
-import { useCallback, useEffect, useState } from "react";
+import { FaGear } from "react-icons/fa6";
+import { useEffect, useState } from "react";
 import { DiscordMessageFormData } from "@/types/discord";
 import { HelpDialog } from "@/components";
 import { AutoResizeTextarea } from "@/components/AutoResizeTextarea";
+import { Switch } from "@/components/ui/switch";
 import MessagePlaceholderText from "../../../messageBuilder/components/MessagePlaceholderText";
 
 export const DiscordMessageContentForm = () => {
@@ -37,51 +31,34 @@ export const DiscordMessageContentForm = () => {
     name: `splitOptions`,
   });
   const { t } = useTranslation();
-  const [accordionIndex, setAccordionIndex] = useState<number>(-1);
+  const [accordionValue, setAccordionValue] = useState<string[]>([]);
   const isSplitOptionsEnabled = !!splitOptions?.isEnabled;
 
   useEffect(() => {
     if (!isSplitOptionsEnabled) {
-      setAccordionIndex(-1);
+      setAccordionValue([]);
     }
   }, [isSplitOptionsEnabled]);
 
-  const onClickSplitSettingsAccordion = useCallback(() => {
-    if (!isSplitOptionsEnabled) {
-      return;
-    }
-
-    if (accordionIndex === 0) {
-      setAccordionIndex(-1);
-    } else {
-      setAccordionIndex(0);
-    }
-  }, [isSplitOptionsEnabled, accordionIndex]);
-
   return (
-    <Stack spacing={6} divider={<StackDivider />}>
-      <FormControl isInvalid={!!errors.content}>
+    <Stack gap={6} separator={<Separator />}>
+      <Field.Root invalid={!!errors.content}>
         <Stack
           direction={{ base: "column", md: "row" }}
-          spacing={{ base: "1.5", md: "8" }}
+          gap={{ base: "1.5", md: "8" }}
           justify="space-between"
           minW={{ md: "md", lg: "lg", xl: "3xl" }}
         >
           <Box>
-            <FormLabel>{t("components.discordMessageForm.contentSectionTitle")}</FormLabel>
-            <FormHelperText>
+            <Field.Label>{t("components.discordMessageForm.contentSectionTitle")}</Field.Label>
+            <Field.HelperText>
               You can use the placeholders listed above. A special placeholder,{" "}
               <MessagePlaceholderText withBrackets>empty</MessagePlaceholderText>, can be used to
               create an empty message, but only if an embed is used. Regular formatting such as bold
               and etc. is also available.
-            </FormHelperText>
+            </Field.HelperText>
           </Box>
-          <Stack
-            spacing={8}
-            width="100%"
-            maxW={{ md: "3xl" }}
-            minW={{ md: "md", lg: "lg", xl: "3xl" }}
-          >
+          <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "md", lg: "lg", xl: "3xl" }}>
             <Controller
               name="content"
               control={control}
@@ -91,35 +68,30 @@ export const DiscordMessageContentForm = () => {
                   size="sm"
                   aria-label="Text content"
                   spellCheck={false}
-                  bg="gray.900"
                   {...field}
                 />
               )}
             />
-            {errors.content && <FormErrorMessage>{errors.content.message}</FormErrorMessage>}
+            {errors.content && <Field.ErrorText>{errors.content.message}</Field.ErrorText>}
           </Stack>
         </Stack>
-      </FormControl>
+      </Field.Root>
       <Stack
         direction={{ base: "column", md: "row" }}
-        spacing={{ base: "1.5", md: "8" }}
+        gap={{ base: "1.5", md: "8" }}
         justify="space-between"
+        alignSelf="stretch"
       >
-        <FormControl>
-          <FormLabel htmlFor="splitCheckbox">
+        <Field.Root>
+          <Field.Label htmlFor="splitCheckbox">
             {t("components.discordMessageForm.splitContentSectionTitle")}
-          </FormLabel>
-          <FormHelperText>
+          </Field.Label>
+          <Field.HelperText>
             {t("components.discordMessageForm.splitContentCheckboxDescription")}
-          </FormHelperText>
-        </FormControl>
-        <Stack
-          spacing={8}
-          width="100%"
-          maxW={{ md: "3xl" }}
-          minW={{ md: "md", lg: "lg", xl: "3xl" }}
-        >
-          <FormControl id="splitCheckbox">
+          </Field.HelperText>
+        </Field.Root>
+        <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "md", lg: "lg", xl: "3xl" }}>
+          <Field.Root id="splitCheckbox">
             <Controller
               name="splitOptions.isEnabled"
               control={control}
@@ -127,278 +99,269 @@ export const DiscordMessageContentForm = () => {
                 return (
                   <Switch
                     name={field.name}
-                    isChecked={!!field.value}
-                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                    checked={!!field.value}
+                    onCheckedChange={(details) => field.onChange(details.checked)}
+                    inputProps={{
+                      "aria-label": t("components.discordMessageForm.splitContentSectionTitle"),
+                    }}
                   />
                 );
               }}
             />
-          </FormControl>
-          <Accordion allowToggle index={accordionIndex}>
-            <AccordionItem isDisabled={!isSplitOptionsEnabled}>
-              <AccordionButton onClick={onClickSplitSettingsAccordion}>
-                <HStack textAlign="left" spacing={4} flex="1">
-                  <SettingsIcon />
-                  <Text>{t("components.discordMessageForm.splitContentSettingsLabel")}</Text>
+          </Field.Root>
+          <Accordion.Root
+            collapsible
+            value={accordionValue}
+            onValueChange={(details) => setAccordionValue(details.value)}
+          >
+            <Accordion.Item value="0" disabled={!isSplitOptionsEnabled}>
+              <Accordion.ItemTrigger>
+                <HStack textAlign="left" gap={4} flex="1">
+                  <Icon as={FaGear} boxSize={4} />
+                  <Text fontSize="sm" fontWeight="medium">
+                    {t("components.discordMessageForm.splitContentSettingsLabel")}
+                  </Text>
                 </HStack>
-                <AccordionIcon />
-              </AccordionButton>
-              <AccordionPanel>
-                <Stack
-                  spacing={8}
-                  width="100%"
-                  maxW={{ md: "3xl" }}
-                  minW={{ md: "md", lg: "lg", xl: "3xl" }}
-                >
-                  <FormControl>
-                    <FormLabel>
-                      {t("components.discordMessageForm.splitContentSplitCharLabel")}
-                    </FormLabel>
-                    <Controller
-                      name="splitOptions.splitChar"
-                      control={control}
-                      render={({ field }) => (
-                        <AutoResizeTextarea
-                          {...field}
-                          size="sm"
-                          rows={1}
-                          aria-label="Split text"
-                          spellCheck={false}
-                          isDisabled={!splitOptions}
-                          value={field.value || ""}
-                          bg="gray.900"
-                          onChange={(e) => {
-                            field.onChange(e.target.value || null);
-                          }}
-                        />
-                      )}
-                    />
-                    <FormHelperText>
-                      {t("components.discordMessageForm.splitContentSplitCharDescription")}
-                    </FormHelperText>
-                  </FormControl>
-                  <FormControl>
-                    <FormLabel>
-                      {t("components.discordMessageForm.splitContentAppendCharLabel")}
-                    </FormLabel>
-                    <Controller
-                      name="splitOptions.appendChar"
-                      control={control}
-                      render={({ field }) => (
-                        <AutoResizeTextarea
-                          {...field}
-                          size="sm"
-                          rows={1}
-                          aria-label="Append text"
-                          spellCheck={false}
-                          value={field.value || ""}
-                          isDisabled={!splitOptions}
-                          bg="gray.900"
-                          onChange={(e) => {
-                            field.onChange(e.target.value || null);
-                          }}
-                        />
-                      )}
-                    />
-                    <FormHelperText>
-                      {t("components.discordMessageForm.splitContentAppendCharDescription")}
-                    </FormHelperText>
-                  </FormControl>
-                  <FormControl>
-                    <FormLabel>
-                      {t("components.discordMessageForm.splitContentPrependCharLabel")}
-                    </FormLabel>
-                    <Controller
-                      name="splitOptions.prependChar"
-                      control={control}
-                      render={({ field }) => (
-                        <AutoResizeTextarea
-                          {...field}
-                          size="sm"
-                          rows={1}
-                          aria-label="Prepend text"
-                          spellCheck={false}
-                          value={field.value || ""}
-                          isDisabled={!splitOptions}
-                          bg="gray.900"
-                          onChange={(e) => {
-                            field.onChange(e.target.value || null);
-                          }}
-                        />
-                      )}
-                    />
-                    <FormHelperText>
-                      {t("components.discordMessageForm.splitContentPrependCharDescription")}
-                    </FormHelperText>
-                  </FormControl>
-                </Stack>
-              </AccordionPanel>
-            </AccordionItem>
-          </Accordion>
+                <Accordion.ItemIndicator />
+              </Accordion.ItemTrigger>
+              <Accordion.ItemContent>
+                <Accordion.ItemBody>
+                  <Stack
+                    gap={8}
+                    width="100%"
+                    maxW={{ md: "3xl" }}
+                    minW={{ md: "md", lg: "lg", xl: "3xl" }}
+                  >
+                    <Field.Root>
+                      <Field.Label>
+                        {t("components.discordMessageForm.splitContentSplitCharLabel")}
+                      </Field.Label>
+                      <Controller
+                        name="splitOptions.splitChar"
+                        control={control}
+                        render={({ field }) => (
+                          <AutoResizeTextarea
+                            {...field}
+                            size="sm"
+                            rows={1}
+                            aria-label="Split text"
+                            spellCheck={false}
+                            disabled={!splitOptions}
+                            value={field.value || ""}
+                            onChange={(e) => {
+                              field.onChange(e.target.value || null);
+                            }}
+                          />
+                        )}
+                      />
+                      <Field.HelperText>
+                        {t("components.discordMessageForm.splitContentSplitCharDescription")}
+                      </Field.HelperText>
+                    </Field.Root>
+                    <Field.Root>
+                      <Field.Label>
+                        {t("components.discordMessageForm.splitContentAppendCharLabel")}
+                      </Field.Label>
+                      <Controller
+                        name="splitOptions.appendChar"
+                        control={control}
+                        render={({ field }) => (
+                          <AutoResizeTextarea
+                            {...field}
+                            size="sm"
+                            rows={1}
+                            aria-label="Append text"
+                            spellCheck={false}
+                            value={field.value || ""}
+                            disabled={!splitOptions}
+                            onChange={(e) => {
+                              field.onChange(e.target.value || null);
+                            }}
+                          />
+                        )}
+                      />
+                      <Field.HelperText>
+                        {t("components.discordMessageForm.splitContentAppendCharDescription")}
+                      </Field.HelperText>
+                    </Field.Root>
+                    <Field.Root>
+                      <Field.Label>
+                        {t("components.discordMessageForm.splitContentPrependCharLabel")}
+                      </Field.Label>
+                      <Controller
+                        name="splitOptions.prependChar"
+                        control={control}
+                        render={({ field }) => (
+                          <AutoResizeTextarea
+                            {...field}
+                            size="sm"
+                            rows={1}
+                            aria-label="Prepend text"
+                            spellCheck={false}
+                            value={field.value || ""}
+                            disabled={!splitOptions}
+                            onChange={(e) => {
+                              field.onChange(e.target.value || null);
+                            }}
+                          />
+                        )}
+                      />
+                      <Field.HelperText>
+                        {t("components.discordMessageForm.splitContentPrependCharDescription")}
+                      </Field.HelperText>
+                    </Field.Root>
+                  </Stack>
+                </Accordion.ItemBody>
+              </Accordion.ItemContent>
+            </Accordion.Item>
+          </Accordion.Root>
         </Stack>
       </Stack>
-      <FormControl>
+      <Field.Root>
         <Stack
           direction={{ base: "column", md: "row" }}
-          spacing={{ base: "1.5", md: "8" }}
+          gap={{ base: "1.5", md: "8" }}
           justify="space-between"
+          alignSelf="stretch"
         >
           <Box>
-            <FormLabel>{t("components.discordMessageForm.formatTablesSectionTitle")}</FormLabel>
-            <FormHelperText>
+            <Field.Label>{t("components.discordMessageForm.formatTablesSectionTitle")}</Field.Label>
+            <Field.HelperText>
               <Trans
                 t={t}
                 i18nKey="components.discordMessageForm.formatTablesCheckboxDescription"
                 components={[<Code />]}
               />
-            </FormHelperText>
+            </Field.HelperText>
           </Box>
-          <Stack
-            spacing={8}
-            width="100%"
-            maxW={{ md: "3xl" }}
-            minW={{ md: "md", lg: "lg", xl: "3xl" }}
-          >
+          <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "md", lg: "lg", xl: "3xl" }}>
             <Controller
               name="formatter.formatTables"
               control={control}
               render={({ field }) => {
                 return (
                   <Switch
-                    {...field}
-                    isChecked={!!field.value}
-                    value=""
-                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                    name={field.name}
+                    checked={!!field.value}
+                    onCheckedChange={(details) => field.onChange(details.checked)}
+                    onBlur={field.onBlur}
                   />
                 );
               }}
             />
           </Stack>
         </Stack>
-      </FormControl>
-      <FormControl>
+      </Field.Root>
+      <Field.Root>
         <Stack
           direction={{ base: "column", md: "row" }}
-          spacing={{ base: "1.5", md: "8" }}
+          gap={{ base: "1.5", md: "8" }}
           justify="space-between"
+          alignSelf="stretch"
         >
           <Box>
-            <FormLabel>{t("components.discordMessageForm.stripImagesSectionTitle")}</FormLabel>
-            <FormHelperText>
+            <Field.Label>{t("components.discordMessageForm.stripImagesSectionTitle")}</Field.Label>
+            <Field.HelperText>
               {t("components.discordMessageForm.stripImagesCheckboxDescription")}
-            </FormHelperText>
+            </Field.HelperText>
           </Box>
-          <Stack
-            spacing={8}
-            flexGrow="1"
-            width="100%"
-            maxW={{ md: "3xl" }}
-            minW={{ md: "md", lg: "lg", xl: "3xl" }}
-          >
+          <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "md", lg: "lg", xl: "3xl" }}>
             <Controller
               name="formatter.stripImages"
               control={control}
               render={({ field }) => {
                 return (
                   <Switch
-                    {...field}
-                    isChecked={!!field.value}
-                    value=""
-                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                    name={field.name}
+                    checked={!!field.value}
+                    onCheckedChange={(details) => field.onChange(details.checked)}
+                    onBlur={field.onBlur}
                   />
                 );
               }}
             />
           </Stack>
         </Stack>
-      </FormControl>
-      <FormControl>
+      </Field.Root>
+      <Field.Root>
         <Stack
           direction={{ base: "column", md: "row" }}
-          spacing={{ base: "1.5", md: "8" }}
+          gap={{ base: "1.5", md: "8" }}
           justify="space-between"
+          alignSelf="stretch"
         >
           <Box>
-            <FormLabel>
+            <Field.Label>
               {t("components.discordMessageForm.disableImageLinkPreviewsTitle")}
-            </FormLabel>
-            <FormHelperText>
+            </Field.Label>
+            <Field.HelperText>
               <Trans
                 t={t}
                 i18nKey="components.discordMessageForm.disableImageLinkPreviewsCheckboxDescription"
                 components={[<Code />]}
               />
-            </FormHelperText>
+            </Field.HelperText>
           </Box>
-          <Stack
-            spacing={8}
-            width="100%"
-            maxW={{ md: "3xl" }}
-            minW={{ md: "md", lg: "lg", xl: "3xl" }}
-          >
+          <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "md", lg: "lg", xl: "3xl" }}>
             <Controller
               name="formatter.disableImageLinkPreviews"
               control={control}
               render={({ field }) => {
                 return (
                   <Switch
-                    {...field}
-                    isChecked={!!field.value}
-                    value=""
-                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                    name={field.name}
+                    checked={!!field.value}
+                    onCheckedChange={(details) => field.onChange(details.checked)}
+                    onBlur={field.onBlur}
                   />
                 );
               }}
             />
           </Stack>
         </Stack>
-      </FormControl>
-      <FormControl>
+      </Field.Root>
+      <Field.Root>
         <Stack
           direction={{ base: "column", md: "row" }}
-          spacing={{ base: "1.5", md: "8" }}
+          gap={{ base: "1.5", md: "8" }}
           justify="space-between"
+          alignSelf="stretch"
         >
           <Box>
-            <FormLabel>Ignore new lines</FormLabel>
-            <FormHelperText>
+            <Field.Label>Ignore new lines</Field.Label>
+            <Field.HelperText>
               Prevents excessive new lines from being added to the message if the text content
               within placeholder content have new lines.
-            </FormHelperText>
+            </Field.HelperText>
           </Box>
-          <Stack
-            spacing={8}
-            flexGrow="1"
-            width="100%"
-            maxW={{ md: "3xl" }}
-            minW={{ md: "md", lg: "lg", xl: "3xl" }}
-          >
+          <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "md", lg: "lg", xl: "3xl" }}>
             <Controller
               name="formatter.ignoreNewLines"
               control={control}
               render={({ field }) => {
                 return (
                   <Switch
-                    {...field}
-                    isChecked={!!field.value}
-                    value=""
-                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                    name={field.name}
+                    checked={!!field.value}
+                    onCheckedChange={(details) => field.onChange(details.checked)}
+                    onBlur={field.onBlur}
                   />
                 );
               }}
             />
           </Stack>
         </Stack>
-      </FormControl>
-      <FormControl>
+      </Field.Root>
+      <Field.Root>
         <Stack
           direction={{ base: "column", md: "row" }}
-          spacing={{ base: "1.5", md: "8" }}
+          gap={{ base: "1.5", md: "8" }}
           justify="space-between"
+          alignSelf="stretch"
         >
           <Box>
-            <FormLabel>{t("components.discordMessageForm.placeholderFallbackTitle")}</FormLabel>
-            <FormHelperText>
+            <Field.Label>{t("components.discordMessageForm.placeholderFallbackTitle")}</Field.Label>
+            <Field.HelperText>
               <Stack>
                 <Text>
                   {t("components.discordMessageForm.placeholderFallbackCheckboxDescription")}
@@ -409,8 +372,11 @@ export const DiscordMessageContentForm = () => {
                       display="inline"
                       fontSize="sm"
                       mt={4}
-                      colorScheme="blue"
-                      variant="link"
+                      color="text.link"
+                      variant="plain"
+                      textDecoration="underline"
+                      height="auto"
+                      padding={0}
                       whiteSpace="initial"
                       textAlign="left"
                       mb={2}
@@ -420,7 +386,7 @@ export const DiscordMessageContentForm = () => {
                   }
                   title="Using Placeholder Fallbacks"
                   body={
-                    <Stack spacing={6}>
+                    <Stack gap={6}>
                       <Text>
                         To use placeholder fallbacks, separate each placeholder with <Code>||</Code>{" "}
                         within the curly braces. For example, if you use{" "}
@@ -438,32 +404,26 @@ export const DiscordMessageContentForm = () => {
                   }
                 />
               </Stack>
-            </FormHelperText>
+            </Field.HelperText>
           </Box>
-          <Stack
-            spacing={8}
-            flexGrow="1"
-            width="100%"
-            maxW={{ md: "3xl" }}
-            minW={{ md: "md", lg: "lg", xl: "3xl" }}
-          >
+          <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "md", lg: "lg", xl: "3xl" }}>
             <Controller
               name="enablePlaceholderFallback"
               control={control}
               render={({ field }) => {
                 return (
                   <Switch
-                    {...field}
-                    isChecked={!!field.value}
-                    value=""
-                    onChange={(e) => field.onChange(e.currentTarget.checked)}
+                    name={field.name}
+                    checked={!!field.value}
+                    onCheckedChange={(details) => field.onChange(details.checked)}
+                    onBlur={field.onBlur}
                   />
                 );
               }}
             />
           </Stack>
         </Stack>
-      </FormControl>
+      </Field.Root>
     </Stack>
   );
 };

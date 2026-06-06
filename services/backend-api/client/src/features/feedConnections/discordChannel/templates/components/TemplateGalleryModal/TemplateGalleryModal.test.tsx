@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { system } from "@/utils/theme";
 import {
   TemplateGalleryModal,
   TemplateGalleryModalProps,
@@ -99,7 +100,7 @@ const TestWrapper = ({ children }: TestWrapperProps) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider>{children}</ChakraProvider>
+      <ChakraProvider value={system}>{children}</ChakraProvider>
     </QueryClientProvider>
   );
 };
@@ -792,10 +793,10 @@ describe("TemplateGalleryModal", () => {
           <TemplateGalleryModal {...defaultProps} />
         </TestWrapper>,
       );
-      // Verify modal is rendered with overlay click behavior enabled
-      // The actual click behavior is handled by Chakra Modal internally
-      // and is tested by Chakra's own test suite
-      const overlay = document.querySelector(".chakra-modal__overlay");
+      // Verify modal is rendered with its backdrop (overlay).
+      // The actual close-on-interact-outside behavior is handled by Chakra v3
+      // Dialog internally (closeOnInteractOutside) and tested by Chakra's own suite.
+      const overlay = document.querySelector(".chakra-dialog__backdrop");
       expect(overlay).toBeInTheDocument();
     });
   });
@@ -1111,7 +1112,7 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>,
       );
       const button = screen.getByText("Use this template").closest("button");
-      expect(button).toHaveAttribute("data-loading");
+      expect(button).toHaveAttribute("aria-busy", "true");
     });
 
     it("displays secondary action button with default label", () => {
@@ -1613,7 +1614,7 @@ describe("TemplateGalleryModal", () => {
           <TemplateGalleryModal {...editorDefaultProps} selectedTemplateId={undefined} />
         </TestWrapper>,
       );
-      expect(screen.getByText("Send to Discord")).toBeDisabled();
+      expect(screen.getByText("Send to Discord")).toHaveAttribute("aria-disabled", "true");
     });
 
     it("disables Send to Discord button when no article is selected", () => {
@@ -1626,7 +1627,7 @@ describe("TemplateGalleryModal", () => {
           />
         </TestWrapper>,
       );
-      expect(screen.getByText("Send to Discord")).toBeDisabled();
+      expect(screen.getByText("Send to Discord")).toHaveAttribute("aria-disabled", "true");
     });
 
     it("shows only Save button when no articles available (empty feed)", () => {
@@ -1938,7 +1939,7 @@ describe("TemplateGalleryModal", () => {
         name: /Use this template/i,
       });
       expect(useTemplateButton).toBeInTheDocument();
-      expect(useTemplateButton).toHaveAttribute("data-loading");
+      expect(useTemplateButton).toHaveAttribute("aria-busy", "true");
     });
   });
 

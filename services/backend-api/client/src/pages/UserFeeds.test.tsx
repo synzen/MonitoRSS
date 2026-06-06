@@ -5,6 +5,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { system } from "@/utils/theme";
 import { CuratedFeed } from "../features/feed/types";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { UserFeeds } from "./UserFeeds";
@@ -171,13 +172,11 @@ vi.mock("../features/feed", async () => {
       getCategoryPreviewText: (id: string) => string;
       onSelectCategory: (id?: string) => void;
     }) => (
-      <div role="radiogroup" aria-label="Feed categories">
+      <div role="group" aria-label="Feed categories">
         {categories.map((cat: { id: string; label: string; count: number }) => (
           <button
             key={cat.id}
             type="button"
-            role="radio"
-            aria-checked={false}
             aria-label={`${cat.label}. ${getCategoryPreviewText(cat.id)}`}
             onClick={() => onSelectCategory(cat.id)}
           >
@@ -185,12 +184,7 @@ vi.mock("../features/feed", async () => {
             <span>{getCategoryPreviewText(cat.id)}</span>
           </button>
         ))}
-        <button
-          type="button"
-          role="radio"
-          aria-checked={false}
-          onClick={() => onSelectCategory(undefined)}
-        >
+        <button type="button" onClick={() => onSelectCategory(undefined)}>
           <span>Browse All Categories</span>
           <span>{totalFeedCount} popular feeds to explore →</span>
         </button>
@@ -304,7 +298,7 @@ const renderPage = () => {
   const user = userEvent.setup();
   const result = render(
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider>
+      <ChakraProvider value={system}>
         <MemoryRouter>
           <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
             <UserFeeds />
@@ -341,19 +335,19 @@ describe("UserFeeds - Discovery Mode", () => {
 
   it("shows category card grid with all categories plus Browse All", () => {
     renderPage();
-    const categoryGroup = screen.getByRole("radiogroup", { name: "Feed categories" });
-    const items = within(categoryGroup).getAllByRole("radio");
+    const categoryGroup = screen.getByRole("group", { name: "Feed categories" });
+    const items = within(categoryGroup).getAllByRole("button");
 
     expect(items).toHaveLength(mockCategories.length + 1);
   });
 
-  it("shows category cards as radios with accessible names including preview text", () => {
+  it("shows category cards as buttons with accessible names including preview text", () => {
     renderPage();
-    const gamingRadio = screen.getByRole("radio", {
+    const gamingButton = screen.getByRole("button", {
       name: /^Gaming\./,
     });
 
-    expect(gamingRadio).toBeInTheDocument();
+    expect(gamingButton).toBeInTheDocument();
   });
 
   it("shows category preview text from getCategoryPreviewText", () => {
@@ -394,10 +388,10 @@ describe("UserFeeds - Category card interactions", () => {
 
   it("clicking a category card opens the browse modal", async () => {
     const { user } = renderPage();
-    const gamingRadio = screen.getByRole("radio", {
+    const gamingButton = screen.getByRole("button", {
       name: /^Gaming\./,
     });
-    await user.click(gamingRadio);
+    await user.click(gamingButton);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Add a Feed")).toBeInTheDocument();
@@ -428,7 +422,7 @@ describe("UserFeeds - Search interaction", () => {
     await user.type(searchInput, "Gaming");
     await user.click(screen.getByRole("button", { name: "Go" }));
 
-    expect(screen.queryByRole("radiogroup", { name: "Feed categories" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Feed categories" })).not.toBeInTheDocument();
   });
 
   it("restores category cards when search is cleared", async () => {
@@ -437,10 +431,10 @@ describe("UserFeeds - Search interaction", () => {
 
     await user.type(searchInput, "Gaming");
     await user.click(screen.getByRole("button", { name: "Go" }));
-    expect(screen.queryByRole("radiogroup", { name: "Feed categories" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Feed categories" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Clear search" }));
-    expect(screen.getByRole("radiogroup", { name: "Feed categories" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Feed categories" })).toBeInTheDocument();
   });
 
   it("hides tip text when search is active", async () => {
@@ -592,7 +586,7 @@ describe("UserFeeds - Non-discovery mode", () => {
     });
     rerender(
       <QueryClientProvider client={queryClient}>
-        <ChakraProvider>
+        <ChakraProvider value={system}>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
               <UserFeeds />

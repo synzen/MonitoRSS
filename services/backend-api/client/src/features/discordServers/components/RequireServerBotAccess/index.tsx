@@ -1,13 +1,5 @@
 /* eslint-disable react/jsx-no-useless-fragment */
-import {
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  AlertTitle,
-  Box,
-  Center,
-  Flex,
-} from "@chakra-ui/react";
+import { Alert, Box, Center, Flex } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { Loading } from "@/components";
 import { useDiscordServerAccessStatus } from "../../hooks";
@@ -44,7 +36,7 @@ export const RequireServerBotAccess = ({ serverId, children }: Props) => {
           paddingTop="8"
           paddingBottom="16"
         >
-          <Alert
+          <Alert.Root
             status="warning"
             variant="subtle"
             flexDirection="column"
@@ -53,12 +45,12 @@ export const RequireServerBotAccess = ({ serverId, children }: Props) => {
             textAlign="center"
             height="200px"
           >
-            <AlertIcon boxSize="40px" mr={0} />
-            <AlertTitle mt={4} mb={1} fontSize="lg">
+            <Alert.Indicator boxSize="40px" mr={0} />
+            <Alert.Title mt={4} mb={1} fontSize="lg">
               {t("common.api.missingBotAccessTitle")}
-            </AlertTitle>
-            <AlertDescription>{t("common.api.missingBotAccessMessage")}</AlertDescription>
-          </Alert>
+            </Alert.Title>
+            <Alert.Description>{t("common.api.missingBotAccessMessage")}</Alert.Description>
+          </Alert.Root>
         </Box>
       </Flex>
     );

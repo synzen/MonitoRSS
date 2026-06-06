@@ -1,7 +1,9 @@
 /* eslint-disable react/no-unstable-nested-components */
-import { Avatar, HStack, Text, useColorModeValue } from "@chakra-ui/react";
+import { HStack, Text } from "@chakra-ui/react";
 import Select, { AriaOnFocusProps, GroupBase, StylesConfig, components } from "react-select";
-import { ChevronDownIcon } from "@chakra-ui/icons";
+import { FaChevronDown } from "react-icons/fa6";
+import { Avatar } from "@/components/ui/avatar";
+import { useColorModeValue } from "@/components/ui/color-mode";
 import { REACT_SELECT_STYLES } from "@/constants/reactSelectStyles";
 
 const { Option, DropdownIndicator } = components;
@@ -50,10 +52,7 @@ export const ThemedSelect = <T,>({
   invertBg,
 }: Props<T>) => {
   // @ts-ignore
-  const styles = useColorModeValue<SelectStyles, SelectStyles>(
-    {},
-    REACT_SELECT_STYLES({ invertBg }),
-  );
+  const styles = useColorModeValue<SelectStyles>({}, REACT_SELECT_STYLES({ invertBg, isInvalid }));
   const selectedOption = options.find((option) => option.value === value);
 
   const onFocus = ({ focused }: AriaOnFocusProps<SelectOption<T>, GroupBase<SelectOption<T>>>) => {
@@ -121,7 +120,7 @@ const IconOption = <T,>(props: IconOptionProps) => {
 const ChakraDropdownIndicator = (props: Parameters<typeof DropdownIndicator>[0]) => {
   return (
     <components.DropdownIndicator {...props}>
-      <ChevronDownIcon fontSize="lg" />
+      <FaChevronDown size={14} />
     </components.DropdownIndicator>
   );
 };

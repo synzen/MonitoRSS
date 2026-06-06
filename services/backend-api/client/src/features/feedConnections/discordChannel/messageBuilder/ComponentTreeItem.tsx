@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Box, VStack, HStack, Text, IconButton, Icon, Button } from "@chakra-ui/react";
+import { Box, VStack, HStack, Text, IconButton, Button } from "@chakra-ui/react";
 import { FaExclamationCircle, FaExclamationTriangle, FaCog } from "react-icons/fa";
-import { ChevronDownIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { FaChevronDown, FaChevronRight } from "react-icons/fa6";
 import { AddComponentButton } from "./AddComponentButton";
 import type { Component, SectionComponent } from "./types";
 import { ComponentType, canComponentHaveChildren } from "./types";
@@ -14,7 +14,6 @@ import { useNavigableTreeItemContext } from "./contexts/NavigableTreeItemContext
 import { useMessageBuilderContext } from "./MessageBuilderContext";
 import { SlidingConfigPanel } from "./SlidingConfigPanel";
 
-import getChakraColor from "@/utils/getChakraColor";
 import getMessageBuilderComponentLabel from "./utils/getMessageBuilderComponentLabel";
 import getMessageBuilderComponentIcon from "./utils/getMessageBuilderComponentIcon";
 import { notifyInfo } from "@/utils/notifyInfo";
@@ -74,15 +73,17 @@ const ComponentTreeItemInner: React.FC<ComponentTreeItemProps> = ({
   const showMobileActions = isSelected;
 
   return (
-    <VStack align="stretch" spacing={0} position="relative" ref={ref}>
+    <VStack align="stretch" gap={0} position="relative" ref={ref}>
       <HStack
+        position="relative"
         pl={2 + depth * 4}
         pr={2}
-        py={2}
+        py={1.5}
         cursor="pointer"
-        bg={isSelected ? "blue.600" : "transparent"}
-        _hover={{ bg: isSelected ? "blue.600" : "gray.700" }}
-        outline={isFocused ? `2px solid ${getChakraColor("blue.300")}` : undefined}
+        bg={isSelected ? "brand.muted" : "transparent"}
+        _hover={{ bg: isSelected ? "brand.muted" : "bg.emphasized" }}
+        outline={isFocused ? "2px solid var(--app-fg)" : undefined}
+        outlineOffset="-2px"
         data-tour-target={isSelected ? "selected-component" : undefined}
       >
         {canHaveChildren && (
@@ -91,50 +92,55 @@ const ComponentTreeItemInner: React.FC<ComponentTreeItemProps> = ({
               return (
                 <IconButton
                   tabIndex={-1}
-                  icon={isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
-                  size="xs"
+                  size="2xs"
                   variant="ghost"
                   aria-label={isExpanded ? "Collapse" : "Expand"}
                   onClick={onClick}
-                />
+                >
+                  {isExpanded ? <FaChevronDown size={12} /> : <FaChevronRight size={12} />}
+                </IconButton>
               );
             }}
           </NavigableTreeItemExpandButton>
         )}
         {!canHaveChildren && <Box w={6} />}
-        <Box fontSize="xs" mr={2} color="gray.400">
+        <Box fontSize="xs" mr={2} color="fg.muted">
           {React.createElement(getMessageBuilderComponentIcon(component.type))}
         </Box>
         <HStack flex={1} justifyContent="space-between" position="relative">
           <HStack>
-            <Text fontSize="sm" color="white">
+            <Text fontSize="sm" color="fg">
               {isAccessory && (
-                <Text as="span" color={isSelected ? "white" : "gray.400"} fontWeight="normal">
+                <Text as="span" color={isSelected ? "fg" : "fg.muted"} fontWeight="normal">
                   [Accessory]{" "}
                 </Text>
               )}
               {getMessageBuilderComponentLabel(component.type)}
             </Text>
             {componentIdsWithErrors.has(component.id) && (
-              <Icon
-                as={FaExclamationCircle}
-                color={isSelected ? "white" : "red.400"}
+              <Box
+                as="span"
+                color={isSelected ? "fg" : "red.400"}
                 flexShrink={0}
-                size="sm"
                 aria-label="Error detected"
                 title="Error detected"
-              />
+                display="inline-flex"
+              >
+                <FaExclamationCircle />
+              </Box>
             )}
             {!componentIdsWithErrors.has(component.id) &&
               componentIdsWithWarnings.has(component.id) && (
-                <Icon
-                  as={FaExclamationTriangle}
-                  color={isSelected ? "white" : "orange.400"}
+                <Box
+                  as="span"
+                  color={isSelected ? "fg" : "orange.400"}
                   flexShrink={0}
-                  size="sm"
                   aria-label="Warning detected"
                   title="Warning detected"
-                />
+                  display="inline-flex"
+                >
+                  <FaExclamationTriangle />
+                </Box>
               )}
           </HStack>
         </HStack>{" "}
@@ -146,7 +152,8 @@ const ComponentTreeItemInner: React.FC<ComponentTreeItemProps> = ({
           display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
           position="absolute"
           right="5px"
-          top="5px"
+          top="50%"
+          transform="translateY(-50%)"
           hidden={!isSelected}
         >
           <AddComponentButton
@@ -159,7 +166,7 @@ const ComponentTreeItemInner: React.FC<ComponentTreeItemProps> = ({
       {/* Mobile inline action buttons - use CSS display to avoid flash on tree remount */}
       <Box display={{ base: "block", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none" }}>
         {showMobileActions && (
-          <HStack pl={2 + depth * 4 + 6} pr={2} py={2} spacing={2} bg="gray.750">
+          <HStack pl={2 + depth * 4 + 6} pr={2} py={2} gap={2} bg="bg.emphasized">
             <AddComponentButton
               component={component}
               canHaveChildren={canHaveChildren}
@@ -169,12 +176,8 @@ const ComponentTreeItemInner: React.FC<ComponentTreeItemProps> = ({
                 variant: "solid",
               }}
             />
-            <Button
-              leftIcon={<FaCog />}
-              size="sm"
-              variant="solid"
-              onClick={() => setIsConfigPanelOpen(true)}
-            >
+            <Button size="sm" variant="solid" onClick={() => setIsConfigPanelOpen(true)}>
+              <FaCog />
               Configure
             </Button>
           </HStack>
@@ -188,7 +191,7 @@ const ComponentTreeItemInner: React.FC<ComponentTreeItemProps> = ({
           This ensures child nodes exist in the DOM on initial render so Google Translate
           can process them before the async expand fires. */}
       {(hasChildren || hasAccessory) && (
-        <VStack align="stretch" spacing={0}>
+        <VStack align="stretch" gap={0}>
           <NavigableTreeItemGroup>
             {component.children?.map((child) => (
               <NavigableTreeItem ariaLabel={child.name} id={child.id} key={child.id}>

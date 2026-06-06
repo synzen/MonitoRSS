@@ -21,7 +21,7 @@ export const RequireAuth = ({ children, waitForUserFetch }: Props) => {
 
   if (isLoading) {
     return (
-      <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
+      <Stack alignItems="center" justifyContent="center" height="100%" gap="2rem">
         <Loading size="xl" />
         <Heading>{t("pages.checkingLogin.title")}</Heading>
       </Stack>

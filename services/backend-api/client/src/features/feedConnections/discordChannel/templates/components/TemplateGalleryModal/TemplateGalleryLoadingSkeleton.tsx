@@ -1,5 +1,6 @@
 import { Box, Skeleton, VStack, Text } from "@chakra-ui/react";
 
+import { Panel } from "@/components/Panel";
 import { TemplateGalleryLayout } from "./TemplateGalleryLayout";
 
 /**
@@ -10,21 +11,21 @@ export const TemplateGalleryLoadingSkeleton = () => {
     <Box>
       <TemplateGalleryLayout
         templateList={
-          <VStack spacing={3} align="stretch" p={1}>
-            <Skeleton height="72px" borderRadius="md" />
-            <Skeleton height="72px" borderRadius="md" />
-            <Skeleton height="72px" borderRadius="md" />
-            <Skeleton height="72px" borderRadius="md" />
+          <VStack gap={3} align="stretch" p={1}>
+            <Skeleton height="72px" borderRadius="l3" />
+            <Skeleton height="72px" borderRadius="l3" />
+            <Skeleton height="72px" borderRadius="l3" />
+            <Skeleton height="72px" borderRadius="l3" />
           </VStack>
         }
         preview={
-          <Box bg="gray.900" borderRadius="md" p={4} minH={{ base: "200px", lg: "400px" }}>
-            <Text fontSize="sm" color="gray.400" mb={3}>
+          <Panel surface="subtle" p={4} minH={{ base: "200px", lg: "400px" }}>
+            <Text fontSize="sm" color="fg.muted" mb={3}>
               Preview
             </Text>
-            <Skeleton height="32px" borderRadius="md" mb={4} />
-            <Skeleton height="300px" borderRadius="md" />
-          </Box>
+            <Skeleton height="32px" borderRadius="l3" mb={4} />
+            <Skeleton height="300px" borderRadius="l3" />
+          </Panel>
         }
       />
     </Box>

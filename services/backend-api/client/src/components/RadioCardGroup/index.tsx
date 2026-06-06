@@ -1,4 +1,4 @@
-import { Box, HStack, UseRadioProps, useRadio, useRadioGroup } from "@chakra-ui/react";
+import { RadioCard as ChakraRadioCard, HStack } from "@chakra-ui/react";
 import React from "react";
 
 interface RadioCardGroupProps {
@@ -6,61 +6,40 @@ interface RadioCardGroupProps {
 }
 
 export const RadioCardGroup = ({ options }: RadioCardGroupProps) => {
-  const { getRootProps, getRadioProps } = useRadioGroup({
-    name: "framework",
-    defaultValue: "react",
-  });
-
-  const group = getRootProps();
-
   return (
-    <HStack {...group}>
-      {options.map((value) => {
-        const radio = getRadioProps({ value });
-
-        return (
-          <RadioCard key={value} {...radio}>
+    <ChakraRadioCard.Root>
+      <HStack>
+        {options.map((value) => (
+          <RadioCard key={value} value={value}>
             {value}
           </RadioCard>
-        );
-      })}
-    </HStack>
+        ))}
+      </HStack>
+    </ChakraRadioCard.Root>
   );
 };
 
 export const RadioCard = (
-  props: UseRadioProps & {
+  props: ChakraRadioCard.ItemProps & {
     children: React.ReactNode;
   },
 ) => {
-  const { children } = props;
-  const { getInputProps, getRadioProps } = useRadio(props);
-
-  const input = getInputProps();
-  const checkbox = getRadioProps();
+  const { children, ...rest } = props;
 
   return (
-    <Box as="label">
-      <input {...input} />
-      <Box
-        {...checkbox}
-        cursor="pointer"
-        borderWidth="1px"
-        borderRadius="md"
-        boxShadow="md"
-        _checked={{
-          bg: "teal.600",
-          color: "white",
-          borderColor: "teal.600",
-        }}
-        _focus={{
-          boxShadow: "outline",
-        }}
-        px={5}
-        py={3}
-      >
-        {children}
-      </Box>
-    </Box>
+    <ChakraRadioCard.Item
+      {...rest}
+      cursor="pointer"
+      borderWidth="1px"
+      borderRadius="l3"
+      boxShadow="md"
+      px={5}
+      py={3}
+    >
+      <ChakraRadioCard.ItemHiddenInput />
+      <ChakraRadioCard.ItemControl>
+        <ChakraRadioCard.ItemText>{children}</ChakraRadioCard.ItemText>
+      </ChakraRadioCard.ItemControl>
+    </ChakraRadioCard.Item>
   );
 };

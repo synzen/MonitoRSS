@@ -6,39 +6,31 @@ import {
   Text,
   HStack,
   Button,
-  AlertDialog,
-  AlertDialogOverlay,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogBody,
-  AlertDialogFooter,
   useDisclosure,
   Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
   Stack,
   Heading,
-  Breadcrumb,
+  BreadcrumbRoot,
+  BreadcrumbList,
   BreadcrumbItem,
   BreadcrumbLink,
-  Avatar,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  MenuDivider,
+  BreadcrumbSeparator,
+  BreadcrumbCurrentLink,
   chakra,
-  Alert,
   Icon,
 } from "@chakra-ui/react";
-import { WarningIcon, SettingsIcon, InfoIcon } from "@chakra-ui/icons";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import {
+  FaTriangleExclamation,
+  FaGear,
+  FaCircleInfo,
+  FaChevronDown,
+  FaChevronUp,
+  FaRightFromBracket,
+} from "react-icons/fa6";
 import { HiTemplate } from "react-icons/hi";
 import { useParams, Link as RouterLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FaRightFromBracket } from "react-icons/fa6";
+
 import { useMessageBuilderStateContext } from "./state";
 import { DiscordMessagePreview } from "./DiscordMessagePreview";
 import { ComponentPropertiesPanel } from "./ComponentPropertiesPanel";
@@ -92,6 +84,19 @@ import { TEMPLATES, getTemplateById, DEFAULT_TEMPLATE } from "../templates/const
 import { detectFields } from "../templates/utils";
 import { useTemplateFeedFields } from "../templates/hooks";
 import type { Component } from "./types";
+import { Avatar } from "@/components/ui/avatar";
+import { Alert } from "@/components/ui/alert";
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 
 // When the tree container remounts (key change for Google Translate compatibility),
 // DOM focus is lost to <body>. This component restores focus to the currently
@@ -187,18 +192,18 @@ const MessageBuilderContent: React.FC = () => {
   const { messageComponent, messageComponentRef, dispatch, errors, isDirty, validate } =
     useMessageBuilderStateContext();
   const { setCurrentSelectedId } = useNavigableTreeContext();
-  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+  const [selectedTabValue, setSelectedTabValue] = useState("components");
   const [isProblemsCollapsed, setIsProblemsCollapsed] = useState(false);
   const allComponentIds = useMemo(() => collectComponentIds(messageComponent), [messageComponent]);
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const { open: isOpen, onOpen, onClose } = useDisclosure();
   const {
-    isOpen: isProblemsDialogOpen,
+    open: isProblemsDialogOpen,
     onOpen: onProblemsDialogOpen,
     onClose: onProblemsDialogClose,
   } = useDisclosure();
   const {
-    isOpen: isTemplatesOpen,
+    open: isTemplatesOpen,
     onOpen: onOpenTemplates,
     onClose: onCloseTemplates,
   } = useDisclosure();
@@ -390,7 +395,7 @@ const MessageBuilderContent: React.FC = () => {
   };
 
   const handlePathClick = (componentId: string) => {
-    setSelectedTabIndex(0);
+    setSelectedTabValue("components");
 
     setScrollToComponentId(componentId);
     setTimeout(() => {
@@ -402,10 +407,10 @@ const MessageBuilderContent: React.FC = () => {
     <NavigableTreeContext.Consumer>
       {({ currentSelectedId }) => {
         return (
-          <Box position="relative" height="100%" bg="gray.900">
+          <Box position="relative" height="100%" bg="bg">
             <Flex direction="column" height="100%">
               {/* Header */}
-              <Box bg="gray.800" borderBottom="1px" borderColor="gray.700" width="full">
+              <Box bg="bg" borderBottomWidth="1px" borderColor="border" width="full">
                 <Flex
                   width="100%"
                   justifyContent="space-between"
@@ -432,7 +437,7 @@ const MessageBuilderContent: React.FC = () => {
                               textOverflow="ellipsis"
                               fontWeight="bold"
                               title="MonitoRSS"
-                              color="white"
+                              color="fg"
                             >
                               MonitoRSS
                             </chakra.span>
@@ -444,30 +449,27 @@ const MessageBuilderContent: React.FC = () => {
                           <Loading />
                         </Box>
                       )}
-                      {botError && <Alert status="error">{botError.message}</Alert>}
+                      {botError && <Alert status="error" title={botError.message} />}
                     </Flex>
                     <Box display={{ base: "none", sm: "block" }}>
                       <SearchFeedsModal />
                     </Box>
                   </HStack>
                   <Flex alignItems="center">
-                    <Menu placement="bottom-end">
-                      <MenuButton
-                        as={Button}
-                        size="sm"
-                        variant="link"
-                        aria-label="Account settings"
-                      >
-                        <Avatar
-                          src={discordUserMe?.iconUrl}
-                          size="sm"
-                          name={discordUserMe?.username}
-                          backgroundColor="transparent"
-                          title={discordUserMe?.username}
-                          aria-hidden
-                        />
-                      </MenuButton>
-                      <MenuList>
+                    <MenuRoot positioning={{ placement: "bottom-end" }}>
+                      <MenuTrigger asChild>
+                        <Button size="sm" variant="ghost" aria-label="Account settings" padding={0}>
+                          <Avatar
+                            src={discordUserMe?.iconUrl}
+                            size="sm"
+                            name={discordUserMe?.username}
+                            backgroundColor="transparent"
+                            title={discordUserMe?.username}
+                            aria-hidden
+                          />
+                        </Button>
+                      </MenuTrigger>
+                      <MenuContent>
                         <Box overflow="hidden" paddingX={2} title={discordUserMe?.username}>
                           <Text
                             overflow="hidden"
@@ -477,129 +479,143 @@ const MessageBuilderContent: React.FC = () => {
                           >
                             {discordUserMe?.username}
                           </Text>
-                          <Text fontSize="sm" color="whiteAlpha.600">
+                          <Text fontSize="sm" color="fg.muted">
                             Discord ID: {discordUserMe?.id}
                           </Text>
                         </Box>
-                        <MenuDivider />
+                        <MenuSeparator />
                         <MenuItem
-                          icon={<SettingsIcon />}
+                          value="account-settings"
                           onClick={() => navigate(pages.userSettings())}
                         >
+                          <Icon>
+                            <FaGear />
+                          </Icon>
                           Account Settings
                         </MenuItem>
                         <MenuItem
-                          alignItems="center"
-                          icon={<InfoIcon />}
+                          value="discord-support"
                           onClick={() => {
                             window.open("https://discord.gg/pudv7Rx", "_blank");
                           }}
                         >
+                          <Icon>
+                            <FaCircleInfo />
+                          </Icon>
                           Discord Support Server
                         </MenuItem>
                         <LogoutButton
                           trigger={
-                            <MenuItem icon={<FaRightFromBracket />}>
+                            <MenuItem value="logout">
+                              <FaRightFromBracket />
                               {t("components.pageContentV2.logout")}
                             </MenuItem>
                           }
                         />
-                      </MenuList>
-                    </Menu>
+                      </MenuContent>
+                    </MenuRoot>
                   </Flex>
                 </Flex>
               </Box>
               {/* Navigation */}
-              <Box bg="gray.800" px={4} py={3}>
-                <Breadcrumb>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink as={RouterLink} to={pages.userFeeds()} color="blue.300">
-                      Feeds
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink
-                      as={RouterLink}
-                      to={pages.userFeed(userFeed.id)}
-                      color="blue.300"
-                    >
-                      {userFeed.title}
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink
-                      as={RouterLink}
-                      to={pages.userFeed(userFeed.id, {
-                        tab: UserFeedTabSearchParam.Connections,
-                      })}
-                      color="blue.300"
-                    >
-                      Connections
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink
-                      as={RouterLink}
-                      to={pages.userFeedConnection({
-                        feedId: userFeed.id,
-                        connectionType: FeedConnectionType.DiscordChannel,
-                        connectionId: connection.id,
-                      })}
-                      color="blue.300"
-                    >
-                      {connection.name}
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbItem isCurrentPage>
-                    <BreadcrumbLink>Message Builder</BreadcrumbLink>
-                  </BreadcrumbItem>
-                </Breadcrumb>
+              <Box bg="bg" px={4} py={3}>
+                <BreadcrumbRoot>
+                  <BreadcrumbList>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <RouterLink to={pages.userFeeds()} color="text.link">
+                          Feeds
+                        </RouterLink>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <RouterLink to={pages.userFeed(userFeed.id)} color="text.link">
+                          {userFeed.title}
+                        </RouterLink>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <RouterLink
+                          to={pages.userFeed(userFeed.id, {
+                            tab: UserFeedTabSearchParam.Connections,
+                          })}
+                          color="text.link"
+                        >
+                          Connections
+                        </RouterLink>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild>
+                        <RouterLink
+                          to={pages.userFeedConnection({
+                            feedId: userFeed.id,
+                            connectionType: FeedConnectionType.DiscordChannel,
+                            connectionId: connection.id,
+                          })}
+                          color="text.link"
+                        >
+                          {connection.name}
+                        </RouterLink>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbCurrentLink>Message Builder</BreadcrumbCurrentLink>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </BreadcrumbRoot>
               </Box>
               {/* Top Bar */}
-              <Stack bg="gray.800" borderBottom="1px" borderColor="gray.600" px={4} pb={3}>
+              <Stack bg="bg" borderBottomWidth="1px" borderColor="border" px={4} pb={3}>
                 <HStack justify="space-between" align="center" flexWrap="wrap">
                   <HStack>
-                    <Text fontSize="lg" fontWeight="bold" color="white" as="h1" tabIndex={-1}>
+                    <Text fontSize="lg" fontWeight="bold" color="fg" as="h1" tabIndex={-1}>
                       Message Builder
                     </Text>
                   </HStack>
-                  <HStack spacing={3} flexWrap="wrap">
+                  <HStack gap={3} flexWrap="wrap">
                     <Button
                       display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "inline-flex" }}
                       variant="outline"
-                      colorScheme="gray"
+                      colorPalette="gray"
                       size="sm"
                       onClick={resetTour}
-                      leftIcon={<InfoIcon />}
                     >
+                      <Icon>
+                        <FaCircleInfo />
+                      </Icon>
                       Take Tour
                     </Button>
                     <Button
                       ref={templatesButtonRef}
                       variant="outline"
-                      colorScheme="gray"
+                      colorPalette="gray"
                       size="sm"
                       onClick={onOpenTemplates}
-                      leftIcon={<HiTemplate />}
                       data-tour-target="templates-button"
                     >
+                      <HiTemplate />
                       Templates
                     </Button>
-                    <HStack spacing={3} data-tour-target="save-discard-buttons">
-                      <Button
-                        variant="outline"
-                        colorScheme="red"
+                    <HStack gap={3} data-tour-target="save-discard-buttons">
+                      <DestructiveActionButton
                         size="sm"
                         onClick={handleDiscard}
                         aria-disabled={!hasAnyChanges}
                       >
                         Discard Changes
-                      </Button>
+                      </DestructiveActionButton>
                       {hasBrandingValues ? (
                         <>
                           <Button
                             variant="outline"
-                            colorScheme="blue"
+                            colorPalette="brand"
                             size="sm"
                             onClick={() => {
                               skipBrandingRef.current = true;
@@ -609,19 +625,18 @@ const MessageBuilderContent: React.FC = () => {
                           >
                             {updateStatus === "loading" ? "Saving..." : "Save without branding"}
                           </Button>
-                          <Button colorScheme="blue" size="sm" onClick={onOpenPricingDialog}>
+                          <PrimaryActionButton size="sm" onClick={onOpenPricingDialog}>
                             Upgrade to save with branding
-                          </Button>
+                          </PrimaryActionButton>
                         </>
                       ) : (
-                        <Button
-                          colorScheme="blue"
+                        <PrimaryActionButton
                           size="sm"
                           onClick={handleSave}
                           aria-disabled={updateStatus === "loading" || !hasAnyChanges}
                         >
                           {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
-                        </Button>
+                        </PrimaryActionButton>
                       )}
                     </HStack>
                   </HStack>
@@ -629,7 +644,7 @@ const MessageBuilderContent: React.FC = () => {
                 <PageAlertContextOutlet containerProps={{ zIndex: 0 }} />
               </Stack>
               {/* Main Content */}
-              <Flex flex={1} bg="gray.900" position="relative">
+              <Flex flex={1} bg="bg" position="relative">
                 {/* Left Panel - Component Tree */}
                 <Box
                   display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
@@ -638,16 +653,16 @@ const MessageBuilderContent: React.FC = () => {
                   width={SIDE_PANEL_WIDTH}
                 >
                   <Box
-                    bg="gray.800"
-                    borderRight="1px"
-                    borderColor="gray.600"
+                    bg="bg"
+                    borderRightWidth="1px"
+                    borderColor="border"
                     height="100%"
                     width="100%"
                     overflowY="auto"
                     overflowX="hidden"
                     data-tour-target="components-section"
                   >
-                    <VStack align="stretch" spacing={0} minWidth={200} height="100%">
+                    <VStack align="stretch" gap={0} minWidth={200} height="100%">
                       <ComponentTreeToolbar />
                       {messageComponent && (
                         <div
@@ -687,9 +702,9 @@ const MessageBuilderContent: React.FC = () => {
                   maxWidth={SIDE_PANEL_WIDTH}
                 >
                   <Box
-                    bg="gray.800"
-                    borderRight="1px"
-                    borderColor="gray.600"
+                    bg="bg"
+                    borderRightWidth="1px"
+                    borderColor="border"
                     height="100%"
                     width="100%"
                     overflowY="auto"
@@ -703,7 +718,7 @@ const MessageBuilderContent: React.FC = () => {
                   </Box>
                 </Box>
                 {/* Right Panel - Discord Preview and Problems */}
-                <Flex flex={1} direction="column" bg="gray.800" maxW={CENTER_PANEL_WIDTH}>
+                <Flex flex={1} direction="column" bg="bg" maxW={CENTER_PANEL_WIDTH}>
                   <Box
                     flex={isProblemsCollapsed ? 1 : "none"}
                     overflow="hidden"
@@ -713,7 +728,7 @@ const MessageBuilderContent: React.FC = () => {
                     flexDirection="column"
                   >
                     <Box srOnly>
-                      <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                      <Text fontSize="lg" fontWeight="bold" color="fg" as="h2">
                         Discord Message Preview
                       </Text>
                     </Box>
@@ -732,40 +747,42 @@ const MessageBuilderContent: React.FC = () => {
                   </Box>
                   <Box
                     display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
-                    borderTop="1px"
-                    borderColor="gray.600"
+                    borderTopWidth="1px"
+                    borderColor="border"
                     data-tour-target="problems-section"
                   >
                     <Box
                       as="button"
                       width="100%"
                       p={4}
-                      borderBottom="1px"
-                      borderColor="gray.600"
+                      borderBottomWidth="1px"
+                      borderColor="border"
                       bg="transparent"
                       cursor="pointer"
                       textAlign="left"
                       onClick={() => setIsProblemsCollapsed(!isProblemsCollapsed)}
                       aria-expanded={!isProblemsCollapsed}
                       aria-controls="problems-content"
-                      _hover={{ bg: "gray.700" }}
-                      _focus={{ outline: "2px solid", outlineColor: "blue.400" }}
+                      _hover={{ bg: "bg.emphasized" }}
+                      _focusVisible={{
+                        outlineWidth: "2px",
+                        outlineStyle: "solid",
+                        outlineColor: "brand.focusRing",
+                      }}
                       transition="background-color 0.2s"
                     >
-                      <HStack spacing={2} align="center" justify="space-between">
-                        <HStack spacing={2} align="center">
-                          <Text fontSize="lg" fontWeight="bold" color="white" as="h2">
+                      <HStack gap={2} align="center" justify="space-between">
+                        <HStack gap={2} align="center">
+                          <Text fontSize="lg" fontWeight="bold" color="fg" as="h2">
                             Problems
                           </Text>
-                          <Text color="gray.400" aria-label={`${allProblems.length} found`}>
+                          <Text color="fg.muted" aria-label={`${allProblems.length} found`}>
                             ({allProblems.length})
                           </Text>
                         </HStack>
-                        <Icon
-                          as={isProblemsCollapsed ? FaChevronUp : FaChevronDown}
-                          color="gray.400"
-                          aria-hidden
-                        />
+                        <Icon color="fg.muted" aria-hidden>
+                          {isProblemsCollapsed ? <FaChevronUp /> : <FaChevronDown />}
+                        </Icon>
                       </HStack>
                     </Box>
                     {!isProblemsCollapsed && (
@@ -780,95 +797,104 @@ const MessageBuilderContent: React.FC = () => {
                   {/* Problems Section - Mobile Tabs */}
                   <Box
                     display={{ base: "block", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "none" }}
-                    borderTop="1px"
-                    borderColor="gray.600"
+                    borderTopWidth="1px"
+                    borderColor="border"
                   >
-                    <Tabs
-                      colorScheme="blue"
+                    <Tabs.Root
+                      colorPalette="brand"
                       variant="line"
-                      index={selectedTabIndex}
-                      onChange={setSelectedTabIndex}
+                      value={selectedTabValue}
+                      onValueChange={(e) => setSelectedTabValue(e.value)}
                     >
-                      <TabList borderBottom="1px" borderColor="gray.600" bg="gray.700">
-                        <Tab
-                          color="gray.300"
-                          _selected={{ color: "white", borderColor: "blue.400" }}
+                      <Tabs.List borderBottomWidth="1px" borderColor="border" bg="bg">
+                        <Tabs.Trigger
+                          value="components"
+                          color="fg.muted"
+                          _selected={{ color: "fg", borderColor: "brand.solid" }}
                         >
                           Message Components ({messageComponent?.children?.length || 0})
-                        </Tab>
-                        <Tab
-                          color="gray.300"
-                          _selected={{ color: "white", borderColor: "blue.400" }}
+                        </Tabs.Trigger>
+                        <Tabs.Trigger
+                          value="problems"
+                          color="fg.muted"
+                          _selected={{ color: "fg", borderColor: "brand.solid" }}
                         >
                           <HStack>
                             {allProblems.length > 0 && (
-                              <WarningIcon
-                                color={problems.length > 0 ? "red.400" : "orange.400"}
+                              <Icon
+                                color={problems.length > 0 ? "text.error" : "text.warning"}
                                 aria-hidden
-                              />
+                              >
+                                <FaTriangleExclamation />
+                              </Icon>
                             )}
                             <Text>Problems ({allProblems.length})</Text>
                           </HStack>
-                        </Tab>
-                      </TabList>
-                      <TabPanels>
-                        <TabPanel p={0}>
-                          <ComponentTreeToolbar />
-                          {messageComponent && (
-                            <div
-                              ref={mobileTreeRef}
-                              key={countComponentNodes(messageComponent)}
-                              role="tree"
-                              aria-label="Message Components"
+                        </Tabs.Trigger>
+                      </Tabs.List>
+                      <Tabs.Content value="components" p={0}>
+                        <ComponentTreeToolbar />
+                        {messageComponent && (
+                          <div
+                            ref={mobileTreeRef}
+                            key={countComponentNodes(messageComponent)}
+                            role="tree"
+                            aria-label="Message Components"
+                          >
+                            <TreeFocusRestorer treeRef={mobileTreeRef} />
+                            <NavigableTreeItem
+                              isRootItem
+                              id={messageComponent.id}
+                              ariaLabel="Message Components Root"
                             >
-                              <TreeFocusRestorer treeRef={mobileTreeRef} />
-                              <NavigableTreeItem
-                                isRootItem
-                                id={messageComponent.id}
-                                ariaLabel="Message Components Root"
-                              >
-                                <ComponentTreeItem
-                                  component={messageComponent}
-                                  scrollToComponentId={scrollToComponentId}
-                                  componentIdsWithErrors={componentIdsWithErrors}
-                                  componentIdsWithWarnings={componentIdsWithWarnings}
-                                />
-                              </NavigableTreeItem>
-                            </div>
-                          )}
-                        </TabPanel>
-                        <TabPanel p={0}>
-                          <ProblemsSection
-                            problems={allProblems}
-                            onClickComponentPath={handlePathClick}
-                          />
-                        </TabPanel>
-                      </TabPanels>
-                    </Tabs>
+                              <ComponentTreeItem
+                                component={messageComponent}
+                                scrollToComponentId={scrollToComponentId}
+                                componentIdsWithErrors={componentIdsWithErrors}
+                                componentIdsWithWarnings={componentIdsWithWarnings}
+                              />
+                            </NavigableTreeItem>
+                          </div>
+                        )}
+                      </Tabs.Content>
+                      <Tabs.Content value="problems" p={0}>
+                        <ProblemsSection
+                          problems={allProblems}
+                          onClickComponentPath={handlePathClick}
+                        />
+                      </Tabs.Content>
+                    </Tabs.Root>
                   </Box>
                 </Flex>
               </Flex>
             </Flex>
             {/* Discard Confirmation Modal */}
-            <AlertDialog isOpen={isOpen} leastDestructiveRef={cancelRef} onClose={onClose}>
-              <AlertDialogOverlay>
-                <AlertDialogContent>
-                  <AlertDialogHeader>Discard Changes</AlertDialogHeader>
-                  <AlertDialogBody>
-                    Are you sure you want to discard all changes? This action cannot be undone and
-                    all your changes will be lost.
-                  </AlertDialogBody>
-                  <AlertDialogFooter>
-                    <Button ref={cancelRef} onClick={onClose} variant="outline">
-                      Cancel
-                    </Button>
-                    <Button colorScheme="red" onClick={confirmDiscard} ml={3}>
-                      Discard Changes
-                    </Button>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialogOverlay>
-            </AlertDialog>
+            <DialogRoot
+              role="alertdialog"
+              open={isOpen}
+              onOpenChange={(e) => {
+                if (!e.open) onClose();
+              }}
+              initialFocusEl={() => cancelRef.current}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Discard Changes</DialogTitle>
+                </DialogHeader>
+                <DialogBody>
+                  Are you sure you want to discard all changes? This action cannot be undone and all
+                  your changes will be lost.
+                </DialogBody>
+                <DialogFooter>
+                  <Button ref={cancelRef} onClick={onClose} variant="outline">
+                    Cancel
+                  </Button>
+                  <Button variant="solid" colorPalette="red" onClick={confirmDiscard} ml={3}>
+                    Discard Changes
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </DialogRoot>
             {/* Problems Dialog */}
             <ProblemsDialog
               isOpen={isProblemsDialogOpen}
@@ -919,7 +945,7 @@ export const MessageBuilder: React.FC = () => {
     <UserFeedProvider
       feedId={feedId}
       loadingComponent={
-        <Stack alignItems="center" justifyContent="center" height="100%" spacing="2rem">
+        <Stack alignItems="center" justifyContent="center" height="100%" gap="2rem">
           <Loading size="xl" />
           <Heading>Loading Feed...</Heading>
         </Stack>

@@ -1,6 +1,7 @@
-import { Box, Button, HStack, Link, Stack, Text } from "@chakra-ui/react";
+import { Box, HStack, Icon, Link, Stack, Text } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { ExternalLinkIcon, WarningTwoIcon } from "@chakra-ui/icons";
+import { FaTriangleExclamation, FaUpRightFromSquare } from "react-icons/fa6";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useCreateUserFeedManualRequest } from "../../hooks";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import ApiAdapterError from "../../../../utils/ApiAdapterError";
@@ -60,20 +61,20 @@ export const RefreshUserFeedButton = () => {
   return (
     <ConfirmModal
       trigger={
-        <Button aria-disabled={manualRequestStatus === "loading"}>
+        <PrimaryActionButton aria-disabled={manualRequestStatus === "loading"}>
           <span>
             {manualRequestStatus === "loading"
               ? "Attempting to re-enable..."
               : "Attempt to re-enable"}
           </span>
-        </Button>
+        </PrimaryActionButton>
       }
       onConfirm={onRefreshFeed}
       title="Have you confirmed the feed link is valid?"
       colorScheme="blue"
       descriptionNode={
         <Stack gap={4} alignItems="center">
-          <WarningTwoIcon fontSize={24} color="yellow.400" aria-hidden />
+          <Icon as={FaTriangleExclamation} color="text.warning" boxSize={10} aria-hidden />
           <Stack gap={4}>
             <Text fontWeight={600}>
               Only one attempt to re-enable can be made every {refreshRateSeconds} seconds to avoid
@@ -81,16 +82,10 @@ export const RefreshUserFeedButton = () => {
               before proceeding.
             </Text>
             <Box>
-              <Link
-                href={url}
-                isExternal
-                target="_blank"
-                rel="noopener noreferrer"
-                color="blue.300"
-              >
+              <Link href={url} target="_blank" rel="noopener noreferrer" color="text.link">
                 <HStack alignItems="center">
                   <Text wordBreak="break-all">{url}</Text>
-                  <ExternalLinkIcon />
+                  <FaUpRightFromSquare />
                 </HStack>
               </Link>
               {/* <FormControl>

@@ -2,30 +2,32 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   Box,
   HStack,
+  Icon,
   Text,
   Badge,
   Button,
   Spinner,
   Link,
   Skeleton,
-  UnorderedList,
-  ListItem,
+  List,
   Highlight,
   VisuallyHidden,
+  chakra,
 } from "@chakra-ui/react";
 import {
-  AddIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  SmallCloseIcon,
-  RepeatIcon,
-  SettingsIcon,
-  WarningIcon,
-} from "@chakra-ui/icons";
+  FaPlus,
+  FaCheck,
+  FaChevronDown,
+  FaChevronUp,
+  FaXmark,
+  FaArrowsRotate,
+  FaGear,
+  FaTriangleExclamation,
+} from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { getAvatarColor } from "@/utils/getAvatarColor";
 import { getCuratedFeedErrorMessage } from "./getCuratedFeedErrorMessage";
 import { getPreviewErrorMessage } from "./getPreviewErrorMessage";
@@ -223,14 +225,14 @@ export const FeedCard = ({
   return (
     <Box
       as="article"
-      bg="gray.800"
+      bg="bg.panel"
       borderWidth={borderless ? 0 : "1px"}
-      borderColor={state === "error" || state === "remove-error" ? "red.400" : "gray.600"}
-      borderRadius={borderless ? 0 : "md"}
+      borderColor={state === "error" || state === "remove-error" ? "red.400" : "border"}
+      borderRadius={borderless ? 0 : "l3"}
       p={3}
       aria-label={feed.title}
     >
-      <HStack spacing={3} align="start" flexWrap="wrap">
+      <HStack gap={3} align="start" flexWrap="wrap">
         <Box flexShrink={0} opacity={state === "added" || state === "removing" ? 0.7 : 1}>
           {imgError ? (
             <Box
@@ -242,7 +244,7 @@ export const FeedCard = ({
               alignItems="center"
               justifyContent="center"
             >
-              <Text color="white" fontSize="sm" fontWeight="bold" lineHeight="1" aria-hidden="true">
+              <Text color="fg" fontSize="sm" fontWeight="bold" lineHeight="1" aria-hidden="true">
                 {feed.title.charAt(0).toUpperCase()}
               </Text>
             </Box>
@@ -250,7 +252,7 @@ export const FeedCard = ({
             <Box
               w="32px"
               h="32px"
-              borderRadius="md"
+              borderRadius="l3"
               bg="white"
               display="flex"
               alignItems="center"
@@ -268,12 +270,12 @@ export const FeedCard = ({
           )}
         </Box>
         <Box flex={1} minW="100px" opacity={state === "added" || state === "removing" ? 0.7 : 1}>
-          <HStack spacing={2} flexWrap="wrap">
-            <Text fontWeight="bold" noOfLines={1} title={feed.title}>
+          <HStack gap={2} flexWrap="wrap">
+            <Text fontWeight="bold" lineClamp={1} title={feed.title}>
               {searchQuery ? (
                 <Highlight
                   query={searchQuery}
-                  styles={{ bg: "yellow.700", color: "white", px: "0", rounded: "none" }}
+                  styles={{ bg: "yellow.700", color: "fg", px: "0", rounded: "none" }}
                 >
                   {feed.title}
                 </Highlight>
@@ -283,7 +285,7 @@ export const FeedCard = ({
             </Text>
             {feed.popular && showPopularBadge && (
               <Badge
-                colorScheme="purple"
+                colorPalette="purple"
                 variant="subtle"
                 borderRadius="full"
                 fontSize="xs"
@@ -297,7 +299,7 @@ export const FeedCard = ({
             )}
             {showCategoryTag && (
               <Badge
-                colorScheme="gray"
+                colorPalette="gray"
                 variant="subtle"
                 borderRadius="full"
                 fontSize="x-small"
@@ -309,11 +311,11 @@ export const FeedCard = ({
             )}
           </HStack>
           {showDomain && (
-            <Text color="gray.400" fontSize="xs" noOfLines={1}>
+            <Text color="fg.muted" fontSize="xs" lineClamp={1}>
               {searchQuery ? (
                 <Highlight
                   query={searchQuery}
-                  styles={{ bg: "yellow.700", color: "gray.100", px: "0", rounded: "none" }}
+                  styles={{ bg: "yellow.700", color: "fg", px: "0", rounded: "none" }}
                 >
                   {feed.domain}
                 </Highlight>
@@ -323,16 +325,16 @@ export const FeedCard = ({
             </Text>
           )}
           {redirectedFrom && (
-            <Text color="gray.400" fontSize="xs" noOfLines={1} title={redirectedFrom}>
+            <Text color="fg.muted" fontSize="xs" lineClamp={1} title={redirectedFrom}>
               Originally entered: {redirectedFrom}
             </Text>
           )}
           {feed.description && (
-            <Text color="gray.400" noOfLines={wrapDescription ? undefined : 1} fontSize="sm">
+            <Text color="fg.muted" lineClamp={wrapDescription ? undefined : 1} fontSize="sm">
               {searchQuery ? (
                 <Highlight
                   query={searchQuery}
-                  styles={{ bg: "yellow.700", color: "gray.100", px: "0", rounded: "none" }}
+                  styles={{ bg: "yellow.700", color: "fg", px: "0", rounded: "none" }}
                 >
                   {feed.description}
                 </Highlight>
@@ -345,13 +347,13 @@ export const FeedCard = ({
         {!hideActions && !fullWidthAction && (
           <Box flexShrink={0} ml="auto">
             {isAddable && (
-              <HStack spacing={2}>
+              <HStack gap={2}>
                 <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
                   {statusAnnouncement}
                 </VisuallyHidden>
                 {isAdded && !onRemove && (
-                  <HStack spacing={1} color="green.300">
-                    <CheckIcon boxSize={3} aria-hidden="true" />
+                  <HStack gap={1} color="text.success">
+                    <FaCheck aria-hidden="true" />
                     <Text fontSize="xs">Added</Text>
                   </HStack>
                 )}
@@ -372,7 +374,7 @@ export const FeedCard = ({
                       </>
                     ) : (
                       <>
-                        <SmallCloseIcon boxSize={4} aria-hidden="true" mr={1} /> Remove
+                        <FaXmark aria-hidden="true" /> Remove
                       </>
                     )}
                   </Button>
@@ -401,22 +403,22 @@ export const FeedCard = ({
                   )}
                   {mainButtonMode === "remove" && (
                     <>
-                      <SmallCloseIcon boxSize={4} aria-hidden="true" mr={1} /> Remove
+                      <FaXmark aria-hidden="true" /> Remove
                     </>
                   )}
                   {mainButtonMode === "settings" && (
                     <>
-                      <SettingsIcon boxSize={3} aria-hidden="true" mr={1} /> Feed settings &rarr;
+                      <FaGear aria-hidden="true" /> Feed settings &rarr;
                     </>
                   )}
                   {mainButtonMode === "added-disabled" && (
                     <>
-                      Added <CheckIcon ml={1} aria-hidden="true" />
+                      Added <FaCheck aria-hidden="true" />
                     </>
                   )}
                   {mainButtonMode === "add" && (
                     <>
-                      <AddIcon boxSize={3} aria-hidden="true" mr={1} /> Add
+                      <FaPlus aria-hidden="true" /> Add
                     </>
                   )}
                 </Button>
@@ -424,15 +426,15 @@ export const FeedCard = ({
             )}
             {state === "error" && (
               <Button size="sm" onClick={onAdd} aria-describedby={errorId}>
-                <RepeatIcon boxSize={3} aria-hidden="true" mr={1} /> Retry
+                <FaArrowsRotate aria-hidden="true" /> Retry
               </Button>
             )}
             {state === "limit-reached" && (
               <Button
                 size="sm"
                 variant="outline"
-                color="gray.300"
-                borderColor="gray.500"
+                color="fg.subtle"
+                borderColor="border"
                 cursor="not-allowed"
                 _hover={{}}
                 _active={{}}
@@ -448,17 +450,18 @@ export const FeedCard = ({
       </HStack>
       {state === "error" && (
         <Box mt={2}>
-          <HStack spacing={2} align="start">
-            <WarningIcon color="red.300" mt="2px" aria-hidden="true" />
+          <HStack gap={2} align="start">
+            <Icon as={FaTriangleExclamation} color="text.error" mt="2px" aria-hidden="true" />
             <Box>
-              <Text color="red.300" fontSize="sm" role="alert" id={errorId} display="inline">
+              <Text color="text.error" fontSize="sm" role="alert" id={errorId} display="inline">
                 {displayErrorMessage}
               </Text>
               {isCurated && errorMessage && (
                 <Button
-                  variant="link"
+                  variant="plain"
+                  textDecoration="underline"
                   fontSize="xs"
-                  color="gray.400"
+                  color="fg.muted"
                   ml={2}
                   display="inline-flex"
                   verticalAlign="baseline"
@@ -477,12 +480,12 @@ export const FeedCard = ({
               mt={2}
               pl={6}
               fontSize="xs"
-              color="gray.400"
+              color="fg.muted"
               hidden={!showDetails}
               as="dl"
             >
-              <HStack spacing={1} align="baseline">
-                <Text as="dt" fontWeight="semibold" color="gray.300" flexShrink={0}>
+              <HStack gap={1} align="baseline">
+                <Text as="dt" fontWeight="semibold" color="fg.subtle" flexShrink={0}>
                   Error
                 </Text>
                 <Text as="dd">{errorMessage}</Text>
@@ -493,9 +496,9 @@ export const FeedCard = ({
       )}
       {state === "remove-error" && (
         <Box mt={2}>
-          <HStack spacing={2} align="start">
-            <WarningIcon color="red.300" mt="2px" aria-hidden="true" />
-            <Text color="red.300" fontSize="sm" role="alert">
+          <HStack gap={2} align="start">
+            <Icon as={FaTriangleExclamation} color="text.error" mt="2px" aria-hidden="true" />
+            <Text color="text.error" fontSize="sm" role="alert">
               {removeErrorMessage}
             </Text>
           </HStack>
@@ -509,14 +512,14 @@ export const FeedCard = ({
                 {statusAnnouncement}
               </VisuallyHidden>
               {isAdded && !onRemove && (
-                <HStack spacing={1} color="green.300" mb={2} justify="center">
-                  <CheckIcon boxSize={3} aria-hidden="true" />
+                <HStack gap={1} color="text.success" mb={2} justify="center">
+                  <FaCheck aria-hidden="true" />
                   <Text fontSize="sm">Added</Text>
                 </HStack>
               )}
               <Button
                 ref={addButtonRef}
-                colorScheme={mainButtonMode === "remove" ? undefined : "blue"}
+                colorPalette={mainButtonMode === "remove" ? undefined : "brand"}
                 width="full"
                 onClick={handleAddButtonClick}
                 variant={
@@ -547,23 +550,22 @@ export const FeedCard = ({
                 )}
                 {mainButtonMode === "remove" && (
                   <>
-                    <SmallCloseIcon boxSize={4} aria-hidden="true" mr={1} /> Remove
+                    <FaXmark aria-hidden="true" /> Remove
                   </>
                 )}
                 {mainButtonMode === "settings" && (
                   <>
-                    <SettingsIcon boxSize={3} aria-hidden="true" mr={1} /> Go to feed settings
-                    &rarr;
+                    <FaGear aria-hidden="true" /> Go to feed settings &rarr;
                   </>
                 )}
                 {mainButtonMode === "added-disabled" && (
                   <>
-                    Added <CheckIcon ml={2} aria-hidden="true" />
+                    Added <FaCheck aria-hidden="true" />
                   </>
                 )}
                 {mainButtonMode === "add" && (
                   <>
-                    <AddIcon boxSize={3} aria-hidden="true" mr={1} /> Add Feed
+                    <FaPlus aria-hidden="true" /> Add Feed
                   </>
                 )}
               </Button>
@@ -585,7 +587,7 @@ export const FeedCard = ({
                     </>
                   ) : (
                     <>
-                      <SmallCloseIcon boxSize={4} aria-hidden="true" mr={1} /> Remove
+                      <FaXmark aria-hidden="true" /> Remove
                     </>
                   )}
                 </Button>
@@ -593,16 +595,16 @@ export const FeedCard = ({
             </>
           )}
           {state === "error" && (
-            <Button colorScheme="blue" width="full" onClick={onAdd} aria-describedby={errorId}>
-              <RepeatIcon boxSize={3} aria-hidden="true" mr={1} /> Retry
-            </Button>
+            <PrimaryActionButton width="full" onClick={onAdd} aria-describedby={errorId}>
+              <FaArrowsRotate aria-hidden="true" /> Retry
+            </PrimaryActionButton>
           )}
           {state === "limit-reached" && (
             <Button
               width="full"
               variant="outline"
-              color="gray.300"
-              borderColor="gray.500"
+              color="fg.subtle"
+              borderColor="border"
               cursor="not-allowed"
               _hover={{}}
               _active={{}}
@@ -616,8 +618,7 @@ export const FeedCard = ({
         </Box>
       )}
       {previewEnabled && feed.id && (
-        <Box
-          as="details"
+        <chakra.details
           mt={2}
           open={isPreviewOpen || undefined}
           onToggle={(e: React.SyntheticEvent<HTMLDetailsElement>) => {
@@ -634,7 +635,7 @@ export const FeedCard = ({
               }
             }
           }}
-          sx={{
+          css={{
             "& > summary": {
               listStyle: "none",
             },
@@ -648,11 +649,11 @@ export const FeedCard = ({
             cursor="pointer"
             py={1}
             fontSize="sm"
-            color="blue.300"
-            _hover={{ color: "blue.200" }}
+            color="text.link"
+            _hover={{ color: "text.link" }}
             _focusVisible={{
               outline: "2px solid",
-              outlineColor: "blue.400",
+              outlineColor: "brand.focusRing",
               outlineOffset: "2px",
               borderRadius: "sm",
             }}
@@ -663,9 +664,9 @@ export const FeedCard = ({
           >
             Preview articles
             {isPreviewOpen ? (
-              <ChevronUpIcon aria-hidden="true" />
+              <FaChevronUp aria-hidden="true" />
             ) : (
-              <ChevronDownIcon aria-hidden="true" />
+              <FaChevronDown aria-hidden="true" />
             )}
           </Box>
           {isPreviewOpen && (
@@ -673,7 +674,7 @@ export const FeedCard = ({
               mt={2}
               pt={2}
               borderTopWidth="1px"
-              borderTopColor="gray.700"
+              borderTopColor="border"
               role="region"
               aria-label={`${feed.title} article preview`}
             >
@@ -681,7 +682,7 @@ export const FeedCard = ({
                 <Box aria-busy="true" aria-label="Loading article preview">
                   <Text
                     fontSize="xs"
-                    color="gray.400"
+                    color="fg.muted"
                     fontWeight="semibold"
                     textTransform="uppercase"
                     letterSpacing="wider"
@@ -698,8 +699,8 @@ export const FeedCard = ({
                 </Box>
               )}
               {!isPreviewLoading && isPreviewError && (
-                <HStack spacing={2}>
-                  <Text color="gray.400" fontSize="sm" role="alert">
+                <HStack gap={2}>
+                  <Text color="fg.muted" fontSize="sm" role="alert">
                     {previewErrorMessage}
                   </Text>
                   <Button size="xs" variant="outline" onClick={handleRetryPreview}>
@@ -711,7 +712,7 @@ export const FeedCard = ({
                 !isPreviewError &&
                 previewArticles &&
                 previewArticles.length === 0 && (
-                  <Text color="gray.400" fontSize="sm">
+                  <Text color="fg.muted" fontSize="sm">
                     No articles found in this feed.
                   </Text>
                 )}
@@ -723,7 +724,7 @@ export const FeedCard = ({
                     <Text
                       id={previewId}
                       fontSize="xs"
-                      color="gray.400"
+                      color="fg.muted"
                       fontWeight="semibold"
                       textTransform="uppercase"
                       letterSpacing="wider"
@@ -731,65 +732,60 @@ export const FeedCard = ({
                     >
                       Recent articles
                     </Text>
-                    <UnorderedList
+                    <List.Root
                       listStyleType="none"
                       ml={0}
-                      spacing={2}
+                      gap={2}
                       aria-labelledby={previewId}
                       role="list"
                     >
                       {previewArticles.map((article, index) => (
                         // eslint-disable-next-line react/no-array-index-key -- static preview list, never reordered
-                        <ListItem key={index}>
-                          <HStack justify="space-between" align="baseline" spacing={3}>
+                        <List.Item key={index}>
+                          <HStack justify="space-between" align="baseline" gap={3}>
                             {article.url ? (
                               <Link
                                 href={article.url}
-                                isExternal
-                                color="gray.100"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                color="fg"
                                 fontSize="sm"
                                 fontWeight="medium"
-                                noOfLines={1}
-                                _hover={{ color: "white", textDecoration: "underline" }}
+                                lineClamp={1}
+                                _hover={{ color: "fg", textDecoration: "underline" }}
                                 _focusVisible={{
                                   outline: "2px solid",
-                                  outlineColor: "blue.400",
+                                  outlineColor: "brand.focusRing",
                                   outlineOffset: "2px",
                                 }}
                               >
                                 {article.title}
                               </Link>
                             ) : (
-                              <Text
-                                fontSize="sm"
-                                fontWeight="medium"
-                                noOfLines={1}
-                                color="gray.100"
-                              >
+                              <Text fontSize="sm" fontWeight="medium" lineClamp={1} color="fg">
                                 {article.title}
                               </Text>
                             )}
                             {article.date && (
-                              <Text
-                                as="time"
+                              <chakra.time
                                 dateTime={article.date}
                                 fontSize="xs"
-                                color="gray.400"
+                                color="fg.muted"
                                 flexShrink={0}
                                 whiteSpace="nowrap"
                               >
                                 {dayjs(article.date).fromNow()}
-                              </Text>
+                              </chakra.time>
                             )}
                           </HStack>
-                        </ListItem>
+                        </List.Item>
                       ))}
-                    </UnorderedList>
+                    </List.Root>
                   </>
                 )}
             </Box>
           )}
-        </Box>
+        </chakra.details>
       )}
     </Box>
   );

@@ -1,31 +1,25 @@
-import {
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormHelperText,
-  FormLabel,
-  HStack,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  useDisclosure,
-} from "@chakra-ui/react";
+import { Button, HStack, Input, Stack } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { cloneElement, useEffect, useRef } from "react";
+import { cloneElement, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { array, InferType, number, object, string } from "yup";
 import { useTranslation } from "react-i18next";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useCreateDiscordChannelConnectionClone } from "../../hooks";
 import { FeedConnectionType } from "@/types";
 import { InlineErrorAlert, InlineErrorIncompleteFormAlert } from "@/components";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
 import { SelectableUserFeedList } from "../../../../../feed/components/CopyUserFeedSettingsDialog/SelectableUserFeedList";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Field } from "@/components/ui/field";
 
 const formSchema = object({
   name: string().required("Name is required").max(250, "Name must be fewer than 250 characters"),
@@ -87,7 +81,7 @@ export const CloneDiscordConnectionCloneDialog = ({
     resolver: yupResolver(formSchema),
     defaultValues,
   });
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [open, setOpen] = useState(false);
   const initialRef = useRef<HTMLInputElement>(null);
   const { mutateAsync: createChannelClone, error } = useCreateDiscordChannelConnectionClone();
   const { t } = useTranslation();
@@ -95,7 +89,7 @@ export const CloneDiscordConnectionCloneDialog = ({
 
   useEffect(() => {
     reset(defaultValues);
-  }, [isOpen, JSON.stringify(defaultValues)]);
+  }, [open, JSON.stringify(defaultValues)]);
 
   const onSubmit = async ({ name, userFeedSelection }: FormData) => {
     try {
@@ -124,7 +118,7 @@ export const CloneDiscordConnectionCloneDialog = ({
         title: `Successfully created cloned connection: ${name}`,
       });
 
-      onClose();
+      setOpen(false);
       reset({ name });
     } catch (err) {}
   };
@@ -133,27 +127,35 @@ export const CloneDiscordConnectionCloneDialog = ({
 
   return (
     <>
-      {cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose} initialFocusRef={initialRef} size="xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Clone connection</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Stack spacing={4}>
+      {cloneElement(trigger, { onClick: () => setOpen(true) })}
+      <DialogRoot
+        open={open}
+        onOpenChange={(e) => setOpen(e.open)}
+        initialFocusEl={() => initialRef.current}
+        size="xl"
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clone connection</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody>
+            <Stack gap={4}>
               <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
-                <Stack spacing={4}>
-                  <FormControl isInvalid={!!errors.name}>
-                    <FormLabel fontWeight={600}>Name</FormLabel>
+                <Stack gap={4}>
+                  <Field
+                    label={<span style={{ fontWeight: 600 }}>Name</span>}
+                    invalid={!!errors.name}
+                    errorText={errors.name?.message}
+                    helperText="The name for the newly-cloned connection."
+                  >
                     <Controller
                       name="name"
                       control={control}
-                      render={({ field }) => <Input {...field} ref={initialRef} bg="gray.800" />}
+                      render={({ field }) => <Input {...field} ref={initialRef} />}
                     />
-                    {errors.name && <FormErrorMessage>{errors.name.message}</FormErrorMessage>}
-                    <FormHelperText>The name for the newly-cloned connection.</FormHelperText>
-                  </FormControl>
-                  <FormControl isInvalid={!!errors.userFeedSelection} isRequired>
+                  </Field>
+                  <Stack gap={1}>
                     <Controller
                       name="userFeedSelection"
                       control={control}
@@ -190,10 +192,11 @@ export const CloneDiscordConnectionCloneDialog = ({
                         />
                       )}
                     />
-                    <FormErrorMessage>
-                      {errors.userFeedSelection?.selectedFeeds?.message}
-                    </FormErrorMessage>
-                  </FormControl>
+                    <Field
+                      invalid={!!errors.userFeedSelection}
+                      errorText={errors.userFeedSelection?.selectedFeeds?.message}
+                    />
+                  </Stack>
                 </Stack>
               </form>
               {error && (
@@ -206,14 +209,13 @@ export const CloneDiscordConnectionCloneDialog = ({
                 <InlineErrorIncompleteFormAlert fieldCount={formErrorCount} />
               )}
             </Stack>
-          </ModalBody>
-          <ModalFooter>
+          </DialogBody>
+          <DialogFooter>
             <HStack>
-              <Button variant="ghost" onClick={onClose}>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button
-                colorScheme="blue"
+              <PrimaryActionButton
                 onClick={() => {
                   if (isSubmitting) {
                     return;
@@ -226,11 +228,11 @@ export const CloneDiscordConnectionCloneDialog = ({
               >
                 <span>{!isSubmitting && "Clone"}</span>
                 <span>{isSubmitting && "Cloning..."}</span>
-              </Button>
+              </PrimaryActionButton>
             </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </>
   );
 };

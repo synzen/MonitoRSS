@@ -1,4 +1,4 @@
-import { Alert, AlertDescription, AlertIcon, AlertTitle, Box } from "@chakra-ui/react";
+import { Alert } from "@chakra-ui/react";
 import { useUserFeedContext, useUserFeedArticles } from "@/features/feed";
 import { useUserMe } from "@/features/discordUser";
 
@@ -34,17 +34,17 @@ export const useExternalPropertiesEligibility = () => {
     loaded: true,
     eligible: false,
     alertComponent: (
-      <Alert status="warning" rounded="lg">
-        <AlertIcon />
-        <Box>
-          <AlertTitle>This feature is disabled for this feed</AlertTitle>
-          <AlertDescription>
+      <Alert.Root status="warning" rounded="lg">
+        <Alert.Indicator />
+        <Alert.Content>
+          <Alert.Title>This feature is disabled for this feed</Alert.Title>
+          <Alert.Description>
             To prevent performance issues, this feature is only enabled for feeds with fewer than{" "}
             {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles. This feed currently has{" "}
             {data.result.totalArticles} articles.
-          </AlertDescription>
-        </Box>
-      </Alert>
+          </Alert.Description>
+        </Alert.Content>
+      </Alert.Root>
     ),
   };
 };

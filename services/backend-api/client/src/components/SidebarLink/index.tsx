@@ -1,17 +1,10 @@
-import {
-  As,
-  HStack,
-  Icon,
-  Link as ChakraLink,
-  LinkProps,
-  Text,
-  Tooltip,
-  useColorModeValue as mode,
-} from "@chakra-ui/react";
+import { HStack, Icon, Link as ChakraLink, LinkProps, Text } from "@chakra-ui/react";
 import React from "react";
+import { useColorModeValue as mode } from "@/components/ui/color-mode";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface NavLinkProps extends LinkProps {
-  icon?: As;
+  icon?: React.ElementType;
   disabled?: boolean;
   active?: boolean;
 }
@@ -23,25 +16,21 @@ export const SidebarLink: React.FC<NavLinkProps> = ({
   disabled,
   active,
 }) => (
-  <Tooltip isDisabled={!disabled} placement="bottom-start">
+  <Tooltip disabled={!disabled} positioning={{ placement: "bottom-start" }} content="">
     <ChakraLink
       px="4"
       py="3"
       userSelect="none"
       onClick={disabled ? undefined : onClick}
       cursor={disabled ? "not-allowed" : "pointer"}
-      borderRadius="md"
-      color={disabled ? "gray.600" : undefined}
-      _hover={active || disabled ? {} : { bg: mode("gray.100", "gray.700") }}
-      background={active ? "blue.500" : undefined}
+      borderRadius="l3"
+      color={active ? "brand.contrast" : (disabled && "fg.subtle") || undefined}
+      _hover={active || disabled ? {} : { bg: mode("gray.100", "bg.emphasized") }}
+      background={active ? "brandSolid" : undefined}
       tabIndex={0}
-      _activeLink={{
-        bg: "gray.700",
-        color: "white",
-      }}
     >
       <HStack justify="space-between">
-        <HStack spacing="3">
+        <HStack gap="3">
           {icon && <Icon as={icon} />}
           <Text as="span" fontSize="sm" lineHeight="1.25rem">
             {children}

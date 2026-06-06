@@ -5,6 +5,7 @@ import { SupporterSubscriptionsService } from "../../src/services/supporter-subs
 import type { PaddleService } from "../../src/services/paddle/paddle.service";
 import type { SupportersService } from "../../src/services/supporters/supporters.service";
 import type { MessageBrokerService } from "../../src/services/message-broker/message-broker.service";
+import type { ISupporterRepository } from "../../src/repositories/interfaces/supporter.types";
 import type { IUser } from "../../src/repositories/interfaces/user.types";
 import type {
   PaddlePricingPreviewResponse,
@@ -63,6 +64,12 @@ export interface MockMessageBrokerService {
   >;
 }
 
+export interface MockSupporterRepository {
+  nullifySubscriptionBySubscriptionId: Mock<
+    (subscriptionId: string) => Promise<null>
+  >;
+}
+
 export interface SupporterSubscriptionsContextOptions {
   config?: Partial<Config>;
   paddleService?: {
@@ -102,6 +109,11 @@ export interface SupporterSubscriptionsContextOptions {
       userId: string;
     }) => Promise<void>;
   };
+  supporterRepository?: {
+    nullifySubscriptionBySubscriptionId?: (
+      subscriptionId: string,
+    ) => Promise<null>;
+  };
 }
 
 export interface SupporterSubscriptionsContext {
@@ -110,6 +122,7 @@ export interface SupporterSubscriptionsContext {
   paddleService: MockPaddleService;
   supportersService: MockSupportersService;
   messageBrokerService: MockMessageBrokerService;
+  supporterRepository: MockSupporterRepository;
   generateId(): string;
   createUser(overrides?: Partial<IUser>): Promise<IUser>;
   createPricingPreviewResponse(
@@ -169,6 +182,16 @@ function createMockMessageBrokerService(
   };
 }
 
+function createMockSupporterRepository(
+  options: SupporterSubscriptionsContextOptions["supporterRepository"] = {},
+): MockSupporterRepository {
+  return {
+    nullifySubscriptionBySubscriptionId: mock.fn(
+      options.nullifySubscriptionBySubscriptionId ?? (async () => null),
+    ),
+  };
+}
+
 export function createSupporterSubscriptionsHarness(): SupporterSubscriptionsHarness {
   let testContext: ServiceTestContext;
   let userRepository: UserMongooseRepository;
@@ -195,6 +218,9 @@ export function createSupporterSubscriptionsHarness(): SupporterSubscriptionsHar
       const messageBrokerService = createMockMessageBrokerService(
         options.messageBrokerService,
       );
+      const supporterRepository = createMockSupporterRepository(
+        options.supporterRepository,
+      );
 
       const service = new SupporterSubscriptionsService({
         config,
@@ -202,6 +228,8 @@ export function createSupporterSubscriptionsHarness(): SupporterSubscriptionsHar
         supportersService: supportersService as unknown as SupportersService,
         messageBrokerService:
           messageBrokerService as unknown as MessageBrokerService,
+        supporterRepository:
+          supporterRepository as unknown as ISupporterRepository,
         userRepository,
       });
 
@@ -211,6 +239,7 @@ export function createSupporterSubscriptionsHarness(): SupporterSubscriptionsHar
         paddleService,
         supportersService,
         messageBrokerService,
+        supporterRepository,
         generateId: generateTestId,
 
         async createUser(overrides: Partial<IUser> = {}) {

@@ -1,23 +1,21 @@
-import { ChevronDownIcon } from "@chakra-ui/icons";
 import {
   Box,
-  Breadcrumb,
+  BreadcrumbCurrentLink,
   BreadcrumbItem,
   BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbRoot,
+  BreadcrumbSeparator,
   Button,
   Grid,
   Heading,
   HStack,
-  MenuButton,
   Spinner,
   Stack,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
   Tabs,
   Text,
 } from "@chakra-ui/react";
+import { FaChevronDown } from "react-icons/fa6";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
@@ -64,6 +62,8 @@ const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedConnectionTabSearchParam.RateLimits, 2],
   [UserFeedConnectionTabSearchParam.CustomPlaceholders, 3],
 ]);
+
+const tabValues = ["message", "filters", "rate-limits", "custom-placeholders"];
 
 export const ConnectionDiscordChannelSettings: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
@@ -155,47 +155,57 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
           w: "100%",
           display: "flex",
           justifyContent: "center",
-          paddingX: [4, 4, 8, 12],
+          paddingX: 4,
           pb: 4,
           pt: 0,
         }}
       />
-      <Tabs isLazy isFitted defaultIndex={tabIndex ?? 0} index={tabIndex ?? undefined} width="100%">
+      <Tabs.Root
+        lazyMount
+        variant="enclosed"
+        fitted
+        defaultValue={tabValues[tabIndex ?? 0]}
+        value={tabIndex !== undefined ? tabValues[tabIndex] : undefined}
+        width="100%"
+      >
         <BoxConstrained.Wrapper>
-          <BoxConstrained.Container spacing={4} px={4}>
-            <Stack spacing={6}>
-              <Stack spacing={4}>
+          <BoxConstrained.Container gap={4} px={4}>
+            <Stack gap={6}>
+              <Stack gap={4}>
                 <Stack>
-                  <Breadcrumb>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink as={RouterLink} to={pages.userFeeds()} color="blue.300">
-                        Feeds
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink
-                        as={RouterLink}
-                        to={pages.userFeed(feedId as string)}
-                        color="blue.300"
-                      >
-                        {feed?.title}
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink
-                        as={RouterLink}
-                        to={pages.userFeed(feedId as string, {
-                          tab: UserFeedTabSearchParam.Connections,
-                        })}
-                        color="blue.300"
-                      >
-                        Connections
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbItem isCurrentPage>
-                      <BreadcrumbLink href="#">{connection?.name}</BreadcrumbLink>
-                    </BreadcrumbItem>
-                  </Breadcrumb>
+                  <BreadcrumbRoot>
+                    <BreadcrumbList>
+                      <BreadcrumbItem>
+                        <BreadcrumbLink asChild color="text.link">
+                          <RouterLink to={pages.userFeeds()}>Feeds</RouterLink>
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator />
+                      <BreadcrumbItem>
+                        <BreadcrumbLink asChild color="text.link">
+                          <RouterLink to={pages.userFeed(feedId as string)}>
+                            {feed?.title}
+                          </RouterLink>
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator />
+                      <BreadcrumbItem>
+                        <BreadcrumbLink asChild color="text.link">
+                          <RouterLink
+                            to={pages.userFeed(feedId as string, {
+                              tab: UserFeedTabSearchParam.Connections,
+                            })}
+                          >
+                            Connections
+                          </RouterLink>
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator />
+                      <BreadcrumbItem>
+                        <BreadcrumbCurrentLink>{connection?.name}</BreadcrumbCurrentLink>
+                      </BreadcrumbItem>
+                    </BreadcrumbList>
+                  </BreadcrumbRoot>
                   <HStack
                     alignItems="center"
                     justifyContent="space-between"
@@ -211,14 +221,10 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                         <DiscordChannelConnectionSettings
                           connection={connection}
                           trigger={
-                            <MenuButton
-                              ref={actionsButtonRef}
-                              as={Button}
-                              variant="outline"
-                              rightIcon={<ChevronDownIcon />}
-                            >
+                            <Button ref={actionsButtonRef} variant="outline">
                               <span>Connection Actions</span>
-                            </MenuButton>
+                              <FaChevronDown />
+                            </Button>
                           }
                           feedId={feedId as string}
                         />
@@ -229,7 +235,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                 <ConnectionDisabledAlert />
               </Stack>
               <TabContentContainer>
-                <Stack spacing={6}>
+                <Stack gap={6}>
                   <Heading as="h2" size="md">
                     Connection Overview
                   </Heading>
@@ -302,8 +308,9 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                 </Stack>
               </TabContentContainer>
             </Stack>
-            <TabList overflow="auto">
-              <Tab
+            <Tabs.List overflow="auto">
+              <Tabs.Trigger
+                value="message"
                 fontWeight={tabIndex === 0 ? "bold" : "semibold"}
                 onClick={() => {
                   navigate({
@@ -312,8 +319,9 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                 }}
               >
                 Message Format
-              </Tab>
-              <Tab
+              </Tabs.Trigger>
+              <Tabs.Trigger
+                value="filters"
                 fontWeight={tabIndex === 1 ? "bold" : "semibold"}
                 onClick={() => {
                   navigate({
@@ -322,14 +330,16 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                 }}
               >
                 Article Filters
-              </Tab>
-              <Tab
+              </Tabs.Trigger>
+              <Tabs.Trigger
+                value="rate-limits"
                 fontWeight={tabIndex === 2 ? "bold" : "semibold"}
                 onClick={() => navigate({ search: UserFeedConnectionTabSearchParam.RateLimits })}
               >
                 Delivery Rate Limits
-              </Tab>
-              <Tab
+              </Tabs.Trigger>
+              <Tabs.Trigger
+                value="custom-placeholders"
                 fontWeight={tabIndex === 3 ? "bold" : "semibold"}
                 onClick={() => {
                   navigate({
@@ -338,14 +348,14 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                 }}
               >
                 Custom Placeholders
-              </Tab>
-            </TabList>
+              </Tabs.Trigger>
+            </Tabs.List>
           </BoxConstrained.Container>
         </BoxConstrained.Wrapper>
-        <TabPanels width="100%" display="flex" justifyContent="center">
-          <TabPanel padding={0} py={4} width="100%">
+        <Tabs.ContentGroup width="100%" display="flex" justifyContent="center">
+          <Tabs.Content value="message" padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
-              <BoxConstrained.Container>
+              <BoxConstrained.Container px={4}>
                 <TabContentContainer>
                   <MessageTabSection
                     guildId={serverId}
@@ -356,10 +366,10 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                 </TabContentContainer>
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
-          </TabPanel>
-          <TabPanel padding={0} py={4} width="100%">
+          </Tabs.Content>
+          <Tabs.Content value="filters" padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
-              <BoxConstrained.Container>
+              <BoxConstrained.Container px={4}>
                 <TabContentContainer>
                   <FiltersTabSection
                     onFiltersUpdated={(filters) =>
@@ -379,27 +389,27 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                 </TabContentContainer>
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
-          </TabPanel>
-          <TabPanel padding={0} py={4} width="100%">
+          </Tabs.Content>
+          <Tabs.Content value="rate-limits" padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
-              <BoxConstrained.Container>
+              <BoxConstrained.Container px={4}>
                 <TabContentContainer>
                   <DeliveryRateLimitsTabSection />
                 </TabContentContainer>
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
-          </TabPanel>
-          <TabPanel padding={0} py={4} width="100%">
+          </Tabs.Content>
+          <Tabs.Content value="custom-placeholders" padding={0} py={4} width="100%">
             <BoxConstrained.Wrapper>
-              <BoxConstrained.Container>
+              <BoxConstrained.Container px={4}>
                 <TabContentContainer>
                   <CustomPlaceholdersTabSection />
                 </TabContentContainer>
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
+          </Tabs.Content>
+        </Tabs.ContentGroup>
+      </Tabs.Root>
     </>
   );
 };

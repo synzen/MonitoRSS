@@ -1,25 +1,17 @@
 import React from "react";
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
   VStack,
   Text,
   Button,
   Box,
   Input,
   InputGroup,
-  InputLeftElement,
   Spinner,
   HStack,
-  Avatar,
   SimpleGrid,
   IconButton,
 } from "@chakra-ui/react";
-import { ArrowBackIcon, AtSignIcon, ChevronRightIcon, SearchIcon } from "@chakra-ui/icons";
+import { FaArrowLeft, FaAt, FaChevronRight, FaMagnifyingGlass } from "react-icons/fa6";
 import { FaHashtag, FaBullhorn, FaComments } from "react-icons/fa";
 import { Virtuoso } from "react-virtuoso";
 import {
@@ -29,6 +21,15 @@ import {
   GetDiscordChannelType,
 } from "@/features/discordServers";
 import { useDebounce } from "@/hooks";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Avatar } from "@/components/ui/avatar";
 
 type MentionType = "role" | "user" | "channel";
 
@@ -65,26 +66,26 @@ const RoleItem: React.FC<RoleItemProps> = ({ role, index, totalCount, onInsert, 
       p={4}
       w="100%"
       borderRadius={0}
-      borderBottom={index < totalCount - 1 ? "1px solid" : undefined}
-      borderColor="gray.600"
-      _hover={{ bg: "gray.700" }}
+      borderBottomWidth={index < totalCount - 1 ? "1px" : undefined}
+      borderColor="border"
+      _hover={{ bg: "bg.emphasized" }}
     >
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <HStack spacing={3}>
-          <Box w={3} h={3} borderRadius="full" bg={role.color || "gray.500"} flexShrink={0} />
+        <HStack gap={3}>
+          <Box w={3} h={3} borderRadius="full" bg={role.color || "fg.muted"} flexShrink={0} />
           <Text fontSize="sm" fontWeight="medium">
             {displayName}
           </Text>
         </HStack>
         <Button
           size="sm"
-          colorScheme="blue"
+          colorPalette="brand"
           variant="outline"
           onClick={() => onInsert({ id: role.id, type: "role", text: mentionText })}
           flexShrink={0}
-          rightIcon={<ChevronRightIcon />}
         >
           Insert
+          <FaChevronRight />
         </Button>
       </Box>
     </Box>
@@ -104,19 +105,19 @@ const UserItem: React.FC<UserItemProps> = ({ user, index, totalCount, onInsert }
       p={4}
       w="100%"
       borderRadius={0}
-      borderBottom={index < totalCount - 1 ? "1px solid" : undefined}
-      borderColor="gray.600"
-      _hover={{ bg: "gray.700" }}
+      borderBottomWidth={index < totalCount - 1 ? "1px" : undefined}
+      borderColor="border"
+      _hover={{ bg: "bg.emphasized" }}
     >
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <HStack spacing={3}>
+        <HStack gap={3}>
           <Avatar size="sm" name={user.username} src={user.avatarUrl || undefined} />
-          <VStack align="start" spacing={0}>
+          <VStack align="start" gap={0}>
             <Text fontSize="sm" fontWeight="medium">
               @{user.displayName || user.username}
             </Text>
             {user.displayName && user.displayName !== user.username && (
-              <Text fontSize="xs" color="gray.400">
+              <Text fontSize="xs" color="fg.muted">
                 {user.username}
               </Text>
             )}
@@ -124,13 +125,13 @@ const UserItem: React.FC<UserItemProps> = ({ user, index, totalCount, onInsert }
         </HStack>
         <Button
           size="sm"
-          colorScheme="blue"
+          colorPalette="brand"
           variant="outline"
           onClick={() => onInsert({ id: user.id, type: "user", text: `<@${user.id}>` })}
           flexShrink={0}
-          rightIcon={<ChevronRightIcon />}
         >
           Insert
+          <FaChevronRight />
         </Button>
       </Box>
     </Box>
@@ -152,12 +153,12 @@ interface ChannelItemProps {
 const getChannelIcon = (type?: string | null) => {
   switch (type) {
     case "announcement":
-      return <Box as={FaBullhorn} color="gray.400" fontSize="sm" />;
+      return <Box as={FaBullhorn} color="fg.muted" fontSize="sm" />;
     case "forum":
-      return <Box as={FaComments} color="gray.400" fontSize="sm" />;
+      return <Box as={FaComments} color="fg.muted" fontSize="sm" />;
     case "text":
     default:
-      return <Box as={FaHashtag} color="gray.400" fontSize="sm" />;
+      return <Box as={FaHashtag} color="fg.muted" fontSize="sm" />;
   }
 };
 
@@ -167,33 +168,33 @@ const ChannelItem: React.FC<ChannelItemProps> = ({ channel, index, totalCount, o
       p={4}
       w="100%"
       borderRadius={0}
-      borderBottom={index < totalCount - 1 ? "1px solid" : undefined}
-      borderColor="gray.600"
-      _hover={{ bg: "gray.700" }}
+      borderBottomWidth={index < totalCount - 1 ? "1px" : undefined}
+      borderColor="border"
+      _hover={{ bg: "bg.emphasized" }}
     >
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <VStack align="start" spacing={0}>
-          <HStack spacing={2}>
+        <VStack align="start" gap={0}>
+          <HStack gap={2}>
             {getChannelIcon(channel.type)}
             <Text fontSize="sm" fontWeight="medium">
               {channel.name}
             </Text>
           </HStack>
           {channel.category?.name && (
-            <Text fontSize="xs" color="gray.400" ml={6}>
+            <Text fontSize="xs" color="fg.muted" ml={6}>
               {channel.category.name}
             </Text>
           )}
         </VStack>
         <Button
           size="sm"
-          colorScheme="blue"
+          colorPalette="brand"
           variant="outline"
           onClick={() => onInsert({ id: channel.id, type: "channel", text: `<#${channel.id}>` })}
           flexShrink={0}
-          rightIcon={<ChevronRightIcon />}
         >
           Insert
+          <FaChevronRight />
         </Button>
       </Box>
     </Box>
@@ -389,57 +390,56 @@ export const InsertMentionDialog: React.FC<Props> = ({
     (selectedType === "channel" && channelsError);
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="2xl"
+    <DialogRoot
+      open={isOpen}
+      onOpenChange={(e) => {
+        if (!e.open) {
+          onClose();
+        }
+      }}
+      size="xl"
       scrollBehavior="inside"
-      finalFocusRef={onCloseFocusRef}
+      finalFocusEl={() => onCloseFocusRef?.current ?? null}
     >
-      <ModalOverlay />
-      <ModalContent bg="gray.800" color="white" onClick={(e) => e.stopPropagation()}>
-        <ModalHeader borderBottom="1px solid" borderColor="gray.600">
-          <HStack spacing={2}>
+      <DialogContent color="fg" onClick={(e) => e.stopPropagation()}>
+        <DialogHeader borderBottomWidth="1px" borderColor="border">
+          <HStack gap={2}>
             {step === "entity-select" && (
-              <IconButton
-                aria-label="Back"
-                icon={<ArrowBackIcon />}
-                variant="ghost"
-                size="sm"
-                onClick={handleBack}
-              />
+              <IconButton aria-label="Back" variant="ghost" size="sm" onClick={handleBack}>
+                <FaArrowLeft />
+              </IconButton>
             )}
-            <Text>{getTitle()}</Text>
+            <DialogTitle>{getTitle()}</DialogTitle>
           </HStack>
-        </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody p={0}>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody p={0}>
           {step === "type-select" && (
             <Box p={6}>
-              <Text fontSize="sm" color="gray.400" mb={6} textAlign="center">
+              <Text fontSize="sm" color="fg.muted" mb={6} textAlign="center">
                 What would you like to mention?
               </Text>
-              <SimpleGrid columns={excludeChannels ? 2 : 3} spacing={4}>
+              <SimpleGrid columns={excludeChannels ? 2 : 3} gap={4}>
                 <Button
                   ref={roleButtonRef}
                   h="80px"
                   variant="outline"
-                  colorScheme="blue"
+                  colorPalette="brand"
                   onClick={() => handleTypeSelect("role")}
-                  leftIcon={<AtSignIcon />}
                   fontSize="md"
                 >
+                  <FaAt />
                   Role
                 </Button>
                 <Button
                   ref={userButtonRef}
                   h="80px"
                   variant="outline"
-                  colorScheme="blue"
+                  colorPalette="brand"
                   onClick={() => handleTypeSelect("user")}
-                  leftIcon={<AtSignIcon />}
                   fontSize="md"
                 >
+                  <FaAt />
                   User
                 </Button>
                 {!excludeChannels && (
@@ -447,11 +447,11 @@ export const InsertMentionDialog: React.FC<Props> = ({
                     ref={channelButtonRef}
                     h="80px"
                     variant="outline"
-                    colorScheme="blue"
+                    colorPalette="brand"
                     onClick={() => handleTypeSelect("channel")}
-                    leftIcon={<Box as={FaHashtag} />}
                     fontSize="md"
                   >
+                    <FaHashtag />
                     Channel
                   </Button>
                 )}
@@ -460,11 +460,8 @@ export const InsertMentionDialog: React.FC<Props> = ({
           )}
           {step === "entity-select" && (
             <>
-              <Box p={4} borderBottom="1px solid" borderColor="gray.600">
-                <InputGroup>
-                  <InputLeftElement pointerEvents="none">
-                    <SearchIcon color="gray.400" />
-                  </InputLeftElement>
+              <Box p={4} borderBottomWidth="1px" borderColor="border">
+                <InputGroup startElement={<FaMagnifyingGlass color="fg.muted" />} w="full">
                   <Input
                     ref={searchInputRef}
                     placeholder={
@@ -474,29 +471,28 @@ export const InsertMentionDialog: React.FC<Props> = ({
                     }
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    bg="gray.700"
                     autoComplete="off"
                     spellCheck={false}
                   />
                 </InputGroup>
                 {selectedType === "role" && !isLoading && !error && (
-                  <Text fontSize="xs" color="gray.400" mt={2}>
+                  <Text fontSize="xs" color="fg.muted" mt={2}>
                     {filteredRoles.length} role{filteredRoles.length !== 1 ? "s" : ""} available
                   </Text>
                 )}
                 {selectedType === "channel" && !isLoading && !error && (
-                  <Text fontSize="xs" color="gray.400" mt={2}>
+                  <Text fontSize="xs" color="fg.muted" mt={2}>
                     {filteredChannels.length} channel{filteredChannels.length !== 1 ? "s" : ""}{" "}
                     available
                   </Text>
                 )}
                 {selectedType === "user" && !searchTerm && (
-                  <Text fontSize="xs" color="gray.400" mt={2}>
+                  <Text fontSize="xs" color="fg.muted" mt={2}>
                     Type to search for server members
                   </Text>
                 )}
                 {selectedType === "user" && searchTerm && !isLoading && !error && membersData && (
-                  <Text fontSize="xs" color="gray.400" mt={2}>
+                  <Text fontSize="xs" color="fg.muted" mt={2}>
                     {membersData.results.length} user{membersData.results.length !== 1 ? "s" : ""}{" "}
                     found
                   </Text>
@@ -505,9 +501,9 @@ export const InsertMentionDialog: React.FC<Props> = ({
               <Box>
                 {isLoading && (
                   <Box p={6} textAlign="center" role="status" aria-live="polite">
-                    <VStack spacing={4}>
-                      <Spinner color="blue.400" size="lg" thickness="4px" aria-hidden="true" />
-                      <Text color="gray.300" fontWeight="medium">
+                    <VStack gap={4}>
+                      <Spinner color="text.link" size="lg" borderWidth="4px" aria-hidden="true" />
+                      <Text color="fg.subtle" fontWeight="medium">
                         Loading...
                       </Text>
                     </VStack>
@@ -515,11 +511,11 @@ export const InsertMentionDialog: React.FC<Props> = ({
                 )}
                 {!isLoading && error && (
                   <Box p={6} textAlign="center" role="alert" aria-live="assertive">
-                    <VStack spacing={4}>
-                      <Text color="red.400" fontWeight="medium">
+                    <VStack gap={4}>
+                      <Text color="text.error" fontWeight="medium">
                         Failed to load
                       </Text>
-                      <Text color="gray.400" fontSize="sm">
+                      <Text color="fg.muted" fontSize="sm">
                         Please try again later.
                       </Text>
                     </VStack>
@@ -528,7 +524,7 @@ export const InsertMentionDialog: React.FC<Props> = ({
                 {/* Roles list */}
                 {selectedType === "role" && !isLoading && !error && filteredRoles.length === 0 && (
                   <Box p={6} textAlign="center" role="status">
-                    <Text color="gray.400" fontStyle="italic">
+                    <Text color="fg.muted" fontStyle="italic">
                       No roles found
                     </Text>
                   </Box>
@@ -546,7 +542,7 @@ export const InsertMentionDialog: React.FC<Props> = ({
                 {/* Users list */}
                 {selectedType === "user" && !isLoading && !error && !searchTerm && (
                   <Box p={6} textAlign="center" role="status">
-                    <Text color="gray.400" fontStyle="italic">
+                    <Text color="fg.muted" fontStyle="italic">
                       Type to search for users
                     </Text>
                   </Box>
@@ -557,7 +553,7 @@ export const InsertMentionDialog: React.FC<Props> = ({
                   searchTerm &&
                   (!membersData || membersData.results.length === 0) && (
                     <Box p={6} textAlign="center" role="status" aria-live="polite">
-                      <Text color="gray.400" fontStyle="italic">
+                      <Text color="fg.muted" fontStyle="italic">
                         No users found
                       </Text>
                     </Box>
@@ -583,7 +579,7 @@ export const InsertMentionDialog: React.FC<Props> = ({
                   !error &&
                   filteredChannels.length === 0 && (
                     <Box p={6} textAlign="center" role="status">
-                      <Text color="gray.400" fontStyle="italic">
+                      <Text color="fg.muted" fontStyle="italic">
                         No channels found
                       </Text>
                     </Box>
@@ -604,8 +600,8 @@ export const InsertMentionDialog: React.FC<Props> = ({
               </Box>
             </>
           )}
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+        </DialogBody>
+      </DialogContent>
+    </DialogRoot>
   );
 };

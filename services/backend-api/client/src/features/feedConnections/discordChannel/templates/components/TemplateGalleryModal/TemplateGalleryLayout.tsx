@@ -17,11 +17,11 @@ export const TemplateGalleryLayout: React.FC<TemplateGalleryLayoutProps> = ({
   preview,
 }) => {
   return (
-    <Grid templateColumns={{ base: "1fr", lg: "1fr minmax(0, 650px)" }} gap={6}>
-      <GridItem maxH={{ lg: "60vh" }} overflowY={{ lg: "auto" }}>
+    <Grid templateColumns={{ base: "1fr", lg: "minmax(360px, 1fr) minmax(0, 1.4fr)" }} gap={6}>
+      <GridItem minW={0} maxH={{ lg: "60vh" }} overflowY={{ lg: "auto" }}>
         {templateList}
       </GridItem>
-      <GridItem>{preview}</GridItem>
+      <GridItem minW={0}>{preview}</GridItem>
     </Grid>
   );
 };

@@ -1,25 +1,7 @@
-import {
-  Avatar,
-  Button,
-  Flex,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  HStack,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  Stack,
-  Tag,
-  TagLabel,
-  useDisclosure,
-} from "@chakra-ui/react";
-import React, { cloneElement, useEffect, useState } from "react";
+import { Button, Flex, HStack, Stack } from "@chakra-ui/react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import {
   DiscordServerSearchSelectv2,
   useDiscordServerAccessStatus,
@@ -28,6 +10,18 @@ import {
 import { InlineErrorAlert, ThemedSelect } from "@/components";
 import { useDebounce } from "@/hooks";
 import { useDiscordUserMe } from "@/features/discordUser";
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+  DialogCloseTrigger,
+} from "@/components/ui/dialog";
+import { Field } from "@/components/ui/field";
+import { Tag } from "@/components/ui/tag";
+import { Avatar } from "@/components/ui/avatar";
 
 interface OptionData {
   id: string;
@@ -37,7 +31,8 @@ interface OptionData {
 
 interface Props {
   onAdded: (data: { id: string }) => Promise<void>;
-  trigger: React.ReactElement;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   description?: React.ReactNode;
   title?: React.ReactNode;
   okButtonText?: string;
@@ -47,7 +42,8 @@ interface Props {
 
 export const SelectUserDialog = ({
   onAdded,
-  trigger,
+  open,
+  onOpenChange,
   title,
   description,
   okButtonText,
@@ -55,12 +51,11 @@ export const SelectUserDialog = ({
   error,
 }: Props) => {
   const { t } = useTranslation();
+  const setOpen = onOpenChange;
+
   const [currentInput, setCurrentInput] = useState("");
   const [guildId, setGuildId] = useState("");
   const [selectedMention, setSelectedMention] = useState<OptionData>();
-  const { isOpen, onOpen, onClose } = useDisclosure({
-    onClose: onClosed,
-  });
   const { data: discordUserMe } = useDiscordUserMe();
   const debouncedSearch = useDebounce(currentInput, 500);
   const { data: serverAccessData } = useDiscordServerAccessStatus({ serverId: guildId });
@@ -70,7 +65,7 @@ export const SelectUserDialog = ({
     isFetching: isFetchingUsers,
   } = useDiscordServerMembers({
     serverId: guildId,
-    disabled: !isOpen || !debouncedSearch,
+    disabled: !open || !debouncedSearch,
     data: {
       limit: 25,
       search: debouncedSearch,
@@ -95,14 +90,14 @@ export const SelectUserDialog = ({
         setSaving(false);
       }
 
-      onClose();
+      setOpen(false);
     }
   };
 
   useEffect(() => {
     setSelectedMention(undefined);
     setGuildId("");
-  }, [isOpen]);
+  }, [open]);
 
   const options: Array<{
     label: string;
@@ -130,96 +125,102 @@ export const SelectUserDialog = ({
   const isInvalidServer = serverAccessData && !serverAccessData.result.authorized;
 
   return (
-    <>
-      {cloneElement(trigger, { onClick: onOpen })}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{title || "Select a User"}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Stack spacing={8}>
-              {description}
-              <Stack spacing={4}>
-                <FormControl isInvalid={isInvalidServer} isRequired>
-                  <FormLabel htmlFor="server-select" id="server-select-id">
-                    Discord Server
-                  </FormLabel>
-                  <DiscordServerSearchSelectv2
-                    onChange={(id) => setGuildId(id)}
-                    value={guildId}
-                    inputId="server-select"
-                    placeholder="Search for select the user's server"
-                    isInvalid={isInvalidServer || false}
-                    ariaLabelledBy="server-select-id"
-                  />
-                  {isInvalidServer && (
-                    <FormErrorMessage>The bot has no access to this server.</FormErrorMessage>
-                  )}
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel htmlFor="user-select">User</FormLabel>
-                  <ThemedSelect
-                    loading={isFetchingUsers}
-                    onInputChange={(value) => setCurrentInput(value)}
-                    options={options}
-                    isInvalid={!!usersError}
-                    onChange={(id, option) =>
-                      onSelected({
-                        value: id,
-                        label: option.name,
-                        icon: option.icon,
-                      })
-                    }
-                    placeholder="Search for a user"
-                    selectProps={{
-                      filterOption: () => true,
-                      inputId: "user-select",
-                    }}
-                  />
-                </FormControl>
-                {selectedMention && (
-                  <Flex justifyContent="center">
-                    <Tag size="lg">
-                      {selectedMention.icon &&
-                        React.cloneElement(selectedMention.icon, {
-                          size: "xs",
-                          "aria-hidden": true,
-                        })}
-                      <TagLabel ml={2}>{selectedMention.name}</TagLabel>
-                    </Tag>
-                  </Flex>
-                )}
-                {usersError && (
-                  <InlineErrorAlert title="Failed to get users" description={usersError.message} />
-                )}
-              </Stack>
-              {error && (
-                <InlineErrorAlert
-                  title={t("common.errors.somethingWentWrong")}
-                  description={error}
+    <DialogRoot
+      open={open}
+      onOpenChange={(e) => {
+        setOpen(e.open);
+
+        if (!e.open) {
+          onClosed?.();
+        }
+      }}
+    >
+      <DialogContent>
+        <DialogHeader marginRight={4}>
+          <DialogTitle>{title || "Select a User"}</DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
+          <Stack gap={8}>
+            {description}
+            <Stack gap={4}>
+              <Field
+                label="Discord Server"
+                invalid={isInvalidServer || false}
+                required
+                errorText="The bot has no access to this server."
+              >
+                <DiscordServerSearchSelectv2
+                  onChange={(id) => setGuildId(id)}
+                  value={guildId}
+                  inputId="server-select"
+                  placeholder="Search for select the user's server"
+                  invalid={isInvalidServer || false}
+                  ariaLabelledBy="server-select-id"
                 />
+              </Field>
+              <Field label="User" required>
+                <ThemedSelect
+                  loading={isFetchingUsers}
+                  onInputChange={(value) => setCurrentInput(value)}
+                  options={options}
+                  isInvalid={!!usersError}
+                  onChange={(id, option) =>
+                    onSelected({
+                      value: id,
+                      label: option.name,
+                      icon: option.icon,
+                    })
+                  }
+                  placeholder="Search for a user"
+                  selectProps={{
+                    filterOption: () => true,
+                    inputId: "user-select",
+                  }}
+                />
+              </Field>
+              {selectedMention && (
+                <Flex justifyContent="center">
+                  <Tag
+                    size="lg"
+                    startElement={
+                      selectedMention.icon
+                        ? React.cloneElement(selectedMention.icon, {
+                            size: "xs",
+                            "aria-hidden": true,
+                          })
+                        : undefined
+                    }
+                  >
+                    {selectedMention.name}
+                  </Tag>
+                </Flex>
+              )}
+              {usersError && (
+                <InlineErrorAlert title="Failed to get users" description={usersError.message} />
               )}
             </Stack>
-          </ModalBody>
-          <ModalFooter>
-            <HStack>
-              <Button variant="ghost" onClick={onClose}>
-                {t("common.buttons.cancel")}
-              </Button>
-              <Button
-                colorScheme="blue"
-                mr={3}
-                onClick={onClickSave}
-                isDisabled={!selectedMention || saving}
-                isLoading={saving}
-              >
-                <span>{okButtonText || t("common.buttons.save")}</span>
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+            {error && (
+              <InlineErrorAlert title={t("common.errors.somethingWentWrong")} description={error} />
+            )}
+          </Stack>
+        </DialogBody>
+        <DialogFooter>
+          <HStack>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              {t("common.buttons.cancel")}
+            </Button>
+            <PrimaryActionButton
+              mr={3}
+              onClick={onClickSave}
+              disabled={!selectedMention}
+              loading={saving}
+            >
+              <span>{okButtonText || t("common.buttons.save")}</span>
+            </PrimaryActionButton>
+          </HStack>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
   );
 };

@@ -56,6 +56,7 @@ export enum ApiErrorCode {
   SUBSCRIPTION_ABOUT_TO_RENEW = "SUBSCRIPTION_ABOUT_TO_RENEW",
   USER_REFRESH_RATE_NOT_ALLOWED = "USER_REFRESH_RATE_NOT_ALLOWED",
   ADDRESS_LOCATION_NOT_ALLOWED = "ADDRESS_LOCATION_NOT_ALLOWED",
+  SUBSCRIPTION_ALREADY_CANCELLED = "SUBSCRIPTION_ALREADY_CANCELLED",
   INVALID_REQUEST = "INVALID_REQUEST",
   SERVER_ID_REQUIRED = "SERVER_ID_REQUIRED",
   GUILD_ID_REQUIRED = "GUILD_ID_REQUIRED",
@@ -142,6 +143,8 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   USER_REFRESH_RATE_NOT_ALLOWED: "Refresh rate not allowed",
   ADDRESS_LOCATION_NOT_ALLOWED:
     "Your location is not supported for billing. This may be due to regional restrictions. If you believe this is an error, please contact support@monitorss.xyz.",
+  SUBSCRIPTION_ALREADY_CANCELLED:
+    "This subscription has already been cancelled.",
   INVALID_REQUEST: "Invalid request",
   SERVER_ID_REQUIRED: "Server ID is required",
   GUILD_ID_REQUIRED: "Guild ID is required",

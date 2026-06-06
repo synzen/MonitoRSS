@@ -1,4 +1,4 @@
-import { FormControl, FormErrorMessage, FormLabel, Input } from "@chakra-ui/react";
+import { Field as ChakraField, Input } from "@chakra-ui/react";
 import { Controller, FieldError, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { getNestedField } from "@/utils/getNestedField";
@@ -20,10 +20,10 @@ export const ConditionInput = ({ controllerName, placeholder }: Props) => {
   const { isFocused } = useNavigableTreeItemContext();
 
   return (
-    <FormControl isInvalid={!!error} isRequired>
-      <FormLabel srOnly id={`${controllerName}-label`}>
+    <ChakraField.Root invalid={!!error} required>
+      <ChakraField.Label srOnly id={`${controllerName}-label`}>
         Filter value
-      </FormLabel>
+      </ChakraField.Label>
       <Controller
         name={controllerName}
         control={control}
@@ -36,22 +36,18 @@ export const ConditionInput = ({ controllerName, placeholder }: Props) => {
               minWidth={150}
               aria-invalid={!!error}
               aria-labelledby={`${controllerName}-label`}
-              bg="gray.800"
-              _placeholder={{
-                color: "gray.400",
-              }}
               {...field}
               ref={null}
               tabIndex={isFocused ? 0 : -1}
             />
             {error?.type === "required" && (
-              <FormErrorMessage>
+              <ChakraField.ErrorText>
                 {t("features.feedConnections.components.filtersForm.valueIsRequired")}
-              </FormErrorMessage>
+              </ChakraField.ErrorText>
             )}
           </>
         )}
       />
-    </FormControl>
+    </ChakraField.Root>
   );
 };
