@@ -329,6 +329,7 @@ export function createContainer(deps: {
     config: deps.config,
     supportersService,
     userRepository,
+    supporterRepository,
     messageBrokerService,
     paddleService,
   });

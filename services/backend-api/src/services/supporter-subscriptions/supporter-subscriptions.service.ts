@@ -1,5 +1,7 @@
 import type { Config } from "../../config";
+import type { ISupporterRepository } from "../../repositories/interfaces/supporter.types";
 import type { IUserRepository } from "../../repositories/interfaces/user.types";
+import { SubscriptionAlreadyCancelledException } from "../../shared/exceptions/paddle.exceptions";
 import { formatCurrency } from "../../utils/format-currency";
 import type { MessageBrokerService } from "../message-broker/message-broker.service";
 import type { PaddleService } from "../paddle/paddle.service";
@@ -20,6 +22,7 @@ export interface SupporterSubscriptionsServiceDeps {
   config: Config;
   supportersService: SupportersService;
   userRepository: IUserRepository;
+  supporterRepository: ISupporterRepository;
   messageBrokerService: MessageBrokerService;
   paddleService: PaddleService;
 }
@@ -376,13 +379,25 @@ export class SupporterSubscriptionsService {
       effective_from: "next_billing_period",
     };
 
-    await this.deps.paddleService.executeApiCall<PaddleSubscriptionPreviewResponse>(
-      `/subscriptions/${existingSubscriptionId}/cancel`,
-      {
-        method: "POST",
-        body: JSON.stringify(postBody),
-      },
-    );
+    try {
+      await this.deps.paddleService.executeApiCall<PaddleSubscriptionPreviewResponse>(
+        `/subscriptions/${existingSubscriptionId}/cancel`,
+        {
+          method: "POST",
+          body: JSON.stringify(postBody),
+        },
+      );
+    } catch (err) {
+      if (err instanceof SubscriptionAlreadyCancelledException) {
+        await this.deps.supporterRepository.nullifySubscriptionBySubscriptionId(
+          existingSubscriptionId,
+        );
+
+        return;
+      }
+
+      throw err;
+    }
 
     await this.pollForSubscriptionChange({
       discordUserId,

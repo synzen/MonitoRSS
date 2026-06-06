@@ -15,7 +15,7 @@ import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 
 interface Props {
   onConfirm: () => void;
-  trigger: React.ReactElement;
+  trigger?: React.ReactElement;
   title?: string;
   error?: string;
   description?: string;
@@ -25,6 +25,8 @@ interface Props {
   colorScheme?: string;
   size?: string;
   onClosed?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export const ConfirmModal = ({
@@ -39,8 +41,19 @@ export const ConfirmModal = ({
   descriptionNode,
   size,
   onClosed,
+  open: controlledOpen,
+  onOpenChange,
 }: Props) => {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) {
+      setUncontrolledOpen(next);
+    }
+
+    onOpenChange?.(next);
+  };
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -71,7 +84,7 @@ export const ConfirmModal = ({
       onRequestDismiss={(e) => e.preventDefault()}
       initialFocusEl={() => cancelRef.current}
     >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent>
         {title && (
           <DialogHeader marginRight={4}>

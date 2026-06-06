@@ -10,4 +10,8 @@ export const UPDATE_PREVIEW_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
     status: 400,
     code: ApiErrorCode.SUBSCRIPTION_ABOUT_TO_RENEW,
   },
+  SubscriptionAlreadyCancelledException: {
+    status: 400,
+    code: ApiErrorCode.SUBSCRIPTION_ALREADY_CANCELLED,
+  },
 };

@@ -15,7 +15,7 @@ test.describe("Column Visibility", () => {
   // enough that the menu item is still moving when the test clicks it, so the
   // Ark checkbox item never registers the toggle. Reduced motion skips the
   // animation, keeping the item stable for deterministic interaction.
-  test.use({ reducedMotion: "reduce" });
+  test.use({ contextOptions: { reducedMotion: "reduce" } });
 
   async function setupColumnTest(page: Page) {
     const feed = await createFeed(page, {

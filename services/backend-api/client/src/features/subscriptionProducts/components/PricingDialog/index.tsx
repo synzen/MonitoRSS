@@ -1,4 +1,3 @@
-/* eslint-disable no-nested-ternary */
 import { FaCheck, FaXmark, FaPlus, FaMinus } from "react-icons/fa6";
 import {
   Box,
@@ -18,11 +17,12 @@ import {
   Skeleton,
   Icon,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { captureException } from "@sentry/react";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { DestructiveActionButton } from "@/components/DestructiveActionButton";
+import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { FAQ } from "@/components/FAQ";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 import { pages, ProductKey, TIER_CONFIGS } from "@/constants";
@@ -67,6 +67,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
   const navigate = useNavigate();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
+  const focusTargetIdRef = useRef<string | null>(null);
 
   const {
     products,
@@ -104,6 +105,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     if (!priceId || !productId || !userSubscription) {
       return;
     }
+
+    focusTargetIdRef.current = `pricing-action-${productId}`;
 
     const additionalFeedsItem =
       productId === ProductKey.Tier3 &&
@@ -226,6 +229,12 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
         size="xl"
         motionPreset="slide-in-bottom"
         scrollBehavior="inside"
+        initialFocusEl={() => {
+          const targetId = focusTargetIdRef.current;
+          focusTargetIdRef.current = null;
+
+          return targetId ? document.getElementById(targetId) : null;
+        }}
       >
         <DialogContent
           bg="none"
@@ -514,42 +523,51 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                     </Card.Body>
                                     <Card.Footer justifyContent="center">
                                       <Stack width="100%" gap={0}>
-                                        <Button
-                                          aria-disabled={isOnThisTier && !isUpdate}
-                                          width="100%"
-                                          onClick={() => {
-                                            if (isOnThisTier && !isUpdate) {
-                                              notifyInfo("You are already on this plan");
-
-                                              return;
+                                        {isOnThisTier && !isUpdate && (
+                                          <Button
+                                            aria-disabled
+                                            width="100%"
+                                            variant="outline"
+                                            onClick={() =>
+                                              notifyInfo("You are already on this plan")
                                             }
-
-                                            onClickPrice(price?.id, productId, isBelowUserTier);
-                                          }}
-                                          variant={
-                                            isOnThisTier || (isOnThisTier && isUpdate)
-                                              ? "outline"
-                                              : isAboveUserTier
-                                                ? "solid"
-                                                : "outline"
-                                          }
-                                          colorPalette={
-                                            isAboveUserTier || (isOnThisTier && isUpdate)
-                                              ? "brand"
-                                              : isBelowUserTier
-                                                ? "red"
-                                                : undefined
-                                          }
-                                        >
-                                          {isOnThisTier && !isUpdate && <span>Current Plan</span>}
-                                          {isOnThisTier && isUpdate && <span>Update Plan</span>}
-                                          {isBelowUserTier && (
-                                            <span>Downgrade to {product?.name}</span>
-                                          )}
-                                          {isAboveUserTier && (
-                                            <span>Upgrade to {product?.name}</span>
-                                          )}
-                                        </Button>
+                                          >
+                                            Current Plan
+                                          </Button>
+                                        )}
+                                        {isOnThisTier && isUpdate && (
+                                          <PrimaryActionButton
+                                            id={`pricing-action-${productId}`}
+                                            width="100%"
+                                            onClick={() =>
+                                              onClickPrice(price?.id, productId, isBelowUserTier)
+                                            }
+                                          >
+                                            Update Plan
+                                          </PrimaryActionButton>
+                                        )}
+                                        {isAboveUserTier && (
+                                          <PrimaryActionButton
+                                            id={`pricing-action-${productId}`}
+                                            width="100%"
+                                            onClick={() =>
+                                              onClickPrice(price?.id, productId, isBelowUserTier)
+                                            }
+                                          >
+                                            Upgrade to {product?.name}
+                                          </PrimaryActionButton>
+                                        )}
+                                        {isBelowUserTier && (
+                                          <DestructiveActionButton
+                                            id={`pricing-action-${productId}`}
+                                            width="100%"
+                                            onClick={() =>
+                                              onClickPrice(price?.id, productId, isBelowUserTier)
+                                            }
+                                          >
+                                            Downgrade to {product?.name}
+                                          </DestructiveActionButton>
+                                        )}
                                       </Stack>
                                     </Card.Footer>
                                   </Card.Root>
@@ -612,6 +630,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                   <Stack margin="auto" justifyContent="center" mt={8} textAlign="center" gap={4}>
                     <Flex justifyContent="center">
                       <DestructiveActionButton
+                        id={`pricing-action-${ProductKey.Free}`}
                         onClick={() => onClickPrice("free-monthly", ProductKey.Free, true)}
                       >
                         <span>Cancel Subscription</span>

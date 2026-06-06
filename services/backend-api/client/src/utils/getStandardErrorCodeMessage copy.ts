@@ -50,6 +50,7 @@ export enum ApiErrorCode {
   SUBSCRIPTION_ABOUT_TO_RENEW = "SUBSCRIPTION_ABOUT_TO_RENEW",
   USER_REFRESH_RATE_NOT_ALLOWED = "USER_REFRESH_RATE_NOT_ALLOWED",
   ADDRESS_LOCATION_NOT_ALLOWED = "ADDRESS_LOCATION_NOT_ALLOWED",
+  SUBSCRIPTION_ALREADY_CANCELLED = "SUBSCRIPTION_ALREADY_CANCELLED",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -114,6 +115,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   USER_REFRESH_RATE_NOT_ALLOWED: "Refresh rate is not allowed.",
   ADDRESS_LOCATION_NOT_ALLOWED:
     "Your location is not supported for billing. This may be due to regional restrictions. If you believe this is an error, please contact support@monitorss.xyz.",
+  SUBSCRIPTION_ALREADY_CANCELLED:
+    "This subscription has already been cancelled. Try refreshing the page to see your current plan.",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

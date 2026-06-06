@@ -22,7 +22,7 @@ export const notifyError = (
     title,
     description,
     type: "error",
-    duration: Number.POSITIVE_INFINITY,
+    duration: 10000,
   });
 };
 

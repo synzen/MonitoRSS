@@ -13,7 +13,7 @@ import {
   TableScrollArea,
   Text,
 } from "@chakra-ui/react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useCreateSubscriptionCancel,
@@ -21,7 +21,6 @@ import {
   useSubscriptionChangePreview,
 } from "@/features/subscriptionProducts";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
-import { notifyError } from "@/utils/notifyError";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { ProductKey, TOP_LEVEL_PRODUCTS } from "@/constants";
 import {
@@ -83,6 +82,7 @@ export const ChangeSubscriptionDialog = ({
   const { mutateAsync: cancelSubscription, status: cancelStatus } = useCreateSubscriptionCancel();
   const initialRef = useRef<HTMLButtonElement>(null);
   const { t } = useTranslation();
+  const [submitError, setSubmitError] = useState<string>();
 
   const isOpen = !!details?.prices && details.prices.length > 0;
   const { data, error } = useSubscriptionChangePreview({
@@ -106,6 +106,8 @@ export const ChangeSubscriptionDialog = ({
       return;
     }
 
+    setSubmitError(undefined);
+
     try {
       if (isChangingToFree) {
         await cancelSubscription();
@@ -123,7 +125,7 @@ export const ChangeSubscriptionDialog = ({
       notifySuccess(t("common.success.savedChanges"));
       onClose();
     } catch (e) {
-      notifyError(t("common.errors.somethingWentWrong"), (e as Error).message);
+      setSubmitError((e as Error).message);
     }
   };
 
@@ -134,6 +136,7 @@ export const ChangeSubscriptionDialog = ({
       open={isOpen}
       onOpenChange={(e) => {
         if (!e.open) {
+          setSubmitError(undefined);
           onClose(true);
         }
       }}
@@ -325,29 +328,36 @@ export const ChangeSubscriptionDialog = ({
               </Stack>
             )}
           </Box>
+          {submitError && (
+            <Box mt={4}>
+              <InlineErrorAlert
+                title={t("common.errors.somethingWentWrong")}
+                description={submitError}
+                scrollIntoViewOnMount
+              />
+            </Box>
+          )}
         </DialogBody>
         <DialogFooter>
+          <Button variant="ghost" mr={3} onClick={() => onClose(true)} ref={initialRef}>
+            <span>Cancel</span>
+          </Button>
           {!isLoading && (
-            <>
-              <Button variant="ghost" mr={3} onClick={() => onClose(true)} ref={initialRef}>
-                <span>Cancel</span>
-              </Button>
-              <Button
-                variant="solid"
-                colorPalette={!isDowngrade ? "brand" : "red"}
-                onClick={onConfirm}
-                aria-disabled={
-                  (!isChangingToFree && !data) ||
-                  createStatus === "loading" ||
-                  cancelStatus === "loading"
-                }
-              >
-                <span>
-                  {!isDowngrade && "Confirm Payment"}
-                  {isDowngrade && "Confirm Downgrade"}
-                </span>
-              </Button>
-            </>
+            <Button
+              variant="solid"
+              colorPalette={!isDowngrade ? "brand" : "red"}
+              onClick={onConfirm}
+              aria-disabled={
+                (!isChangingToFree && !data) ||
+                createStatus === "loading" ||
+                cancelStatus === "loading"
+              }
+            >
+              <span>
+                {!isDowngrade && "Confirm Payment"}
+                {isDowngrade && "Confirm Downgrade"}
+              </span>
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>

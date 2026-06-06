@@ -12,3 +12,7 @@ export class CannotRenewSubscriptionBeforeRenewal extends StandardException {
 export class AddressLocationNotAllowedException extends StandardException {
   override message = "Your location is not supported for billing.";
 }
+
+export class SubscriptionAlreadyCancelledException extends StandardException {
+  override message = "Subscription has already been cancelled.";
+}

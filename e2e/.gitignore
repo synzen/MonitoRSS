@@ -1,0 +1,3 @@
+# Local run artifacts captured by e2e-mock.sh
+logs/
+.paddle-state.json

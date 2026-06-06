@@ -99,6 +99,8 @@ const CopyUserFeedSettingsMenuItem = ({
   );
 };
 
+type BulkAction = "enable" | "disable" | "delete";
+
 const UserFeedsInner: React.FC = () => {
   const { t } = useTranslation();
   const { state } = useLocation();
@@ -143,6 +145,7 @@ const UserFeedsInner: React.FC = () => {
     string | undefined
   >();
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [pendingBulkAction, setPendingBulkAction] = useState<BulkAction | null>(null);
   const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
   const limitAlertShownRef = useRef(false);
   const addFeedParamConsumed = useRef(false);
@@ -555,48 +558,32 @@ const UserFeedsInner: React.FC = () => {
                     </Button>
                   </MenuTrigger>
                   <MenuContent zIndex={2}>
-                    <ConfirmModal
-                      trigger={
-                        <MenuItem
-                          disabled={
-                            !selectedFeeds.length ||
-                            !selectedFeeds.some(
-                              (f) => f.disabledCode === UserFeedDisabledCode.Manual,
-                            )
-                          }
-                          value="enable"
-                        >
-                          <FaPlay />
-                          Enable
-                        </MenuItem>
+                    <MenuItem
+                      disabled={
+                        !selectedFeeds.length ||
+                        !selectedFeeds.some((f) => f.disabledCode === UserFeedDisabledCode.Manual)
                       }
-                      title={`Are you sure you want to enable ${selectedFeeds.length} feed(s)?`}
-                      description="Only feeds that were manually disabled will be enabled."
-                      onConfirm={onEnableSelectedFeeds}
-                      colorScheme="blue"
-                    />
-                    <ConfirmModal
-                      trigger={
-                        <MenuItem
-                          disabled={
-                            !selectedFeeds.length ||
-                            selectedFeeds.every(
-                              (r) =>
-                                !!r.disabledCode &&
-                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
-                            )
-                          }
-                          value="disable"
-                        >
-                          <FaPause />
-                          Disable
-                        </MenuItem>
+                      value="enable"
+                      onClick={() => setPendingBulkAction("enable")}
+                    >
+                      <FaPlay />
+                      Enable
+                    </MenuItem>
+                    <MenuItem
+                      disabled={
+                        !selectedFeeds.length ||
+                        selectedFeeds.every(
+                          (r) =>
+                            !!r.disabledCode &&
+                            r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
+                        )
                       }
-                      title={`Are you sure you want to disable ${selectedFeeds.length} feed(s)?`}
-                      description="Only feeds that are not currently disabled will be affected."
-                      onConfirm={onDisableSelectedFeeds}
-                      colorScheme="blue"
-                    />
+                      value="disable"
+                      onClick={() => setPendingBulkAction("disable")}
+                    >
+                      <FaPause />
+                      Disable
+                    </MenuItem>
                     <CloneUserFeedDialog
                       feedId={selectedFeeds[0]?.id}
                       trigger={
@@ -617,21 +604,41 @@ const UserFeedsInner: React.FC = () => {
                       }}
                     />
                     <MenuSeparator />
-                    <ConfirmModal
-                      trigger={
-                        <MenuItem value="delete" disabled={!selectedFeeds.length}>
-                          <FaTrash color="text.error" />
-                          <Text color="text.error">Delete</Text>
-                        </MenuItem>
-                      }
-                      title={`Are you sure you want to delete ${selectedFeeds.length} feed(s)?`}
-                      description="This action cannot be undone."
-                      onConfirm={onDeleteSelectedFeeds}
-                      colorScheme="red"
-                      okText={t("common.buttons.delete")}
-                    />
+                    <MenuItem
+                      value="delete"
+                      disabled={!selectedFeeds.length}
+                      onClick={() => setPendingBulkAction("delete")}
+                    >
+                      <FaTrash color="text.error" />
+                      <Text color="text.error">Delete</Text>
+                    </MenuItem>
                   </MenuContent>
                 </MenuRoot>
+                <ConfirmModal
+                  open={pendingBulkAction === "enable"}
+                  onOpenChange={(open) => !open && setPendingBulkAction(null)}
+                  title={`Are you sure you want to enable ${selectedFeeds.length} feed(s)?`}
+                  description="Only feeds that were manually disabled will be enabled."
+                  onConfirm={onEnableSelectedFeeds}
+                  colorScheme="blue"
+                />
+                <ConfirmModal
+                  open={pendingBulkAction === "disable"}
+                  onOpenChange={(open) => !open && setPendingBulkAction(null)}
+                  title={`Are you sure you want to disable ${selectedFeeds.length} feed(s)?`}
+                  description="Only feeds that are not currently disabled will be affected."
+                  onConfirm={onDisableSelectedFeeds}
+                  colorScheme="blue"
+                />
+                <ConfirmModal
+                  open={pendingBulkAction === "delete"}
+                  onOpenChange={(open) => !open && setPendingBulkAction(null)}
+                  title={`Are you sure you want to delete ${selectedFeeds.length} feed(s)?`}
+                  description="This action cannot be undone."
+                  onConfirm={onDeleteSelectedFeeds}
+                  colorScheme="red"
+                  okText={t("common.buttons.delete")}
+                />
                 <HStack gap={1}>
                   <PrimaryActionButton
                     borderRightRadius={0}
