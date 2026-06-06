@@ -101,7 +101,20 @@ export const MenuContextTrigger = ChakraMenu.ContextTrigger;
 export const MenuRoot = ChakraMenu.Root;
 export const MenuSeparator = ChakraMenu.Separator;
 
-export const MenuItem = ChakraMenu.Item;
+export const MenuItem = React.forwardRef<HTMLDivElement, ChakraMenu.ItemProps>(
+  function MenuItem(props, ref) {
+    const { disabled, onClick, ...rest } = props;
+
+    return (
+      <ChakraMenu.Item
+        ref={ref}
+        disabled={disabled}
+        onClick={disabled ? undefined : onClick}
+        {...rest}
+      />
+    );
+  },
+);
 export const MenuItemText = ChakraMenu.ItemText;
 export const MenuItemCommand = ChakraMenu.ItemCommand;
 export const MenuTrigger = ChakraMenu.Trigger;

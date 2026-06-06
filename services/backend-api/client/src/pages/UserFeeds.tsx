@@ -551,7 +551,8 @@ const UserFeedsInner: React.FC = () => {
                   <MenuTrigger asChild>
                     <Button
                       variant="outline"
-                      // disabled={selectedFeeds.length === 0}
+                      aria-disabled={selectedFeeds.length === 0}
+                      data-disabled={selectedFeeds.length === 0 ? "" : undefined}
                     >
                       Feed Actions
                       <FaChevronDown />
