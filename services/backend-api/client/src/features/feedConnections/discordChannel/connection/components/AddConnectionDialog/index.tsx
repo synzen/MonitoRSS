@@ -197,7 +197,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
     formState: { errors, isSubmitting, isValid, isSubmitted },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
-    mode: "all",
+    mode: "onSubmit",
     defaultValues: defaultFormValues,
   });
   const [serverId, channelId, watchedThreadId, watchedCreateThreadMethod] = watch([

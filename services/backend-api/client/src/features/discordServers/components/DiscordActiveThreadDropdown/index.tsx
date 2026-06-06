@@ -44,7 +44,7 @@ export const DiscordActiveThreadDropdown: React.FC<Props> = ({
     })) || [];
 
   return (
-    <Stack>
+    <Stack alignSelf="stretch">
       <ThemedSelect
         loading={isFetching}
         isDisabled={isDisabled || !!error}

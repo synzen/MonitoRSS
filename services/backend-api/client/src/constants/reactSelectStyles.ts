@@ -10,7 +10,10 @@ export interface SelectOption {
 
 type SelectStyles = StylesConfig<SelectOption, false, GroupBase<SelectOption>> | undefined;
 
-export const REACT_SELECT_STYLES: (opts?: { invertBg?: boolean }) => SelectStyles = (opts) => ({
+export const REACT_SELECT_STYLES: (opts?: {
+  invertBg?: boolean;
+  isInvalid?: boolean;
+}) => SelectStyles = (opts) => ({
   menu: (provided) => ({
     ...provided,
     backgroundColor: "var(--app-bg-panel)",
@@ -40,14 +43,20 @@ export const REACT_SELECT_STYLES: (opts?: { invertBg?: boolean }) => SelectStyle
     paddingLeft: "8px",
     borderWidth: "1px",
     // Parity with native inputs: the control edge uses the controlBorder role (>=3:1), not the quiet
-    // divider border. Mirrors the Chakra input/select recipe override (see
-    // docs/adr/007-styling-roles-tiers-contrast.md — the --app-* boundary keeps react-select in lockstep).
-    borderColor: state.isFocused ? "var(--app-accent-focus-ring)" : "var(--app-control-border)",
+    // divider border. An invalid control mirrors the Chakra Field invalid state — a red border that
+    // persists through focus, with the red focus ring on top when focused.
+    borderColor: opts?.isInvalid
+      ? "var(--app-error)"
+      : state.isFocused
+        ? "var(--app-accent-focus-ring)"
+        : "var(--app-control-border)",
     borderRadius: "var(--chakra-radii-md)",
     "&:hover": {
-      borderColor: "var(--app-control-border)",
+      borderColor: opts?.isInvalid ? "var(--app-error)" : "var(--app-control-border)",
     },
-    boxShadow: state.isFocused ? "0 0 0 1px var(--app-accent-focus-ring)" : "none",
+    boxShadow: state.isFocused
+      ? `0 0 0 1px ${opts?.isInvalid ? "var(--app-error)" : "var(--app-accent-focus-ring)"}`
+      : "none",
   }),
   input: (provided) => ({
     ...provided,

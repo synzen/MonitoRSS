@@ -74,7 +74,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
 
   return (
     <SimpleGrid
-      role="radiogroup"
+      role="group"
       aria-label="Feed categories"
       columns={columns}
       gap={4}
@@ -90,8 +90,6 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
             ref={(el: HTMLDivElement | null) => {
               buttonRefs.current[index] = el;
             }}
-            role="radio"
-            aria-checked={false}
             direction="column"
             align="center"
             w="100%"
@@ -134,8 +132,6 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
         ref={(el: HTMLDivElement | null) => {
           buttonRefs.current[categories.length] = el;
         }}
-        role="radio"
-        aria-checked={false}
         direction="column"
         align="center"
         w="100%"

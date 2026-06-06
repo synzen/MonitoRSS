@@ -178,7 +178,7 @@ describe("BrowseFeedsModal", () => {
     it("renders category pills", () => {
       renderModal();
 
-      expect(screen.getByRole("radiogroup", { name: "Feed categories" })).toBeInTheDocument();
+      expect(screen.getByRole("tablist", { name: "Feed categories" })).toBeInTheDocument();
     });
   });
 
@@ -210,8 +210,8 @@ describe("BrowseFeedsModal", () => {
       const seeAllBtn = screen.getByRole("button", { name: "See all Gaming feeds" });
       await user.click(seeAllBtn);
 
-      const gamingRadio = screen.getByRole("radio", { name: /Gaming/ });
-      expect(gamingRadio).toHaveAttribute("aria-checked", "true");
+      const gamingTab = screen.getByRole("tab", { name: /Gaming/ });
+      expect(gamingTab).toHaveAttribute("aria-selected", "true");
     });
 
     it("Most added badge is hidden in highlights view", () => {
@@ -250,7 +250,7 @@ describe("BrowseFeedsModal", () => {
     it("selecting a category pill shows that category's feeds", async () => {
       const { user } = renderModal();
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       expect(screen.queryByRole("heading", { level: 3 })).not.toBeInTheDocument();
       const list = screen.getByRole("list", { name: /Gaming feeds/ });
@@ -260,7 +260,7 @@ describe("BrowseFeedsModal", () => {
     it("shows Most added badge on popular feeds in category view", async () => {
       const { user } = renderModal();
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       expect(screen.getByText("Most added")).toBeInTheDocument();
     });
@@ -268,7 +268,7 @@ describe("BrowseFeedsModal", () => {
     it("shows domain text in category view", async () => {
       const { user } = renderModal();
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       const list = screen.getByRole("list", { name: /Gaming feeds/ });
       expect(within(list).getAllByText("example.com").length).toBeGreaterThan(0);
@@ -285,7 +285,7 @@ describe("BrowseFeedsModal", () => {
     it("shows first 20 feeds and Show more button when >20 feeds", async () => {
       const { user } = renderModal();
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       const list = screen.getByRole("list", { name: /Gaming feeds/ });
       const items = within(list).getAllByRole("listitem");
@@ -296,7 +296,7 @@ describe("BrowseFeedsModal", () => {
     it("Show more reveals next batch", async () => {
       const { user } = renderModal();
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
       await user.click(screen.getByRole("button", { name: /Show more/ }));
 
       const list = screen.getByRole("list", { name: /Gaming feeds/ });
@@ -307,7 +307,7 @@ describe("BrowseFeedsModal", () => {
     it("Show more button disappears when all feeds shown", async () => {
       const { user } = renderModal();
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
       await user.click(screen.getByRole("button", { name: /Show more/ }));
 
       expect(screen.queryByRole("button", { name: /Show more/ })).not.toBeInTheDocument();
@@ -316,7 +316,7 @@ describe("BrowseFeedsModal", () => {
     it("count text shows when total > 20", async () => {
       const { user } = renderModal();
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       expect(screen.getByText("Showing 20 of 30 feeds")).toBeInTheDocument();
     });
@@ -324,7 +324,7 @@ describe("BrowseFeedsModal", () => {
     it("count text updates after Show more", async () => {
       const { user } = renderModal();
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
       await user.click(screen.getByRole("button", { name: /Show more/ }));
 
       expect(screen.getByText("Showing 30 of 30 feeds")).toBeInTheDocument();
@@ -335,7 +335,7 @@ describe("BrowseFeedsModal", () => {
     it("shows all items, no Show more, no count text for <=20 feeds", async () => {
       const { user } = renderModal();
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       const list = screen.getByRole("list", { name: /Gaming feeds/ });
       const items = within(list).getAllByRole("listitem");
@@ -349,8 +349,8 @@ describe("BrowseFeedsModal", () => {
     it("opens with specified category pre-selected", () => {
       renderModal({ initialCategory: "tech" });
 
-      const techRadio = screen.getByRole("radio", { name: /Tech/ });
-      expect(techRadio).toHaveAttribute("aria-checked", "true");
+      const techTab = screen.getByRole("tab", { name: /Tech/ });
+      expect(techTab).toHaveAttribute("aria-selected", "true");
 
       expect(screen.queryByRole("heading", { level: 3 })).not.toBeInTheDocument();
     });
@@ -358,7 +358,7 @@ describe("BrowseFeedsModal", () => {
     it("re-opening with a different initialCategory selects the new category", async () => {
       const { rerender } = renderModal({ initialCategory: "tech" });
 
-      expect(screen.getByRole("radio", { name: /Tech/ })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByRole("tab", { name: /Tech/ })).toHaveAttribute("aria-selected", "true");
 
       rerender(
         <ChakraProvider value={system}>
@@ -380,17 +380,17 @@ describe("BrowseFeedsModal", () => {
         </ChakraProvider>,
       );
 
-      expect(await screen.findByRole("radio", { name: /Sports/ })).toHaveAttribute(
-        "aria-checked",
+      expect(await screen.findByRole("tab", { name: /Sports/ })).toHaveAttribute(
+        "aria-selected",
         "true",
       );
-      expect(screen.getByRole("radio", { name: /Tech/ })).toHaveAttribute("aria-checked", "false");
+      expect(screen.getByRole("tab", { name: /Tech/ })).toHaveAttribute("aria-selected", "false");
     });
 
     it("re-opening with no initialCategory shows highlights view", async () => {
       const { rerender } = renderModal({ initialCategory: "gaming" });
 
-      expect(screen.getByRole("radio", { name: /Gaming/ })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByRole("tab", { name: /Gaming/ })).toHaveAttribute("aria-selected", "true");
 
       rerender(
         <ChakraProvider value={system}>
@@ -412,8 +412,8 @@ describe("BrowseFeedsModal", () => {
         </ChakraProvider>,
       );
 
-      expect(await screen.findByRole("radio", { name: /All/ })).toHaveAttribute(
-        "aria-checked",
+      expect(await screen.findByRole("tab", { name: /All/ })).toHaveAttribute(
+        "aria-selected",
         "true",
       );
       expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(8);
@@ -428,10 +428,10 @@ describe("BrowseFeedsModal", () => {
       await user.type(searchInput, "test query");
       await user.click(screen.getByRole("button", { name: "Go" }));
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
-      const gamingRadio = screen.getByRole("radio", { name: /Gaming/ });
-      expect(gamingRadio).toHaveAttribute("aria-checked", "true");
+      const gamingTab = screen.getByRole("tab", { name: /Gaming/ });
+      expect(gamingTab).toHaveAttribute("aria-selected", "true");
 
       const list = screen.getByRole("list", { name: /Gaming feeds/ });
       expect(list).toBeInTheDocument();
@@ -479,17 +479,17 @@ describe("BrowseFeedsModal", () => {
       expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
     });
 
-    it("during search, previously selected pill retains aria-checked", async () => {
+    it("during search, previously selected pill retains aria-selected", async () => {
       const { user } = renderModal();
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       const searchInput = screen.getByLabelText(/search/i);
       await user.type(searchInput, "Feed");
       await user.click(screen.getByRole("button", { name: "Go" }));
 
-      const gamingRadio = screen.getByRole("radio", { name: /Gaming/ });
-      expect(gamingRadio).toHaveAttribute("aria-checked", "true");
+      const gamingTab = screen.getByRole("tab", { name: /Gaming/ });
+      expect(gamingTab).toHaveAttribute("aria-selected", "true");
     });
 
     it("URL validation happy path works inside modal", async () => {
@@ -526,7 +526,7 @@ describe("BrowseFeedsModal", () => {
     it("at limit: all Add buttons become disabled in category view", async () => {
       const { user } = renderModal({ isAtLimit: true });
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       const disabledButtons = screen.getAllByRole("button", {
         name: /add .* feed, disabled, feed limit reached/i,
@@ -544,7 +544,7 @@ describe("BrowseFeedsModal", () => {
       const onAdd = vi.fn();
       const { user } = renderModal({ onAdd });
 
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       await user.click(screen.getByRole("button", { name: `Add ${firstFeed.title} feed` }));
@@ -618,8 +618,8 @@ describe("BrowseFeedsModal", () => {
         screen.getByRole("button", { name: `Go to feed settings for ${gamingFeed.title}` }),
       ).toBeInTheDocument();
 
-      await user.click(screen.getByRole("radio", { name: /Anime/ }));
-      await user.click(screen.getByRole("radio", { name: /Gaming/ }));
+      await user.click(screen.getByRole("tab", { name: /Anime/ }));
+      await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       expect(
         screen.getByRole("button", { name: `Go to feed settings for ${gamingFeed.title}` }),

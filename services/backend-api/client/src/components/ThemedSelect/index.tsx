@@ -52,7 +52,7 @@ export const ThemedSelect = <T,>({
   invertBg,
 }: Props<T>) => {
   // @ts-ignore
-  const styles = useColorModeValue<SelectStyles>({}, REACT_SELECT_STYLES({ invertBg }));
+  const styles = useColorModeValue<SelectStyles>({}, REACT_SELECT_STYLES({ invertBg, isInvalid }));
   const selectedOption = options.find((option) => option.value === value);
 
   const onFocus = ({ focused }: AriaOnFocusProps<SelectOption<T>, GroupBase<SelectOption<T>>>) => {

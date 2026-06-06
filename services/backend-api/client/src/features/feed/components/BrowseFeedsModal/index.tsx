@@ -8,6 +8,7 @@ import {
   Heading,
   Skeleton,
   VisuallyHidden,
+  Tabs,
 } from "@chakra-ui/react";
 import {
   DialogRoot,
@@ -25,7 +26,7 @@ import {
   FeedDiscoverySearchInput,
   FeedDiscoverySearchResults,
 } from "../FeedDiscoverySearch";
-import { CategoryPills } from "../CategoryPills";
+import { CategoryPills, ALL_TAB_VALUE } from "../CategoryPills";
 import { useCuratedFeeds } from "../../hooks";
 import type { CuratedFeed } from "../../types";
 import type { FeedActionState } from "../../types/FeedActionState";
@@ -121,6 +122,10 @@ export const BrowseFeedsModal = ({
     scrollModalBodyToTop();
   };
 
+  const handleTabChange = (value: string) => {
+    handleCategorySelect(value === ALL_TAB_VALUE ? undefined : value);
+  };
+
   const handleShowMore = () => {
     const feeds = data?.feeds ?? [];
     const previousCount = visibleCount;
@@ -202,187 +207,192 @@ export const BrowseFeedsModal = ({
               Don&apos;t see what you&apos;re looking for? Try pasting a website URL above - many
               sites have feeds we can detect.
             </Text>
-            {(data?.feeds ?? []).length > 0 && (
-              <Box as="nav" aria-label="Feed categories">
+            <Tabs.Root
+              value={selectedCategory ?? ALL_TAB_VALUE}
+              onValueChange={(e) => handleTabChange(e.value)}
+              activationMode="manual"
+              colorPalette="brand"
+              variant="enclosed"
+              fitted
+              size="sm"
+            >
+              {(data?.feeds ?? []).length > 0 && (
                 <CategoryPills
                   categories={data?.categories ?? []}
-                  selectedCategory={selectedCategory}
-                  onSelect={handleCategorySelect}
                   isSearchActive={isSearchActive}
                 />
-              </Box>
-            )}
-            {isFetching && !isSearchActive && (
-              <Box aria-busy="true" aria-hidden="true">
-                <Stack gap={2}>
-                  {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <Skeleton key={i} height="64px" borderRadius="l3" />
-                  ))}
-                </Stack>
-              </Box>
-            )}
-            {!!error && !isFetching && (
-              <Alert status="error">
-                Failed to load feeds.{" "}
-                <Button variant="plain" onClick={() => refetch()} colorPalette="brand">
-                  Retry
-                </Button>
-              </Alert>
-            )}
-            {/* key forces remount when search query or results change so Google Translate
+              )}
+              {isFetching && !isSearchActive && (
+                <Box aria-busy="true" aria-hidden="true">
+                  <Stack gap={2}>
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <Skeleton key={i} height="64px" borderRadius="l3" />
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+              {!!error && !isFetching && (
+                <Alert status="error">
+                  Failed to load feeds.{" "}
+                  <Button variant="plain" onClick={() => refetch()} colorPalette="brand">
+                    Retry
+                  </Button>
+                </Alert>
+              )}
+              {/* key forces remount when search query or results change so Google Translate
                 processes new content as fresh DOM nodes. */}
-            {isSearchActive && (
-              <Box
-                key={`${searchState.activeQuery}-${searchState.validationStatus}-${searchState.totalResults}`}
-                as="section"
-                aria-label="Feed list"
-                opacity={isAtLimit ? 0.85 : 1}
-              >
-                <FeedDiscoverySearchResults state={searchState} />
-              </Box>
-            )}
-            {/* key forces a full remount when category changes. Google Translate
+              {isSearchActive && (
+                <Box
+                  key={`${searchState.activeQuery}-${searchState.validationStatus}-${searchState.totalResults}`}
+                  as="section"
+                  aria-label="Feed list"
+                  opacity={isAtLimit ? 0.85 : 1}
+                >
+                  <FeedDiscoverySearchResults state={searchState} />
+                </Box>
+              )}
+              {/* key forces a full remount when category changes. Google Translate
                 does not re-translate text when React replaces children inside an already-translated
                 container; remounting creates fresh DOM nodes that Google Translate picks up. */}
-            {!isSearchActive && data && !isFetching && !error && (
-              <Box
-                key={selectedCategory ?? "all"}
-                as="section"
-                aria-label="Feed list"
-                opacity={isAtLimit ? 0.85 : 1}
-              >
-                {selectedCategory === undefined ? (
-                  <Stack gap={6}>
-                    {highlights.map(({ category, feeds }) => {
-                      const headingId = `highlights-heading-${category.id}`;
-
-                      return (
-                        <Box
-                          as="section"
-                          key={category.id}
-                          aria-labelledby={headingId}
-                          display="grid"
-                          gridTemplateColumns="1fr auto"
-                          gridTemplateRows="auto auto"
-                          gap={3}
-                        >
-                          <Heading
-                            as="h3"
-                            size="sm"
-                            id={headingId}
-                            gridColumn="1"
-                            gridRow="1"
-                            alignSelf="center"
-                          >
-                            {category.label}
-                          </Heading>
-                          <SimpleGrid
-                            as="ul"
-                            role="list"
-                            aria-label={`${category.label} feeds`}
-                            columns={{ base: 1, md: 3 }}
-                            gap={4}
-                            gridColumn="1 / -1"
-                            gridRow="2"
-                            listStyleType="none"
-                          >
-                            {feeds.map((feed) => {
-                              const cardProps = getFeedCardPropsFromState(
-                                feedActionStates,
-                                feed.id,
-                                isAtLimit,
-                              );
-
-                              return (
-                                <Box as="li" key={feed.id}>
-                                  <FeedCard
-                                    feed={feed}
-                                    state={cardProps.state}
-                                    onAdd={() => onAdd(feed)}
-                                    onRemove={onRemove ? () => onRemove(feed.id) : undefined}
-                                    errorMessage={cardProps.errorMessage}
-                                    errorCode={cardProps.errorCode}
-                                    isCurated
-                                    showPopularBadge={false}
-                                    showDomain={false}
-                                    hideActions
-                                    feedSettingsUrl={cardProps.feedSettingsUrl}
-                                  />
-                                </Box>
-                              );
-                            })}
-                          </SimpleGrid>
-                          <Button
-                            variant="plain"
-                            size="sm"
-                            gridColumn="2"
-                            gridRow="1"
-                            aria-label={`See all ${category.label} feeds`}
-                            onClick={() => handleSeeAll(category.id)}
-                          >
-                            See all &rarr;
-                          </Button>
-                        </Box>
-                      );
-                    })}
-                  </Stack>
-                ) : (
-                  <Box>
-                    <Stack
-                      as="ul"
-                      role="list"
-                      aria-label={`${selectedCategoryLabel} feeds, showing ${Math.min(
-                        visibleCount,
-                        totalFeeds,
-                      )} of ${totalFeeds}`}
-                      gap={2}
-                      listStyleType="none"
-                    >
-                      {visibleFeeds.map((feed, index) => {
-                        const cardProps = getFeedCardPropsFromState(
-                          feedActionStates,
-                          feed.id,
-                          isAtLimit,
-                        );
+              {!isSearchActive && data && !isFetching && !error && (
+                <Tabs.Content
+                  key={selectedCategory ?? ALL_TAB_VALUE}
+                  value={selectedCategory ?? ALL_TAB_VALUE}
+                  opacity={isAtLimit ? 0.85 : 1}
+                >
+                  {selectedCategory === undefined ? (
+                    <Stack gap={6}>
+                      {highlights.map(({ category, feeds }) => {
+                        const headingId = `highlights-heading-${category.id}`;
 
                         return (
-                          <Box as="li" key={feed.id} data-category-feed-index={index}>
-                            <FeedCard
-                              feed={feed}
-                              state={cardProps.state}
-                              onAdd={() => onAdd(feed)}
-                              onRemove={onRemove ? () => onRemove(feed.id) : undefined}
-                              errorMessage={cardProps.errorMessage}
-                              errorCode={cardProps.errorCode}
-                              isCurated
-                              feedSettingsUrl={cardProps.feedSettingsUrl}
-                              previewEnabled
-                              wrapDescription
-                            />
+                          <Box
+                            as="section"
+                            key={category.id}
+                            aria-labelledby={headingId}
+                            display="grid"
+                            gridTemplateColumns="1fr auto"
+                            gridTemplateRows="auto auto"
+                            gap={3}
+                          >
+                            <Heading
+                              as="h3"
+                              size="sm"
+                              id={headingId}
+                              gridColumn="1"
+                              gridRow="1"
+                              alignSelf="center"
+                            >
+                              {category.label}
+                            </Heading>
+                            <SimpleGrid
+                              as="ul"
+                              role="list"
+                              aria-label={`${category.label} feeds`}
+                              columns={{ base: 1, md: 3 }}
+                              gap={4}
+                              gridColumn="1 / -1"
+                              gridRow="2"
+                              listStyleType="none"
+                            >
+                              {feeds.map((feed) => {
+                                const cardProps = getFeedCardPropsFromState(
+                                  feedActionStates,
+                                  feed.id,
+                                  isAtLimit,
+                                );
+
+                                return (
+                                  <Box as="li" key={feed.id}>
+                                    <FeedCard
+                                      feed={feed}
+                                      state={cardProps.state}
+                                      onAdd={() => onAdd(feed)}
+                                      onRemove={onRemove ? () => onRemove(feed.id) : undefined}
+                                      errorMessage={cardProps.errorMessage}
+                                      errorCode={cardProps.errorCode}
+                                      isCurated
+                                      showPopularBadge={false}
+                                      showDomain={false}
+                                      hideActions
+                                      feedSettingsUrl={cardProps.feedSettingsUrl}
+                                    />
+                                  </Box>
+                                );
+                              })}
+                            </SimpleGrid>
+                            <Button
+                              variant="plain"
+                              size="sm"
+                              gridColumn="2"
+                              gridRow="1"
+                              aria-label={`See all ${category.label} feeds`}
+                              onClick={() => handleSeeAll(category.id)}
+                            >
+                              See all &rarr;
+                            </Button>
                           </Box>
                         );
                       })}
                     </Stack>
-                    {totalFeeds > BATCH_SIZE && (
-                      <Text
-                        aria-live="polite"
-                        fontSize="sm"
-                        color="fg.muted"
-                        mt={3}
-                        textAlign="center"
+                  ) : (
+                    <Box>
+                      <Stack
+                        as="ul"
+                        role="list"
+                        aria-label={`${selectedCategoryLabel} feeds, showing ${Math.min(
+                          visibleCount,
+                          totalFeeds,
+                        )} of ${totalFeeds}`}
+                        gap={2}
+                        listStyleType="none"
                       >
-                        Showing {Math.min(visibleCount, totalFeeds)} of {totalFeeds} feeds
-                      </Text>
-                    )}
-                    {hasMore && (
-                      <Button mt={3} onClick={handleShowMore} variant="outline" width="full">
-                        Show more
-                      </Button>
-                    )}
-                  </Box>
-                )}
-              </Box>
-            )}
+                        {visibleFeeds.map((feed, index) => {
+                          const cardProps = getFeedCardPropsFromState(
+                            feedActionStates,
+                            feed.id,
+                            isAtLimit,
+                          );
+
+                          return (
+                            <Box as="li" key={feed.id} data-category-feed-index={index}>
+                              <FeedCard
+                                feed={feed}
+                                state={cardProps.state}
+                                onAdd={() => onAdd(feed)}
+                                onRemove={onRemove ? () => onRemove(feed.id) : undefined}
+                                errorMessage={cardProps.errorMessage}
+                                errorCode={cardProps.errorCode}
+                                isCurated
+                                feedSettingsUrl={cardProps.feedSettingsUrl}
+                                previewEnabled
+                                wrapDescription
+                              />
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+                      {totalFeeds > BATCH_SIZE && (
+                        <Text
+                          aria-live="polite"
+                          fontSize="sm"
+                          color="fg.muted"
+                          mt={3}
+                          textAlign="center"
+                        >
+                          Showing {Math.min(visibleCount, totalFeeds)} of {totalFeeds} feeds
+                        </Text>
+                      )}
+                      {hasMore && (
+                        <Button mt={3} onClick={handleShowMore} variant="outline" width="full">
+                          Show more
+                        </Button>
+                      )}
+                    </Box>
+                  )}
+                </Tabs.Content>
+              )}
+            </Tabs.Root>
           </Stack>
         </DialogBody>
       </DialogContent>
