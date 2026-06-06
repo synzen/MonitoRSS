@@ -329,10 +329,15 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
       tier1Prices={tier1Prices}
       isPaddleLoaded={isPaddleLoaded}
       onCheckout={(priceId) => {
+        // Hide this dialog while Paddle's overlay checkout is open so the overlay is the only modal
+        // layer (a modal dialog makes everything outside it inert, including a body-level Paddle
+        // overlay). The dialog's in-progress state is preserved; it reappears on completion or if
+        // the user closes checkout without paying.
         setIsPaddleCheckoutOpen(true);
         openCheckout({
           prices: [{ priceId, quantity: 1 }],
           displayMode: "overlay",
+          onClose: () => setIsPaddleCheckoutOpen(false),
         });
       }}
       onBackToEditor={() => setModalView("editor")}
@@ -514,16 +519,18 @@ const TemplateGalleryModalInner = (props: TemplateGalleryModalProps) => {
 
   return (
     <DialogRoot
-      open={isOpen}
+      // Visually hidden while Paddle checkout is open, but the flow is still active (state is kept).
+      open={isOpen && !isPaddleCheckoutOpen}
       onOpenChange={(e) => {
-        if (!e.open) onClose();
+        // Ignore the close that comes from hiding the dialog for checkout; only a genuine user
+        // dismissal (while checkout is not open) should tear down the flow.
+        if (!e.open && !isPaddleCheckoutOpen) onClose();
       }}
       size={{ base: "full", md: "xl" }}
       scrollBehavior="inside"
       closeOnInteractOutside
       closeOnEscape={modalView === "editor"}
       finalFocusEl={finalFocusRef ? () => finalFocusRef.current : undefined}
-      trapFocus={!isPaddleCheckoutOpen}
     >
       <DialogContent
         maxW={{ lg: "1080px" }}

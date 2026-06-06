@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { initializePaddle, Paddle, RetainCancellationFlowResult } from "@paddle/paddle-js";
@@ -81,6 +82,8 @@ interface ContextProps {
     prices: Array<{ priceId: string; quantity: number }>;
     frameTarget?: string;
     displayMode?: "inline" | "overlay";
+    /** Called when the checkout overlay is closed without completing payment. */
+    onClose?: () => void;
   }) => void;
   getPricePreview: (
     pricesToGet: Array<{ priceId: string; quantity: number }>,
@@ -115,6 +118,10 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   const [paddle, setPaddle] = useState<Paddle | undefined>();
   const [checkForSubscriptionCreated, setCheckForSubscriptionCreated] = useState(false);
   const [isSubscriptionCreated, setIsSubscriptionCreated] = useState(false);
+  // Holds the current checkout's "closed without completing" callback. The Paddle event callback is
+  // registered once at init and can't see per-open closures, so the latest one is kept in a ref.
+  const checkoutClosedCallbackRef = useRef<(() => void) | undefined>(undefined);
+  const checkoutCompletedRef = useRef(false);
   const { data: user } = useUserMe({ checkForSubscriptionCreated });
   const { refetch: refetchDiscordUserMe } = useDiscordUserMe();
   const navigate = useNavigate();
@@ -144,8 +151,17 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       token: clientToken,
       eventCallback(event) {
         if (event.name === "checkout.completed") {
+          checkoutCompletedRef.current = true;
           setCheckForSubscriptionCreated(true);
           setCheckoutLoadedData(undefined);
+        } else if (event.name === "checkout.closed") {
+          // Fired when the overlay is dismissed. Only treat it as a cancel if payment didn't
+          // complete (Paddle also closes the overlay after a successful checkout).
+          if (!checkoutCompletedRef.current) {
+            checkoutClosedCallbackRef.current?.();
+          }
+
+          checkoutClosedCallbackRef.current = undefined;
         } else if (event.name === "checkout.error") {
           fetch("/api/v1/error-reports", {
             method: "POST",
@@ -382,12 +398,16 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       prices,
       frameTarget,
       displayMode,
+      onClose,
     }: {
       prices: Array<{ priceId: string; quantity: number }>;
       frameTarget?: string;
       displayMode?: "inline" | "overlay";
+      onClose?: () => void;
     }) => {
       setIsSubscriptionCreated(false);
+      checkoutCompletedRef.current = false;
+      checkoutClosedCallbackRef.current = onClose;
 
       if (!user?.result.email) {
         navigate(pages.userSettings());
