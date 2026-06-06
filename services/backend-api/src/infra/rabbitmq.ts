@@ -65,7 +65,7 @@ function parseMessageBody(body: Buffer | string | unknown): unknown {
 
 export function createConsumer(connection: Connection) {
   return (queue: string, handler: (msg: unknown) => Promise<void>) => {
-    return connection.createConsumer(
+    const consumer = connection.createConsumer(
       {
         queue,
         queueOptions: { durable: true },
@@ -81,5 +81,16 @@ export function createConsumer(connection: Connection) {
         }
       },
     );
+
+    // The consumer retries setup on its own; without an error listener the
+    // emitted 'error' (e.g. broker not yet reachable at boot) would crash the
+    // process.
+    consumer.on("error", (err) => {
+      logger.error(`Consumer error for ${queue}`, {
+        error: (err as Error).stack,
+      });
+    });
+
+    return consumer;
   };
 }

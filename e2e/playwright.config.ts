@@ -4,6 +4,21 @@ import {
   MOCK_DISCORD_SERVER_PORT,
 } from "./helpers/constants";
 
+const INSTANCE = process.env.E2E_INSTANCE || "0";
+const SUFFIX = INSTANCE === "0" ? "" : `-${INSTANCE}`;
+
+// Concurrent runs (instance > 0) share one Docker host, so cap workers to ease
+// resource contention. E2E_WORKERS overrides for manual tuning.
+function resolveWorkers(): number {
+  if (process.env.E2E_WORKERS) {
+    return Number(process.env.E2E_WORKERS);
+  }
+  if (process.env.CI) {
+    return 4;
+  }
+  return INSTANCE === "0" ? 8 : 4;
+}
+
 const PADDLE_CHECKOUT_TESTS = [
   "**/billing/branding-paddle-overlay.spec.ts",
   "**/billing/paddle-checkout.spec.ts",
@@ -16,8 +31,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 1,
-  workers: process.env.CI ? 4 : 8,
-  reporter: "html",
+  workers: resolveWorkers(),
+  outputDir: `./test-results${SUFFIX}`,
+  reporter: [
+    ["html", { outputFolder: `./playwright-report${SUFFIX}`, open: "never" }],
+  ],
   use: {
     baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
     trace: "on-first-retry",

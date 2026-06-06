@@ -1,5 +1,4 @@
 const PADDLE_SANDBOX_URL = "https://sandbox-api.paddle.com";
-const PADDLE_NOTIFICATION_SETTING_ID = "ntfset_01hbxt19pg3xeqjn4adhh8am17";
 
 function getPaddleKey(): string {
   const key = process.env.BACKEND_API_PADDLE_KEY;
@@ -29,7 +28,8 @@ async function paddleRequest<T>(
     throw new Error(`Paddle API ${endpoint} failed (${res.status}): ${text}`);
   }
 
-  return (await res.json()) as T;
+  const body = await res.text();
+  return (body ? JSON.parse(body) : undefined) as T;
 }
 
 interface PaddleSubscription {
@@ -43,17 +43,59 @@ interface PaddleListResponse<T> {
   meta: { pagination?: { next?: string } };
 }
 
+function getNotificationSettingId(): string {
+  const id = process.env.E2E_PADDLE_NOTIFICATION_SETTING_ID;
+  if (!id) {
+    throw new Error(
+      "E2E_PADDLE_NOTIFICATION_SETTING_ID is not set. Either run Paddle tests " +
+        "via e2e-mock.sh (it creates an ephemeral setting), or set it yourself " +
+        "in e2e/.env alongside a matching BACKEND_API_PADDLE_WEBHOOK_SECRET.",
+    );
+  }
+  return id;
+}
+
 export async function updateNotificationUrl(webhookUrl: string): Promise<void> {
-  await paddleRequest(
-    `/notification-settings/${PADDLE_NOTIFICATION_SETTING_ID}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({
-        destination: webhookUrl,
-      }),
-    },
-  );
+  await paddleRequest(`/notification-settings/${getNotificationSettingId()}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      destination: webhookUrl,
+    }),
+  });
   console.log("Paddle notification URL updated");
+}
+
+const E2E_SUBSCRIBED_EVENTS = [
+  "subscription.created",
+  "subscription.activated",
+  "subscription.updated",
+  "subscription.canceled",
+];
+
+export async function createNotificationSetting(): Promise<{
+  id: string;
+  secret: string;
+}> {
+  const result = await paddleRequest<{
+    data: { id: string; endpoint_secret_key: string };
+  }>("/notification-settings", {
+    method: "POST",
+    body: JSON.stringify({
+      description: "MonitoRSS E2E (ephemeral)",
+      type: "url",
+      destination: "https://placeholder.invalid/paddle-webhook",
+      subscribed_events: E2E_SUBSCRIBED_EVENTS,
+    }),
+  });
+
+  return {
+    id: result.data.id,
+    secret: result.data.endpoint_secret_key,
+  };
+}
+
+export async function deleteNotificationSetting(id: string): Promise<void> {
+  await paddleRequest(`/notification-settings/${id}`, { method: "DELETE" });
 }
 
 export async function listActiveSubscriptions(): Promise<PaddleSubscription[]> {
@@ -88,13 +130,10 @@ interface PaddleSimulationRun {
 export async function setNotificationTrafficSource(
   trafficSource: "platform" | "all",
 ): Promise<void> {
-  await paddleRequest(
-    `/notification-settings/${PADDLE_NOTIFICATION_SETTING_ID}`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ traffic_source: trafficSource }),
-    },
-  );
+  await paddleRequest(`/notification-settings/${getNotificationSettingId()}`, {
+    method: "PATCH",
+    body: JSON.stringify({ traffic_source: trafficSource }),
+  });
 }
 
 export async function createPaddleCustomer(email: string): Promise<string> {
@@ -119,7 +158,7 @@ export async function simulateSubscriptionCreation({
     {
       method: "POST",
       body: JSON.stringify({
-        notification_setting_id: PADDLE_NOTIFICATION_SETTING_ID,
+        notification_setting_id: getNotificationSettingId(),
         name: `e2e-sub-creation-${Date.now()}`,
         type: "subscription_creation",
         config: {

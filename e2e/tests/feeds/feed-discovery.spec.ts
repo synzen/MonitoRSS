@@ -8,6 +8,7 @@ import {
   MOCK_RSS_FEED_URL,
   MOCK_RSS_HOST,
   MOCK_RSS_HTML_PAGE_URL,
+  MOCK_RSS_SERVER_PORT,
 } from "../../helpers/constants";
 
 test.describe("Feed Discovery", () => {
@@ -300,7 +301,9 @@ test.describe("Feed Discovery", () => {
       await page.getByRole("button", { name: "Go" }).click();
 
       await expect(
-        page.getByText("To add a YouTube channel, paste the channel URL.", { exact: true }),
+        page.getByText("To add a YouTube channel, paste the channel URL.", {
+          exact: true,
+        }),
       ).toBeVisible({ timeout: 5000 });
     });
 
@@ -325,7 +328,9 @@ test.describe("Feed Discovery", () => {
       await page.getByRole("button", { name: "Go" }).click();
 
       await expect(
-        page.getByText("To add a subreddit, paste the subreddit URL.", { exact: true }),
+        page.getByText("To add a subreddit, paste the subreddit URL.", {
+          exact: true,
+        }),
       ).toBeVisible({ timeout: 5000 });
     });
   });
@@ -497,7 +502,11 @@ test.describe("Feed Discovery", () => {
       // The details panel surfaces the raw error message, but never the feed URL.
       await expect(page.getByText("Error", { exact: true })).toBeVisible();
       await expect(
-        page.getByText(/host\.docker\.internal:3001\/feed-500/),
+        page.getByText(
+          new RegExp(
+            `host\\.docker\\.internal:${MOCK_RSS_SERVER_PORT}\\/feed-500`,
+          ),
+        ),
       ).toHaveCount(0);
 
       const hideDetailsButton = page.getByRole("button", {

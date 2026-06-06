@@ -9,11 +9,12 @@ import {
   watch,
 } from "fs";
 import { join } from "path";
+import { instanceSuffix } from "./instance";
 
 let tunnelProcess: ChildProcess | null = null;
 
-const PID_FILE = join(process.cwd(), ".tunnel-pid");
-const LOG_FILE = join(process.cwd(), ".cloudflared.log");
+const PID_FILE = join(process.cwd(), `.tunnel-pid${instanceSuffix}`);
+const LOG_FILE = join(process.cwd(), `.cloudflared${instanceSuffix}.log`);
 const URL_REGEX = /https:\/\/(?!api\.)[a-z0-9-]+\.trycloudflare\.com/;
 
 function startWithFileOutput(

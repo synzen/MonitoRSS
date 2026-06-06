@@ -1,4 +1,4 @@
-name: monitorss-e2e
+name: ${COMPOSE_PROJECT_NAME:-monitorss-e2e}
 
 services:
   # --- Infrastructure ---
@@ -13,7 +13,7 @@ services:
       - /data/db
       - /data/configdb
     ports:
-      - "27019:27017"
+      - "${E2E_MONGO_PORT:-27019}:27017"
     command: ["--replSet", "dbrs", "--bind_ip_all", "--port", "27017"]
     networks:
       - e2e-default
@@ -178,7 +178,7 @@ services:
       - LOG_LEVEL=debug
       - USER_FEEDS_START_TARGET=service
       - NODE_ENV=local
-      - USER_FEEDS_DISCORD_API_BASE_URL=http://host.docker.internal:3002/api/v10
+      - USER_FEEDS_DISCORD_API_BASE_URL=http://host.docker.internal:${E2E_MOCK_DISCORD_PORT:-3002}/api/v10
       - USER_FEEDS_DISCORD_CLIENT_ID=000000000000000001
       - USER_FEEDS_DISCORD_API_TOKEN=fake-bot-token
       - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/userfeeds
@@ -215,7 +215,7 @@ services:
       - LOG_LEVEL=debug
       - USER_FEEDS_START_TARGET=api
       - NODE_ENV=local
-      - USER_FEEDS_DISCORD_API_BASE_URL=http://host.docker.internal:3002/api/v10
+      - USER_FEEDS_DISCORD_API_BASE_URL=http://host.docker.internal:${E2E_MOCK_DISCORD_PORT:-3002}/api/v10
       - USER_FEEDS_DISCORD_CLIENT_ID=000000000000000001
       - USER_FEEDS_DISCORD_API_TOKEN=fake-bot-token
       - USER_FEEDS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/userfeeds
@@ -247,15 +247,15 @@ services:
       timeout: 5s
       retries: 10
     ports:
-      - "8100:8100"
+      - "${E2E_BACKEND_PORT:-8100}:8100"
     environment:
       - BACKEND_API_NODE_ENV=local
       - BACKEND_API_PORT=8100
-      - BACKEND_API_DISCORD_API_BASE_URL=http://host.docker.internal:3002/api/v9
+      - BACKEND_API_DISCORD_API_BASE_URL=http://host.docker.internal:${E2E_MOCK_DISCORD_PORT:-3002}/api/v9
       - BACKEND_API_DISCORD_BOT_TOKEN=fake-bot-token
       - BACKEND_API_DISCORD_CLIENT_ID=000000000000000001
       - BACKEND_API_DISCORD_CLIENT_SECRET=fake-client-secret
-      - BACKEND_API_DISCORD_REDIRECT_URI=http://localhost:8100/api/v1/discord/callback-v2
+      - BACKEND_API_DISCORD_REDIRECT_URI=http://localhost:${E2E_BACKEND_PORT:-8100}/api/v1/discord/callback-v2
       - BACKEND_API_SESSION_SECRET=e2e-session-secret-that-is-long-enough-for-validation
       - BACKEND_API_SESSION_SALT=e2esessionsalt16
       - BACKEND_API_USER_FEEDS_API_HOST=http://e2e-user-feeds-api:5000
@@ -265,7 +265,7 @@ services:
       - BACKEND_API_FEED_USER_AGENT=MonitoRSS
       - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
-      - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:3100
+      - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:${E2E_FRONTEND_PORT:-3100}
       - BACKEND_API_PADDLE_KEY=${BACKEND_API_PADDLE_KEY:-}
       - BACKEND_API_PADDLE_URL=${BACKEND_API_PADDLE_URL:-}
       - BACKEND_API_PADDLE_WEBHOOK_SECRET=${BACKEND_API_PADDLE_WEBHOOK_SECRET:-}
@@ -286,7 +286,7 @@ services:
       web-api:
         condition: service_healthy
     ports:
-      - "3100:3100"
+      - "${E2E_FRONTEND_PORT:-3100}:3100"
     environment:
       - API_PROXY_URL=http://web-api:8100
       - VITE_PADDLE_CLIENT_TOKEN=${VITE_PADDLE_CLIENT_TOKEN:-}
