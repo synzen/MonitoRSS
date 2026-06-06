@@ -72,7 +72,7 @@ export const PlatformHint = ({ query }: { query: string }) => {
         <Text fontSize="sm" color="fg">
           {hint.description}
         </Text>
-        <Text fontSize="sm" color="fg.subtle" mt={2}>
+        <Text fontSize="sm" color="fg.muted" mt={2}>
           For example:{" "}
           <Text as="code" fontFamily="mono">
             {hint.example}
@@ -89,3 +89,10 @@ export const PlatformHint = ({ query }: { query: string }) => {
     </Text>
   );
 };
+
+export const SearchOwnFeedHint = () => (
+  <Text fontSize="sm" color="fg.muted">
+    Don&apos;t see what you&apos;re looking for? Many websites have feeds - try pasting a URL (e.g.,
+    a YouTube channel or news site) above and we&apos;ll check automatically.
+  </Text>
+);

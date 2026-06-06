@@ -183,10 +183,10 @@ export const BrowseFeedsModal = ({
       onOpenChange={(e) => {
         if (!e.open) onClose();
       }}
-      size="cover"
+      size="xl"
       initialFocusEl={() => searchInputRef.current}
     >
-      <DialogContent>
+      <DialogContent maxW="1200px" width="90vw">
         <DialogHeader marginRight={4}>
           <DialogTitle as="h2">Add a Feed</DialogTitle>
         </DialogHeader>

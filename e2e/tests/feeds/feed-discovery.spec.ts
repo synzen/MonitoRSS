@@ -79,6 +79,13 @@ test.describe("Feed Discovery", () => {
         page.locator("p").filter({ hasText: /\d+ results? for/ }),
       ).toBeVisible();
       await expect(page.getByText("Steam News")).toBeVisible();
+
+      await expect(
+        page
+          .locator("p")
+          .filter({ hasText: /Don't see what you're looking for\?/ })
+          .filter({ hasText: /try pasting a URL/ }),
+      ).toBeVisible();
     });
 
     test("clearing search returns to category cards", async ({ page }) => {

@@ -27,7 +27,12 @@ import type { CuratedFeed } from "../../types";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 import { UrlValidationResult } from "./UrlValidationResult";
 import type { FeedActionState } from "../../types/FeedActionState";
-import { PlatformHint, getNoResultsAnnouncement, getPlatformHint } from "./PlatformHint";
+import {
+  PlatformHint,
+  SearchOwnFeedHint,
+  getNoResultsAnnouncement,
+  getPlatformHint,
+} from "./PlatformHint";
 import { getFeedCardPropsFromState } from "../../types/FeedActionState";
 import { createDiscoverySearchEvent } from "../../api/createDiscoverySearchEvent";
 import { parseSearchInputAsUrl } from "../../utils/normalizeUrlInput";
@@ -406,6 +411,11 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
         <Button mt={3} onClick={state.handleShowMore} variant="outline" width="full">
           Show more
         </Button>
+      )}
+      {state.totalResults > 0 && (
+        <Box mt={4}>
+          <SearchOwnFeedHint />
+        </Box>
       )}
     </>
   );

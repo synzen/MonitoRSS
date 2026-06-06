@@ -239,6 +239,40 @@ describe("FeedDiscoverySearch", () => {
     });
   });
 
+  describe("Search-your-own-feed hint", () => {
+    it("shows the paste-a-URL hint below results when there are matches", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "IGN{Enter}");
+
+      expect(screen.getByText("IGN")).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          (_, element) =>
+            element?.tagName === "P" &&
+            /Don't see what you're looking for\?/.test(element.textContent ?? "") &&
+            /try pasting a URL/.test(element.textContent ?? ""),
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("does not show the paste-a-URL hint when there are no matches", async () => {
+      const { user } = renderSearch();
+
+      const input = screen.getByLabelText("Search popular feeds or paste a URL");
+      await user.type(input, "zzzznonexistent{Enter}");
+
+      expect(
+        screen.queryByText(
+          (_, element) =>
+            element?.tagName === "P" &&
+            /Don't see what you're looking for\?/.test(element.textContent ?? ""),
+        ),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   describe("No matches", () => {
     it("shows generic no matches message for non-platform queries", async () => {
       const { user } = renderSearch();

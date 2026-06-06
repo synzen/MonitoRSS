@@ -388,6 +388,17 @@ const config = defineConfig({
       button: buttonRecipe,
     },
     slotRecipes: {
+      // v3's default dialog backdrop is `blackAlpha.500` — actually only rgba(0,0,0,0.36), too faint
+      // to push the page back, so content behind a modal stays legible and competes with the dialog's
+      // own text (worst on the pricing dialog, whose content floats with no panel of its own, so the
+      // scrim IS its text background and must clear WCAG 1.4.3 against whatever shows through). Deepen
+      // to 64% black + a 12px blur: above the industry median (~0.5) because dark mode needs more dim
+      // to separate, but short of a near-opaque 0.8 wash that would kill the depth cue and waste the
+      // blur. The blur does the real work — it smears competing detail so the dim needn't go heavier.
+      dialog: {
+        slots: ["backdrop"],
+        base: { backdrop: { bg: "blackAlpha.700", backdropFilter: "blur(12px)" } },
+      },
       nativeSelect: {
         slots: ["root", "field", "indicator"],
         variants: { variant: { outline: { field: { borderColor: "controlBorder" } } } },

@@ -650,6 +650,7 @@ const UserFeedsInner: React.FC = () => {
                   <MenuRoot>
                     <MenuTrigger asChild>
                       <IconButton
+                        variant="solid"
                         colorPalette="brand"
                         aria-label="Additional add feed options"
                         borderLeftRadius={0}

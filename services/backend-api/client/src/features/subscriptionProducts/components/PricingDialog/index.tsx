@@ -68,6 +68,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
   const focusTargetIdRef = useRef<string | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   const {
     products,
@@ -233,7 +234,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
           const targetId = focusTargetIdRef.current;
           focusTargetIdRef.current = null;
 
-          return targetId ? document.getElementById(targetId) : null;
+          return (targetId ? document.getElementById(targetId) : null) ?? headingRef.current;
         }}
       >
         <DialogContent
@@ -250,7 +251,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                 <Flex alignItems="center" justifyContent="center">
                   <Stack width="100%" alignItems="center" gap={12} justifyContent="center">
                     <Stack justifyContent="center" textAlign="center">
-                      <Heading as="h1" tabIndex={-1}>
+                      <Heading as="h1" tabIndex={-1} ref={headingRef}>
                         Pricing
                       </Heading>
                       <Text color="fg" fontSize="lg" fontWeight="light">
