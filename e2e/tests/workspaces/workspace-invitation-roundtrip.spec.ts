@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "../../fixtures/test-fixtures";
+import { test, expect, type Page, newInstrumentedContext } from "../../fixtures/test-fixtures";
 import type { Browser } from "@playwright/test";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
 import {
@@ -21,10 +21,12 @@ import {
 // member. Every assertion goes through the rendered UI; the only thing read out
 // of band is the email the invitee would have received (via the mock mailer).
 
-async function waitForAuthenticatedApp(page: Page): Promise<void> {
-  await expect(page.getByRole("button", { name: "Account settings" })).toBeVisible({
-    timeout: 20000,
-  });
+async function waitForAuthenticatedApp(page: Page, context = "app"): Promise<void> {
+  await expect(
+    page.getByRole("button", { name: "Account settings" }),
+    `${context}: authenticated shell never rendered (the "Account settings" button is ` +
+      `absent, usually because the session/auth check failed)`,
+  ).toBeVisible({ timeout: 20000 });
 }
 
 async function gotoMembers(page: Page, workspaceName: string): Promise<void> {
@@ -41,26 +43,64 @@ async function gotoMembers(page: Page, workspaceName: string): Promise<void> {
 // bootstraps via Discord OAuth, enrols in the feature, verifies the invited
 // email via the real one-time-code flow, accepts, and confirms they can see the
 // workspace they joined in their own switcher.
+// Opening the invite link logged-out kicks off a multi-redirect OAuth bootstrap:
+// `RequireAuth` sees the 401, sets `window.location.href` to `/discord/login-v2`,
+// which round-trips through the mock authorize and `callback-v2` (the backend
+// validates an OAuth `state` it stored in the session cookie) before the app
+// re-renders authenticated. That client-side redirect needs a beat to fire, so we
+// must WAIT for the authenticated shell after each open rather than re-navigating
+// in a tight loop (re-`goto`ing immediately stomps the redirect before it runs).
+// On the rare run where the session is lost mid-chain we re-open the link, and if
+// it never authenticates we fail with a legible message instead of a bare timeout.
+async function bootstrapInviteeSession(page: Page, inviteLink: string): Promise<string> {
+  const attempts = 3;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    await page.goto(inviteLink);
+
+    try {
+      // Give the RequireAuth redirect + OAuth chain room to complete; on success
+      // the authenticated shell renders and @me resolves.
+      await waitForAuthenticatedApp(page, `invitee OAuth bootstrap (attempt ${attempt})`);
+      const res = await page.request.get("/api/v1/discord-users/@me");
+
+      if (res.status() === 200) {
+        const { id } = (await res.json()) as { id: string };
+        return id;
+      }
+    } catch {
+      // Fall through to retry: a lost session mid-chain leaves the logged-out
+      // shell, which never renders "Account settings".
+    }
+  }
+
+  throw new Error(
+    `Invitee OAuth bootstrap never authenticated after ${attempts} attempts: the logged-out ` +
+      `OAuth redirect chain (login-v2 -> authorize -> callback-v2) failed to establish a session ` +
+      `(/discord-users/@me kept returning 401). See attached browser-auth-error/http-401 annotations.`,
+  );
+}
+
 async function inviteeAcceptsViaLink(
   browser: Browser,
   inviteLink: string,
   invitedEmail: string,
   workspaceName: string,
 ): Promise<void> {
-  const context = await browser.newContext();
+  const context = await newInstrumentedContext(browser, test.info());
   const page = await context.newPage();
 
   try {
     // Open the invitation while logged out -> OAuth bootstrap (a brand-new user).
-    await page.goto(inviteLink);
-    await waitForAuthenticatedApp(page);
+    // This retries the redirect chain and fails fast with a clear message if the
+    // session never lands, instead of hanging on the authenticated-UI assertion.
+    const discordUserId = await bootstrapInviteeSession(page, inviteLink);
 
     // The new user lacks the per-user workspaces flag, so the invite endpoints
     // 404 until it's enabled; enable it for the minted user and reload the link.
-    const discordUserId = await getDiscordUserIdFromPage(page);
     await enableWorkspacesFeatureInDb(discordUserId);
     await page.goto(inviteLink);
-    await waitForAuthenticatedApp(page);
+    await waitForAuthenticatedApp(page, "invitee after enabling workspaces flag");
 
     // Verify the invited email through the real one-time-code flow.
     await expect(page.getByRole("button", { name: /send code/i })).toBeVisible({
