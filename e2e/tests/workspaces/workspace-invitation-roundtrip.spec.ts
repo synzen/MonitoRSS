@@ -140,6 +140,12 @@ test.describe("Workspace invitations (inviter -> invitee round-trip)", () => {
     page,
     browser,
   }) => {
+    // Two real sessions (owner + invitee), a multi-redirect OAuth bootstrap, the
+    // real one-time-code email verification, and accept — far more than the 30s
+    // default budget. Give it room rather than racing the budget (the bootstrap's
+    // 20s authenticated-shell wait alone can blow 30s and tear the context down).
+    test.slow();
+
     // --- Session A: the owner sets up a workspace and invites by email. ---
     await page.goto("/feeds");
     await waitForAuthenticatedApp(page);
