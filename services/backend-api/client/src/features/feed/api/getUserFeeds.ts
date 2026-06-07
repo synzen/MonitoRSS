@@ -13,10 +13,9 @@ export interface GetUserFeedsInput {
     hasConnections?: boolean;
   };
   /**
-   * Optional team scope. Undefined = personal feeds (current behavior).
-   * Forward-compatibility shell per ADR-005 — backend may ignore today.
+   * Optional workspace scope. Undefined = personal feeds; set = the workspace's feeds.
    */
-  teamId?: string;
+  workspaceId?: string;
 }
 
 const GetUserFeedsOutputSchema = object({
@@ -44,8 +43,8 @@ export const getUserFeeds = async (options: GetUserFeedsInput): Promise<GetUserF
     params.append(`filters[hasConnections]`, String(options.filters.hasConnections));
   }
 
-  if (options.teamId) {
-    params.append("teamId", options.teamId);
+  if (options.workspaceId) {
+    params.append("workspaceId", options.workspaceId);
   }
 
   const searchParams = params.toString();

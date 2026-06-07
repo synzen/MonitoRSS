@@ -23,7 +23,7 @@ import {
   DialogCloseTrigger,
 } from "@/components/ui/dialog";
 import { useMessageBuilderContext } from "./MessageBuilderContext";
-import { useUserFeedConnectionContext } from "@/features/feed";
+import { useUserFeedConnectionContext, useFeedScope } from "@/features/feed";
 import { pages } from "@/constants";
 import { UserFeedConnectionTabSearchParam } from "@/constants/userFeedConnectionTabSearchParam";
 
@@ -122,6 +122,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
 }) => {
   const { error, isLoading, currentArticle } = useMessageBuilderContext();
   const { connection, userFeed } = useUserFeedConnectionContext();
+  const { workspaceSlug } = useFeedScope();
   const [searchTerm, setSearchTerm] = React.useState("");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -283,6 +284,7 @@ export const InsertPlaceholderDialog: React.FC<Props> = ({
                       feedId: userFeed.id,
                       connectionId: connection.id,
                       connectionType: connection.key,
+                      scope: workspaceSlug ? { workspaceSlug } : undefined,
                     },
                     {
                       tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,

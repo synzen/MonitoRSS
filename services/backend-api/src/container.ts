@@ -12,7 +12,6 @@ import type { IUserFeedLimitOverrideRepository } from "./repositories/interfaces
 import type { IPatronRepository } from "./repositories/interfaces/patron.types";
 import type { INotificationDeliveryAttemptRepository } from "./repositories/interfaces/notification-delivery-attempt.types";
 import type { IFeedSubscriberRepository } from "./repositories/interfaces/feed-subscriber.types";
-import type { IUserRepository } from "./repositories/interfaces/user.types";
 import type { ICustomerRepository } from "./repositories/interfaces/customer.types";
 import type { IFeedRepository } from "./repositories/interfaces/feed.types";
 import type { IFeedFilteredFormatRepository } from "./repositories/interfaces/feed-filtered-format.types";
@@ -31,6 +30,8 @@ import { PatronMongooseRepository } from "./repositories/mongoose/patron.mongoos
 import { NotificationDeliveryAttemptMongooseRepository } from "./repositories/mongoose/notification-delivery-attempt.mongoose.repository";
 import { FeedSubscriberMongooseRepository } from "./repositories/mongoose/feed-subscriber.mongoose.repository";
 import { UserMongooseRepository } from "./repositories/mongoose/user.mongoose.repository";
+import { WorkspaceMongooseRepository } from "./repositories/mongoose/workspace.mongoose.repository";
+import { EmailVerificationMongooseRepository } from "./repositories/mongoose/email-verification.mongoose.repository";
 import { CustomerMongooseRepository } from "./repositories/mongoose/customer.mongoose.repository";
 import { FeedMongooseRepository } from "./repositories/mongoose/feed.mongoose.repository";
 import { FeedFilteredFormatMongooseRepository } from "./repositories/mongoose/feed-filtered-format.mongoose.repository";
@@ -56,6 +57,8 @@ import { DiscordUsersService } from "./services/discord-users/discord-users.serv
 import { FeedSchedulingService } from "./services/feed-scheduling/feed-scheduling.service";
 import { FeedsService } from "./services/feeds/feeds.service";
 import { NotificationsService } from "./services/notifications/notifications.service";
+import { EmailVerificationService } from "./features/users/email-verification.service";
+import { WorkspacesService } from "./features/workspaces/workspaces.service";
 import { DiscordServersService } from "./services/discord-servers/discord-servers.service";
 import { UserFeedConnectionEventsService } from "./services/user-feed-connection-events/user-feed-connection-events.service";
 import { MongoMigrationsService } from "./services/mongo-migrations/mongo-migrations.service";
@@ -91,7 +94,9 @@ export interface Container {
   patronRepository: IPatronRepository;
   notificationDeliveryAttemptRepository: INotificationDeliveryAttemptRepository;
   feedSubscriberRepository: IFeedSubscriberRepository;
-  userRepository: IUserRepository;
+  userRepository: UserMongooseRepository;
+  workspaceRepository: WorkspaceMongooseRepository;
+  emailVerificationRepository: EmailVerificationMongooseRepository;
   customerRepository: ICustomerRepository;
   feedRepository: IFeedRepository;
   feedFilteredFormatRepository: IFeedFilteredFormatRepository;
@@ -122,6 +127,8 @@ export interface Container {
   feedSchedulingService: FeedSchedulingService;
   feedsService: FeedsService;
   notificationsService: NotificationsService;
+  emailVerificationService: EmailVerificationService;
+  workspacesService: WorkspacesService;
   discordServersService: DiscordServersService;
   userFeedConnectionEventsService: UserFeedConnectionEventsService;
   mongoMigrationsService: MongoMigrationsService;
@@ -166,6 +173,12 @@ export function createContainer(deps: {
     deps.mongoConnection,
   );
   const userRepository = new UserMongooseRepository(deps.mongoConnection);
+  const workspaceRepository = new WorkspaceMongooseRepository(
+    deps.mongoConnection,
+  );
+  const emailVerificationRepository = new EmailVerificationMongooseRepository(
+    deps.mongoConnection,
+  );
   const customerRepository = new CustomerMongooseRepository(
     deps.mongoConnection,
   );
@@ -254,6 +267,21 @@ export function createContainer(deps: {
 
   const smtpTransport = createSmtpTransport(deps.config);
 
+  const emailVerificationService = new EmailVerificationService({
+    config: deps.config,
+    smtpTransport,
+    emailVerificationRepository,
+    userRepository,
+  });
+
+  const workspacesService = new WorkspacesService({
+    config: deps.config,
+    smtpTransport,
+    workspaceRepository,
+    userRepository,
+    emailVerificationService,
+  });
+
   const notificationsService = new NotificationsService({
     config: deps.config,
     smtpTransport,
@@ -300,6 +328,7 @@ export function createContainer(deps: {
     userRepository,
     feedsService,
     supportersService,
+    workspacesService,
     feedFetcherApiService,
     feedFetcherService,
     feedHandlerService,
@@ -382,6 +411,8 @@ export function createContainer(deps: {
     notificationDeliveryAttemptRepository,
     feedSubscriberRepository,
     userRepository,
+    workspaceRepository,
+    emailVerificationRepository,
     customerRepository,
     feedRepository,
     feedFilteredFormatRepository,
@@ -412,6 +443,8 @@ export function createContainer(deps: {
     feedSchedulingService,
     feedsService,
     notificationsService,
+    emailVerificationService,
+    workspacesService,
     discordServersService,
     userFeedConnectionEventsService,
     mongoMigrationsService,

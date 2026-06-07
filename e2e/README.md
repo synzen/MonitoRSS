@@ -10,10 +10,16 @@ The E2E Docker stack (defined in `docker-compose.e2e.yml`) provides all required
 
 `e2e-mock.sh` is the canonical wrapper: it brings up the full Docker stack (`up -d --build --wait`), runs Playwright, and tears the stack down on exit. **Any arguments after the script name are forwarded straight to `playwright test`**, so you can scope a run to a single file and/or project. Always go through this script (or the `npm run e2e*` aliases) rather than starting the stack and Playwright by hand — `--build` is required because the `web-api` source is baked into its image (no bind mount), so backend changes won't take effect otherwise.
 
-The script writes two logs to `e2e/logs/` (gitignored) that outlive the torn-down stack:
+The script writes logs to `e2e/logs/` (gitignored) that outlive the torn-down stack. **If a run fails, read `logs/combined.log` first** — it is the one file containing everything, top to bottom:
 
-- `logs/playwright.log` — the full Playwright run output.
-- `logs/docker-stack.log` — `docker compose logs` for all services, captured just before teardown. This is the only place to inspect container-side behaviour after a run, e.g. inbound Paddle webhooks in `web-api` ("Paddle webhook received" / "Invalid signature received for paddle webhook event").
+- `logs/combined.log` — **read this first after a run ends.** Playwright run output + every container's logs + all three mock servers, concatenated under `===== SECTION =====` headers. Assembled on teardown. The script prints this path when the run starts and again when it ends.
+- `logs/playwright.log` — the Playwright run output (written live via `tee`).
+- `logs/docker-stack.log` — `docker compose logs --timestamps --follow` for all services, streamed **live** for the whole run. The place to inspect container-side behaviour, e.g. inbound Paddle webhooks in `web-api` ("Paddle webhook received" / "Invalid signature received for paddle webhook event").
+- `logs/mock-rss.log`, `logs/mock-discord.log`, `logs/mock-smtp.log` — the host-side mock servers Playwright launches, written live. Look here for things like `[mock-discord] Unmatched: <method> <path>` when a request isn't being mocked.
+
+`combined.log` is assembled on teardown, so it only exists once the run ends. **While a run is still going (e.g. a hang), read the four source files above — they are all written live.**
+
+Concurrent runs (`E2E_INSTANCE > 0`) suffix every log file with `-<instance>` (e.g. `combined-1.log`).
 
 ```bash
 # Run all regular (non-paddle) tests via Docker stack (defaults to --project=e2e-web)

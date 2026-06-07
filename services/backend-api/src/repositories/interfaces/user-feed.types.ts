@@ -69,6 +69,7 @@ export interface IUserFeed {
   healthStatus: UserFeedHealthStatus;
   connections: IFeedConnections;
   user: IUserFeedUser;
+  workspaceId?: string;
   formatOptions?: IUserFeedFormatOptions;
   dateCheckOptions?: IUserFeedDateCheckOptions;
   shareManageOptions?: IUserFeedShareManageOptions;
@@ -138,6 +139,7 @@ export interface CreateUserFeedInput {
   title: string;
   url: string;
   user: { id: string; discordUserId: string };
+  workspaceId?: string;
   inputUrl?: string;
   connections?: IFeedConnections;
   feedRequestLookupKey?: string;
@@ -196,6 +198,12 @@ export interface UserFeedListingFilters {
 
 export interface UserFeedListingInput {
   discordUserId: string;
+  /**
+   * Workspace scope. When set, the listing returns only feeds associated with
+   * this workspace (membership is verified by the caller). When absent, the
+   * listing returns the user's personal feeds (those with no workspaceId).
+   */
+  workspaceId?: string;
   limit?: number;
   offset?: number;
   search?: string;
@@ -375,8 +383,29 @@ export interface UserFeedForDelivery {
   users: Array<UserForDelivery>;
 }
 
+// Thrown inside the create transaction to abort it (rolling back the insert)
+// when over limit; the service rethrows it as FeedLimitReachedException.
+export class FeedLimitExceededError extends Error {
+  constructor() {
+    super("Feed limit exceeded");
+    this.name = "FeedLimitExceededError";
+  }
+}
+
+export type FeedLimitScope =
+  | { scope: "workspace"; workspaceId: string; maxFeeds: number }
+  | { scope: "personal"; discordUserId: string; maxFeeds: number };
+
 export interface IUserFeedRepository {
   create(input: CreateUserFeedInput): Promise<IUserFeed>;
+  createWithLimitEnforcement(
+    input: CreateUserFeedInput,
+    limit: FeedLimitScope,
+  ): Promise<IUserFeed>;
+  cloneWithLimitEnforcement(
+    input: CloneUserFeedInput,
+    limit: FeedLimitScope,
+  ): Promise<IUserFeed>;
   findById(id: string): Promise<IUserFeed | null>;
   deleteAll(): Promise<void>;
   bulkUpdateLookupKeys(operations: LookupKeyOperation[]): Promise<void>;
@@ -390,6 +419,7 @@ export interface IUserFeedRepository {
   filterFeedIdsByOwnership(
     feedIds: string[],
     discordUserId: string,
+    myWorkspaceIds?: string[],
   ): Promise<string[]>;
 
   findOneAndUpdate(
@@ -416,6 +446,7 @@ export interface IUserFeedRepository {
 
   // CRUD methods for UserFeedsService
   countByOwnership(discordUserId: string): Promise<number>;
+  countByWorkspace(workspaceId: string): Promise<number>;
   countByOwnershipExcludingDisabled(
     discordUserId: string,
     excludeDisabledCodes: UserFeedDisabledCode[],
@@ -424,6 +455,7 @@ export interface IUserFeedRepository {
   findByIdAndOwnership(
     id: string,
     discordUserId: string,
+    myWorkspaceIds?: string[],
   ): Promise<IUserFeed | null>;
   findByIdAndCreator(
     id: string,

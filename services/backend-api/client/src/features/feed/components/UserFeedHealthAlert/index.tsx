@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { UserFeedDisabledCode, UserFeedRequestStatus } from "../../types";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
+import { useFeedScope } from "../../contexts/FeedScopeContext";
 import { getErrorMessageForArticleRequestStatus } from "../../utils";
 import { useCreateUserFeedManualRequest, useUserFeedRequestsWithPagination } from "../../hooks";
 import ApiAdapterError from "../../../../utils/ApiAdapterError";
@@ -19,6 +20,8 @@ const RESOLVABLE_STATUS_CODES = [429, 403, 401];
 export const UserFeedHealthAlert = () => {
   const { t } = useTranslation();
   const { userFeed } = useUserFeedContext();
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
   const { data, status } = useUserFeedRequestsWithPagination({
     feedId: userFeed.id,
     data: {},
@@ -101,6 +104,7 @@ export const UserFeedHealthAlert = () => {
                     navigate(
                       pages.userFeed(userFeed.id, {
                         tab: UserFeedTabSearchParam.Logs,
+                        scope,
                       }),
                     )
                   }

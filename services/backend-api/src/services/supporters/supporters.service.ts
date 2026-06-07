@@ -40,6 +40,7 @@ export class SupportersService {
   readonly defaultRefreshRateSeconds: number;
   readonly defaultSupporterRefreshRateSeconds = 120;
   readonly defaultMaxUserFeeds: number;
+  readonly defaultMaxWorkspaceFeeds: number;
   readonly defaultMaxSupporterUserFeeds: number;
   readonly maxDailyArticlesSupporter: number;
   readonly maxDailyArticlesDefault: number;
@@ -59,6 +60,9 @@ export class SupportersService {
       config.BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES * 60;
     this.defaultMaxUserFeeds = Number(
       config.BACKEND_API_DEFAULT_MAX_USER_FEEDS,
+    );
+    this.defaultMaxWorkspaceFeeds = Number(
+      config.BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS,
     );
     this.defaultMaxSupporterUserFeeds = Number(
       config.BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS,
@@ -441,6 +445,33 @@ export class SupportersService {
           : undefined,
       maxPatreonPledge: benefits.maxPatreonPledge,
       allowExternalProperties: benefits.allowExternalProperties,
+    };
+  }
+
+  /**
+   * Feed-related benefits for a WORKSPACE. Today the feed limit is the
+   * hardcoded `BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS` and the article/refresh
+   * limits use the default tier — workspace feeds are deliberately insulated
+   * from the creator's personal supporter perks.
+   *
+   * Forward-compat: when a workspace-level Paddle subscription exists, resolve
+   * it here (look up the workspace's subscription benefits) and return those
+   * instead. The return shape mirrors the fields `addFeed` consumes from
+   * `getBenefitsOfDiscordUser`, so the swap is local to this method.
+   */
+  async getWorkspaceBenefits(_workspaceId: string): Promise<{
+    maxFeeds: number;
+    maxDailyArticles: number;
+    refreshRateSeconds: number;
+    allowWebhooks: boolean;
+  }> {
+    // TODO: workspace Paddle subscription lookup slots in here (keyed on
+    // _workspaceId).
+    return {
+      maxFeeds: this.defaultMaxWorkspaceFeeds,
+      maxDailyArticles: this.maxDailyArticlesDefault,
+      refreshRateSeconds: this.defaultRefreshRateSeconds,
+      allowWebhooks: false,
     };
   }
 

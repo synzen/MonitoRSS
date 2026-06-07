@@ -28,6 +28,7 @@ import {
   useUserFeedConnectionContext,
   UserFeedProvider,
   useUserFeedContext,
+  useFeedScope,
 } from "@/features/feed";
 import {
   LogicalFilterExpression,
@@ -96,6 +97,8 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
 const ConnectionDiscordChannelSettingsInner: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
   const navigate = useNavigate();
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
   const { search: urlSearch } = useLocation();
   const actionsButtonRef = useRef<HTMLButtonElement>(null);
   const { userFeed: feed } = useUserFeedContext();
@@ -177,13 +180,13 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                     <BreadcrumbList>
                       <BreadcrumbItem>
                         <BreadcrumbLink asChild color="text.link">
-                          <RouterLink to={pages.userFeeds()}>Feeds</RouterLink>
+                          <RouterLink to={pages.userFeeds(scope)}>Feeds</RouterLink>
                         </BreadcrumbLink>
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />
                       <BreadcrumbItem>
                         <BreadcrumbLink asChild color="text.link">
-                          <RouterLink to={pages.userFeed(feedId as string)}>
+                          <RouterLink to={pages.userFeed(feedId as string, { scope })}>
                             {feed?.title}
                           </RouterLink>
                         </BreadcrumbLink>
@@ -194,6 +197,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                           <RouterLink
                             to={pages.userFeed(feedId as string, {
                               tab: UserFeedTabSearchParam.Connections,
+                              scope,
                             })}
                           >
                             Connections

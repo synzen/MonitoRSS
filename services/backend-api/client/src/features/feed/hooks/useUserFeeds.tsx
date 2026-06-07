@@ -4,6 +4,7 @@ import { pick } from "lodash";
 import { getUserFeeds, GetUserFeedsInput, GetUserFeedsOutput } from "../api";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { UserFeed } from "../types";
+import { useFeedScope } from "../contexts/FeedScopeContext";
 
 export const useUserFeeds = (
   input: GetUserFeedsInput,
@@ -14,11 +15,16 @@ export const useUserFeeds = (
   const [search, setSearch] = useState("");
   const [hasErrored, setHasErrored] = useState(false);
   const queryClient = useQueryClient();
+  const { workspaceId } = useFeedScope();
+
+  // In workspace scope, list/count this workspace's feeds; in personal scope, the user's.
+  // Merged into the query key so the two scopes cache separately.
+  const scopedInput: GetUserFeedsInput = { ...input, workspaceId: input.workspaceId ?? workspaceId };
 
   const queryKey = [
     "user-feeds",
     {
-      input,
+      input: scopedInput,
     },
   ];
 
@@ -28,7 +34,7 @@ export const useUserFeeds = (
   >(
     queryKey,
     async () => {
-      const result = await getUserFeeds(input);
+      const result = await getUserFeeds(scopedInput);
 
       return result;
     },

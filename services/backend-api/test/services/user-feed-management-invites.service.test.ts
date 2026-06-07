@@ -8,6 +8,7 @@ import { FeedLimitReachedException } from "../../src/shared/exceptions/user-feed
 import {
   UserManagerAlreadyInvitedException,
   UserFeedTransferRequestExistsException,
+  WorkspaceFeedSharingDisabledException,
 } from "../../src/shared/exceptions/user-feed-management-invites.exceptions";
 import { createUserFeedManagementInvitesHarness } from "../helpers/user-feed-management-invites.harness";
 
@@ -59,6 +60,25 @@ describe("UserFeedManagementInvitesService", { concurrency: true }, () => {
           }),
         UserManagerAlreadyInvitedException,
       );
+    });
+
+    it("throws WorkspaceFeedSharingDisabledException for workspace feeds", async () => {
+      const ctx = harness.createContext();
+      const feed = await ctx.createFeed({ workspaceId: ctx.generateId() });
+      const targetDiscordUserId = ctx.generateId();
+
+      await assert.rejects(
+        () =>
+          ctx.service.createInvite({
+            feed,
+            targetDiscordUserId,
+            type: UserFeedManagerInviteType.CoManage,
+          }),
+        WorkspaceFeedSharingDisabledException,
+      );
+
+      const updatedFeed = await ctx.findById(feed.id);
+      assert.ok(!updatedFeed?.shareManageOptions?.invites?.length);
     });
 
     it("throws UserManagerAlreadyInvitedException when inviting self", async () => {

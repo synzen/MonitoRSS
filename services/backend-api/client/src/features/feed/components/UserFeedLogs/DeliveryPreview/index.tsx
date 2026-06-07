@@ -6,6 +6,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { useUserFeedContext } from "../../../contexts/UserFeedContext";
+import { useFeedScope } from "../../../contexts/FeedScopeContext";
 import { pages } from "../../../../../constants";
 import { UserFeedTabSearchParam } from "../../../../../constants/userFeedTabSearchParam";
 import { useDeliveryPreviewWithPagination } from "../../../hooks/useDeliveryPreviewWithPagination";
@@ -254,6 +255,7 @@ export const DeliveryPreviewPresentational = ({
 
 export const DeliveryPreview = () => {
   const { userFeed } = useUserFeedContext();
+  const { workspaceSlug } = useFeedScope();
   const {
     results,
     status,
@@ -303,7 +305,10 @@ export const DeliveryPreview = () => {
       nextRetryAtIso={nextRetryAtIso}
       nextRetryReason={nextRetryReason}
       cacheDurationMs={latestFreshnessLifetimeMs}
-      addConnectionUrl={pages.userFeed(userFeed.id, { tab: UserFeedTabSearchParam.Connections })}
+      addConnectionUrl={pages.userFeed(userFeed.id, {
+        tab: UserFeedTabSearchParam.Connections,
+        scope: workspaceSlug ? { workspaceSlug } : undefined,
+      })}
       lastCheckedFormatted={formatLastChecked()}
       onRefresh={refresh}
       onLoadMore={loadMore}

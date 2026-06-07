@@ -48,7 +48,11 @@ import { UserFeedCopyableSetting } from "./types";
 import type {
   CopySettingsTarget,
   CopyableSettings,
+  CloneUserFeedInput,
+  FeedLimitScope,
+  CreateUserFeedInput as CreateUserFeedRepoInput,
 } from "../../repositories/interfaces/user-feed.types";
+import { FeedLimitExceededError } from "../../repositories/interfaces/user-feed.types";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -105,6 +109,7 @@ export class UserFeedsService {
   ): Promise<UserFeedListItem[]> {
     return this.deps.userFeedRepository.getUserFeedsListing({
       discordUserId,
+      workspaceId: input.workspaceId,
       limit: input.limit,
       offset: input.offset,
       search: input.search,
@@ -120,6 +125,7 @@ export class UserFeedsService {
   ): Promise<number> {
     return this.deps.userFeedRepository.getUserFeedsCount({
       discordUserId,
+      workspaceId: input.workspaceId,
       search: input.search,
       filters: input.filters,
     });
@@ -128,11 +134,64 @@ export class UserFeedsService {
   async getFeedsWithoutConnectionsCount(
     _userId: string,
     discordUserId: string,
+    workspaceId?: string,
   ): Promise<number> {
     return this.deps.userFeedRepository.getUserFeedsCount({
       discordUserId,
+      workspaceId,
       filters: { hasConnections: false },
     });
+  }
+
+  private feedLimitScope({
+    workspaceId,
+    ownerDiscordUserId,
+    maxFeeds,
+  }: {
+    workspaceId: string | null;
+    ownerDiscordUserId: string;
+    maxFeeds: number;
+  }): FeedLimitScope {
+    return workspaceId
+      ? { scope: "workspace", workspaceId, maxFeeds }
+      : { scope: "personal", discordUserId: ownerDiscordUserId, maxFeeds };
+  }
+
+  // Translates the repository's limit sentinel into the exception callers handle.
+  private async createWithFeedLimit(
+    input: CreateUserFeedRepoInput,
+    scope: FeedLimitScope,
+  ): Promise<IUserFeed> {
+    try {
+      return await this.deps.userFeedRepository.createWithLimitEnforcement(
+        input,
+        scope,
+      );
+    } catch (err) {
+      if (err instanceof FeedLimitExceededError) {
+        throw new FeedLimitReachedException("Max feeds reached");
+      }
+
+      throw err;
+    }
+  }
+
+  private async cloneWithFeedLimit(
+    input: CloneUserFeedInput,
+    scope: FeedLimitScope,
+  ): Promise<IUserFeed> {
+    try {
+      return await this.deps.userFeedRepository.cloneWithLimitEnforcement(
+        input,
+        scope,
+      );
+    } catch (err) {
+      if (err instanceof FeedLimitExceededError) {
+        throw new FeedLimitReachedException("Max feeds reached");
+      }
+
+      throw err;
+    }
   }
 
   async addFeed(
@@ -140,30 +199,52 @@ export class UserFeedsService {
       discordUserId,
       userAccessToken,
     }: { discordUserId: string; userAccessToken: string },
-    { title, url, sourceFeedId }: CreateUserFeedInput,
+    { title, url, sourceFeedId, workspaceId }: CreateUserFeedInput,
   ): Promise<IUserFeed> {
-    const [
-      { maxUserFeeds, maxDailyArticles, refreshRateSeconds },
-      user,
-      sourceFeedToCopyFrom,
-    ] = await Promise.all([
-      this.deps.supportersService.getBenefitsOfDiscordUser(discordUserId),
-      this.deps.usersService.getOrCreateUserByDiscordId(discordUserId),
-      sourceFeedId
-        ? this.deps.userFeedRepository.findByIdAndOwnership(
-            sourceFeedId,
-            discordUserId,
-          )
-        : null,
-    ]);
+    const user =
+      await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
+    const userId = user.id;
+
+    // Workspace feeds draw their limits from workspace benefits (hardcoded today, a
+    // future workspace Paddle subscription later) — never the creator's personal
+    // supporter perks. Membership is verified before creation.
+    if (workspaceId) {
+      await this.deps.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    }
+
+    const myWorkspaceIds = workspaceId ? [workspaceId] : [];
+
+    const [{ maxFeeds, maxDailyArticles, refreshRateSeconds }, sourceFeedToCopyFrom] =
+      await Promise.all([
+        workspaceId
+          ? this.deps.supportersService
+              .getWorkspaceBenefits(workspaceId)
+              .then((b) => ({
+                maxFeeds: b.maxFeeds,
+                maxDailyArticles: b.maxDailyArticles,
+                refreshRateSeconds: b.refreshRateSeconds,
+              }))
+          : this.deps.supportersService
+              .getBenefitsOfDiscordUser(discordUserId)
+              .then((b) => ({
+                maxFeeds: b.maxUserFeeds,
+                maxDailyArticles: b.maxDailyArticles,
+                refreshRateSeconds: b.refreshRateSeconds,
+              })),
+        sourceFeedId
+          ? this.deps.userFeedRepository.findByIdAndOwnership(
+              sourceFeedId,
+              discordUserId,
+              myWorkspaceIds,
+            )
+          : null,
+      ]);
 
     if (sourceFeedId && !sourceFeedToCopyFrom) {
       throw new SourceFeedNotFoundException(
         `Feed with ID ${sourceFeedId} not found for user ${discordUserId}`,
       );
     }
-
-    const userId = user.id;
 
     const tempLookupDetails = getFeedRequestLookupDetails({
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
@@ -177,34 +258,37 @@ export class UserFeedsService {
     const { finalUrl, enableDateChecks, feedTitle } =
       await this.checkUrlIsValid(url, tempLookupDetails);
 
-    const { connections, ...propertiesToCopy } = sourceFeedToCopyFrom || {};
+    const {
+      connections,
+      workspaceId: _sourceWorkspaceId,
+      ...propertiesToCopy
+    } = sourceFeedToCopyFrom || {};
 
-    const created = await this.deps.userFeedRepository.create({
-      ...propertiesToCopy,
-      title: title || feedTitle || "Untitled Feed",
-      url: finalUrl,
-      inputUrl: url,
-      user: {
-        id: userId,
-        discordUserId,
+    const created = await this.createWithFeedLimit(
+      {
+        ...propertiesToCopy,
+        title: title || feedTitle || "Untitled Feed",
+        url: finalUrl,
+        inputUrl: url,
+        user: {
+          id: userId,
+          discordUserId,
+        },
+        workspaceId,
+        refreshRateSeconds,
+        slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
+        maxDailyArticles,
+        feedRequestLookupKey: tempLookupDetails?.key,
+        dateCheckOptions: enableDateChecks
+          ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
+          : undefined,
       },
-      refreshRateSeconds,
-      slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
-      maxDailyArticles,
-      feedRequestLookupKey: tempLookupDetails?.key,
-      dateCheckOptions: enableDateChecks
-        ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
-        : undefined,
-    });
-
-    const feedCount =
-      await this.deps.userFeedRepository.countByOwnership(discordUserId);
-
-    if (feedCount > maxUserFeeds) {
-      await this.deps.userFeedRepository.deleteById(created.id);
-
-      throw new FeedLimitReachedException("Max feeds reached");
-    }
+      this.feedLimitScope({
+        workspaceId: workspaceId ?? null,
+        ownerDiscordUserId: discordUserId,
+        maxFeeds,
+      }),
+    );
 
     if (connections) {
       for (const c of connections.discordChannels) {
@@ -239,10 +323,16 @@ export class UserFeedsService {
       throw new Error(`Feed ${feedId} not found while cloning`);
     }
 
-    const { maxUserFeeds } =
-      await this.deps.supportersService.getBenefitsOfDiscordUser(
-        sourceFeed.user.discordUserId,
-      );
+    // Clone lands in the source's scope (the repo carries `workspaceId` over), so
+    // the limit is the workspace's for a workspace feed, else the creator's.
+    const maxFeeds = sourceFeed.workspaceId
+      ? (await this.deps.supportersService.getWorkspaceBenefits(sourceFeed.workspaceId))
+          .maxFeeds
+      : (
+          await this.deps.supportersService.getBenefitsOfDiscordUser(
+            sourceFeed.user.discordUserId,
+          )
+        ).maxUserFeeds;
 
     let inputUrl = sourceFeed.inputUrl;
     let finalUrl = sourceFeed.url;
@@ -267,24 +357,21 @@ export class UserFeedsService {
       inputUrl = data.url;
     }
 
-    const created = await this.deps.userFeedRepository.clone({
-      sourceFeed,
-      overrides: {
-        title: data?.title,
-        url: finalUrl,
-        inputUrl,
+    const created = await this.cloneWithFeedLimit(
+      {
+        sourceFeed,
+        overrides: {
+          title: data?.title,
+          url: finalUrl,
+          inputUrl,
+        },
       },
-    });
-
-    const feedCount = await this.deps.userFeedRepository.countByOwnership(
-      sourceFeed.user.discordUserId,
+      this.feedLimitScope({
+        workspaceId: sourceFeed.workspaceId ?? null,
+        ownerDiscordUserId: sourceFeed.user.discordUserId,
+        maxFeeds,
+      }),
     );
-
-    if (feedCount > maxUserFeeds) {
-      await this.deps.userFeedRepository.deleteById(created.id);
-
-      throw new FeedLimitReachedException("Max feeds reached");
-    }
 
     await this.deps.usersService.syncLookupKeys({ feedIds: [created.id] });
 

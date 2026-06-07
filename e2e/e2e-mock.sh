@@ -92,6 +92,9 @@ PLAYWRIGHT_ARGS="${@:---project=e2e-web}"
 LOG_DIR="$SCRIPT_DIR/logs"
 RUN_LOG="$LOG_DIR/playwright${INSTANCE_SUFFIX}.log"
 DOCKER_LOG="$LOG_DIR/docker-stack${INSTANCE_SUFFIX}.log"
+# Single file an agent can read top-to-bottom after a failure: Playwright run +
+# every container's logs + all three host-side mock servers, with section headers.
+COMBINED_LOG="$LOG_DIR/combined${INSTANCE_SUFFIX}.log"
 mkdir -p "$LOG_DIR"
 
 # When a Paddle key is present, create an EPHEMERAL notification setting for this run
@@ -121,11 +124,32 @@ cleanup() {
     echo "Deleting ephemeral Paddle notification setting: $PADDLE_SETTING_EPHEMERAL"
     npx tsx "$SCRIPT_DIR/scripts/paddle-notification-setting.ts" delete "$PADDLE_SETTING_EPHEMERAL" || true
   fi
-  echo "Capturing container logs to $DOCKER_LOG ..."
-  docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" logs --no-color \
-    >"$DOCKER_LOG" 2>&1 || true
+  # Stop the live `logs --follow` (started after stack boot). $DOCKER_LOG is already
+  # populated in real time, so there's nothing to capture here — just end the stream.
+  if [ -n "${DOCKER_LOGS_PID:-}" ]; then
+    kill "$DOCKER_LOGS_PID" 2>/dev/null || true
+    wait "$DOCKER_LOGS_PID" 2>/dev/null || true
+  fi
+
+  # Fold everything into one file so an agent can read a single log after a failure.
+  # The mock-*.log files are written by Playwright's webServers (see playwright.config.ts).
+  echo "Writing combined log to $COMBINED_LOG ..."
+  {
+    echo "===== PLAYWRIGHT ====="
+    cat "$RUN_LOG" 2>/dev/null || echo "(no playwright log)"
+    echo
+    echo "===== DOCKER STACK ====="
+    cat "$DOCKER_LOG" 2>/dev/null || echo "(no docker log)"
+    for mock in rss discord smtp; do
+      echo
+      echo "===== MOCK: $mock ====="
+      cat "$LOG_DIR/mock-${mock}${INSTANCE_SUFFIX}.log" 2>/dev/null || echo "(no mock-$mock log)"
+    done
+  } >"$COMBINED_LOG" 2>&1 || true
+
   echo "Tearing down E2E Docker stack..."
   docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" down --volumes --remove-orphans
+  echo "Combined log (read this first if the run failed): $COMBINED_LOG"
 }
 trap cleanup EXIT
 
@@ -139,6 +163,21 @@ echo "Starting E2E Docker stack (instance: $E2E_INSTANCE, project: $COMPOSE_PROJ
 echo "  backend=$E2E_BACKEND_PORT frontend=$E2E_FRONTEND_PORT mongo=$E2E_MONGO_PORT rss-mock=$E2E_MOCK_RSS_PORT discord-mock=$E2E_MOCK_DISCORD_PORT"
 docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d --build --wait
 
+# Follow container logs into $DOCKER_LOG live, so an agent inspecting a hung/slow run
+# sees current container output without waiting for teardown. The follower is stopped
+# in cleanup. (Playwright and mock-server logs are already written live elsewhere.)
+docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" logs --no-color --timestamps --follow \
+  >"$DOCKER_LOG" 2>&1 &
+DOCKER_LOGS_PID=$!
+
 echo "Running E2E tests... (output also written to $RUN_LOG)"
+echo "On failure, read the combined log (Playwright + all containers + mock servers): $COMBINED_LOG"
+# Playwright discovers its config from the CURRENT WORKING DIRECTORY, and the only
+# config is e2e/playwright.config.ts (there is none at the repo root). This script
+# does not cd, so it must be run with cwd = e2e/ (the `npm run e2e*` aliases do this).
+# Run it from the repo root instead and Playwright finds no config: it falls back to
+# an implicit unnamed project with no baseURL, so `page.goto("/feeds")` fails with
+# "Cannot navigate to invalid URL" and `--project=e2e-web` errors with
+# 'Available projects: ""'. Run from e2e/ (or via `npm run e2e -- <spec>`).
 E2E_BACKEND_URL="$BACKEND_URL" E2E_BASE_URL="$FRONTEND_URL" \
   npx playwright test $PLAYWRIGHT_ARGS 2>&1 | tee "$RUN_LOG"

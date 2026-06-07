@@ -38,11 +38,12 @@ import {
   UserFeedsTable,
   useUserFeedManagementInvitesCount,
   useUserFeeds,
+  useFeedScope,
 } from "../features/feed";
 import type { FeedActionState } from "../features/feed";
 import type { CuratedFeed } from "../features/feed/types";
 import { useDeleteUserFeed } from "../features/feed/hooks/useDeleteUserFeed";
-import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage";
 import ApiAdapterError from "../utils/ApiAdapterError";
 import { pages } from "../constants";
 import { BoxConstrained, ConfirmModal, Panel } from "../components";
@@ -105,6 +106,8 @@ const UserFeedsInner: React.FC = () => {
   const { t } = useTranslation();
   const { state } = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { workspaceSlug } = useFeedScope();
+  const scope = useMemo(() => (workspaceSlug ? { workspaceSlug } : undefined), [workspaceSlug]);
   const { data: userMeData } = useUserMe();
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
     limit: 1,
@@ -172,14 +175,16 @@ const UserFeedsInner: React.FC = () => {
   const showSetupChecklist =
     (feedsWithoutConnections > 0 && unconfiguredFeedsLoaded) || hasCompletedSetup;
   const navigatedAlertTitle = state?.alertTitle;
+  const navigatedAlertDescription = state?.alertDescription;
 
   useEffect(() => {
     if (navigatedAlertTitle) {
       createSuccessAlert({
         title: navigatedAlertTitle,
+        description: navigatedAlertDescription,
       });
     }
-  }, [navigatedAlertTitle]);
+  }, [navigatedAlertTitle, navigatedAlertDescription]);
 
   useEffect(() => {
     const addFeedQuery = searchParams.get("addFeed");
@@ -240,7 +245,7 @@ const UserFeedsInner: React.FC = () => {
           ...prev,
           [feed.id]: {
             status: "added",
-            settingsUrl: pages.userFeed(result.id),
+            settingsUrl: pages.userFeed(result.id, { scope }),
             feedId: result.id,
           },
         }));
@@ -272,7 +277,7 @@ const UserFeedsInner: React.FC = () => {
         }
       }
     },
-    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds],
+    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds, scope],
   );
 
   const handleCuratedFeedRemove = useCallback(
@@ -314,13 +319,20 @@ const UserFeedsInner: React.FC = () => {
     [feedActionStates, deleteUserFeed],
   );
 
-  const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {
-    setFeedActionStates((prev) => ({
-      ...prev,
-      [feedUrl]: { status: "added", settingsUrl: pages.userFeed(_feedId), feedId: _feedId },
-    }));
-    setModalSessionAddCount((prev) => prev + 1);
-  }, []);
+  const handleUrlFeedAdded = useCallback(
+    (_feedId: string, feedUrl: string) => {
+      setFeedActionStates((prev) => ({
+        ...prev,
+        [feedUrl]: {
+          status: "added",
+          settingsUrl: pages.userFeed(_feedId, { scope }),
+          feedId: _feedId,
+        },
+      }));
+      setModalSessionAddCount((prev) => prev + 1);
+    },
+    [scope],
+  );
 
   const handleUrlFeedRemoved = useCallback((feedUrl: string) => {
     setFeedActionStates((prev) => {
@@ -661,7 +673,7 @@ const UserFeedsInner: React.FC = () => {
                     </MenuTrigger>
                     <MenuContent>
                       <MenuItem value="add-multiple" asChild>
-                        <Link to={pages.addFeeds()}>
+                        <Link to={pages.addFeeds(scope)}>
                           <FaPlus />
                           Add multiple feeds
                         </Link>

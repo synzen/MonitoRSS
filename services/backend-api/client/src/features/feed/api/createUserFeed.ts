@@ -8,6 +8,8 @@ export interface CreateUserFeedInput {
     url?: string;
     curatedFeedId?: string;
     sourceFeedId?: string;
+    // When set, the feed is created under this workspace.
+    workspaceId?: string;
   };
 }
 

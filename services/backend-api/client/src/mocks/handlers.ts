@@ -9,6 +9,7 @@ import {
   UpdateUserMeOutput,
 } from "@/features/discordUser";
 import { GetServersOutput } from "../features/discordServers/api/getServer";
+import { isReservedSlug } from "@/utils/slugify";
 import {
   CreateUserFeedCloneOutput,
   CreateUserFeedDatePreviewOutput,
@@ -76,7 +77,7 @@ import {
   CreateUserFeedUrlValidationInput,
   CreateUserFeedUrlValidationOutput,
 } from "../features/feed/api/createUserFeedUrlValidation";
-import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage";
 import {
   CreateUserFeedDeduplicatedUrlsInput,
   CreateUserFeedDeduplicatedUrlsOutput,
@@ -84,9 +85,20 @@ import {
 import { UserFeedUrlRequestStatus } from "../features/feed/types/UserFeedUrlRequestStatus";
 import curatedFeedsMock from "./data/curatedFeedsMock.json";
 import { GetCuratedFeedsOutput } from "../features/feed/api/getCuratedFeeds";
+import {
+  CreateWorkspaceOutput,
+  GetWorkspaceOutput,
+  GetWorkspacesOutput,
+  Workspace,
+  UpdateWorkspaceOutput,
+} from "@/features/workspaces";
+import mockWorkspaces from "./data/workspaces";
 
 const CURATED_FEEDS_MAX_LIMIT = 25;
 const CURATED_FEEDS_MIN_SEARCH_LENGTH = 3;
+
+// In-memory workspaces store so the mock create flow reflects in the chooser/list.
+const workspacesStore: Workspace[] = [...mockWorkspaces];
 
 function escapeRegex(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -197,6 +209,137 @@ const handlers = [
     await delay(500);
 
     return HttpResponse.json<UpdateUserMeOutput>({ result: mockUserMe });
+  }),
+  http.post("/api/v1/users/@me/email-verification", async () => {
+    await delay(500);
+
+    return HttpResponse.json({ result: { ok: true } });
+  }),
+  http.post("/api/v1/users/@me/email-verification/confirm", async () => {
+    await delay(500);
+
+    return HttpResponse.json({ result: { ok: true } });
+  }),
+  http.get("/api/v1/workspaces", async () => {
+    await delay(500);
+
+    return HttpResponse.json<GetWorkspacesOutput>({ result: workspacesStore });
+  }),
+  http.post("/api/v1/workspaces", async ({ request }) => {
+    await delay(500);
+    const body = (await request.json()) as { name: string; slug: string };
+
+    if (isReservedSlug(body.slug)) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "WORKSPACE_SLUG_RESERVED",
+          message: "This URL slug is reserved and cannot be used",
+        }),
+        { status: 409 },
+      );
+    }
+
+    if (workspacesStore.some((t) => t.slug === body.slug)) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "WORKSPACE_SLUG_TAKEN",
+          message: "This URL slug is already taken by another workspace",
+        }),
+        { status: 409 },
+      );
+    }
+
+    const id = `workspace-${workspacesStore.length + 1}`;
+    workspacesStore.push({ id, name: body.name, slug: body.slug, role: "owner" });
+
+    return HttpResponse.json<CreateWorkspaceOutput>({
+      result: {
+        id,
+        name: body.name,
+        slug: body.slug,
+        createdByUserId: "1",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  }),
+  http.get("/api/v1/workspaces/:workspaceSlug", async ({ params }) => {
+    await delay(500);
+    const workspaceSlug = params.workspaceSlug as string;
+    const workspace = workspacesStore.find((t) => t.slug === workspaceSlug);
+
+    if (!workspace) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "WORKSPACE_NOT_FOUND",
+          message: "Workspace not found",
+        }),
+        { status: 404 },
+      );
+    }
+
+    return HttpResponse.json<GetWorkspaceOutput>({
+      result: {
+        id: workspace.id,
+        name: workspace.name,
+        slug: workspace.slug,
+        role: workspace.role,
+      },
+    });
+  }),
+  http.patch("/api/v1/workspaces/:workspaceSlug", async ({ request, params }) => {
+    await delay(500);
+    const workspaceSlug = params.workspaceSlug as string;
+    const body = (await request.json()) as { name?: string; slug?: string };
+    const workspace = workspacesStore.find((t) => t.slug === workspaceSlug);
+
+    if (!workspace) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "WORKSPACE_NOT_FOUND",
+          message: "Workspace not found",
+        }),
+        { status: 404 },
+      );
+    }
+
+    if (body.slug && body.slug !== workspace.slug && isReservedSlug(body.slug)) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "WORKSPACE_SLUG_RESERVED",
+          message: "This URL slug is reserved and cannot be used",
+        }),
+        { status: 409 },
+      );
+    }
+
+    if (
+      body.slug &&
+      body.slug !== workspace.slug &&
+      workspacesStore.some((t) => t.slug === body.slug)
+    ) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "WORKSPACE_SLUG_TAKEN",
+          message: "This URL slug is already taken by another workspace",
+        }),
+        { status: 409 },
+      );
+    }
+
+    if (body.name) workspace.name = body.name;
+    if (body.slug) workspace.slug = body.slug;
+
+    return HttpResponse.json<UpdateWorkspaceOutput>({
+      result: {
+        id: workspace.id,
+        name: workspace.name,
+        slug: workspace.slug,
+        createdByUserId: "1",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
   }),
   http.get("/api/v1/discord-users/bot", async () =>
     HttpResponse.json<GetDiscordBotOutput>({

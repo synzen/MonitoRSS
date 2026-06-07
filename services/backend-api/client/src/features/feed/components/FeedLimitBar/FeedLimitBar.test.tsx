@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { FeedLimitBar } from "./index";
+import { FeedScopeProvider } from "../../contexts/FeedScopeContext";
 
 import { useUserFeeds } from "../../hooks";
 import { useDiscordUserMe } from "../../../discordUser";
@@ -253,6 +254,41 @@ describe("FeedLimitBar", () => {
 
       expect(screen.queryByRole("status")).not.toBeInTheDocument();
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Workspace scope", () => {
+    const renderWorkspaceBar = () =>
+      render(
+        <ChakraProvider value={system}>
+          <PricingDialogContext.Provider value={{ onOpen: mockOnOpen }}>
+            <FeedScopeProvider value={{ workspaceId: "t1", workspaceSlug: "my-workspace", maxFeeds: 140 }}>
+              <FeedLimitBar />
+            </FeedScopeProvider>
+          </PricingDialogContext.Provider>
+        </ChakraProvider>,
+      );
+
+    beforeEach(() => {
+      vi.mocked(useUserFeeds).mockReturnValue({
+        data: { results: [], total: 5 },
+      } as never);
+      // Personal max must be ignored in workspace scope.
+      vi.mocked(useDiscordUserMe).mockReturnValue({
+        data: { maxUserFeeds: 25 },
+      } as never);
+    });
+
+    it("uses the workspace's feed limit, not the personal one", () => {
+      renderWorkspaceBar();
+
+      expect(screen.getByText("Feed Limit: 5/140")).toBeInTheDocument();
+    });
+
+    it("hides the Increase Limits upsell in workspace scope", () => {
+      renderWorkspaceBar();
+
+      expect(screen.queryByRole("button", { name: /increase limits/i })).not.toBeInTheDocument();
     });
   });
 });

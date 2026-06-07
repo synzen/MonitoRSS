@@ -3,6 +3,9 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { URL } from "url";
 import { MOCK_RSS_SERVER_PORT } from "./helpers/constants";
+import { teeConsoleToFile } from "./helpers/log-to-file";
+
+teeConsoleToFile("mock-rss");
 
 const server = createServer((req, res) => {
   const parsedUrl = new URL(

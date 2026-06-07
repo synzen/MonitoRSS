@@ -13,6 +13,7 @@ module.exports = {
       "error",
       {
         endOfLine: "auto",
+        printWidth: 100,
       },
     ],
     "linebreak-style": 0,

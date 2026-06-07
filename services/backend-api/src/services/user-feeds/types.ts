@@ -21,6 +21,7 @@ import type { FeedFetcherService } from "../feed-fetcher";
 import type { FeedHandlerService } from "../feed-handler/feed-handler.service";
 import type { SupportersService } from "../supporters/supporters.service";
 import type { UsersService } from "../users/users.service";
+import type { WorkspacesService } from "../../features/workspaces/workspaces.service";
 
 import type { IDiscordChannelConnection } from "../../repositories/interfaces/feed-connection.types";
 import type {
@@ -60,6 +61,7 @@ export interface UserFeedsServiceDeps {
   userRepository: IUserRepository;
   feedsService: FeedsService;
   supportersService: SupportersService;
+  workspacesService: WorkspacesService;
   feedFetcherApiService: FeedFetcherApiService;
   feedFetcherService: FeedFetcherService;
   feedHandlerService: FeedHandlerService;
@@ -119,6 +121,9 @@ export interface GetUserFeedsInput {
   search?: string;
   sort?: GetUserFeedsInputSortKey;
   filters?: GetUserFeedsInputFilters;
+  // When set, lists this workspace's feeds instead of the user's personal feeds.
+  // Caller verifies membership before passing it.
+  workspaceId?: string;
 }
 
 export interface UserFeedListItem {
@@ -140,6 +145,9 @@ export interface CreateUserFeedInput {
   title?: string;
   url: string;
   sourceFeedId?: string;
+  // When set, the feed is created under this workspace. Membership is verified in
+  // addFeed.
+  workspaceId?: string;
 }
 
 export interface ValidateFeedUrlOutput {

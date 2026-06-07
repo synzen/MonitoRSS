@@ -10,6 +10,10 @@ export const CREATE_INVITE_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
     status: 400,
     code: ApiErrorCode.USER_FEED_TRANSFER_REQUEST_EXISTS,
   },
+  WorkspaceFeedSharingDisabledException: {
+    status: 403,
+    code: ApiErrorCode.WORKSPACE_FEED_SHARING_DISABLED,
+  },
 };
 
 export const UPDATE_INVITE_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {

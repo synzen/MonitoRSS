@@ -52,6 +52,10 @@ const configSchema = z.object({
   BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: z.coerce.number().default(10),
   BACKEND_API_DEFAULT_MAX_FEEDS: z.coerce.number().default(5),
   BACKEND_API_DEFAULT_MAX_USER_FEEDS: z.coerce.number().default(5),
+  // Hardcoded workspace feed limit. Forward-compatible: a future
+  // workspace-level Paddle subscription will resolve this dynamically per
+  // workspace.
+  BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS: z.coerce.number().default(140),
   BACKEND_API_DEFAULT_DATE_FORMAT: z
     .string()
     .default("ddd, D MMMM YYYY, h:mm A z"),
@@ -86,6 +90,14 @@ const configSchema = z.object({
   BACKEND_API_SMTP_USERNAME: z.string().optional(),
   BACKEND_API_SMTP_PASSWORD: z.string().optional(),
   BACKEND_API_SMTP_FROM: z.string().optional(),
+  BACKEND_API_SMTP_FROM_DOMAIN: z.string().optional(),
+  // Defaults target production SMTPS (implicit TLS on 465). Overridable so a
+  // local/test mailer can run plain SMTP on another port.
+  BACKEND_API_SMTP_PORT: z.coerce.number().optional(),
+  BACKEND_API_SMTP_SECURE: z
+    .string()
+    .transform((val) => val !== "false")
+    .default("true"),
 
   // Paddle
   BACKEND_API_PADDLE_KEY: z.string().optional(),
@@ -129,7 +141,27 @@ const configSchema = z.object({
         : [],
     )
     .default(""),
-});
+})
+  .refine(
+    (cfg) => {
+      const smtpConfigured = Boolean(
+        cfg.BACKEND_API_SMTP_HOST &&
+          cfg.BACKEND_API_SMTP_USERNAME &&
+          cfg.BACKEND_API_SMTP_PASSWORD,
+      );
+      if (!smtpConfigured) {
+        return true;
+      }
+      return Boolean(
+        cfg.BACKEND_API_SMTP_FROM || cfg.BACKEND_API_SMTP_FROM_DOMAIN,
+      );
+    },
+    {
+      message:
+        "When SMTP is configured, either BACKEND_API_SMTP_FROM or BACKEND_API_SMTP_FROM_DOMAIN must be set",
+      path: ["BACKEND_API_SMTP_FROM_DOMAIN"],
+    },
+  );
 
 export type Config = z.infer<typeof configSchema>;
 

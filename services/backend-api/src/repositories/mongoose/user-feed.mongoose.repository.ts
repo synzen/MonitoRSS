@@ -35,7 +35,9 @@ import type {
   RefreshRateSyncInput,
   MaxDailyArticlesSyncInput,
   UserFeedForDelivery,
+  FeedLimitScope,
 } from "../interfaces/user-feed.types";
+import { FeedLimitExceededError } from "../interfaces/user-feed.types";
 import type { SlotWindow } from "../../shared/types/slot-window.types";
 import { getCommonFeedAggregateStages } from "../../shared/utils/get-common-feed-aggregate-stages";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
@@ -162,6 +164,10 @@ const UserFeedSchema = new Schema(
     },
     connections: { type: FeedConnectionsSchema, default: {} },
     user: { type: UserFeedUserSchema, required: true },
+    // When set, the feed belongs to a workspace (all members share access). When
+    // absent, the feed is personal (owned by `user`). A feed is personal XOR
+    // one workspace's.
+    workspaceId: { type: Schema.Types.ObjectId },
     formatOptions: { type: UserFeedFormatOptionsSchema },
     dateCheckOptions: { type: UserFeedDateCheckOptionsSchema },
     shareManageOptions: { type: UserFeedShareManageOptionsSchema },
@@ -191,6 +197,7 @@ UserFeedSchema.index({
   url: 1,
 });
 UserFeedSchema.index({ userRefreshRateSeconds: 1, refreshRateSeconds: 1 });
+UserFeedSchema.index({ workspaceId: 1 });
 UserFeedSchema.index({
   refreshRateSeconds: 1,
   slotOffsetMs: 1,
@@ -270,6 +277,7 @@ export class UserFeedMongooseRepository
         id: this.objectIdToString(doc.user.id),
         discordUserId: doc.user.discordUserId,
       },
+      workspaceId: this.objectIdToString(doc.workspaceId),
       formatOptions: doc.formatOptions,
       dateCheckOptions: doc.dateCheckOptions,
       shareManageOptions: doc.shareManageOptions
@@ -431,8 +439,8 @@ export class UserFeedMongooseRepository
     );
   }
 
-  async create(input: CreateUserFeedInput): Promise<IUserFeed> {
-    const doc = await this.model.create({
+  private buildCreateDoc(input: CreateUserFeedInput) {
+    return {
       title: input.title,
       url: input.url,
       inputUrl: input.inputUrl,
@@ -444,6 +452,7 @@ export class UserFeedMongooseRepository
         id: new Types.ObjectId(input.user.id),
         discordUserId: input.user.discordUserId,
       },
+      workspaceId: input.workspaceId ? new Types.ObjectId(input.workspaceId) : undefined,
       refreshRateSeconds: input.refreshRateSeconds,
       maxDailyArticles: input.maxDailyArticles,
       dateCheckOptions: input.dateCheckOptions,
@@ -464,16 +473,87 @@ export class UserFeedMongooseRepository
       externalProperties: input.externalProperties,
       formatOptions: input.formatOptions,
       userRefreshRateSeconds: input.userRefreshRateSeconds,
-    });
+    };
+  }
+
+  async create(input: CreateUserFeedInput): Promise<IUserFeed> {
+    const doc = await this.model.create(this.buildCreateDoc(input));
 
     return this.toEntity(
       doc as unknown as UserFeedDoc & { _id: Types.ObjectId },
     );
   }
 
-  async clone(input: CloneUserFeedInput): Promise<IUserFeed> {
+  // Inserts the feed and, in the same transaction, aborts (rolling back the
+  // insert) if it pushes the scope over `maxFeeds`. The in-transaction count
+  // makes concurrent creations serialize on write conflicts rather than racing
+  // a separate count-then-delete whose compensating delete could leak an
+  // over-limit feed on failure. Throws FeedLimitExceededError when over limit.
+  async createWithLimitEnforcement(
+    input: CreateUserFeedInput,
+    limit: FeedLimitScope,
+  ): Promise<IUserFeed> {
+    return this.createDocWithLimitEnforcement(
+      () => this.buildCreateDoc(input),
+      limit,
+    );
+  }
+
+  private async createDocWithLimitEnforcement(
+    buildDoc: () => Record<string, unknown>,
+    limit: FeedLimitScope,
+  ): Promise<IUserFeed> {
+    const countFilter =
+      limit.scope === "workspace"
+        ? { workspaceId: this.stringToObjectId(limit.workspaceId) }
+        : {
+            $and: [this.getOwnershipFilter(limit.discordUserId), { workspaceId: null }],
+          };
+
+    const session = await this.model.db.startSession();
+
+    try {
+      let result: IUserFeed | undefined;
+
+      await session.withTransaction(async () => {
+        const docs = await this.model.create([buildDoc()], { session });
+        const doc = docs[0];
+
+        if (!doc) {
+          throw new Error("Feed creation transaction produced no feed");
+        }
+
+        const count = await this.model
+          .countDocuments(countFilter)
+          .session(session);
+
+        if (count > limit.maxFeeds) {
+          throw new FeedLimitExceededError();
+        }
+
+        result = this.toEntity(
+          doc.toObject() as UserFeedDoc & { _id: Types.ObjectId },
+        );
+      });
+
+      if (!result) {
+        throw new Error("Feed creation transaction produced no feed");
+      }
+
+      return result;
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  private buildCloneDoc(input: CloneUserFeedInput) {
     const { sourceFeed, overrides } = input;
 
+    // `cloneableFields` intentionally retains `user` and `workspaceId` from the
+    // source, so a clone lands in the same scope as its source (a workspace feed
+    // clones into the same workspace; a personal feed stays personal). The
+    // service enforces the matching feed limit (workspace vs personal)
+    // accordingly.
     const {
       id,
       connections,
@@ -488,7 +568,7 @@ export class UserFeedMongooseRepository
     const effectiveRefreshRate =
       getEffectiveRefreshRateSeconds(cloneableFields);
 
-    const doc = await this.model.create({
+    return {
       ...cloneableFields,
       title: overrides.title || cloneableFields.title,
       url,
@@ -497,10 +577,25 @@ export class UserFeedMongooseRepository
       slotOffsetMs: effectiveRefreshRate
         ? calculateSlotOffsetMs(url, effectiveRefreshRate)
         : undefined,
-    });
+    };
+  }
+
+  async clone(input: CloneUserFeedInput): Promise<IUserFeed> {
+    const doc = await this.model.create(this.buildCloneDoc(input));
 
     return this.toEntity(
       doc as unknown as UserFeedDoc & { _id: Types.ObjectId },
+    );
+  }
+
+  // See createWithLimitEnforcement — same atomic insert-and-check, for clones.
+  async cloneWithLimitEnforcement(
+    input: CloneUserFeedInput,
+    limit: FeedLimitScope,
+  ): Promise<IUserFeed> {
+    return this.createDocWithLimitEnforcement(
+      () => this.buildCloneDoc(input) as Record<string, unknown>,
+      limit,
     );
   }
 
@@ -512,20 +607,28 @@ export class UserFeedMongooseRepository
     return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
   }
 
-  private getOwnershipFilter(discordUserId: string) {
-    return {
-      $or: [
-        { "user.discordUserId": discordUserId },
-        {
-          "shareManageOptions.invites": {
-            $elemMatch: {
-              discordUserId,
-              status: UserFeedManagerStatus.Accepted,
-            },
+  private getOwnershipFilter(discordUserId: string, myWorkspaceIds: string[] = []) {
+    const $or: Record<string, unknown>[] = [
+      { "user.discordUserId": discordUserId },
+      {
+        "shareManageOptions.invites": {
+          $elemMatch: {
+            discordUserId,
+            status: UserFeedManagerStatus.Accepted,
           },
         },
-      ],
-    };
+      },
+    ];
+
+    if (myWorkspaceIds.length) {
+      // Any member of a workspace may access that workspace's feeds; roles do not
+      // restrict feed actions.
+      $or.push({
+        workspaceId: { $in: myWorkspaceIds.map((id) => this.stringToObjectId(id)) },
+      });
+    }
+
+    return { $or };
   }
 
   private escapeRegExp(string: string): string {
@@ -542,7 +645,7 @@ export class UserFeedMongooseRepository
   }
 
   private buildListingPipeline(input: UserFeedListingInput): PipelineStage[] {
-    const { discordUserId, search, filters } = input;
+    const { discordUserId, workspaceId, search, filters } = input;
 
     const badUserFeedCodes = Object.values(UserFeedDisabledCode).filter(
       (c) => c !== UserFeedDisabledCode.Manual,
@@ -552,8 +655,16 @@ export class UserFeedMongooseRepository
     );
     const feedConnectionTypeKeys = Object.values(FeedConnectionTypeEntityKey);
 
+    // Strict scope separation: a workspace-scoped listing returns only that workspace's
+    // feeds (membership is verified by the caller); a personal listing returns
+    // only personal feeds (no workspaceId). Workspace feeds never leak into personal
+    // scope and vice versa.
+    const scopeMatch: PipelineStage.Match["$match"] = workspaceId
+      ? { workspaceId: this.stringToObjectId(workspaceId) }
+      : { $and: [this.getOwnershipFilter(discordUserId), { workspaceId: null }] };
+
     const pipeline: PipelineStage[] = [
-      { $match: this.getOwnershipFilter(discordUserId) },
+      { $match: scopeMatch },
       {
         $addFields: {
           ownedByUser: { $eq: ["$user.discordUserId", discordUserId] },
@@ -750,7 +861,15 @@ export class UserFeedMongooseRepository
   }
 
   async countByOwnership(discordUserId: string): Promise<number> {
-    return this.model.countDocuments(this.getOwnershipFilter(discordUserId));
+    // Personal feed count only — workspace feeds (workspaceId set) count against the
+    // workspace's limit, not the user's.
+    return this.model.countDocuments({
+      $and: [this.getOwnershipFilter(discordUserId), { workspaceId: null }],
+    });
+  }
+
+  async countByWorkspace(workspaceId: string): Promise<number> {
+    return this.model.countDocuments({ workspaceId: this.stringToObjectId(workspaceId) });
   }
 
   async countByOwnershipExcludingDisabled(
@@ -770,11 +889,12 @@ export class UserFeedMongooseRepository
   async findByIdAndOwnership(
     id: string,
     discordUserId: string,
+    myWorkspaceIds: string[] = [],
   ): Promise<IUserFeed | null> {
     const doc = await this.model
       .findOne({
         _id: this.stringToObjectId(id),
-        ...this.getOwnershipFilter(discordUserId),
+        ...this.getOwnershipFilter(discordUserId, myWorkspaceIds),
       })
       .lean();
 
@@ -806,6 +926,7 @@ export class UserFeedMongooseRepository
   async filterFeedIdsByOwnership(
     feedIds: string[],
     discordUserId: string,
+    myWorkspaceIds: string[] = [],
   ): Promise<string[]> {
     const objectIds = feedIds
       .filter((id) => Types.ObjectId.isValid(id))
@@ -816,7 +937,7 @@ export class UserFeedMongooseRepository
     const docs = await this.model
       .find({
         _id: { $in: objectIds },
-        ...this.getOwnershipFilter(discordUserId),
+        ...this.getOwnershipFilter(discordUserId, myWorkspaceIds),
       })
       .select("_id")
       .lean();
@@ -1044,12 +1165,15 @@ export class UserFeedMongooseRepository
   async *getFeedsGroupedByUserForLimitEnforcement(
     query: UserFeedLimitEnforcementQuery,
   ): AsyncIterable<UserFeedLimitEnforcementResult> {
+    // Workspace feeds (workspaceId set) are excluded: the personal feed-limit
+    // enforcement is keyed on the creator's discordUserId and must not disable
+    // a workspace feed under the creator's personal limit.
     const matchFilter =
       query.type === "include"
-        ? { "user.discordUserId": { $in: query.discordUserIds } }
+        ? { "user.discordUserId": { $in: query.discordUserIds }, workspaceId: null }
         : query.discordUserIds.length > 0
-          ? { "user.discordUserId": { $nin: query.discordUserIds } }
-          : {};
+          ? { "user.discordUserId": { $nin: query.discordUserIds }, workspaceId: null }
+          : { workspaceId: null };
 
     if (query.type === "include" && query.discordUserIds.length === 0) {
       return;
@@ -1160,6 +1284,9 @@ export class UserFeedMongooseRepository
       await this.model.updateMany(
         {
           "user.discordUserId": userFilter,
+          // Workspace feeds derive webhook entitlement from workspace benefits, not the
+          // creator's personal subscription.
+          workspaceId: null,
           "connections.discordChannels": {
             $elemMatch: {
               "details.webhook.id": { $exists: true },
@@ -1190,6 +1317,7 @@ export class UserFeedMongooseRepository
       await this.model.updateMany(
         {
           "user.discordUserId": userFilter,
+          workspaceId: null,
           "connections.discordChannels": {
             $elemMatch: {
               "details.webhook.id": { $exists: true },
@@ -1222,6 +1350,8 @@ export class UserFeedMongooseRepository
         {
           userRefreshRateSeconds: supporterRefreshRateSeconds,
           "user.discordUserId": { $nin: supporterDiscordUserIds },
+          // Workspace feeds keep their workspace-derived rate.
+          workspaceId: null,
         },
         { $unset: { userRefreshRateSeconds: "" } },
       );
@@ -1234,6 +1364,7 @@ export class UserFeedMongooseRepository
         {
           userRefreshRateSeconds: supporterRefreshRateSeconds,
           "user.discordUserId": target.discordUserId,
+          workspaceId: null,
         },
         { $unset: { userRefreshRateSeconds: "" } },
       );
@@ -1914,10 +2045,14 @@ export class UserFeedMongooseRepository
     );
 
     const bulkOps: Parameters<typeof this.model.bulkWrite>[0] = [
+      // workspaceId: null excludes workspace feeds — their refresh rate comes
+      // from workspace benefits at creation, not the creator's personal
+      // benefits.
       ...supporterLimits.map(({ discordUserIds, refreshRateSeconds }) => ({
         updateMany: {
           filter: {
             "user.discordUserId": { $in: discordUserIds },
+            workspaceId: null,
             refreshRateSeconds: { $ne: refreshRateSeconds },
           },
           update: { $set: { refreshRateSeconds } },
@@ -1927,6 +2062,7 @@ export class UserFeedMongooseRepository
         updateMany: {
           filter: {
             "user.discordUserId": { $nin: allSupporterUserIds },
+            workspaceId: null,
             refreshRateSeconds: { $ne: defaultRefreshRateSeconds },
           },
           update: { $set: { refreshRateSeconds: defaultRefreshRateSeconds } },
@@ -1947,10 +2083,13 @@ export class UserFeedMongooseRepository
     );
 
     const bulkOps: Parameters<typeof this.model.bulkWrite>[0] = [
+      // workspaceId: null excludes workspace feeds — their daily article limit comes from
+      // workspace benefits at creation, not the creator's benefits.
       ...supporterLimits.map(({ discordUserIds, maxDailyArticles }) => ({
         updateMany: {
           filter: {
             "user.discordUserId": { $in: discordUserIds },
+            workspaceId: null,
             maxDailyArticles: { $ne: maxDailyArticles },
           },
           update: { $set: { maxDailyArticles } },
@@ -1960,6 +2099,7 @@ export class UserFeedMongooseRepository
         updateMany: {
           filter: {
             "user.discordUserId": { $nin: allSupporterUserIds },
+            workspaceId: null,
             maxDailyArticles: { $ne: defaultMaxDailyArticles },
           },
           update: { $set: { maxDailyArticles: defaultMaxDailyArticles } },
@@ -1986,6 +2126,7 @@ export class UserFeedMongooseRepository
       const cursor = this.model
         .find({
           "user.discordUserId": { $in: discordUserIds },
+          workspaceId: null,
           refreshRateSeconds: { $ne: refreshRateSeconds },
         })
         .select("_id url userRefreshRateSeconds")
@@ -2007,6 +2148,7 @@ export class UserFeedMongooseRepository
     const cursor = this.model
       .find({
         "user.discordUserId": { $nin: allSupporterUserIds },
+        workspaceId: null,
         refreshRateSeconds: { $ne: defaultRefreshRateSeconds },
       })
       .select("_id url userRefreshRateSeconds")

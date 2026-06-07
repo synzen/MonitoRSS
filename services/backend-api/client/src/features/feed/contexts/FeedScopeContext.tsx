@@ -1,0 +1,27 @@
+import { createContext, useContext } from "react";
+
+/**
+ * The scope the feeds UI operates in.
+ *
+ * The default (empty) value is the personal scope. When a workspace-scoped page
+ * provides a value, every feed query, mutation, and link inside it becomes
+ * workspace-scoped — a single chokepoint that lets the personal feeds UI be reused
+ * verbatim in workspace scope without threading `workspaceId` through every component.
+ *
+ * Lives in the `feed` feature (not `workspaces`) so feed hooks can consume it
+ * without importing `workspaces`, which would create a circular dependency.
+ */
+export interface FeedScope {
+  /** The current workspace's id; undefined in personal scope. */
+  workspaceId?: string;
+  /** The current workspace's slug, for building workspace-scoped route links. */
+  workspaceSlug?: string;
+  /** The current workspace's feed limit, for the feed-limit bar. */
+  maxFeeds?: number;
+}
+
+const FeedScopeContext = createContext<FeedScope>({});
+
+export const FeedScopeProvider = FeedScopeContext.Provider;
+
+export const useFeedScope = () => useContext(FeedScopeContext);

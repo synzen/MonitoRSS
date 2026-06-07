@@ -47,6 +47,7 @@ export const ConfirmModal = ({
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : uncontrolledOpen;
+
   const setOpen = (next: boolean) => {
     if (!isControlled) {
       setUncontrolledOpen(next);
@@ -54,6 +55,7 @@ export const ConfirmModal = ({
 
     onOpenChange?.(next);
   };
+
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -61,9 +63,14 @@ export const ConfirmModal = ({
   const onClickConfirm = async () => {
     setLoading(true);
 
+    // A rejecting onConfirm keeps the modal open so the caller's `error` prop can be
+    // shown; swallow the rejection here rather than let it escape as an unhandled
+    // rejection (nothing awaits this click handler).
     try {
       await onConfirm();
       setOpen(false);
+    } catch {
+      // Intentionally ignored — the failure is surfaced via the `error` prop.
     } finally {
       setLoading(false);
     }

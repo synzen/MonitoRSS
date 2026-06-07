@@ -54,6 +54,7 @@ import {
   UserFeedConnectionProvider,
   useUserFeedConnectionContext,
   useUserFeedArticles,
+  useFeedScope,
 } from "@/features/feed";
 import { LogoutButton } from "@/features/auth";
 import { useDiscordBot, useDiscordUserMe } from "@/features/discordUser";
@@ -213,6 +214,8 @@ const MessageBuilderContent: React.FC = () => {
   const mobileTreeRef = useRef<HTMLDivElement>(null);
   const [scrollToComponentId, setScrollToComponentId] = useState<string | null>(null);
   const { feedId, connectionId } = useParams<RouteParams>();
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
   const { mutateAsync: updateConnection, status: updateStatus } =
     useUpdateDiscordChannelConnection();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
@@ -523,7 +526,7 @@ const MessageBuilderContent: React.FC = () => {
                   <BreadcrumbList>
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild>
-                        <RouterLink to={pages.userFeeds()} color="text.link">
+                        <RouterLink to={pages.userFeeds(scope)} color="text.link">
                           Feeds
                         </RouterLink>
                       </BreadcrumbLink>
@@ -531,7 +534,7 @@ const MessageBuilderContent: React.FC = () => {
                     <BreadcrumbSeparator />
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild>
-                        <RouterLink to={pages.userFeed(userFeed.id)} color="text.link">
+                        <RouterLink to={pages.userFeed(userFeed.id, { scope })} color="text.link">
                           {userFeed.title}
                         </RouterLink>
                       </BreadcrumbLink>
@@ -542,6 +545,7 @@ const MessageBuilderContent: React.FC = () => {
                         <RouterLink
                           to={pages.userFeed(userFeed.id, {
                             tab: UserFeedTabSearchParam.Connections,
+                            scope,
                           })}
                           color="text.link"
                         >
@@ -557,6 +561,7 @@ const MessageBuilderContent: React.FC = () => {
                             feedId: userFeed.id,
                             connectionType: FeedConnectionType.DiscordChannel,
                             connectionId: connection.id,
+                            scope,
                           })}
                           color="text.link"
                         >

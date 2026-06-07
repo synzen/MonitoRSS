@@ -40,6 +40,7 @@ import { DatePreferencesForm } from "@/features/feed";
 
 import { useRemoveRedditLogin } from "../features/feed/hooks/useRemoveRedditLogin";
 import { RedditLoginButton } from "@/features/discordUser";
+import { WorkspacesSettingsSection } from "@/features/workspaces";
 import {
   PageAlertContextOutlet,
   PageAlertProvider,
@@ -664,6 +665,7 @@ const UserSettingsInner = () => {
           </HStack>
         </HStack>
       </Stack>
+      <WorkspacesSettingsSection />
       <Separator />
       <FormProvider {...formMethods}>
         <form onSubmit={handleSubmit(onSubmit)} ref={formFocusRef} aria-label="Account settings">

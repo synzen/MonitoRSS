@@ -8,6 +8,7 @@ import { RowData } from "./types";
 import { UserFeedComputedStatus } from "../../types";
 import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { DATE_FORMAT, pages } from "../../../../constants";
+import type { RouteScope } from "../../../../constants";
 import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
 
 const columnHelper = createColumnHelper<RowData>();
@@ -15,7 +16,11 @@ const columnHelper = createColumnHelper<RowData>();
 interface ColumnConfig {
   id: string;
   header: string;
-  cell: (info: CellContext<RowData, unknown>, search: string) => React.ReactNode;
+  cell: (
+    info: CellContext<RowData, unknown>,
+    search: string,
+    scope?: RouteScope,
+  ) => React.ReactNode;
   accessor?: keyof RowData | ((row: RowData) => unknown);
   sortable?: boolean;
 }
@@ -32,21 +37,21 @@ const columnConfigs: ColumnConfig[] = [
     id: "title",
     header: "Title",
     accessor: "title",
-    cell: (info, search) => {
+    cell: (info, search, scope) => {
       const value = info.getValue() as string;
       const feedId = info.row.original.id;
 
       if (!search) {
         return (
           <ChakraLink asChild color="text.link" _hover={{ textDecoration: "underline" }}>
-            <RouterLink to={pages.userFeed(feedId)}>{value}</RouterLink>
+            <RouterLink to={pages.userFeed(feedId, { scope })}>{value}</RouterLink>
           </ChakraLink>
         );
       }
 
       return (
         <ChakraLink asChild _hover={{ textDecoration: "underline" }}>
-          <RouterLink to={pages.userFeed(feedId)}>
+          <RouterLink to={pages.userFeed(feedId, { scope })}>
             <Highlight query={search} styles={{ bg: "orange.100" }}>
               {value}
             </Highlight>
@@ -199,7 +204,7 @@ function createSelectColumn(): ColumnDef<RowData> {
   });
 }
 
-function createConfigureColumn(): ColumnDef<RowData> {
+function createConfigureColumn(scope?: RouteScope): ColumnDef<RowData> {
   return columnHelper.display({
     id: "configure",
     header: () => null,
@@ -211,7 +216,7 @@ function createConfigureColumn(): ColumnDef<RowData> {
         size="sm"
         aria-label={`Configure ${row.original.title}`}
       >
-        <RouterLink to={pages.userFeed(row.original.id)}>
+        <RouterLink to={pages.userFeed(row.original.id, { scope })}>
           Configure
           <FaChevronRight aria-hidden="true" />
         </RouterLink>
@@ -220,23 +225,23 @@ function createConfigureColumn(): ColumnDef<RowData> {
   });
 }
 
-export function createTableColumns(search: string): ColumnDef<RowData>[] {
+export function createTableColumns(search: string, scope?: RouteScope): ColumnDef<RowData>[] {
   const selectColumn = createSelectColumn();
-  const configureColumn = createConfigureColumn();
+  const configureColumn = createConfigureColumn(scope);
 
   const dataColumns = columnConfigs.map((config) => {
     if (typeof config.accessor === "function") {
       return columnHelper.accessor(config.accessor, {
         id: config.id,
         header: () => <span>{config.header}</span>,
-        cell: (info) => config.cell(info as CellContext<RowData, unknown>, search),
+        cell: (info) => config.cell(info as CellContext<RowData, unknown>, search, scope),
       });
     }
 
     return columnHelper.accessor(config.accessor as keyof RowData, {
       id: config.id,
       header: () => <span>{config.header}</span>,
-      cell: (info) => config.cell(info as CellContext<RowData, unknown>, search),
+      cell: (info) => config.cell(info as CellContext<RowData, unknown>, search, scope),
     });
   }) as ColumnDef<RowData>[];
 

@@ -9,6 +9,7 @@ import {
   UserManagerAlreadyInvitedException,
   UserFeedTransferRequestExistsException,
   InviteNotFoundException,
+  WorkspaceFeedSharingDisabledException,
 } from "../../shared/exceptions/user-feed-management-invites.exceptions";
 import type {
   UserFeedManagementInvitesServiceDeps,
@@ -22,6 +23,12 @@ export class UserFeedManagementInvitesService {
 
   async createInvite(input: CreateInviteInput): Promise<void> {
     const { feed, targetDiscordUserId, type, connections } = input;
+
+    if (feed.workspaceId) {
+      throw new WorkspaceFeedSharingDisabledException(
+        "Per-user feed management invites are disabled for workspace feeds",
+      );
+    }
 
     const existingInvites = feed.shareManageOptions?.invites ?? [];
 

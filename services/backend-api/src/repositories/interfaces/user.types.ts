@@ -38,6 +38,7 @@ export interface IUserPreferences {
 
 export interface IUserFeatureFlags {
   externalProperties?: boolean;
+  workspaces?: boolean;
 }
 
 export interface IUserExternalCredential {
@@ -52,6 +53,8 @@ export interface IUser {
   id: string;
   discordUserId: string;
   email?: string;
+  verifiedEmail?: string;
+  verifiedEmailVerifiedAt?: Date;
   preferences?: IUserPreferences;
   featureFlags?: IUserFeatureFlags;
   enableBilling?: boolean;
@@ -92,6 +95,7 @@ export interface IUserRepository {
     discordUserId: string,
     email: string,
   ): Promise<IUser | null>;
+  setVerifiedEmail(userId: string, email: string): Promise<void>;
   updatePreferencesByDiscordId(
     discordUserId: string,
     preferences: UpdateUserPreferencesInput,

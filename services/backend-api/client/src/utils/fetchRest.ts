@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import { Schema, ValidationError } from "yup";
 import ApiAdapterError from "./ApiAdapterError";
-import { getStandardErrorCodeMessage } from "./getStandardErrorCodeMessage copy";
+import { getStandardErrorCodeMessage } from "./getStandardErrorCodeMessage";
 import getStatusCodeErrorMessage from "./getStatusCodeErrorMessage";
 
 interface StandardApiError {

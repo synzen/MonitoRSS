@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import {
   MOCK_RSS_SERVER_PORT,
   MOCK_DISCORD_SERVER_PORT,
+  MOCK_SMTP_HTTP_PORT,
 } from "./helpers/constants";
 
 const INSTANCE = process.env.E2E_INSTANCE || "0";
@@ -71,16 +72,32 @@ export default defineConfig({
       testMatch: PADDLE_CHECKOUT_TESTS,
     },
   ],
+  // Mock servers run on the HOST (not in Docker), so their output would otherwise be
+  // lost. Each server tees its console to logs/mock-*.log (see helpers/log-to-file.ts)
+  // so e2e-mock.sh can fold them into the combined failure log; stdout/stderr are piped
+  // so Playwright also surfaces them in its own run output.
   webServer: [
     {
       command: "npx tsx mock-rss-server.ts",
       port: MOCK_RSS_SERVER_PORT,
       reuseExistingServer: false,
+      stdout: "pipe",
+      stderr: "pipe",
     },
     {
       command: "npx tsx mock-discord-server.ts",
       port: MOCK_DISCORD_SERVER_PORT,
       reuseExistingServer: false,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+    {
+      // Probed on its HTTP control port; it also opens a raw SMTP socket.
+      command: "npx tsx mock-smtp-server.ts",
+      port: MOCK_SMTP_HTTP_PORT,
+      reuseExistingServer: false,
+      stdout: "pipe",
+      stderr: "pipe",
     },
   ],
 });

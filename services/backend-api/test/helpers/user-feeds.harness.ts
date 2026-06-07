@@ -1,4 +1,5 @@
 import type { Connection } from "mongoose";
+import type { Config } from "../../src/config";
 import type {
   IUserFeed,
   WebhookEnforcementTarget,
@@ -6,6 +7,9 @@ import type {
 import type { IDiscordChannelConnection } from "../../src/repositories/interfaces/feed-connection.types";
 import { UserFeedMongooseRepository } from "../../src/repositories/mongoose/user-feed.mongoose.repository";
 import { UserMongooseRepository } from "../../src/repositories/mongoose/user.mongoose.repository";
+import { WorkspaceMongooseRepository } from "../../src/repositories/mongoose/workspace.mongoose.repository";
+import { WorkspacesService } from "../../src/features/workspaces/workspaces.service";
+import type { EmailVerificationService } from "../../src/features/users/email-verification.service";
 import {
   UserFeedDisabledCode,
   UserFeedManagerStatus,
@@ -103,6 +107,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
   let testContext: ServiceTestContext;
   let userFeedRepository: UserFeedMongooseRepository;
   let userRepository: UserMongooseRepository;
+  let workspacesService: WorkspacesService;
 
   return {
     async setup() {
@@ -111,6 +116,15 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         testContext.connection,
       );
       userRepository = new UserMongooseRepository(testContext.connection);
+      workspacesService = new WorkspacesService({
+        // Invitations are not exercised by this feed-authorization harness, so a
+        // minimal config and no transport suffice.
+        config: {} as Config,
+        smtpTransport: null,
+        workspaceRepository: new WorkspaceMongooseRepository(testContext.connection),
+        userRepository,
+        emailVerificationService: {} as EmailVerificationService,
+      });
     },
 
     async teardown() {
@@ -155,6 +169,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         ),
         feedHandlerService: createMockFeedHandlerService(options.feedHandler),
         usersService: createMockUsersService(userId, discordUserId),
+        workspacesService,
         publishMessage: options.publishMessage ?? (async () => {}),
         feedConnectionsDiscordChannelsService,
       };

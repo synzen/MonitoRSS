@@ -1,6 +1,7 @@
 import Handlebars from "handlebars";
 import type { Config } from "../../config";
 import type { SmtpTransport } from "../../infra/smtp";
+import { createFromFormatter, type FormatFrom } from "../../infra/email-from";
 import type { INotificationDeliveryAttemptRepository } from "../../repositories/interfaces/notification-delivery-attempt.types";
 import type {
   IUserFeed,
@@ -41,13 +42,14 @@ export interface NotificationsServiceDeps {
 }
 
 export class NotificationsService {
-  private emailAlertFrom: string;
+  // Formats lazily at send time: the "from" address requires SMTP config that
+  // an SMTP-less deployment won't have, and resolving it in the constructor
+  // would crash app startup rather than only the (optional) email send.
+  private formatFrom: FormatFrom;
   private loginRedirectUrl: string;
 
   constructor(private readonly deps: NotificationsServiceDeps) {
-    this.emailAlertFrom =
-      deps.config.BACKEND_API_SMTP_FROM ||
-      '"MonitoRSS Alerts" <alerts@monitorss.xyz>';
+    this.formatFrom = createFromFormatter(deps.config);
     this.loginRedirectUrl =
       deps.config.BACKEND_API_LOGIN_REDIRECT_URI || "https://my.monitorss.xyz";
   }
@@ -108,7 +110,7 @@ export class NotificationsService {
 
     try {
       await this.deps.smtpTransport?.sendMail({
-        from: this.emailAlertFrom,
+        from: this.formatFrom("MonitoRSS Alerts", "alerts"),
         to: emails,
         subject: `Feed has been disabled: ${feed.title}`,
         html: disabledFeedTemplate(templateData),
@@ -175,7 +177,7 @@ export class NotificationsService {
 
     try {
       await this.deps.smtpTransport?.sendMail({
-        from: this.emailAlertFrom,
+        from: this.formatFrom("MonitoRSS Alerts", "alerts"),
         to: emails,
         subject: `Feed connection has been disabled: ${connection.name} (feed: ${feed.title})`,
         html: disabledFeedTemplate(templateData),

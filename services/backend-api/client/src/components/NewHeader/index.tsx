@@ -14,7 +14,9 @@ interface Props {
   isBotLoading?: boolean;
   botError?: { message: string } | null;
   user?: { iconUrl?: string; username?: string; id?: string };
+  workspaceSlot?: React.ReactNode;
   searchSlot?: React.ReactNode;
+  accountMenuSlot?: React.ReactNode;
   logoutSlot?: React.ReactNode;
 }
 
@@ -24,7 +26,9 @@ export const NewHeader = ({
   isBotLoading,
   botError,
   user,
+  workspaceSlot,
   searchSlot,
+  accountMenuSlot,
   logoutSlot,
 }: Props) => {
   const navigate = useNavigate();
@@ -75,6 +79,7 @@ export const NewHeader = ({
               )}
               {botError && <Alert status="error" title={botError.message} />}
             </Flex>
+            {workspaceSlot && <HStack>{workspaceSlot}</HStack>}
             <HStack>{searchSlot}</HStack>
           </HStack>
           <Flex alignItems="center" paddingY="4">
@@ -120,6 +125,7 @@ export const NewHeader = ({
                   <FaCircleInfo />
                   Discord Support Server
                 </MenuItem>
+                {accountMenuSlot}
                 {logoutSlot}
               </MenuContent>
             </MenuRoot>

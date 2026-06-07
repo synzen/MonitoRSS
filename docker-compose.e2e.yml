@@ -13,6 +13,11 @@ services:
       - /data/db
       - /data/configdb
     ports:
+      # Default host 27019 (not 27018) so the e2e stack can run alongside the dev
+      # stack (docker-compose.dev.yml publishes mongo on 27018). Parameterized so
+      # concurrent e2e runs can each bind a distinct host port. The backend reaches
+      # mongo over the internal network (mongo:27017), unaffected by this mapping;
+      # only host-side e2e helpers use it (see e2e/helpers/constants.ts MONGO_URI).
       - "${E2E_MONGO_PORT:-27019}:27017"
     command: ["--replSet", "dbrs", "--bind_ip_all", "--port", "27017"]
     networks:
@@ -266,6 +271,14 @@ services:
       - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
       - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:${E2E_FRONTEND_PORT:-3100}
+      # Mock mailer (plain SMTP on the host, reached via host.docker.internal) so
+      # the email-verification one-time-code flow can be driven through the UI.
+      - BACKEND_API_SMTP_HOST=host.docker.internal
+      - BACKEND_API_SMTP_PORT=${E2E_MOCK_SMTP_PORT:-3004}
+      - BACKEND_API_SMTP_SECURE=false
+      - BACKEND_API_SMTP_USERNAME=mock
+      - BACKEND_API_SMTP_PASSWORD=mock
+      - BACKEND_API_SMTP_FROM_DOMAIN=example.com
       - BACKEND_API_PADDLE_KEY=${BACKEND_API_PADDLE_KEY:-}
       - BACKEND_API_PADDLE_URL=${BACKEND_API_PADDLE_URL:-}
       - BACKEND_API_PADDLE_WEBHOOK_SECRET=${BACKEND_API_PADDLE_WEBHOOK_SECRET:-}

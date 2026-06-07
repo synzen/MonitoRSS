@@ -1,7 +1,7 @@
 import { Button, Card, Badge, Box, HStack, Stack, Text } from "@chakra-ui/react";
 import { FaChevronRight } from "react-icons/fa6";
 import { Link as RouterLink } from "react-router-dom";
-import { UserFeed } from "@/features/feed";
+import { UserFeed, useFeedScope } from "@/features/feed";
 import {
   FeedConnectionDisabledCode,
   FeedConnectionType,
@@ -24,6 +24,7 @@ const DISABLED_CODES_FOR_ERROR = [
 ];
 
 export const ConnectionCard = ({ feedId, connection }: Props) => {
+  const { workspaceSlug } = useFeedScope();
   const isError = DISABLED_CODES_FOR_ERROR.includes(
     connection.disabledCode as FeedConnectionDisabledCode,
   );
@@ -94,6 +95,7 @@ export const ConnectionCard = ({ feedId, connection }: Props) => {
                 feedId: feedId as string,
                 connectionType: connection.key,
                 connectionId: connection.id,
+                scope: workspaceSlug ? { workspaceSlug } : undefined,
               })}
             >
               Manage

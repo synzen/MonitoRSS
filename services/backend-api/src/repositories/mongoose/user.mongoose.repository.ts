@@ -73,6 +73,7 @@ const UserPreferencesSchema = new Schema(
 const UserFeatureFlagsSchema = new Schema(
   {
     externalProperties: { type: Boolean },
+    workspaces: { type: Boolean },
   },
   { _id: false, timestamps: false },
 );
@@ -100,6 +101,8 @@ const UserSchema = new Schema(
   {
     discordUserId: { type: String, required: true, unique: true },
     email: { type: String },
+    verifiedEmail: { type: String },
+    verifiedEmailVerifiedAt: { type: Date },
     preferences: { type: UserPreferencesSchema, default: {} },
     featureFlags: { type: UserFeatureFlagsSchema, default: {} },
     enableBilling: { type: Boolean },
@@ -117,6 +120,8 @@ UserSchema.index({
 UserSchema.index({
   "externalCredentials.0": 1,
 });
+
+UserSchema.index({ verifiedEmail: 1 }, { unique: true, sparse: true });
 
 type UserDoc = InferSchemaType<typeof UserSchema>;
 
@@ -138,6 +143,8 @@ export class UserMongooseRepository
       id: this.objectIdToString(doc._id),
       discordUserId: doc.discordUserId,
       email: doc.email,
+      verifiedEmail: doc.verifiedEmail,
+      verifiedEmailVerifiedAt: doc.verifiedEmailVerifiedAt,
       preferences: doc.preferences,
       featureFlags: doc.featureFlags,
       enableBilling: doc.enableBilling,
@@ -173,6 +180,11 @@ export class UserMongooseRepository
     return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
   }
 
+  async findByVerifiedEmail(email: string): Promise<IUser | null> {
+    const doc = await this.model.findOne({ verifiedEmail: email }).lean();
+    return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
+  }
+
   async findByDiscordId(discordUserId: string): Promise<IUser | null> {
     const doc = await this.model.findOne({ discordUserId }).lean();
     return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
@@ -202,6 +214,13 @@ export class UserMongooseRepository
       .findOneAndUpdate({ discordUserId }, { $set: { email } }, { new: true })
       .lean();
     return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
+  }
+
+  async setVerifiedEmail(userId: string, email: string): Promise<void> {
+    await this.model.updateOne(
+      { _id: this.stringToObjectId(userId) },
+      { $set: { verifiedEmail: email, verifiedEmailVerifiedAt: new Date() } },
+    );
   }
 
   async updatePreferencesByDiscordId(

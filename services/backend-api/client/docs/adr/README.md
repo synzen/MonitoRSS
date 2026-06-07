@@ -28,15 +28,16 @@ Each ADR follows the [Michael Nygard one-pager template](https://cognitect.com/b
 | [002](002-folder-model.md) | Folder model: thin pages, fat features (with destination sub-features), narrow shared base | Accepted |
 | [003](003-state-ownership.md) | State ownership: React Query for server, URL for shareable, Context only for cross-cutting | Accepted |
 | [004](004-destination-extensibility.md) | Destination extensibility: keep the FeedConnectionType shell honest via destination sub-features | Accepted |
-| [005](005-team-scoping.md) | Team scoping: `team` / `teamId`, implicit `/me` + opaque `/teams/:teamId/...` | Accepted |
+| [005](005-workspace-scoping.md) | Workspace scoping: implicit `/me` + slug-based `/workspaces/:workspaceSlug/...` | Accepted |
 | [006](006-fitness-functions.md) | Frontend fitness functions: three ESLint architecture rules | Accepted |
 | [007](007-styling-roles-tiers-contrast.md) | Styling: a semantic role system, encoding mechanisms, and a contrast gate | Accepted |
+| [008](008-workspace-ui.md) | Workspace UI: a count-gated header workspace switcher, scope-agnostic pages, owner/admin settings | Accepted |
 
 ## When to write a new frontend ADR
 
 - A decision constrains where future code goes (folder model, state ownership).
 - A decision records a trade-off the maintainer will second-guess later.
 - A library or framework is being replaced.
-- A feature crosses architectural boundaries (destinations, team scoping).
+- A feature crosses architectural boundaries (destinations, workspace scoping).
 
 Implementation details visible from code don't need ADRs.

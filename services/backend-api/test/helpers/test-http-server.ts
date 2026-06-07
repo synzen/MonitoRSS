@@ -133,6 +133,10 @@ export function createTestHttpServer(
   });
 
   server.listen(0);
+  // Don't let the listening socket alone keep Node's event loop alive: if a
+  // test setup throws before teardown is wired up, the runner should still be
+  // able to exit rather than hang on this handle.
+  server.unref();
 
   const address = server.address();
   if (!address || typeof address === "string") {
@@ -232,6 +236,7 @@ function createTestConfig(
     BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: 10,
     BACKEND_API_DEFAULT_MAX_FEEDS: 5,
     BACKEND_API_DEFAULT_MAX_USER_FEEDS: 5,
+    BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS: 140,
     BACKEND_API_DEFAULT_DATE_FORMAT: "ddd, D MMMM YYYY, h:mm A z",
     BACKEND_API_DEFAULT_TIMEZONE: "UTC",
     BACKEND_API_DEFAULT_DATE_LANGUAGE: "en",
@@ -250,6 +255,9 @@ function createTestConfig(
     BACKEND_API_SMTP_USERNAME: undefined,
     BACKEND_API_SMTP_PASSWORD: undefined,
     BACKEND_API_SMTP_FROM: undefined,
+    BACKEND_API_SMTP_FROM_DOMAIN: undefined,
+    BACKEND_API_SMTP_PORT: undefined,
+    BACKEND_API_SMTP_SECURE: true,
     BACKEND_API_PADDLE_KEY: undefined,
     BACKEND_API_PADDLE_URL: undefined,
     BACKEND_API_PADDLE_WEBHOOK_SECRET: undefined,

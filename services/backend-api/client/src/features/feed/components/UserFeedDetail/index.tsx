@@ -65,6 +65,7 @@ import {
   useUpdateUserFeedManagementInviteStatus,
 } from "../../hooks";
 import { useUserFeedContext } from "../../contexts";
+import { useFeedScope } from "../../contexts/FeedScopeContext";
 import { UpdateUserFeedInput } from "../../api";
 import { UserFeedDisabledCode } from "../../types";
 import { CloneUserFeedDialog } from "../CloneUserFeedDialog";
@@ -105,6 +106,9 @@ const tabValues = ["connections", "comparisons", "external-properties", "setting
 
 export const UserFeedDetail: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
+  // Keep navigation in the current (workspace) scope when rendered under a workspace route.
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
   const { open: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
   const {
     open: copySettingsIsOpen,
@@ -289,7 +293,7 @@ export const UserFeedDetail: React.FC = () => {
                     <BreadcrumbList>
                       <BreadcrumbItem>
                         <BreadcrumbLink asChild color="text.link">
-                          <RouterLink to={pages.userFeeds()}>Feeds</RouterLink>
+                          <RouterLink to={pages.userFeeds(scope)}>Feeds</RouterLink>
                         </BreadcrumbLink>
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />
@@ -298,6 +302,7 @@ export const UserFeedDetail: React.FC = () => {
                           <RouterLink
                             to={pages.userFeed(feed.id, {
                               tab: UserFeedTabSearchParam.Connections,
+                              scope,
                             })}
                           >
                             {feed?.title}

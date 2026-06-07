@@ -17,6 +17,9 @@ export const CreateUserFeedBodySchema = Type.Object({
   curatedFeedId: Type.Optional(Type.String({ minLength: 1 })),
   title: Type.Optional(Type.String()),
   sourceFeedId: Type.Optional(Type.String()),
+  // When set, the feed is created under this workspace. Membership is verified
+  // server-side; non-members get 404.
+  workspaceId: Type.Optional(Type.String({ minLength: 1 })),
 });
 export type CreateUserFeedBody = Static<typeof CreateUserFeedBodySchema>;
 
@@ -585,5 +588,8 @@ export const GetUserFeedsQuerySchema = Type.Object({
       enum: ["", ...Object.values(GetUserFeedsInputSortKey)],
     }),
   ),
+  // When set, lists feeds for this workspace instead of the user's personal feeds.
+  // Membership is verified server-side; non-members get 404.
+  workspaceId: Type.Optional(Type.String({ minLength: 1 })),
 });
 export type GetUserFeedsQuery = Static<typeof GetUserFeedsQuerySchema>;

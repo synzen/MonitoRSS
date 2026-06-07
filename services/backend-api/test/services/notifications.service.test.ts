@@ -203,9 +203,12 @@ describe("NotificationsService", { concurrency: true }, () => {
       assert.ok(sendMailCall.html.includes("Exceeded feed limit"));
     });
 
-    it("uses default from address when not configured", async () => {
+    it("derives the alerts sender from BACKEND_API_SMTP_FROM_DOMAIN when no full SMTP_FROM is set", async () => {
       const ctx = harness.createContext({
-        config: { BACKEND_API_SMTP_FROM: undefined },
+        config: {
+          BACKEND_API_SMTP_FROM: undefined,
+          BACKEND_API_SMTP_FROM_DOMAIN: "test.com",
+        },
       });
 
       await ctx.service.sendDisabledFeedsAlert(["feed-id"], {
@@ -216,7 +219,7 @@ describe("NotificationsService", { concurrency: true }, () => {
         ?.arguments[0] as { from: string };
       assert.strictEqual(
         sendMailCall.from,
-        '"MonitoRSS Alerts" <alerts@monitorss.xyz>',
+        '"MonitoRSS Alerts" <alerts@test.com>',
       );
     });
 

@@ -1,6 +1,7 @@
 import { createServer } from "http";
 import { URL } from "url";
 import { MOCK_DISCORD_SERVER_PORT } from "./helpers/constants";
+import { teeConsoleToFile } from "./helpers/log-to-file";
 import {
   MOCK_DISCORD_USER,
   MOCK_DISCORD_BOT_USER,
@@ -10,6 +11,8 @@ import {
   MOCK_DISCORD_GUILD_ID,
   MOCK_DISCORD_USER_ID,
 } from "./helpers/mock-discord-data";
+
+teeConsoleToFile("mock-discord");
 
 interface StoredWebhook {
   id: string;
@@ -82,7 +85,34 @@ interface Route {
     params: Record<string, string>,
     req: import("http").IncomingMessage,
     body?: unknown,
-  ) => { status: number; body?: unknown };
+  ) => { status: number; body?: unknown; headers?: Record<string, string> };
+}
+
+// The interactive OAuth identity is carried end to end via the authorization
+// code: the mock authorize endpoint mints `mock-code-<discordId>`, the token
+// endpoint echoes it back as `mock-token-<discordId>`, and getUserFromRequest
+// derives the id from that Bearer token. Each authorize call mints a fresh
+// distinct Discord id, so a logged-out test bootstraps a brand-new user (the
+// invite is keyed by email, never by Discord id, so the test needs no advance
+// knowledge of the minted id).
+const DEFAULT_OAUTH_DISCORD_ID = MOCK_DISCORD_USER_ID;
+
+let oauthUserCounter = 0;
+
+function mintOAuthDiscordId(): string {
+  // 17-digit snowflake-shaped id in a range that won't collide with the fixed
+  // MOCK_DISCORD_USER_ID or the fixtures' generated ids.
+  return String(800000000000000000n + BigInt(++oauthUserCounter));
+}
+
+function discordIdFromCode(code: string | undefined): string {
+  const match = /^mock-code-(\d+)$/.exec(code ?? "");
+  return match ? match[1] : DEFAULT_OAUTH_DISCORD_ID;
+}
+
+function parseFormBody(body: unknown): Record<string, string> {
+  if (typeof body !== "string") return {};
+  return Object.fromEntries(new URLSearchParams(body));
 }
 
 function getUserFromRequest(req: import("http").IncomingMessage) {
@@ -353,20 +383,63 @@ const routes: Route[] = [
     pattern: "/api/v10/users/:id",
     handler: () => ({ status: 200, body: MOCK_DISCORD_BOT_USER }),
   },
-  // OAuth token refresh fallback
+  // Interactive OAuth consent screen. The real Discord shows a consent page then
+  // 302s the browser to redirect_uri with ?code=&state=. The mock skips consent:
+  // it mints a fresh Discord id, encodes it in the code, and immediately
+  // redirects back with the state echoed byte-for-byte (the backend validates it
+  // against the value it stored in the session).
+  {
+    method: "GET",
+    pattern: "/api/v9/oauth2/authorize",
+    handler: (_params, req) => {
+      const url = new URL(
+        req.url || "/",
+        `http://localhost:${MOCK_DISCORD_SERVER_PORT}`,
+      );
+      const redirectUri = url.searchParams.get("redirect_uri");
+      const state = url.searchParams.get("state");
+
+      if (!redirectUri) {
+        return { status: 400, body: { message: "missing redirect_uri" } };
+      }
+
+      const code = `mock-code-${mintOAuthDiscordId()}`;
+      const location = new URL(redirectUri);
+      location.searchParams.set("code", code);
+      if (state !== null) {
+        location.searchParams.set("state", state);
+      }
+
+      return {
+        status: 302,
+        headers: { Location: location.toString() },
+      };
+    },
+  },
+  // OAuth token exchange (authorization_code) and refresh. The access token
+  // carries the Discord id parsed from the code so /users/@me resolves to the
+  // user the authorize step minted; a refresh (no code) keeps the default user.
   {
     method: "POST",
     pattern: "/api/v9/oauth2/token",
-    handler: () => ({
-      status: 200,
-      body: {
-        access_token: `refreshed-token-${MOCK_DISCORD_USER_ID}`,
-        token_type: "Bearer",
-        expires_in: 604800,
-        refresh_token: "new-mock-refresh-token",
-        scope: "identify guilds",
-      },
-    }),
+    handler: (_params, _req, body) => {
+      const form = parseFormBody(body);
+      const discordId =
+        form.grant_type === "authorization_code"
+          ? discordIdFromCode(form.code)
+          : DEFAULT_OAUTH_DISCORD_ID;
+
+      return {
+        status: 200,
+        body: {
+          access_token: `mock-token-${discordId}`,
+          token_type: "Bearer",
+          expires_in: 604800,
+          refresh_token: "new-mock-refresh-token",
+          scope: "identify guilds",
+        },
+      };
+    },
   },
 ];
 
@@ -398,6 +471,15 @@ const server = createServer((req, res) => {
       const params = matchRoute(route.pattern, pathname);
       if (params) {
         const result = route.handler(params, req, body);
+
+        // A redirect (or any handler-supplied headers) bypasses the JSON
+        // responder so the browser-facing OAuth authorize step can 302.
+        if (result.headers) {
+          res.writeHead(result.status, result.headers);
+          res.end();
+          return;
+        }
+
         jsonResponse(res, result.status, result.body);
         return;
       }

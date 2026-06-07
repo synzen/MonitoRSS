@@ -50,6 +50,29 @@ export enum ApiErrorCode {
   SUBSCRIPTION_ABOUT_TO_RENEW = "SUBSCRIPTION_ABOUT_TO_RENEW",
   USER_REFRESH_RATE_NOT_ALLOWED = "USER_REFRESH_RATE_NOT_ALLOWED",
   ADDRESS_LOCATION_NOT_ALLOWED = "ADDRESS_LOCATION_NOT_ALLOWED",
+  EMAIL_VERIFICATION_INVALID_CODE = "EMAIL_VERIFICATION_INVALID_CODE",
+  EMAIL_VERIFICATION_EXPIRED = "EMAIL_VERIFICATION_EXPIRED",
+  EMAIL_VERIFICATION_TOO_MANY_ATTEMPTS = "EMAIL_VERIFICATION_TOO_MANY_ATTEMPTS",
+  EMAIL_VERIFICATION_RESEND_TOO_SOON = "EMAIL_VERIFICATION_RESEND_TOO_SOON",
+  EMAIL_VERIFICATION_TOO_MANY_TARGETS = "EMAIL_VERIFICATION_TOO_MANY_TARGETS",
+  EMAIL_VERIFICATION_UNAVAILABLE = "EMAIL_VERIFICATION_UNAVAILABLE",
+  TOO_MANY_REQUESTS = "TOO_MANY_REQUESTS",
+  EMAIL_ALREADY_IN_USE = "EMAIL_ALREADY_IN_USE",
+  EMAIL_NOT_VERIFIED = "EMAIL_NOT_VERIFIED",
+  WORKSPACE_NOT_FOUND = "WORKSPACE_NOT_FOUND",
+  WORKSPACE_INSUFFICIENT_ROLE = "WORKSPACE_INSUFFICIENT_ROLE",
+  WORKSPACE_SLUG_TAKEN = "WORKSPACE_SLUG_TAKEN",
+  WORKSPACE_SLUG_RESERVED = "WORKSPACE_SLUG_RESERVED",
+  WORKSPACE_INVITE_NOT_FOUND = "WORKSPACE_INVITE_NOT_FOUND",
+  WORKSPACE_INVITE_EMAIL_UNVERIFIED = "WORKSPACE_INVITE_EMAIL_UNVERIFIED",
+  WORKSPACE_INVITE_EMAIL_MISMATCH = "WORKSPACE_INVITE_EMAIL_MISMATCH",
+  WORKSPACE_INVITE_ALREADY_MEMBER = "WORKSPACE_INVITE_ALREADY_MEMBER",
+  WORKSPACE_MEMBER_ALREADY_EXISTS = "WORKSPACE_MEMBER_ALREADY_EXISTS",
+  WORKSPACE_ALREADY_INVITED = "WORKSPACE_ALREADY_INVITED",
+  WORKSPACE_INVITE_EMAIL_UNAVAILABLE = "WORKSPACE_INVITE_EMAIL_UNAVAILABLE",
+  WORKSPACE_INVITE_RESEND_TOO_SOON = "WORKSPACE_INVITE_RESEND_TOO_SOON",
+  WORKSPACE_INVITE_LIMIT_REACHED = "WORKSPACE_INVITE_LIMIT_REACHED",
+  CANNOT_REMOVE_LAST_OWNER = "CANNOT_REMOVE_LAST_OWNER",
   SUBSCRIPTION_ALREADY_CANCELLED = "SUBSCRIPTION_ALREADY_CANCELLED",
 }
 
@@ -115,6 +138,37 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   USER_REFRESH_RATE_NOT_ALLOWED: "Refresh rate is not allowed.",
   ADDRESS_LOCATION_NOT_ALLOWED:
     "Your location is not supported for billing. This may be due to regional restrictions. If you believe this is an error, please contact support@monitorss.xyz.",
+  EMAIL_VERIFICATION_INVALID_CODE: "Invalid or incorrect verification code. Please try again.",
+  EMAIL_VERIFICATION_EXPIRED: "This verification code has expired. Please request a new one.",
+  EMAIL_VERIFICATION_TOO_MANY_ATTEMPTS:
+    "Too many incorrect attempts. Please request a new verification code.",
+  EMAIL_VERIFICATION_RESEND_TOO_SOON:
+    "Please wait a moment before requesting another verification code.",
+  EMAIL_VERIFICATION_TOO_MANY_TARGETS:
+    "Too many different email addresses have been tried recently. Please wait before trying another address.",
+  EMAIL_VERIFICATION_UNAVAILABLE:
+    "Email verification is currently unavailable. Please try again later.",
+  TOO_MANY_REQUESTS: "Too many requests. Please wait a moment and try again.",
+  EMAIL_ALREADY_IN_USE: "This email is already in use by another account.",
+  EMAIL_NOT_VERIFIED: "A verified email is required to perform this action.",
+  WORKSPACE_NOT_FOUND: "This team no longer exists, or you do not have access to it.",
+  WORKSPACE_INSUFFICIENT_ROLE: "You do not have permission to do this.",
+  WORKSPACE_SLUG_TAKEN: "This URL is already taken by another team.",
+  WORKSPACE_SLUG_RESERVED: "This URL is reserved. Please choose another.",
+  WORKSPACE_INVITE_NOT_FOUND:
+    "This invitation no longer exists. It may have already been accepted, declined, or revoked.",
+  WORKSPACE_INVITE_EMAIL_UNVERIFIED: "Verify the invited email address to accept this invitation.",
+  WORKSPACE_INVITE_EMAIL_MISMATCH: "Verify the invited email address to accept this invitation.",
+  WORKSPACE_MEMBER_ALREADY_EXISTS: "This email already belongs to a member of this team.",
+  WORKSPACE_INVITE_ALREADY_MEMBER: "You are already a member of this team.",
+  WORKSPACE_ALREADY_INVITED: "This email already has a pending invitation to this team.",
+  WORKSPACE_INVITE_EMAIL_UNAVAILABLE:
+    "The invitation email could not be sent because email delivery is currently unavailable. Please try again later.",
+  WORKSPACE_INVITE_RESEND_TOO_SOON: "Please wait a moment before resending this invitation.",
+  WORKSPACE_INVITE_LIMIT_REACHED:
+    "This team has reached its limit of pending invitations. Revoke a pending invitation before sending another.",
+  CANNOT_REMOVE_LAST_OWNER:
+    "A team must have at least one owner. Transfer ownership before removing this member.",
   SUBSCRIPTION_ALREADY_CANCELLED:
     "This subscription has already been cancelled. Try refreshing the page to see your current plan.",
 };

@@ -1,0 +1,651 @@
+import Handlebars from "handlebars";
+import {
+  ApiErrorCode,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ServiceUnavailableError,
+  TooManyRequestsError,
+} from "../../infra/error-handler";
+import { isReservedSlug, isValidSlug } from "../../shared/utils/slugify";
+import { normalizeEmail } from "../../shared/utils/normalizeEmail";
+import type { Config } from "../../config";
+import type { SmtpTransport } from "../../infra/smtp";
+import { createFromFormatter } from "../../infra/email-from";
+import type { UserMongooseRepository } from "../../repositories/mongoose/user.mongoose.repository";
+import {
+  CannotRemoveLastOwnerError,
+  WorkspaceInviteExistsError,
+  WorkspaceSlugTakenError,
+  type IWorkspace,
+  type IWorkspaceInvite,
+  type IWorkspaceInviteWithContext,
+  type IWorkspaceMember,
+  type IWorkspaceWithRole,
+  type WorkspaceRole,
+  type WorkspaceMongooseRepository,
+} from "../../repositories/mongoose/workspace.mongoose.repository";
+import type { EmailVerificationService } from "../users/email-verification.service";
+import WORKSPACE_INVITE_TEMPLATE from "./workspace-invite.template";
+
+const inviteTemplate = Handlebars.compile(WORKSPACE_INVITE_TEMPLATE);
+
+// v1 invitations grant admin only; the role is stored for forward-compatibility.
+const INVITE_ROLE: WorkspaceRole = "admin";
+
+// Mirrors EmailVerificationService's resend cooldown: bounds how often a given
+// invitation's notification email can be re-dispatched.
+const INVITE_RESEND_COOLDOWN_MS = 60 * 1000;
+
+// Cap on pending invitations a single workspace may hold at once. Bounds abuse
+// (mass invite spam) and the unbounded growth of the invite collection.
+const MAX_PENDING_INVITES_PER_WORKSPACE = 25;
+
+// owner ⊇ admin. changeSettings/manageMembers/leaveWorkspace are open to every
+// member (all are ≥ admin); removeMember/deleteWorkspace/transferOwnership are
+// owner-gated. The function is the seam: handlers call can(), never compare role
+// strings, so a future role or action is a change here, not across handlers. It
+// stays a pure (action, role) function — identity (actor vs target) is handler
+// routing, not policy.
+type WorkspaceAction =
+  | "changeSettings"
+  | "manageMembers"
+  | "removeMember"
+  | "leaveWorkspace"
+  | "deleteWorkspace"
+  | "transferOwnership";
+
+export interface WorkspacesServiceDeps {
+  config: Config;
+  smtpTransport: SmtpTransport;
+  workspaceRepository: WorkspaceMongooseRepository;
+  userRepository: UserMongooseRepository;
+  emailVerificationService: EmailVerificationService;
+}
+
+export class WorkspacesService {
+  constructor(private readonly deps: WorkspacesServiceDeps) {}
+
+  // Authorization seam: callers check can(...) rather than comparing roles.
+  can(action: WorkspaceAction, role: WorkspaceRole): boolean {
+    switch (action) {
+      case "changeSettings":
+      case "manageMembers":
+      case "leaveWorkspace":
+        return role === "owner" || role === "admin";
+      case "removeMember":
+      case "deleteWorkspace":
+      case "transferOwnership":
+        return role === "owner";
+      default:
+        return false;
+    }
+  }
+
+  async createWorkspace(
+    userId: string,
+    name: string,
+    slug: string,
+  ): Promise<IWorkspace> {
+    const user = await this.deps.userRepository.findById(userId);
+
+    if (!user?.verifiedEmail) {
+      throw new ForbiddenError(ApiErrorCode.EMAIL_NOT_VERIFIED);
+    }
+
+    if (isReservedSlug(slug)) {
+      throw new ConflictError(ApiErrorCode.WORKSPACE_SLUG_RESERVED);
+    }
+
+    if (!isValidSlug(slug)) {
+      throw new ConflictError(ApiErrorCode.VALIDATION_FAILED);
+    }
+
+    const taken = await this.deps.workspaceRepository.isSlugTaken(slug);
+
+    if (taken) {
+      throw new ConflictError(ApiErrorCode.WORKSPACE_SLUG_TAKEN);
+    }
+
+    try {
+      return await this.deps.workspaceRepository.createWorkspaceWithOwner({
+        name,
+        slug,
+        ownerUserId: userId,
+      });
+    } catch (err) {
+      if (err instanceof WorkspaceSlugTakenError) {
+        throw new ConflictError(ApiErrorCode.WORKSPACE_SLUG_TAKEN);
+      }
+
+      throw err;
+    }
+  }
+
+  async listWorkspaces(userId: string): Promise<IWorkspaceWithRole[]> {
+    return this.deps.workspaceRepository.listWorkspacesForUser(userId);
+  }
+
+  // The workspace ids a user belongs to, for workspace-feed authorization.
+  async listWorkspaceIds(userId: string): Promise<string[]> {
+    return this.deps.workspaceRepository.listWorkspaceIdsForUser(userId);
+  }
+
+  async getWorkspaceForMember(
+    workspaceId: string,
+    userId: string,
+  ): Promise<{ workspace: IWorkspace; role: WorkspaceRole }> {
+    const found =
+      await this.deps.workspaceRepository.findMembershipWithWorkspace(
+        workspaceId,
+        userId,
+      );
+
+    if (!found) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
+    }
+
+    return found;
+  }
+
+  async getWorkspaceForMemberBySlug(
+    slug: string,
+    userId: string,
+  ): Promise<{ workspace: IWorkspace; role: WorkspaceRole }> {
+    const found =
+      await this.deps.workspaceRepository.findMembershipWithWorkspaceBySlug(
+        slug,
+        userId,
+      );
+
+    if (!found) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
+    }
+
+    return found;
+  }
+
+  async updateWorkspaceName(
+    workspaceId: string,
+    userId: string,
+    name: string,
+  ): Promise<IWorkspace> {
+    const { role } = await this.getWorkspaceForMember(workspaceId, userId);
+
+    if (!this.can("changeSettings", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    const updated = await this.deps.workspaceRepository.updateName(
+      workspaceId,
+      name,
+    );
+
+    if (!updated) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
+    }
+
+    return updated;
+  }
+
+  async updateWorkspaceSlug(
+    workspaceId: string,
+    userId: string,
+    slug: string,
+  ): Promise<IWorkspace> {
+    const { role } = await this.getWorkspaceForMember(workspaceId, userId);
+
+    if (!this.can("changeSettings", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    if (isReservedSlug(slug)) {
+      throw new ConflictError(ApiErrorCode.WORKSPACE_SLUG_RESERVED);
+    }
+
+    if (!isValidSlug(slug)) {
+      throw new ConflictError(ApiErrorCode.VALIDATION_FAILED);
+    }
+
+    const taken = await this.deps.workspaceRepository.isSlugTaken(
+      slug,
+      workspaceId,
+    );
+
+    if (taken) {
+      throw new ConflictError(ApiErrorCode.WORKSPACE_SLUG_TAKEN);
+    }
+
+    let updated: IWorkspace | null;
+
+    try {
+      updated = await this.deps.workspaceRepository.updateSlug(
+        workspaceId,
+        slug,
+      );
+    } catch (err) {
+      if (err instanceof WorkspaceSlugTakenError) {
+        throw new ConflictError(ApiErrorCode.WORKSPACE_SLUG_TAKEN);
+      }
+
+      throw err;
+    }
+
+    if (!updated) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
+    }
+
+    return updated;
+  }
+
+  async createInvite(
+    slug: string,
+    userId: string,
+    rawEmail: string,
+  ): Promise<IWorkspaceInvite> {
+    const { workspace, role } = await this.getWorkspaceForMemberBySlug(
+      slug,
+      userId,
+    );
+
+    if (!this.can("manageMembers", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    const email = normalizeEmail(rawEmail);
+
+    // Membership binds to the verified email, so "already a member" resolves the
+    // invited email to its verified-email owner and checks this workspace only.
+    const existingUser =
+      await this.deps.userRepository.findByVerifiedEmail(email);
+
+    if (
+      existingUser &&
+      (await this.deps.workspaceRepository.isMember(
+        workspace.id,
+        existingUser.id,
+      ))
+    ) {
+      throw new ConflictError(ApiErrorCode.WORKSPACE_MEMBER_ALREADY_EXISTS);
+    }
+
+    const pending = await this.deps.workspaceRepository.findPendingInvite(
+      workspace.id,
+      email,
+    );
+
+    if (pending) {
+      throw new ConflictError(ApiErrorCode.WORKSPACE_ALREADY_INVITED);
+    }
+
+    const pendingCount =
+      await this.deps.workspaceRepository.countInvitesForWorkspace(
+        workspace.id,
+      );
+
+    if (pendingCount >= MAX_PENDING_INVITES_PER_WORKSPACE) {
+      throw new ConflictError(ApiErrorCode.WORKSPACE_INVITE_LIMIT_REACHED);
+    }
+
+    // The row is only created if the notification can be dispatched: a failed
+    // send must never leave a stranded invitation. The link is keyed by the
+    // invitation id, so the id is generated up front, the email is sent, and
+    // only then is the row persisted — a send failure persists nothing.
+    const inviteId = this.deps.workspaceRepository.generateInviteId();
+
+    await this.sendInviteEmail(inviteId, email, workspace.name);
+
+    try {
+      return await this.deps.workspaceRepository.createInvite({
+        id: inviteId,
+        workspaceId: workspace.id,
+        email,
+        role: INVITE_ROLE,
+        invitedByUserId: userId,
+      });
+    } catch (err) {
+      if (err instanceof WorkspaceInviteExistsError) {
+        throw new ConflictError(ApiErrorCode.WORKSPACE_ALREADY_INVITED);
+      }
+
+      throw err;
+    }
+  }
+
+  private async sendInviteEmail(
+    inviteId: string,
+    email: string,
+    workspaceName: string,
+  ): Promise<void> {
+    if (!this.deps.smtpTransport) {
+      throw new ServiceUnavailableError(
+        ApiErrorCode.WORKSPACE_INVITE_EMAIL_UNAVAILABLE,
+      );
+    }
+
+    // The link is keyed by invitation id; the invited email never appears in it.
+    const inviteUrl = `${this.deps.config.BACKEND_API_LOGIN_REDIRECT_URI}/invites/${inviteId}`;
+
+    await this.deps.smtpTransport.sendMail({
+      from: createFromFormatter(this.deps.config)("MonitoRSS", "noreply"),
+      to: email,
+      subject: `You've been invited to ${workspaceName} on MonitoRSS`,
+      html: inviteTemplate({ workspaceName, inviteUrl }),
+    });
+  }
+
+  async listInvites(
+    slug: string,
+    userId: string,
+  ): Promise<IWorkspaceInvite[]> {
+    const { workspace, role } = await this.getWorkspaceForMemberBySlug(
+      slug,
+      userId,
+    );
+
+    if (!this.can("manageMembers", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    return this.deps.workspaceRepository.listInvitesForWorkspace(workspace.id);
+  }
+
+  // Minimal context for the invitation landing page. The invited email is
+  // resolved from the row, never trusted from the URL. Reachable by any
+  // feature-flagged user who has the invite id, so the full invited address is
+  // disclosed only when the caller has already proven ownership of it
+  // (verifiedEmail matches); otherwise emailMatches is false and the handler
+  // returns a redacted hint, preventing address harvesting by a prober.
+  async getInvite(
+    inviteId: string,
+    userId: string,
+  ): Promise<{
+    invite: IWorkspaceInviteWithContext;
+    emailMatches: boolean;
+    alreadyMember: boolean;
+  }> {
+    const invite =
+      await this.deps.workspaceRepository.findInviteWithContext(inviteId);
+
+    if (!invite) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_INVITE_NOT_FOUND);
+    }
+
+    const user = await this.deps.userRepository.findById(userId);
+    const emailMatches = !!user?.verifiedEmail && user.verifiedEmail === invite.email;
+
+    // Surfaced so the landing page can short-circuit the verify-then-accept flow
+    // for a caller who is already a member (the path an owner hits on their own
+    // invite). Without it the page would push them through email verification —
+    // which overwrites their verified email — only for the accept to be rejected
+    // by the same-member guard. This check is independent of verifiedEmail, so it
+    // can be evaluated before any verification happens.
+    const alreadyMember = await this.deps.workspaceRepository.isMember(
+      invite.workspaceId,
+      userId,
+    );
+
+    return { invite, emailMatches, alreadyMember };
+  }
+
+  // Invite-scoped email-verification send. Unlike the generic send endpoint,
+  // this dispatches a code ONLY when the submitted address matches the real
+  // invited address — so the invite flow can never email an unrelated address.
+  // The match decision is never reflected in the response: a matching and a
+  // non-matching (or unknown-invite) call return identically, so this endpoint
+  // is not an oracle a prober could use to harvest the invited address (the same
+  // anti-harvesting property getInvite preserves with its redacted hint).
+  async sendInviteVerification(
+    inviteId: string,
+    userId: string,
+    submittedEmail: string,
+  ): Promise<void> {
+    const invite =
+      await this.deps.workspaceRepository.findInviteWithContext(inviteId);
+
+    // Unknown invite or mismatched address: no-op, no send, uniform return.
+    if (!invite || normalizeEmail(submittedEmail) !== invite.email) {
+      return;
+    }
+
+    await this.deps.emailVerificationService.sendCode(userId, invite.email);
+  }
+
+  // Invitations addressed to the caller's verified email, with workspace name +
+  // inviter. Returns nothing until the user verifies a matching email, so a
+  // freshly-verified address surfaces its pending invitations here with no
+  // extra hook.
+  async listMyInvites(userId: string): Promise<IWorkspaceInviteWithContext[]> {
+    const user = await this.deps.userRepository.findById(userId);
+
+    if (!user?.verifiedEmail) {
+      return [];
+    }
+
+    return this.deps.workspaceRepository.listInvitesForEmail(
+      user.verifiedEmail,
+    );
+  }
+
+  // Both accept and decline are gated server-side on the caller's verifiedEmail
+  // matching the invitation's email. The decision axis is purely the user's
+  // verifiedEmail state; the Discord-provided email never enters the logic.
+  private async assertCanClaim(
+    inviteId: string,
+    userId: string,
+  ): Promise<IWorkspaceInviteWithContext> {
+    const invite =
+      await this.deps.workspaceRepository.findInviteWithContext(inviteId);
+
+    if (!invite) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_INVITE_NOT_FOUND);
+    }
+
+    const user = await this.deps.userRepository.findById(userId);
+
+    // The error CODE alone tells the client which case it is. The invited email
+    // is never echoed here: the invitee gets the (redacted) address from the
+    // gated single-invite GET, so this 403 must not leak it to a prober.
+    if (!user?.verifiedEmail) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INVITE_EMAIL_UNVERIFIED);
+    }
+
+    if (user.verifiedEmail !== invite.email) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INVITE_EMAIL_MISMATCH);
+    }
+
+    return invite;
+  }
+
+  async acceptInvite(
+    inviteId: string,
+    userId: string,
+  ): Promise<{ workspaceSlug: string }> {
+    const invite = await this.assertCanClaim(inviteId, userId);
+
+    // A user who is already a member of the workspace cannot consume the invite.
+    // This is the path an owner hits when they verify the invited email onto
+    // their own account and accept their own invitation: the membership insert
+    // would collide with their existing membership. Rejecting here (rather than
+    // swallowing the collision as idempotent success) leaves the invite pending
+    // so it can still reach the intended person.
+    if (
+      await this.deps.workspaceRepository.isMember(invite.workspaceId, userId)
+    ) {
+      throw new ConflictError(ApiErrorCode.WORKSPACE_INVITE_ALREADY_MEMBER);
+    }
+
+    const accepted = await this.deps.workspaceRepository.acceptInvite({
+      inviteId,
+      userId,
+    });
+
+    if (!accepted) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_INVITE_NOT_FOUND);
+    }
+
+    return { workspaceSlug: invite.workspaceSlug };
+  }
+
+  async declineInvite(inviteId: string, userId: string): Promise<void> {
+    await this.assertCanClaim(inviteId, userId);
+
+    const declined = await this.deps.workspaceRepository.deleteInvite(inviteId);
+
+    if (!declined) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_INVITE_NOT_FOUND);
+    }
+  }
+
+  async resendInvite(
+    slug: string,
+    userId: string,
+    inviteId: string,
+  ): Promise<void> {
+    const { workspace, role } = await this.getWorkspaceForMemberBySlug(
+      slug,
+      userId,
+    );
+
+    if (!this.can("manageMembers", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    const invite =
+      await this.deps.workspaceRepository.findInviteByIdForWorkspace(
+        inviteId,
+        workspace.id,
+      );
+
+    if (!invite) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_INVITE_NOT_FOUND);
+    }
+
+    // Atomically acquire the resend slot before sending: the cooldown check and
+    // the lastSentAt advance are one conditional update, so two concurrent
+    // resends cannot both pass the window. A null return means the slot is still
+    // on cooldown (the invite exists — its existence was just verified above).
+    const claimed = await this.deps.workspaceRepository.claimInviteForResend(
+      invite.id,
+      workspace.id,
+      INVITE_RESEND_COOLDOWN_MS,
+    );
+
+    if (!claimed) {
+      throw new TooManyRequestsError(
+        ApiErrorCode.WORKSPACE_INVITE_RESEND_TOO_SOON,
+      );
+    }
+
+    // Send after acquiring the slot. A send failure leaves lastSentAt advanced —
+    // the safe direction (a transient failure cannot be retried until the next
+    // window rather than enabling a send-spam loop).
+    await this.sendInviteEmail(claimed.id, claimed.email, workspace.name);
+  }
+
+  async revokeInvite(
+    slug: string,
+    userId: string,
+    inviteId: string,
+  ): Promise<void> {
+    const { workspace, role } = await this.getWorkspaceForMemberBySlug(
+      slug,
+      userId,
+    );
+
+    if (!this.can("manageMembers", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    const deleted = await this.deps.workspaceRepository.deleteInvite(
+      inviteId,
+      workspace.id,
+    );
+
+    if (!deleted) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_INVITE_NOT_FOUND);
+    }
+  }
+
+  async listMembers(slug: string, userId: string): Promise<IWorkspaceMember[]> {
+    const { workspace, role } = await this.getWorkspaceForMemberBySlug(
+      slug,
+      userId,
+    );
+
+    if (!this.can("manageMembers", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    return this.deps.workspaceRepository.listMembers(workspace.id);
+  }
+
+  // Identity-aware routing: removing oneself is leaving (leaveWorkspace);
+  // removing another member requires removeMember (owner only). The actor vs
+  // target decision lives here, not in can().
+  async removeMember(
+    slug: string,
+    actorUserId: string,
+    targetUserId: string,
+  ): Promise<void> {
+    if (actorUserId === targetUserId) {
+      return this.leaveWorkspace(slug, actorUserId);
+    }
+
+    const { workspace, role } = await this.getWorkspaceForMemberBySlug(
+      slug,
+      actorUserId,
+    );
+
+    if (!this.can("removeMember", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    const removed = await this.removeMembershipEnforcingOwnerCount(
+      workspace.id,
+      targetUserId,
+    );
+
+    if (!removed) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
+    }
+  }
+
+  async leaveWorkspace(slug: string, userId: string): Promise<void> {
+    const { workspace, role } = await this.getWorkspaceForMemberBySlug(
+      slug,
+      userId,
+    );
+
+    if (!this.can("leaveWorkspace", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    const removed = await this.removeMembershipEnforcingOwnerCount(
+      workspace.id,
+      userId,
+    );
+
+    if (!removed) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
+    }
+  }
+
+  private async removeMembershipEnforcingOwnerCount(
+    workspaceId: string,
+    userId: string,
+  ): Promise<boolean> {
+    try {
+      return await this.deps.workspaceRepository.removeMembership(
+        workspaceId,
+        userId,
+      );
+    } catch (err) {
+      if (err instanceof CannotRemoveLastOwnerError) {
+        throw new ConflictError(ApiErrorCode.CANNOT_REMOVE_LAST_OWNER);
+      }
+
+      throw err;
+    }
+  }
+}
