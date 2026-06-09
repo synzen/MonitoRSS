@@ -44,6 +44,10 @@ export const FEED_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
   },
   FeedNotFoundException: { status: 400, code: ApiErrorCode.FEED_NOT_FOUND },
   FeedTooLargeException: { status: 400, code: ApiErrorCode.FEED_TOO_LARGE },
+  RedditConnectionRequiredException: {
+    status: 403,
+    code: ApiErrorCode.REDDIT_CONNECTION_REQUIRED,
+  },
 };
 
 export const UPDATE_USER_FEED_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =

@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
-import { Box, Text, Button, Spinner, HStack, Alert, VisuallyHidden } from "@chakra-ui/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Box,
+  Text,
+  Button,
+  Spinner,
+  HStack,
+  Alert,
+  VisuallyHidden,
+} from "@chakra-ui/react";
 import { Panel } from "@/components/Panel";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { CreateUserFeedUrlValidationOutput } from "../../api/createUserFeedUrlValidation";
@@ -9,6 +17,7 @@ import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage copy";
 import { pages } from "@/constants";
 import { useCreateUserFeed } from "../../hooks";
 import { useDeleteUserFeed } from "../../hooks/useDeleteUserFeed";
+import { useUserMe } from "@/features/discordUser";
 import { FeedCard } from "../FeedCard";
 import { isExpectedResolutionUrl } from "./PlatformHint";
 
@@ -95,7 +104,40 @@ export const UrlValidationResult = ({
     }
   }, [addedFeedId, isRemoving, deleteFeed, onFeedRemoved, feedUrl]);
 
-  const isLimitReachedError = addError?.errorCode === ApiErrorCode.FEED_LIMIT_REACHED;
+  const isLimitReachedError =
+    addError?.errorCode === ApiErrorCode.FEED_LIMIT_REACHED;
+  const isRedditConnectionRequiredAddError =
+    addError?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
+
+  const { data: userMeData } = useUserMe();
+  const hasRedditConnected =
+    userMeData?.result.externalAccounts?.find((e) => e.type === "reddit")
+      ?.status === "ACTIVE";
+
+  // Re-run the blocked action once Reddit connects. The connect button lives inside
+  // FixFeedRequestsCTA, which unmounts the instant the account becomes active - so the retry can't
+  // be driven from there (its callback would race its own unmount). This component survives the
+  // transition, so it owns the retry: on the not-connected -> connected edge, re-validate (URL gate)
+  // or re-add (add-time gate), whichever Reddit gate is currently showing.
+  const isRedditValidationGate =
+    validationStatus === "error" &&
+    validationError?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
+  const prevHasRedditConnectedRef = useRef(hasRedditConnected);
+
+  useEffect(() => {
+    const justConnected =
+      hasRedditConnected && !prevHasRedditConnectedRef.current;
+    prevHasRedditConnectedRef.current = hasRedditConnected;
+
+    if (!justConnected) return;
+
+    if (isRedditValidationGate) {
+      onRetryValidation();
+    } else if (isRedditConnectionRequiredAddError) {
+      setAddError(null);
+      handleAdd(validationData?.result.feedTitle);
+    }
+  }, [hasRedditConnected]);
 
   const getButtonState = ():
     | "default"
@@ -163,18 +205,40 @@ export const UrlValidationResult = ({
           state={feedCardState}
           onAdd={() => handleAdd(displayTitle)}
           onRemove={onFeedRemoved ? handleRemove : undefined}
-          feedSettingsUrl={addedFeedId ? pages.userFeed(addedFeedId) : undefined}
+          feedSettingsUrl={
+            addedFeedId ? pages.userFeed(addedFeedId) : undefined
+          }
           fullWidthAction
           redirectedFrom={redirectedFrom}
         />
-        {addError && !isLimitReachedError && (
+        {addError &&
+          !isLimitReachedError &&
+          !isRedditConnectionRequiredAddError && (
+            <Box mt={2}>
+              <InlineErrorAlert
+                title="Failed to add feed"
+                description={addError.message}
+              />
+            </Box>
+          )}
+        {isRedditConnectionRequiredAddError && (
           <Box mt={2}>
-            <InlineErrorAlert title="Failed to add feed" description={addError.message} />
+            <FixFeedRequestsCTA
+              url={feedUrl}
+              variant="required"
+              onCorrected={() => {
+                setAddError(null);
+                handleAdd(displayTitle);
+              }}
+            />
           </Box>
         )}
         {removeError && (
           <Box mt={2}>
-            <InlineErrorAlert title="Failed to remove feed" description={removeError} />
+            <InlineErrorAlert
+              title="Failed to remove feed"
+              description={removeError}
+            />
           </Box>
         )}
       </Box>
@@ -182,8 +246,21 @@ export const UrlValidationResult = ({
   }
 
   if (validationStatus === "error" && validationError) {
+    if (validationError.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED) {
+      return (
+        <Box mt={3}>
+          <FixFeedRequestsCTA
+            url={url}
+            variant="required"
+            onCorrected={onRetryValidation}
+          />
+        </Box>
+      );
+    }
+
     const isNoFeedFound =
-      validationError.errorCode && NO_FEED_FOUND_CODES.includes(validationError.errorCode);
+      validationError.errorCode &&
+      NO_FEED_FOUND_CODES.includes(validationError.errorCode);
 
     if (isNoFeedFound) {
       return (
@@ -194,7 +271,8 @@ export const UrlValidationResult = ({
               <Alert.Title>Couldn&apos;t find a feed</Alert.Title>
               <Alert.Description>
                 <Text fontSize="sm" mb={2} color="fg">
-                  We couldn&apos;t detect a news feed at this URL. The site may not publish one.
+                  We couldn&apos;t detect a news feed at this URL. The site may
+                  not publish one.
                 </Text>
                 <Button
                   size="sm"
@@ -223,9 +301,12 @@ export const UrlValidationResult = ({
                 Double-check the URL for typos or missing parts
               </Box>
               <Box as="li" mb={1}>
-                Look for an RSS icon or &quot;Subscribe&quot; link on the website
+                Look for an RSS icon or &quot;Subscribe&quot; link on the
+                website
               </Box>
-              <Box as="li">Search Google for the site name + &quot;RSS feed&quot;</Box>
+              <Box as="li">
+                Search Google for the site name + &quot;RSS feed&quot;
+              </Box>
             </Box>
           </Panel>
         </Box>
@@ -234,7 +315,10 @@ export const UrlValidationResult = ({
 
     return (
       <Box mt={3}>
-        <InlineErrorAlert title="Failed to validate feed" description={validationError.message} />
+        <InlineErrorAlert
+          title="Failed to validate feed"
+          description={validationError.message}
+        />
         <FixFeedRequestsCTA url={url} onCorrected={onRetryValidation} />
       </Box>
     );

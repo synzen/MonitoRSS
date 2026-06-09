@@ -69,6 +69,11 @@ export E2E_MONGO_PORT=$((27019 + OFF))
 export E2E_MOCK_RSS_PORT=$((3001 + OFF))
 export E2E_MOCK_DISCORD_PORT=$((3002 + OFF))
 
+# Enable the mandatory-Reddit-connection gate for the mocked suite so the
+# gate-render flow can be exercised. Reddit OAuth itself is never hit (the gate
+# short-circuits before any outbound request), so any non-empty id will do.
+export BACKEND_API_REDDIT_CLIENT_ID="${BACKEND_API_REDDIT_CLIENT_ID:-e2e-reddit-client-id}"
+
 if [ "$E2E_INSTANCE" = 0 ]; then
   COMPOSE_PROJECT_NAME="monitorss-e2e"
   INSTANCE_SUFFIX=""

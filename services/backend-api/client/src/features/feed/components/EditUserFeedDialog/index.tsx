@@ -11,6 +11,10 @@ import {
   InlineErrorIncompleteFormAlert,
 } from "../../../../components/InlineErrorAlert";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
+import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
+import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
+import type ApiAdapterError from "@/utils/ApiAdapterError";
+import { useUserMe } from "../../../discordUser";
 import {
   DialogRoot,
   DialogContent,
@@ -35,8 +39,13 @@ interface Props {
   onCloseRef?: React.RefObject<HTMLButtonElement>;
   isOpen: boolean;
   onClose: () => void;
-  error?: string;
+  error?: ApiAdapterError | null;
 }
+
+const RESOLVABLE_ERRORS: string[] = [
+  ApiErrorCode.FEED_REQUEST_FORBIDDEN,
+  ApiErrorCode.FEED_REQUEST_TOO_MANY_REQUESTS,
+];
 
 export const EditUserFeedDialog: React.FC<Props> = ({
   onUpdate,
@@ -67,9 +76,13 @@ export const EditUserFeedDialog: React.FC<Props> = ({
     reset: resetValidationMutation,
     status: validationStatus,
   } = useCreateUserFeedUrlValidation();
-  const error = updateError || validationError?.message;
+  const error = updateError || validationError;
   const isConfirming = !!feedUrlValidationData?.result.resolvedToUrl;
   const isLoading = isSubmitting || validationStatus === "loading";
+  const canResolveError = !!error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
+  const isRedditConnectionRequired =
+    error?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
+  const showCta = canResolveError || isRedditConnectionRequired;
 
   const onSubmit = async ({ title, url }: FormData) => {
     if (!isDirty) {
@@ -95,6 +108,25 @@ export const EditUserFeedDialog: React.FC<Props> = ({
       // Surfaced to the user via the `error` prop; keep the dialog open on failure
     }
   };
+
+  // Re-run the blocked save once Reddit connects. The connect button lives inside
+  // FixFeedRequestsCTA, which unmounts the instant the account becomes active - so the retry can't
+  // be driven from its onConnected callback (it would race its own unmount). This dialog survives the
+  // transition, so it owns the retry: on the not-connected -> connected edge while a Reddit gate is
+  // showing, re-submit the form.
+  const { data: userMe } = useUserMe();
+  const hasRedditConnected =
+    userMe?.result.externalAccounts?.find((e) => e.type === "reddit")?.status === "ACTIVE";
+  const prevHasRedditConnectedRef = useRef(hasRedditConnected);
+
+  useEffect(() => {
+    const justConnected = hasRedditConnected && !prevHasRedditConnectedRef.current;
+    prevHasRedditConnectedRef.current = hasRedditConnected;
+
+    if (justConnected && showCta) {
+      handleSubmit(onSubmit)();
+    }
+  }, [hasRedditConnected]);
 
   useEffect(() => {
     reset(defaultValues);
@@ -208,8 +240,14 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                 </Field>
               </Stack>
             )}
-            {error && (
-              <InlineErrorAlert title={t("common.errors.failedToSave")} description={error} />
+            {error && !showCta && (
+              <InlineErrorAlert title={t("common.errors.failedToSave")} description={error.message} />
+            )}
+            {showCta && (
+              <FixFeedRequestsCTA
+                url={urlFromForm || ""}
+                variant={isRedditConnectionRequired ? "required" : "rate-limited"}
+              />
             )}
             {isSubmitted && formErrorCount > 0 && (
               <InlineErrorIncompleteFormAlert fieldCount={formErrorCount} />
@@ -217,7 +255,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
           </Stack>
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
+          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
             <span>{t("common.buttons.cancel")}</span>
           </Button>
           <PrimaryActionButton
@@ -230,8 +268,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
               handleSubmit(onSubmit)();
             }}
           >
-            <span>{isLoading && "Saving..."}</span>
-            <span>{!isLoading && t("common.buttons.save")}</span>
+            <span>{isLoading ? "Saving..." : t("common.buttons.save")}</span>
           </PrimaryActionButton>
         </DialogFooter>
       </DialogContent>
