@@ -439,7 +439,7 @@ async function startServiceMode(
       // Acquire processing lock to prevent concurrent processing of same feed
       const lockAcquired = await infrastructure.processingLock.acquire(feedId);
       if (!lockAcquired) {
-        logger.debug(
+        logger.info(
           `User feed event for feed ${feedId} is already being processed, ignoring`
         );
         return;
