@@ -17,6 +17,7 @@ import {
   UserFeedDisabledCode as RepoUserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../../src/repositories/shared/enums";
+import { RedditConnectionRequiredException } from "../../src/shared/exceptions/reddit.exceptions";
 import { createUserFeedsHarness } from "../helpers/user-feeds.harness";
 import { createMockDiscordChannelConnection } from "../helpers/mock-factories";
 import { UserFeedCopyableSetting } from "../../src/services/user-feeds/types";
@@ -106,6 +107,105 @@ describe("UserFeedsService", { concurrency: true }, () => {
       ]);
 
       assert.strictEqual(result.length, 2);
+    });
+  });
+
+  describe("Reddit connection gate", () => {
+    const REDDIT_URL = "https://www.reddit.com/r/gaming/.rss";
+    const REDDIT_CLIENT_ID = "test-reddit-client-id";
+    // No accessToken: the gate only inspects type + status, and omitting the
+    // token keeps getFeedRequestLookupDetails out of the decrypt path (a bogus
+    // token would fail to decrypt).
+    const activeReddit = [{ type: "reddit", status: "ACTIVE", data: {} }];
+    const revokedReddit = [{ type: "reddit", status: "REVOKED", data: {} }];
+
+    const addReddit = (ctx: ReturnType<typeof harness.createContext>) =>
+      ctx.service.addFeed(
+        { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+        { url: REDDIT_URL },
+      );
+
+    const validateReddit = (ctx: ReturnType<typeof harness.createContext>) =>
+      ctx.service.validateFeedUrl(
+        { discordUserId: ctx.discordUserId },
+        { url: REDDIT_URL },
+      );
+
+    describe("when reddit oauth is configured", () => {
+      it("rejects addFeed for a reddit url without an active connection", async () => {
+        const ctx = harness.createContext({ redditClientId: REDDIT_CLIENT_ID });
+
+        await assert.rejects(addReddit(ctx), RedditConnectionRequiredException);
+      });
+
+      it("rejects validateFeedUrl for a reddit url without an active connection", async () => {
+        const ctx = harness.createContext({ redditClientId: REDDIT_CLIENT_ID });
+
+        await assert.rejects(
+          validateReddit(ctx),
+          RedditConnectionRequiredException,
+        );
+      });
+
+      it("rejects when the reddit connection is REVOKED", async () => {
+        const ctx = harness.createContext({
+          redditClientId: REDDIT_CLIENT_ID,
+          externalCredentials: revokedReddit,
+        });
+
+        await assert.rejects(addReddit(ctx), RedditConnectionRequiredException);
+      });
+
+      it("allows addFeed for a reddit url with an ACTIVE connection", async () => {
+        const ctx = harness.createContext({
+          redditClientId: REDDIT_CLIENT_ID,
+          externalCredentials: activeReddit,
+          feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+        });
+
+        const feed = await addReddit(ctx);
+
+        assert.ok(feed.id);
+      });
+
+      it("does not gate non-reddit urls", async () => {
+        const ctx = harness.createContext({
+          redditClientId: REDDIT_CLIENT_ID,
+          feedHandler: {
+            url: "https://example.com/feed.xml",
+            feedTitle: "Example",
+          },
+        });
+
+        const feed = await ctx.service.addFeed(
+          { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+          { url: "https://example.com/feed.xml" },
+        );
+
+        assert.ok(feed.id);
+      });
+    });
+
+    describe("when reddit oauth is not configured (self-host)", () => {
+      it("allows addFeed for a reddit url even without a connection", async () => {
+        const ctx = harness.createContext({
+          feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+        });
+
+        const feed = await addReddit(ctx);
+
+        assert.ok(feed.id);
+      });
+
+      it("allows validateFeedUrl for a reddit url even without a connection", async () => {
+        const ctx = harness.createContext({
+          feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+        });
+
+        const result = await validateReddit(ctx);
+
+        assert.strictEqual(result.feedTitle, "gaming");
+      });
     });
   });
 

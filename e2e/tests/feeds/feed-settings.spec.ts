@@ -916,4 +916,40 @@ test.describe("Feed Settings", () => {
       }
     });
   });
+
+  test.describe("Reddit connection gate when editing a feed URL", () => {
+    test("changing a feed's URL to a subreddit without a connection shows the connect prompt, not a raw error", async ({
+      page,
+      testFeed,
+    }) => {
+      await page.goto(`/feeds/${testFeed.id}`);
+      await expect(
+        page.getByRole("heading", { name: testFeed.title }),
+      ).toBeVisible({ timeout: 10000 });
+
+      await page.getByRole("button", { name: "Feed Actions" }).click();
+      await page.getByRole("menuitem", { name: "Edit" }).click();
+
+      const editDialog = page.getByRole("dialog");
+      const urlInput = editDialog.getByLabel("RSS Feed Link");
+      await expect(urlInput).toBeVisible({ timeout: 10000 });
+      await urlInput.fill("https://www.reddit.com/r/gaming/.rss");
+
+      await editDialog.getByRole("button", { name: "Save" }).click();
+
+      // The mandatory-connection prompt is rendered inside the dialog instead of a flat error.
+      await expect(
+        page.getByText("Connect your Reddit account to continue"),
+      ).toBeVisible({ timeout: 30000 });
+      await expect(
+        page.getByRole("button", { name: "Connect Reddit in popup window" }),
+      ).toBeVisible();
+
+      // It must NOT fall back to the generic save-failure alert.
+      await expect(page.getByText("Failed to save changes")).toHaveCount(0);
+
+      // The dialog stays open so the user can connect and retry.
+      await expect(editDialog).toBeVisible();
+    });
+  });
 });

@@ -264,6 +264,10 @@ export class UserMongooseRepository
       ...(credential.expireAt && {
         "externalCredentials.$.expireAt": credential.expireAt,
       }),
+      // A re-auth produces fresh, valid tokens, so a previously revoked/expired credential is
+      // active again. Without this the record keeps its prior REVOKED status and the UI never
+      // leaves the disconnected state after reconnecting.
+      "externalCredentials.$.status": UserExternalCredentialStatus.Active,
     };
 
     const result = await this.model.updateOne(

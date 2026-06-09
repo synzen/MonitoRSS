@@ -7,13 +7,29 @@ import { openRedditLogin } from "@/utils/openRedditLogin";
 interface Props {
   size?: "sm" | "md" | "lg";
   colorPalette?: string;
+  /**
+   * "primary" renders a solid accent fill for use as the main action of a prompt (the mandatory
+   * connection gate). Omit for the default low-emphasis button (settings, rate-limit hint).
+   */
+  emphasis?: "primary";
   onConnected?: () => void;
 }
 
-export const RedditLoginButton = ({ size, colorPalette, onConnected }: Props) => {
+export const RedditLoginButton = ({
+  size,
+  colorPalette,
+  emphasis,
+  onConnected,
+}: Props) => {
   const { data, refetch, fetchStatus } = useUserMe();
 
-  const redditConnected = data?.result.externalAccounts?.find((e) => e.type === "reddit");
+  const redditAccount = data?.result.externalAccounts?.find(
+    (e) => e.type === "reddit",
+  );
+  // A revoked/expired account record still exists, so "is there a record" is the wrong signal for a
+  // successful connection - it would fire onConnected (and any retry it drives) while the account is
+  // still unusable, re-hitting the server-side gate. Only an ACTIVE account is actually connected.
+  const isRedditActive = redditAccount?.status === "ACTIVE";
 
   useEffect(() => {
     const messageListener = (e: MessageEvent) => {
@@ -30,14 +46,15 @@ export const RedditLoginButton = ({ size, colorPalette, onConnected }: Props) =>
   }, []);
 
   useEffect(() => {
-    if (redditConnected) {
+    if (isRedditActive) {
       onConnected?.();
     }
-  }, [redditConnected]);
+  }, [isRedditActive]);
 
   return (
     <Button
       size={size || "sm"}
+      variant={emphasis === "primary" ? "solid" : undefined}
       aria-disabled={fetchStatus === "fetching"}
       onClick={() => {
         if (fetchStatus === "fetching") {
@@ -46,12 +63,14 @@ export const RedditLoginButton = ({ size, colorPalette, onConnected }: Props) =>
 
         openRedditLogin();
       }}
-      colorPalette={colorPalette}
+      colorPalette={emphasis === "primary" ? "brand" : colorPalette}
       aria-label={
-        redditConnected ? "Reconnect Reddit in popup window" : "Connect Reddit in popup window"
+        redditAccount
+          ? "Reconnect Reddit in popup window"
+          : "Connect Reddit in popup window"
       }
     >
-      {redditConnected ? "Reconnect" : "Connect"}
+      {redditAccount ? "Reconnect" : "Connect"}
       <Icon as={FaUpRightFromSquare} />
     </Button>
   );

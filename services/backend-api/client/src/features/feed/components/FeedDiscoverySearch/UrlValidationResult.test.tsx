@@ -27,13 +27,35 @@ vi.mock("../../hooks/useDeleteUserFeed", () => ({
   }),
 }));
 
+vi.mock("@/features/discordUser", () => ({
+  useUserMe: () => ({ data: { result: { externalAccounts: undefined } } }),
+}));
+
 vi.mock("../FixFeedRequestsCTA", () => ({
-  FixFeedRequestsCTA: ({ url }: { url: string }) => {
-    const isReddit = /^http(s?):\/\/(www.)?(\w+\.)?reddit\.com\/r\//i.test(url);
+  FixFeedRequestsCTA: ({
+    url,
+    variant,
+    onCorrected,
+  }: {
+    url: string;
+    variant?: string;
+    onCorrected?: () => void;
+  }) => {
+    const isReddit = /^http(s?):\/\/(www.)?(\w+\.)?reddit\.com\//i.test(url);
 
     if (!isReddit) return null;
 
-    return <div data-testid="fix-feed-requests-cta" data-url={url} />;
+    return (
+      <div
+        data-testid="fix-feed-requests-cta"
+        data-url={url}
+        data-variant={variant ?? "rate-limited"}
+      >
+        <button type="button" onClick={() => onCorrected?.()}>
+          mock-connect-reddit
+        </button>
+      </div>
+    );
   },
 }));
 
@@ -47,7 +69,9 @@ const defaultProps = {
   onRetryValidation: vi.fn(),
 };
 
-const renderComponent = (props: Partial<React.ComponentProps<typeof UrlValidationResult>> = {}) => {
+const renderComponent = (
+  props: Partial<React.ComponentProps<typeof UrlValidationResult>> = {},
+) => {
   const user = userEvent.setup();
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -149,7 +173,9 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      expect(screen.getAllByText("blog.example.com").length).toBeGreaterThanOrEqual(1);
+      expect(
+        screen.getAllByText("blog.example.com").length,
+      ).toBeGreaterThanOrEqual(1);
     });
 
     it("shows add button for resolved URL", () => {
@@ -164,7 +190,9 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      expect(screen.getByRole("button", { name: /add example feed/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /add example feed/i }),
+      ).toBeInTheDocument();
     });
 
     it("shows favicon using resolved URL domain", () => {
@@ -212,7 +240,8 @@ describe("UrlValidationResult", () => {
         validationStatus: "success",
         validationData: {
           result: {
-            resolvedToUrl: "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
+            resolvedToUrl:
+              "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
             feedTitle: "MKBHD",
           },
         },
@@ -242,13 +271,16 @@ describe("UrlValidationResult", () => {
         validationStatus: "success",
         validationData: {
           result: {
-            resolvedToUrl: "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
+            resolvedToUrl:
+              "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
             feedTitle: "MKBHD",
           },
         },
       });
 
-      expect(screen.getByRole("button", { name: /add mkbhd feed/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /add mkbhd feed/i }),
+      ).toBeInTheDocument();
     });
 
     it("still shows 'Originally entered' for unknown domain with resolved URL", () => {
@@ -300,7 +332,9 @@ describe("UrlValidationResult", () => {
         onTrySearchByName,
       });
 
-      await user.click(screen.getByRole("button", { name: /try searching by name instead/i }));
+      await user.click(
+        screen.getByRole("button", { name: /try searching by name instead/i }),
+      );
 
       expect(onTrySearchByName).toHaveBeenCalledTimes(1);
     });
@@ -313,7 +347,9 @@ describe("UrlValidationResult", () => {
         }),
       });
 
-      expect(screen.getByRole("heading", { name: /tips for finding feeds/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: /tips for finding feeds/i }),
+      ).toBeInTheDocument();
     });
 
     it("tips list contains 3 items", () => {
@@ -339,7 +375,9 @@ describe("UrlValidationResult", () => {
         }),
       });
 
-      expect(screen.queryByText("Tips for finding feeds")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Tips for finding feeds"),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -368,7 +406,10 @@ describe("UrlValidationResult", () => {
       const cta = screen.getByTestId("fix-feed-requests-cta");
 
       expect(cta).toBeInTheDocument();
-      expect(cta).toHaveAttribute("data-url", "https://www.reddit.com/r/gaming/.rss");
+      expect(cta).toHaveAttribute(
+        "data-url",
+        "https://www.reddit.com/r/gaming/.rss",
+      );
     });
 
     it("FixFeedRequestsCTA not rendered for non-Reddit errors", () => {
@@ -380,7 +421,104 @@ describe("UrlValidationResult", () => {
         }),
       });
 
-      expect(screen.queryByTestId("fix-feed-requests-cta")).not.toBeInTheDocument();
+      expect(
+        screen.queryByTestId("fix-feed-requests-cta"),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Reddit connection required (validation error)", () => {
+    it("renders the connect prompt in 'required' variant, not a red error", () => {
+      renderComponent({
+        url: "https://www.reddit.com/r/gaming/.rss",
+        validationStatus: "error",
+        validationError: new ApiAdapterError("Connect reddit", {
+          errorCode: ApiErrorCode.REDDIT_CONNECTION_REQUIRED,
+          statusCode: 403,
+        }),
+      });
+
+      const cta = screen.getByTestId("fix-feed-requests-cta");
+      expect(cta).toBeInTheDocument();
+      expect(cta).toHaveAttribute("data-variant", "required");
+      expect(
+        screen.queryByText("Failed to validate feed"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("auto-retries validation when the connect prompt reports success", async () => {
+      const onRetryValidation = vi.fn();
+      const { user } = renderComponent({
+        url: "https://www.reddit.com/r/gaming/.rss",
+        validationStatus: "error",
+        validationError: new ApiAdapterError("Connect reddit", {
+          errorCode: ApiErrorCode.REDDIT_CONNECTION_REQUIRED,
+          statusCode: 403,
+        }),
+        onRetryValidation,
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: /mock-connect-reddit/i }),
+      );
+
+      expect(onRetryValidation).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("Reddit connection required (add error)", () => {
+    it("renders the connect prompt instead of a red 'Failed to add feed' alert", async () => {
+      mockMutateAsync.mockRejectedValue(
+        new ApiAdapterError("Connect reddit", {
+          errorCode: ApiErrorCode.REDDIT_CONNECTION_REQUIRED,
+          statusCode: 403,
+        }),
+      );
+
+      const { user } = renderComponent({
+        url: "https://www.reddit.com/r/gaming/.rss",
+        validationStatus: "success",
+        validationData: {
+          result: { feedTitle: "gaming" },
+        },
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: /add gaming feed/i }),
+      );
+
+      const cta = screen.getByTestId("fix-feed-requests-cta");
+      expect(cta).toBeInTheDocument();
+      expect(cta).toHaveAttribute("data-variant", "required");
+      expect(screen.queryByText("Failed to add feed")).not.toBeInTheDocument();
+    });
+
+    it("auto-retries the add when the connect prompt reports success", async () => {
+      mockMutateAsync.mockRejectedValueOnce(
+        new ApiAdapterError("Connect reddit", {
+          errorCode: ApiErrorCode.REDDIT_CONNECTION_REQUIRED,
+          statusCode: 403,
+        }),
+      );
+      mockMutateAsync.mockResolvedValueOnce({ result: { id: "feed-123" } });
+
+      const { user } = renderComponent({
+        url: "https://www.reddit.com/r/gaming/.rss",
+        validationStatus: "success",
+        validationData: {
+          result: { feedTitle: "gaming" },
+        },
+      });
+
+      await user.click(
+        screen.getByRole("button", { name: /add gaming feed/i }),
+      );
+      await user.click(
+        screen.getByRole("button", { name: /mock-connect-reddit/i }),
+      );
+
+      expect(mockMutateAsync).toHaveBeenCalledTimes(2);
+      expect(await screen.findByText("Added")).toBeInTheDocument();
     });
   });
 
@@ -395,7 +533,9 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(screen.getByRole("button", { name: /add test feed feed/i }));
+      await user.click(
+        screen.getByRole("button", { name: /add test feed feed/i }),
+      );
 
       expect(mockMutateAsync).toHaveBeenCalledWith({
         details: { url: "https://example.com/feed.xml", title: "Test Feed" },
@@ -413,10 +553,15 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(screen.getByRole("button", { name: /add blog\.example\.com feed/i }));
+      await user.click(
+        screen.getByRole("button", { name: /add blog\.example\.com feed/i }),
+      );
 
       expect(mockMutateAsync).toHaveBeenCalledWith({
-        details: { url: "https://blog.example.com/feed.xml", title: "blog.example.com" },
+        details: {
+          url: "https://blog.example.com/feed.xml",
+          title: "blog.example.com",
+        },
       });
     });
 
@@ -433,7 +578,9 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(screen.getByRole("button", { name: /add example\.com feed/i }));
+      await user.click(
+        screen.getByRole("button", { name: /add example\.com feed/i }),
+      );
 
       expect(mockMutateAsync).toHaveBeenCalledWith({
         details: { url: "https://example.com/rss.xml", title: "example.com" },
@@ -450,10 +597,14 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(screen.getByRole("button", { name: /add test feed feed/i }));
+      await user.click(
+        screen.getByRole("button", { name: /add test feed feed/i }),
+      );
 
       expect(screen.getByText("Added")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /go to feed settings/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /go to feed settings/i }),
+      ).toBeInTheDocument();
     });
 
     it("add failure: InlineErrorAlert below card, button stays enabled", async () => {
@@ -470,10 +621,14 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(screen.getByRole("button", { name: /add test feed feed/i }));
+      await user.click(
+        screen.getByRole("button", { name: /add test feed feed/i }),
+      );
 
       expect(screen.getByText("Failed to add feed")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /add test feed feed/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /add test feed feed/i }),
+      ).toBeInTheDocument();
     });
 
     it('FEED_LIMIT_REACHED add error: "Limit reached" button, no inline alert', async () => {
@@ -490,7 +645,9 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(screen.getByRole("button", { name: /add test feed feed/i }));
+      await user.click(
+        screen.getByRole("button", { name: /add test feed feed/i }),
+      );
 
       expect(screen.getByText("Limit reached")).toBeInTheDocument();
       expect(screen.queryByText("Failed to add feed")).not.toBeInTheDocument();

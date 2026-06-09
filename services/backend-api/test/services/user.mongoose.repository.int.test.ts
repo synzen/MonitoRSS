@@ -219,4 +219,85 @@ describe("UserMongooseRepository Integration", { concurrency: false }, () => {
       assert.deepStrictEqual(result, [feedA._id.toString()]);
     });
   });
+
+  describe("setExternalCredential", () => {
+    const createUserWithReddit = async (
+      status: UserExternalCredentialStatus,
+    ) => {
+      return ctx.connection.model("User").create({
+        discordUserId: randomUUID(),
+        externalCredentials: [
+          {
+            type: UserExternalCredentialType.Reddit,
+            status,
+            data: { accessToken: "old", refreshToken: "old" },
+            expireAt: new Date(Date.now() - 1000),
+          },
+        ],
+      });
+    };
+
+    const readRedditCredential = async (userId: string) => {
+      return ctx.container.userRepository.getExternalCredentials(
+        userId,
+        UserExternalCredentialType.Reddit,
+      );
+    };
+
+    it("reactivates a revoked credential on re-auth", async () => {
+      const user = await createUserWithReddit(
+        UserExternalCredentialStatus.Revoked,
+      );
+
+      await ctx.container.userRepository.setExternalCredential(
+        user._id.toString(),
+        {
+          type: UserExternalCredentialType.Reddit,
+          data: { accessToken: "new", refreshToken: "new" },
+          expireAt: new Date(Date.now() + 100000),
+        },
+      );
+
+      const cred = await readRedditCredential(user._id.toString());
+      assert.strictEqual(cred?.status, UserExternalCredentialStatus.Active);
+      assert.strictEqual(cred?.data.accessToken, "new");
+    });
+
+    it("keeps an active credential active and updates its tokens", async () => {
+      const user = await createUserWithReddit(
+        UserExternalCredentialStatus.Active,
+      );
+
+      await ctx.container.userRepository.setExternalCredential(
+        user._id.toString(),
+        {
+          type: UserExternalCredentialType.Reddit,
+          data: { accessToken: "new", refreshToken: "new" },
+          expireAt: new Date(Date.now() + 100000),
+        },
+      );
+
+      const cred = await readRedditCredential(user._id.toString());
+      assert.strictEqual(cred?.status, UserExternalCredentialStatus.Active);
+      assert.strictEqual(cred?.data.accessToken, "new");
+    });
+
+    it("creates an active credential when none exists", async () => {
+      const user = await ctx.connection.model("User").create({
+        discordUserId: randomUUID(),
+      });
+
+      await ctx.container.userRepository.setExternalCredential(
+        user._id.toString(),
+        {
+          type: UserExternalCredentialType.Reddit,
+          data: { accessToken: "tok", refreshToken: "tok" },
+          expireAt: new Date(Date.now() + 100000),
+        },
+      );
+
+      const cred = await readRedditCredential(user._id.toString());
+      assert.strictEqual(cred?.status, UserExternalCredentialStatus.Active);
+    });
+  });
 });

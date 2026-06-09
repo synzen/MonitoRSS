@@ -1120,4 +1120,41 @@ test.describe("Feed Discovery", () => {
       });
     });
   });
+
+  test.describe("Reddit connection gate", () => {
+    test("pasting a subreddit URL without a connection shows the connect prompt, not an Add button", async ({
+      page,
+    }) => {
+      test.setTimeout(60000);
+      await page.goto("/feeds");
+      await expect(
+        page.getByRole("heading", {
+          name: "Get news delivered to your Discord",
+        }),
+      ).toBeVisible({ timeout: 15000 });
+
+      const searchInput = page.getByRole("textbox", {
+        name: "Search popular feeds or paste a URL",
+      });
+      await searchInput.fill("https://www.reddit.com/r/gaming/.rss");
+      await page.getByRole("button", { name: "Go", exact: true }).click();
+
+      // The mandatory-connection prompt is rendered in place of the feed card.
+      await expect(
+        page.getByText("Connect your Reddit account to continue"),
+      ).toBeVisible({ timeout: 30000 });
+      await expect(
+        page.getByRole("button", { name: "Connect Reddit in popup window" }),
+      ).toBeVisible();
+
+      // Gate short-circuits before any fetch: no feed card / Add button, and no
+      // generic validation-failure alert.
+      await expect(
+        page.getByRole("button", { name: /^Add .+ feed$/i }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByText("Failed to validate feed"),
+      ).toHaveCount(0);
+    });
+  });
 });

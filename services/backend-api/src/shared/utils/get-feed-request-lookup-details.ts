@@ -1,7 +1,7 @@
 import { UserExternalCredentialType } from "../../repositories/shared/enums";
 import type { FeedRequestLookupDetails } from "../types/feed-request-lookup-details.type";
 import { decrypt } from "./decrypt";
-import { getRedditUrlRegex } from "./get-reddit-url-regex";
+import { isRedditFeedUrl } from "./is-reddit-feed-url";
 
 interface FeedInput {
   url: string;
@@ -31,7 +31,7 @@ export function getFeedRequestLookupDetails({
     return null;
   }
 
-  if (!getRedditUrlRegex().test(url)) {
+  if (!isRedditFeedUrl(url)) {
     return null;
   }
 

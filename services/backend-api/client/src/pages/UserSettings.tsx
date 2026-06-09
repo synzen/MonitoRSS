@@ -1,5 +1,4 @@
 import {
-  Badge,
   Box,
   Button,
   Flex,
@@ -36,10 +35,7 @@ import { ProductKey } from "../constants";
 
 import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
 import { PricingDialogContext, usePaddleContext } from "@/features/subscriptionProducts";
-import { DatePreferencesForm } from "@/features/feed";
-
-import { useRemoveRedditLogin } from "../features/feed/hooks/useRemoveRedditLogin";
-import { RedditLoginButton } from "@/features/discordUser";
+import { DatePreferencesForm, RedditConnectionSetting } from "@/features/feed";
 import {
   PageAlertContextOutlet,
   PageAlertProvider,
@@ -208,24 +204,8 @@ const UserSettingsInner = () => {
     reset,
   } = formMethods;
   const formFocusRef = useRef<HTMLFormElement>(null);
-  const { mutateAsync: removeRedditLogin, status: removeRedditLoginStatus } =
-    useRemoveRedditLogin();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
   const hasLoaded = status !== "loading";
-
-  const onClickRemoveRedditLogin = async () => {
-    try {
-      await removeRedditLogin();
-      createSuccessAlert({
-        title: "Successfully removed Reddit login.",
-      });
-    } catch (err) {
-      createErrorAlert({
-        title: "Failed to remove Reddit login.",
-        description: (err as Error).message,
-      });
-    }
-  };
 
   useEffect(() => {
     reset(convertUserMeToFormData(data));
@@ -346,8 +326,6 @@ const UserSettingsInner = () => {
   }
 
   const isPastDue = subscription?.status === "PAST_DUE";
-
-  const redditConnected = data?.result.externalAccounts?.some((a) => a.type === "reddit");
 
   return (
     <Stack gap={8}>
@@ -621,48 +599,19 @@ const UserSettingsInner = () => {
         <Heading as="h2" size="md">
           Integrations
         </Heading>
-        <HStack
-          justifyContent="space-between"
-          borderStyle="solid"
-          alignItems="flex-start"
-          borderWidth={1}
-          borderColor="border"
-          rounded="l3"
-          p={4}
-          gap={4}
-          flexWrap="wrap"
-        >
-          <Stack>
-            <Stack gap={1}>
-              <HStack alignItems="center" gap={2}>
-                <Text fontWeight={600}>Reddit</Text>
-                {redditConnected && <Badge colorPalette="green">Connected</Badge>}
-                {!redditConnected && <Badge>Not Connected</Badge>}
-              </HStack>
-              <Text color="fg.muted" fontSize="sm">
-                Allows MonitoRSS to use rate limits specific to your Reddit account, which has much
-                higher rate limit quotas than the global rate limits. All Reddit feeds will
-                automatically use your Reddit account if connected.
-              </Text>
-            </Stack>
-          </Stack>
-          <HStack>
-            <RedditLoginButton />
-            {redditConnected && (
-              <SafeLoadingButton
-                colorPalette="red"
-                variant="ghost"
-                size="sm"
-                loading={removeRedditLoginStatus === "loading"}
-                onClick={() => {
-                  onClickRemoveRedditLogin();
-                }}
-              >
-                <span>Disconnect</span>
-              </SafeLoadingButton>
-            )}
-          </HStack>
-        </HStack>
+        <RedditConnectionSetting
+          onRemoveSuccess={() =>
+            createSuccessAlert({
+              title: "Successfully removed Reddit login.",
+            })
+          }
+          onRemoveError={(description) =>
+            createErrorAlert({
+              title: "Failed to remove Reddit login.",
+              description,
+            })
+          }
+        />
       </Stack>
       <Separator />
       <FormProvider {...formMethods}>

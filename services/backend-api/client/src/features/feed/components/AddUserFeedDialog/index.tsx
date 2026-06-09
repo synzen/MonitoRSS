@@ -86,7 +86,11 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
     offset: 0,
   });
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
-  const { mutateAsync, error: createError, reset: resetMutation } = useCreateUserFeed();
+  const {
+    mutateAsync,
+    error: createError,
+    reset: resetMutation,
+  } = useCreateUserFeed();
   const {
     data: feedUrlValidationData,
     mutateAsync: createUserFeedUrlValidation,
@@ -103,7 +107,9 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
 
     try {
       if (!feedUrlValidationData) {
-        const { result } = await createUserFeedUrlValidation({ details: { url } });
+        const { result } = await createUserFeedUrlValidation({
+          details: { url },
+        });
 
         if (result.resolvedToUrl) {
           return;
@@ -138,9 +144,14 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
   }, [open]);
 
   const error = createError || validationError;
-  const canResolveError = error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
+  const canResolveError =
+    error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
+  const isRedditConnectionRequired =
+    error?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
   const isAtLimit =
-    userFeedsResults && discordUserMe && userFeedsResults?.total >= discordUserMe?.maxUserFeeds;
+    userFeedsResults &&
+    discordUserMe &&
+    userFeedsResults?.total >= discordUserMe?.maxUserFeeds;
 
   return (
     <>
@@ -150,7 +161,9 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
         })
       ) : (
         <PrimaryActionButton onClick={() => setOpen(true)} variant="solid">
-          <span>{t("features.userFeeds.components.addUserFeedDialog.addButton")}</span>
+          <span>
+            {t("features.userFeeds.components.addUserFeedDialog.addButton")}
+          </span>
         </PrimaryActionButton>
       )}
       <DialogRoot open={open} onOpenChange={(e) => setOpen(e.open)} size="xl">
@@ -190,8 +203,8 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                         </HStack>
                       </Link>{" "}
                       <Text display="inline">
-                        instead that might be related to the url you provided. Do you want to use
-                        this feed link instead?
+                        instead that might be related to the url you provided.
+                        Do you want to use this feed link instead?
                       </Text>
                     </Box>
                     <span
@@ -238,7 +251,11 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                       <Heading as="h2" size="md" id="limits">
                         Limits
                       </Heading>
-                      <Button variant="outline" onClick={onOpenPricingDialog} size="sm">
+                      <Button
+                        variant="outline"
+                        onClick={onOpenPricingDialog}
+                        size="sm"
+                      >
                         <Icon as={FaArrowUp} />
                         Increase Limits
                       </Button>
@@ -252,9 +269,13 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                           color={isAtLimit ? "text.error" : undefined}
                           hidden={!userFeedsResults || !discordUserMe}
                         >
-                          {userFeedsResults?.total}/{discordUserMe?.maxUserFeeds}
+                          {userFeedsResults?.total}/
+                          {discordUserMe?.maxUserFeeds}
                         </Text>
-                        <Spinner hidden={!!userFeedsResults && !!discordUserMe} size="sm" />
+                        <Spinner
+                          hidden={!!userFeedsResults && !!discordUserMe}
+                          size="sm"
+                        />
                       </Stack>
                       <Stack flex={1}>
                         <Heading as="h3" size="sm" fontWeight="semibold">
@@ -262,10 +283,12 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                         </Heading>
                         <Text>
                           {userMe &&
-                            userMe.result.subscription.product.key !== ProductKey.Free &&
+                            userMe.result.subscription.product.key !==
+                              ProductKey.Free &&
                             1000}
                           {userMe &&
-                            userMe.result.subscription.product.key === ProductKey.Free &&
+                            userMe.result.subscription.product.key ===
+                              ProductKey.Free &&
                             50}
                           {!userMe && <Spinner size="sm" />}
                         </Text>
@@ -293,7 +316,9 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                     />
                   </Field>
                   <Field
-                    label={t("features.userFeeds.components.addUserFeedDialog.formTitleLabel")}
+                    label={t(
+                      "features.userFeeds.components.addUserFeedDialog.formTitleLabel",
+                    )}
                     helperText="An optional title for your own reference. If left blank, the feed's title will be automatically detected."
                     errorText={errors.title?.message}
                   >
@@ -301,15 +326,28 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                       name="title"
                       control={control}
                       render={({ field }) => (
-                        <Input aria-readonly={isSubmitting} {...field} value={field.value || ""} />
+                        <Input
+                          aria-readonly={isSubmitting}
+                          {...field}
+                          value={field.value || ""}
+                        />
                       )}
                     />
                   </Field>
                   <Separator />
-                  <Heading as="h2" size="sm" fontWeight="medium" id="faq-accordion">
+                  <Heading
+                    as="h2"
+                    size="sm"
+                    fontWeight="medium"
+                    id="faq-accordion"
+                  >
                     Frequently Asked Questions
                   </Heading>
-                  <AccordionRoot collapsible role="list" aria-labelledby="faq-accordion">
+                  <AccordionRoot
+                    collapsible
+                    role="list"
+                    aria-labelledby="faq-accordion"
+                  >
                     <AccordionItem
                       value="what-is-rss"
                       role="listitem"
@@ -330,8 +368,9 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                       </AccordionItemTrigger>
                       <AccordionItemContent>
                         <Text fontSize={13}>
-                          An RSS feed is a specially-formatted webpage with XML text that&apos;s
-                          designed to contain news articles. An example of an RSS feed link is{" "}
+                          An RSS feed is a specially-formatted webpage with XML
+                          text that&apos;s designed to contain news articles. An
+                          example of an RSS feed link is{" "}
                           <Link
                             href="https://www.ign.com/rss/articles/feed"
                             target="_blank"
@@ -343,8 +382,9 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                           .
                           <br />
                           <br />
-                          To see if a link is a valid RSS feed, you may search for &quot;online feed
-                          validators&quot; and input feed URLs to test.
+                          To see if a link is a valid RSS feed, you may search
+                          for &quot;online feed validators&quot; and input feed
+                          URLs to test.
                         </Text>
                       </AccordionItemContent>
                     </AccordionItem>
@@ -368,10 +408,11 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                       </AccordionItemTrigger>
                       <AccordionItemContent>
                         <Text fontSize={13}>
-                          You can find RSS feed pages by searching for what you&apos;re looking for,
-                          plus &quot;RSS feed&quot;, such as &quot;podcast RSS feeds&quot;. You may
-                          also contact site owners for links to RSS feeds they may have. An example
-                          RSS feed link is{" "}
+                          You can find RSS feed pages by searching for what
+                          you&apos;re looking for, plus &quot;RSS feed&quot;,
+                          such as &quot;podcast RSS feeds&quot;. You may also
+                          contact site owners for links to RSS feeds they may
+                          have. An example RSS feed link is{" "}
                           <Link
                             href="https://www.ign.com/rss/articles/feed"
                             target="_blank"
@@ -383,8 +424,9 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                           .
                           <br />
                           <br />
-                          You may also try submitting links to regular webpages and MonitoRSS will
-                          attempt to find RSS feeds related to the webpage.
+                          You may also try submitting links to regular webpages
+                          and MonitoRSS will attempt to find RSS feeds related
+                          to the webpage.
                         </Text>
                       </AccordionItemContent>
                     </AccordionItem>
@@ -408,23 +450,25 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                       </AccordionItemTrigger>
                       <AccordionItemContent>
                         <Text fontSize={13}>
-                          With RSS, article delivery is not instant. New articles are checked on a
-                          regular interval (every 20 minutes by default for free). Once new articles
-                          are found, they are automatically delivered.
+                          With RSS, article delivery is not instant. New
+                          articles are checked on a regular interval (every 20
+                          minutes by default for free). Once new articles are
+                          found, they are automatically delivered.
                         </Text>
                       </AccordionItemContent>
                     </AccordionItem>
                   </AccordionRoot>
-                  {error && (
+                  {error && !isRedditConnectionRequired && (
                     <InlineErrorAlert
                       title="Failed to add feed"
                       description={
                         error.errorCode === ApiErrorCode.FEED_LIMIT_REACHED ? (
                           <Stack>
                             <Text>
-                              You&apos;ve reached your feed limit. Consider supporting
-                              MonitoRSS&apos;s open-source development by upgrading your plan and
-                              increasing your feed limit.
+                              You&apos;ve reached your feed limit. Consider
+                              supporting MonitoRSS&apos;s open-source
+                              development by upgrading your plan and increasing
+                              your feed limit.
                             </Text>
                             <Box>
                               <Button onClick={onOpenPricingDialog}>
@@ -444,6 +488,13 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                   {canResolveError && (
                     <FixFeedRequestsCTA
                       url={getValues().url}
+                      onCorrected={() => onSubmit(getValues())}
+                    />
+                  )}
+                  {isRedditConnectionRequired && (
+                    <FixFeedRequestsCTA
+                      url={getValues().url}
+                      variant="required"
                       onCorrected={() => onSubmit(getValues())}
                     />
                   )}
@@ -468,11 +519,17 @@ export const AddUserFeedDialog = ({ trigger }: Props) => {
                 }}
                 aria-disabled={isSubmitting}
               >
-                <span>{isConfirming ? "Go back" : t("common.buttons.cancel")}</span>
+                <span>
+                  {isConfirming ? "Go back" : t("common.buttons.cancel")}
+                </span>
               </Button>
               <PrimaryActionButton type="submit" disabled={isSubmitting}>
                 <span>{isSubmitting && "Saving..."}</span>
-                <span>{!isSubmitting && isConfirming && "Add feed with updated link"}</span>
+                <span>
+                  {!isSubmitting &&
+                    isConfirming &&
+                    "Add feed with updated link"}
+                </span>
                 <span>{!isSubmitting && !isConfirming && "Save"}</span>
               </PrimaryActionButton>
             </DialogFooter>
