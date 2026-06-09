@@ -85,11 +85,17 @@ export function createMockSupportersService(
 export function createMockUsersService(
   userId?: string,
   discordUserId?: string,
+  externalCredentials?: Array<{
+    type: string;
+    status: string;
+    data: Record<string, string>;
+  }>,
 ): UserFeedsServiceDeps["usersService"] {
   return {
     getOrCreateUserByDiscordId: async (inputDiscordUserId: string) => ({
       id: userId ?? generateTestId(),
       discordUserId: discordUserId ?? inputDiscordUserId ?? "test-user",
+      externalCredentials,
     }),
     syncLookupKeys: async () => {},
   } as unknown as UserFeedsServiceDeps["usersService"];

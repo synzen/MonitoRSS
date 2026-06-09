@@ -2,11 +2,15 @@ import { randomUUID } from "crypto";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import type { IUser } from "../../repositories/interfaces/user.types";
 import {
+  UserExternalCredentialStatus,
+  UserExternalCredentialType,
   UserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../../repositories/shared/enums";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
 import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request-lookup-details";
+import { isRedditFeedUrl } from "../../shared/utils/is-reddit-feed-url";
+import { RedditConnectionRequiredException } from "../../shared/exceptions/reddit.exceptions";
 import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
 import {
   GetArticlesResponseRequestStatus,
@@ -246,6 +250,8 @@ export class UserFeedsService {
       );
     }
 
+    this.assertRedditConnectionIfRequired(url, user);
+
     const tempLookupDetails = getFeedRequestLookupDetails({
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
       feed: {
@@ -257,6 +263,8 @@ export class UserFeedsService {
 
     const { finalUrl, enableDateChecks, feedTitle } =
       await this.checkUrlIsValid(url, tempLookupDetails);
+
+    this.assertRedditConnectionIfRequired(finalUrl, user);
 
     const {
       connections,
@@ -344,6 +352,8 @@ export class UserFeedsService {
           sourceFeed.user.discordUserId,
         ));
 
+      this.assertRedditConnectionIfRequired(data.url, user);
+
       finalUrl = (
         await this.checkUrlIsValid(
           data.url,
@@ -354,6 +364,8 @@ export class UserFeedsService {
           }),
         )
       ).finalUrl;
+
+      this.assertRedditConnectionIfRequired(finalUrl, user);
       inputUrl = data.url;
     }
 
@@ -1243,6 +1255,8 @@ export class UserFeedsService {
     const user =
       await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
 
+    this.assertRedditConnectionIfRequired(url, user);
+
     const lookupDetails = getFeedRequestLookupDetails({
       feed: { url, feedRequestLookupKey: randomUUID() },
       user: {
@@ -1258,6 +1272,8 @@ export class UserFeedsService {
       url,
       lookupDetails,
     );
+
+    this.assertRedditConnectionIfRequired(finalUrl, user);
 
     if (finalUrl !== url) {
       return {
@@ -1548,6 +1564,28 @@ export class UserFeedsService {
 
   private generateFeedRequestLookupKey(): string {
     return randomUUID();
+  }
+
+  private assertRedditConnectionIfRequired(url: string, user: IUser): void {
+    if (!isRedditFeedUrl(url)) {
+      return;
+    }
+
+    if (!this.deps.config.BACKEND_API_REDDIT_CLIENT_ID) {
+      return;
+    }
+
+    const hasActiveRedditConnection = user.externalCredentials?.some(
+      (cred) =>
+        cred.type === UserExternalCredentialType.Reddit &&
+        cred.status === UserExternalCredentialStatus.Active,
+    );
+
+    if (!hasActiveRedditConnection) {
+      throw new RedditConnectionRequiredException(
+        "Reddit requires a connected account to add Reddit feeds",
+      );
+    }
   }
 
   private async checkUrlIsValid(

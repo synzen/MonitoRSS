@@ -55,6 +55,12 @@ export interface TestContextOptions {
   feedConnectionsDiscordChannelsService?: MockFeedConnectionsDiscordChannelsServiceOptions;
   bannedFeedDetails?: unknown;
   publishMessage?: (queue: string, message: unknown) => Promise<void>;
+  redditClientId?: string;
+  externalCredentials?: Array<{
+    type: string;
+    status: string;
+    data: Record<string, string>;
+  }>;
 }
 
 export interface CreateFeedWithConnectionsInput {
@@ -143,6 +149,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
       const serviceDeps: UserFeedsServiceDeps = {
         config: {
           BACKEND_API_ENCRYPTION_KEY_HEX: DEFAULT_ENCRYPTION_KEY,
+          BACKEND_API_REDDIT_CLIENT_ID: options.redditClientId,
         } as UserFeedsServiceDeps["config"],
         userFeedRepository,
         userRepository,
@@ -168,7 +175,11 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           options.feedFetcherService,
         ),
         feedHandlerService: createMockFeedHandlerService(options.feedHandler),
-        usersService: createMockUsersService(userId, discordUserId),
+        usersService: createMockUsersService(
+          userId,
+          discordUserId,
+          options.externalCredentials,
+        ),
         workspacesService,
         publishMessage: options.publishMessage ?? (async () => {}),
         feedConnectionsDiscordChannelsService,

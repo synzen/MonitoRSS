@@ -1,4 +1,5 @@
 export * from "./RefreshUserFeedButton";
+export * from "./RedditConnectionSetting/RedditConnectionSetting";
 export * from "./EditUserFeedDialog";
 export * from "./UserFeedsTable";
 export * from "./ArticleSelectDialog";

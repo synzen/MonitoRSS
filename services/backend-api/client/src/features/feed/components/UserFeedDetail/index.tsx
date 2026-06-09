@@ -276,7 +276,7 @@ export const UserFeedDetail: React.FC = () => {
             url: feed?.url as string,
           }}
           onUpdate={onUpdateFeed}
-          error={updateError?.message}
+          error={updateError}
         />
         <CopyUserFeedSettingsDialog
           isOpen={copySettingsIsOpen}

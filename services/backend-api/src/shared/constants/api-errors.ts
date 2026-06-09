@@ -16,6 +16,7 @@ export enum ApiErrorCode {
   FEED_REQUEST_INTERNAL_ERROR = "FEED_REQUEST_INTERNAL_ERROR",
   FEED_REQUEST_TOO_MANY_REQUESTS = "FEED_REQUEST_TOO_MANY_REQUESTS",
   FEED_REQUEST_UNAUTHORIZED = "FEED_REQUEST_UNAUTHORIZED",
+  REDDIT_CONNECTION_REQUIRED = "REDDIT_CONNECTION_REQUIRED",
   FEED_CONNECTION_NOT_FOUND = "FEED_CONNECTION_NOT_FOUND",
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS = "WEBHOOKS_MANAGE_MISSING_PERMISSIONS",
   WEBHOOKS_DISABLED = "WEBHOOKS_DISABLED",
@@ -108,6 +109,8 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   FEED_REQUEST_INTERNAL_ERROR: "Request to feed failed (5xx code)",
   FEED_REQUEST_TOO_MANY_REQUESTS: "Request to feed failed (429 code)",
   FEED_REQUEST_UNAUTHORIZED: "Request to feed failed (401 code)",
+  REDDIT_CONNECTION_REQUIRED:
+    "Reddit heavily rate-limits unauthenticated requests, so Reddit feeds need a connected account to fetch reliably. Connect your Reddit account and try again.",
   FEED_CONNECTION_NOT_FOUND: "Feed connection was not found",
   WEBHOOKS_MANAGE_MISSING_PERMISSIONS:
     "Bot is missing Manage Webhooks permission",
