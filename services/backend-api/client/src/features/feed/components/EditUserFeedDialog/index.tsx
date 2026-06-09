@@ -12,7 +12,7 @@ import {
 } from "../../../../components/InlineErrorAlert";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
-import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage";
 import type ApiAdapterError from "@/utils/ApiAdapterError";
 import { useUserMe } from "../../../discordUser";
 import {

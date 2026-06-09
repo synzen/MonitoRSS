@@ -237,7 +237,7 @@ describe("Workspace invite claim API", () => {
 
     // The accept response returns the joined workspace's slug so the client
     // can redirect the invitee straight into it.
-    const body = await res.json();
+    const body = await readJson<{ result: { workspaceSlug: string } }>(res);
     assert.strictEqual(body.result.workspaceSlug, workspace.slug);
 
     // Membership row created with role admin.

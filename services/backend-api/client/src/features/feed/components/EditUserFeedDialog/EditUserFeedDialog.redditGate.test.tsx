@@ -7,7 +7,7 @@ import { useState } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
 import ApiAdapterError from "@/utils/ApiAdapterError";
-import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 import { EditUserFeedDialog } from "./index";
 
 // Regression test for the missing Reddit connect gate when EDITING an existing feed's URL.

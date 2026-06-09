@@ -8,7 +8,7 @@ import { useState } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
 import ApiAdapterError from "@/utils/ApiAdapterError";
-import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 import { BrowseFeedsModal } from "./index";
 
 // Regression test for the Reddit connect retry in the discovery modal: pasting a subreddit URL
