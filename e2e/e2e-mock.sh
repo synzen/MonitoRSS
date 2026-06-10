@@ -142,7 +142,15 @@ fi
 
 echo "Starting E2E Docker stack (instance: $E2E_INSTANCE, project: $COMPOSE_PROJECT_NAME)..."
 echo "  backend=$E2E_BACKEND_PORT frontend=$E2E_FRONTEND_PORT mongo=$E2E_MONGO_PORT rss-mock=$E2E_MOCK_RSS_PORT discord-mock=$E2E_MOCK_DISCORD_PORT"
-docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d --build --wait
+# On startup failure, dump container status + logs to stdout before the EXIT trap
+# tears the stack down — in CI this output is the only diagnosable record of why a
+# container exited (e.g. web-api crashing before becoming healthy).
+if ! docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d --build --wait; then
+  echo "E2E stack failed to start; container status and recent logs follow:"
+  docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps -a || true
+  docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" logs --no-color --tail=200 || true
+  exit 1
+fi
 
 echo "Running E2E tests... (output also written to $RUN_LOG)"
 E2E_BACKEND_URL="$BACKEND_URL" E2E_BASE_URL="$FRONTEND_URL" \

@@ -265,7 +265,7 @@ test.describe("Feed Settings", () => {
 
       await page.getByRole("button", { name: "Save all changes" }).click();
 
-      await expect(page.getByText(/saved/i)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText("Changes saved.")).toBeVisible({ timeout: 10000 });
 
       await page.goto(`/feeds/${testFeed.id}`);
       await expect(
@@ -298,7 +298,7 @@ test.describe("Feed Settings", () => {
 
       await page.getByRole("button", { name: "Save all changes" }).click();
 
-      await expect(page.getByText(/saved/i)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText("Changes saved.")).toBeVisible({ timeout: 10000 });
 
       await page.reload();
       await expect(dateThresholdInput).toHaveValue("7", { timeout: 10000 });
@@ -323,7 +323,7 @@ test.describe("Feed Settings", () => {
 
       await page.getByRole("button", { name: "Save all changes" }).click();
 
-      await expect(page.getByText(/saved/i)).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText("Changes saved.")).toBeVisible({ timeout: 10000 });
 
       await page.reload();
       await expect(timezoneInput).toHaveValue("America/New_York", {
