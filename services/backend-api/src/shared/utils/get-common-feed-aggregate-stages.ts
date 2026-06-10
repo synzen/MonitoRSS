@@ -113,5 +113,17 @@ export function getCommonFeedAggregateStages({
     },
   });
 
+  // Workspace feeds resolve fetch credentials from their workspace's
+  // connection, so the workspace rides alongside the creator (whose record is
+  // still needed for delivery preferences and premium checks).
+  pipelineStages.push({
+    $lookup: {
+      from: "workspaces",
+      localField: "workspaceId",
+      foreignField: "_id",
+      as: "workspaces",
+    },
+  });
+
   return pipelineStages;
 }

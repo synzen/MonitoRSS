@@ -15,6 +15,7 @@ import { ApiErrorCode, getStandardErrorCodeMessage } from "@/utils/getStandardEr
 import { Field } from "@/components/ui/field";
 import { useCurrentWorkspace } from "../../contexts";
 import { useUpdateWorkspace } from "../../hooks";
+import { WorkspaceRedditConnectionSetting } from "../WorkspaceRedditConnectionSetting";
 
 const formSchema = object({
   name: string().required("Team name is required").max(100, "Team name is too long"),
@@ -175,6 +176,12 @@ export const WorkspaceSettings = () => {
           </Box>
         </Stack>
       </form>
+      <Stack gap={3}>
+        <Heading as="h2" size="md">
+          Integrations
+        </Heading>
+        <WorkspaceRedditConnectionSetting workspaceSlug={workspace.slug} />
+      </Stack>
       <ConfirmModal
         open={confirmOpen}
         onOpenChange={setConfirmOpen}

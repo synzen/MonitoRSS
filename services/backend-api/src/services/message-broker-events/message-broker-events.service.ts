@@ -23,7 +23,11 @@ import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request
 import { castDiscordContentForMedium } from "../../shared/utils/cast-discord-content-for-medium";
 import { castDiscordEmbedsForMedium } from "../../shared/utils/cast-discord-embeds-for-medium";
 import { castDiscordComponentRowsForMedium } from "../../shared/utils/cast-discord-component-rows-for-medium";
-import type { DiscordMediumEvent, UserForDelivery } from "./types";
+import type {
+  DiscordMediumEvent,
+  UserForDelivery,
+  WorkspaceForDelivery,
+} from "./types";
 
 export interface MessageBrokerEventsServiceDeps {
   config: Config;
@@ -202,6 +206,7 @@ export class MessageBrokerEventsService {
         await this.emitDeliverFeedArticlesEventWithPremiumCheck(
           feed,
           feed.users[0],
+          feed.workspaces[0],
         );
       } catch (err) {
         logger.error(
@@ -402,6 +407,7 @@ export class MessageBrokerEventsService {
   async emitDeliverFeedArticlesEventWithPremiumCheck(
     userFeed: UserFeedForDelivery | IUserFeed,
     user?: UserForDelivery,
+    workspace?: WorkspaceForDelivery,
   ): Promise<void> {
     const allConnections = Object.values(userFeed.connections).flat() as Array<{
       customPlaceholders?: unknown[];
@@ -431,6 +437,7 @@ export class MessageBrokerEventsService {
       parseCustomPlaceholders: allowCustomPlaceholders,
       parseExternalProperties: allowExternalProperties,
       user,
+      workspace,
     });
   }
 
@@ -440,12 +447,14 @@ export class MessageBrokerEventsService {
     parseCustomPlaceholders,
     parseExternalProperties,
     user,
+    workspace,
   }: {
     userFeed: UserFeedForDelivery | IUserFeed;
     maxDailyArticles: number;
     parseCustomPlaceholders: boolean;
     parseExternalProperties?: boolean;
     user?: UserForDelivery;
+    workspace?: WorkspaceForDelivery;
   }): Promise<void> {
     const discordChannelMediums = userFeed.connections.discordChannels
       .filter((c) => !c.disabledCode)
@@ -517,10 +526,12 @@ export class MessageBrokerEventsService {
           "feedRequestLookupKey" in userFeed
             ? userFeed.feedRequestLookupKey
             : undefined,
+        workspaceId: userFeed.workspaceId,
       },
       user: {
         externalCredentials: user?.externalCredentials,
       },
+      workspace,
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 

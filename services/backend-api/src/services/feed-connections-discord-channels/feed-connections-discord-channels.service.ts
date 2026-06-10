@@ -57,6 +57,27 @@ export class FeedConnectionsDiscordChannelsService {
     private readonly deps: FeedConnectionsDiscordChannelsServiceDeps,
   ) {}
 
+  // Workspace feeds resolve fetch credentials from their workspace's
+  // connection, never the creator's personal one (and vice versa).
+  private async getWorkspaceCredentialSource(
+    workspaceId: string | undefined | null,
+  ): Promise<{
+    externalCredentials: Array<{
+      type: string;
+      status: string;
+      data: Record<string, string>;
+    }>;
+  } | null> {
+    if (!workspaceId) {
+      return null;
+    }
+
+    const credential =
+      await this.deps.workspacesService.getRedditCredentials(workspaceId);
+
+    return { externalCredentials: credential ? [credential] : [] };
+  }
+
   async createDiscordChannelConnection(
     input: CreateDiscordChannelConnectionInput,
   ): Promise<IDiscordChannelConnection> {
@@ -984,6 +1005,7 @@ export class FeedConnectionsDiscordChannelsService {
       feed: userFeed,
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
       user,
+      workspace: await this.getWorkspaceCredentialSource(userFeed.workspaceId),
     });
 
     const payload: SendTestArticleInput["details"] = {
@@ -1101,6 +1123,7 @@ export class FeedConnectionsDiscordChannelsService {
       feed: userFeed,
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
       user,
+      workspace: await this.getWorkspaceCredentialSource(userFeed.workspaceId),
     });
 
     const cleanedEmbeds = input.embeds
@@ -1245,6 +1268,9 @@ export class FeedConnectionsDiscordChannelsService {
           getFeedRequestLookupDetails({
             feed: userFeed,
             user,
+            workspace: await this.getWorkspaceCredentialSource(
+              userFeed.workspaceId,
+            ),
             decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
           }) || undefined,
         url: userFeed.url,
@@ -1347,6 +1373,9 @@ export class FeedConnectionsDiscordChannelsService {
           getFeedRequestLookupDetails({
             feed: userFeed,
             user,
+            workspace: await this.getWorkspaceCredentialSource(
+              userFeed.workspaceId,
+            ),
             decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
           }) || undefined,
         url: userFeed.url,

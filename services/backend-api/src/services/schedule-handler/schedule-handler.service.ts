@@ -108,7 +108,9 @@ export class ScheduleHandlerService {
     for await (const {
       url,
       feedRequestLookupKey,
+      workspaceId,
       users,
+      workspaces,
     } of this.deps.userFeedRepository.iterateFeedsWithLookupKeysForRefreshRate(
       refreshRateSeconds,
       slotWindow,
@@ -120,10 +122,12 @@ export class ScheduleHandlerService {
         feed: {
           url,
           feedRequestLookupKey,
+          workspaceId,
         },
         user: {
           externalCredentials,
         },
+        workspace: workspaces[0],
         decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
       });
 

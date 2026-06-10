@@ -322,7 +322,14 @@ export interface ScheduledFeedUrl {
 export interface ScheduledFeedWithLookupKey {
   url: string;
   feedRequestLookupKey?: string;
+  workspaceId?: string;
   users: Array<{
+    externalCredentials?: Array<{
+      type: UserExternalCredentialType;
+      data: Record<string, string>;
+    }>;
+  }>;
+  workspaces: Array<{
     externalCredentials?: Array<{
       type: UserExternalCredentialType;
       data: Record<string, string>;
@@ -365,6 +372,13 @@ export interface UserForDelivery {
   };
 }
 
+export interface WorkspaceForDelivery {
+  externalCredentials?: Array<{
+    type: string;
+    data: Record<string, string>;
+  }>;
+}
+
 export interface UserFeedForDelivery {
   id: string;
   url: string;
@@ -377,10 +391,12 @@ export interface UserFeedForDelivery {
   externalProperties?: IExternalFeedProperty[];
   dateCheckOptions?: IUserFeedDateCheckOptions;
   feedRequestLookupKey?: string;
+  workspaceId?: string;
   user: {
     discordUserId: string;
   };
   users: Array<UserForDelivery>;
+  workspaces: Array<WorkspaceForDelivery>;
 }
 
 // Thrown inside the create transaction to abort it (rolling back the insert)

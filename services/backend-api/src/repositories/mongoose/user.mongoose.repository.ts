@@ -419,6 +419,9 @@ export class UserMongooseRepository
         {
           $match: {
             "feeds.url": REDDIT_URL_REGEX,
+            // Workspace feeds resolve credentials from their workspace, never
+            // their creator's personal connection.
+            "feeds.workspaceId": { $exists: false },
             ...(options?.feedIds?.length && {
               "feeds._id": {
                 $in: options.feedIds.map((id) => this.stringToObjectId(id)),
@@ -457,6 +460,9 @@ export class UserMongooseRepository
           $match: {
             feedRequestLookupKey: { $exists: true },
             url: REDDIT_URL_REGEX,
+            // Workspace feeds' lookup keys are synced against workspace
+            // credentials, not the creator's.
+            workspaceId: { $exists: false },
             ...(options?.feedIds?.length && {
               _id: {
                 $in: options.feedIds.map((id) => this.stringToObjectId(id)),

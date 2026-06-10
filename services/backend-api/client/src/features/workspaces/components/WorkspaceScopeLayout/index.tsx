@@ -22,7 +22,12 @@ import { useIsWorkspacesEnabled, useWorkspace } from "../../hooks";
 export const WorkspaceScopeLayout = () => {
   const { workspaceSlug } = useParams<RouteParams>();
   const { enabled, status: flagStatus } = useIsWorkspacesEnabled();
-  const { workspace, status: workspaceStatus, error } = useWorkspace({ workspaceSlug: enabled ? workspaceSlug : undefined });
+  const {
+    workspace,
+    status: workspaceStatus,
+    error,
+    refetch,
+  } = useWorkspace({ workspaceSlug: enabled ? workspaceSlug : undefined });
 
   if (flagStatus === "loading") {
     return <Spinner mt={24} />;
@@ -45,7 +50,21 @@ export const WorkspaceScopeLayout = () => {
       {/* All feed queries, mutations, and links under a workspace route are
           workspace-scoped via this provider, so the personal feeds UI is reused
           verbatim. */}
-      <FeedScopeProvider value={{ workspaceId: workspace.id, workspaceSlug: workspace.slug, maxFeeds: workspace.maxFeeds }}>
+      <FeedScopeProvider
+        value={{
+          workspaceId: workspace.id,
+          workspaceSlug: workspace.slug,
+          maxFeeds: workspace.maxFeeds,
+          redditConnection: workspace.redditConnection
+            ? {
+                status: workspace.redditConnection.status as "ACTIVE" | "REVOKED",
+                connectedByUserId: workspace.redditConnection.connectedBy.userId,
+                connectedByDiscordUserId: workspace.redditConnection.connectedBy.discordUserId,
+              }
+            : null,
+          refreshRedditConnection: refetch,
+        }}
+      >
         <Suspense fallback={<Spinner mt={24} />}>
           <Outlet />
         </Suspense>

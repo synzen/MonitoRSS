@@ -250,21 +250,29 @@ export class UserFeedsService {
       );
     }
 
-    this.assertRedditConnectionIfRequired(url, user);
+    const workspaceCredentialSource =
+      await this.getWorkspaceCredentialSource(workspaceId);
+
+    this.assertRedditConnectionIfRequired(url, workspaceCredentialSource ?? user);
 
     const tempLookupDetails = getFeedRequestLookupDetails({
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
       feed: {
         url,
         feedRequestLookupKey: randomUUID(),
+        workspaceId,
       },
       user,
+      workspace: workspaceCredentialSource,
     });
 
     const { finalUrl, enableDateChecks, feedTitle } =
       await this.checkUrlIsValid(url, tempLookupDetails);
 
-    this.assertRedditConnectionIfRequired(finalUrl, user);
+    this.assertRedditConnectionIfRequired(
+      finalUrl,
+      workspaceCredentialSource ?? user,
+    );
 
     const {
       connections,
@@ -352,7 +360,14 @@ export class UserFeedsService {
           sourceFeed.user.discordUserId,
         ));
 
-      this.assertRedditConnectionIfRequired(data.url, user);
+      const workspaceCredentialSource = await this.getWorkspaceCredentialSource(
+        sourceFeed.workspaceId,
+      );
+
+      this.assertRedditConnectionIfRequired(
+        data.url,
+        workspaceCredentialSource ?? user,
+      );
 
       finalUrl = (
         await this.checkUrlIsValid(
@@ -360,12 +375,16 @@ export class UserFeedsService {
           getFeedRequestLookupDetails({
             feed: sourceFeed,
             user,
+            workspace: workspaceCredentialSource,
             decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
           }),
         )
       ).finalUrl;
 
-      this.assertRedditConnectionIfRequired(finalUrl, user);
+      this.assertRedditConnectionIfRequired(
+        finalUrl,
+        workspaceCredentialSource ?? user,
+      );
       inputUrl = data.url;
     }
 
@@ -385,7 +404,7 @@ export class UserFeedsService {
       }),
     );
 
-    await this.deps.usersService.syncLookupKeys({ feedIds: [created.id] });
+    await this.syncLookupKeysForAnyScope([created.id]);
 
     for (const c of sourceFeed.connections.discordChannels) {
       await this.deps.feedConnectionsDiscordChannelsService.cloneConnection(
@@ -518,6 +537,7 @@ export class UserFeedsService {
     const lookupDetails = getFeedRequestLookupDetails({
       feed,
       user,
+      workspace: await this.getWorkspaceCredentialSource(feed.workspaceId),
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 
@@ -661,6 +681,7 @@ export class UserFeedsService {
         getFeedRequestLookupDetails({
           feed,
           user,
+          workspace: await this.getWorkspaceCredentialSource(feed.workspaceId),
           decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
         }),
       );
@@ -847,9 +868,7 @@ export class UserFeedsService {
   }
 
   async retryFailedFeed(feedId: string) {
-    await this.deps.usersService.syncLookupKeys({
-      feedIds: [feedId],
-    });
+    await this.syncLookupKeysForAnyScope([feedId]);
     const feed = await this.deps.userFeedRepository.findById(feedId);
 
     if (!feed) {
@@ -874,6 +893,7 @@ export class UserFeedsService {
     const lookupDetails = getFeedRequestLookupDetails({
       feed,
       user,
+      workspace: await this.getWorkspaceCredentialSource(feed.workspaceId),
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 
@@ -918,12 +938,11 @@ export class UserFeedsService {
       feed.user.discordUserId,
     );
 
-    await this.deps.usersService.syncLookupKeys({
-      feedIds: [feed.id],
-    });
+    await this.syncLookupKeysForAnyScope([feed.id]);
     const lookupDetails = getFeedRequestLookupDetails({
       feed,
       user,
+      workspace: await this.getWorkspaceCredentialSource(feed.workspaceId),
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 
@@ -1027,6 +1046,7 @@ export class UserFeedsService {
         getFeedRequestLookupDetails({
           feed,
           user,
+          workspace: await this.getWorkspaceCredentialSource(feed.workspaceId),
           decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
         }),
       );
@@ -1113,6 +1133,7 @@ export class UserFeedsService {
       getFeedRequestLookupDetails({
         feed,
         user,
+        workspace: await this.getWorkspaceCredentialSource(feed.workspaceId),
         decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
       }),
     );
@@ -1247,24 +1268,35 @@ export class UserFeedsService {
 
   async validateFeedUrl(
     opts: { discordUserId: string },
-    input: { url: string },
+    input: { url: string; workspaceId?: string },
   ): Promise<ValidateFeedUrlOutput> {
     const { discordUserId } = opts;
-    const { url } = input;
+    const { url, workspaceId } = input;
 
     const user =
       await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
 
-    this.assertRedditConnectionIfRequired(url, user);
+    if (workspaceId) {
+      await this.deps.workspacesService.getWorkspaceForMember(
+        workspaceId,
+        user.id,
+      );
+    }
+
+    const workspaceCredentialSource =
+      await this.getWorkspaceCredentialSource(workspaceId);
+
+    this.assertRedditConnectionIfRequired(url, workspaceCredentialSource ?? user);
 
     const lookupDetails = getFeedRequestLookupDetails({
-      feed: { url, feedRequestLookupKey: randomUUID() },
+      feed: { url, feedRequestLookupKey: randomUUID(), workspaceId },
       user: {
         externalCredentials: user.externalCredentials?.map((c) => ({
           type: c.type,
           data: c.data,
         })),
       },
+      workspace: workspaceCredentialSource,
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 
@@ -1273,7 +1305,10 @@ export class UserFeedsService {
       lookupDetails,
     );
 
-    this.assertRedditConnectionIfRequired(finalUrl, user);
+    this.assertRedditConnectionIfRequired(
+      finalUrl,
+      workspaceCredentialSource ?? user,
+    );
 
     if (finalUrl !== url) {
       return {
@@ -1287,22 +1322,30 @@ export class UserFeedsService {
 
   async previewFeedByUrl(
     opts: { discordUserId: string },
-    input: { url: string },
+    input: { url: string; workspaceId?: string },
   ): Promise<PreviewFeedByUrlOutput> {
     const { discordUserId } = opts;
-    const { url } = input;
+    const { url, workspaceId } = input;
 
     const user =
       await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
 
+    if (workspaceId) {
+      await this.deps.workspacesService.getWorkspaceForMember(
+        workspaceId,
+        user.id,
+      );
+    }
+
     const lookupDetails = getFeedRequestLookupDetails({
-      feed: { url, feedRequestLookupKey: randomUUID() },
+      feed: { url, feedRequestLookupKey: randomUUID(), workspaceId },
       user: {
         externalCredentials: user.externalCredentials?.map((c) => ({
           type: c.type,
           data: c.data,
         })),
       },
+      workspace: await this.getWorkspaceCredentialSource(workspaceId),
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 
@@ -1526,6 +1569,7 @@ export class UserFeedsService {
     const lookupDetails = getFeedRequestLookupDetails({
       feed,
       user,
+      workspace: await this.getWorkspaceCredentialSource(feed.workspaceId),
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
     });
 
@@ -1566,7 +1610,48 @@ export class UserFeedsService {
     return randomUUID();
   }
 
-  private assertRedditConnectionIfRequired(url: string, user: IUser): void {
+  // Reconcile lookup keys for feeds whose scope isn't known at the call site:
+  // the user-keyed sync skips workspace feeds and the workspace-keyed sync only
+  // matches them, so running both covers either scope exactly once.
+  private async syncLookupKeysForAnyScope(feedIds: string[]): Promise<void> {
+    await Promise.all([
+      this.deps.usersService.syncLookupKeys({ feedIds }),
+      this.deps.workspacesService.syncWorkspaceLookupKeys({ feedIds }),
+    ]);
+  }
+
+  // The credential source for a workspace-scoped feed (or feed-to-be). Returns
+  // null when there is no workspace scope; returns an empty credential list when
+  // the workspace exists but has no connection, so asserts and lookups fail
+  // closed rather than falling back to anyone's personal connection.
+  private async getWorkspaceCredentialSource(
+    workspaceId: string | undefined | null,
+  ): Promise<{
+    externalCredentials: Array<{
+      type: string;
+      status: string;
+      data: Record<string, string>;
+    }>;
+  } | null> {
+    if (!workspaceId) {
+      return null;
+    }
+
+    const credential =
+      await this.deps.workspacesService.getRedditCredentials(workspaceId);
+
+    return { externalCredentials: credential ? [credential] : [] };
+  }
+
+  private assertRedditConnectionIfRequired(
+    url: string,
+    credentialSource: {
+      externalCredentials?: Array<{
+        type: UserExternalCredentialType | string;
+        status: UserExternalCredentialStatus | string;
+      }>;
+    },
+  ): void {
     if (!isRedditFeedUrl(url)) {
       return;
     }
@@ -1575,11 +1660,12 @@ export class UserFeedsService {
       return;
     }
 
-    const hasActiveRedditConnection = user.externalCredentials?.some(
-      (cred) =>
-        cred.type === UserExternalCredentialType.Reddit &&
-        cred.status === UserExternalCredentialStatus.Active,
-    );
+    const hasActiveRedditConnection =
+      credentialSource.externalCredentials?.some(
+        (cred) =>
+          cred.type === UserExternalCredentialType.Reddit &&
+          cred.status === UserExternalCredentialStatus.Active,
+      );
 
     if (!hasActiveRedditConnection) {
       throw new RedditConnectionRequiredException(

@@ -4,6 +4,9 @@ import fetchRest from "../../../utils/fetchRest";
 export interface CreateUserFeedUrlValidationInput {
   details: {
     url: string;
+    // In workspace scope, reddit-connection checks resolve against the workspace's
+    // connection instead of the caller's personal one.
+    workspaceId?: string;
   };
 }
 

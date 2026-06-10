@@ -96,4 +96,7 @@ export interface UserFeedForDelivery {
   }>;
 }
 
-export type { UserForDelivery } from "../../repositories/interfaces/user-feed.types";
+export type {
+  UserForDelivery,
+  WorkspaceForDelivery,
+} from "../../repositories/interfaces/user-feed.types";

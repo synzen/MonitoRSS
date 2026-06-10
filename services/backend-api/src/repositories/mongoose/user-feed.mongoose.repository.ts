@@ -2199,7 +2199,15 @@ export class UserFeedMongooseRepository
       slotWindow,
       withLookupKeys: true,
     });
-    pipeline.push({ $project: { url: 1, feedRequestLookupKey: 1, users: 1 } });
+    pipeline.push({
+      $project: {
+        url: 1,
+        feedRequestLookupKey: 1,
+        workspaceId: 1,
+        users: 1,
+        workspaces: 1,
+      },
+    });
 
     const cursor = this.model
       .aggregate(pipeline, {
@@ -2211,7 +2219,9 @@ export class UserFeedMongooseRepository
       yield {
         url: doc.url,
         feedRequestLookupKey: doc.feedRequestLookupKey,
+        workspaceId: doc.workspaceId?.toString(),
         users: doc.users || [],
+        workspaces: doc.workspaces || [],
       };
     }
   }
@@ -2298,6 +2308,7 @@ export class UserFeedMongooseRepository
       externalProperties?: Array<Record<string, unknown>>;
       dateCheckOptions?: Record<string, unknown>;
       feedRequestLookupKey?: string;
+      workspaceId?: Types.ObjectId;
       user: { discordUserId: string };
       users?: Array<{
         externalCredentials?: Array<{
@@ -2305,6 +2316,12 @@ export class UserFeedMongooseRepository
           data: Record<string, string>;
         }>;
         preferences?: Record<string, unknown>;
+      }>;
+      workspaces?: Array<{
+        externalCredentials?: Array<{
+          type: string;
+          data: Record<string, string>;
+        }>;
       }>;
     };
 
@@ -2327,8 +2344,10 @@ export class UserFeedMongooseRepository
       dateCheckOptions:
         typedDoc.dateCheckOptions as UserFeedForDelivery["dateCheckOptions"],
       feedRequestLookupKey: typedDoc.feedRequestLookupKey,
+      workspaceId: typedDoc.workspaceId?.toString(),
       user: { discordUserId: typedDoc.user.discordUserId },
       users: typedDoc.users || [],
+      workspaces: typedDoc.workspaces || [],
     };
   }
 

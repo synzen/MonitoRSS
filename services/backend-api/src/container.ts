@@ -279,7 +279,9 @@ export function createContainer(deps: {
     smtpTransport,
     workspaceRepository,
     userRepository,
+    userFeedRepository,
     emailVerificationService,
+    redditApiService,
   });
 
   const notificationsService = new NotificationsService({
@@ -320,6 +322,7 @@ export function createContainer(deps: {
       discordAuthService,
       connectionEventsService: userFeedConnectionEventsService,
       usersService,
+      workspacesService,
     });
 
   const userFeedsService = new UserFeedsService({

@@ -32,6 +32,9 @@ export type DeduplicateFeedUrlsBody = Static<
 
 export const ValidateUrlBodySchema = Type.Object({
   url: Type.String({ minLength: 1 }),
+  // Validate in workspace scope: reddit-connection checks resolve against the
+  // workspace's connection instead of the caller's personal one.
+  workspaceId: Type.Optional(Type.String({ minLength: 1 })),
 });
 export type ValidateUrlBody = Static<typeof ValidateUrlBodySchema>;
 
@@ -39,6 +42,7 @@ export type ValidateUrlBody = Static<typeof ValidateUrlBodySchema>;
 export const PreviewByUrlBodySchema = Type.Object(
   {
     url: Type.String({ minLength: 1 }),
+    workspaceId: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 );

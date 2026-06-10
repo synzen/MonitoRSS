@@ -50,7 +50,8 @@ export async function getWorkspaceHandler(
   request: FastifyRequest<{ Params: WorkspaceSlugParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { workspacesService, supportersService } = request.container;
+  const { workspacesService, supportersService, userRepository } =
+    request.container;
   const { workspace, role } =
     await workspacesService.getWorkspaceForMemberBySlug(
       request.params.workspaceSlug,
@@ -63,6 +64,27 @@ export async function getWorkspaceHandler(
     workspace.id,
   );
 
+  // The workspace's Reddit connection state with named attribution ("Connected
+  // by X"), so members always see whose personal grant backs the workspace.
+  const redditCredential = await workspacesService.getRedditCredentials(
+    workspace.id,
+  );
+  let redditConnection = null;
+
+  if (redditCredential) {
+    const connectedByUser = await userRepository.findById(
+      redditCredential.connectedByUserId,
+    );
+
+    redditConnection = {
+      status: redditCredential.status,
+      connectedBy: {
+        userId: redditCredential.connectedByUserId,
+        discordUserId: connectedByUser?.discordUserId ?? null,
+      },
+    };
+  }
+
   return reply.send({
     result: {
       id: workspace.id,
@@ -70,8 +92,23 @@ export async function getWorkspaceHandler(
       slug: workspace.slug,
       role,
       maxFeeds,
+      redditConnection,
     },
   });
+}
+
+export async function disconnectWorkspaceRedditHandler(
+  request: FastifyRequest<{ Params: WorkspaceSlugParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { workspacesService } = request.container;
+
+  await workspacesService.disconnectReddit(
+    request.params.workspaceSlug,
+    request.userId as string,
+  );
+
+  return reply.status(200).send({ result: { ok: true } });
 }
 
 export async function updateWorkspaceHandler(

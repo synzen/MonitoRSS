@@ -199,7 +199,7 @@ export async function validateFeedUrlHandler(
 
   const result = await userFeedsService.validateFeedUrl(
     { discordUserId },
-    { url: request.body.url },
+    { url: request.body.url, workspaceId: request.body.workspaceId },
   );
 
   return reply.status(200).send({ result });
@@ -215,7 +215,7 @@ export async function previewFeedByUrlHandler(
 
   const result = await userFeedsService.previewFeedByUrl(
     { discordUserId },
-    { url: request.body.url },
+    { url: request.body.url, workspaceId: request.body.workspaceId },
   );
 
   return reply.status(200).send({ result });

@@ -16,3 +16,4 @@ export * from "./resendWorkspaceInvite";
 export * from "./revokeWorkspaceInvite";
 export * from "./removeWorkspaceMember";
 export * from "./leaveWorkspace";
+export * from "./disconnectWorkspaceReddit";

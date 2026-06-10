@@ -50,8 +50,10 @@ async function main() {
     });
 
   refreshRedditCredentials(container);
+  refreshWorkspaceRedditCredentials(container);
   redditRefreshIntervalId = setInterval(() => {
     refreshRedditCredentials(container);
+    refreshWorkspaceRedditCredentials(container);
   }, REDDIT_REFRESH_INTERVAL_MS);
 
   runMaintenanceOps(container);
@@ -217,6 +219,96 @@ async function refreshRedditCredentials(container: Container) {
     }
   } catch (err) {
     logger.error("Failed to refresh reddit credentials on schedule", {
+      error: (err as Error).stack,
+    });
+  }
+}
+
+async function refreshWorkspaceRedditCredentials(container: Container) {
+  try {
+    const encryptionKey = container.config.BACKEND_API_ENCRYPTION_KEY_HEX;
+
+    if (!encryptionKey) {
+      logger.debug(
+        "Encryption key not found, skipping workspace credentials refresh task",
+      );
+      return;
+    }
+
+    const workspacesIterator =
+      container.workspaceRepository.iterateWorkspacesWithExpiringRedditCredentials(
+        REDDIT_CREDENTIAL_EXPIRY_WINDOW_MS,
+      );
+
+    for await (const workspace of workspacesIterator) {
+      try {
+        const {
+          access_token: newAccessToken,
+          refresh_token: newRefreshToken,
+          expires_in: expiresIn,
+        } = await container.redditApiService.refreshAccessToken(
+          decrypt(workspace.encryptedRefreshToken, encryptionKey),
+        );
+
+        const existingCredential =
+          await container.workspacesService.getRedditCredentials(
+            workspace.workspaceId,
+          );
+
+        if (!existingCredential) {
+          continue;
+        }
+
+        await container.workspacesService.setRedditCredentials({
+          workspaceId: workspace.workspaceId,
+          connectedByUserId: existingCredential.connectedByUserId,
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+          expiresIn,
+        });
+
+        logger.info(
+          `Refreshed reddit credentials for workspace ${workspace.workspaceId} successfully`,
+        );
+      } catch (err) {
+        if (err instanceof RedditAppRevokedException) {
+          // The connector pulled the grant from reddit.com directly. Mark it
+          // revoked, stop fetching with it, and tell every member so any of
+          // them can reconnect.
+          logger.info(
+            `Reddit app has been revoked, revoking credentials for workspace ${workspace.workspaceId}`,
+          );
+
+          await container.workspacesService.revokeRedditCredentials(
+            workspace.workspaceId,
+            workspace.credentialId,
+          );
+
+          await container.workspacesService.syncWorkspaceLookupKeys({
+            workspaceIds: [workspace.workspaceId],
+          });
+
+          const workspaceEntity = await container.workspaceRepository.findById(
+            workspace.workspaceId,
+          );
+
+          if (workspaceEntity) {
+            await container.workspacesService.notifyRedditConnectionLost(
+              workspaceEntity,
+            );
+          }
+
+          continue;
+        }
+
+        logger.error(
+          `Failed to refresh reddit credentials for workspace ${workspace.workspaceId}`,
+          { error: (err as Error).stack },
+        );
+      }
+    }
+  } catch (err) {
+    logger.error("Failed to refresh workspace reddit credentials on schedule", {
       error: (err as Error).stack,
     });
   }

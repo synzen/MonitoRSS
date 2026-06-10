@@ -18,6 +18,18 @@ export interface FeedScope {
   workspaceSlug?: string;
   /** The current workspace's feed limit, for the feed-limit bar. */
   maxFeeds?: number;
+  /**
+   * The workspace's Reddit connection state. In workspace scope, Reddit gates resolve
+   * against this (the workspace's connection) instead of the caller's personal account;
+   * null means the workspace has no connection record.
+   */
+  redditConnection?: {
+    status: "ACTIVE" | "REVOKED";
+    connectedByUserId?: string;
+    connectedByDiscordUserId?: string | null;
+  } | null;
+  /** Re-fetches the workspace so a just-completed connect/disconnect is reflected. */
+  refreshRedditConnection?: () => void;
 }
 
 const FeedScopeContext = createContext<FeedScope>({});

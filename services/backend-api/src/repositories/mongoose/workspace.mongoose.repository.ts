@@ -7,6 +7,12 @@ import {
 } from "mongoose";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
 import { normalizeEmail } from "../../shared/utils/normalizeEmail";
+import {
+  UserExternalCredentialStatus,
+  UserExternalCredentialType,
+} from "../shared/enums";
+
+const REDDIT_URL_REGEX = /^http(s?):\/\/(www.)?(\w+\.)?reddit\.com\/r\//i;
 
 // owner ⊇ admin. There is no read-only tier: every membership can manage the
 // workspace and its feeds. Only owner-gated actions (delete, transfer) require
@@ -65,6 +71,27 @@ export class CannotRemoveLastOwnerError extends Error {
   }
 }
 
+// A workspace's connection to an external service. Mirrors the per-user
+// IUserExternalCredential shape (same status/type enums, same encrypted data
+// map) with one addition: connectedByUserId records which member's personal
+// account backs the grant, for attribution ("Connected by Alice") and the
+// revoke-on-exit hook.
+export interface IWorkspaceExternalCredential {
+  id: string;
+  type: UserExternalCredentialType;
+  status: UserExternalCredentialStatus;
+  data: Record<string, string>;
+  expireAt?: Date;
+  connectedByUserId: string;
+}
+
+export interface SetWorkspaceExternalCredentialInput {
+  type: UserExternalCredentialType;
+  data: Record<string, string>;
+  expireAt?: Date;
+  connectedByUserId: string;
+}
+
 export interface IWorkspaceInvite {
   id: string;
   workspaceId: string;
@@ -90,16 +117,45 @@ export class WorkspaceInviteExistsError extends Error {
   }
 }
 
+const WorkspaceExternalCredentialSchema = new Schema(
+  {
+    type: {
+      type: String,
+      required: true,
+      enum: Object.values(UserExternalCredentialType),
+    },
+    status: {
+      type: String,
+      required: true,
+      enum: Object.values(UserExternalCredentialStatus),
+      default: UserExternalCredentialStatus.Active,
+    },
+    data: { type: Map, of: Schema.Types.Mixed },
+    expireAt: { type: Date },
+    connectedByUserId: { type: Schema.Types.ObjectId, required: true },
+  },
+  { timestamps: false },
+);
+
 const WorkspaceSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, trim: true, lowercase: true },
     createdByUserId: { type: Schema.Types.ObjectId, required: true },
+    externalCredentials: { type: [WorkspaceExternalCredentialSchema] },
   },
   { timestamps: true },
 );
 
 WorkspaceSchema.index({ slug: 1 }, { unique: true });
+
+// Serves the expiring-credential refresh sweep (mirrors the user collection's
+// externalCredentials index).
+WorkspaceSchema.index({
+  "externalCredentials.expireAt": 1,
+  "externalCredentials.status": 1,
+  "externalCredentials.type": 1,
+});
 
 const WorkspaceMembershipSchema = new Schema(
   {
@@ -186,6 +242,20 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
+  }
+
+  async findById(workspaceId: string): Promise<IWorkspace | null> {
+    if (!Types.ObjectId.isValid(workspaceId)) {
+      return null;
+    }
+
+    const doc = await this.workspaceModel
+      .findById(this.stringToObjectId(workspaceId))
+      .lean();
+
+    return doc
+      ? this.toEntity(doc as WorkspaceDoc & { _id: Types.ObjectId })
+      : null;
   }
 
   async createWorkspaceWithOwner(input: {
@@ -806,5 +876,357 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     return this.inviteModel.countDocuments({
       workspaceId: this.stringToObjectId(workspaceId),
     });
+  }
+
+  private toExternalCredential(credential: {
+    _id?: Types.ObjectId;
+    type: string;
+    status: string;
+    data?: unknown;
+    expireAt?: Date | null;
+    connectedByUserId: Types.ObjectId;
+  }): IWorkspaceExternalCredential {
+    let data: Record<string, string> = {};
+
+    if (credential.data) {
+      if (credential.data instanceof Map) {
+        data = Object.fromEntries(credential.data);
+      } else {
+        data = credential.data as Record<string, string>;
+      }
+    }
+
+    return {
+      id: this.objectIdToString(credential._id) as string,
+      type: credential.type as UserExternalCredentialType,
+      status: credential.status as UserExternalCredentialStatus,
+      data,
+      expireAt: credential.expireAt ?? undefined,
+      connectedByUserId: this.objectIdToString(credential.connectedByUserId),
+    };
+  }
+
+  async setExternalCredential(
+    workspaceId: string,
+    credential: SetWorkspaceExternalCredentialInput,
+  ): Promise<void> {
+    const setQueries = Object.entries(credential.data).reduce(
+      (acc, [key, value]) => {
+        acc[`externalCredentials.$.data.${key}`] = value;
+        return acc;
+      },
+      {} as Record<string, unknown>,
+    );
+
+    const finalSetQuery = {
+      ...setQueries,
+      ...(credential.expireAt && {
+        "externalCredentials.$.expireAt": credential.expireAt,
+      }),
+      // A (re-)connect produces fresh, valid tokens: a previously revoked
+      // credential is active again, attributed to whoever just connected.
+      "externalCredentials.$.status": UserExternalCredentialStatus.Active,
+      "externalCredentials.$.connectedByUserId": this.stringToObjectId(
+        credential.connectedByUserId,
+      ),
+    };
+
+    const result = await this.workspaceModel.updateOne(
+      {
+        _id: this.stringToObjectId(workspaceId),
+        externalCredentials: {
+          $elemMatch: { type: credential.type },
+        },
+      },
+      { $set: finalSetQuery },
+    );
+
+    if (!result.modifiedCount) {
+      await this.workspaceModel.updateOne(
+        { _id: this.stringToObjectId(workspaceId) },
+        {
+          $push: {
+            externalCredentials: {
+              type: credential.type,
+              data: credential.data,
+              expireAt: credential.expireAt,
+              status: UserExternalCredentialStatus.Active,
+              connectedByUserId: this.stringToObjectId(
+                credential.connectedByUserId,
+              ),
+            },
+          },
+        },
+      );
+    }
+  }
+
+  async getExternalCredentials(
+    workspaceId: string,
+    type: UserExternalCredentialType,
+  ): Promise<IWorkspaceExternalCredential | null> {
+    const doc = await this.workspaceModel
+      .findOne(
+        { _id: this.stringToObjectId(workspaceId) },
+        { externalCredentials: 1 },
+      )
+      .lean();
+
+    const credential = doc?.externalCredentials?.find((c) => c.type === type);
+
+    return credential ? this.toExternalCredential(credential) : null;
+  }
+
+  async removeExternalCredentials(
+    workspaceId: string,
+    type: UserExternalCredentialType,
+  ): Promise<void> {
+    await this.workspaceModel.updateOne(
+      { _id: this.stringToObjectId(workspaceId) },
+      { $pull: { externalCredentials: { type } } },
+    );
+  }
+
+  async revokeExternalCredential(
+    workspaceId: string,
+    credentialId: string,
+  ): Promise<void> {
+    await this.workspaceModel.updateOne(
+      {
+        _id: this.stringToObjectId(workspaceId),
+        "externalCredentials._id": this.stringToObjectId(credentialId),
+      },
+      {
+        $set: {
+          "externalCredentials.$.status": UserExternalCredentialStatus.Revoked,
+        },
+      },
+    );
+  }
+
+  // Workspace counterpart of the user repository's reddit lookup-key
+  // aggregations: workspace feeds resolve credentials from their workspace,
+  // never their creator, so the sync must consult workspace credentials.
+  async *aggregateWorkspacesWithActiveRedditCredentials(options?: {
+    workspaceIds?: string[];
+    feedIds?: string[];
+  }): AsyncIterable<{ feedId: string; lookupKey?: string }> {
+    const cursor = this.workspaceModel
+      .aggregate([
+        {
+          $match: {
+            ...(options?.workspaceIds?.length && {
+              _id: {
+                $in: options.workspaceIds.map((id) =>
+                  this.stringToObjectId(id),
+                ),
+              },
+            }),
+            externalCredentials: {
+              $elemMatch: {
+                expireAt: { $gt: new Date() },
+                status: UserExternalCredentialStatus.Active,
+                type: UserExternalCredentialType.Reddit,
+              },
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "userfeeds",
+            localField: "_id",
+            foreignField: "workspaceId",
+            as: "feeds",
+          },
+        },
+        { $unwind: { path: "$feeds" } },
+        {
+          $match: {
+            "feeds.url": REDDIT_URL_REGEX,
+            ...(options?.feedIds?.length && {
+              "feeds._id": {
+                $in: options.feedIds.map((id) => this.stringToObjectId(id)),
+              },
+            }),
+          },
+        },
+        {
+          $project: {
+            feedId: "$feeds._id",
+            lookupKey: "$feeds.feedRequestLookupKey",
+            _id: 0,
+          },
+        },
+      ])
+      .cursor();
+
+    for await (const doc of cursor) {
+      yield {
+        feedId: this.objectIdToString(doc.feedId),
+        lookupKey: doc.lookupKey,
+      };
+    }
+  }
+
+  async *aggregateWorkspaceFeedsWithExpiredOrRevokedRedditCredentials(options?: {
+    workspaceIds?: string[];
+    feedIds?: string[];
+  }): AsyncIterable<{ feedId: string }> {
+    const cursor = this.workspaceModel.db
+      .collection("userfeeds")
+      .aggregate([
+        {
+          $match: {
+            feedRequestLookupKey: { $exists: true },
+            url: REDDIT_URL_REGEX,
+            workspaceId: options?.workspaceIds?.length
+              ? {
+                  $in: options.workspaceIds.map((id) =>
+                    this.stringToObjectId(id),
+                  ),
+                }
+              : { $exists: true },
+            ...(options?.feedIds?.length && {
+              _id: {
+                $in: options.feedIds.map((id) => this.stringToObjectId(id)),
+              },
+            }),
+          },
+        },
+        {
+          $lookup: {
+            from: this.workspaceModel.collection.name,
+            localField: "workspaceId",
+            foreignField: "_id",
+            as: "workspace",
+          },
+        },
+        {
+          $set: {
+            workspace: { $arrayElemAt: ["$workspace", 0] },
+          },
+        },
+        {
+          $match: {
+            $or: [
+              { workspace: null },
+              { "workspace.externalCredentials.0": { $exists: false } },
+              {
+                "workspace.externalCredentials": {
+                  $elemMatch: {
+                    type: UserExternalCredentialType.Reddit,
+                    expireAt: { $lte: new Date() },
+                  },
+                },
+              },
+              {
+                "workspace.externalCredentials": {
+                  $elemMatch: {
+                    type: UserExternalCredentialType.Reddit,
+                    status: UserExternalCredentialStatus.Revoked,
+                  },
+                },
+              },
+            ],
+          },
+        },
+        {
+          $project: {
+            feedId: "$_id",
+            _id: 0,
+          },
+        },
+      ]);
+
+    for await (const doc of cursor) {
+      yield {
+        feedId: this.objectIdToString(doc.feedId as Types.ObjectId),
+      };
+    }
+  }
+
+  // Workspaces whose reddit credential is nearing expiry, for the scheduled
+  // refresh sweep (mirrors iterateUsersWithExpiringRedditCredentials).
+  async *iterateWorkspacesWithExpiringRedditCredentials(
+    withinMs: number,
+  ): AsyncIterable<{
+    workspaceId: string;
+    credentialId: string;
+    encryptedRefreshToken: string;
+  }> {
+    const expirationThreshold = new Date(Date.now() + withinMs);
+
+    const cursor = this.workspaceModel
+      .find({
+        externalCredentials: {
+          $elemMatch: {
+            type: UserExternalCredentialType.Reddit,
+            status: UserExternalCredentialStatus.Active,
+            "data.accessToken": { $exists: true },
+            "data.refreshToken": { $exists: true },
+            expireAt: {
+              $exists: true,
+              $lte: expirationThreshold,
+            },
+          },
+        },
+      })
+      .select("_id externalCredentials")
+      .lean()
+      .cursor();
+
+    for await (const doc of cursor) {
+      const redditCredential = doc.externalCredentials?.find(
+        (c) => c.type === UserExternalCredentialType.Reddit,
+      );
+
+      if (!redditCredential) {
+        continue;
+      }
+
+      const refreshToken = (
+        redditCredential.data as unknown as
+          | Record<string, string>
+          | undefined
+      )?.refreshToken;
+
+      if (!refreshToken) {
+        continue;
+      }
+
+      yield {
+        workspaceId: this.objectIdToString(doc._id),
+        credentialId: this.objectIdToString(redditCredential._id) as string,
+        encryptedRefreshToken: refreshToken,
+      };
+    }
+  }
+
+  // Notification fan-out targets: every member's email address. Prefers the
+  // verified email (the workspace identity) over the Discord-provided one.
+  async listMemberEmails(workspaceId: string): Promise<string[]> {
+    const results = await this.membershipModel.aggregate<{
+      user: { email?: string; verifiedEmail?: string };
+    }>([
+      { $match: { workspaceId: this.stringToObjectId(workspaceId) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      { $project: { user: { email: 1, verifiedEmail: 1 } } },
+    ]);
+
+    return [
+      ...new Set(
+        results
+          .map((r) => r.user.verifiedEmail || r.user.email)
+          .filter((email): email is string => !!email),
+      ),
+    ];
   }
 }

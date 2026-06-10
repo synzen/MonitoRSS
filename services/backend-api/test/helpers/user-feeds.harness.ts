@@ -9,6 +9,7 @@ import { UserFeedMongooseRepository } from "../../src/repositories/mongoose/user
 import { UserMongooseRepository } from "../../src/repositories/mongoose/user.mongoose.repository";
 import { WorkspaceMongooseRepository } from "../../src/repositories/mongoose/workspace.mongoose.repository";
 import { WorkspacesService } from "../../src/features/workspaces/workspaces.service";
+import { RedditApiService } from "../../src/services/reddit-api/reddit-api.service";
 import type { EmailVerificationService } from "../../src/features/users/email-verification.service";
 import {
   UserFeedDisabledCode,
@@ -129,7 +130,9 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         smtpTransport: null,
         workspaceRepository: new WorkspaceMongooseRepository(testContext.connection),
         userRepository,
+        userFeedRepository,
         emailVerificationService: {} as EmailVerificationService,
+        redditApiService: new RedditApiService({} as Config),
       });
     },
 

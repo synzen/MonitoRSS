@@ -12,6 +12,7 @@ import {
   revokeWorkspaceInviteHandler,
   listWorkspaceMembersHandler,
   removeWorkspaceMemberHandler,
+  disconnectWorkspaceRedditHandler,
 } from "./workspaces.handlers";
 import {
   CreateWorkspaceBodySchema,
@@ -77,6 +78,14 @@ export async function workspacesRoutes(app: FastifyInstance): Promise<void> {
     preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
     schema: { params: WorkspaceSlugParamsSchema },
     handler: listWorkspaceMembersHandler,
+  });
+
+  // Disconnect the workspace's Reddit connection (any member). Connecting goes
+  // through the reddit-auth OAuth flow with ?workspaceId=.
+  app.delete("/:workspaceSlug/reddit-connection", {
+    preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
+    schema: { params: WorkspaceSlugParamsSchema },
+    handler: disconnectWorkspaceRedditHandler,
   });
 
   // One route covers both remove-other (:userId) and leave (@me); the handler

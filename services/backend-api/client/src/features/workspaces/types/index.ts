@@ -19,6 +19,18 @@ export const WorkspaceSchema = object({
   // The workspace's feed limit. Present on the detail endpoint; the list endpoint
   // omits it, so it is optional.
   maxFeeds: number().optional(),
+  // The workspace's Reddit connection (detail endpoint only). One member's personal
+  // grant backs the whole workspace's Reddit feeds; connectedBy names that member.
+  redditConnection: object({
+    status: string().oneOf(["ACTIVE", "REVOKED"]).required(),
+    connectedBy: object({
+      userId: string().required(),
+      discordUserId: string().nullable(),
+    }).required(),
+  })
+    .nullable()
+    .optional()
+    .default(undefined),
 }).required();
 
 export type Workspace = InferType<typeof WorkspaceSchema>;

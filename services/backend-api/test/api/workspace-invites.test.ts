@@ -81,7 +81,9 @@ describe("Workspace invites API", () => {
       smtpTransport: fakeTransport,
       workspaceRepository: ctx.container.workspaceRepository,
       userRepository: ctx.container.userRepository,
+      userFeedRepository: ctx.container.userFeedRepository,
       emailVerificationService,
+      redditApiService: ctx.container.redditApiService,
     });
   });
 
@@ -301,12 +303,14 @@ describe("Workspace invites API", () => {
       smtpTransport: null,
       workspaceRepository: ctx.container.workspaceRepository,
       userRepository: ctx.container.userRepository,
+      userFeedRepository: ctx.container.userFeedRepository,
       emailVerificationService: new EmailVerificationService({
         config: ctx.container.config,
         smtpTransport: null,
         emailVerificationRepository: ctx.container.emailVerificationRepository,
         userRepository: ctx.container.userRepository,
       }),
+      redditApiService: ctx.container.redditApiService,
     });
 
     const inviteEmail = `${randomUUID()}@example.com`;

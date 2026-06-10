@@ -9,15 +9,27 @@ import {
 } from "../../infra/error-handler";
 import { isReservedSlug, isValidSlug } from "../../shared/utils/slugify";
 import { normalizeEmail } from "../../shared/utils/normalizeEmail";
+import { randomUUID } from "node:crypto";
+import dayjs from "dayjs";
 import type { Config } from "../../config";
 import type { SmtpTransport } from "../../infra/smtp";
 import { createFromFormatter } from "../../infra/email-from";
+import { encrypt } from "../../utils/encrypt";
+import { decrypt } from "../../shared/utils/decrypt";
+import logger from "../../infra/logger";
 import type { UserMongooseRepository } from "../../repositories/mongoose/user.mongoose.repository";
+import type { IUserFeedRepository } from "../../repositories/interfaces/user-feed.types";
+import type { RedditApiService } from "../../services/reddit-api/reddit-api.service";
+import {
+  UserExternalCredentialStatus,
+  UserExternalCredentialType,
+} from "../../repositories/shared/enums";
 import {
   CannotRemoveLastOwnerError,
   WorkspaceInviteExistsError,
   WorkspaceSlugTakenError,
   type IWorkspace,
+  type IWorkspaceExternalCredential,
   type IWorkspaceInvite,
   type IWorkspaceInviteWithContext,
   type IWorkspaceMember,
@@ -27,8 +39,12 @@ import {
 } from "../../repositories/mongoose/workspace.mongoose.repository";
 import type { EmailVerificationService } from "../users/email-verification.service";
 import WORKSPACE_INVITE_TEMPLATE from "./workspace-invite.template";
+import WORKSPACE_REDDIT_CONNECTION_LOST_TEMPLATE from "./workspace-reddit-connection-lost.template";
 
 const inviteTemplate = Handlebars.compile(WORKSPACE_INVITE_TEMPLATE);
+const redditConnectionLostTemplate = Handlebars.compile(
+  WORKSPACE_REDDIT_CONNECTION_LOST_TEMPLATE,
+);
 
 // v1 invitations grant admin only; the role is stored for forward-compatibility.
 const INVITE_ROLE: WorkspaceRole = "admin";
@@ -50,6 +66,7 @@ const MAX_PENDING_INVITES_PER_WORKSPACE = 25;
 type WorkspaceAction =
   | "changeSettings"
   | "manageMembers"
+  | "manageIntegrations"
   | "removeMember"
   | "leaveWorkspace"
   | "deleteWorkspace"
@@ -60,7 +77,9 @@ export interface WorkspacesServiceDeps {
   smtpTransport: SmtpTransport;
   workspaceRepository: WorkspaceMongooseRepository;
   userRepository: UserMongooseRepository;
+  userFeedRepository: IUserFeedRepository;
   emailVerificationService: EmailVerificationService;
+  redditApiService: RedditApiService;
 }
 
 export class WorkspacesService {
@@ -71,6 +90,10 @@ export class WorkspacesService {
     switch (action) {
       case "changeSettings":
       case "manageMembers":
+      // Open to every member by design: when the workspace's Reddit connection
+      // breaks, the largest possible set of people must be able to fix it by
+      // reconnecting with their own account.
+      case "manageIntegrations":
       case "leaveWorkspace":
         return role === "owner" || role === "admin";
       case "removeMember":
@@ -609,6 +632,8 @@ export class WorkspacesService {
     if (!removed) {
       throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
     }
+
+    await this.handleRedditConnectionOnMemberExit(workspace, targetUserId);
   }
 
   async leaveWorkspace(slug: string, userId: string): Promise<void> {
@@ -629,6 +654,8 @@ export class WorkspacesService {
     if (!removed) {
       throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
     }
+
+    await this.handleRedditConnectionOnMemberExit(workspace, userId);
   }
 
   private async removeMembershipEnforcingOwnerCount(
@@ -646,6 +673,234 @@ export class WorkspacesService {
       }
 
       throw err;
+    }
+  }
+
+  async getRedditCredentials(
+    workspaceId: string,
+  ): Promise<IWorkspaceExternalCredential | null> {
+    return this.deps.workspaceRepository.getExternalCredentials(
+      workspaceId,
+      UserExternalCredentialType.Reddit,
+    );
+  }
+
+  async setRedditCredentials(input: {
+    workspaceId: string;
+    connectedByUserId: string;
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+  }): Promise<void> {
+    const encryptionKey = this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX;
+
+    if (!encryptionKey) {
+      throw new Error("Encryption key not set while encrypting object values");
+    }
+
+    await this.deps.workspaceRepository.setExternalCredential(
+      input.workspaceId,
+      {
+        type: UserExternalCredentialType.Reddit,
+        data: {
+          accessToken: encrypt(input.accessToken, encryptionKey),
+          refreshToken: encrypt(input.refreshToken, encryptionKey),
+        },
+        expireAt: dayjs().add(input.expiresIn, "second").toDate(),
+        connectedByUserId: input.connectedByUserId,
+      },
+    );
+
+    await this.syncWorkspaceLookupKeys({ workspaceIds: [input.workspaceId] });
+  }
+
+  async revokeRedditCredentials(
+    workspaceId: string,
+    credentialId: string,
+  ): Promise<void> {
+    await this.deps.workspaceRepository.revokeExternalCredential(
+      workspaceId,
+      credentialId,
+    );
+  }
+
+  // Member-initiated disconnect: revoke the grant at Reddit, drop the record,
+  // and unset the workspace feeds' lookup keys so they stop fetching with the
+  // dead token.
+  async disconnectReddit(slug: string, userId: string): Promise<void> {
+    const { workspace, role } = await this.getWorkspaceForMemberBySlug(
+      slug,
+      userId,
+    );
+
+    if (!this.can("manageIntegrations", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    const credential = await this.getRedditCredentials(workspace.id);
+
+    if (!credential) {
+      return;
+    }
+
+    await this.revokeRedditGrantAtReddit(credential);
+
+    await this.deps.workspaceRepository.removeExternalCredentials(
+      workspace.id,
+      UserExternalCredentialType.Reddit,
+    );
+
+    await this.syncWorkspaceLookupKeys({ workspaceIds: [workspace.id] });
+  }
+
+  // Workspace counterpart of UsersService.syncLookupKeys: reconciles
+  // feedRequestLookupKey presence on workspace feeds against the workspace's
+  // reddit credential state.
+  async syncWorkspaceLookupKeys(data?: {
+    workspaceIds?: string[];
+    feedIds?: string[];
+  }): Promise<void> {
+    const bulkWriteOps: Array<{
+      feedId: string;
+      action: "set" | "unset";
+      lookupKey?: string;
+    }> = [];
+
+    for await (const {
+      feedId,
+      lookupKey,
+    } of this.deps.workspaceRepository.aggregateWorkspacesWithActiveRedditCredentials(
+      { workspaceIds: data?.workspaceIds, feedIds: data?.feedIds },
+    )) {
+      if (lookupKey) {
+        continue;
+      }
+
+      bulkWriteOps.push({
+        feedId,
+        action: "set",
+        lookupKey: randomUUID(),
+      });
+    }
+
+    for await (const {
+      feedId,
+    } of this.deps.workspaceRepository.aggregateWorkspaceFeedsWithExpiredOrRevokedRedditCredentials(
+      { workspaceIds: data?.workspaceIds, feedIds: data?.feedIds },
+    )) {
+      bulkWriteOps.push({
+        feedId,
+        action: "unset",
+      });
+    }
+
+    if (bulkWriteOps.length) {
+      await this.deps.userFeedRepository.bulkUpdateLookupKeys(bulkWriteOps);
+    }
+  }
+
+  // Revoke-on-exit: when the member whose personal Reddit account backs the
+  // workspace connection leaves (or is removed), the grant is revoked — nobody's
+  // account keeps powering a workspace they're no longer part of. Remaining
+  // members are notified so any of them can reconnect. Best-effort: a failure
+  // here must not undo or fail the membership removal itself.
+  private async handleRedditConnectionOnMemberExit(
+    workspace: IWorkspace,
+    exitedUserId: string,
+  ): Promise<void> {
+    try {
+      const credential = await this.getRedditCredentials(workspace.id);
+
+      if (
+        !credential ||
+        credential.connectedByUserId !== exitedUserId ||
+        credential.status !== UserExternalCredentialStatus.Active
+      ) {
+        return;
+      }
+
+      await this.revokeRedditGrantAtReddit(credential);
+
+      await this.deps.workspaceRepository.revokeExternalCredential(
+        workspace.id,
+        credential.id,
+      );
+
+      await this.syncWorkspaceLookupKeys({ workspaceIds: [workspace.id] });
+
+      await this.notifyRedditConnectionLost(workspace);
+    } catch (err) {
+      logger.error(
+        `Failed to handle reddit connection on member exit for workspace ${workspace.id}`,
+        { stack: (err as Error).stack },
+      );
+    }
+  }
+
+  // Revocation at Reddit is best-effort: the authoritative state is our
+  // credential record; an unreachable Reddit API must not block disconnection.
+  private async revokeRedditGrantAtReddit(
+    credential: IWorkspaceExternalCredential,
+  ): Promise<void> {
+    const encryptionKey = this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX;
+    const encryptedRefreshToken = credential.data.refreshToken;
+
+    if (!encryptionKey || !encryptedRefreshToken) {
+      return;
+    }
+
+    try {
+      await this.deps.redditApiService.revokeRefreshToken(
+        decrypt(encryptedRefreshToken, encryptionKey),
+      );
+    } catch (err) {
+      logger.warn("Failed to revoke workspace reddit refresh token at Reddit", {
+        stack: (err as Error).stack,
+      });
+    }
+  }
+
+  // Connection-death notification fans out to every member — the person who
+  // connected is often exactly the one who just left. Fired only on the
+  // ACTIVE→dead transition (callers check status first), so it cannot repeat
+  // per failed fetch.
+  async notifyRedditConnectionLost(workspace: IWorkspace): Promise<void> {
+    if (!this.deps.smtpTransport) {
+      return;
+    }
+
+    try {
+      const emails = await this.deps.workspaceRepository.listMemberEmails(
+        workspace.id,
+      );
+
+      if (!emails.length) {
+        return;
+      }
+
+      const settingsUrl = `${this.deps.config.BACKEND_API_LOGIN_REDIRECT_URI}/workspaces/${workspace.slug}/settings`;
+
+      await Promise.all(
+        emails.map((email) =>
+          this.deps.smtpTransport!.sendMail({
+            from: createFromFormatter(this.deps.config)(
+              "MonitoRSS",
+              "noreply",
+            ),
+            to: email,
+            subject: `Reddit connection lost for ${workspace.name}`,
+            html: redditConnectionLostTemplate({
+              workspaceName: workspace.name,
+              settingsUrl,
+            }),
+          }),
+        ),
+      );
+    } catch (err) {
+      logger.error(
+        `Failed to notify members of lost reddit connection for workspace ${workspace.id}`,
+        { stack: (err as Error).stack },
+      );
     }
   }
 }
