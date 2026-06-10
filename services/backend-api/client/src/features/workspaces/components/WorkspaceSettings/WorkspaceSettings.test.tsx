@@ -18,6 +18,14 @@ vi.mock("../../contexts", () => ({
   useCurrentWorkspace: vi.fn(),
 }));
 
+// The Reddit connection section has its own test file; stub it so these tests don't
+// need its workspace/user queries wired up.
+vi.mock("../WorkspaceRedditConnectionSetting", () => ({
+  WorkspaceRedditConnectionSetting: ({ workspaceSlug }: { workspaceSlug: string }) => (
+    <div>{`reddit-connection-setting:${workspaceSlug}`}</div>
+  ),
+}));
+
 vi.mock("../../hooks", () => ({
   useUpdateWorkspace: () => ({
     mutateAsync: h.update,
