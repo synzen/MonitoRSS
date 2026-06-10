@@ -34,6 +34,7 @@ export interface IUserPreferences {
   feedListColumnVisibility?: IUserFeedListColumnVisibility;
   feedListColumnOrder?: IUserFeedListColumnOrder;
   feedListStatusFilters?: IUserFeedListStatusFilters;
+  lastActiveWorkspaceSlug?: string;
 }
 
 export interface IUserFeatureFlags {
@@ -77,6 +78,7 @@ export interface UpdateUserPreferencesInput {
   feedListColumnVisibility?: IUserFeedListColumnVisibility | null;
   feedListColumnOrder?: IUserFeedListColumnOrder | null;
   feedListStatusFilters?: IUserFeedListStatusFilters | null;
+  lastActiveWorkspaceSlug?: string | null;
 }
 
 export interface SetExternalCredentialInput {

@@ -1,6 +1,7 @@
 import { useDisclosure } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import { FaPlus, FaRightFromBracket } from "react-icons/fa6";
+import { useParams } from "react-router-dom";
 import { MenuItem } from "@/components/ui/menu";
 import { LogoutButton } from "@/features/auth";
 import { useDiscordBot, useDiscordUserMe } from "@/features/discordUser";
@@ -11,6 +12,8 @@ import {
   useWorkspaces,
   WorkspaceSwitcher,
 } from "@/features/workspaces";
+import { pages } from "../constants";
+import RouteParams from "../types/RouteParams";
 import { NewHeader } from "../components";
 
 interface Props {
@@ -29,6 +32,8 @@ export const AppHeader = ({ invertBackground }: Props) => {
   const { data: discordBotData, status, error } = useDiscordBot();
   const { data: discordUserMe } = useDiscordUserMe();
   const { t } = useTranslation();
+  // The logo is scope-relative: "home" inside a workspace is that workspace's feeds.
+  const { workspaceSlug } = useParams<RouteParams>();
 
   const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
   const { workspaces } = useWorkspaces({ enabled: workspacesEnabled });
@@ -43,6 +48,7 @@ export const AppHeader = ({ invertBackground }: Props) => {
         isBotLoading={status === "loading"}
         botError={error}
         user={discordUserMe}
+        logoHref={pages.userFeeds(workspaceSlug ? { workspaceSlug } : undefined)}
         workspaceSlot={
           workspacesEnabled && hasWorkspaces ? (
             <WorkspaceSwitcher onCreateWorkspace={createWorkspaceDisclosure.onOpen} />

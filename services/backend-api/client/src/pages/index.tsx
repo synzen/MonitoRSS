@@ -11,6 +11,7 @@ import { Loading } from "../components";
 import { UserFeedStatusFilterProvider, MultiSelectUserFeedProvider } from "@/features/feed";
 import { WorkspaceScopeLayout, InvitePage } from "@/features/workspaces";
 import { NotFound } from "./NotFound";
+import { ScopeAwareLanding } from "./ScopeAwareLanding";
 import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
 
 import { lazyWithRetries } from "../utils/lazyImportWithRetry";
@@ -52,7 +53,14 @@ const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 const Pages: React.FC = () => (
   <SentryRoutes>
     <Route path={pages.notFound()} element={<NotFound />} />
-    <Route path="/" element={<Navigate to={pages.userFeeds()} />} />
+    <Route
+      path="/"
+      element={
+        <RequireAuth waitForUserFetch>
+          <ScopeAwareLanding />
+        </RequireAuth>
+      }
+    />
     <Route
       path={pages.checkout(":priceId")}
       element={

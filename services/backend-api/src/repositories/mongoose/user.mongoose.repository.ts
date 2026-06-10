@@ -75,6 +75,7 @@ const UserPreferencesSchema = new Schema(
     feedListColumnVisibility: { type: UserFeedListColumnVisibilitySchema },
     feedListColumnOrder: { type: UserFeedListColumnOrderSchema },
     feedListStatusFilters: { type: UserFeedListStatusFiltersSchema },
+    lastActiveWorkspaceSlug: { type: String },
   },
   { _id: false, timestamps: false },
 );

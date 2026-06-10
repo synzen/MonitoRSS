@@ -56,6 +56,7 @@ import {
 import { TabContentContainer } from "@/components/TabContentContainer";
 import { FeedDiscordChannelConnection } from "@/types";
 import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
+import { useScopeCrumbLabel } from "@/contexts/ScopeLabelContext";
 
 const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedConnectionTabSearchParam.Message, 0],
@@ -99,6 +100,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
   const navigate = useNavigate();
   const { workspaceSlug } = useFeedScope();
   const scope = workspaceSlug ? { workspaceSlug } : undefined;
+  const scopeCrumbLabel = useScopeCrumbLabel();
   const { search: urlSearch } = useLocation();
   const actionsButtonRef = useRef<HTMLButtonElement>(null);
   const { userFeed: feed } = useUserFeedContext();
@@ -180,7 +182,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                     <BreadcrumbList>
                       <BreadcrumbItem>
                         <BreadcrumbLink asChild color="text.link">
-                          <RouterLink to={pages.userFeeds(scope)}>Feeds</RouterLink>
+                          <RouterLink to={pages.userFeeds(scope)}>{scopeCrumbLabel}</RouterLink>
                         </BreadcrumbLink>
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />

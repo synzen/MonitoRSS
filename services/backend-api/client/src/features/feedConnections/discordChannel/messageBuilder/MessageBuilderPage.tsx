@@ -69,6 +69,7 @@ import {
   PageAlertProvider,
   usePageAlertContext,
 } from "@/contexts/PageAlertContext";
+import { useScopeCrumbLabel } from "@/contexts/ScopeLabelContext";
 import convertMessageBuilderStateToConnectionUpdate from "./utils/convertMessageBuilderStateToConnectionUpdate";
 import { pages } from "@/constants";
 import {
@@ -216,6 +217,7 @@ const MessageBuilderContent: React.FC = () => {
   const { feedId, connectionId } = useParams<RouteParams>();
   const { workspaceSlug } = useFeedScope();
   const scope = workspaceSlug ? { workspaceSlug } : undefined;
+  const scopeCrumbLabel = useScopeCrumbLabel();
   const { mutateAsync: updateConnection, status: updateStatus } =
     useUpdateDiscordChannelConnection();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
@@ -527,7 +529,7 @@ const MessageBuilderContent: React.FC = () => {
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild>
                         <RouterLink to={pages.userFeeds(scope)} color="text.link">
-                          Feeds
+                          {scopeCrumbLabel}
                         </RouterLink>
                       </BreadcrumbLink>
                     </BreadcrumbItem>

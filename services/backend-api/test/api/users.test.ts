@@ -412,6 +412,26 @@ describe("PATCH /api/v1/users/@me", { concurrency: true }, () => {
       assert.strictEqual(response.status, 400);
     });
 
+    it("treats an empty lastActiveWorkspaceSlug as clearing it (AJV coerces '' to null)", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+
+      const response = await user.fetch("/api/v1/users/@me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          preferences: { lastActiveWorkspaceSlug: "" },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as UserResponse;
+      assert.strictEqual(
+        body.result.preferences.lastActiveWorkspaceSlug,
+        undefined,
+      );
+    });
+
     it("returns 400 for invalid feedListSort.key", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);
@@ -584,6 +604,41 @@ describe("PATCH /api/v1/users/@me", { concurrency: true }, () => {
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as UserResponse;
       assert.strictEqual(body.result.preferences.dateLocale, "en-gb");
+    });
+
+    it("updates and clears lastActiveWorkspaceSlug preference", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+
+      const setResponse = await user.fetch("/api/v1/users/@me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          preferences: { lastActiveWorkspaceSlug: "acme-team" },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      assert.strictEqual(setResponse.status, 200);
+      const setBody = (await setResponse.json()) as UserResponse;
+      assert.strictEqual(
+        setBody.result.preferences.lastActiveWorkspaceSlug,
+        "acme-team",
+      );
+
+      const clearResponse = await user.fetch("/api/v1/users/@me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          preferences: { lastActiveWorkspaceSlug: null },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      assert.strictEqual(clearResponse.status, 200);
+      const clearBody = (await clearResponse.json()) as UserResponse;
+      assert.strictEqual(
+        clearBody.result.preferences.lastActiveWorkspaceSlug,
+        undefined,
+      );
     });
 
     it("updates feedListSort preference", async () => {

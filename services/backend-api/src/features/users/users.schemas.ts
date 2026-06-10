@@ -83,6 +83,9 @@ const UpdateMePreferencesSchema = Type.Object(
     feedListColumnVisibility: Type.Optional(FeedListColumnVisibilitySchema),
     feedListColumnOrder: Type.Optional(FeedListColumnOrderSchema),
     feedListStatusFilters: Type.Optional(FeedListStatusFiltersSchema),
+    lastActiveWorkspaceSlug: Type.Optional(
+      Type.Union([Type.String({ minLength: 1, maxLength: 200 }), Type.Null()]),
+    ),
   },
   { additionalProperties: false },
 );

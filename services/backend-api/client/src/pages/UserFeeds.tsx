@@ -16,7 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FaPlus, FaCircleCheck, FaChevronDown, FaTrash, FaCopy } from "react-icons/fa6";
+import { FaPlus, FaCircleCheck, FaChevronDown, FaGear, FaTrash, FaCopy } from "react-icons/fa6";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { IoDuplicate } from "react-icons/io5";
@@ -59,6 +59,7 @@ import { CopyUserFeedSettingsDialog } from "../features/feed/components/CopyUser
 import { SetupChecklist } from "../features/feed/components/SetupChecklist";
 import { useUnconfiguredFeeds } from "../features/feed/hooks/useUnconfiguredFeeds";
 import { ReducedLimitAlert } from "@/features/subscriptionProducts";
+import { useCurrentWorkspace } from "@/features/workspaces";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 
 export const UserFeeds = () => {
@@ -108,6 +109,7 @@ const UserFeedsInner: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { workspaceSlug } = useFeedScope();
   const scope = useMemo(() => (workspaceSlug ? { workspaceSlug } : undefined), [workspaceSlug]);
+  const currentWorkspace = useCurrentWorkspace();
   const { data: userMeData } = useUserMe();
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
     limit: 1,
@@ -469,6 +471,21 @@ const UserFeedsInner: React.FC = () => {
   return (
     <>
       <Stack gap={4}>
+        {/* In-scope settings affordance: once inside a workspace, its settings are one
+            visible on-page click rather than buried in the header switcher menu. */}
+        {currentWorkspace && (
+          <Flex alignItems="center" justifyContent="space-between" gap={4} flexWrap="wrap" mt={4}>
+            <Heading as="h1" size="lg" tabIndex={-1}>
+              {currentWorkspace.name}
+            </Heading>
+            <Button asChild variant="outline" size="sm">
+              <Link to={pages.workspaceSettings(currentWorkspace.slug)}>
+                <FaGear aria-hidden="true" />
+                Team settings
+              </Link>
+            </Button>
+          </Flex>
+        )}
         <Stack gap={2}>
           <PageAlertContextOutlet
             containerProps={{
@@ -546,7 +563,7 @@ const UserFeedsInner: React.FC = () => {
           <>
             <Flex alignItems="center" justifyContent="space-between" gap="4" flexWrap="wrap">
               <Flex alignItems="center" gap={4}>
-                <Heading as="h1" size="lg" tabIndex={-1}>
+                <Heading as={currentWorkspace ? "h2" : "h1"} size="lg" tabIndex={-1}>
                   {t("pages.userFeeds.title")}{" "}
                   <span>
                     {totalFeedCount !== undefined &&

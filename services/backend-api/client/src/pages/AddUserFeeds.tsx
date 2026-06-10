@@ -40,6 +40,7 @@ import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { AutoResizeTextarea } from "../components/AutoResizeTextarea";
 import { pages, ProductKey } from "../constants";
 import { ensureUrlScheme, useCreateUserFeed, useUserFeeds, useFeedScope } from "../features/feed";
+import { useScopeCrumbLabel } from "../contexts/ScopeLabelContext";
 import { useCreateUserFeedUrlValidation } from "../features/feed/hooks/useCreateUserFeedUrlValidation";
 import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
@@ -488,6 +489,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
   const navigate = useNavigate();
   const { workspaceSlug } = useFeedScope();
   const scope = workspaceSlug ? { workspaceSlug } : undefined;
+  const scopeCrumbLabel = useScopeCrumbLabel();
 
   const remainingFeedsAllowed =
     discordUserMe && userFeedsResults
@@ -543,7 +545,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <RouterLink to={pages.userFeeds(scope)}>Feeds</RouterLink>
+              <RouterLink to={pages.userFeeds(scope)}>{scopeCrumbLabel}</RouterLink>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator>

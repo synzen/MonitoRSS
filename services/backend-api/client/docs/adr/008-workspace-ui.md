@@ -4,6 +4,10 @@
 **Date:** 2026-05-29 (header switcher 2026-05-30; slugs + real workspace feeds 2026-05-31)
 **Scope:** `services/backend-api/client/src/`. The API contract and data model are backend ADR-002.
 
+## Addendum (2026-06-10) — navigation clauses revised
+
+The navigation-freeze parts of this ADR no longer hold: §10's "permanent header order … the header layout never changes" (the switcher is now a path-connected chip after the logo), §8's outline-button trigger presentation (accessible name, keyboard pattern, and gating are reaffirmed), and the E2E plan's "default landing" assertion (#4 — landing is now sticky-scope via `preferences.lastActiveWorkspaceSlug`). Everything else here stands.
+
 ## Addendum (2026-06-07) — user-facing label is "Team", code/URLs/API stay "Workspace"
 
 The entity is named **Workspace** throughout the code, data model, URLs (`/workspaces/:workspaceSlug`), API routes, env vars, and error codes (see [[project_teams_renamed_workspaces]] for why `Workspace` was chosen over `Team` at the model layer — it aligns with better-auth's `organization` plugin and keeps `team` free for a future inner sub-grouping).

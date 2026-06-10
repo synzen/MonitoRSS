@@ -30,6 +30,7 @@ export const UserMeSchema = object({
     feedListStatusFilters: object({
       statuses: array(string().required()).required(),
     }).optional(),
+    lastActiveWorkspaceSlug: string().nullable().optional(),
   }).default({}),
   subscription: object({
     subscriptionId: string().optional().nullable(),

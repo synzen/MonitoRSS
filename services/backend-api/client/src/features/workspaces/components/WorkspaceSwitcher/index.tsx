@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Box, Button, Input, Skeleton, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
+import { Box, Button, Icon, Input, Skeleton, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
 import { FaChevronDown, FaGear, FaPlus } from "react-icons/fa6";
 import { useNavigate, useParams } from "react-router-dom";
 import { pages } from "@/constants";
@@ -75,16 +75,20 @@ export const WorkspaceSwitcher = ({ onCreateWorkspace }: { onCreateWorkspace: ()
   return (
     <MenuRoot positioning={{ placement: "bottom-start" }}>
       <MenuTrigger asChild>
+        {/* Quiet ghost chip: the trigger reads as the scope segment of the header's
+            brand/scope path rather than a freestanding control. */}
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           maxW="220px"
+          fontSize="md"
+          fontWeight="medium"
           aria-label={`Switch team, current: ${activeName}`}
         >
           <Text as="span" lineClamp={1}>
             {activeName}
           </Text>
-          <FaChevronDown />
+          <Icon as={FaChevronDown} boxSize={3} color="fg.muted" />
         </Button>
       </MenuTrigger>
       <MenuContent maxH="420px" overflowY="auto">
