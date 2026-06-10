@@ -39,5 +39,17 @@ export const UserFeedStatusTag: React.FC<Props> = ({ status, ariaHidden }) => {
     );
   }
 
+  if (status === UserFeedComputedStatus.FeedLimitExceeded) {
+    return (
+      <Icon
+        as={FaPauseCircle}
+        aria-label="Disabled (feed limit exceeded)"
+        boxSize={5}
+        color="fg"
+        aria-hidden={ariaHidden}
+      />
+    );
+  }
+
   return <Icon as={FaCheckCircle} aria-label="Ok" boxSize={5} color="text.success" />;
 };

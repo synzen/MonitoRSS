@@ -19,7 +19,10 @@ import { ArticleRejectCode } from "../../shared/enums/article-reject-code";
 import { FeedRejectCode } from "../../shared/enums/feed-reject-code";
 import { getConnectionDisableCodeByArticleRejectCode } from "../../shared/utils/get-connection-disable-code-by-article-reject-code";
 import { getUserFeedDisableCodeByFeedRejectCode } from "../../shared/utils/get-user-feed-disable-code-by-feed-reject-code";
-import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request-lookup-details";
+import {
+  getFeedRequestLookupDetails,
+  pickFeedCredentialSource,
+} from "../../shared/utils/get-feed-request-lookup-details";
 import { castDiscordContentForMedium } from "../../shared/utils/cast-discord-content-for-medium";
 import { castDiscordEmbedsForMedium } from "../../shared/utils/cast-discord-embeds-for-medium";
 import { castDiscordComponentRowsForMedium } from "../../shared/utils/cast-discord-component-rows-for-medium";
@@ -526,13 +529,15 @@ export class MessageBrokerEventsService {
           "feedRequestLookupKey" in userFeed
             ? userFeed.feedRequestLookupKey
             : undefined,
-        workspaceId: userFeed.workspaceId,
       },
-      user: {
-        externalCredentials: user?.externalCredentials,
-      },
-      workspace,
+      credentials: pickFeedCredentialSource({
+        feed: userFeed,
+        user: { externalCredentials: user?.externalCredentials },
+        workspace,
+      }),
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+      redditFeedBaseUrl:
+        this.deps.config.BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL,
     });
 
     const publishData = {

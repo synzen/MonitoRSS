@@ -146,6 +146,8 @@
       "invalidFeedFailureText": "The feed contents could not be read. You may attempt to re-enable it. If the feed is verified to be working, it will be re-enabled.",
       "exceededFeedLimitTitle": "This feed is currently disabled because it is over your feed limit.",
       "exceededFeedLimitText": "You currently have exceeded your feed limit. You may either become a supporter, or disable/delete some of your other feeds to be able to re-enable this feed.",
+      "exceededFeedLimitWorkspaceTitle": "This feed is currently disabled because the workspace is over its feed limit.",
+      "exceededFeedLimitWorkspaceText": "The workspace has exceeded its feed limit. Disable or delete some of the workspace's other feeds to re-enable this feed.",
       "adminDisabledTitle": "This feed is currently disabled by an administrator.",
       "adminDisabledText": "Please contact support for more details.",
       "feedTooLargeTitle": "Disabled due to feed size",

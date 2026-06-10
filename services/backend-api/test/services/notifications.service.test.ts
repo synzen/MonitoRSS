@@ -477,4 +477,173 @@ describe("NotificationsService", { concurrency: true }, () => {
       assert.ok(sendMailCall.html.includes("MANUAL"));
     });
   });
+
+  describe("workspace feed alerts", () => {
+    it("routes recipients through workspace member alert emails for workspace feeds", async () => {
+      const feed = createMockFeed({
+        id: "ws-feed-id",
+        workspaceId: "workspace-1",
+      });
+      const ctx = harness.createContext({
+        userFeedRepository: { feeds: [feed] },
+        workspaceRepository: {
+          memberAlertEmails: ["owner@test.com", "admin@test.com"],
+        },
+      });
+
+      await ctx.service.sendDisabledFeedsAlert(["ws-feed-id"], {
+        disabledCode: UserFeedDisabledCode.FailedRequests,
+      });
+
+      assert.strictEqual(ctx.usersService.getEmailsForAlerts.mock.calls.length, 0);
+      assert.strictEqual(
+        ctx.workspaceRepository.getMemberAlertEmails.mock.calls.length,
+        1,
+      );
+      assert.deepStrictEqual(
+        ctx.workspaceRepository.getMemberAlertEmails.mock.calls[0]?.arguments[0],
+        "workspace-1",
+      );
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as { to: string[] };
+      assert.deepStrictEqual(sendMailCall.to, [
+        "owner@test.com",
+        "admin@test.com",
+      ]);
+    });
+
+    it("routes connection alerts for workspace feeds through member alert emails", async () => {
+      const connection = createMockConnection();
+      const feed = createMockFeed({
+        workspaceId: "workspace-2",
+        connections: { discordChannels: [connection] },
+      });
+      const ctx = harness.createContext({
+        workspaceRepository: { memberAlertEmails: ["member@test.com"] },
+      });
+
+      await ctx.service.sendDisabledFeedConnectionAlert(feed, connection, {
+        disabledCode: FeedConnectionDisabledCode.Unknown,
+      });
+
+      assert.strictEqual(ctx.usersService.getEmailsForAlerts.mock.calls.length, 0);
+      assert.strictEqual(ctx.smtpTransport!.sendMail.mock.calls.length, 1);
+    });
+  });
+
+  describe("sendWorkspaceFeedsDisabledDigest", () => {
+    it("sends one digest to member alert emails listing the disabled feeds", async () => {
+      const ctx = harness.createContext({
+        workspaceRepository: {
+          workspace: { id: "ws-1", name: "Acme News", slug: "acme-news" },
+          memberAlertEmails: ["owner@test.com", "admin@test.com"],
+        },
+      });
+
+      await ctx.service.sendWorkspaceFeedsDisabledDigest({
+        workspaceId: "ws-1",
+        disabledFeeds: [
+          { id: "f1", title: "Feed One", url: "https://example.com/one.xml" },
+          { id: "f2", title: "Feed Two", url: "https://example.com/two.xml" },
+        ],
+      });
+
+      assert.strictEqual(ctx.smtpTransport!.sendMail.mock.calls.length, 1);
+      const sendMailCall = ctx.smtpTransport!.sendMail.mock.calls[0]
+        ?.arguments[0] as { to: string[]; subject: string; html: string };
+      assert.deepStrictEqual(sendMailCall.to, [
+        "owner@test.com",
+        "admin@test.com",
+      ]);
+      assert.ok(sendMailCall.subject.includes("Acme News"));
+      assert.ok(sendMailCall.html.includes("Feed One"));
+      assert.ok(sendMailCall.html.includes("Feed Two"));
+      assert.ok(
+        sendMailCall.html.includes(
+          "https://my.test.com/workspaces/acme-news/feeds",
+        ),
+      );
+    });
+
+    it("creates delivery attempts with the digest type and workspace id", async () => {
+      const ctx = harness.createContext({
+        workspaceRepository: {
+          workspace: { id: "ws-1", name: "Acme News", slug: "acme-news" },
+          memberAlertEmails: ["owner@test.com"],
+        },
+      });
+
+      await ctx.service.sendWorkspaceFeedsDisabledDigest({
+        workspaceId: "ws-1",
+        disabledFeeds: [
+          { id: "f1", title: "Feed One", url: "https://example.com/one.xml" },
+        ],
+      });
+
+      const createCall = ctx.notificationDeliveryAttemptRepository.createMany
+        .mock.calls[0]?.arguments[0] as Array<{
+        type: NotificationDeliveryAttemptType;
+        workspaceId?: string;
+      }>;
+      assert.strictEqual(
+        createCall[0]?.type,
+        NotificationDeliveryAttemptType.DisabledFeedsDigest,
+      );
+      assert.strictEqual(createCall[0]?.workspaceId, "ws-1");
+    });
+
+    it("does not send when no members opted into alerts", async () => {
+      const ctx = harness.createContext({
+        workspaceRepository: { memberAlertEmails: [] },
+      });
+
+      await ctx.service.sendWorkspaceFeedsDisabledDigest({
+        workspaceId: "ws-1",
+        disabledFeeds: [
+          { id: "f1", title: "Feed One", url: "https://example.com/one.xml" },
+        ],
+      });
+
+      assert.strictEqual(ctx.smtpTransport!.sendMail.mock.calls.length, 0);
+    });
+
+    it("does not send when there are no disabled feeds", async () => {
+      const ctx = harness.createContext();
+
+      await ctx.service.sendWorkspaceFeedsDisabledDigest({
+        workspaceId: "ws-1",
+        disabledFeeds: [],
+      });
+
+      assert.strictEqual(ctx.smtpTransport!.sendMail.mock.calls.length, 0);
+    });
+
+    it("marks delivery attempts as failed when SMTP send fails", async () => {
+      const ctx = harness.createContext({
+        smtpTransport: {
+          sendMail: () => Promise.reject(new Error("SMTP failed")),
+        },
+      });
+
+      await assert.rejects(
+        () =>
+          ctx.service.sendWorkspaceFeedsDisabledDigest({
+            workspaceId: "ws-1",
+            disabledFeeds: [
+              { id: "f1", title: "Feed One", url: "https://example.com/one.xml" },
+            ],
+          }),
+        { message: "SMTP failed" },
+      );
+
+      assert.deepStrictEqual(
+        ctx.notificationDeliveryAttemptRepository.updateManyByIds.mock.calls[0]
+          ?.arguments[1],
+        {
+          status: NotificationDeliveryAttemptStatus.Failure,
+          failReasonInternal: "SMTP failed",
+        },
+      );
+    });
+  });
 });

@@ -11,8 +11,17 @@ import {
   UserExternalCredentialStatus,
   UserExternalCredentialType,
 } from "../shared/enums";
-
-const REDDIT_URL_REGEX = /^http(s?):\/\/(www.)?(\w+\.)?reddit\.com\/r\//i;
+import {
+  REDDIT_URL_REGEX,
+  activeRedditCredentialElemMatch,
+  expiredOrRevokedRedditCredentialConditions,
+  expiringActiveRedditCredentialFilter,
+  extractRedditRefreshCredential,
+  normalizeExternalCredentialData,
+  removeExternalCredentialsByType,
+  revokeExternalCredentialById,
+  upsertExternalCredential,
+} from "./external-credentials.subdocument";
 
 // owner ⊇ admin. There is no read-only tier: every membership can manage the
 // workspace and its feeds. Only owner-gated actions (delete, transfer) require
@@ -506,6 +515,14 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     }));
   }
 
+  // Emails of members who opted into disabled-feed alerts (see
+  // listMemberEmails for the unfiltered variant).
+  async getMemberAlertEmails(workspaceId: string): Promise<string[]> {
+    return this.aggregateMemberEmails(workspaceId, {
+      "user.preferences.alertOnDisabledFeeds": true,
+    });
+  }
+
   // Delete a membership while preserving the ≥1-owner invariant. The delete and
   // the owner re-count run in one transaction (mirrors createWorkspaceWithOwner)
   // so a concurrent demotion cannot slip a workspace to zero owners between the
@@ -886,21 +903,11 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     expireAt?: Date | null;
     connectedByUserId: Types.ObjectId;
   }): IWorkspaceExternalCredential {
-    let data: Record<string, string> = {};
-
-    if (credential.data) {
-      if (credential.data instanceof Map) {
-        data = Object.fromEntries(credential.data);
-      } else {
-        data = credential.data as Record<string, string>;
-      }
-    }
-
     return {
       id: this.objectIdToString(credential._id) as string,
       type: credential.type as UserExternalCredentialType,
       status: credential.status as UserExternalCredentialStatus,
-      data,
+      data: normalizeExternalCredentialData(credential.data),
       expireAt: credential.expireAt ?? undefined,
       connectedByUserId: this.objectIdToString(credential.connectedByUserId),
     };
@@ -910,55 +917,15 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     workspaceId: string,
     credential: SetWorkspaceExternalCredentialInput,
   ): Promise<void> {
-    const setQueries = Object.entries(credential.data).reduce(
-      (acc, [key, value]) => {
-        acc[`externalCredentials.$.data.${key}`] = value;
-        return acc;
+    await upsertExternalCredential({
+      model: this.workspaceModel,
+      ownerFilter: { _id: this.stringToObjectId(workspaceId) },
+      credential,
+      // Re-attributed to whoever just connected.
+      extraFields: {
+        connectedByUserId: this.stringToObjectId(credential.connectedByUserId),
       },
-      {} as Record<string, unknown>,
-    );
-
-    const finalSetQuery = {
-      ...setQueries,
-      ...(credential.expireAt && {
-        "externalCredentials.$.expireAt": credential.expireAt,
-      }),
-      // A (re-)connect produces fresh, valid tokens: a previously revoked
-      // credential is active again, attributed to whoever just connected.
-      "externalCredentials.$.status": UserExternalCredentialStatus.Active,
-      "externalCredentials.$.connectedByUserId": this.stringToObjectId(
-        credential.connectedByUserId,
-      ),
-    };
-
-    const result = await this.workspaceModel.updateOne(
-      {
-        _id: this.stringToObjectId(workspaceId),
-        externalCredentials: {
-          $elemMatch: { type: credential.type },
-        },
-      },
-      { $set: finalSetQuery },
-    );
-
-    if (!result.modifiedCount) {
-      await this.workspaceModel.updateOne(
-        { _id: this.stringToObjectId(workspaceId) },
-        {
-          $push: {
-            externalCredentials: {
-              type: credential.type,
-              data: credential.data,
-              expireAt: credential.expireAt,
-              status: UserExternalCredentialStatus.Active,
-              connectedByUserId: this.stringToObjectId(
-                credential.connectedByUserId,
-              ),
-            },
-          },
-        },
-      );
-    }
+    });
   }
 
   async getExternalCredentials(
@@ -981,27 +948,22 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     workspaceId: string,
     type: UserExternalCredentialType,
   ): Promise<void> {
-    await this.workspaceModel.updateOne(
-      { _id: this.stringToObjectId(workspaceId) },
-      { $pull: { externalCredentials: { type } } },
-    );
+    await removeExternalCredentialsByType({
+      model: this.workspaceModel,
+      ownerFilter: { _id: this.stringToObjectId(workspaceId) },
+      type,
+    });
   }
 
   async revokeExternalCredential(
     workspaceId: string,
     credentialId: string,
   ): Promise<void> {
-    await this.workspaceModel.updateOne(
-      {
-        _id: this.stringToObjectId(workspaceId),
-        "externalCredentials._id": this.stringToObjectId(credentialId),
-      },
-      {
-        $set: {
-          "externalCredentials.$.status": UserExternalCredentialStatus.Revoked,
-        },
-      },
-    );
+    await revokeExternalCredentialById({
+      model: this.workspaceModel,
+      ownerFilter: { _id: this.stringToObjectId(workspaceId) },
+      credentialId: this.stringToObjectId(credentialId),
+    });
   }
 
   // Workspace counterpart of the user repository's reddit lookup-key
@@ -1022,13 +984,7 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
                 ),
               },
             }),
-            externalCredentials: {
-              $elemMatch: {
-                expireAt: { $gt: new Date() },
-                status: UserExternalCredentialStatus.Active,
-                type: UserExternalCredentialType.Reddit,
-              },
-            },
+            ...activeRedditCredentialElemMatch(),
           },
         },
         {
@@ -1109,24 +1065,10 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
         {
           $match: {
             $or: [
+              // Unlike user-owned feeds, a feed whose workspace doc is gone
+              // has no credential source at all, so its key is unset too.
               { workspace: null },
-              { "workspace.externalCredentials.0": { $exists: false } },
-              {
-                "workspace.externalCredentials": {
-                  $elemMatch: {
-                    type: UserExternalCredentialType.Reddit,
-                    expireAt: { $lte: new Date() },
-                  },
-                },
-              },
-              {
-                "workspace.externalCredentials": {
-                  $elemMatch: {
-                    type: UserExternalCredentialType.Reddit,
-                    status: UserExternalCredentialStatus.Revoked,
-                  },
-                },
-              },
+              ...expiredOrRevokedRedditCredentialConditions("workspace"),
             ],
           },
         },
@@ -1157,47 +1099,22 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     const expirationThreshold = new Date(Date.now() + withinMs);
 
     const cursor = this.workspaceModel
-      .find({
-        externalCredentials: {
-          $elemMatch: {
-            type: UserExternalCredentialType.Reddit,
-            status: UserExternalCredentialStatus.Active,
-            "data.accessToken": { $exists: true },
-            "data.refreshToken": { $exists: true },
-            expireAt: {
-              $exists: true,
-              $lte: expirationThreshold,
-            },
-          },
-        },
-      })
+      .find(expiringActiveRedditCredentialFilter(expirationThreshold))
       .select("_id externalCredentials")
       .lean()
       .cursor();
 
     for await (const doc of cursor) {
-      const redditCredential = doc.externalCredentials?.find(
-        (c) => c.type === UserExternalCredentialType.Reddit,
-      );
+      const credential = extractRedditRefreshCredential(doc);
 
-      if (!redditCredential) {
-        continue;
-      }
-
-      const refreshToken = (
-        redditCredential.data as unknown as
-          | Record<string, string>
-          | undefined
-      )?.refreshToken;
-
-      if (!refreshToken) {
+      if (!credential) {
         continue;
       }
 
       yield {
         workspaceId: this.objectIdToString(doc._id),
-        credentialId: this.objectIdToString(redditCredential._id) as string,
-        encryptedRefreshToken: refreshToken,
+        credentialId: this.objectIdToString(credential.credentialId) as string,
+        encryptedRefreshToken: credential.encryptedRefreshToken,
       };
     }
   }
@@ -1205,6 +1122,13 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
   // Notification fan-out targets: every member's email address. Prefers the
   // verified email (the workspace identity) over the Discord-provided one.
   async listMemberEmails(workspaceId: string): Promise<string[]> {
+    return this.aggregateMemberEmails(workspaceId);
+  }
+
+  private async aggregateMemberEmails(
+    workspaceId: string,
+    userMatch?: Record<string, unknown>,
+  ): Promise<string[]> {
     const results = await this.membershipModel.aggregate<{
       user: { email?: string; verifiedEmail?: string };
     }>([
@@ -1218,6 +1142,7 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
         },
       },
       { $unwind: "$user" },
+      ...(userMatch ? [{ $match: userMatch }] : []),
       { $project: { user: { email: 1, verifiedEmail: 1 } } },
     ]);
 

@@ -273,6 +273,13 @@ const infoSlots = {
 const defaultButtonRecipe = defaultConfig.theme!.recipes!.button;
 const buttonRecipe = {
   ...defaultButtonRecipe,
+  // Pin the NEUTRAL palette at the recipe level. `colorPalette` cascades via CSS vars, so a bare
+  // button inside a status-tinted container (e.g. an Alert, which hardwires its status palette)
+  // silently inherits that tint. Pinning gray here keeps buttons neutral-by-default everywhere;
+  // call sites that MEAN a hue still state it (colorPalette="brand" via PrimaryActionButton,
+  // explicit status palettes) and props win over the recipe. This also removes the need for any
+  // per-call-site colorPalette="gray" (which the lint ratchet now bans).
+  base: { ...defaultButtonRecipe.base, colorPalette: "gray" },
   defaultVariants: { ...defaultButtonRecipe.defaultVariants, variant: "outline" },
   variants: {
     ...defaultButtonRecipe.variants,

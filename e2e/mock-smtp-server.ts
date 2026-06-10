@@ -17,6 +17,10 @@ interface CapturedMail {
   // The first /invites/<id> link found in the body (the workspace-invitation
   // notification email); null for other mails (e.g. the verification code mail).
   inviteLink: string | null;
+  subject: string | null;
+  // All decoded candidate renderings of the body joined together, so tests can
+  // substring-match content regardless of transfer encoding.
+  body: string;
   receivedAt: number;
 }
 
@@ -86,6 +90,39 @@ function extractInviteLink(body: string): string | null {
   return null;
 }
 
+// MIME-decode a Subject header. Handles the common nodemailer encodings: plain
+// ASCII, RFC 2047 B (base64) and Q (quoted-printable-ish) encoded words.
+function decodeSubjectValue(value: string): string {
+  return value.replace(
+    /=\?[^?]+\?([BQbq])\?([^?]*)\?=/g,
+    (_m, enc: string, text: string) => {
+      if (enc.toUpperCase() === "B") {
+        try {
+          return Buffer.from(text, "base64").toString("utf8");
+        } catch {
+          return text;
+        }
+      }
+      return text
+        .replace(/_/g, " ")
+        .replace(/=([0-9A-Fa-f]{2})/g, (_m2, hex) =>
+          String.fromCharCode(parseInt(hex, 16)),
+        );
+    },
+  );
+}
+
+function extractSubject(raw: string): string | null {
+  const headers = raw.slice(0, raw.search(/\r?\n\r?\n/) + 1 || raw.length);
+  // Unfold header continuation lines before matching. Folding can leave double
+  // spaces at the fold points; collapse them so tests see the logical subject.
+  const unfolded = headers.replace(/\r?\n[ \t]+/g, " ");
+  const match = /^Subject:[ \t]*(.+)$/im.exec(unfolded);
+  return match
+    ? decodeSubjectValue(match[1].trim()).replace(/\s+/g, " ")
+    : null;
+}
+
 const smtpServer = createTcpServer((socket: Socket) => {
   socket.setEncoding("utf8");
 
@@ -113,12 +150,14 @@ const smtpServer = createTcpServer((socket: Socket) => {
         // carries a 6-digit-tailed invite ObjectId in the link that would
         // otherwise be mistaken for a verification code.
         const code = inviteLink ? null : extractCode(message);
+        const subject = extractSubject(message);
+        const body = decodeBodyCandidates(message).join("\n");
         // eslint-disable-next-line no-console
         console.log(
-          `[mock-smtp] captured for ${recipients.join(",")}: code=${code ?? "NONE"} link=${inviteLink ?? "NONE"} (raw ${message.length} bytes)`,
+          `[mock-smtp] captured for ${recipients.join(",")}: subject=${subject ?? "NONE"} code=${code ?? "NONE"} link=${inviteLink ?? "NONE"} (raw ${message.length} bytes)`,
         );
         for (const to of recipients) {
-          mailboxes.set(to, { to, code, inviteLink, receivedAt: Date.now() });
+          mailboxes.set(to, { to, code, inviteLink, subject, body, receivedAt: Date.now() });
         }
         inData = false;
         dataBuffer = "";
@@ -197,6 +236,20 @@ const httpServer = createHttpServer((req, res) => {
     const captured = mailboxes.get(to);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ inviteLink: captured?.inviteLink ?? null }));
+    return;
+  }
+
+  if (url.pathname === "/message") {
+    const to = (url.searchParams.get("to") || "").toLowerCase();
+    const captured = mailboxes.get(to);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify(
+        captured
+          ? { subject: captured.subject, body: captured.body, receivedAt: captured.receivedAt }
+          : { subject: null, body: null, receivedAt: null },
+      ),
+    );
     return;
   }
 

@@ -64,9 +64,7 @@ export const ConnectionCard = ({ feedId, connection }: Props) => {
                   {connection.name}
                 </Text>
                 {connection.disabledCode === FeedConnectionDisabledCode.Manual && (
-                  <Badge fontSize="x-small" colorPalette="gray">
-                    Disabled
-                  </Badge>
+                  <Badge fontSize="x-small">Disabled</Badge>
                 )}
                 {isError && (
                   <Badge fontSize="x-small" colorPalette="red">

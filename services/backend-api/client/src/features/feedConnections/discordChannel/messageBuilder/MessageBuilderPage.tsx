@@ -588,7 +588,6 @@ const MessageBuilderContent: React.FC = () => {
                     <Button
                       display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "inline-flex" }}
                       variant="outline"
-                      colorPalette="gray"
                       size="sm"
                       onClick={resetTour}
                     >
@@ -600,7 +599,6 @@ const MessageBuilderContent: React.FC = () => {
                     <Button
                       ref={templatesButtonRef}
                       variant="outline"
-                      colorPalette="gray"
                       size="sm"
                       onClick={onOpenTemplates}
                       data-tour-target="templates-button"

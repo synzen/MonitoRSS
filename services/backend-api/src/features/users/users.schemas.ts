@@ -61,6 +61,7 @@ const FeedListStatusFiltersSchema = Type.Object(
         Type.Literal("OK"),
         Type.Literal("REQUIRES_ATTENTION"),
         Type.Literal("MANUALLY_DISABLED"),
+        Type.Literal("FEED_LIMIT_EXCEEDED"),
         Type.Literal("RETRYING"),
       ]),
     ),

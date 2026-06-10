@@ -3,6 +3,7 @@ import {
   MOCK_RSS_SERVER_PORT,
   MOCK_DISCORD_SERVER_PORT,
   MOCK_SMTP_HTTP_PORT,
+  MOCK_REDDIT_SERVER_PORT,
 } from "./helpers/constants";
 
 const INSTANCE = process.env.E2E_INSTANCE || "0";
@@ -95,6 +96,13 @@ export default defineConfig({
       // Probed on its HTTP control port; it also opens a raw SMTP socket.
       command: "npx tsx mock-smtp-server.ts",
       port: MOCK_SMTP_HTTP_PORT,
+      reuseExistingServer: false,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+    {
+      command: "npx tsx mock-reddit-server.ts",
+      port: MOCK_REDDIT_SERVER_PORT,
       reuseExistingServer: false,
       stdout: "pipe",
       stderr: "pipe",

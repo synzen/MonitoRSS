@@ -1,10 +1,3 @@
-import type { IFeedConnections } from "../../repositories/interfaces/feed-connection.types";
-import type {
-  IUserFeedDateCheckOptions,
-  IUserFeedFormatOptions,
-  IExternalFeedProperty,
-} from "../../repositories/interfaces/user-feed.types";
-
 export interface DiscordMediumEventDetails {
   channelNewThreadTitle?: string;
   channelNewThreadExcludesPreview?: boolean;
@@ -66,34 +59,6 @@ export interface DiscordMediumEvent {
   filters: { expression: Record<string, unknown> } | null;
   rateLimits?: Array<{ id: string; timeWindowSeconds: number; limit: number }>;
   details: DiscordMediumEventDetails;
-}
-
-export interface UserFeedForDelivery {
-  id: string;
-  url: string;
-  debug?: boolean;
-  maxDailyArticles?: number;
-  connections: IFeedConnections;
-  passingComparisons?: string[];
-  blockingComparisons?: string[];
-  formatOptions?: IUserFeedFormatOptions;
-  externalProperties?: IExternalFeedProperty[];
-  dateCheckOptions?: IUserFeedDateCheckOptions;
-  feedRequestLookupKey?: string;
-  user: {
-    discordUserId: string;
-  };
-  users: Array<{
-    externalCredentials?: Array<{
-      type: string;
-      data: Record<string, string>;
-    }>;
-    preferences?: {
-      dateFormat?: string;
-      dateTimezone?: string;
-      dateLocale?: string;
-    };
-  }>;
 }
 
 export type {

@@ -28,7 +28,7 @@ port_in_use() {
 # already held 3001/3002.
 instance_ports() {
   local off=$(($1 * STRIDE))
-  echo "$((8100 + off)) $((3100 + off)) $((27019 + off)) $((3001 + off)) $((3002 + off))"
+  echo "$((8100 + off)) $((3100 + off)) $((27019 + off)) $((3001 + off)) $((3002 + off)) $((3006 + off))"
 }
 
 instance_is_free() {
@@ -68,10 +68,12 @@ export E2E_FRONTEND_PORT=$((3100 + OFF))
 export E2E_MONGO_PORT=$((27019 + OFF))
 export E2E_MOCK_RSS_PORT=$((3001 + OFF))
 export E2E_MOCK_DISCORD_PORT=$((3002 + OFF))
+export E2E_MOCK_REDDIT_PORT=$((3006 + OFF))
 
-# Enable the mandatory-Reddit-connection gate for the mocked suite so the
-# gate-render flow can be exercised. Reddit OAuth itself is never hit (the gate
-# short-circuits before any outbound request), so any non-empty id will do.
+# Enable the mandatory-Reddit-connection gate for the mocked suite. Reddit OAuth
+# and authenticated feed fetches are served by the host-side mock reddit server
+# (see docker-compose.e2e.yml BACKEND_API_REDDIT_* env vars), so the full
+# connect -> fetch flow can be exercised; any non-empty id will do.
 export BACKEND_API_REDDIT_CLIENT_ID="${BACKEND_API_REDDIT_CLIENT_ID:-e2e-reddit-client-id}"
 
 if [ "$E2E_INSTANCE" = 0 ]; then
@@ -145,7 +147,7 @@ cleanup() {
     echo
     echo "===== DOCKER STACK ====="
     cat "$DOCKER_LOG" 2>/dev/null || echo "(no docker log)"
-    for mock in rss discord smtp; do
+    for mock in rss discord smtp reddit; do
       echo
       echo "===== MOCK: $mock ====="
       cat "$LOG_DIR/mock-${mock}${INSTANCE_SUFFIX}.log" 2>/dev/null || echo "(no mock-$mock log)"
@@ -165,7 +167,7 @@ else
 fi
 
 echo "Starting E2E Docker stack (instance: $E2E_INSTANCE, project: $COMPOSE_PROJECT_NAME)..."
-echo "  backend=$E2E_BACKEND_PORT frontend=$E2E_FRONTEND_PORT mongo=$E2E_MONGO_PORT rss-mock=$E2E_MOCK_RSS_PORT discord-mock=$E2E_MOCK_DISCORD_PORT"
+echo "  backend=$E2E_BACKEND_PORT frontend=$E2E_FRONTEND_PORT mongo=$E2E_MONGO_PORT rss-mock=$E2E_MOCK_RSS_PORT discord-mock=$E2E_MOCK_DISCORD_PORT reddit-mock=$E2E_MOCK_REDDIT_PORT"
 docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d --build --wait
 
 # Follow container logs into $DOCKER_LOG live, so an agent inspecting a hung/slow run

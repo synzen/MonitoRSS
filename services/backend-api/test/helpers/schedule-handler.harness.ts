@@ -50,6 +50,7 @@ export interface MockUserFeedsService {
       }>,
     ) => Promise<void>
   >;
+  enforceAllWorkspaceFeedLimits: Mock<() => Promise<void>>;
 }
 
 export interface MockUsersService {
@@ -140,12 +141,19 @@ function createMockSupportersService(
       refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
       isSupporter: false,
     })),
+    getWorkspaceBenefits: mock.fn(async () => ({
+      maxFeeds: 5,
+      maxDailyArticles: DEFAULT_MAX_DAILY_ARTICLES,
+      refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
+      allowWebhooks: false,
+    })),
   } as unknown as ScheduleHandlerServiceDeps["supportersService"];
 }
 
 function createMockUserFeedsService(): MockUserFeedsService {
   return {
     enforceAllUserFeedLimits: mock.fn(async () => {}),
+    enforceAllWorkspaceFeedLimits: mock.fn(async () => {}),
   };
 }
 

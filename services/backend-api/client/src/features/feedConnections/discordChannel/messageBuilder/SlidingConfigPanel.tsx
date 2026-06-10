@@ -76,9 +76,7 @@ export const SlidingConfigPanel: React.FC<SlidingConfigPanelProps> = ({ onClose,
           )}
         </DialogBody>
         <DialogFooter borderTop="1px solid" borderColor="border" p={4}>
-          <Button colorPalette="gray" onClick={onClose}>
-            Close
-          </Button>
+          <Button onClick={onClose}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </DialogRoot>

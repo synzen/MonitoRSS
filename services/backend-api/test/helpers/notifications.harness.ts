@@ -1,5 +1,8 @@
 import { mock } from "node:test";
-import { NotificationsService } from "../../src/services/notifications/notifications.service";
+import {
+  NotificationsService,
+  type NotificationsWorkspaceRepository,
+} from "../../src/services/notifications/notifications.service";
 import type { Config } from "../../src/config";
 import type { SmtpTransport } from "../../src/infra/smtp";
 import type {
@@ -49,11 +52,17 @@ export interface NotificationDeliveryAttemptRepositoryMockOptions {
   updateManyByIds?: () => Promise<void>;
 }
 
+export interface WorkspaceRepositoryMockOptions {
+  workspace?: { id: string; name: string; slug: string } | null;
+  memberAlertEmails?: string[];
+}
+
 export interface NotificationsContextOptions {
   config?: Partial<Config>;
   smtpTransport?: SmtpTransportMockOptions | null;
   usersService?: UsersServiceMockOptions;
   userFeedRepository?: UserFeedRepositoryMockOptions;
+  workspaceRepository?: WorkspaceRepositoryMockOptions;
   notificationDeliveryAttemptRepository?: NotificationDeliveryAttemptRepositoryMockOptions;
 }
 
@@ -69,6 +78,11 @@ export interface MockUserFeedRepository {
   findByIdsForNotification: ReturnType<typeof mock.fn>;
 }
 
+export interface MockWorkspaceRepository {
+  findById: ReturnType<typeof mock.fn>;
+  getMemberAlertEmails: ReturnType<typeof mock.fn>;
+}
+
 export interface MockNotificationDeliveryAttemptRepository {
   createMany: ReturnType<typeof mock.fn>;
   updateManyByIds: ReturnType<typeof mock.fn>;
@@ -79,6 +93,7 @@ export interface NotificationsContext {
   smtpTransport: MockSmtpTransport | null;
   usersService: MockUsersService;
   userFeedRepository: MockUserFeedRepository;
+  workspaceRepository: MockWorkspaceRepository;
   notificationDeliveryAttemptRepository: MockNotificationDeliveryAttemptRepository;
   generateId(): string;
   createMockFeed(overrides?: Partial<IUserFeed>): IUserFeed;
@@ -150,12 +165,35 @@ export function createNotificationsHarness(): NotificationsHarness {
           ),
         };
 
+      const workspaceRepository: MockWorkspaceRepository = {
+        findById: mock.fn(() =>
+          Promise.resolve(
+            options.workspaceRepository?.workspace === undefined
+              ? {
+                  id: generateTestId(),
+                  name: "Test Workspace",
+                  slug: "test-workspace",
+                }
+              : options.workspaceRepository.workspace,
+          ),
+        ),
+        getMemberAlertEmails: mock.fn(() =>
+          Promise.resolve(
+            options.workspaceRepository?.memberAlertEmails ?? [
+              "member@test.com",
+            ],
+          ),
+        ),
+      };
+
       const service = new NotificationsService({
         config,
         smtpTransport: smtpTransport as unknown as SmtpTransport,
         usersService: usersService as unknown as UsersService,
         userFeedRepository:
           userFeedRepository as unknown as IUserFeedRepository,
+        workspaceRepository:
+          workspaceRepository as unknown as NotificationsWorkspaceRepository,
         notificationDeliveryAttemptRepository:
           notificationDeliveryAttemptRepository as unknown as INotificationDeliveryAttemptRepository,
       });
@@ -165,6 +203,7 @@ export function createNotificationsHarness(): NotificationsHarness {
         smtpTransport,
         usersService,
         userFeedRepository,
+        workspaceRepository,
         notificationDeliveryAttemptRepository,
         generateId: generateTestId,
         createMockFeed,

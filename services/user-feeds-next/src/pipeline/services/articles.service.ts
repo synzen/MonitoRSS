@@ -171,7 +171,10 @@ export async function findOrFetchFeedArticles(
     };
   }
 
-  const result = await fetchFeed(url, {
+  // Credentialed feeds (reddit) must be fetched via the lookup URL (oauth.reddit.com
+  // with the Authorization header), exactly like the delivery pipeline does in
+  // shared-processing. The original url remains the feed's display/cache identity.
+  const result = await fetchFeed(options.requestLookupDetails?.url || url, {
     executeFetch: options.executeFetch,
     executeFetchIfNotInCache: true,
     executeFetchIfStale: options.executeFetchIfStale,

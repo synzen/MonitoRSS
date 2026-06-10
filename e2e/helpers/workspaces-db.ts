@@ -102,6 +102,84 @@ export async function seedWorkspaceInviteInDb(input: {
 }
 
 /**
+ * Opt a user into disabled-feed alert emails (the same preference the alerting
+ * settings page writes). Alert/digest recipients are filtered on this flag.
+ */
+export async function setDisabledFeedAlertPreferenceInDb(discordUserId: string): Promise<void> {
+  await withUsersCollection((users) =>
+    users.updateOne(
+      { discordUserId },
+      { $set: { "preferences.alertOnDisabledFeeds": true } },
+      { upsert: true },
+    ),
+  );
+}
+
+/**
+ * Seed a co-member who can RECEIVE alert emails: a freshly minted user document
+ * with a verified email and the disabled-feed alert preference, plus an admin
+ * membership in the workspace. The member has no browser session — they exist to
+ * assert email fan-out, not to drive the UI.
+ */
+export async function seedAlertableWorkspaceMemberInDb(input: {
+  workspaceId: string;
+  email: string;
+}): Promise<void> {
+  await withDb(async (db) => {
+    const now = new Date();
+    const memberUserId = new ObjectId();
+
+    await db.collection("users").insertOne({
+      _id: memberUserId,
+      discordUserId: `member-${memberUserId.toHexString()}`,
+      verifiedEmail: input.email.trim().toLowerCase(),
+      verifiedEmailVerifiedAt: now,
+      preferences: { alertOnDisabledFeeds: true },
+    });
+
+    await db.collection("workspacememberships").insertOne({
+      workspaceId: new ObjectId(input.workspaceId),
+      userId: memberUserId,
+      role: "admin",
+      createdAt: now,
+      updatedAt: now,
+    });
+  });
+}
+
+/**
+ * Seed workspace feeds directly. Creating feeds through the API can never exceed
+ * the workspace feed limit (creation is atomically gated), so tests that need an
+ * OVER-limit workspace — the state a billing-driven limit decrease produces —
+ * must write the feed documents themselves. `createdAt` is staggered in array
+ * order so "oldest first" enforcement is deterministic.
+ */
+export async function seedWorkspaceFeedsInDb(input: {
+  workspaceId: string;
+  userId: ObjectId;
+  discordUserId: string;
+  feeds: Array<{ title: string; url: string; disabledCode?: string }>;
+}): Promise<void> {
+  await withDb(async (db) => {
+    const base = Date.now() - input.feeds.length * 60_000;
+
+    await db.collection("userfeeds").insertMany(
+      input.feeds.map((feed, index) => ({
+        title: feed.title,
+        url: feed.url,
+        ...(feed.disabledCode ? { disabledCode: feed.disabledCode } : {}),
+        healthStatus: "OK",
+        connections: { discordChannels: [] },
+        user: { id: input.userId, discordUserId: input.discordUserId },
+        workspaceId: new ObjectId(input.workspaceId),
+        createdAt: new Date(base + index * 60_000),
+        updatedAt: new Date(base + index * 60_000),
+      })),
+    );
+  });
+}
+
+/**
  * Resolve a Discord user id to the user's Mongo `_id`. Membership rows bind to the
  * Mongo user id (Discord-agnostic), so seeding the authenticated test user as a
  * member needs their `_id`, not their Discord id. The user document is created on
@@ -116,6 +194,29 @@ export async function getUserMongoIdFromDiscordId(discordUserId: string): Promis
     }
 
     return user._id as ObjectId;
+  });
+}
+
+/**
+ * Add a membership to an EXISTING workspace for an EXISTING real user — one with a live
+ * browser session who must drive the UI themselves. (The co-members created by
+ * `seedWorkspaceWithMembershipsInDb` get freshly minted user documents with no session,
+ * so they can never click anything.)
+ */
+export async function seedMembershipInDb(input: {
+  workspaceId: string;
+  userId: ObjectId;
+  role: "owner" | "admin";
+}): Promise<void> {
+  await withDb(async (db) => {
+    const now = new Date();
+    await db.collection("workspacememberships").insertOne({
+      workspaceId: new ObjectId(input.workspaceId),
+      userId: input.userId,
+      role: input.role,
+      createdAt: now,
+      updatedAt: now,
+    });
   });
 }
 

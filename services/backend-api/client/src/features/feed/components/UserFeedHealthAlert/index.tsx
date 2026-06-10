@@ -2,7 +2,7 @@ import { Alert, Box, Button, Flex, HStack, Stack } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { UserFeedDisabledCode, UserFeedRequestStatus } from "../../types";
+import { UserFeedRequestStatus } from "../../types";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
 import { useFeedScope } from "../../contexts/FeedScopeContext";
 import { getErrorMessageForArticleRequestStatus } from "../../utils";
@@ -68,11 +68,9 @@ export const UserFeedHealthAlert = () => {
   const isFailing = !!latestRequest && latestRequest.status !== UserFeedRequestStatus.OK;
   const nextRetryAt = data?.result.nextRetryAtIso ? dayjs(data.result.nextRetryAtIso) : null;
 
-  if (
-    !isFailing ||
-    status === "loading" ||
-    userFeed.disabledCode === UserFeedDisabledCode.FailedRequests
-  ) {
+  // A disabled feed is not being polled, so the failing-requests warning (and its
+  // retry CTA) would be misleading; the disabled alert already explains the state.
+  if (!isFailing || status === "loading" || !!userFeed.disabledCode) {
     return null;
   }
 

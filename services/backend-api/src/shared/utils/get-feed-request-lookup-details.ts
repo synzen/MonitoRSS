@@ -1,35 +1,58 @@
-import { UserExternalCredentialType } from "../../repositories/shared/enums";
+import {
+  UserExternalCredentialStatus,
+  UserExternalCredentialType,
+} from "../../repositories/shared/enums";
 import type { FeedRequestLookupDetails } from "../types/feed-request-lookup-details.type";
 import { decrypt } from "./decrypt";
 import { isRedditFeedUrl } from "./is-reddit-feed-url";
 
-interface FeedInput {
-  url: string;
-  feedRequestLookupKey?: string;
-  workspaceId?: string;
-}
-
-interface ExternalCredentialSource {
+// A holder of external credentials a feed can fetch with: a user or a
+// workspace. Lookup-detail construction reads `data`; connection gates read
+// `status`.
+export interface FeedCredentialSource {
   externalCredentials?: Array<{
     type: UserExternalCredentialType | string;
-    data: Record<string, string>;
+    status?: UserExternalCredentialStatus | string;
+    data?: Record<string, string>;
   }>;
+}
+
+// The single place that decides which credential source backs a feed:
+// workspace feeds resolve ONLY the workspace connection and personal feeds
+// ONLY the creator's — never a fallback from one to the other, so a feed's
+// fetch health is a function of exactly one connection. A workspace feed with
+// no workspace connection resolves to an empty credential list (fails closed).
+//
+// Batch pipelines that aggregate both sources alongside feeds pick here;
+// request-path code resolves through FeedCredentialsService instead.
+export function pickFeedCredentialSource({
+  feed,
+  user,
+  workspace,
+}: {
+  feed: { workspaceId?: string | null };
+  user: FeedCredentialSource;
+  workspace?: FeedCredentialSource | null;
+}): FeedCredentialSource {
+  if (!feed.workspaceId) {
+    return user;
+  }
+
+  return workspace ?? { externalCredentials: [] };
 }
 
 export function getFeedRequestLookupDetails({
   feed,
-  user,
-  workspace,
+  credentials,
   decryptionKey,
+  redditFeedBaseUrl,
 }: {
-  feed: FeedInput;
-  user: ExternalCredentialSource;
-  // The credential source for a workspace feed. Workspace feeds resolve ONLY
-  // workspace credentials and personal feeds ONLY the creator's — never a
-  // fallback from one to the other, so a feed's fetch health is a function of
-  // exactly one connection.
-  workspace?: ExternalCredentialSource | null;
+  feed: { url: string; feedRequestLookupKey?: string };
+  credentials: FeedCredentialSource;
   decryptionKey: string | undefined;
+  // BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL; overridable so tests can
+  // point authenticated reddit fetches at a mock server.
+  redditFeedBaseUrl: string | undefined;
 }): FeedRequestLookupDetails | null {
   const { url, feedRequestLookupKey } = feed;
 
@@ -41,11 +64,7 @@ export function getFeedRequestLookupDetails({
     return null;
   }
 
-  const externalCredentials = feed.workspaceId
-    ? workspace?.externalCredentials
-    : user.externalCredentials;
-
-  const encryptedToken = externalCredentials?.find(
+  const encryptedToken = credentials.externalCredentials?.find(
     (cred) => cred.type === UserExternalCredentialType.Reddit,
   )?.data?.accessToken;
 
@@ -56,7 +75,8 @@ export function getFeedRequestLookupDetails({
   const decrypted = decrypt(encryptedToken, decryptionKey);
 
   const parsedUrl = new URL(url);
-  const urlToFetch = `https://oauth.reddit.com${parsedUrl.pathname}${parsedUrl.search}`;
+  const baseUrl = redditFeedBaseUrl || "https://oauth.reddit.com";
+  const urlToFetch = `${baseUrl}${parsedUrl.pathname}${parsedUrl.search}`;
 
   return {
     key: feedRequestLookupKey,

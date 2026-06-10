@@ -63,6 +63,7 @@ import { DiscordServersService } from "./services/discord-servers/discord-server
 import { UserFeedConnectionEventsService } from "./services/user-feed-connection-events/user-feed-connection-events.service";
 import { MongoMigrationsService } from "./services/mongo-migrations/mongo-migrations.service";
 import { UserFeedsService } from "./services/user-feeds/user-feeds.service";
+import { FeedCredentialsService } from "./services/feed-credentials/feed-credentials.service";
 import { FeedConnectionsDiscordChannelsService } from "./services/feed-connections-discord-channels/feed-connections-discord-channels.service";
 import { FeedFetcherService } from "./services/feed-fetcher";
 import { createSmtpTransport } from "./infra/smtp";
@@ -132,6 +133,7 @@ export interface Container {
   discordServersService: DiscordServersService;
   userFeedConnectionEventsService: UserFeedConnectionEventsService;
   mongoMigrationsService: MongoMigrationsService;
+  feedCredentialsService: FeedCredentialsService;
   userFeedsService: UserFeedsService;
   feedConnectionsDiscordChannelsService: FeedConnectionsDiscordChannelsService;
   userFeedManagementInvitesService: UserFeedManagementInvitesService;
@@ -289,6 +291,7 @@ export function createContainer(deps: {
     smtpTransport,
     usersService,
     userFeedRepository,
+    workspaceRepository,
     notificationDeliveryAttemptRepository,
   });
 
@@ -310,6 +313,12 @@ export function createContainer(deps: {
     userRepository,
   });
 
+  const feedCredentialsService = new FeedCredentialsService({
+    config: deps.config,
+    usersService,
+    workspacesService,
+  });
+
   const feedConnectionsDiscordChannelsService =
     new FeedConnectionsDiscordChannelsService({
       config: deps.config,
@@ -322,7 +331,7 @@ export function createContainer(deps: {
       discordAuthService,
       connectionEventsService: userFeedConnectionEventsService,
       usersService,
-      workspacesService,
+      feedCredentialsService,
     });
 
   const userFeedsService = new UserFeedsService({
@@ -332,10 +341,12 @@ export function createContainer(deps: {
     feedsService,
     supportersService,
     workspacesService,
+    feedCredentialsService,
     feedFetcherApiService,
     feedFetcherService,
     feedHandlerService,
     usersService,
+    notificationsService,
     publishMessage,
     feedConnectionsDiscordChannelsService,
   });
@@ -451,6 +462,7 @@ export function createContainer(deps: {
     discordServersService,
     userFeedConnectionEventsService,
     mongoMigrationsService,
+    feedCredentialsService,
     userFeedsService,
     feedConnectionsDiscordChannelsService,
     userFeedManagementInvitesService,

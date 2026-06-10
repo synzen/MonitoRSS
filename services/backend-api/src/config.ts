@@ -128,6 +128,13 @@ const configSchema = z.object({
   BACKEND_API_REDDIT_CLIENT_ID: z.string().optional(),
   BACKEND_API_REDDIT_CLIENT_SECRET: z.string().optional(),
   BACKEND_API_REDDIT_REDIRECT_URI: z.string().optional(),
+  // Overridable so tests can point Reddit traffic at a mock server.
+  BACKEND_API_REDDIT_API_BASE_URL: z
+    .string()
+    .default("https://www.reddit.com/api/v1"),
+  BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL: z
+    .string()
+    .default("https://oauth.reddit.com"),
 
   // Admin
   BACKEND_API_ADMIN_USER_IDS: z

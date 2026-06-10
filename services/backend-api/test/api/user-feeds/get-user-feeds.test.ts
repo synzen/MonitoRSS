@@ -8,6 +8,7 @@ import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   FeedConnectionDisabledCode,
   UserFeedDisabledCode,
+  UserFeedHealthStatus,
   UserFeedManagerStatus,
 } from "../../../src/repositories/shared/enums";
 
@@ -282,6 +283,120 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
     assert.ok(
       body.results.every((r) => r.computedStatus === "MANUALLY_DISABLED"),
     );
+  });
+
+  it("computes FEED_LIMIT_EXCEEDED and lets feed-level disabled states win over connection problems", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const userId = generateTestId();
+
+    const brokenConnection = () => ({
+      id: generateTestId(),
+      name: "broken-connection",
+      disabledCode: FeedConnectionDisabledCode.MissingPermissions,
+      details: {
+        embeds: [],
+        formatter: { formatTables: false, stripImages: false },
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const limitDisabledFeed = await ctx.container.userFeedRepository.create({
+      title: "Limit Disabled Feed",
+      url: `https://example.com/get-user-feeds-limit-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    // Also broken at the connection level: the limit-disabled state must still win.
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: limitDisabledFeed.id },
+      {
+        $set: { disabledCode: UserFeedDisabledCode.ExceededFeedLimit },
+        $push: { "connections.discordChannels": brokenConnection() },
+      },
+    );
+
+    const manualFeedWithBadConnection =
+      await ctx.container.userFeedRepository.create({
+        title: "Manual Feed With Bad Connection",
+        url: `https://example.com/get-user-feeds-manualbadconn-${generateSnowflake()}.xml`,
+        user: { id: userId, discordUserId },
+      });
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: manualFeedWithBadConnection.id },
+      {
+        $set: { disabledCode: UserFeedDisabledCode.Manual },
+        $push: { "connections.discordChannels": brokenConnection() },
+      },
+    );
+
+    const failedRequestsFeed = await ctx.container.userFeedRepository.create({
+      title: "Failed Requests Feed",
+      url: `https://example.com/get-user-feeds-failedreq-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: failedRequestsFeed.id },
+      { $set: { disabledCode: UserFeedDisabledCode.FailedRequests } },
+    );
+
+    const retryingFeed = await ctx.container.userFeedRepository.create({
+      title: "Retrying Feed",
+      url: `https://example.com/get-user-feeds-retrying-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: retryingFeed.id },
+      { $set: { healthStatus: UserFeedHealthStatus.Failing } },
+    );
+
+    const response = await user.fetch(
+      "/api/v1/user-feeds?limit=100&offset=0",
+      { method: "GET" },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    const statusOf = (id: string) =>
+      body.results.find((r) => r.id === id)?.computedStatus;
+
+    assert.strictEqual(statusOf(limitDisabledFeed.id), "FEED_LIMIT_EXCEEDED");
+    assert.strictEqual(
+      statusOf(manualFeedWithBadConnection.id),
+      "MANUALLY_DISABLED",
+    );
+    // Health-driven disables and retries still surface as needing attention.
+    assert.strictEqual(statusOf(failedRequestsFeed.id), "REQUIRES_ATTENTION");
+    assert.strictEqual(statusOf(retryingFeed.id), "RETRYING");
+
+    // Filtering and the total count (what the requires-attention banner reads)
+    // follow the same pipeline.
+    const filterBy = async (computedStatus: string) => {
+      const res = await user.fetch(
+        `/api/v1/user-feeds?limit=100&offset=0&filters[computedStatuses]=${computedStatus}`,
+        { method: "GET" },
+      );
+      assert.strictEqual(res.status, 200);
+      return (await res.json()) as GetUserFeedsResponse;
+    };
+
+    const limitFiltered = await filterBy("FEED_LIMIT_EXCEEDED");
+    assert.deepStrictEqual(
+      limitFiltered.results.map((r) => r.id),
+      [limitDisabledFeed.id],
+    );
+    assert.strictEqual(limitFiltered.total, 1);
+
+    const attentionFiltered = await filterBy("REQUIRES_ATTENTION");
+    assert.deepStrictEqual(
+      attentionFiltered.results.map((r) => r.id),
+      [failedRequestsFeed.id],
+    );
+    assert.strictEqual(attentionFiltered.total, 1);
   });
 
   it("filters by disabledCodes", async () => {

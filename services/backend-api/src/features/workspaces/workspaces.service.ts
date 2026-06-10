@@ -9,7 +9,7 @@ import {
 } from "../../infra/error-handler";
 import { isReservedSlug, isValidSlug } from "../../shared/utils/slugify";
 import { normalizeEmail } from "../../shared/utils/normalizeEmail";
-import { randomUUID } from "node:crypto";
+import { reconcileFeedLookupKeys } from "../../shared/utils/reconcile-feed-lookup-keys";
 import dayjs from "dayjs";
 import type { Config } from "../../config";
 import type { SmtpTransport } from "../../infra/smtp";
@@ -760,43 +760,18 @@ export class WorkspacesService {
     workspaceIds?: string[];
     feedIds?: string[];
   }): Promise<void> {
-    const bulkWriteOps: Array<{
-      feedId: string;
-      action: "set" | "unset";
-      lookupKey?: string;
-    }> = [];
-
-    for await (const {
-      feedId,
-      lookupKey,
-    } of this.deps.workspaceRepository.aggregateWorkspacesWithActiveRedditCredentials(
-      { workspaceIds: data?.workspaceIds, feedIds: data?.feedIds },
-    )) {
-      if (lookupKey) {
-        continue;
-      }
-
-      bulkWriteOps.push({
-        feedId,
-        action: "set",
-        lookupKey: randomUUID(),
-      });
-    }
-
-    for await (const {
-      feedId,
-    } of this.deps.workspaceRepository.aggregateWorkspaceFeedsWithExpiredOrRevokedRedditCredentials(
-      { workspaceIds: data?.workspaceIds, feedIds: data?.feedIds },
-    )) {
-      bulkWriteOps.push({
-        feedId,
-        action: "unset",
-      });
-    }
-
-    if (bulkWriteOps.length) {
-      await this.deps.userFeedRepository.bulkUpdateLookupKeys(bulkWriteOps);
-    }
+    await reconcileFeedLookupKeys({
+      feedsWithActiveCredentials:
+        this.deps.workspaceRepository.aggregateWorkspacesWithActiveRedditCredentials(
+          { workspaceIds: data?.workspaceIds, feedIds: data?.feedIds },
+        ),
+      feedsWithDeadCredentials:
+        this.deps.workspaceRepository.aggregateWorkspaceFeedsWithExpiredOrRevokedRedditCredentials(
+          { workspaceIds: data?.workspaceIds, feedIds: data?.feedIds },
+        ),
+      bulkUpdateLookupKeys: (ops) =>
+        this.deps.userFeedRepository.bulkUpdateLookupKeys(ops),
+    });
   }
 
   // Revoke-on-exit: when the member whose personal Reddit account backs the

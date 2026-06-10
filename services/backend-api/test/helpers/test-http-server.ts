@@ -268,6 +268,8 @@ function createTestConfig(
     BACKEND_API_REDDIT_CLIENT_ID: undefined,
     BACKEND_API_REDDIT_CLIENT_SECRET: undefined,
     BACKEND_API_REDDIT_REDIRECT_URI: undefined,
+    BACKEND_API_REDDIT_API_BASE_URL: "https://www.reddit.com/api/v1",
+    BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL: "https://oauth.reddit.com",
     BACKEND_API_ADMIN_USER_IDS: [],
     ...overrides,
   };

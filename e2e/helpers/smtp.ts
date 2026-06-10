@@ -77,6 +77,65 @@ export async function peekVerificationCode(
   return null;
 }
 
+export interface CapturedMailMessage {
+  subject: string | null;
+  body: string;
+}
+
+/**
+ * Poll the mock mailer for the latest full message (subject + decoded body)
+ * captured for `email`. Used to assert on alert/digest emails whose content
+ * isn't a code or invite link.
+ */
+export async function waitForMail(
+  email: string,
+  { timeoutMs = 15000, intervalMs = 250 }: { timeoutMs?: number; intervalMs?: number } = {},
+): Promise<CapturedMailMessage> {
+  const deadline = Date.now() + timeoutMs;
+  const to = encodeURIComponent(email.trim().toLowerCase());
+
+  while (Date.now() < deadline) {
+    const res = await fetch(`${SMTP_HTTP_URL}/message?to=${to}`);
+    if (res.ok) {
+      const { subject, body } = (await res.json()) as {
+        subject: string | null;
+        body: string | null;
+      };
+      if (body !== null) return { subject, body };
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+
+  throw new Error(`No mail captured for ${email} within ${timeoutMs}ms`);
+}
+
+/**
+ * Non-throwing counterpart to waitForMail: polls for a short, fixed window and
+ * returns the captured message if one arrives, or null if none does. Used to
+ * ASSERT NON-DELIVERY without paying a long timeout for the expected-empty case.
+ */
+export async function peekMail(
+  email: string,
+  { windowMs = 3000, intervalMs = 250 }: { windowMs?: number; intervalMs?: number } = {},
+): Promise<CapturedMailMessage | null> {
+  const deadline = Date.now() + windowMs;
+  const to = encodeURIComponent(email.trim().toLowerCase());
+
+  while (Date.now() < deadline) {
+    const res = await fetch(`${SMTP_HTTP_URL}/message?to=${to}`);
+    if (res.ok) {
+      const { subject, body } = (await res.json()) as {
+        subject: string | null;
+        body: string | null;
+      };
+      if (body !== null) return { subject, body };
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+
+  return null;
+}
+
 /** Clear all captured mail (call before triggering a fresh send). */
 export async function resetCapturedMail(): Promise<void> {
   await fetch(`${SMTP_HTTP_URL}/reset`, { method: "POST" });

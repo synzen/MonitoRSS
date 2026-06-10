@@ -147,6 +147,7 @@ export enum NotificationDeliveryAttemptStatus {
 export enum NotificationDeliveryAttemptType {
   DisabledFeed = "DISABLED_FEED",
   DisabledConnection = "DISABLED_CONNECTION",
+  DisabledFeedsDigest = "DISABLED_FEEDS_DIGEST",
 }
 
 // Supporter enums

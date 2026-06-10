@@ -19,12 +19,16 @@ import {
 import type { UsersService } from "../users/users.service";
 import logger from "../../infra/logger";
 import DISABLED_FEED_TEMPLATE from "./disabled-feed.template";
+import WORKSPACE_FEEDS_DISABLED_DIGEST_TEMPLATE from "./workspace-feeds-disabled-digest.template";
 import {
   USER_FEED_DISABLED_REASONS,
   USER_FEED_CONNECTION_DISABLED_REASONS,
 } from "./constants";
 
 const disabledFeedTemplate = Handlebars.compile(DISABLED_FEED_TEMPLATE);
+const workspaceFeedsDisabledDigestTemplate = Handlebars.compile(
+  WORKSPACE_FEEDS_DISABLED_DIGEST_TEMPLATE,
+);
 
 function truncateString(str: string, maxLength: number): string {
   if (str.length > maxLength) {
@@ -33,11 +37,21 @@ function truncateString(str: string, maxLength: number): string {
   return str;
 }
 
+// The slice of the workspace repository notifications needs: digest recipients
+// and the workspace identity for email copy/links.
+export interface NotificationsWorkspaceRepository {
+  findById(
+    workspaceId: string,
+  ): Promise<{ id: string; name: string; slug: string } | null>;
+  getMemberAlertEmails(workspaceId: string): Promise<string[]>;
+}
+
 export interface NotificationsServiceDeps {
   config: Config;
   smtpTransport: SmtpTransport;
   usersService: UsersService;
   userFeedRepository: IUserFeedRepository;
+  workspaceRepository: NotificationsWorkspaceRepository;
   notificationDeliveryAttemptRepository: INotificationDeliveryAttemptRepository;
 }
 
@@ -79,10 +93,7 @@ export class NotificationsService {
     feed: UserFeedForNotification,
     disabledCode: UserFeedDisabledCode,
   ): Promise<void> {
-    const discordUserIdsToAlert = this.getDiscordUserIdsToAlert(feed);
-    const emails = await this.deps.usersService.getEmailsForAlerts(
-      discordUserIdsToAlert,
-    );
+    const emails = await this.getEmailsToAlert(feed);
 
     if (!emails.length) {
       logger.debug(
@@ -94,7 +105,7 @@ export class NotificationsService {
     const attemptIds = await this.createDeliveryAttempts(
       emails,
       NotificationDeliveryAttemptType.DisabledFeed,
-      feed.id,
+      { feedId: feed.id },
     );
 
     const reason = USER_FEED_DISABLED_REASONS[disabledCode];
@@ -139,10 +150,7 @@ export class NotificationsService {
       rejectedMessage?: string;
     },
   ): Promise<void> {
-    const discordUserIdsToAlert = this.getDiscordUserIdsToAlert(feed);
-    const emails = await this.deps.usersService.getEmailsForAlerts(
-      discordUserIdsToAlert,
-    );
+    const emails = await this.getEmailsToAlert(feed);
 
     if (!emails.length) {
       logger.debug(
@@ -154,7 +162,7 @@ export class NotificationsService {
     const attemptIds = await this.createDeliveryAttempts(
       emails,
       NotificationDeliveryAttemptType.DisabledConnection,
-      feed.id,
+      { feedId: feed.id },
     );
 
     const reason = USER_FEED_CONNECTION_DISABLED_REASONS[options.disabledCode];
@@ -197,7 +205,97 @@ export class NotificationsService {
     }
   }
 
-  private getDiscordUserIdsToAlert(feed: UserFeedForNotification): string[] {
+  // A workspace feed alerts the workspace's members (who opted in); a personal
+  // feed alerts the owner plus accepted share invitees, resolved via their
+  // Discord identity.
+  private async getEmailsToAlert(
+    feed: Pick<
+      UserFeedForNotification,
+      "workspaceId" | "user" | "shareManageOptions"
+    >,
+  ): Promise<string[]> {
+    if (feed.workspaceId) {
+      return this.deps.workspaceRepository.getMemberAlertEmails(
+        feed.workspaceId,
+      );
+    }
+
+    return this.deps.usersService.getEmailsForAlerts(
+      this.getDiscordUserIdsToAlert(feed),
+    );
+  }
+
+  async sendWorkspaceFeedsDisabledDigest(input: {
+    workspaceId: string;
+    disabledFeeds: Array<{ id: string; title: string; url: string }>;
+  }): Promise<void> {
+    if (input.disabledFeeds.length === 0) {
+      return;
+    }
+
+    const [workspace, emails] = await Promise.all([
+      this.deps.workspaceRepository.findById(input.workspaceId),
+      this.deps.workspaceRepository.getMemberAlertEmails(input.workspaceId),
+    ]);
+
+    if (!workspace) {
+      logger.warn(
+        `Workspace ${input.workspaceId} not found while sending disabled feeds digest`,
+      );
+      return;
+    }
+
+    if (!emails.length) {
+      logger.debug(
+        `No emails found to send disabled feeds digest for workspace ${input.workspaceId}`,
+      );
+      return;
+    }
+
+    const attemptIds = await this.createDeliveryAttempts(
+      emails,
+      NotificationDeliveryAttemptType.DisabledFeedsDigest,
+      { workspaceId: input.workspaceId },
+    );
+
+    const templateData = {
+      workspaceName: truncateString(workspace.name, 50),
+      feedCount: input.disabledFeeds.length,
+      multipleFeeds: input.disabledFeeds.length > 1,
+      feeds: input.disabledFeeds.map((feed) => ({
+        name: truncateString(feed.title, 50),
+        urlDisplay: truncateString(feed.url, 50),
+        urlLink: feed.url,
+      })),
+      controlPanelUrl: `${this.loginRedirectUrl}/workspaces/${workspace.slug}/feeds`,
+      manageNotificationsUrl: `${this.loginRedirectUrl}/alerting`,
+    };
+
+    try {
+      await this.deps.smtpTransport?.sendMail({
+        from: this.formatFrom("MonitoRSS Alerts", "alerts"),
+        to: emails,
+        subject: `Feeds have been disabled in workspace "${workspace.name}": feed limit exceeded`,
+        html: workspaceFeedsDisabledDigestTemplate(templateData),
+      });
+
+      await this.updateDeliveryAttemptStatus(
+        attemptIds,
+        NotificationDeliveryAttemptStatus.Success,
+      );
+    } catch (err) {
+      await this.updateDeliveryAttemptStatus(
+        attemptIds,
+        NotificationDeliveryAttemptStatus.Failure,
+        (err as Error).message,
+      );
+      throw err;
+    }
+  }
+
+  private getDiscordUserIdsToAlert(
+    feed: Pick<UserFeedForNotification, "user" | "shareManageOptions">,
+  ): string[] {
     const acceptedInviteUserIds =
       feed.shareManageOptions?.invites
         .filter((i) => i.status === UserFeedManagerStatus.Accepted)
@@ -224,7 +322,7 @@ export class NotificationsService {
   private async createDeliveryAttempts(
     emails: string[],
     type: NotificationDeliveryAttemptType,
-    feedId: string,
+    ref: { feedId?: string; workspaceId?: string },
   ): Promise<string[]> {
     try {
       const attempts =
@@ -233,13 +331,16 @@ export class NotificationsService {
             email,
             status: NotificationDeliveryAttemptStatus.Pending,
             type,
-            feedId,
+            feedId: ref.feedId,
+            workspaceId: ref.workspaceId,
           })),
         );
       return attempts.map((a) => a.id);
     } catch (err) {
       logger.error(
-        `Failed to create notification delivery attempts for feed ${feedId}`,
+        `Failed to create notification delivery attempts for ${
+          ref.feedId ? `feed ${ref.feedId}` : `workspace ${ref.workspaceId}`
+        }`,
         { stack: (err as Error).stack },
       );
       return [];

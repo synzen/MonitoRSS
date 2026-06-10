@@ -114,12 +114,24 @@ export const UserFeedDisabledAlert = () => {
   }
 
   if (disabledCode === UserFeedDisabledCode.ExceededFeedLimit) {
+    // Workspace feeds count against the workspace's limit, so the supporter
+    // upsell in the personal copy does not apply.
+    const isWorkspaceFeed = !!feed.isWorkspaceFeed;
+
     return (
       <Alert.Root status="error">
         <Alert.Content>
-          <Alert.Title>{t("pages.userFeed.exceededFeedLimitTitle")}</Alert.Title>
+          <Alert.Title>
+            {isWorkspaceFeed
+              ? t("pages.userFeed.exceededFeedLimitWorkspaceTitle")
+              : t("pages.userFeed.exceededFeedLimitTitle")}
+          </Alert.Title>
           <Alert.Description display="block">
-            <span>{t("pages.userFeed.exceededFeedLimitText")}</span>
+            <span>
+              {isWorkspaceFeed
+                ? t("pages.userFeed.exceededFeedLimitWorkspaceText")
+                : t("pages.userFeed.exceededFeedLimitText")}
+            </span>
           </Alert.Description>
         </Alert.Content>
       </Alert.Root>

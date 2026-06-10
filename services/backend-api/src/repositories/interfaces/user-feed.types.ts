@@ -96,6 +96,7 @@ export interface UserFeedForNotification {
   title: string;
   url: string;
   user: IUserFeedUser;
+  workspaceId?: string;
   shareManageOptions?: IUserFeedShareManageOptions;
 }
 
@@ -185,6 +186,7 @@ export enum UserFeedComputedStatus {
   Ok = "OK",
   RequiresAttention = "REQUIRES_ATTENTION",
   ManuallyDisabled = "MANUALLY_DISABLED",
+  FeedLimitExceeded = "FEED_LIMIT_EXCEEDED",
   Retrying = "RETRYING",
 }
 
@@ -235,6 +237,42 @@ export interface UserFeedLimitEnforcementResult {
 export type UserFeedLimitEnforcementQuery =
   | { type: "include"; discordUserIds: string[] }
   | { type: "exclude"; discordUserIds: string[] };
+
+export interface WorkspaceFeedLimitEnforcementResult {
+  workspaceId: string;
+  disabledFeedIds: string[];
+  enabledFeedIds: string[];
+}
+
+export type WorkspaceFeedLimitEnforcementQuery =
+  | { type: "include"; workspaceIds: string[] }
+  | { type: "all" };
+
+export type WorkspaceWebhookEnforcementTarget =
+  | { type: "all-workspaces"; webhookAllowedWorkspaceIds: string[] }
+  | { type: "single-workspace"; workspaceId: string; allowWebhooks: boolean };
+
+export type WorkspaceRefreshRateEnforcementTarget =
+  | { type: "all-workspaces"; fastRateWorkspaceIds: string[] }
+  | {
+      type: "single-workspace";
+      workspaceId: string;
+      refreshRateSeconds: number;
+    };
+
+export interface WorkspaceRefreshRateSyncInput {
+  workspaceLimits: Array<{
+    workspaceIds: string[];
+    refreshRateSeconds: number;
+  }>;
+}
+
+export interface WorkspaceMaxDailyArticlesSyncInput {
+  workspaceLimits: Array<{
+    workspaceIds: string[];
+    maxDailyArticles: number;
+  }>;
+}
 
 export interface CloneConnectionToFeedsInput {
   targetFeedIds?: string[];
@@ -467,6 +505,10 @@ export interface IUserFeedRepository {
     discordUserId: string,
     excludeDisabledCodes: UserFeedDisabledCode[],
   ): Promise<number>;
+  countByWorkspaceExcludingDisabled(
+    workspaceId: string,
+    excludeDisabledCodes: UserFeedDisabledCode[],
+  ): Promise<number>;
   findByUrls(discordUserId: string, urls: string[]): Promise<{ url: string }[]>;
   findByIdAndOwnership(
     id: string,
@@ -498,9 +540,21 @@ export interface IUserFeedRepository {
     feedIds: string[],
   ): Promise<UserFeedForBulkOperation[]>;
   findDiscordUserIdsByFeedIds(feedIds: string[]): Promise<string[]>;
+  findWorkspaceIdsByFeedIds(feedIds: string[]): Promise<string[]>;
   getFeedsGroupedByUserForLimitEnforcement(
     query: UserFeedLimitEnforcementQuery,
   ): AsyncIterable<UserFeedLimitEnforcementResult>;
+  getFeedsGroupedByWorkspaceForLimitEnforcement(
+    query: WorkspaceFeedLimitEnforcementQuery,
+  ): AsyncIterable<WorkspaceFeedLimitEnforcementResult>;
+  getDistinctWorkspaceIdsWithFeeds(): Promise<string[]>;
+  enforceWorkspaceWebhookConnections(
+    target: WorkspaceWebhookEnforcementTarget,
+  ): Promise<void>;
+  enforceWorkspaceRefreshRates(
+    target: WorkspaceRefreshRateEnforcementTarget,
+    supporterRefreshRateSeconds: number,
+  ): Promise<void>;
 
   disableFeedsByIds(
     feedIds: string[],
@@ -574,8 +628,17 @@ export interface IUserFeedRepository {
   findDebugFeedUrls(): Promise<Set<string>>;
   syncRefreshRates(input: RefreshRateSyncInput): Promise<void>;
   syncMaxDailyArticles(input: MaxDailyArticlesSyncInput): Promise<void>;
+  syncWorkspaceRefreshRates(input: WorkspaceRefreshRateSyncInput): Promise<void>;
+  syncWorkspaceMaxDailyArticles(
+    input: WorkspaceMaxDailyArticlesSyncInput,
+  ): Promise<void>;
   iterateFeedsForRefreshRateSync(
     input: RefreshRateSyncInput,
+  ): AsyncIterable<
+    FeedForSlotOffsetRecalculation & { newRefreshRateSeconds: number }
+  >;
+  iterateWorkspaceFeedsForRefreshRateSync(
+    input: WorkspaceRefreshRateSyncInput,
   ): AsyncIterable<
     FeedForSlotOffsetRecalculation & { newRefreshRateSeconds: number }
   >;

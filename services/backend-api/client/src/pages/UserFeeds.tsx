@@ -523,7 +523,7 @@ const UserFeedsInner: React.FC = () => {
             </Alert.Title>
             <FeedManagementInvitesDialog
               trigger={
-                <Button variant="outline" colorPalette="gray">
+                <Button variant="outline">
                   <span>View pending management invites</span>
                 </Button>
               }
@@ -733,7 +733,12 @@ const UserFeedsInner: React.FC = () => {
               )}
             </Stack>
             <Stack gap={2}>
+              {/* Keyed by scope: a search submitted just before a scope switch commits is
+                  validated against the OLD scope's credentials. Remounting on scope change
+                  guarantees no cross-scope search state (query, result, Add button) is ever
+                  shown under the new scope. */}
               <FeedDiscoverySearch
+                key={workspaceSlug ?? "personal"}
                 feedActionStates={feedActionStates}
                 isAtLimit={isAtLimit}
                 onAdd={handleCuratedFeedAdd}

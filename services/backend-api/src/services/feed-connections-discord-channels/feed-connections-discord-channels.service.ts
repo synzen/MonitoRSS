@@ -50,33 +50,11 @@ import { WebhookMissingPermissionsException } from "../../shared/exceptions/disc
 import { InvalidComponentsV2Exception } from "../../shared/exceptions/invalid-components-v2.exception";
 import logger from "../../infra/logger";
 import { IUser } from "../../repositories/interfaces/user.types";
-import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request-lookup-details";
 
 export class FeedConnectionsDiscordChannelsService {
   constructor(
     private readonly deps: FeedConnectionsDiscordChannelsServiceDeps,
   ) {}
-
-  // Workspace feeds resolve fetch credentials from their workspace's
-  // connection, never the creator's personal one (and vice versa).
-  private async getWorkspaceCredentialSource(
-    workspaceId: string | undefined | null,
-  ): Promise<{
-    externalCredentials: Array<{
-      type: string;
-      status: string;
-      data: Record<string, string>;
-    }>;
-  } | null> {
-    if (!workspaceId) {
-      return null;
-    }
-
-    const credential =
-      await this.deps.workspacesService.getRedditCredentials(workspaceId);
-
-    return { externalCredentials: credential ? [credential] : [] };
-  }
 
   async createDiscordChannelConnection(
     input: CreateDiscordChannelConnectionInput,
@@ -1001,12 +979,11 @@ export class FeedConnectionsDiscordChannelsService {
       userFeed.user.discordUserId,
     );
 
-    const requestLookupDetails = getFeedRequestLookupDetails({
-      feed: userFeed,
-      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-      user,
-      workspace: await this.getWorkspaceCredentialSource(userFeed.workspaceId),
-    });
+    const requestLookupDetails =
+      await this.deps.feedCredentialsService.getLookupDetails({
+        feed: userFeed,
+        user,
+      });
 
     const payload: SendTestArticleInput["details"] = {
       type: "discord",
@@ -1119,12 +1096,11 @@ export class FeedConnectionsDiscordChannelsService {
       userFeed.user.discordUserId,
     );
 
-    const requestLookupDetails = getFeedRequestLookupDetails({
-      feed: userFeed,
-      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-      user,
-      workspace: await this.getWorkspaceCredentialSource(userFeed.workspaceId),
-    });
+    const requestLookupDetails =
+      await this.deps.feedCredentialsService.getLookupDetails({
+        feed: userFeed,
+        user,
+      });
 
     const cleanedEmbeds = input.embeds
       ? input.embeds.map((e) => ({
@@ -1265,14 +1241,10 @@ export class FeedConnectionsDiscordChannelsService {
       includeCustomPlaceholderPreviews,
       feed: {
         requestLookupDetails:
-          getFeedRequestLookupDetails({
+          (await this.deps.feedCredentialsService.getLookupDetails({
             feed: userFeed,
             user,
-            workspace: await this.getWorkspaceCredentialSource(
-              userFeed.workspaceId,
-            ),
-            decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-          }) || undefined,
+          })) || undefined,
         url: userFeed.url,
         formatOptions: {
           ...feedFormatOptions,
@@ -1370,14 +1342,10 @@ export class FeedConnectionsDiscordChannelsService {
       includeCustomPlaceholderPreviews: false,
       feed: {
         requestLookupDetails:
-          getFeedRequestLookupDetails({
+          (await this.deps.feedCredentialsService.getLookupDetails({
             feed: userFeed,
             user,
-            workspace: await this.getWorkspaceCredentialSource(
-              userFeed.workspaceId,
-            ),
-            decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-          }) || undefined,
+          })) || undefined,
         url: userFeed.url,
         formatOptions: {
           ...feedFormatOptions,
