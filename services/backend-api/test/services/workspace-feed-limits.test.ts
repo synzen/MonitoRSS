@@ -8,7 +8,10 @@ import { FeedLimitReachedException } from "../../src/shared/exceptions/user-feed
 import { createUserFeedsHarness } from "../helpers/user-feeds.harness";
 import { createMockDiscordChannelConnection } from "../helpers/mock-factories";
 
-describe("Workspace feed limit enforcement", { concurrency: true }, () => {
+// NOT concurrent: enforceAllWorkspaceFeedLimits sweeps every workspace in the
+// file-shared database, so it would disable feeds belonging to concurrently
+// running tests (their digest then goes to the sweeper's notifier, not theirs).
+describe("Workspace feed limit enforcement", () => {
   const harness = createUserFeedsHarness();
 
   before(() => harness.setup());

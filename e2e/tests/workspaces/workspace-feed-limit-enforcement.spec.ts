@@ -143,7 +143,7 @@ test.describe("Workspace feed limit enforcement", () => {
       ],
     });
 
-    await resetCapturedMail();
+    await resetCapturedMail([selfEmail, memberEmail]);
 
     // Enter the workspace through the switcher and anchor on the committed scope.
     await page.reload();
@@ -203,7 +203,7 @@ test.describe("Workspace feed limit enforcement", () => {
 
     // Free headroom by deleting a feed through the UI: the ExceededFeedLimit feed
     // comes back automatically — and silently (no new email).
-    await resetCapturedMail();
+    await resetCapturedMail([selfEmail, memberEmail]);
     await page.goBack();
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
 

@@ -1,7 +1,11 @@
 import { test, expect, type Page } from "../../fixtures/test-fixtures";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
 import { enableWorkspacesFeatureInDb } from "../../helpers/workspaces-db";
-import { peekVerificationCode, resetCapturedMail } from "../../helpers/smtp";
+import {
+  peekVerificationCode,
+  waitForVerificationCode,
+  resetCapturedMail,
+} from "../../helpers/smtp";
 
 // The verify step discloses the server's resend cooldown (RESEND_COOLDOWN_MS, 60s)
 // and code TTL (CODE_TTL_MS, 10 min) so a too-soon resend isn't a silent failure.
@@ -38,19 +42,19 @@ test.describe("Email verification resend disclosures", () => {
     await page.reload();
     await waitForAuthenticatedApp(page);
 
-    await resetCapturedMail();
+    const email = `resend-${discordUserId}@example.com`;
+    await resetCapturedMail(email);
     await openCreateTeamVerifyStep(page);
 
     const dialog = page.getByRole("dialog");
     const emailInput = dialog.getByLabel("Email address");
-    const email = `resend-${discordUserId}@example.com`;
 
     await emailInput.fill(email);
     await dialog.getByRole("button", { name: /^send code$/i }).click();
 
     // The first code is dispatched, moving us to the code-entry view.
-    const firstCode = await peekVerificationCode(email);
-    expect(firstCode, "first send should dispatch a code").not.toBeNull();
+    // (waitFor, not peek: this is a DELIVERY assertion and must tolerate slow CI.)
+    await waitForVerificationCode(email);
 
     // The TTL is disclosed up front, before any expiry error can occur.
     await expect(dialog.getByText(/the code expires in 10 minutes/i)).toBeVisible();
@@ -67,7 +71,7 @@ test.describe("Email verification resend disclosures", () => {
     await dialog.getByRole("button", { name: /change email/i }).click();
     await expect(emailInput).toBeVisible();
 
-    await resetCapturedMail();
+    await resetCapturedMail(email);
     await emailInput.fill(email);
     await dialog.getByRole("button", { name: /^send code$/i }).click();
 

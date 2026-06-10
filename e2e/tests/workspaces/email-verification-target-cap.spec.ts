@@ -1,7 +1,11 @@
 import { test, expect, type Page } from "../../fixtures/test-fixtures";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
 import { enableWorkspacesFeatureInDb } from "../../helpers/workspaces-db";
-import { peekVerificationCode, resetCapturedMail } from "../../helpers/smtp";
+import {
+  peekVerificationCode,
+  waitForVerificationCode,
+  resetCapturedMail,
+} from "../../helpers/smtp";
 
 // The generic email-verification send (used by the create-team verify step) caps
 // how many DISTINCT addresses a single user can have codes sent to within the
@@ -37,7 +41,9 @@ test.describe("Email verification distinct-target cap", () => {
     await page.reload();
     await waitForAuthenticatedApp(page);
 
-    await resetCapturedMail();
+    await resetCapturedMail(
+      [0, 1, 2, 3, 4, 6].map((i) => `cap-${i}-${discordUserId}@example.com`),
+    );
     await openCreateTeamVerifyStep(page);
 
     const dialog = page.getByRole("dialog");
@@ -51,8 +57,8 @@ test.describe("Email verification distinct-target cap", () => {
       await dialog.getByRole("button", { name: /^send code$/i }).click();
 
       // Confirm the code actually went out for this allowed address.
-      const code = await peekVerificationCode(email);
-      expect(code, `code should be sent for distinct address #${i + 1}`).not.toBeNull();
+      // (waitFor, not peek: this is a DELIVERY assertion and must tolerate slow CI.)
+      await waitForVerificationCode(email);
 
       await dialog.getByRole("button", { name: /change email/i }).click();
       await expect(emailInput).toBeVisible();

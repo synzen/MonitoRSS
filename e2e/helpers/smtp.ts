@@ -11,7 +11,7 @@ const SMTP_HTTP_URL = `http://localhost:${MOCK_SMTP_HTTP_PORT}`;
  */
 export async function waitForVerificationCode(
   email: string,
-  { timeoutMs = 10000, intervalMs = 250 }: { timeoutMs?: number; intervalMs?: number } = {},
+  { timeoutMs = 15000, intervalMs = 250 }: { timeoutMs?: number; intervalMs?: number } = {},
 ): Promise<string> {
   const deadline = Date.now() + timeoutMs;
   const to = encodeURIComponent(email.trim().toLowerCase());
@@ -35,7 +35,7 @@ export async function waitForVerificationCode(
  */
 export async function waitForInviteLink(
   email: string,
-  { timeoutMs = 10000, intervalMs = 250 }: { timeoutMs?: number; intervalMs?: number } = {},
+  { timeoutMs = 15000, intervalMs = 250 }: { timeoutMs?: number; intervalMs?: number } = {},
 ): Promise<string> {
   const deadline = Date.now() + timeoutMs;
   const to = encodeURIComponent(email.trim().toLowerCase());
@@ -136,7 +136,20 @@ export async function peekMail(
   return null;
 }
 
-/** Clear all captured mail (call before triggering a fresh send). */
-export async function resetCapturedMail(): Promise<void> {
-  await fetch(`${SMTP_HTTP_URL}/reset`, { method: "POST" });
+/**
+ * Clear captured mail before triggering a fresh send. Always pass the addresses
+ * the test is about to assert on: specs run in parallel workers against ONE
+ * shared catcher, so a global reset deletes mail that sibling specs are still
+ * polling for. The no-argument global form exists only for single-spec debugging.
+ */
+export async function resetCapturedMail(emails?: string | string[]): Promise<void> {
+  if (emails === undefined) {
+    await fetch(`${SMTP_HTTP_URL}/reset`, { method: "POST" });
+    return;
+  }
+  const list = Array.isArray(emails) ? emails : [emails];
+  for (const email of list) {
+    const to = encodeURIComponent(email.trim().toLowerCase());
+    await fetch(`${SMTP_HTTP_URL}/reset?to=${to}`, { method: "POST" });
+  }
 }

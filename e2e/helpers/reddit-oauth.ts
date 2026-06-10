@@ -24,9 +24,16 @@ export async function connectRedditViaPopup(page: Page, connectButton: Locator):
   const popup = await popupPromise;
 
   try {
-    await popup.waitForEvent("close", { timeout: 20000 });
+    // Generous timeout: the redirect chain spans the backend container and the
+    // host-side mock reddit server, which is slow under parallel-worker CI load.
+    await popup.waitForEvent("close", { timeout: 45000 });
   } catch (err) {
     // The popup can finish its redirect chain and close before the listener attaches.
-    if (!popup.isClosed()) throw err;
+    if (!popup.isClosed()) {
+      throw new Error(
+        `Reddit OAuth popup never closed (stuck on ${popup.url()})`,
+        { cause: err },
+      );
+    }
   }
 }

@@ -254,7 +254,14 @@ const httpServer = createHttpServer((req, res) => {
   }
 
   if (url.pathname === "/reset") {
-    mailboxes.clear();
+    // Scoped reset (?to=<email>) so parallel specs can clear their own recipient
+    // without wiping mail that other workers are still polling for.
+    const to = url.searchParams.get("to");
+    if (to) {
+      mailboxes.delete(to.toLowerCase());
+    } else {
+      mailboxes.clear();
+    }
     res.writeHead(204);
     res.end();
     return;

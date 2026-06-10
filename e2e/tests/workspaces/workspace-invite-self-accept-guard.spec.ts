@@ -61,7 +61,7 @@ test.describe("Workspace invite self-accept guard", () => {
     const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const ownerEmail = `owner-${suffix}@example.com`;
     const invitedEmail = `invited-${suffix}@example.com`;
-    await resetCapturedMail();
+    await resetCapturedMail([ownerEmail, invitedEmail]);
 
     // --- Create a workspace through the UI, verifying ownerEmail via real OTP. ---
     await page.getByRole("button", { name: "Account settings" }).click();
@@ -85,7 +85,7 @@ test.describe("Workspace invite self-accept guard", () => {
 
     // --- Invite a DIFFERENT address through the UI — a real notification send.
     // The owner does not own this address, so creation succeeds. ---
-    await resetCapturedMail();
+    await resetCapturedMail(invitedEmail);
     await gotoMembers(page, workspaceName);
     await page.getByLabel("Invite by email").fill(invitedEmail);
     await page.getByRole("button", { name: "Send invite" }).click();

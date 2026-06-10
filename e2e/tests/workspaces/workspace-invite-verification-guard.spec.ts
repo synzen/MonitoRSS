@@ -41,14 +41,15 @@ test.describe("Workspace invite verification guard", () => {
       email: invitedEmail,
     });
 
-    await resetCapturedMail();
+    // Type a clearly-unrelated address and attempt to send the code.
+    const unrelatedEmail = `attacker-${discordUserId}@evil.example.net`;
+    await resetCapturedMail(unrelatedEmail);
+
     await page.goto(`/invites/${inviteId}`);
     await expect(
       page.getByRole("heading", { name: new RegExp(workspaceName) }),
     ).toBeVisible({ timeout: 15000 });
 
-    // Type a clearly-unrelated address and attempt to send the code.
-    const unrelatedEmail = `attacker-${discordUserId}@evil.example.net`;
     await page.getByLabel(/email address/i).fill(unrelatedEmail);
     await page.getByRole("button", { name: /send code/i }).click();
 

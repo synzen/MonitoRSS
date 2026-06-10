@@ -165,7 +165,7 @@ test.describe("Workspace member management (owner/admin view)", () => {
 
     // No mail must be captured for this address before the resend, so the link we
     // observe afterwards is unambiguously the resent one.
-    await resetCapturedMail();
+    await resetCapturedMail(invitedEmail);
 
     await page.reload();
     await waitForAuthenticatedApp(page);

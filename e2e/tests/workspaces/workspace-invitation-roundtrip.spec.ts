@@ -167,7 +167,7 @@ test.describe("Workspace invitations (inviter -> invitee round-trip)", () => {
     const invitedEmail = `invitee-${Date.now().toString(36)}-${Math.random()
       .toString(36)
       .slice(2, 8)}@example.com`;
-    await resetCapturedMail();
+    await resetCapturedMail(invitedEmail);
 
     await page.reload();
     await waitForAuthenticatedApp(page);
