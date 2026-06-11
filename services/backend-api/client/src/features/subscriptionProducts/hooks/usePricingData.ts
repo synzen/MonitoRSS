@@ -8,26 +8,33 @@ import { PricePreview } from "../../../types/PricePreview";
 type BillingInterval = "month" | "year";
 
 const getInitialInterval = (): BillingInterval =>
-  (localStorage.getItem("preferredPricingInterval") as BillingInterval) || "month";
+  (localStorage.getItem("preferredPricingInterval") as BillingInterval) ||
+  "month";
 
 interface UsePricingDataOptions {
   isOpen: boolean;
 }
 
 export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
-  const { getPricePreview, getChargePreview, isLoaded: isPaddleLoaded } = usePaddleContext();
+  const {
+    getPricePreview,
+    getChargePreview,
+    isLoaded: isPaddleLoaded,
+  } = usePaddleContext();
   const { status: userStatus, error: userError, data: userData } = useUserMe();
 
   const [products, setProducts] = useState<PricePreview[]>();
-  const [additionalFeedPricePreview, setAdditionalFeedPricePreview] = useState<PricePreview | null>(
-    null,
-  );
+  const [additionalFeedPricePreview, setAdditionalFeedPricePreview] =
+    useState<PricePreview | null>(null);
   const [chargePreview, setChargePreview] = useState<string | null>(null);
-  const [baseAdditionalFeedsPrice, setBaseAdditionalFeedsPrice] = useState<string | null>(null);
+  const [baseAdditionalFeedsPrice, setBaseAdditionalFeedsPrice] = useState<
+    string | null
+  >(null);
   const [additionalFeedsInput, setAdditionalFeedsInput] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingAdditionalFeedsChange, setIsLoadingAdditionalFeedsChange] = useState(false);
+  const [isLoadingAdditionalFeedsChange, setIsLoadingAdditionalFeedsChange] =
+    useState(false);
   const [hasError, setHasError] = useState(false);
 
   const [interval, setInterval] = useState<BillingInterval>(getInitialInterval);
@@ -36,10 +43,12 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
   const priceIdOfAdditionalFeeds = PRICE_IDS[ProductKey.Tier3Feed][interval];
   const priceIdOfTier3 = PRICE_IDS[ProductKey.Tier3][interval];
 
-  const additionalFeedsQuantity = additionalFeedPricePreview?.prices[0]?.quantity;
-  const userSubscriptionAdditionalFeeds = userData?.result.subscription.addons?.find(
-    (a) => a.key === ProductKey.Tier3Feed,
-  )?.quantity;
+  const additionalFeedsQuantity =
+    additionalFeedPricePreview?.prices[0]?.quantity;
+  const userSubscriptionAdditionalFeeds =
+    userData?.result.subscription.addons?.find(
+      (a) => a.key === ProductKey.Tier3Feed,
+    )?.quantity;
 
   const changeInterval = useCallback((newInterval: BillingInterval) => {
     setInterval(newInterval);
@@ -57,14 +66,18 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
       try {
         if (newQuantity > 0) {
           const [preview, chargePreviewResult] = await Promise.all([
-            getPricePreview([{ priceId: priceIdOfAdditionalFeeds, quantity: newQuantity }]),
+            getPricePreview([
+              { priceId: priceIdOfAdditionalFeeds, quantity: newQuantity },
+            ]),
             getChargePreview([
               { priceId: priceIdOfAdditionalFeeds, quantity: newQuantity },
               { priceId: priceIdOfTier3, quantity: 1 },
             ]),
           ]);
 
-          const feedsPreview = preview.find((p) => p.id === ProductKey.Tier3Feed);
+          const feedsPreview = preview.find(
+            (p) => p.id === ProductKey.Tier3Feed,
+          );
 
           if (feedsPreview) {
             setAdditionalFeedPricePreview(feedsPreview);
@@ -81,12 +94,20 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
         setIsLoadingAdditionalFeedsChange(false);
       }
     },
-    [priceIdOfAdditionalFeeds, priceIdOfTier3, getPricePreview, getChargePreview, isPaddleLoaded],
+    [
+      priceIdOfAdditionalFeeds,
+      priceIdOfTier3,
+      getPricePreview,
+      getChargePreview,
+      isPaddleLoaded,
+    ],
   );
 
   const changeAdditionalFeedsInput = useCallback(
     (newQuantity: number) => {
-      const clamped = Math.max(0, newQuantity);
+      const clamped = Number.isFinite(newQuantity)
+        ? Math.max(0, newQuantity)
+        : 0;
       setAdditionalFeedsInput(clamped);
       updateAdditionalFeeds(clamped);
     },
@@ -116,9 +137,10 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
         setIsLoading(true);
         setHasError(false);
 
-        const userAdditionalFeedsAddon = userData.result.subscription.addons?.find(
-          (a) => a.key === ProductKey.Tier3Feed,
-        );
+        const userAdditionalFeedsAddon =
+          userData.result.subscription.addons?.find(
+            (a) => a.key === ProductKey.Tier3Feed,
+          );
 
         if (userAdditionalFeedsAddon?.quantity != null) {
           setAdditionalFeedsInput(userAdditionalFeedsAddon.quantity);
@@ -158,7 +180,9 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
         setChargePreview(totalT3ChargePreview.totalFormatted);
         setProducts(pricePreview);
 
-        const t3FeedPricePreview = pricePreview.find((p) => p.id === ProductKey.Tier3Feed);
+        const t3FeedPricePreview = pricePreview.find(
+          (p) => p.id === ProductKey.Tier3Feed,
+        );
 
         if (t3FeedPricePreview) {
           setAdditionalFeedPricePreview(t3FeedPricePreview);
@@ -172,7 +196,9 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
         }
       } catch (err) {
         setHasError(true);
-        captureException(new Error("Price preview failed to load"), { extra: { error: err } });
+        captureException(new Error("Price preview failed to load"), {
+          extra: { error: err },
+        });
       } finally {
         setIsLoading(false);
       }
