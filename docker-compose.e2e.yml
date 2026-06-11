@@ -7,8 +7,6 @@ services:
     image: mongo:7.0.2
     hostname: mongo
     restart: "no"
-    volumes:
-      - ./rs-initiate.js:/docker-entrypoint-initdb.d/rs-initiate.js
     tmpfs:
       - /data/db
       - /data/configdb
@@ -20,6 +18,16 @@ services:
       # only host-side e2e helpers use it (see e2e/helpers/constants.ts MONGO_URI).
       - "${E2E_MONGO_PORT:-27019}:27017"
     command: ["--replSet", "dbrs", "--bind_ip_all", "--port", "27017"]
+    # The replica set is initiated via the healthcheck rather than a
+    # docker-entrypoint-initdb.d script: init scripts make the mongo image start a
+    # temporary mongod, then stop it and start the real one, and the second start
+    # can race the first for port 27017 ("Address already in use", exit code 48),
+    # killing the container and the whole E2E stack with it.
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "try { quit(rs.status().myState === 1 ? 0 : 1) } catch (e) { rs.initiate(); quit(1) }"]
+      interval: 2s
+      timeout: 10s
+      retries: 30
     networks:
       - e2e-default
 
@@ -251,7 +259,7 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       mongo:
-        condition: service_started
+        condition: service_healthy
       rabbitmq-broker:
         condition: service_healthy
     healthcheck:
