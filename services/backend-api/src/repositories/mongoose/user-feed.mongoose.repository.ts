@@ -491,11 +491,10 @@ export class UserFeedMongooseRepository
     );
   }
 
-  // Inserts the feed and, in the same transaction, aborts (rolling back the
-  // insert) if it pushes the scope over `maxFeeds`. The in-transaction count
-  // makes concurrent creations serialize on write conflicts rather than racing
-  // a separate count-then-delete whose compensating delete could leak an
-  // over-limit feed on failure. Throws FeedLimitExceededError when over limit.
+  // Counts the scope's feeds and throws FeedLimitExceededError when the new
+  // feed would exceed `maxFeeds`. Best-effort: concurrent creates can race the
+  // count, which is accepted — only serial requests are guaranteed not to
+  // exceed the limit.
   async createWithLimitEnforcement(
     input: CreateUserFeedInput,
     limit: FeedLimitScope,
@@ -517,40 +516,17 @@ export class UserFeedMongooseRepository
             $and: [this.getOwnershipFilter(limit.discordUserId), { workspaceId: null }],
           };
 
-    const session = await this.model.db.startSession();
+    const count = await this.model.countDocuments(countFilter);
 
-    try {
-      let result: IUserFeed | undefined;
-
-      await session.withTransaction(async () => {
-        const docs = await this.model.create([buildDoc()], { session });
-        const doc = docs[0];
-
-        if (!doc) {
-          throw new Error("Feed creation transaction produced no feed");
-        }
-
-        const count = await this.model
-          .countDocuments(countFilter)
-          .session(session);
-
-        if (count > limit.maxFeeds) {
-          throw new FeedLimitExceededError();
-        }
-
-        result = this.toEntity(
-          doc.toObject() as UserFeedDoc & { _id: Types.ObjectId },
-        );
-      });
-
-      if (!result) {
-        throw new Error("Feed creation transaction produced no feed");
-      }
-
-      return result;
-    } finally {
-      await session.endSession();
+    if (count >= limit.maxFeeds) {
+      throw new FeedLimitExceededError();
     }
+
+    const doc = await this.model.create(buildDoc());
+
+    return this.toEntity(
+      doc.toObject() as UserFeedDoc & { _id: Types.ObjectId },
+    );
   }
 
   private buildCloneDoc(input: CloneUserFeedInput) {
@@ -595,7 +571,7 @@ export class UserFeedMongooseRepository
     );
   }
 
-  // See createWithLimitEnforcement — same atomic insert-and-check, for clones.
+  // See createWithLimitEnforcement — same count-then-insert check, for clones.
   async cloneWithLimitEnforcement(
     input: CloneUserFeedInput,
     limit: FeedLimitScope,
