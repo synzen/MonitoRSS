@@ -42,6 +42,19 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
     trace: "on-first-retry",
     headless: !!process.env.CI,
+    // Backend-issued OAuth redirects (mock Discord login, mock Reddit authorize)
+    // point the BROWSER at host.docker.internal so the same base URL also works
+    // for containers reaching the host-side mock servers. Docker Desktop adds
+    // that hostname to the host's hosts file, but plain Linux (CI runners) does
+    // not, so without this the popup dies on chrome-error://chromewebdata/.
+    // Resolve it inside the browser ONLY: a host-level /etc/hosts entry is not
+    // equivalent, because Docker's embedded DNS forwards container queries to
+    // the host resolver, and the backend's mailer resolves via dns.resolve4
+    // (bypassing the container's own hosts file) — a host entry of 127.0.0.1
+    // leaks into the container and breaks SMTP delivery to the mock mailer.
+    launchOptions: {
+      args: ["--host-resolver-rules=MAP host.docker.internal 127.0.0.1"],
+    },
   },
   projects: [
     {

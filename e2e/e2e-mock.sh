@@ -109,6 +109,15 @@ mkdir -p "$LOG_DIR"
 # Its signing secret must be known before the backend boots (the backend reads
 # BACKEND_API_PADDLE_WEBHOOK_SECRET once at startup), so create it here, not in Playwright.
 #
+# Only runs that include the e2e-paddle project (or target a billing spec directly)
+# receive real Paddle webhooks; the mocked e2e-web project never does, so creating a
+# setting for every CI shard only consumed Paddle's cap on active notification
+# settings ("notification_maximum_active_settings_reached" killed shards at setup).
+RUN_NEEDS_PADDLE_SETTING=""
+case "$PLAYWRIGHT_ARGS" in
+  *e2e-paddle*|*billing*) RUN_NEEDS_PADDLE_SETTING=1 ;;
+esac
+
 # To use your OWN notification setting instead, set E2E_PADDLE_NOTIFICATION_SETTING_ID
 # (and the matching BACKEND_API_PADDLE_WEBHOOK_SECRET) in e2e/.env: the script then skips
 # create/delete and leaves your setting in place (only repointing its destination to the
@@ -116,7 +125,7 @@ mkdir -p "$LOG_DIR"
 PADDLE_SETTING_EPHEMERAL=""
 if [ -n "${E2E_PADDLE_NOTIFICATION_SETTING_ID:-}" ]; then
   echo "Using provided Paddle notification setting: $E2E_PADDLE_NOTIFICATION_SETTING_ID"
-elif [ -n "${BACKEND_API_PADDLE_KEY:-}" ]; then
+elif [ -n "${BACKEND_API_PADDLE_KEY:-}" ] && [ -n "$RUN_NEEDS_PADDLE_SETTING" ]; then
   echo "Creating ephemeral Paddle notification setting..."
   created="$(npx tsx "$SCRIPT_DIR/scripts/paddle-notification-setting.ts" create)"
   PADDLE_SETTING_EPHEMERAL="$(echo "$created" | sed -n '1p')"
