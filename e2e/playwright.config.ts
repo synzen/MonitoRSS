@@ -24,6 +24,7 @@ const PADDLE_CHECKOUT_TESTS = [
   "**/billing/paddle-checkout.spec.ts",
   "**/billing/paddle-branding-checkout.spec.ts",
   "**/billing/paddle-retain-cancellation.spec.ts",
+  "**/billing/paddle-additional-feeds.spec.ts",
 ];
 
 export default defineConfig({
