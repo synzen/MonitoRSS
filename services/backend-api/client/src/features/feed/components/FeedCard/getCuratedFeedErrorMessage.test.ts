@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { getCuratedFeedErrorMessage } from "./getCuratedFeedErrorMessage";
-import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage";
 
 describe("getCuratedFeedErrorMessage", () => {
   describe("Bucket 1 - Transient (try again later)", () => {

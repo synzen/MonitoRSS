@@ -9,7 +9,9 @@ import { pages } from "../constants";
 import { FeedConnectionType } from "../types";
 import { Loading } from "../components";
 import { UserFeedStatusFilterProvider, MultiSelectUserFeedProvider } from "@/features/feed";
+import { WorkspaceScopeLayout, InvitePage } from "@/features/workspaces";
 import { NotFound } from "./NotFound";
+import { ScopeAwareLanding } from "./ScopeAwareLanding";
 import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
 
 import { lazyWithRetries } from "../utils/lazyImportWithRetry";
@@ -42,12 +44,27 @@ const Checkout = lazyWithRetries(() =>
   import("./Checkout").then(({ Checkout: c }) => ({ default: c })),
 );
 
+const WorkspaceSettingsPage = lazyWithRetries(() =>
+  import("./WorkspaceSettings").then(({ WorkspaceSettingsPage: c }) => ({ default: c })),
+);
+
+const WorkspaceBillingPage = lazyWithRetries(() =>
+  import("./WorkspaceBilling").then(({ WorkspaceBillingPage: c }) => ({ default: c })),
+);
+
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 const Pages: React.FC = () => (
   <SentryRoutes>
     <Route path={pages.notFound()} element={<NotFound />} />
-    <Route path="/" element={<Navigate to={pages.userFeeds()} />} />
+    <Route
+      path="/"
+      element={
+        <RequireAuth waitForUserFetch>
+          <ScopeAwareLanding />
+        </RequireAuth>
+      }
+    />
     <Route
       path={pages.checkout(":priceId")}
       element={
@@ -150,6 +167,115 @@ const Pages: React.FC = () => (
               <MessageBuilder />
             </Suspense>
           </SuspenseErrorBoundary>
+        </RequireAuth>
+      }
+    />
+    {/* Workspace-scoped routes reuse the same page components as personal scope.
+        WorkspaceScopeLayout provides the workspace + feed scope so feed queries,
+        mutations, and links stay workspace-scoped. Each child renders its own header
+        (mirroring the personal routes) so the message-builder route can be
+        full-screen with no header, exactly like personal scope. */}
+    <Route
+      path="/workspaces/:workspaceSlug"
+      element={
+        <RequireAuth waitForUserFetch>
+          <WorkspaceScopeLayout />
+        </RequireAuth>
+      }
+    >
+      <Route index element={<Navigate to="feeds" replace />} />
+      <Route
+        path="feeds"
+        element={
+          <>
+            <AppHeader />
+            <Suspense fallback={<Spinner mt={24} />}>
+              <MultiSelectUserFeedProvider>
+                <UserFeedStatusFilterProvider>
+                  <UserFeeds />
+                </UserFeedStatusFilterProvider>
+              </MultiSelectUserFeedProvider>
+            </Suspense>
+          </>
+        }
+      />
+      <Route
+        path="add-feeds"
+        element={
+          <>
+            <AppHeader invertBackground />
+            <Suspense fallback={<Spinner mt={24} />}>
+              <AddUserFeeds />
+            </Suspense>
+          </>
+        }
+      />
+      <Route
+        path="feeds/:feedId"
+        element={
+          <PageContentV2 header={<AppHeader />}>
+            <Suspense fallback={<Spinner mt={24} />}>
+              <UserFeed />
+            </Suspense>
+          </PageContentV2>
+        }
+      />
+      <Route
+        path="feeds/:feedId/discord-channel-connections/:connectionId"
+        element={
+          <PageContentV2 header={<AppHeader />}>
+            <Suspense fallback={<Spinner mt={24} />}>
+              <ConnectionSettings connectionType={FeedConnectionType.DiscordChannel} />
+            </Suspense>
+          </PageContentV2>
+        }
+      />
+      <Route
+        path="feeds/:feedId/discord-channel-connections/:connectionId/message-builder"
+        element={
+          <SuspenseErrorBoundary>
+            <Suspense
+              fallback={
+                <Stack alignItems="center" justifyContent="center" height="100%" gap="2rem">
+                  <Loading size="xl" />
+                  <Heading>Loading Message Builder...</Heading>
+                </Stack>
+              }
+            >
+              <MessageBuilder />
+            </Suspense>
+          </SuspenseErrorBoundary>
+        }
+      />
+      <Route
+        path="settings"
+        element={
+          <>
+            <AppHeader />
+            <WorkspaceSettingsPage />
+          </>
+        }
+      />
+      <Route
+        path="settings/billing"
+        element={
+          <>
+            <AppHeader />
+            <WorkspaceBillingPage />
+          </>
+        }
+      />
+    </Route>
+    {/* Invitation landing page. RequireAuth bootstraps a logged-out invitee
+        through Discord OAuth and returns them here (the path is preserved via
+        the OAuth state), so the link works whether or not they're signed in. */}
+    <Route
+      path={pages.workspaceInvite(":inviteId")}
+      element={
+        <RequireAuth waitForUserFetch>
+          <PageContentV2 header={<AppHeader />}>
+            <InvitePage />
+          </PageContentV2>
         </RequireAuth>
       }
     />

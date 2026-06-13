@@ -69,6 +69,7 @@ export interface UpdateUserPreferencesInput {
     | null;
   feedListColumnOrder?: IUserPreferences["feedListColumnOrder"] | null;
   feedListStatusFilters?: IUserPreferences["feedListStatusFilters"] | null;
+  lastActiveWorkspaceSlug?: string | null;
 }
 
 export interface SetRedditCredentialsInput {

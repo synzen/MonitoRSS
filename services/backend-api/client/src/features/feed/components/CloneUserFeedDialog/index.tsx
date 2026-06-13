@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { FaUpRightFromSquare } from "react-icons/fa6";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useCreateUserFeedClone } from "../../hooks";
+import { useFeedScope } from "../../contexts/FeedScopeContext";
 import {
   InlineErrorAlert,
   InlineErrorIncompleteFormAlert,
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) => {
+  const { workspaceSlug } = useFeedScope();
   const {
     handleSubmit,
     control,
@@ -82,7 +84,12 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, trigger }: Props) =
         description: (
           <Box mt={2}>
             <Button asChild>
-              <Link href={pages.userFeed(id)} target="_blank">
+              <Link
+                href={pages.userFeed(id, {
+                  scope: workspaceSlug ? { workspaceSlug } : undefined,
+                })}
+                target="_blank"
+              >
                 View cloned feed
                 <Icon>
                   <FaUpRightFromSquare />

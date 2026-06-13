@@ -1,4 +1,4 @@
-import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage";
 
 const UNAVAILABLE_CODES = new Set<string>([
   ApiErrorCode.FEED_NOT_FOUND,

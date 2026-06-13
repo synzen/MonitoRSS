@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { system } from "@/utils/theme";
 import { FeedCard } from "./index";
-import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage";
 
 dayjs.extend(relativeTime);
 

@@ -12,13 +12,13 @@ const getConnectionPathByType = (type: FeedConnectionType) => {
 };
 
 /**
- * Forward-compatibility shell per ADR-005 (team scoping).
- * When teams ship, pass `{ teamId }` to scope a route to a team workspace.
- * Personal-scope routes (no `teamId`) stay unprefixed so existing bookmarks survive.
+ * Workspace scope uses a human-readable slug.
+ * Personal-scope routes (no `workspaceSlug`) stay unprefixed so existing bookmarks survive.
  */
-export type RouteScope = { teamId?: string };
+export type RouteScope = { workspaceSlug?: string };
 
-const scopePrefix = (scope?: RouteScope) => (scope?.teamId ? `/teams/${scope.teamId}` : "");
+const scopePrefix = (scope?: RouteScope) =>
+  scope?.workspaceSlug ? `/workspaces/${scope.workspaceSlug}` : "";
 
 export const pages = {
   checkout: (priceId: string, feeds?: { quantity: number; priceId: string }) =>
@@ -29,8 +29,11 @@ export const pages = {
     connectionId: string;
     scope?: RouteScope;
   }) => `${pages.userFeedConnection(data)}/message-builder`,
-  addFeeds: () => "/add-feeds",
+  addFeeds: (scope?: RouteScope) => `${scopePrefix(scope)}/add-feeds`,
   userSettings: () => "/settings",
+  workspaceSettings: (workspaceSlug: string) => `/workspaces/${workspaceSlug}/settings`,
+  workspaceBilling: (workspaceSlug: string) => `/workspaces/${workspaceSlug}/settings/billing`,
+  workspaceInvite: (inviteId: string) => `/invites/${inviteId}`,
   userFeeds: (scope?: RouteScope) => `${scopePrefix(scope)}/feeds`,
   notFound: () => "/not-found",
   testPaddle: () => "/test-paddle",

@@ -8,7 +8,11 @@ import {
 } from "./paddle-api";
 
 const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = process.env.CI ? 60000 : 30000;
+// Sandbox subscription webhooks routinely take well over 30s — sometimes past
+// 90s — to land. The in-test current-plan waits already budget 120s for the
+// same webhook, so give fixture setup at least that much to stop it flaking out
+// before the test even starts. Callers set a beforeEach timeout above this.
+const POLL_TIMEOUT_MS = process.env.CI ? 150000 : 120000;
 
 async function waitForFreeState(page: Page): Promise<void> {
   const startTime = Date.now();

@@ -155,6 +155,7 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
             preferences: {},
           },
         ],
+        workspaces: [],
       };
 
       const ctx = harness.createContext({
@@ -187,6 +188,7 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
           discordUserId: "user-123",
         },
         users: [{}],
+        workspaces: [],
       };
 
       const ctx = harness.createContext({
@@ -240,6 +242,7 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
           discordUserId: "user-123",
         },
         users: [{}],
+        workspaces: [],
       };
 
       const ctx = harness.createContext({
@@ -298,6 +301,7 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
           discordUserId: "user-123",
         },
         users: [{}],
+        workspaces: [],
       };
 
       const ctx = harness.createContext({
@@ -344,6 +348,7 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
           discordUserId: "user-123",
         },
         users: [{}],
+        workspaces: [],
       };
 
       const ctx = harness.createContext({
@@ -384,6 +389,7 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
         },
         user: { discordUserId: "user-1" },
         users: [{}],
+        workspaces: [],
       };
       const mockFeed2 = {
         id: "feed-2",
@@ -392,6 +398,7 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
         connections: { discordChannels: [] },
         user: { discordUserId: "user-2" },
         users: [{}],
+        workspaces: [],
       };
 
       const ctx = harness.createContext({

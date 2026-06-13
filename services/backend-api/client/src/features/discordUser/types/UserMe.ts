@@ -4,6 +4,7 @@ import { ProductKey } from "../../../constants";
 export const UserMeSchema = object({
   id: string().required(),
   email: string(),
+  verifiedEmail: string(),
   preferences: object({
     alertOnDisabledFeeds: bool().default(false),
     dateFormat: string().nullable(),
@@ -29,6 +30,7 @@ export const UserMeSchema = object({
     feedListStatusFilters: object({
       statuses: array(string().required()).required(),
     }).optional(),
+    lastActiveWorkspaceSlug: string().nullable().optional(),
   }).default({}),
   subscription: object({
     subscriptionId: string().optional().nullable(),
@@ -62,7 +64,11 @@ export const UserMeSchema = object({
   enableBilling: bool(),
   featureFlags: object({
     externalProperties: bool(),
+    workspaces: bool(),
   }),
+  capabilities: object({
+    workspaces: bool(),
+  }).optional(),
   supporterFeatures: object({
     exrternalProperties: object({
       enabled: bool(),

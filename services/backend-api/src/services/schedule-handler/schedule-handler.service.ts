@@ -7,11 +7,17 @@ import type {
   IUserFeedRepository,
   RefreshRateSyncInput,
   MaxDailyArticlesSyncInput,
+  WorkspaceRefreshRateSyncInput,
+  WorkspaceMaxDailyArticlesSyncInput,
+  FeedForSlotOffsetRecalculation,
 } from "../../repositories/interfaces/user-feed.types";
 import type { SlotWindow } from "../../shared/types/slot-window.types";
 import { SCHEDULER_WINDOW_SIZE_MS } from "../../shared/constants/scheduler.constants";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
-import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request-lookup-details";
+import {
+  getFeedRequestLookupDetails,
+  pickFeedCredentialSource,
+} from "../../shared/utils/get-feed-request-lookup-details";
 import logger from "../../infra/logger";
 
 export interface ScheduleHandlerServiceDeps {
@@ -62,6 +68,19 @@ export class ScheduleHandlerService {
       maxDailyArticlesSyncInput,
     );
 
+    const workspaceSyncInputs = await this.buildWorkspaceSyncInputs();
+    await this.recalculateSlotOffsets(
+      this.deps.userFeedRepository.iterateWorkspaceFeedsForRefreshRateSync(
+        workspaceSyncInputs.refreshRates,
+      ),
+    );
+    await this.deps.userFeedRepository.syncWorkspaceRefreshRates(
+      workspaceSyncInputs.refreshRates,
+    );
+    await this.deps.userFeedRepository.syncWorkspaceMaxDailyArticles(
+      workspaceSyncInputs.maxDailyArticles,
+    );
+
     logger.info("Maintenance operations completed");
   }
 
@@ -108,23 +127,26 @@ export class ScheduleHandlerService {
     for await (const {
       url,
       feedRequestLookupKey,
+      workspaceId,
       users,
+      workspaces,
     } of this.deps.userFeedRepository.iterateFeedsWithLookupKeysForRefreshRate(
       refreshRateSeconds,
       slotWindow,
     )) {
-      const user = users[0];
-      const externalCredentials = user?.externalCredentials;
-
       const lookupDetails = getFeedRequestLookupDetails({
         feed: {
           url,
           feedRequestLookupKey,
         },
-        user: {
-          externalCredentials,
-        },
+        credentials: pickFeedCredentialSource({
+          feed: { workspaceId },
+          user: { externalCredentials: users[0]?.externalCredentials },
+          workspace: workspaces[0],
+        }),
         decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+        redditFeedBaseUrl:
+          this.deps.config.BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL,
       });
 
       if (!lookupDetails) {
@@ -173,6 +195,61 @@ export class ScheduleHandlerService {
         refreshRateSeconds,
       })),
     );
+
+    await this.deps.userFeedsService.enforceAllWorkspaceFeedLimits();
+  }
+
+  // Workspace benefits are resolved per workspace, then grouped by value so the
+  // repo can sync each distinct rate/limit with one update.
+  private async buildWorkspaceSyncInputs(): Promise<{
+    refreshRates: WorkspaceRefreshRateSyncInput;
+    maxDailyArticles: WorkspaceMaxDailyArticlesSyncInput;
+  }> {
+    const workspaceIds =
+      await this.deps.userFeedRepository.getDistinctWorkspaceIdsWithFeeds();
+
+    const workspaceIdsByRate = new Map<number, string[]>();
+    const workspaceIdsByArticles = new Map<number, string[]>();
+
+    await Promise.all(
+      workspaceIds.map(async (workspaceId) => {
+        const { refreshRateSeconds, maxDailyArticles } =
+          await this.deps.supportersService.getWorkspaceBenefits(workspaceId);
+
+        const byRate = workspaceIdsByRate.get(refreshRateSeconds);
+        if (byRate) {
+          byRate.push(workspaceId);
+        } else {
+          workspaceIdsByRate.set(refreshRateSeconds, [workspaceId]);
+        }
+
+        const byArticles = workspaceIdsByArticles.get(maxDailyArticles);
+        if (byArticles) {
+          byArticles.push(workspaceId);
+        } else {
+          workspaceIdsByArticles.set(maxDailyArticles, [workspaceId]);
+        }
+      }),
+    );
+
+    return {
+      refreshRates: {
+        workspaceLimits: Array.from(workspaceIdsByRate.entries()).map(
+          ([refreshRateSeconds, ids]) => ({
+            workspaceIds: ids,
+            refreshRateSeconds,
+          }),
+        ),
+      },
+      maxDailyArticles: {
+        workspaceLimits: Array.from(workspaceIdsByArticles.entries()).map(
+          ([maxDailyArticles, ids]) => ({
+            workspaceIds: ids,
+            maxDailyArticles,
+          }),
+        ),
+      },
+    };
   }
 
   private buildRefreshRateSyncInput(
@@ -239,12 +316,20 @@ export class ScheduleHandlerService {
   private async recalculateSlotOffsetsForChangedRates(
     input: RefreshRateSyncInput,
   ): Promise<void> {
+    await this.recalculateSlotOffsets(
+      this.deps.userFeedRepository.iterateFeedsForRefreshRateSync(input),
+    );
+  }
+
+  private async recalculateSlotOffsets(
+    feeds: AsyncIterable<
+      FeedForSlotOffsetRecalculation & { newRefreshRateSeconds: number }
+    >,
+  ): Promise<void> {
     const BATCH_SIZE = 1000;
     let batch: Array<{ feedId: string; slotOffsetMs: number }> = [];
 
-    for await (const feed of this.deps.userFeedRepository.iterateFeedsForRefreshRateSync(
-      input,
-    )) {
+    for await (const feed of feeds) {
       const effectiveRate =
         feed.userRefreshRateSeconds ?? feed.newRefreshRateSeconds;
       batch.push({

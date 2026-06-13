@@ -6,6 +6,7 @@ import {
   type Response,
   type BrowserContext,
   type Browser,
+  type TestInfo,
 } from "@playwright/test";
 import {
   createFeed,
@@ -68,6 +69,45 @@ async function createMockSessionCookies(): Promise<MockCookie[]> {
   ];
 }
 
+// A timed-out `toBeVisible` on an authenticated page is usually a symptom: the
+// real cause (an auth/session failure, an unhandled fetch error) only ever
+// reached the browser console, which Playwright does not echo into the report.
+// This promotes those signals to test annotations so the next failure is legible
+// from the report alone, without downloading and parsing a trace. Attaching at the
+// context level covers every page the context opens — including ones created after
+// this call — so callers never wire individual pages.
+function surfaceBrowserErrors(context: BrowserContext, testInfo: TestInfo): void {
+  const note = (kind: string, detail: string) => {
+    testInfo.annotations.push({ type: kind, description: detail });
+  };
+
+  context.on("console", (msg) => {
+    if (msg.type() === "error" && /unauthorized|401|ApiAdapterError/i.test(msg.text())) {
+      note("browser-auth-error", msg.text().slice(0, 300));
+    }
+  });
+  context.on("weberror", (err) => note("browser-page-error", err.error().message.slice(0, 300)));
+  context.on("response", (res) => {
+    const url = res.url();
+    if (res.status() === 401 && url.includes("/api/v1/")) {
+      note("http-401", `401 on ${url.replace(/^https?:\/\/[^/]+/, "")}`);
+    }
+  });
+}
+
+// Creates a fresh browser context with browser-error surfacing already attached.
+// Both the default `page` fixture and any spec that needs its own context (e.g. a
+// second logged-out actor) go through this, so error visibility is uniform and no
+// call site touches the listener wiring directly.
+export async function newInstrumentedContext(
+  browser: Browser,
+  testInfo: TestInfo,
+): Promise<BrowserContext> {
+  const context = await browser.newContext();
+  surfaceBrowserErrors(context, testInfo);
+  return context;
+}
+
 type TestFixtures = {
   testFeed: Feed;
   testFeedWithConnection: FeedWithConnection;
@@ -104,9 +144,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: "worker" },
   ],
 
-  page: async ({ browser }, use) => {
+  page: async ({ browser }, use, testInfo) => {
     const cookies = await createMockSessionCookies();
-    const context = await browser.newContext();
+    const context = await newInstrumentedContext(browser, testInfo);
     await context.addCookies(cookies);
     const page = await context.newPage();
     await use(page);

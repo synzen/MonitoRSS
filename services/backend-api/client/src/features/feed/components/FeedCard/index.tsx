@@ -299,7 +299,6 @@ export const FeedCard = ({
             )}
             {showCategoryTag && (
               <Badge
-                colorPalette="gray"
                 variant="subtle"
                 borderRadius="full"
                 fontSize="x-small"

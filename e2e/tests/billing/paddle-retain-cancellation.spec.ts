@@ -9,7 +9,9 @@ const TIER_1_MONTHLY_PRICE_ID = "pri_01hf01yn08hj2jwtywq7fhsww3";
 
 test.describe("Paddle Subscription Cancellation", () => {
   test.beforeEach(async ({ page }, testInfo) => {
-    testInfo.setTimeout(120_000);
+    // Generous budget: establishing paid state waits on a sandbox subscription
+    // webhook that can be slow to land, and this runs before every test.
+    testInfo.setTimeout(200_000);
     const userResponse = await page.request.get("/api/v1/users/@me");
     const userData = await userResponse.json();
     await ensurePaidSubscriptionState(page, {

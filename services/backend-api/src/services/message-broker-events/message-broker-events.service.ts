@@ -19,11 +19,18 @@ import { ArticleRejectCode } from "../../shared/enums/article-reject-code";
 import { FeedRejectCode } from "../../shared/enums/feed-reject-code";
 import { getConnectionDisableCodeByArticleRejectCode } from "../../shared/utils/get-connection-disable-code-by-article-reject-code";
 import { getUserFeedDisableCodeByFeedRejectCode } from "../../shared/utils/get-user-feed-disable-code-by-feed-reject-code";
-import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request-lookup-details";
+import {
+  getFeedRequestLookupDetails,
+  pickFeedCredentialSource,
+} from "../../shared/utils/get-feed-request-lookup-details";
 import { castDiscordContentForMedium } from "../../shared/utils/cast-discord-content-for-medium";
 import { castDiscordEmbedsForMedium } from "../../shared/utils/cast-discord-embeds-for-medium";
 import { castDiscordComponentRowsForMedium } from "../../shared/utils/cast-discord-component-rows-for-medium";
-import type { DiscordMediumEvent, UserForDelivery } from "./types";
+import type {
+  DiscordMediumEvent,
+  UserForDelivery,
+  WorkspaceForDelivery,
+} from "./types";
 
 export interface MessageBrokerEventsServiceDeps {
   config: Config;
@@ -202,6 +209,7 @@ export class MessageBrokerEventsService {
         await this.emitDeliverFeedArticlesEventWithPremiumCheck(
           feed,
           feed.users[0],
+          feed.workspaces[0],
         );
       } catch (err) {
         logger.error(
@@ -402,6 +410,7 @@ export class MessageBrokerEventsService {
   async emitDeliverFeedArticlesEventWithPremiumCheck(
     userFeed: UserFeedForDelivery | IUserFeed,
     user?: UserForDelivery,
+    workspace?: WorkspaceForDelivery,
   ): Promise<void> {
     const allConnections = Object.values(userFeed.connections).flat() as Array<{
       customPlaceholders?: unknown[];
@@ -431,6 +440,7 @@ export class MessageBrokerEventsService {
       parseCustomPlaceholders: allowCustomPlaceholders,
       parseExternalProperties: allowExternalProperties,
       user,
+      workspace,
     });
   }
 
@@ -440,12 +450,14 @@ export class MessageBrokerEventsService {
     parseCustomPlaceholders,
     parseExternalProperties,
     user,
+    workspace,
   }: {
     userFeed: UserFeedForDelivery | IUserFeed;
     maxDailyArticles: number;
     parseCustomPlaceholders: boolean;
     parseExternalProperties?: boolean;
     user?: UserForDelivery;
+    workspace?: WorkspaceForDelivery;
   }): Promise<void> {
     const discordChannelMediums = userFeed.connections.discordChannels
       .filter((c) => !c.disabledCode)
@@ -518,10 +530,14 @@ export class MessageBrokerEventsService {
             ? userFeed.feedRequestLookupKey
             : undefined,
       },
-      user: {
-        externalCredentials: user?.externalCredentials,
-      },
+      credentials: pickFeedCredentialSource({
+        feed: userFeed,
+        user: { externalCredentials: user?.externalCredentials },
+        workspace,
+      }),
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+      redditFeedBaseUrl:
+        this.deps.config.BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL,
     });
 
     const publishData = {

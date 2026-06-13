@@ -6,11 +6,14 @@ export class RedditApiService {
   private readonly clientId?: string;
   private readonly clientSecret?: string;
   private readonly redirectUri?: string;
+  private readonly apiBaseUrl: string;
 
   constructor(private readonly config: Config) {
     this.clientId = config.BACKEND_API_REDDIT_CLIENT_ID;
     this.clientSecret = config.BACKEND_API_REDDIT_CLIENT_SECRET;
     this.redirectUri = config.BACKEND_API_REDDIT_REDIRECT_URI;
+    this.apiBaseUrl =
+      config.BACKEND_API_REDDIT_API_BASE_URL || "https://www.reddit.com/api/v1";
   }
 
   getAuthorizeUrl(scopes = "read", state = "state") {
@@ -22,7 +25,7 @@ export class RedditApiService {
       throw new Error("Reddit redirect uri not found");
     }
 
-    return `https://www.reddit.com/api/v1/authorize?client_id=${
+    return `${this.apiBaseUrl}/authorize?client_id=${
       this.clientId
     }&response_type=code&state=${state}&redirect_uri=${encodeURIComponent(
       this.redirectUri,
@@ -46,7 +49,7 @@ export class RedditApiService {
       })
       .join("&");
 
-    const res = await fetch("https://www.reddit.com/api/v1/access_token", {
+    const res = await fetch(`${this.apiBaseUrl}/access_token`, {
       method: "POST",
       headers: this.getAccessTokenHeaders(),
       body: form,
@@ -85,7 +88,7 @@ export class RedditApiService {
       })
       .join("&");
 
-    const res = await fetch("https://www.reddit.com/api/v1/access_token", {
+    const res = await fetch(`${this.apiBaseUrl}/access_token`, {
       method: "POST",
       headers: this.getAccessTokenHeaders(),
       body: form,
@@ -115,7 +118,7 @@ export class RedditApiService {
   }
 
   async revokeRefreshToken(refreshToken: string) {
-    const res = await fetch("https://www.reddit.com/api/v1/revoke_token", {
+    const res = await fetch(`${this.apiBaseUrl}/revoke_token`, {
       method: "POST",
       headers: this.getAccessTokenHeaders(),
       body: `token=${refreshToken}&token_type_hint=refresh_token`,

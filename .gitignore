@@ -145,6 +145,7 @@ auth*.json
 **/playwright-report/
 _bmad
 _bmad-output
+skills-lock.json
 
 !docs/
 docs/*

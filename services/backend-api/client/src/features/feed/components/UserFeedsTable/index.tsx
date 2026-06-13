@@ -25,6 +25,7 @@ import { Panel } from "@/components/Panel";
 import { UserFeedComputedStatus } from "../../types";
 import { UserFeedStatusFilterContext } from "../../contexts/UserFeedStatusFilterContext";
 import { useMultiSelectUserFeedContext } from "../../contexts/MultiSelectUserFeedContext";
+import { useFeedScope } from "../../contexts/FeedScopeContext";
 import { useTablePreferences, useTableSearch, useFeedTableData } from "./hooks";
 import {
   ActiveFilterChips,
@@ -43,6 +44,7 @@ export const UserFeedsTable: React.FC = () => {
 
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
   const { selectedFeeds, setSelectedFeeds } = useMultiSelectUserFeedContext();
+  const { workspaceSlug } = useFeedScope();
 
   // Preferences (sorting, column visibility, column order)
   const {
@@ -97,8 +99,11 @@ export const UserFeedsTable: React.FC = () => {
     [setSearchParams],
   );
 
-  // Columns with search highlighting
-  const columns = useMemo(() => createTableColumns(search), [search]);
+  // Columns with search highlighting; links stay in the current (workspace) scope.
+  const columns = useMemo(
+    () => createTableColumns(search, workspaceSlug ? { workspaceSlug } : undefined),
+    [search, workspaceSlug],
+  );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 

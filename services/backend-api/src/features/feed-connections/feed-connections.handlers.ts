@@ -29,6 +29,10 @@ import type {
   CreateTemplatePreviewBody,
   UpdateDiscordChannelConnectionBody,
 } from "./feed-connections.schemas";
+import {
+  resolveFeedForRequester,
+  canAccessConnection,
+} from "../../shared/utils/feed-access";
 
 export function formatDiscordChannelConnectionResponse(
   con: IDiscordChannelConnection,
@@ -85,46 +89,14 @@ export async function deleteDiscordChannelConnectionHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedRepository,
-    feedConnectionsDiscordChannelsService,
-    usersService,
-    config,
-  } = request.container;
+  const { feedConnectionsDiscordChannelsService } = request.container;
   const { discordUserId } = request;
   const { feedId, connectionId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, isAdmin } = await resolveFeedForRequester(request, feedId);
 
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const isOwner = feed.user.discordUserId === discordUserId;
-  if (!isAdmin && !isOwner) {
-    const invite = feed.shareManageOptions?.invites.find(
-      (i) => i.discordUserId === discordUserId,
-    );
-    const allowedConnectionIds = invite?.connections?.map(
-      (c) => c.connectionId,
-    );
-
-    if (
-      allowedConnectionIds &&
-      allowedConnectionIds.length > 0 &&
-      !allowedConnectionIds.includes(connectionId)
-    ) {
-      throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
-    }
+  if (!canAccessConnection(feed, discordUserId, isAdmin, connectionId)) {
+    throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
   }
 
   const connection = feed.connections.discordChannels.find(
@@ -153,27 +125,12 @@ export async function createDiscordChannelConnectionHandler(
   const {
     userFeedRepository,
     feedConnectionsDiscordChannelsService,
-    usersService,
-    config,
     messageBrokerEventsService,
   } = request.container;
   const { discordUserId, accessToken } = request;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed } = await resolveFeedForRequester(request, feedId);
 
   const {
     name,
@@ -236,46 +193,14 @@ export async function sendTestArticleHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedRepository,
-    feedConnectionsDiscordChannelsService,
-    usersService,
-    config,
-  } = request.container;
+  const { feedConnectionsDiscordChannelsService } = request.container;
   const { discordUserId } = request;
   const { feedId, connectionId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, isAdmin } = await resolveFeedForRequester(request, feedId);
 
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const isOwner = feed.user.discordUserId === discordUserId;
-  if (!isAdmin && !isOwner) {
-    const invite = feed.shareManageOptions?.invites.find(
-      (i) => i.discordUserId === discordUserId,
-    );
-    const allowedConnectionIds = invite?.connections?.map(
-      (c) => c.connectionId,
-    );
-
-    if (
-      allowedConnectionIds &&
-      allowedConnectionIds.length > 0 &&
-      !allowedConnectionIds.includes(connectionId)
-    ) {
-      throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
-    }
+  if (!canAccessConnection(feed, discordUserId, isAdmin, connectionId)) {
+    throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
   }
 
   const connection = feed.connections.discordChannels.find(
@@ -328,46 +253,14 @@ export async function copyConnectionSettingsHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedRepository,
-    feedConnectionsDiscordChannelsService,
-    usersService,
-    config,
-  } = request.container;
+  const { feedConnectionsDiscordChannelsService } = request.container;
   const { discordUserId, accessToken } = request;
   const { feedId, connectionId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, isAdmin } = await resolveFeedForRequester(request, feedId);
 
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const isOwner = feed.user.discordUserId === discordUserId;
-  if (!isAdmin && !isOwner) {
-    const invite = feed.shareManageOptions?.invites.find(
-      (i) => i.discordUserId === discordUserId,
-    );
-    const allowedConnectionIds = invite?.connections?.map(
-      (c) => c.connectionId,
-    );
-
-    if (
-      allowedConnectionIds &&
-      allowedConnectionIds.length > 0 &&
-      !allowedConnectionIds.includes(connectionId)
-    ) {
-      throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
-    }
+  if (!canAccessConnection(feed, discordUserId, isAdmin, connectionId)) {
+    throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
   }
 
   const connection = feed.connections.discordChannels.find(
@@ -396,46 +289,14 @@ export async function cloneConnectionHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedRepository,
-    feedConnectionsDiscordChannelsService,
-    usersService,
-    config,
-  } = request.container;
+  const { feedConnectionsDiscordChannelsService } = request.container;
   const { discordUserId, accessToken } = request;
   const { feedId, connectionId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, isAdmin } = await resolveFeedForRequester(request, feedId);
 
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const isOwner = feed.user.discordUserId === discordUserId;
-  if (!isAdmin && !isOwner) {
-    const invite = feed.shareManageOptions?.invites.find(
-      (i) => i.discordUserId === discordUserId,
-    );
-    const allowedConnectionIds = invite?.connections?.map(
-      (c) => c.connectionId,
-    );
-
-    if (
-      allowedConnectionIds &&
-      allowedConnectionIds.length > 0 &&
-      !allowedConnectionIds.includes(connectionId)
-    ) {
-      throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
-    }
+  if (!canAccessConnection(feed, discordUserId, isAdmin, connectionId)) {
+    throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
   }
 
   const connection = feed.connections.discordChannels.find(
@@ -482,46 +343,14 @@ export async function createPreviewHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedRepository,
-    feedConnectionsDiscordChannelsService,
-    usersService,
-    config,
-  } = request.container;
+  const { feedConnectionsDiscordChannelsService } = request.container;
   const { discordUserId } = request;
   const { feedId, connectionId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, isAdmin } = await resolveFeedForRequester(request, feedId);
 
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const isOwner = feed.user.discordUserId === discordUserId;
-  if (!isAdmin && !isOwner) {
-    const invite = feed.shareManageOptions?.invites.find(
-      (i) => i.discordUserId === discordUserId,
-    );
-    const allowedConnectionIds = invite?.connections?.map(
-      (c) => c.connectionId,
-    );
-
-    if (
-      allowedConnectionIds &&
-      allowedConnectionIds.length > 0 &&
-      !allowedConnectionIds.includes(connectionId)
-    ) {
-      throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
-    }
+  if (!canAccessConnection(feed, discordUserId, isAdmin, connectionId)) {
+    throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
   }
 
   const connection = feed.connections.discordChannels.find(
@@ -571,29 +400,10 @@ export async function createTemplatePreviewHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedRepository,
-    feedConnectionsDiscordChannelsService,
-    usersService,
-    config,
-  } = request.container;
-  const { discordUserId } = request;
+  const { feedConnectionsDiscordChannelsService } = request.container;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed } = await resolveFeedForRequester(request, feedId);
 
   const body = request.body;
 
@@ -623,46 +433,14 @@ export async function updateDiscordChannelConnectionHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedRepository,
-    feedConnectionsDiscordChannelsService,
-    usersService,
-    config,
-  } = request.container;
+  const { feedConnectionsDiscordChannelsService } = request.container;
   const { discordUserId, accessToken } = request;
   const { feedId, connectionId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, isAdmin } = await resolveFeedForRequester(request, feedId);
 
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const isOwner = feed.user.discordUserId === discordUserId;
-  if (!isAdmin && !isOwner) {
-    const invite = feed.shareManageOptions?.invites.find(
-      (i) => i.discordUserId === discordUserId,
-    );
-    const allowedConnectionIds = invite?.connections?.map(
-      (c) => c.connectionId,
-    );
-
-    if (
-      allowedConnectionIds &&
-      allowedConnectionIds.length > 0 &&
-      !allowedConnectionIds.includes(connectionId)
-    ) {
-      throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
-    }
+  if (!canAccessConnection(feed, discordUserId, isAdmin, connectionId)) {
+    throw new NotFoundError(ApiErrorCode.FEED_CONNECTION_NOT_FOUND);
   }
 
   const connection = feed.connections.discordChannels.find(

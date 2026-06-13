@@ -12,9 +12,10 @@ import {
 } from "../../../../components/InlineErrorAlert";
 import { useCreateUserFeedUrlValidation } from "../../hooks/useCreateUserFeedUrlValidation";
 import { FixFeedRequestsCTA } from "../FixFeedRequestsCTA";
-import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage";
 import type ApiAdapterError from "@/utils/ApiAdapterError";
 import { useUserMe } from "../../../discordUser";
+import { useFeedScope } from "../../contexts/FeedScopeContext";
 import {
   DialogRoot,
   DialogContent,
@@ -80,8 +81,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   const isConfirming = !!feedUrlValidationData?.result.resolvedToUrl;
   const isLoading = isSubmitting || validationStatus === "loading";
   const canResolveError = !!error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
-  const isRedditConnectionRequired =
-    error?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
+  const isRedditConnectionRequired = error?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
   const showCta = canResolveError || isRedditConnectionRequired;
 
   const onSubmit = async ({ title, url }: FormData) => {
@@ -113,10 +113,12 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   // FixFeedRequestsCTA, which unmounts the instant the account becomes active - so the retry can't
   // be driven from its onConnected callback (it would race its own unmount). This dialog survives the
   // transition, so it owns the retry: on the not-connected -> connected edge while a Reddit gate is
-  // showing, re-submit the form.
+  // showing, re-submit the form. In workspace scope the watched connection is the workspace's.
   const { data: userMe } = useUserMe();
-  const hasRedditConnected =
-    userMe?.result.externalAccounts?.find((e) => e.type === "reddit")?.status === "ACTIVE";
+  const feedScope = useFeedScope();
+  const hasRedditConnected = feedScope.workspaceId
+    ? feedScope.redditConnection?.status === "ACTIVE"
+    : userMe?.result.externalAccounts?.find((e) => e.type === "reddit")?.status === "ACTIVE";
   const prevHasRedditConnectedRef = useRef(hasRedditConnected);
 
   useEffect(() => {
@@ -241,7 +243,10 @@ export const EditUserFeedDialog: React.FC<Props> = ({
               </Stack>
             )}
             {error && !showCta && (
-              <InlineErrorAlert title={t("common.errors.failedToSave")} description={error.message} />
+              <InlineErrorAlert
+                title={t("common.errors.failedToSave")}
+                description={error.message}
+              />
             )}
             {showCta && (
               <FixFeedRequestsCTA

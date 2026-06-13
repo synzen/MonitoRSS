@@ -7,7 +7,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
 import { UrlValidationResult } from "./UrlValidationResult";
-import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 
 const mockMutateAsync = vi.fn();

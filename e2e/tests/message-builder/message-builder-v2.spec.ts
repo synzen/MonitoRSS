@@ -415,6 +415,7 @@ test.describe("Message Builder V2", () => {
     page,
     testFeedWithConnection,
   }) => {
+    test.setTimeout(120_000);
     const { feed, connection } = testFeedWithConnection;
 
     await page.goto(

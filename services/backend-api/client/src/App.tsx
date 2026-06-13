@@ -10,6 +10,7 @@ import advancedFormat from "dayjs/plugin/advancedFormat";
 import dayjs from "dayjs";
 import { SendTestArticleProvider } from "./features/feedConnections/discordChannel/messageBuilder/contexts/SendTestArticleContext";
 import Pages from "./pages";
+import { ScopeNavigationContainer } from "./pages/ScopeNavigationContainer";
 import { AccessibleNavigationAnnouncer } from "./components/AccessibleNavigationAnnouncer";
 
 dayjs.extend(utc);
@@ -23,7 +24,9 @@ const App: React.FC = () => {
     <Box display="flex" flexDir="column" height="100vh">
       <AccessibleNavigationAnnouncer />
       <SendTestArticleProvider>
-        <Pages />
+        <ScopeNavigationContainer>
+          <Pages />
+        </ScopeNavigationContainer>
       </SendTestArticleProvider>
     </Box>
   );

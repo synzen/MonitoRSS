@@ -65,6 +65,7 @@ import {
   useUpdateUserFeedManagementInviteStatus,
 } from "../../hooks";
 import { useUserFeedContext } from "../../contexts";
+import { useFeedScope } from "../../contexts/FeedScopeContext";
 import { UpdateUserFeedInput } from "../../api";
 import { UserFeedDisabledCode } from "../../types";
 import { CloneUserFeedDialog } from "../CloneUserFeedDialog";
@@ -84,6 +85,7 @@ import {
   PopoverBody,
 } from "@/components/ui/popover";
 import { Alert } from "@/components/ui/alert";
+import { useScopeCrumbLabel } from "@/contexts/ScopeLabelContext";
 
 const tabIndexBySearchParam = new Map<string, number>([
   [UserFeedTabSearchParam.Connections, 0],
@@ -105,6 +107,10 @@ const tabValues = ["connections", "comparisons", "external-properties", "setting
 
 export const UserFeedDetail: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
+  // Keep navigation in the current (workspace) scope when rendered under a workspace route.
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
+  const scopeCrumbLabel = useScopeCrumbLabel();
   const { open: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
   const {
     open: copySettingsIsOpen,
@@ -171,7 +177,7 @@ export const UserFeedDetail: React.FC = () => {
     await mutateAsync({
       feedId,
     });
-    navigate(pages.userFeeds(), {
+    navigate(pages.userFeeds(scope), {
       state: {
         alertTitle: `Successfully deleted feed: ${feed.title}`,
       },
@@ -208,7 +214,7 @@ export const UserFeedDetail: React.FC = () => {
         },
       });
 
-      navigate(pages.userFeeds(), {
+      navigate(pages.userFeeds(scope), {
         state: {
           alertTitle: `Successfully removed shared access to feed: ${feed.title}`,
         },
@@ -229,6 +235,8 @@ export const UserFeedDetail: React.FC = () => {
       </Button>
     </Flex>
   );
+
+  const showEmptyConnectionsAlert = !!feed && !feed.connections.length && !isSharedWithMe;
 
   const disabledConnections = feed?.connections.filter(
     (c) => c.disabledCode === FeedConnectionDisabledCode.Manual,
@@ -289,7 +297,7 @@ export const UserFeedDetail: React.FC = () => {
                     <BreadcrumbList>
                       <BreadcrumbItem>
                         <BreadcrumbLink asChild color="text.link">
-                          <RouterLink to={pages.userFeeds()}>Feeds</RouterLink>
+                          <RouterLink to={pages.userFeeds(scope)}>{scopeCrumbLabel}</RouterLink>
                         </BreadcrumbLink>
                       </BreadcrumbItem>
                       <BreadcrumbSeparator />
@@ -298,6 +306,7 @@ export const UserFeedDetail: React.FC = () => {
                           <RouterLink
                             to={pages.userFeed(feed.id, {
                               tab: UserFeedTabSearchParam.Connections,
+                              scope,
                             })}
                           >
                             {feed?.title}
@@ -648,14 +657,18 @@ export const UserFeedDetail: React.FC = () => {
                         <Heading size="md" as="h2">
                           {t("pages.userFeeds.tabConnections")}
                         </Heading>
-                        <PrimaryActionButton onClick={onAddConnection}>
-                          <FaPlus fontSize="sm" />
-                          Add connection
-                        </PrimaryActionButton>
+                        {/* The empty-state alert below owns the CTA when there are no
+                            connections — one primary action per view. */}
+                        {!showEmptyConnectionsAlert && (
+                          <PrimaryActionButton onClick={onAddConnection}>
+                            <FaPlus fontSize="sm" />
+                            Add connection
+                          </PrimaryActionButton>
+                        )}
                       </Flex>
                       <Text>{t("pages.feed.connectionSectionDescription")}</Text>
                     </Stack>
-                    {feed && !feed.connections.length && !isSharedWithMe && (
+                    {showEmptyConnectionsAlert && (
                       <Stack>
                         <Alert status="warning" title="You have no connections set up!">
                           <Stack>
@@ -663,7 +676,10 @@ export const UserFeedDetail: React.FC = () => {
                               You&apos;ll need to set up at least one connection to tell the bot
                               where to send new articles!
                             </Text>
-                            {addConnectionButtons}
+                            <PrimaryActionButton onClick={onAddConnection} alignSelf="flex-start">
+                              <FaPlus fontSize="sm" />
+                              Add connection
+                            </PrimaryActionButton>
                           </Stack>
                         </Alert>
                       </Stack>

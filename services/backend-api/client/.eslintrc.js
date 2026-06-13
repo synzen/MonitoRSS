@@ -13,6 +13,7 @@ module.exports = {
       "error",
       {
         endOfLine: "auto",
+        printWidth: 100,
       },
     ],
     "linebreak-style": 0,
@@ -158,6 +159,9 @@ module.exports = {
         // raw hex/palette refs are sanctioned, not debt (ADR-007 § "the ONE exception that stays raw").
         "**/DiscordMessageDisplay/**",
         "**/DiscordView/**",
+        // Vendored Chakra snippet: LightMode/DarkMode spans use colorPalette="gray" as a
+        // palette reset for a forced-theme subtree (upstream snippet semantics, not debt).
+        "src/components/ui/color-mode.tsx",
       ],
       rules: {
         "no-restricted-syntax": [
@@ -167,6 +171,37 @@ module.exports = {
               "JSXAttribute[name.name=/^(color|bg|background|backgroundColor|borderColor|borderTopColor|borderBottomColor|borderLeftColor|borderRightColor|fill|stroke|outlineColor)$/] > Literal[value=/^(gray|blue|red|green|orange|yellow|purple|pink|cyan|teal)\\.(50|[0-9]{3}|fg|solid|muted|subtle|emphasized|focusRing|contrast)$/]",
             message:
               "Raw palette ref in a color prop. Name a semantic ROLE (fg/bg/border/text.* for text, brand/PrimaryActionButton for accent, explicit colorPalette for status), not a hue. See client/docs/adr/007-styling-roles-tiers-contrast.md.",
+          },
+          /* ADR-007 corollary: colorPalette="gray" at a call site is a hue spelling the neutral
+           * DEFAULT. The button recipe pins the neutral palette in theme.ts, so the prop is
+           * always redundant on buttons, and the global gray default covers everything else.
+           * Status palettes (red/green/orange) and brand stay explicit and allowed. color-mode.tsx
+           * (vendored Chakra snippet; its LightMode/DarkMode spans use gray as a palette reset)
+           * is exempted via excludedFiles above. */
+          {
+            selector: 'JSXAttribute[name.name="colorPalette"] > Literal[value="gray"]',
+            message:
+              'colorPalette="gray" is redundant: gray is the pinned neutral default (button recipe in theme.ts, global default elsewhere). Remove it, or name a meaningful palette (brand or an explicit status hue). See client/docs/adr/007-styling-roles-tiers-contrast.md.',
+          },
+          /* ADR-007 corollary: a status-colored OUTLINE button renders broken. The button recipe
+           * (theme.ts) pins every outline border to the neutral `controlBorder`, so a
+           * `<Button variant="outline" colorPalette="red">` shows a red LABEL inside a grey BOX —
+           * the label and the border disagree. Use <DestructiveActionButton> (which overrides the
+           * border to match the label) for delete/discard/cancel. A bare <Button colorPalette="red">
+           * hits the same bug because the default variant IS outline. The loud final confirm inside a
+           * dialog stays an explicit `variant="solid"` (allowed below). Two selectors: explicit
+           * outline, and the bare (default-variant) case. */
+          {
+            selector:
+              'JSXElement[openingElement.name.name="Button"]:has(JSXAttribute[name.name="variant"] > Literal[value="outline"]):has(JSXAttribute[name.name="colorPalette"] > Literal[value=/^(red|green|orange)$/])',
+            message:
+              'A status-colored outline button renders a colored label in a grey box (the outline border is pinned to the neutral controlBorder in theme.ts). Use <DestructiveActionButton> for destructive actions, or variant="solid" for a loud confirm. See client/docs/adr/007-styling-roles-tiers-contrast.md.',
+          },
+          {
+            selector:
+              'JSXElement[openingElement.name.name="Button"]:not(:has(JSXAttribute[name.name="variant"])):has(JSXAttribute[name.name="colorPalette"] > Literal[value=/^(red|green|orange)$/])',
+            message:
+              'A status-colored button with no variant defaults to outline, rendering a colored label in a grey box (the outline border is pinned to controlBorder in theme.ts). Use <DestructiveActionButton> for destructive actions, or variant="solid" for a loud confirm. See client/docs/adr/007-styling-roles-tiers-contrast.md.',
           },
         ],
       },

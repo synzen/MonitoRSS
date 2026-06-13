@@ -2,8 +2,9 @@ import { Alert, Box, Button, Flex, HStack, Stack } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { UserFeedDisabledCode, UserFeedRequestStatus } from "../../types";
+import { UserFeedRequestStatus } from "../../types";
 import { useUserFeedContext } from "../../contexts/UserFeedContext";
+import { useFeedScope } from "../../contexts/FeedScopeContext";
 import { getErrorMessageForArticleRequestStatus } from "../../utils";
 import { useCreateUserFeedManualRequest, useUserFeedRequestsWithPagination } from "../../hooks";
 import ApiAdapterError from "../../../../utils/ApiAdapterError";
@@ -19,6 +20,8 @@ const RESOLVABLE_STATUS_CODES = [429, 403, 401];
 export const UserFeedHealthAlert = () => {
   const { t } = useTranslation();
   const { userFeed } = useUserFeedContext();
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
   const { data, status } = useUserFeedRequestsWithPagination({
     feedId: userFeed.id,
     data: {},
@@ -65,11 +68,9 @@ export const UserFeedHealthAlert = () => {
   const isFailing = !!latestRequest && latestRequest.status !== UserFeedRequestStatus.OK;
   const nextRetryAt = data?.result.nextRetryAtIso ? dayjs(data.result.nextRetryAtIso) : null;
 
-  if (
-    !isFailing ||
-    status === "loading" ||
-    userFeed.disabledCode === UserFeedDisabledCode.FailedRequests
-  ) {
+  // A disabled feed is not being polled, so the failing-requests warning (and its
+  // retry CTA) would be misleading; the disabled alert already explains the state.
+  if (!isFailing || status === "loading" || !!userFeed.disabledCode) {
     return null;
   }
 
@@ -101,6 +102,7 @@ export const UserFeedHealthAlert = () => {
                     navigate(
                       pages.userFeed(userFeed.id, {
                         tab: UserFeedTabSearchParam.Logs,
+                        scope,
                       }),
                     )
                   }

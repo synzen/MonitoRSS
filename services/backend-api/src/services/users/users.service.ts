@@ -1,4 +1,3 @@
-import { randomUUID } from "crypto";
 import dayjs from "dayjs";
 import type { Config } from "../../config";
 import type {
@@ -16,6 +15,7 @@ import {
 } from "../../repositories/shared/enums";
 import { formatCurrency } from "../../utils/format-currency";
 import { encrypt } from "../../utils/encrypt";
+import { reconcileFeedLookupKeys } from "../../shared/utils/reconcile-feed-lookup-keys";
 import logger from "../../infra/logger";
 import type {
   GetUserByDiscordIdOutput,
@@ -301,48 +301,19 @@ export class UsersService {
     feedIds?: string[];
     userIds?: string[];
   }): Promise<void> {
-    const bulkWriteOps: Array<{
-      feedId: string;
-      action: "set" | "unset";
-      lookupKey?: string;
-    }> = [];
-
-    for await (const {
-      feedId,
-      lookupKey,
-    } of this.deps.userRepository.aggregateUsersWithActiveRedditCredentials({
-      userIds: data?.userIds,
-      feedIds: data?.feedIds,
-    })) {
-      if (lookupKey) {
-        logger.debug(`Feed ${feedId} already has a lookup key, skipping`);
-        continue;
-      }
-
-      logger.debug(`Updating lookup key for feed ${feedId}`);
-      const newLookupKey = randomUUID();
-      bulkWriteOps.push({
-        feedId,
-        action: "set",
-        lookupKey: newLookupKey,
-      });
-    }
-
-    for await (const {
-      feedId,
-    } of this.deps.userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials(
-      { userIds: data?.userIds, feedIds: data?.feedIds },
-    )) {
-      logger.info(`Removing lookup key for feed ${feedId}`);
-      bulkWriteOps.push({
-        feedId,
-        action: "unset",
-      });
-    }
-
-    if (bulkWriteOps.length) {
-      await this.deps.userFeedRepository.bulkUpdateLookupKeys(bulkWriteOps);
-    }
+    await reconcileFeedLookupKeys({
+      feedsWithActiveCredentials:
+        this.deps.userRepository.aggregateUsersWithActiveRedditCredentials({
+          userIds: data?.userIds,
+          feedIds: data?.feedIds,
+        }),
+      feedsWithDeadCredentials:
+        this.deps.userRepository.aggregateUsersWithExpiredOrRevokedRedditCredentials(
+          { userIds: data?.userIds, feedIds: data?.feedIds },
+        ),
+      bulkUpdateLookupKeys: (ops) =>
+        this.deps.userFeedRepository.bulkUpdateLookupKeys(ops),
+    });
   }
 
   private encryptObjectValues(

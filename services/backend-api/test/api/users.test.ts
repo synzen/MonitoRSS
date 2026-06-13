@@ -99,6 +99,7 @@ describe("GET /api/v1/users/@me", { concurrency: true }, () => {
           creditBalance: { availableFormatted: string };
           enableBilling: boolean;
           featureFlags: Record<string, unknown>;
+          capabilities: { workspaces: boolean };
           supporterFeatures: {
             exrternalProperties: { enabled: boolean };
           };
@@ -119,6 +120,7 @@ describe("GET /api/v1/users/@me", { concurrency: true }, () => {
       assert.strictEqual(body.result.creditBalance.availableFormatted, "0");
       assert.strictEqual(body.result.enableBilling, true);
       assert.deepStrictEqual(body.result.featureFlags, {});
+      assert.deepStrictEqual(body.result.capabilities, { workspaces: false });
       assert.ok(body.result.supporterFeatures);
       assert.strictEqual(
         body.result.supporterFeatures.exrternalProperties.enabled,
@@ -410,6 +412,26 @@ describe("PATCH /api/v1/users/@me", { concurrency: true }, () => {
       assert.strictEqual(response.status, 400);
     });
 
+    it("treats an empty lastActiveWorkspaceSlug as clearing it (AJV coerces '' to null)", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+
+      const response = await user.fetch("/api/v1/users/@me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          preferences: { lastActiveWorkspaceSlug: "" },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as UserResponse;
+      assert.strictEqual(
+        body.result.preferences.lastActiveWorkspaceSlug,
+        undefined,
+      );
+    });
+
     it("returns 400 for invalid feedListSort.key", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);
@@ -582,6 +604,41 @@ describe("PATCH /api/v1/users/@me", { concurrency: true }, () => {
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as UserResponse;
       assert.strictEqual(body.result.preferences.dateLocale, "en-gb");
+    });
+
+    it("updates and clears lastActiveWorkspaceSlug preference", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+
+      const setResponse = await user.fetch("/api/v1/users/@me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          preferences: { lastActiveWorkspaceSlug: "acme-team" },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      assert.strictEqual(setResponse.status, 200);
+      const setBody = (await setResponse.json()) as UserResponse;
+      assert.strictEqual(
+        setBody.result.preferences.lastActiveWorkspaceSlug,
+        "acme-team",
+      );
+
+      const clearResponse = await user.fetch("/api/v1/users/@me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          preferences: { lastActiveWorkspaceSlug: null },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      assert.strictEqual(clearResponse.status, 200);
+      const clearBody = (await clearResponse.json()) as UserResponse;
+      assert.strictEqual(
+        clearBody.result.preferences.lastActiveWorkspaceSlug,
+        undefined,
+      );
     });
 
     it("updates feedListSort preference", async () => {
@@ -759,3 +816,74 @@ describe("PATCH /api/v1/users/@me", { concurrency: true }, () => {
     });
   });
 });
+
+describe(
+  "capabilities.workspaces reflects the per-user feature flag",
+  { concurrency: true },
+  () => {
+    let ctx: AppTestContext;
+
+    before(async () => {
+      ctx = await createAppTestContext();
+    });
+
+    after(async () => {
+      await ctx.teardown();
+    });
+
+    async function enableWorkspacesFlag(discordUserId: string): Promise<void> {
+      await ctx.connection
+        .collection("users")
+        .updateOne(
+          { discordUserId },
+          { $set: { "featureFlags.workspaces": true } },
+        );
+    }
+
+    it("GET /users/@me returns capabilities.workspaces=true when the user has the flag", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      await enableWorkspacesFlag(discordUserId);
+
+      const response = await user.fetch("/api/v1/users/@me");
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { capabilities: { workspaces: boolean } };
+      };
+      assert.deepStrictEqual(body.result.capabilities, { workspaces: true });
+    });
+
+    it("GET /users/@me returns capabilities.workspaces=false without the flag", async () => {
+      const user = await ctx.asUser(generateSnowflake());
+
+      const response = await user.fetch("/api/v1/users/@me");
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { capabilities: { workspaces: boolean } };
+      };
+      assert.deepStrictEqual(body.result.capabilities, { workspaces: false });
+    });
+
+    it("PATCH /users/@me also returns capabilities.workspaces=true when the user has the flag", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      await enableWorkspacesFlag(discordUserId);
+
+      const response = await user.fetch("/api/v1/users/@me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          preferences: { alertOnDisabledFeeds: true },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { capabilities: { workspaces: boolean } };
+      };
+      assert.deepStrictEqual(body.result.capabilities, { workspaces: true });
+    });
+  },
+);

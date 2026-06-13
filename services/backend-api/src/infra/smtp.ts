@@ -14,10 +14,14 @@ export function createSmtpTransport(config: Config): SmtpTransport {
     return null;
   }
 
+  // Production default is implicit TLS on 465; both are overridable so a local
+  // or test mailer can listen on a plain-SMTP port.
+  const secure = config.BACKEND_API_SMTP_SECURE;
+
   return nodemailer.createTransport({
     host,
-    port: 465,
-    secure: true,
+    port: config.BACKEND_API_SMTP_PORT ?? (secure ? 465 : 587),
+    secure,
     auth: {
       user: username,
       pass: password,

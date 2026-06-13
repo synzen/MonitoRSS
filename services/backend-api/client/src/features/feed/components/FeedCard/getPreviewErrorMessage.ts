@@ -1,4 +1,4 @@
-import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "../../../../utils/getStandardErrorCodeMessage";
 import { getCuratedFeedErrorMessage } from "./getCuratedFeedErrorMessage";
 
 function mapPreviewStatusToErrorCode(

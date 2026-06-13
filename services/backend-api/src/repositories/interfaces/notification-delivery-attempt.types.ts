@@ -10,6 +10,7 @@ export interface INotificationDeliveryAttempt {
   type: NotificationDeliveryAttemptType;
   feedId?: string;
   connectionId?: string;
+  workspaceId?: string;
   failReasonInternal?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -21,6 +22,7 @@ export interface CreateNotificationDeliveryAttemptInput {
   type: NotificationDeliveryAttemptType;
   feedId?: string;
   connectionId?: string;
+  workspaceId?: string;
 }
 
 export interface INotificationDeliveryAttemptRepository {

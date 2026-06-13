@@ -123,8 +123,19 @@ test.describe("Paddle Branding Checkout", () => {
     const zipInput = paddle.getByRole("textbox", { name: "ZIP/Postcode" });
     await zipInput.fill("12345");
 
+    // Paddle's overlay sometimes renders details + payment on one step (no
+    // "Continue") and sometimes splits them. Only click Continue if it is
+    // actually present and actionable; either way we then wait for the card
+    // field, so a one-step layout still proceeds.
     const continueButton = paddle.getByRole("button", { name: "Continue" });
-    await continueButton.click();
+    if (
+      await continueButton
+        .waitFor({ state: "visible", timeout: 15000 })
+        .then(() => true)
+        .catch(() => false)
+    ) {
+      await continueButton.click();
+    }
 
     // Step 2: "Payment" — fill card details
     const cardInput = paddle.getByRole("textbox", { name: "Card number" });
@@ -184,14 +195,29 @@ test.describe("Paddle Branding Checkout", () => {
       await subscribeButton.click();
     }
 
-    // Phase 6: Wait for Paddle success screen, then close overlay to trigger checkout.completed
+    // Phase 6: Wait for the checkout to complete, then make sure the overlay is
+    // closed so checkout.completed fires. Paddle sometimes shows a success
+    // screen we must close manually, and sometimes auto-dismisses the overlay
+    // straight into the app's provisioning flow. Treat either as success: wait
+    // until the success screen shows OR the overlay is already gone, then only
+    // click Close if it is still present.
     const paddleSuccessText = paddle.getByText(
       /transaction has been completed successfully/i,
     );
-    await expect(paddleSuccessText).toBeVisible({ timeout: 60000 });
-
     const paddleCloseButton = paddle.getByRole("button", { name: "Close" });
-    await paddleCloseButton.click();
+
+    await expect(async () => {
+      const overlayGone = !(await paddleFrame.isVisible().catch(() => false));
+      const succeeded = await paddleSuccessText
+        .isVisible()
+        .catch(() => false);
+
+      expect(overlayGone || succeeded).toBe(true);
+    }).toPass({ timeout: 90000, intervals: [2000] });
+
+    if (await paddleCloseButton.isVisible().catch(() => false)) {
+      await paddleCloseButton.click();
+    }
     await expect(paddleFrame).not.toBeVisible({ timeout: 15000 });
 
     // Phase 7: Wait for provisioning to complete

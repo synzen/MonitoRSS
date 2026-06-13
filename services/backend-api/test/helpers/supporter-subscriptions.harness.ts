@@ -41,6 +41,9 @@ export interface MockPaddleService {
     }>
   >;
   executeApiCall: Mock<<T>(endpoint: string, data?: RequestInit) => Promise<T>>;
+  getUpdatePaymentMethodTransaction: Mock<
+    (subscriptionId: string) => Promise<{ id: string }>
+  >;
 }
 
 export interface MockSupportersService {
@@ -144,6 +147,10 @@ export interface SupporterSubscriptionsHarness {
 function createMockPaddleService(
   options: SupporterSubscriptionsContextOptions["paddleService"] = {},
 ): MockPaddleService {
+  const executeApiCall = mock.fn(
+    options.executeApiCall ?? (async <T>(): Promise<T> => ({}) as T),
+  );
+
   return {
     getProducts: mock.fn(
       options.getProducts ??
@@ -151,9 +158,16 @@ function createMockPaddleService(
           products: [],
         })),
     ),
-    executeApiCall: mock.fn(
-      options.executeApiCall ?? (async <T>(): Promise<T> => ({}) as T),
-    ),
+    executeApiCall,
+    // Mirror the real PaddleService: this routes through executeApiCall so a
+    // test that stubs executeApiCall still drives the returned transaction id.
+    getUpdatePaymentMethodTransaction: mock.fn(async (subscriptionId: string) => {
+      const response = await executeApiCall<PaddleSubscriptionUpdatePaymentMethodResponse>(
+        `/subscriptions/${subscriptionId}/update-payment-method-transaction`,
+      );
+
+      return { id: response.data.id };
+    }),
   };
 }
 

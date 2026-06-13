@@ -63,6 +63,10 @@ export interface MockSupportersOptions {
   defaultMaxUserFeeds?: number;
   defaultRefreshRateSeconds?: number;
   defaultSupporterRefreshRateSeconds?: number;
+  workspaceMaxFeeds?: number;
+  workspaceMaxDailyArticles?: number;
+  workspaceRefreshRateSeconds?: number;
+  workspaceAllowWebhooks?: boolean;
 }
 
 export function createMockSupportersService(
@@ -78,6 +82,13 @@ export function createMockSupportersService(
       maxDailyArticles: options.maxDailyArticles ?? 100,
       refreshRateSeconds: options.refreshRateSeconds ?? 600,
       isSupporter: options.isSupporter ?? false,
+    }),
+    getWorkspaceBenefits: async () => ({
+      maxFeeds: options.workspaceMaxFeeds ?? 5,
+      maxDailyArticles: options.workspaceMaxDailyArticles ?? 100,
+      refreshRateSeconds: options.workspaceRefreshRateSeconds ?? 600,
+      allowWebhooks: options.workspaceAllowWebhooks ?? false,
+      dormant: false,
     }),
   } as unknown as UserFeedsServiceDeps["supportersService"];
 }

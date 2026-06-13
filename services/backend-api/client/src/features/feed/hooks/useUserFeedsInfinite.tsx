@@ -2,6 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getUserFeeds, GetUserFeedsInput, GetUserFeedsOutput } from "../api";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { useFeedScope } from "../contexts/FeedScopeContext";
 
 export const useUserFeedsInfinite = (
   input: Omit<GetUserFeedsInput, "search">,
@@ -11,12 +12,15 @@ export const useUserFeedsInfinite = (
 ) => {
   const [search, setSearch] = useState("");
   const useLimit = input.limit || 10;
+  const { workspaceId } = useFeedScope();
+  const scopedWorkspaceId = input.workspaceId ?? workspaceId;
 
   const queryKey = [
     "user-feeds",
     {
       input: {
         ...input,
+        workspaceId: scopedWorkspaceId,
         infinite: true,
         limit: useLimit,
         search,
@@ -39,6 +43,7 @@ export const useUserFeedsInfinite = (
     async ({ pageParam: newOffset }) => {
       const result = await getUserFeeds({
         ...input,
+        workspaceId: scopedWorkspaceId,
         offset: newOffset,
         search,
       });

@@ -49,10 +49,21 @@ async function main() {
       });
     });
 
-  refreshRedditCredentials(container);
-  redditRefreshIntervalId = setInterval(() => {
-    refreshRedditCredentials(container);
-  }, REDDIT_REFRESH_INTERVAL_MS);
+  const redditRefreshTargets = [
+    createUserRedditRefreshTarget(container),
+    createWorkspaceRedditRefreshTarget(container),
+  ];
+  const refreshAllRedditCredentials = () => {
+    for (const target of redditRefreshTargets) {
+      refreshRedditCredentialsForTarget(container, target);
+    }
+  };
+
+  refreshAllRedditCredentials();
+  redditRefreshIntervalId = setInterval(
+    refreshAllRedditCredentials,
+    REDDIT_REFRESH_INTERVAL_MS,
+  );
 
   runMaintenanceOps(container);
   maintenanceIntervalId = setInterval(() => {
@@ -146,79 +157,167 @@ async function runMaintenanceOps(container: Container) {
   }
 }
 
-async function refreshRedditCredentials(container: Container) {
+// A credential-owning scope (user or workspace) swept by the scheduled reddit
+// token refresh. The loop body is identical for both; what differs is how to
+// enumerate expiring grants, how to store refreshed tokens, and what cleanup a
+// dead grant requires.
+interface RedditRefreshTarget {
+  ownerLabel: "user" | "workspace";
+  iterateExpiring(): AsyncIterable<{
+    ownerId: string;
+    credentialId: string;
+    encryptedRefreshToken: string;
+  }>;
+  setCredentials(
+    ownerId: string,
+    tokens: { accessToken: string; refreshToken: string; expiresIn: number },
+  ): Promise<void>;
+  // The owner pulled the grant from reddit.com directly: mark it revoked and
+  // unset lookup keys so feeds stop fetching with the dead token.
+  onRevoked(ownerId: string, credentialId: string): Promise<void>;
+}
+
+function createUserRedditRefreshTarget(
+  container: Container,
+): RedditRefreshTarget {
+  return {
+    ownerLabel: "user",
+    iterateExpiring: async function* () {
+      for await (const user of container.userRepository.iterateUsersWithExpiringRedditCredentials(
+        REDDIT_CREDENTIAL_EXPIRY_WINDOW_MS,
+      )) {
+        yield {
+          ownerId: user.userId,
+          credentialId: user.credentialId,
+          encryptedRefreshToken: user.encryptedRefreshToken,
+        };
+      }
+    },
+    async setCredentials(userId, tokens) {
+      await container.usersService.setRedditCredentials({ userId, ...tokens });
+    },
+    async onRevoked(userId, credentialId) {
+      await container.usersService.revokeRedditCredentials(
+        userId,
+        credentialId,
+      );
+      await container.usersService.syncLookupKeys({ userIds: [userId] });
+    },
+  };
+}
+
+function createWorkspaceRedditRefreshTarget(
+  container: Container,
+): RedditRefreshTarget {
+  return {
+    ownerLabel: "workspace",
+    iterateExpiring: async function* () {
+      for await (const workspace of container.workspaceRepository.iterateWorkspacesWithExpiringRedditCredentials(
+        REDDIT_CREDENTIAL_EXPIRY_WINDOW_MS,
+      )) {
+        yield {
+          ownerId: workspace.workspaceId,
+          credentialId: workspace.credentialId,
+          encryptedRefreshToken: workspace.encryptedRefreshToken,
+        };
+      }
+    },
+    async setCredentials(workspaceId, tokens) {
+      // Refresh preserves attribution; if the connection vanished mid-sweep
+      // there is nothing to update.
+      const existingCredential =
+        await container.workspacesService.getRedditCredentials(workspaceId);
+
+      if (!existingCredential) {
+        return;
+      }
+
+      await container.workspacesService.setRedditCredentials({
+        workspaceId,
+        connectedByUserId: existingCredential.connectedByUserId,
+        ...tokens,
+      });
+    },
+    async onRevoked(workspaceId, credentialId) {
+      await container.workspacesService.revokeRedditCredentials(
+        workspaceId,
+        credentialId,
+      );
+
+      await container.workspacesService.syncWorkspaceLookupKeys({
+        workspaceIds: [workspaceId],
+      });
+
+      // Tell every member so any of them can reconnect.
+      const workspace =
+        await container.workspaceRepository.findById(workspaceId);
+
+      if (workspace) {
+        await container.workspacesService.notifyRedditConnectionLost(workspace);
+      }
+    },
+  };
+}
+
+async function refreshRedditCredentialsForTarget(
+  container: Container,
+  target: RedditRefreshTarget,
+) {
   try {
     const encryptionKey = container.config.BACKEND_API_ENCRYPTION_KEY_HEX;
 
     if (!encryptionKey) {
       logger.debug(
-        "Encryption key not found, skipping credentials refresh task",
+        `Encryption key not found, skipping ${target.ownerLabel} credentials refresh task`,
       );
       return;
     }
 
-    logger.debug("Refreshing credentials on schedule");
-
-    const usersIterator =
-      container.userRepository.iterateUsersWithExpiringRedditCredentials(
-        REDDIT_CREDENTIAL_EXPIRY_WINDOW_MS,
-      );
-
-    for await (const user of usersIterator) {
-      logger.debug(`Refreshing reddit credentials for user ${user.userId}`, {
-        user,
-      });
-
+    for await (const {
+      ownerId,
+      credentialId,
+      encryptedRefreshToken,
+    } of target.iterateExpiring()) {
       try {
-        if (!user.encryptedRefreshToken) {
-          logger.debug(
-            `No reddit credentials found for user ${user.userId}, skipping`,
-          );
-          continue;
-        }
-
         const {
-          access_token: newAccessToken,
-          refresh_token: newRefreshToken,
+          access_token: accessToken,
+          refresh_token: refreshToken,
           expires_in: expiresIn,
         } = await container.redditApiService.refreshAccessToken(
-          decrypt(user.encryptedRefreshToken, encryptionKey),
+          decrypt(encryptedRefreshToken, encryptionKey),
         );
 
-        await container.usersService.setRedditCredentials({
-          userId: user.userId,
-          accessToken: newAccessToken,
-          refreshToken: newRefreshToken,
+        await target.setCredentials(ownerId, {
+          accessToken,
+          refreshToken,
           expiresIn,
         });
 
         logger.info(
-          `Refreshed reddit credentials for user ${user.userId} successfully`,
+          `Refreshed reddit credentials for ${target.ownerLabel} ${ownerId} successfully`,
         );
       } catch (err) {
         if (err instanceof RedditAppRevokedException) {
-          logger.debug(
-            `Reddit app has been revoked, revoking credentials for user ${user.userId}`,
+          logger.info(
+            `Reddit app has been revoked, revoking credentials for ${target.ownerLabel} ${ownerId}`,
           );
 
-          await container.usersService.revokeRedditCredentials(
-            user.userId,
-            user.credentialId,
-          );
+          await target.onRevoked(ownerId, credentialId);
 
           continue;
         }
 
         logger.error(
-          `Failed to refresh reddit credentials for user ${user.userId}`,
+          `Failed to refresh reddit credentials for ${target.ownerLabel} ${ownerId}`,
           { error: (err as Error).stack },
         );
       }
     }
   } catch (err) {
-    logger.error("Failed to refresh reddit credentials on schedule", {
-      error: (err as Error).stack,
-    });
+    logger.error(
+      `Failed to refresh ${target.ownerLabel} reddit credentials on schedule`,
+      { error: (err as Error).stack },
+    );
   }
 }
 

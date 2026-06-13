@@ -327,7 +327,6 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          colorPalette="gray"
                           aria-disabled={currentPage === 1 || fetchStatus === "fetching"}
                           onClick={() => {
                             if (currentPage === 1 || fetchStatus === "fetching") {
@@ -343,7 +342,6 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          colorPalette="gray"
                           aria-disabled={currentPage === totalPages || fetchStatus === "fetching"}
                           onClick={() => {
                             if (currentPage === totalPages || fetchStatus === "fetching") {

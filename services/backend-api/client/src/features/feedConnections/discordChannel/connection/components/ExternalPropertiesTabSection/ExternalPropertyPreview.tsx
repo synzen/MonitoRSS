@@ -19,6 +19,7 @@ import { Field } from "@/components/ui/field";
 import { NativeSelectRoot, NativeSelectField } from "@/components/ui/native-select";
 import {
   useUserFeedContext,
+  useFeedScope,
   UserFeedConnectionContext,
   UserFeedConnectionProvider,
   useUserFeedConnectionContext,
@@ -234,6 +235,8 @@ const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?
 
 export const ExternalPropertyPreview = ({ externalProperties: inputExternalProperties }: Props) => {
   const { userFeed, articleFormatOptions } = useUserFeedContext();
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
   const [selectedConnectionId, setSelectedConnectionId] = useState<string>(
     userFeed.connections[0]?.id,
   );
@@ -290,10 +293,12 @@ export const ExternalPropertyPreview = ({ externalProperties: inputExternalPrope
           <Alert.Description>
             The preview is disabled because there are no connections within this feed to preview
             with. To create connections, visit the{" "}
+            {/* eslint-disable-next-line jsx-a11y/anchor-is-valid -- href comes from the RouterLink child via asChild */}
             <Link asChild color="text.link">
               <RouterLink
                 to={pages.userFeed(userFeed.id, {
                   tab: UserFeedTabSearchParam.Connections,
+                  scope,
                 })}
               >
                 Connections
@@ -347,6 +352,7 @@ export const ExternalPropertyPreview = ({ externalProperties: inputExternalPrope
                               feedId: userFeed.id,
                               connectionId: connectionContext.connection.id,
                               connectionType: connectionContext.connection.key,
+                              scope,
                             })}
                             target="_blank"
                             rel="noopener noreferrer"

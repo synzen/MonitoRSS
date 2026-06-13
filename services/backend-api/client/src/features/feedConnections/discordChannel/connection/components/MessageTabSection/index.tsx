@@ -28,6 +28,7 @@ import {
   useUserFeedArticles,
   ArticleSelectDialog,
   useUserFeedConnectionContext,
+  useFeedScope,
 } from "@/features/feed";
 import { ArticlePlaceholderTable } from "../ArticlePlaceholderTable";
 import { DiscordMessageForm, SaveExtra } from "../DiscordMessageForm";
@@ -64,6 +65,8 @@ interface Props {
 export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
   const { userFeed, connection, articleFormatOptions } =
     useUserFeedConnectionContext<FeedDiscordChannelConnection>();
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
   const [isOpen, setIsOpen] = useState(false);
   const onOpen = () => setIsOpen(true);
   const onClose = () => setIsOpen(false);
@@ -240,6 +243,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                   feedId: userFeed.id,
                   connectionId: connection.id,
                   connectionType: connection.key,
+                  scope,
                 })}
               >
                 <span>{hasComponentsV2 ? "Open Message Builder" : "Check it out"}</span>
@@ -367,6 +371,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                                       feedId: userFeed.id,
                                       connectionId: connection.id,
                                       connectionType: connection.key,
+                                      scope,
                                     },
                                     {
                                       tab: UserFeedConnectionTabSearchParam.CustomPlaceholders,
@@ -381,6 +386,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
                                 <Link
                                   to={pages.userFeed(userFeed.id, {
                                     tab: UserFeedTabSearchParam.ExternalProperties,
+                                    scope,
                                   })}
                                 >
                                   External Properties

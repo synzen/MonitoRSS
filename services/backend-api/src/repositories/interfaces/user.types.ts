@@ -34,10 +34,12 @@ export interface IUserPreferences {
   feedListColumnVisibility?: IUserFeedListColumnVisibility;
   feedListColumnOrder?: IUserFeedListColumnOrder;
   feedListStatusFilters?: IUserFeedListStatusFilters;
+  lastActiveWorkspaceSlug?: string;
 }
 
 export interface IUserFeatureFlags {
   externalProperties?: boolean;
+  workspaces?: boolean;
 }
 
 export interface IUserExternalCredential {
@@ -52,6 +54,8 @@ export interface IUser {
   id: string;
   discordUserId: string;
   email?: string;
+  verifiedEmail?: string;
+  verifiedEmailVerifiedAt?: Date;
   preferences?: IUserPreferences;
   featureFlags?: IUserFeatureFlags;
   enableBilling?: boolean;
@@ -74,6 +78,7 @@ export interface UpdateUserPreferencesInput {
   feedListColumnVisibility?: IUserFeedListColumnVisibility | null;
   feedListColumnOrder?: IUserFeedListColumnOrder | null;
   feedListStatusFilters?: IUserFeedListStatusFilters | null;
+  lastActiveWorkspaceSlug?: string | null;
 }
 
 export interface SetExternalCredentialInput {
@@ -92,6 +97,7 @@ export interface IUserRepository {
     discordUserId: string,
     email: string,
   ): Promise<IUser | null>;
+  setVerifiedEmail(userId: string, email: string): Promise<void>;
   updatePreferencesByDiscordId(
     discordUserId: string,
     preferences: UpdateUserPreferencesInput,
