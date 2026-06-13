@@ -21,9 +21,9 @@ import {
   FeedRequestException,
   FeedInvalidSslCertException,
   FeedLimitReachedException,
+  WorkspaceNotSubscribedException,
   RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
-  FeedNotFailedException,
   ManualRequestTooSoonException,
 } from "../../shared/exceptions/user-feeds.exceptions";
 import logger from "../../infra/logger";
@@ -70,6 +70,15 @@ const MESSAGE_BROKER_QUEUE_FEED_DELETED = "feed-deleted";
 const DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS = [
   UserFeedDisabledCode.ExceededFeedLimit,
   UserFeedDisabledCode.Manual,
+];
+
+// The only disable states a successful manual request proves recovery from.
+// Other codes (Manual, ExceededFeedLimit, ExcessivelyActive, FeedTooLarge)
+// are deliberate or limit-driven and have their own re-enable paths.
+const MANUALLY_RETRYABLE_DISABLED_CODES = [
+  UserFeedDisabledCode.FailedRequests,
+  UserFeedDisabledCode.InvalidFeed,
+  UserFeedDisabledCode.BadFormat,
 ];
 
 interface WorkspaceLimitEnforcementOutcome {
@@ -220,7 +229,7 @@ export class UserFeedsService {
 
     const myWorkspaceIds = workspaceId ? [workspaceId] : [];
 
-    const [{ maxFeeds, maxDailyArticles, refreshRateSeconds }, sourceFeedToCopyFrom] =
+    const [{ maxFeeds, maxDailyArticles, refreshRateSeconds, dormant }, sourceFeedToCopyFrom] =
       await Promise.all([
         workspaceId
           ? this.deps.supportersService
@@ -229,6 +238,7 @@ export class UserFeedsService {
                 maxFeeds: b.maxFeeds,
                 maxDailyArticles: b.maxDailyArticles,
                 refreshRateSeconds: b.refreshRateSeconds,
+                dormant: b.dormant,
               }))
           : this.deps.supportersService
               .getBenefitsOfDiscordUser(discordUserId)
@@ -236,6 +246,7 @@ export class UserFeedsService {
                 maxFeeds: b.maxUserFeeds,
                 maxDailyArticles: b.maxDailyArticles,
                 refreshRateSeconds: b.refreshRateSeconds,
+                dormant: false,
               })),
         sourceFeedId
           ? this.deps.userFeedRepository.findByIdAndOwnership(
@@ -245,6 +256,14 @@ export class UserFeedsService {
             )
           : null,
       ]);
+
+    // The dormant gate fires before any URL validation so the rejection is
+    // unmistakable (activation prompt) rather than a generic fetch failure.
+    if (workspaceId && dormant) {
+      throw new WorkspaceNotSubscribedException(
+        `Workspace ${workspaceId} has no active subscription`,
+      );
+    }
 
     if (sourceFeedId && !sourceFeedToCopyFrom) {
       throw new SourceFeedNotFoundException(
@@ -308,6 +327,22 @@ export class UserFeedsService {
         maxFeeds,
       }),
     );
+
+    if (workspaceId) {
+      // The workspace can be deleted while URL validation above is in flight;
+      // an insert landing after deletion's feed sweep would survive as an
+      // orphan no scope can reach. Re-verify and undo the insert if so.
+      try {
+        await this.deps.workspacesService.getWorkspaceForMember(
+          workspaceId,
+          userId,
+        );
+      } catch (err) {
+        await this.bulkDelete([created.id]);
+
+        throw err;
+      }
+    }
 
     if (connections) {
       for (const c of connections.discordChannels) {
@@ -889,53 +924,6 @@ export class UserFeedsService {
     return feed;
   }
 
-  async retryFailedFeed(feedId: string) {
-    await this.deps.feedCredentialsService.syncLookupKeys({
-      feedIds: [feedId],
-    });
-    const feed = await this.deps.userFeedRepository.findById(feedId);
-
-    if (!feed) {
-      throw new Error(
-        `Feed ${feedId} not found while attempting to retry failed feed`,
-      );
-    }
-
-    if (
-      feed.healthStatus !== UserFeedHealthStatus.Failed &&
-      feed.disabledCode !== UserFeedDisabledCode.InvalidFeed
-    ) {
-      throw new FeedNotFailedException(
-        `Feed ${feedId} is not in a failed state, cannot retry it`,
-      );
-    }
-
-    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-      feed.user.discordUserId,
-    );
-
-    const lookupDetails = await this.deps.feedCredentialsService.getLookupDetails(
-      { feed, user },
-    );
-
-    await this.deps.feedFetcherService.fetchFeed(
-      lookupDetails?.url || feed.url,
-      lookupDetails,
-      {
-        fetchOptions: {
-          useServiceApi: true,
-          useServiceApiCache: false,
-          debug: feed.debug,
-        },
-      },
-    );
-
-    return this.deps.userFeedRepository.updateById(feedId, {
-      $set: { healthStatus: UserFeedHealthStatus.Ok },
-      $unset: { disabledCode: "" },
-    });
-  }
-
   async manuallyRequest(feed: IUserFeed) {
     const lastRequestTime = feed.lastManualRequestAt || new Date(0);
     const waitDurationSeconds = getEffectiveRefreshRateSeconds(feed, 10 * 60)!;
@@ -952,6 +940,57 @@ export class UserFeedsService {
             waitDurationSeconds - secondsSinceLastRequest,
         },
       );
+    }
+
+    // A successful request would re-enable the feed, so the scope must be
+    // within its feed limit first. Checked before fetching so a doomed retry
+    // does not consume the rate-limited manual attempt.
+    if (
+      feed.disabledCode &&
+      MANUALLY_RETRYABLE_DISABLED_CODES.includes(feed.disabledCode)
+    ) {
+      if (feed.workspaceId) {
+        const { maxFeeds, dormant } =
+          await this.deps.supportersService.getWorkspaceBenefits(
+            feed.workspaceId,
+          );
+
+        if (dormant) {
+          throw new WorkspaceNotSubscribedException(
+            `Workspace ${feed.workspaceId} has no active subscription`,
+          );
+        }
+
+        const currentFeedCount =
+          await this.deps.userFeedRepository.countByWorkspaceExcludingDisabled(
+            feed.workspaceId,
+            DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+          );
+
+        // The count includes this feed (failure codes still hold a limit
+        // slot), so only a scope strictly over its limit is blocked.
+        if (currentFeedCount > maxFeeds) {
+          throw new FeedLimitReachedException(
+            `Cannot re-enable feed ${feed.id} because workspace ${feed.workspaceId} has reached the feed limit`,
+          );
+        }
+      } else {
+        const [{ maxUserFeeds }, currentFeedCount] = await Promise.all([
+          this.deps.supportersService.getBenefitsOfDiscordUser(
+            feed.user.discordUserId,
+          ),
+          this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
+            feed.user.discordUserId,
+            DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+          ),
+        ]);
+
+        if (currentFeedCount > maxUserFeeds) {
+          throw new FeedLimitReachedException(
+            `Cannot re-enable feed ${feed.id} because user ${feed.user.discordUserId} has reached the feed limit`,
+          );
+        }
+      }
     }
 
     const requestDate = new Date();
@@ -976,7 +1015,10 @@ export class UserFeedsService {
 
     const isRequestSuccessful =
       res.requestStatus === FeedFetcherFetchStatus.Success;
-    let canBeEnabled = isRequestSuccessful;
+    let canBeEnabled =
+      isRequestSuccessful &&
+      (!feed.disabledCode ||
+        MANUALLY_RETRYABLE_DISABLED_CODES.includes(feed.disabledCode));
 
     let getArticlesRequestStatus: GetArticlesResponseRequestStatus | null =
       null;
@@ -1670,7 +1712,9 @@ export class UserFeedsService {
       const { workspaceId, enabledFeedIds, disabledFeedIds } = res;
       const limit = getMaxFeeds(workspaceId);
 
-      if (!limit) {
+      // 0 is a meaningful limit (dormant workspace: disable everything), so
+      // only an absent limit is an error.
+      if (limit === undefined) {
         throw new Error(
           `No feed limit found for workspace ${workspaceId} while enforcing limits`,
         );

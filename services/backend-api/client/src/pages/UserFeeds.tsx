@@ -59,7 +59,7 @@ import { CopyUserFeedSettingsDialog } from "../features/feed/components/CopyUser
 import { SetupChecklist } from "../features/feed/components/SetupChecklist";
 import { useUnconfiguredFeeds } from "../features/feed/hooks/useUnconfiguredFeeds";
 import { ReducedLimitAlert } from "@/features/subscriptionProducts";
-import { useCurrentWorkspace } from "@/features/workspaces";
+import { useCurrentWorkspace, WorkspaceActivationEmptyState } from "@/features/workspaces";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 
 export const UserFeeds = () => {
@@ -107,7 +107,7 @@ const UserFeedsInner: React.FC = () => {
   const { t } = useTranslation();
   const { state } = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { workspaceSlug } = useFeedScope();
+  const { workspaceSlug, workspaceDormant } = useFeedScope();
   const scope = useMemo(() => (workspaceSlug ? { workspaceSlug } : undefined), [workspaceSlug]);
   const currentWorkspace = useCurrentWorkspace();
   const { data: userMeData } = useUserMe();
@@ -467,6 +467,31 @@ const UserFeedsInner: React.FC = () => {
 
   const totalFeedsRequiringAttention = userFeedsRequireAttentionResults?.total || 0;
   const totalManagementInvites = managementInvitesCount?.total || 0;
+
+  // Pay-at-blocked-intent: a dormant workspace with no feeds shows the
+  // activation empty state instead of the add-feed experience (which the
+  // server would reject anyway). With existing (disabled) feeds, the list
+  // stays visible so nothing looks deleted; the banner carries the message.
+  if (workspaceDormant && userFeedsResults && userFeedsResults.total === 0) {
+    return (
+      <Stack gap={4}>
+        {currentWorkspace && (
+          <Flex alignItems="center" justifyContent="space-between" gap={4} flexWrap="wrap" mt={4}>
+            <Heading as="h1" size="lg" tabIndex={-1}>
+              {currentWorkspace.name}
+            </Heading>
+            <Button asChild variant="outline" size="sm">
+              <Link to={pages.workspaceSettings(currentWorkspace.slug)}>
+                <FaGear aria-hidden="true" />
+                Team settings
+              </Link>
+            </Button>
+          </Flex>
+        )}
+        <WorkspaceActivationEmptyState />
+      </Stack>
+    );
+  }
 
   return (
     <>

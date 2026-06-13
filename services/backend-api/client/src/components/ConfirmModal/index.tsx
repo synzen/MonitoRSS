@@ -1,4 +1,4 @@
-import { Button, Stack, Text } from "@chakra-ui/react";
+import { Button, Input, Stack, Text } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Field } from "@/components/ui/field";
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 
@@ -27,6 +28,12 @@ interface Props {
   onClosed?: () => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * When set, the confirm button stays disabled until the user types this exact
+   * phrase. Use for high-impact destructive actions where a single click is too
+   * easy (e.g. deleting a resource that affects other people).
+   */
+  confirmationPhrase?: string;
 }
 
 export const ConfirmModal = ({
@@ -43,14 +50,21 @@ export const ConfirmModal = ({
   onClosed,
   open: controlledOpen,
   onOpenChange,
+  confirmationPhrase,
 }: Props) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const [phraseInput, setPhraseInput] = useState("");
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const phraseMismatch = !!confirmationPhrase && phraseInput.trim() !== confirmationPhrase;
 
   const setOpen = (next: boolean) => {
     if (!isControlled) {
       setUncontrolledOpen(next);
+    }
+
+    if (!next) {
+      setPhraseInput("");
     }
 
     onOpenChange?.(next);
@@ -102,6 +116,16 @@ export const ConfirmModal = ({
           <Stack gap={4}>
             {description && !descriptionNode && <Text>{description}</Text>}
             {descriptionNode && !description && descriptionNode}
+            {confirmationPhrase && (
+              <Field label={`Type "${confirmationPhrase}" to confirm`} required>
+                <Input
+                  value={phraseInput}
+                  onChange={(e) => setPhraseInput(e.target.value)}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </Field>
+            )}
             {error && (
               <InlineErrorAlert title={t("common.errors.somethingWentWrong")} description={error} />
             )}
@@ -113,6 +137,7 @@ export const ConfirmModal = ({
           </Button>
           <SafeLoadingButton
             loading={loading}
+            disabled={phraseMismatch}
             colorPalette={colorScheme}
             variant="solid"
             onClick={onClickConfirm}

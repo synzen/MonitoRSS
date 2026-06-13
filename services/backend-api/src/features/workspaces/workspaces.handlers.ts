@@ -85,6 +85,26 @@ export async function getWorkspaceHandler(
     };
   }
 
+  // The workspace's own Paddle subscription state, so members can observe
+  // whether the workspace is subscribed and on which tier. Billing-cycle
+  // fields feed the owner/admin Billing page.
+  const paddleSubscription = workspace.paddleCustomer?.subscription;
+  const subscription = paddleSubscription
+    ? {
+        productKey: paddleSubscription.productKey,
+        status: paddleSubscription.status,
+        cancellationDate: paddleSubscription.cancellationDate ?? null,
+        nextBillDate: paddleSubscription.nextBillDate ?? null,
+        billingInterval: paddleSubscription.billingInterval,
+        billingPeriodEnd: paddleSubscription.billingPeriodEnd,
+        currencyCode: paddleSubscription.currencyCode,
+        addons: (paddleSubscription.addons ?? []).map((a) => ({
+          key: a.key,
+          quantity: a.quantity,
+        })),
+      }
+    : null;
+
   return reply.send({
     result: {
       id: workspace.id,
@@ -93,6 +113,7 @@ export async function getWorkspaceHandler(
       role,
       maxFeeds,
       redditConnection,
+      subscription,
     },
   });
 }
@@ -109,6 +130,56 @@ export async function disconnectWorkspaceRedditHandler(
   );
 
   return reply.status(200).send({ result: { ok: true } });
+}
+
+export async function deleteWorkspaceHandler(
+  request: FastifyRequest<{ Params: WorkspaceSlugParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const {
+    workspacesService,
+    workspaceBillingService,
+    userFeedsService,
+    userFeedRepository,
+    workspaceRepository,
+  } = request.container;
+
+  const { workspace, role } =
+    await workspacesService.getWorkspaceForMemberBySlug(
+      request.params.workspaceSlug,
+      request.userId as string,
+    );
+
+  if (!workspacesService.can("deleteWorkspace", role)) {
+    throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+  }
+
+  // Cancel before deleting: if Paddle is unreachable the deletion aborts, so
+  // a paid subscription can never outlive its workspace unnoticed.
+  await workspaceBillingService.cancelSubscriptionOnDeletion(workspace);
+
+  // Feeds go through the service so connection cleanup and queue events run.
+  const feedIds = await userFeedRepository.findIdsByWorkspace(workspace.id);
+
+  if (feedIds.length > 0) {
+    await userFeedsService.bulkDelete(feedIds);
+  }
+
+  await workspaceRepository.deleteWorkspaceCascade(workspace.id);
+
+  // A feed creation that passed its membership check before the cascade can
+  // insert between the snapshot above and the cascade. Now that the workspace
+  // is gone no further creations can pass the member check, so one more sweep
+  // ends the race (creations landing even later clean up after themselves).
+  const stragglerIds = await userFeedRepository.findIdsByWorkspace(
+    workspace.id,
+  );
+
+  if (stragglerIds.length > 0) {
+    await userFeedsService.bulkDelete(stragglerIds);
+  }
+
+  return reply.status(204).send();
 }
 
 export async function updateWorkspaceHandler(

@@ -876,6 +876,15 @@ export class UserFeedMongooseRepository
     return this.model.countDocuments({ workspaceId: this.stringToObjectId(workspaceId) });
   }
 
+  async findIdsByWorkspace(workspaceId: string): Promise<string[]> {
+    const docs = await this.model
+      .find({ workspaceId: this.stringToObjectId(workspaceId) })
+      .select("_id")
+      .lean();
+
+    return docs.map((d) => String(d._id));
+  }
+
   async countByOwnershipExcludingDisabled(
     discordUserId: string,
     excludeDisabledCodes: UserFeedDisabledCode[],

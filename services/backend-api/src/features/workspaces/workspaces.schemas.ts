@@ -59,6 +59,26 @@ export const WorkspaceInviteParamsSchema = Type.Object(
 
 export type WorkspaceInviteParams = Static<typeof WorkspaceInviteParamsSchema>;
 
+export const WorkspaceBillingUpdateBodySchema = Type.Object(
+  {
+    prices: Type.Array(
+      Type.Object(
+        {
+          priceId: Type.String({ minLength: 1 }),
+          quantity: Type.Number({ minimum: 1 }),
+        },
+        { additionalProperties: false },
+      ),
+      { minItems: 1 },
+    ),
+  },
+  { additionalProperties: false },
+);
+
+export type WorkspaceBillingUpdateBody = Static<
+  typeof WorkspaceBillingUpdateBodySchema
+>;
+
 // userId accepts "@me" so a member can leave via DELETE .../members/@me; the
 // handler resolves it to the caller's own id before routing by identity.
 export const WorkspaceMemberParamsSchema = Type.Object(

@@ -4,6 +4,7 @@ import { Spinner } from "@chakra-ui/react";
 import { pages } from "@/constants";
 import { FeedScopeProvider } from "@/features/feed";
 import RouteParams from "@/types/RouteParams";
+import { usePaddleContext } from "@/features/subscriptionProducts";
 import { CurrentWorkspaceProvider } from "../../contexts";
 import { useIsWorkspacesEnabled, useWorkspace } from "../../hooks";
 
@@ -22,6 +23,7 @@ import { useIsWorkspacesEnabled, useWorkspace } from "../../hooks";
 export const WorkspaceScopeLayout = () => {
   const { workspaceSlug } = useParams<RouteParams>();
   const { enabled, status: flagStatus } = useIsWorkspacesEnabled();
+  const { isConfigured: isPaddleConfigured } = usePaddleContext();
   const {
     workspace,
     status: workspaceStatus,
@@ -55,6 +57,9 @@ export const WorkspaceScopeLayout = () => {
           workspaceId: workspace.id,
           workspaceSlug: workspace.slug,
           maxFeeds: workspace.maxFeeds,
+          // Dormant = billing exists on this instance but the workspace has no
+          // active subscription; feed UI swaps to activation prompts.
+          workspaceDormant: isPaddleConfigured && !workspace.subscription,
           redditConnection: workspace.redditConnection
             ? {
                 status: workspace.redditConnection.status as "ACTIVE" | "REVOKED",

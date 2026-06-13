@@ -27,7 +27,6 @@ export enum ApiErrorCode {
   FEED_MISSING_CHANNEL = "FEED_MISSING_CHANNEL",
   FEED_USER_MISSING_MANAGE_GUILD = "FEED_USER_MISSING_MANAGE_GUILD",
   FEED_LIMIT_REACHED = "FEED_LIMIT_REACHED",
-  FEED_NOT_FAILED = "FEED_NOT_FAILED",
   FEED_NOT_FOUND = "FEED_NOT_FOUND",
   USER_FEED_NOT_FOUND = "USER_FEED_NOT_FOUND",
   CURATED_FEED_NOT_FOUND = "CURATED_FEED_NOT_FOUND",
@@ -75,6 +74,10 @@ export enum ApiErrorCode {
   EMAIL_ALREADY_IN_USE = "EMAIL_ALREADY_IN_USE",
   EMAIL_NOT_VERIFIED = "EMAIL_NOT_VERIFIED",
   WORKSPACE_NOT_FOUND = "WORKSPACE_NOT_FOUND",
+  WORKSPACE_NOT_SUBSCRIBED = "WORKSPACE_NOT_SUBSCRIBED",
+  WORKSPACE_NEVER_ACTIVATED_EXISTS = "WORKSPACE_NEVER_ACTIVATED_EXISTS",
+  WORKSPACE_BILLING_NOT_CONFIGURED = "WORKSPACE_BILLING_NOT_CONFIGURED",
+  WORKSPACE_INVALID_TIER = "WORKSPACE_INVALID_TIER",
   WORKSPACE_INSUFFICIENT_ROLE = "WORKSPACE_INSUFFICIENT_ROLE",
   WORKSPACE_SLUG_TAKEN = "WORKSPACE_SLUG_TAKEN",
   WORKSPACE_SLUG_RESERVED = "WORKSPACE_SLUG_RESERVED",
@@ -130,8 +133,6 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   DISCORD_CHANNEL_NOT_OWNED_BY_GUILD:
     "Channel is not owned by the current guild",
   DISCORD_CAHNNEL_INVALID: "Selected channel is not accepted",
-  FEED_NOT_FAILED:
-    "The feed is not in a failed state. It must be in a failed state for it to be retried.",
   FEED_NOT_FOUND:
     "Feed does not exist or is not accessible. You may confirm by directly going to the feed link and checking that the feed is valid and publicly accessible.",
   USER_FEED_NOT_FOUND:
@@ -192,6 +193,14 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   EMAIL_ALREADY_IN_USE: "This email is already in use by another account",
   EMAIL_NOT_VERIFIED: "A verified email is required to perform this action",
   WORKSPACE_NOT_FOUND: "Workspace not found",
+  WORKSPACE_NOT_SUBSCRIBED:
+    "This workspace does not have an active subscription, so feeds cannot be added",
+  WORKSPACE_NEVER_ACTIVATED_EXISTS:
+    "You already own a workspace that has never been activated. Activate or delete it before creating another workspace.",
+  WORKSPACE_BILLING_NOT_CONFIGURED:
+    "Workspace billing is not available on this instance",
+  WORKSPACE_INVALID_TIER:
+    "This plan is not available for workspaces",
   WORKSPACE_INSUFFICIENT_ROLE:
     "You do not have permission to perform this action in this workspace",
   WORKSPACE_SLUG_TAKEN: "This URL slug is already taken by another workspace",

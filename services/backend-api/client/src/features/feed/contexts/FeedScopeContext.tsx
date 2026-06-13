@@ -19,6 +19,13 @@ export interface FeedScope {
   /** The current workspace's feed limit, for the feed-limit bar. */
   maxFeeds?: number;
   /**
+   * True when billing is enabled on this instance and the workspace has no
+   * active subscription: feeds are disabled and feed creation is rejected, so
+   * the feed UI shows activation prompts instead. Always false/undefined in
+   * personal scope and on self-hosted instances without Paddle.
+   */
+  workspaceDormant?: boolean;
+  /**
    * The workspace's Reddit connection state. In workspace scope, Reddit gates resolve
    * against this (the workspace's connection) instead of the caller's personal account;
    * null means the workspace has no connection record.

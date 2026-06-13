@@ -13,6 +13,7 @@ import { GuildSubscriptionsService } from "../../src/services/guild-subscription
 import { SupporterMongooseRepository } from "../../src/repositories/mongoose/supporter.mongoose.repository";
 import { PatronMongooseRepository } from "../../src/repositories/mongoose/patron.mongoose.repository";
 import { UserFeedLimitOverrideMongooseRepository } from "../../src/repositories/mongoose/user-feed-limit-override.mongoose.repository";
+import { WorkspaceMongooseRepository } from "../../src/repositories/mongoose/workspace.mongoose.repository";
 import {
   PatronStatus,
   SubscriptionProductKey,
@@ -162,6 +163,7 @@ export function createSupportersHarness(): SupportersHarness {
   let supporterRepository: SupporterMongooseRepository;
   let patronRepository: PatronMongooseRepository;
   let userFeedLimitOverrideRepository: UserFeedLimitOverrideMongooseRepository;
+  let workspaceRepository: WorkspaceMongooseRepository;
   let patronsService: PatronsService;
 
   return {
@@ -173,6 +175,9 @@ export function createSupportersHarness(): SupportersHarness {
       patronRepository = new PatronMongooseRepository(testContext.connection);
       userFeedLimitOverrideRepository =
         new UserFeedLimitOverrideMongooseRepository(testContext.connection);
+      workspaceRepository = new WorkspaceMongooseRepository(
+        testContext.connection,
+      );
       patronsService = new PatronsService(DEFAULT_CONFIG);
     },
 
@@ -199,6 +204,7 @@ export function createSupportersHarness(): SupportersHarness {
         discordApiService: discordApiService as unknown as DiscordApiService,
         supporterRepository,
         userFeedLimitOverrideRepository,
+        workspaceRepository,
       });
 
       return {

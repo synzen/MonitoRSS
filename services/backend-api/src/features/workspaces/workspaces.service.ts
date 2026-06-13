@@ -8,6 +8,7 @@ import {
   TooManyRequestsError,
 } from "../../infra/error-handler";
 import { isReservedSlug, isValidSlug } from "../../shared/utils/slugify";
+import { isBillingEnabled } from "../../shared/utils/billing";
 import { normalizeEmail } from "../../shared/utils/normalizeEmail";
 import { reconcileFeedLookupKeys } from "../../shared/utils/reconcile-feed-lookup-keys";
 import dayjs from "dayjs";
@@ -70,7 +71,8 @@ type WorkspaceAction =
   | "removeMember"
   | "leaveWorkspace"
   | "deleteWorkspace"
-  | "transferOwnership";
+  | "transferOwnership"
+  | "manageBilling";
 
 export interface WorkspacesServiceDeps {
   config: Config;
@@ -99,6 +101,10 @@ export class WorkspacesService {
       case "removeMember":
       case "deleteWorkspace":
       case "transferOwnership":
+      // Billing mutations are owner-only: the owner is the purchasing payer.
+      // Admins may read subscription status (the workspace read) but never
+      // change a plan someone else pays for.
+      case "manageBilling":
         return role === "owner";
       default:
         return false;
@@ -114,6 +120,16 @@ export class WorkspacesService {
 
     if (!user?.verifiedEmail) {
       throw new ForbiddenError(ApiErrorCode.EMAIL_NOT_VERIFIED);
+    }
+
+    // Anti-hoarding cap, only meaningful when billing exists: one
+    // never-activated workspace per user. Activation permanently exits the
+    // cap, so a lapsed-but-previously-active workspace never counts.
+    if (
+      isBillingEnabled(this.deps.config) &&
+      (await this.deps.workspaceRepository.ownsNeverActivatedWorkspace(userId))
+    ) {
+      throw new ConflictError(ApiErrorCode.WORKSPACE_NEVER_ACTIVATED_EXISTS);
     }
 
     if (isReservedSlug(slug)) {

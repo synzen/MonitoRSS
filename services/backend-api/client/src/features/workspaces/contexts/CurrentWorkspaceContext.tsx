@@ -2,7 +2,7 @@ import { ReactElement, ReactNode, createContext, useContext, useMemo } from "rea
 import { Spinner } from "@chakra-ui/react";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { useWorkspace } from "../hooks";
-import { WorkspaceRole } from "../types";
+import { Workspace, WorkspaceRole } from "../types";
 
 export interface CurrentWorkspace {
   id: string;
@@ -11,6 +11,9 @@ export interface CurrentWorkspace {
   myRole: WorkspaceRole;
   // The workspace's feed limit, used to render the feed-limit bar.
   maxFeeds?: number;
+  // The workspace's own subscription state; null when unsubscribed (dormant
+  // if billing is enabled).
+  subscription?: Workspace["subscription"];
 }
 
 /**
@@ -42,6 +45,7 @@ export const CurrentWorkspaceProvider = ({
             slug: workspace.slug,
             myRole: workspace.role,
             maxFeeds: workspace.maxFeeds,
+            subscription: workspace.subscription,
           }
         : null,
     [workspace],
@@ -55,7 +59,9 @@ export const CurrentWorkspaceProvider = ({
     return loadingComponent || <Spinner />;
   }
 
-  return <CurrentWorkspaceContext.Provider value={value}>{children}</CurrentWorkspaceContext.Provider>;
+  return (
+    <CurrentWorkspaceContext.Provider value={value}>{children}</CurrentWorkspaceContext.Provider>
+  );
 };
 
 export const useCurrentWorkspace = () => useContext(CurrentWorkspaceContext);

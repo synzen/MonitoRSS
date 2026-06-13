@@ -16,7 +16,9 @@ export interface RecordedRequest {
   body?: unknown;
 }
 
-type ResponseProvider = (req: RecordedRequest) => MockResponse;
+type ResponseProvider = (
+  req: RecordedRequest,
+) => MockResponse | Promise<MockResponse>;
 
 export interface TestHttpServerOptions {
   pathPrefix?: string;
@@ -61,7 +63,7 @@ export function createTestHttpServer(
       chunks.push(chunk);
     });
 
-    req.on("end", () => {
+    req.on("end", async () => {
       const bodyStr = Buffer.concat(chunks).toString();
       let body: unknown;
 
@@ -108,7 +110,7 @@ export function createTestHttpServer(
         }
 
         mockResponse =
-          typeof handler === "function" ? handler(recorded) : handler;
+          typeof handler === "function" ? await handler(recorded) : handler;
       }
 
       res.statusCode = mockResponse.status ?? 200;

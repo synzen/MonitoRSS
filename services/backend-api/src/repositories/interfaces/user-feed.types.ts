@@ -501,6 +501,7 @@ export interface IUserFeedRepository {
   // CRUD methods for UserFeedsService
   countByOwnership(discordUserId: string): Promise<number>;
   countByWorkspace(workspaceId: string): Promise<number>;
+  findIdsByWorkspace(workspaceId: string): Promise<string[]>;
   countByOwnershipExcludingDisabled(
     discordUserId: string,
     excludeDisabledCodes: UserFeedDisabledCode[],

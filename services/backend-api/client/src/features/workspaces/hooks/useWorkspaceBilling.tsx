@@ -1,0 +1,87 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import ApiAdapterError from "@/utils/ApiAdapterError";
+import {
+  cancelWorkspaceBilling,
+  previewWorkspaceBillingChange,
+  resumeWorkspaceBilling,
+  updateWorkspaceBilling,
+  type WorkspaceBillingChangePreviewOutput,
+} from "../api/workspaceBilling";
+
+// All billing mutations invalidate the workspace detail query: the webhook has
+// already reflected the change onto the workspace record by the time the
+// endpoint returns (the server polls for it).
+const useInvalidateWorkspace = () => {
+  const queryClient = useQueryClient();
+
+  return async () => {
+    await queryClient.invalidateQueries({ queryKey: ["workspace"] });
+  };
+};
+
+export const useUpdateWorkspaceBilling = () => {
+  const invalidate = useInvalidateWorkspace();
+
+  return useMutation<
+    void,
+    ApiAdapterError,
+    { workspaceSlug: string; prices: Array<{ priceId: string; quantity: number }> }
+  >((input) => updateWorkspaceBilling(input), {
+    onSuccess: invalidate,
+  });
+};
+
+export const useCancelWorkspaceBilling = () => {
+  const invalidate = useInvalidateWorkspace();
+
+  return useMutation<void, ApiAdapterError, { workspaceSlug: string }>(
+    ({ workspaceSlug }) => cancelWorkspaceBilling(workspaceSlug),
+    {
+      onSuccess: invalidate,
+    },
+  );
+};
+
+export const useResumeWorkspaceBilling = () => {
+  const invalidate = useInvalidateWorkspace();
+
+  return useMutation<void, ApiAdapterError, { workspaceSlug: string }>(
+    ({ workspaceSlug }) => resumeWorkspaceBilling(workspaceSlug),
+    {
+      onSuccess: invalidate,
+    },
+  );
+};
+
+export const useWorkspaceBillingChangePreview = ({
+  workspaceSlug,
+  prices,
+  enabled,
+}: {
+  workspaceSlug?: string;
+  prices?: Array<{ priceId: string; quantity: number }>;
+  enabled?: boolean;
+}) => {
+  const { data, status, error } = useQuery<
+    WorkspaceBillingChangePreviewOutput,
+    ApiAdapterError | Error
+  >(
+    ["workspace-billing-preview", { workspaceSlug, prices }],
+    async () => {
+      if (!workspaceSlug || !prices?.length) {
+        throw new Error("Missing workspace billing preview input");
+      }
+
+      return previewWorkspaceBillingChange({ workspaceSlug, prices });
+    },
+    {
+      enabled: !!enabled && !!workspaceSlug && !!prices?.length,
+    },
+  );
+
+  return {
+    preview: data?.data,
+    status,
+    error,
+  };
+};

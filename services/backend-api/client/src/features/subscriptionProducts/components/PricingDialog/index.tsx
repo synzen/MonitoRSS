@@ -32,6 +32,7 @@ import { useUserMe } from "@/features/discordUser";
 import { notifyInfo } from "@/utils/notifyInfo";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { usePricingData } from "@/features/subscriptionProducts";
+import { useIsWorkspacesEnabled } from "@/features/workspaces";
 import { Switch } from "@/components/ui/switch";
 import {
   DialogRoot,
@@ -40,10 +41,7 @@ import {
   DialogFooter,
   DialogCloseTrigger,
 } from "@/components/ui/dialog";
-import {
-  NumberInputRoot,
-  NumberInputField,
-} from "@/components/ui/number-input";
+import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
 
 interface Props {
   isOpen: boolean;
@@ -67,6 +65,7 @@ interface ChangeSubscriptionDetails {
 export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
   const { resetCheckoutData, initCancellationFlow } = usePaddleContext();
   const { data: userData } = useUserMe();
+  const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
   const navigate = useNavigate();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
@@ -104,11 +103,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
 
   const subscriptionId = userData?.result.subscription.subscriptionId;
 
-  const onClickPrice = async (
-    priceId?: string,
-    productId?: ProductKey,
-    isDowngrade?: boolean,
-  ) => {
+  const onClickPrice = async (priceId?: string, productId?: ProductKey, isDowngrade?: boolean) => {
     if (!priceId || !productId || !userSubscription) {
       return;
     }
@@ -120,9 +115,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     )?.supportsAdditionalFeeds;
 
     const additionalFeedsItem =
-      tierSupportsAdditionalFeeds &&
-      additionalFeedsInput > 0 &&
-      priceIdOfAdditionalFeeds
+      tierSupportsAdditionalFeeds && additionalFeedsInput > 0 && priceIdOfAdditionalFeeds
         ? { priceId: priceIdOfAdditionalFeeds, quantity: additionalFeedsInput }
         : undefined;
 
@@ -141,10 +134,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
       try {
         const result = await initCancellationFlow(subscriptionId);
 
-        if (
-          result?.status === "retained" ||
-          result?.status === "chose_to_cancel"
-        ) {
+        if (result?.status === "retained" || result?.status === "chose_to_cancel") {
           notifySuccess("Changes saved!");
 
           return;
@@ -157,8 +147,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
         }
 
         if (!result || result.status === "error") {
-          const errorDetails =
-            result && "details" in result ? result.details : "flow not shown";
+          const errorDetails = result && "details" in result ? result.details : "flow not shown";
           captureException(new Error(`Paddle Retain error: ${errorDetails}`));
         }
       } catch (err) {
@@ -167,10 +156,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     }
 
     setChangeSubscriptionDetails({
-      prices: [
-        { priceId, quantity: 1 },
-        ...(additionalFeedsItem ? [additionalFeedsItem] : []),
-      ],
+      prices: [{ priceId, quantity: 1 }, ...(additionalFeedsItem ? [additionalFeedsItem] : [])],
       productId,
       isDowngrade,
     });
@@ -183,9 +169,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
   const biggestPriceLength = products
     ? Math.max(
         ...products.flatMap((pr) =>
-          pr.prices
-            .filter((p) => p.interval === interval)
-            .map((p) => p.formattedPrice.length),
+          pr.prices.filter((p) => p.interval === interval).map((p) => p.formattedPrice.length),
         ),
         0,
       )
@@ -215,9 +199,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
       // the live preview reflects the currently selected quantity
       const productPrice =
         (product?.id === ProductKey.Tier3Feed
-          ? additionalFeedPricePreview?.prices.find(
-              (p) => p.id === price.priceId,
-            )
+          ? additionalFeedPricePreview?.prices.find((p) => p.id === price.priceId)
           : undefined) ?? product?.prices.find((p) => p.id === price.priceId);
 
       if (!product || !productPrice) return null;
@@ -259,10 +241,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
           const targetId = focusTargetIdRef.current;
           focusTargetIdRef.current = null;
 
-          return (
-            (targetId ? document.getElementById(targetId) : null) ??
-            headingRef.current
-          );
+          return (targetId ? document.getElementById(targetId) : null) ?? headingRef.current;
         }}
       >
         <DialogContent
@@ -277,19 +256,13 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
             <Box mt={12}>
               <Stack>
                 <Flex alignItems="center" justifyContent="center">
-                  <Stack
-                    width="100%"
-                    alignItems="center"
-                    gap={12}
-                    justifyContent="center"
-                  >
+                  <Stack width="100%" alignItems="center" gap={12} justifyContent="center">
                     <Stack justifyContent="center" textAlign="center">
                       <Heading as="h1" tabIndex={-1} ref={headingRef}>
                         Pricing
                       </Heading>
                       <Text color="fg" fontSize="lg" fontWeight="light">
-                        MonitoRSS is able to stay open-source and free thanks to
-                        its supporters.
+                        MonitoRSS is able to stay open-source and free thanks to its supporters.
                         <br />
                         Add in your support in exchange for some upgrades!
                       </Text>
@@ -324,12 +297,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                               Yearly
                             </Text>
                           </HStack>
-                          <Badge
-                            fontSize="1rem"
-                            colorPalette="green"
-                            borderRadius="l3"
-                            px={4}
-                          >
+                          <Badge fontSize="1rem" colorPalette="green" borderRadius="l3" px={4}>
                             Save 15% with a yearly plan!
                           </Badge>
                         </Stack>
@@ -349,11 +317,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                           >
                             {TIER_CONFIGS.map(
                               (
-                                {
-                                  productId,
-                                  features,
-                                  supportsAdditionalFeeds,
-                                },
+                                { productId, features, supportsAdditionalFeeds },
                                 currentTierIndex,
                               ) => {
                                 const product = getProduct(productId);
@@ -366,28 +330,22 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
 
                                 const isOnThisTier =
                                   userSubscription.product.key === productId &&
-                                  (userSubscription.billingInterval ===
-                                    interval ||
+                                  (userSubscription.billingInterval === interval ||
                                     !userSubscription.billingInterval);
                                 const isAboveUserTier =
                                   userTierIndex < currentTierIndex ||
                                   (userSubscription.product.key === productId &&
-                                    userSubscription.billingInterval !==
-                                      interval &&
-                                    userSubscription.billingInterval ===
-                                      "month");
+                                    userSubscription.billingInterval !== interval &&
+                                    userSubscription.billingInterval === "month");
                                 const isBelowUserTier =
                                   userTierIndex > currentTierIndex ||
                                   (userSubscription.product.key === productId &&
-                                    userSubscription.billingInterval !==
-                                      interval &&
-                                    userSubscription.billingInterval ===
-                                      "year");
+                                    userSubscription.billingInterval !== interval &&
+                                    userSubscription.billingInterval === "year");
                                 const isUpdate =
                                   isOnThisTier &&
                                   !!supportsAdditionalFeeds &&
-                                  (userSubscriptionAdditionalFeeds ?? 0) !==
-                                    additionalFeedsInput;
+                                  (userSubscriptionAdditionalFeeds ?? 0) !== additionalFeedsInput;
 
                                 return (
                                   <Card.Root
@@ -399,10 +357,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                     <Card.Header pb={0}>
                                       <Stack>
                                         <HStack justifyContent="flex-start">
-                                          <Heading
-                                            size="md"
-                                            fontWeight="semibold"
-                                          >
+                                          <Heading size="md" fontWeight="semibold">
                                             {product?.name || ""}
                                           </Heading>
                                         </HStack>
@@ -427,9 +382,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                             )}
                                           </Text>
                                           <Text fontSize="lg" color="fg.muted">
-                                            {interval === "month"
-                                              ? "per month"
-                                              : "per year"}
+                                            {interval === "month" ? "per month" : "per year"}
                                           </Text>
                                         </Stack>
                                         <Stack as="ul" listStyleType="none">
@@ -442,32 +395,18 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                   p={1}
                                                   aria-disabled
                                                 >
-                                                  <Icon
-                                                    fontSize="md"
-                                                    width={3}
-                                                    height={3}
-                                                  >
+                                                  <Icon fontSize="md" width={3} height={3}>
                                                     <FaCheck />
                                                   </Icon>
                                                 </Flex>
                                               ) : (
-                                                <Flex
-                                                  bg="bg.subtle"
-                                                  rounded="full"
-                                                  p={1.5}
-                                                >
-                                                  <Icon
-                                                    width={2}
-                                                    height={2}
-                                                    fontSize="sm"
-                                                  >
+                                                <Flex bg="bg.subtle" rounded="full" p={1.5}>
+                                                  <Icon width={2} height={2} fontSize="sm">
                                                     <FaXmark />
                                                   </Icon>
                                                 </Flex>
                                               )}
-                                              <Text fontSize="lg">
-                                                {f.description}
-                                              </Text>
+                                              <Text fontSize="lg">{f.description}</Text>
                                             </HStack>
                                           ))}
                                         </Stack>
@@ -475,61 +414,38 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                           <Box>
                                             <Separator my={4} />
                                             <Stack gap={3}>
-                                              <Text
-                                                fontSize="md"
-                                                fontWeight="semibold"
-                                              >
+                                              <Text fontSize="md" fontWeight="semibold">
                                                 Additional Feeds
                                               </Text>
                                               {!baseAdditionalFeedsPrice ? (
-                                                <Skeleton
-                                                  height="18px"
-                                                  width="30px"
-                                                />
+                                                <Skeleton height="18px" width="30px" />
                                               ) : (
-                                                <Text
-                                                  fontSize="sm"
-                                                  color="fg.muted"
-                                                >
-                                                  Add more feeds for{" "}
-                                                  {baseAdditionalFeedsPrice}{" "}
-                                                  each per month.
+                                                <Text fontSize="sm" color="fg.muted">
+                                                  Add more feeds for {baseAdditionalFeedsPrice} each
+                                                  per month.
                                                 </Text>
                                               )}
-                                              <HStack
-                                                gap={2}
-                                                alignItems="center"
-                                              >
+                                              <HStack gap={2} alignItems="center">
                                                 <IconButton
                                                   aria-label="Decrease additional feeds"
                                                   size="sm"
                                                   variant="outline"
                                                   onClick={() => {
-                                                    if (
-                                                      additionalFeedsInput > 0
-                                                    ) {
+                                                    if (additionalFeedsInput > 0) {
                                                       changeAdditionalFeedsInput(
-                                                        additionalFeedsInput -
-                                                          1,
+                                                        additionalFeedsInput - 1,
                                                       );
                                                     }
                                                   }}
-                                                  disabled={
-                                                    additionalFeedsInput === 0
-                                                  }
+                                                  disabled={additionalFeedsInput === 0}
                                                 >
                                                   <FaMinus />
                                                 </IconButton>
                                                 <NumberInputRoot
-                                                  value={String(
-                                                    additionalFeedsInput,
-                                                  )}
+                                                  value={String(additionalFeedsInput)}
                                                   onValueChange={(details) => {
                                                     changeAdditionalFeedsInput(
-                                                      parseInt(
-                                                        details.value,
-                                                        10,
-                                                      ),
+                                                      parseInt(details.value, 10),
                                                     );
                                                   }}
                                                   min={0}
@@ -560,28 +476,18 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                                   isLoadingAdditionalFeedsChange ||
                                                   !additionalFeedPricePreview
                                                 }
-                                                hidden={
-                                                  additionalFeedsInput === 0
-                                                }
+                                                hidden={additionalFeedsInput === 0}
                                               >
                                                 {isLoadingAdditionalFeedsChange ||
                                                 !additionalFeedPricePreview ? (
-                                                  <Skeleton
-                                                    height="22px"
-                                                    width="180px"
-                                                  />
+                                                  <Skeleton height="22px" width="180px" />
                                                 ) : (
                                                   <Text as="span">
-                                                    {
-                                                      additionalFeedPricePreview
-                                                        .prices[0].quantity
-                                                    }{" "}
+                                                    {additionalFeedPricePreview.prices[0].quantity}{" "}
                                                     additional feeds: +
                                                     {
                                                       additionalFeedPricePreview.prices.find(
-                                                        (p) =>
-                                                          p.interval ===
-                                                          interval,
+                                                        (p) => p.interval === interval,
                                                       )?.formattedPrice
                                                     }
                                                     {interval === "month"
@@ -593,42 +499,33 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                             </Stack>
                                           </Box>
                                         )}
-                                        {supportsAdditionalFeeds &&
-                                          additionalFeedsInput > 0 && (
-                                            <Box
-                                              aria-live="polite"
-                                              aria-busy={
-                                                isLoadingAdditionalFeedsChange
-                                              }
-                                            >
-                                              <Separator my={4} />
-                                              <Stack gap={2}>
+                                        {supportsAdditionalFeeds && additionalFeedsInput > 0 && (
+                                          <Box
+                                            aria-live="polite"
+                                            aria-busy={isLoadingAdditionalFeedsChange}
+                                          >
+                                            <Separator my={4} />
+                                            <Stack gap={2}>
+                                              <Text fontSize="md" fontWeight="semibold">
+                                                Total
+                                              </Text>
+                                              {isLoadingAdditionalFeedsChange ? (
+                                                <Skeleton height="28px" width="120px" />
+                                              ) : (
                                                 <Text
-                                                  fontSize="md"
-                                                  fontWeight="semibold"
+                                                  fontSize="lg"
+                                                  fontWeight="bold"
+                                                  color="text.link"
                                                 >
-                                                  Total
+                                                  {chargePreview}
+                                                  {interval === "month"
+                                                    ? " per month"
+                                                    : " per year"}
                                                 </Text>
-                                                {isLoadingAdditionalFeedsChange ? (
-                                                  <Skeleton
-                                                    height="28px"
-                                                    width="120px"
-                                                  />
-                                                ) : (
-                                                  <Text
-                                                    fontSize="lg"
-                                                    fontWeight="bold"
-                                                    color="text.link"
-                                                  >
-                                                    {chargePreview}
-                                                    {interval === "month"
-                                                      ? " per month"
-                                                      : " per year"}
-                                                  </Text>
-                                                )}
-                                              </Stack>
-                                            </Box>
-                                          )}
+                                              )}
+                                            </Stack>
+                                          </Box>
+                                        )}
                                       </Stack>
                                     </Card.Body>
                                     <Card.Footer justifyContent="center">
@@ -639,9 +536,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                             width="100%"
                                             variant="outline"
                                             onClick={() =>
-                                              notifyInfo(
-                                                "You are already on this plan",
-                                              )
+                                              notifyInfo("You are already on this plan")
                                             }
                                           >
                                             Current Plan
@@ -652,11 +547,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                             id={`pricing-action-${productId}`}
                                             width="100%"
                                             onClick={() =>
-                                              onClickPrice(
-                                                price?.id,
-                                                productId,
-                                                isBelowUserTier,
-                                              )
+                                              onClickPrice(price?.id, productId, isBelowUserTier)
                                             }
                                           >
                                             Update Plan
@@ -667,11 +558,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                             id={`pricing-action-${productId}`}
                                             width="100%"
                                             onClick={() =>
-                                              onClickPrice(
-                                                price?.id,
-                                                productId,
-                                                isBelowUserTier,
-                                              )
+                                              onClickPrice(price?.id, productId, isBelowUserTier)
                                             }
                                           >
                                             Upgrade to {product?.name}
@@ -682,11 +569,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                                             id={`pricing-action-${productId}`}
                                             width="100%"
                                             onClick={() =>
-                                              onClickPrice(
-                                                price?.id,
-                                                productId,
-                                                isBelowUserTier,
-                                              )
+                                              onClickPrice(price?.id, productId, isBelowUserTier)
                                             }
                                           >
                                             Downgrade to {product?.name}
@@ -708,14 +591,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                   <>
                     <Box textAlign="center" pb={3} fontSize="lg">
                       <Text fontSize="sm">
-                        If you are having issues after clicking
-                        &quot;Upgrade&quot;, try using incognito mode or a
-                        different browser. If you are still having issues,
+                        If you are having issues after clicking &quot;Upgrade&quot;, try using
+                        incognito mode or a different browser. If you are still having issues,
                         please contact us at{" "}
-                        <Link
-                          color="text.link"
-                          href="mailto:support@monitorss.xyz"
-                        >
+                        <Link color="text.link" href="mailto:support@monitorss.xyz">
                           support@monitorss.xyz
                         </Link>
                         .
@@ -733,15 +612,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                       </Text>
                     </Box>
                     <Text textAlign="center" color="fg.muted">
-                      * External properties are currently limited to feeds with
-                      fewer than {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles{" "}
-                      <br /> <br />
+                      * External properties are currently limited to feeds with fewer than{" "}
+                      {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles <br /> <br />
                       By proceeding to payment, you are agreeing to our{" "}
-                      <Link
-                        target="_blank"
-                        href="https://monitorss.xyz/terms"
-                        color="text.link"
-                      >
+                      <Link target="_blank" href="https://monitorss.xyz/terms" color="text.link">
                         terms and conditions
                       </Link>{" "}
                       as well as our{" "}
@@ -753,27 +627,18 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         privacy policy
                       </Link>
                       .<br />
-                      The checkout process is handled by our reseller and
-                      Merchant of Record, Paddle.com, who also handles
-                      subscription-related inquiries. Prices will be localized
-                      your location.
+                      The checkout process is handled by our reseller and Merchant of Record,
+                      Paddle.com, who also handles subscription-related inquiries. Prices will be
+                      localized your location.
                     </Text>
                   </>
                 )}
                 {userSubscription?.product.key !== ProductKey.Free && (
-                  <Stack
-                    margin="auto"
-                    justifyContent="center"
-                    mt={8}
-                    textAlign="center"
-                    gap={4}
-                  >
+                  <Stack margin="auto" justifyContent="center" mt={8} textAlign="center" gap={4}>
                     <Flex justifyContent="center">
                       <DestructiveActionButton
                         id={`pricing-action-${ProductKey.Free}`}
-                        onClick={() =>
-                          onClickPrice("free-monthly", ProductKey.Free, true)
-                        }
+                        onClick={() => onClickPrice("free-monthly", ProductKey.Free, true)}
                       >
                         <span>Cancel Subscription</span>
                       </DestructiveActionButton>
@@ -792,13 +657,11 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         q: "Can I switch between plans?",
                         a: (
                           <Text>
-                            Yes! You can easily upgrade or downgrade your plan,
-                            at any time. If you upgrade, the amount you have
-                            already paid for the current period will be
-                            pro-rated and applied to the new plan. If you
-                            downgrade, the amount you have already paid for the
-                            current period will be pro-rated and applied as a
-                            credit to the new plan.
+                            Yes! You can easily upgrade or downgrade your plan, at any time. If you
+                            upgrade, the amount you have already paid for the current period will be
+                            pro-rated and applied to the new plan. If you downgrade, the amount you
+                            have already paid for the current period will be pro-rated and applied
+                            as a credit to the new plan.
                           </Text>
                         ),
                       },
@@ -806,11 +669,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         q: "Can I cancel my subscription at any time?",
                         a: (
                           <Text>
-                            Yes, you can cancel your subscription at any time
-                            from your account page. Your subscription will
-                            remain active until the end of the period you have
-                            paid for, and will then expire with no further
-                            charges.
+                            Yes, you can cancel your subscription at any time from your account
+                            page. Your subscription will remain active until the end of the period
+                            you have paid for, and will then expire with no further charges.
                           </Text>
                         ),
                       },
@@ -818,10 +679,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         q: "What payment methods are accepted?",
                         a: (
                           <Text>
-                            Cards (Mastercard, Visa, Maestro, American Express,
-                            Discover, Diners Club, JCB, UnionPay, and Mada),
-                            PayPal, Google Pay (only on Google Chrome), and
-                            Apple Pay (only on Safari).
+                            Cards (Mastercard, Visa, Maestro, American Express, Discover, Diners
+                            Club, JCB, UnionPay, and Mada), PayPal, Google Pay (only on Google
+                            Chrome), and Apple Pay (only on Safari).
                           </Text>
                         ),
                       },
@@ -829,9 +689,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         q: "What currencies are supported?",
                         a: (
                           <Text>
-                            The supported currencies are USD, EUR, GBP, ARS,
-                            AUD, BRL, CAD, CHF, COP, CNY, CZK, DKK, HKD, HUF,
-                            INR, ILS, JPY, KRW, MXN, NOK, NZD, PLN.
+                            The supported currencies are USD, EUR, GBP, ARS, AUD, BRL, CAD, CHF,
+                            COP, CNY, CZK, DKK, HKD, HUF, INR, ILS, JPY, KRW, MXN, NOK, NZD, PLN.
                           </Text>
                         ),
                       },
@@ -839,9 +698,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         q: "Can I get a refund?",
                         a: (
                           <Text>
-                            We may offer a refund on a case-by-case basis
-                            depending on the situation. For more information,
-                            please see our{" "}
+                            We may offer a refund on a case-by-case basis depending on the
+                            situation. For more information, please see our{" "}
                             <Link
                               color="text.link"
                               target="_blank"
@@ -849,8 +707,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                             >
                               Terms and Conditions
                             </Link>
-                            . In any case, please do not hesitate to contact us
-                            if you have any questions or concerns.
+                            . In any case, please do not hesitate to contact us if you have any
+                            questions or concerns.
                           </Text>
                         ),
                       },
@@ -858,8 +716,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         q: "How many Discord servers does my subscription apply to?",
                         a: (
                           <Text>
-                            Your subscription applies to all the feeds that you
-                            own, regardless of what server it is in.
+                            Your subscription applies to all the feeds that you own, regardless of
+                            what server it is in.
                           </Text>
                         ),
                       },
@@ -867,22 +725,37 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         q: "Can I apply my benefits to someone else?",
                         a: (
                           <Text>
-                            While you can&apos;t transfer or apply your benefits
-                            to someone else&apos; feeds, you can share your
-                            feeds for them to co-manage it with you. They will
-                            have full access to manage the feeds that you share
-                            with them.
+                            While you can&apos;t transfer or apply your benefits to someone
+                            else&apos;s feeds, you can share your feeds for them to co-manage it
+                            with you. They will have full access to manage the feeds that you share
+                            with them. Note that each shared feed counts toward the feed limit of
+                            the person who accepts it.
+                            {workspacesEnabled &&
+                              " If you want a fully shared space instead, you can create a team with its own plan. Feeds in a team count against the team's limit, not any member's personal limit."}
                           </Text>
                         ),
                       },
+                      ...(workspacesEnabled
+                        ? [
+                            {
+                              q: "Can my team share one subscription?",
+                              a: (
+                                <Text>
+                                  Not a personal one. Personal plans only cover feeds that you own.
+                                  To manage feeds together, create a team: the team subscribes to a
+                                  plan of its own, and every member manages the team&apos;s feeds.
+                                </Text>
+                              ),
+                            },
+                          ]
+                        : []),
                       {
                         q: "Do my benefits applied to feeds that I co-manage but do not own?",
                         a: (
                           <Text>
-                            Unfortunately, no. Your benefits only apply to feeds
-                            that you own. Consider asking the feed owner to
-                            transfer ownership to you if you have the desired
-                            benefits.
+                            Unfortunately, no. Your benefits only apply to feeds that you own.
+                            Consider asking the feed owner to transfer ownership to you if you have
+                            the desired benefits.
                           </Text>
                         ),
                       },
@@ -905,10 +778,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         q: "Who/what is Paddle?",
                         a: (
                           <Text>
-                            Paddle (paddle.com) is our reseller and Merchant of
-                            Record. They handle the checkout and billing
-                            process. All emails related to billing will be sent
-                            from Paddle.
+                            Paddle (paddle.com) is our reseller and Merchant of Record. They handle
+                            the checkout and billing process. All emails related to billing will be
+                            sent from Paddle.
                           </Text>
                         ),
                       },

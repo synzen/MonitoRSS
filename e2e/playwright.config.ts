@@ -27,6 +27,11 @@ const PADDLE_CHECKOUT_TESTS = [
   "**/billing/paddle-branding-checkout.spec.ts",
   "**/billing/paddle-retain-cancellation.spec.ts",
   "**/billing/paddle-additional-feeds.spec.ts",
+  "**/billing/paddle-workspace-roundtrip.spec.ts",
+  // Not a checkout test, but it needs a billing-enabled backend (dormant
+  // workspaces only exist when Paddle is configured), and e2e-mock.sh blanks
+  // the Paddle vars for every non-billing run.
+  "**/billing/dormant-workspace-feed-retry.spec.ts",
 ];
 
 export default defineConfig({

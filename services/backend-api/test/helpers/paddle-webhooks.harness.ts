@@ -3,6 +3,7 @@ import { createHmac } from "crypto";
 import type { Config } from "../../src/config";
 import { SupporterMongooseRepository } from "../../src/repositories/mongoose/supporter.mongoose.repository";
 import { UserMongooseRepository } from "../../src/repositories/mongoose/user.mongoose.repository";
+import { WorkspaceMongooseRepository } from "../../src/repositories/mongoose/workspace.mongoose.repository";
 import { PaddleWebhooksService } from "../../src/services/paddle-webhooks/paddle-webhooks.service";
 import type { PaddleService } from "../../src/services/paddle/paddle.service";
 import type { SupportersService } from "../../src/services/supporters/supporters.service";
@@ -70,6 +71,7 @@ export interface PaddleWebhooksContext {
   service: PaddleWebhooksService;
   supporterRepository: SupporterMongooseRepository;
   userRepository: UserMongooseRepository;
+  workspaceRepository: WorkspaceMongooseRepository;
   paddleService: MockPaddleService;
   supportersService: MockSupportersService;
   userFeedsService: MockUserFeedsService;
@@ -138,6 +140,7 @@ export function createPaddleWebhooksHarness(): PaddleWebhooksHarness {
   let testContext: ServiceTestContext;
   let supporterRepository: SupporterMongooseRepository;
   let userRepository: UserMongooseRepository;
+  let workspaceRepository: WorkspaceMongooseRepository;
 
   return {
     async setup() {
@@ -146,6 +149,9 @@ export function createPaddleWebhooksHarness(): PaddleWebhooksHarness {
         testContext.connection,
       );
       userRepository = new UserMongooseRepository(testContext.connection);
+      workspaceRepository = new WorkspaceMongooseRepository(
+        testContext.connection,
+      );
     },
 
     async teardown() {
@@ -172,12 +178,14 @@ export function createPaddleWebhooksHarness(): PaddleWebhooksHarness {
         userFeedsService: userFeedsService as unknown as UserFeedsService,
         supporterRepository,
         userRepository,
+        workspaceRepository,
       });
 
       return {
         service,
         supporterRepository,
         userRepository,
+        workspaceRepository,
         paddleService,
         supportersService,
         userFeedsService,

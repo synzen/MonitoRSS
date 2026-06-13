@@ -116,6 +116,21 @@ mkdir -p "$LOG_DIR"
 RUN_NEEDS_PADDLE_SETTING=""
 case "$PLAYWRIGHT_ARGS" in
   *e2e-paddle*|*billing*) RUN_NEEDS_PADDLE_SETTING=1 ;;
+  *)
+    # Non-billing runs always get the self-host posture: Paddle vars are
+    # force-blanked so billing state cannot leak in from e2e/.env, the repo-root
+    # .env (compose auto-loads that one from its project directory, i.e. the
+    # repo root, regardless of cwd), or CI workflow-level env. Exported empty
+    # values take precedence over compose's .env interpolation. Most workspace
+    # specs assume feeds work without a subscription, and
+    # workspace-self-host-posture.spec.ts requires Paddle to be absent; specs
+    # that need a billing-enabled backend belong in tests/billing/ (the
+    # e2e-paddle project).
+    export BACKEND_API_PADDLE_KEY=""
+    export BACKEND_API_PADDLE_URL=""
+    export BACKEND_API_PADDLE_WEBHOOK_SECRET=""
+    export VITE_PADDLE_CLIENT_TOKEN=""
+    ;;
 esac
 
 # To use your OWN notification setting instead, set E2E_PADDLE_NOTIFICATION_SETTING_ID

@@ -100,6 +100,38 @@ export class PaddleService {
     );
   }
 
+  // The one shape Paddle accepts for changing a subscription's item set
+  // (tier changes and add-on quantity changes alike), shared by the personal
+  // and workspace billing services. `preview` prices the change without
+  // applying it.
+  async updateSubscriptionItems<T>(
+    subscriptionId: string,
+    {
+      items,
+      currencyCode,
+      preview,
+    }: {
+      items: Array<{ priceId: string; quantity: number }>;
+      currencyCode: string;
+      preview?: boolean;
+    },
+  ): Promise<T> {
+    return this.executeApiCall<T>(
+      `/subscriptions/${subscriptionId}${preview ? "/preview" : ""}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          items: items.map((i) => ({
+            price_id: i.priceId,
+            quantity: i.quantity,
+          })),
+          currency_code: currencyCode,
+          proration_billing_mode: "prorated_immediately",
+        }),
+      },
+    );
+  }
+
   async executeApiCall<T>(endpoint: string, data?: RequestInit): Promise<T> {
     if (!this.PADDLE_KEY || !this.PADDLE_URL) {
       throw new Error(

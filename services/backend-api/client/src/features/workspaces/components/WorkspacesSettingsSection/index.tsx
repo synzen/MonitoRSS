@@ -2,10 +2,7 @@ import {
   Badge,
   Box,
   Button,
-  Flex,
-  Heading,
   HStack,
-  Link as ChakraLink,
   Separator,
   Skeleton,
   Stack,
@@ -18,6 +15,7 @@ import { Link as RouterLink } from "react-router-dom";
 import { pages } from "@/constants";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { SettingsSection } from "@/components/SettingsSection";
 import { useIsWorkspacesEnabled, useWorkspaces } from "../../hooks";
 import { CreateWorkspaceDialog } from "../CreateWorkspaceDialog";
 import { PendingInvitationsList } from "../PendingInvitationsList";
@@ -46,20 +44,16 @@ export const WorkspacesSettingsSection = () => {
   return (
     <>
       <Separator />
-      <Stack gap={6}>
-        <Flex justifyContent="space-between" alignItems="center" gap={4} flexWrap="wrap">
-          <Heading as="h2" size="md">
-            Your teams
-          </Heading>
+      <SettingsSection
+        title="Your teams"
+        description="Teams let you collaborate on feeds with others. Open a team to work in it, or change its settings."
+      >
+        <Box>
           <PrimaryActionButton size="sm" onClick={createDisclosure.onOpen}>
             <FaPlus />
             Create team
           </PrimaryActionButton>
-        </Flex>
-        <Text color="fg.muted" fontSize="sm">
-          Teams let you collaborate on feeds with others. Open a team to work in it, or change its
-          settings.
-        </Text>
+        </Box>
         <VisuallyHidden aria-live="polite">{LIVE_STATUS_TEXT[status] ?? ""}</VisuallyHidden>
         {status === "loading" && (
           <Stack gap={3} aria-busy="true">
@@ -108,27 +102,21 @@ export const WorkspacesSettingsSection = () => {
                       Open
                     </RouterLink>
                   </Button>
-                  <ChakraLink
-                    asChild
-                    display="inline-flex"
-                    alignItems="center"
-                    gap={1}
-                    color="text.link"
-                  >
+                  <Button asChild size="sm" variant="outline">
                     <RouterLink
                       to={pages.workspaceSettings(workspace.slug)}
                       aria-label={`${workspace.name} settings`}
                     >
                       <FaGear /> Settings
                     </RouterLink>
-                  </ChakraLink>
+                  </Button>
                 </HStack>
               </HStack>
             ))}
           </Stack>
         )}
         <PendingInvitationsList enabled={enabled} />
-      </Stack>
+      </SettingsSection>
       <CreateWorkspaceDialog isOpen={createDisclosure.open} onClose={createDisclosure.onClose} />
     </>
   );

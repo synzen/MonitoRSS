@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Input, InputGroup, Stack, VisuallyHidden } from "@chakra-ui/react";
+import { Button, Input, InputGroup, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +8,7 @@ import { pages } from "@/constants";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useUserMe } from "@/features/discordUser";
+import { usePaddleContext } from "@/features/subscriptionProducts";
 import { isReservedSlug, SLUG_PATTERN, slugifyPreview } from "@/utils/slugify";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { ApiErrorCode, getStandardErrorCodeMessage } from "@/utils/getStandardErrorCodeMessage";
@@ -45,11 +46,19 @@ interface Props {
 
 const FORM_ID = "create-workspace-form";
 
+const TEAM_VALUE_EXPLAINER =
+  "A team is a shared space where you and others manage feeds together, with more team features on the way.";
+
+const TEAM_BILLING_EXPLAINER =
+  "Creating a team is free, but adding feeds to it needs a separate team plan. Your personal" +
+  ` feeds stay free and aren't affected. ${TEAM_VALUE_EXPLAINER}`;
+
 export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
   const navigate = useNavigate();
   const { data: userMe } = useUserMe();
   const verifiedEmail = userMe?.result.verifiedEmail;
   const discordEmail = userMe?.result.email;
+  const { isConfigured: billingConfigured } = usePaddleContext();
 
   const { mutateAsync, error, reset } = useCreateWorkspace();
   const [slugTouched, setSlugTouched] = useState(false);
@@ -120,6 +129,9 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
         </DialogHeader>
         <DialogCloseTrigger />
         <DialogBody>
+          <Text color="fg.muted" mb={4}>
+            {billingConfigured ? TEAM_BILLING_EXPLAINER : TEAM_VALUE_EXPLAINER}
+          </Text>
           {!verifiedEmail ? (
             <VerifyEmailStep
               defaultEmail={discordEmail}

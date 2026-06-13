@@ -88,6 +88,7 @@ export function createMockSupportersService(
       maxDailyArticles: options.workspaceMaxDailyArticles ?? 100,
       refreshRateSeconds: options.workspaceRefreshRateSeconds ?? 600,
       allowWebhooks: options.workspaceAllowWebhooks ?? false,
+      dormant: false,
     }),
   } as unknown as UserFeedsServiceDeps["supportersService"];
 }

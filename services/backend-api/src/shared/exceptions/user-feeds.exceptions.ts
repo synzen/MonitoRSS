@@ -1,10 +1,13 @@
 import { StandardException } from "./standard.exception";
 
 export class FeedLimitReachedException extends StandardException {}
+// Adding a feed to a dormant workspace (billing enabled, no benefit-granting
+// subscription). Distinct from FeedLimitReachedException so the client can
+// show the workspace activation prompt instead of a generic limit error.
+export class WorkspaceNotSubscribedException extends StandardException {}
 export class BannedFeedException extends StandardException {}
 export class SourceFeedNotFoundException extends StandardException {}
 export class RefreshRateNotAllowedException extends StandardException {}
-export class FeedNotFailedException extends StandardException {}
 export class ManualRequestTooSoonException extends StandardException {
   secondsUntilNextRequest?: number;
 

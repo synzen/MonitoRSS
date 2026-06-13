@@ -13,6 +13,11 @@ const h = vi.hoisted(() => ({
   confirm: vi.fn(),
   navigate: vi.fn(),
   createError: { current: null as null | { message: string; errorCode?: string } },
+  paddleConfigured: { current: true },
+}));
+
+vi.mock("@/features/subscriptionProducts", () => ({
+  usePaddleContext: () => ({ isConfigured: h.paddleConfigured.current }),
 }));
 
 vi.mock("@/features/discordUser", () => ({
@@ -77,6 +82,40 @@ describe("CreateWorkspaceDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     h.createError.current = null;
+    h.paddleConfigured.current = true;
+  });
+
+  it("discloses the team plan and free personal feeds before email verification", () => {
+    mockUnverified();
+
+    renderDialog();
+
+    expect(screen.getByText(/creating a team is free/i)).toBeInTheDocument();
+    expect(screen.getByText(/needs a separate team plan/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/your personal feeds stay free and aren't affected/i),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the disclosure visible on the create form step", () => {
+    mockVerified();
+
+    renderDialog();
+
+    expect(screen.getByText(/creating a team is free/i)).toBeInTheDocument();
+  });
+
+  it("shows only the value explainer when billing is not configured", () => {
+    h.paddleConfigured.current = false;
+    mockVerified();
+
+    renderDialog();
+
+    expect(
+      screen.getByText(/a team is a shared space where you and others manage feeds together/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/team plan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/free/i)).not.toBeInTheDocument();
   });
 
   it("requires email verification before the name form when no verified email exists", () => {
@@ -210,6 +249,20 @@ describe("CreateWorkspaceDialog", () => {
 
     expect(screen.getByText("Failed to create team")).toBeInTheDocument();
     expect(screen.getByText(/a verified email is required/i)).toBeInTheDocument();
+    expect(screen.queryByText(/raw server detail/i)).not.toBeInTheDocument();
+  });
+
+  it("explains the never-activated team cap when creation is rejected for it", () => {
+    mockVerified();
+    h.createError.current = {
+      message: "raw server detail",
+      errorCode: "WORKSPACE_NEVER_ACTIVATED_EXISTS",
+    };
+
+    renderDialog();
+
+    expect(screen.getByText("Failed to create team")).toBeInTheDocument();
+    expect(screen.getByText(/hasn't been activated/i)).toBeInTheDocument();
     expect(screen.queryByText(/raw server detail/i)).not.toBeInTheDocument();
   });
 

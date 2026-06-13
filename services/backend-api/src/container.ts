@@ -59,6 +59,7 @@ import { FeedsService } from "./services/feeds/feeds.service";
 import { NotificationsService } from "./services/notifications/notifications.service";
 import { EmailVerificationService } from "./features/users/email-verification.service";
 import { WorkspacesService } from "./features/workspaces/workspaces.service";
+import { WorkspaceBillingService } from "./features/workspaces/workspace-billing.service";
 import { DiscordServersService } from "./services/discord-servers/discord-servers.service";
 import { UserFeedConnectionEventsService } from "./services/user-feed-connection-events/user-feed-connection-events.service";
 import { MongoMigrationsService } from "./services/mongo-migrations/mongo-migrations.service";
@@ -130,6 +131,7 @@ export interface Container {
   notificationsService: NotificationsService;
   emailVerificationService: EmailVerificationService;
   workspacesService: WorkspacesService;
+  workspaceBillingService: WorkspaceBillingService;
   discordServersService: DiscordServersService;
   userFeedConnectionEventsService: UserFeedConnectionEventsService;
   mongoMigrationsService: MongoMigrationsService;
@@ -235,6 +237,7 @@ export function createContainer(deps: {
     discordApiService,
     supporterRepository,
     userFeedLimitOverrideRepository,
+    workspaceRepository,
   });
 
   const usersService = new UsersService({
@@ -284,6 +287,12 @@ export function createContainer(deps: {
     userFeedRepository,
     emailVerificationService,
     redditApiService,
+  });
+
+  const workspaceBillingService = new WorkspaceBillingService({
+    config: deps.config,
+    workspaceRepository,
+    paddleService,
   });
 
   const notificationsService = new NotificationsService({
@@ -366,6 +375,7 @@ export function createContainer(deps: {
     userFeedsService,
     supporterRepository,
     userRepository,
+    workspaceRepository,
   });
 
   const supporterSubscriptionsService = new SupporterSubscriptionsService({
@@ -459,6 +469,7 @@ export function createContainer(deps: {
     notificationsService,
     emailVerificationService,
     workspacesService,
+    workspaceBillingService,
     discordServersService,
     userFeedConnectionEventsService,
     mongoMigrationsService,

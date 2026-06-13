@@ -48,6 +48,10 @@ const WorkspaceSettingsPage = lazyWithRetries(() =>
   import("./WorkspaceSettings").then(({ WorkspaceSettingsPage: c }) => ({ default: c })),
 );
 
+const WorkspaceBillingPage = lazyWithRetries(() =>
+  import("./WorkspaceBilling").then(({ WorkspaceBillingPage: c }) => ({ default: c })),
+);
+
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 const Pages: React.FC = () => (
@@ -249,6 +253,15 @@ const Pages: React.FC = () => (
           <>
             <AppHeader />
             <WorkspaceSettingsPage />
+          </>
+        }
+      />
+      <Route
+        path="settings/billing"
+        element={
+          <>
+            <AppHeader />
+            <WorkspaceBillingPage />
           </>
         }
       />

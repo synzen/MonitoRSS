@@ -6,8 +6,11 @@ import {
   type InferSchemaType,
 } from "mongoose";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
+import { PaddleCustomerSchema } from "./paddle-customer.subdocument";
+import type { IPaddleCustomer } from "../interfaces/supporter.types";
 import { normalizeEmail } from "../../shared/utils/normalizeEmail";
 import {
+  SubscriptionStatus,
   UserExternalCredentialStatus,
   UserExternalCredentialType,
 } from "../shared/enums";
@@ -54,6 +57,14 @@ export interface IWorkspace {
   name: string;
   slug: string;
   createdByUserId: string;
+  // The workspace's own Paddle subscription record, independent of any
+  // member's personal supporter record. Mirrors the supporter paddleCustomer
+  // shape so both billing surfaces stay interchangeable.
+  paddleCustomer?: IPaddleCustomer | null;
+  // Stamped once, on the first benefit-granting subscription write. Its
+  // absence marks a "never-activated" workspace for the creation cap; lapsing
+  // never clears it (activation permanently exits never-activated).
+  firstActivatedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -152,6 +163,8 @@ const WorkspaceSchema = new Schema(
     slug: { type: String, required: true, trim: true, lowercase: true },
     createdByUserId: { type: Schema.Types.ObjectId, required: true },
     externalCredentials: { type: [WorkspaceExternalCredentialSchema] },
+    paddleCustomer: { type: PaddleCustomerSchema },
+    firstActivatedAt: { type: Date },
   },
   { timestamps: true },
 );
@@ -248,9 +261,68 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
       name: doc.name,
       slug: doc.slug,
       createdByUserId: this.objectIdToString(doc.createdByUserId),
+      paddleCustomer: (doc.paddleCustomer ?? null) as IPaddleCustomer | null,
+      firstActivatedAt: doc.firstActivatedAt ?? null,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
+  }
+
+  // Webhook-driven write: replaces the workspace's whole Paddle record on every
+  // subscription event, mirroring the supporter upsert. Returns null when the
+  // workspace no longer exists (e.g. deleted between checkout and webhook).
+  async upsertPaddleCustomer(
+    workspaceId: string,
+    paddleCustomer: IPaddleCustomer,
+  ): Promise<IWorkspace | null> {
+    if (!Types.ObjectId.isValid(workspaceId)) {
+      return null;
+    }
+
+    const update: Record<string, unknown> = { $set: { paddleCustomer } };
+
+    // First benefit-granting write permanently exits "never-activated" ($min
+    // keeps the earliest stamp on later renewals/updates).
+    if (paddleCustomer.subscription?.status === SubscriptionStatus.Active) {
+      update.$min = { firstActivatedAt: new Date() };
+    }
+
+    const doc = await this.workspaceModel
+      .findByIdAndUpdate(this.stringToObjectId(workspaceId), update, {
+        new: true,
+      })
+      .lean();
+
+    return doc
+      ? this.toEntity(doc as WorkspaceDoc & { _id: Types.ObjectId })
+      : null;
+  }
+
+  // Whether the user owns at least one workspace that has never had an active
+  // subscription — the subject of the creation cap when billing is enabled.
+  async ownsNeverActivatedWorkspace(userId: string): Promise<boolean> {
+    const results = await this.membershipModel.aggregate([
+      {
+        $match: {
+          userId: this.stringToObjectId(userId),
+          role: "owner",
+        },
+      },
+      {
+        $lookup: {
+          from: this.workspaceModel.collection.name,
+          localField: "workspaceId",
+          foreignField: "_id",
+          as: "workspace",
+        },
+      },
+      { $unwind: "$workspace" },
+      // null matches both an absent field and an explicit null.
+      { $match: { "workspace.firstActivatedAt": null } },
+      { $limit: 1 },
+    ]);
+
+    return results.length > 0;
   }
 
   async findById(workspaceId: string): Promise<IWorkspace | null> {
@@ -260,6 +332,42 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
 
     const doc = await this.workspaceModel
       .findById(this.stringToObjectId(workspaceId))
+      .lean();
+
+    return doc
+      ? this.toEntity(doc as WorkspaceDoc & { _id: Types.ObjectId })
+      : null;
+  }
+
+  // Deletes the workspace and its dependent rows (memberships, invites) in
+  // one transaction. Feeds are deleted separately by the caller through the
+  // feed service so connection/queue side effects run.
+  async deleteWorkspaceCascade(workspaceId: string): Promise<void> {
+    const id = this.stringToObjectId(workspaceId);
+    const session = await this.workspaceModel.db.startSession();
+
+    try {
+      await session.withTransaction(async () => {
+        await this.workspaceModel.deleteOne({ _id: id }, { session });
+        await this.membershipModel.deleteMany({ workspaceId: id }, { session });
+        await this.inviteModel.deleteMany({ workspaceId: id }, { session });
+      });
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  // Paddle cancellation is keyed by subscription id, not workspace id, so the
+  // canceled-event handler resolves the workspace through its subscription
+  // record. Mirrors the supporter repository's method of the same name.
+  async nullifySubscriptionBySubscriptionId(
+    subscriptionId: string,
+  ): Promise<IWorkspace | null> {
+    const doc = await this.workspaceModel
+      .findOneAndUpdate(
+        { "paddleCustomer.subscription.id": subscriptionId },
+        { $set: { "paddleCustomer.subscription": null } },
+      )
       .lean();
 
     return doc

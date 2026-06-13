@@ -44,7 +44,23 @@ npm run e2e:ui
 npm run e2e:report
 ```
 
-> **Which project does my spec belong to?** Anything matching `tests/billing/paddle-*.spec.ts` or `branding-paddle-overlay.spec.ts` is in the `e2e-paddle` project (see `PADDLE_CHECKOUT_TESTS` in `playwright.config.ts`), which depends on `e2e-paddle-setup` (starts a cloudflared tunnel + configures the Paddle sandbox webhook). Everything else is `e2e-web`. Paddle specs require `cloudflared` on PATH and `BACKEND_API_PADDLE_KEY` / `_URL` / `_WEBHOOK_SECRET` in `e2e/.env` — even ones that mock the request under test, because their setup still provisions a real sandbox subscription.
+> **Which project does my spec belong to?** Anything listed in `PADDLE_CHECKOUT_TESTS` in `playwright.config.ts` (all under `tests/billing/`) is in the `e2e-paddle` project, which depends on `e2e-paddle-setup` (starts a cloudflared tunnel + configures the Paddle sandbox webhook). Everything else is `e2e-web`. Paddle specs require `cloudflared` on PATH and `BACKEND_API_PADDLE_KEY` / `_URL` / `_WEBHOOK_SECRET` in `e2e/.env` — even ones that mock the request under test, because their setup still provisions a real sandbox subscription.
+
+## Billing posture: e2e-web is always self-host (Paddle blanked)
+
+The mock suite runs in exactly one billing posture per stack boot, so `e2e-mock.sh` makes it
+deterministic: **any run that does not target the `e2e-paddle` project or a `tests/billing/` spec
+gets the four Paddle vars (`BACKEND_API_PADDLE_KEY` / `_URL` / `_WEBHOOK_SECRET`,
+`VITE_PADDLE_CLIENT_TOKEN`) force-blanked** before the stack boots. Values in `e2e/.env`, the
+repo-root `.env` (which Docker Compose auto-loads from its project directory regardless of cwd),
+or CI workflow env cannot leak in.
+
+This matches what the `e2e-web` specs assume: feeds work in workspaces without subscriptions
+(`BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS` applies), and `workspace-self-host-posture.spec.ts`
+asserts billing UI is absent entirely. A spec that needs a billing-enabled backend (e.g.
+`dormant-workspace-feed-retry.spec.ts` — dormant workspaces only exist when Paddle is configured)
+must live in `tests/billing/` and be listed in `PADDLE_CHECKOUT_TESTS` so it runs under
+`e2e-paddle` with the real env.
 
 ## Project Structure
 

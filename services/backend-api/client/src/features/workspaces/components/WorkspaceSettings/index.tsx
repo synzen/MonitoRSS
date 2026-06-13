@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
-import { Box, Heading, Input, InputGroup, Stack } from "@chakra-ui/react";
+import { Box, Button, Input, InputGroup, Stack, StackSeparator } from "@chakra-ui/react";
+import { FaChevronRight } from "react-icons/fa6";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { InferType, object, string } from "yup";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
-import { ConfirmModal } from "@/components";
+import { ConfirmModal, SettingsSection } from "@/components";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
 import { pages } from "@/constants";
 import { isReservedSlug, SLUG_PATTERN } from "@/utils/slugify";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { ApiErrorCode, getStandardErrorCodeMessage } from "@/utils/getStandardErrorCodeMessage";
 import { Field } from "@/components/ui/field";
+import { usePaddleContext } from "@/features/subscriptionProducts";
 import { useCurrentWorkspace } from "../../contexts";
 import { useUpdateWorkspace } from "../../hooks";
 import { WorkspaceRedditConnectionSetting } from "../WorkspaceRedditConnectionSetting";
@@ -33,6 +35,7 @@ type FormData = InferType<typeof formSchema>;
 
 export const WorkspaceSettings = () => {
   const workspace = useCurrentWorkspace();
+  const { isConfigured: isPaddleConfigured } = usePaddleContext();
   const navigate = useNavigate();
   const { createSuccessAlert } = usePageAlertContext();
   const { mutateAsync, error } = useUpdateWorkspace();
@@ -116,71 +119,91 @@ export const WorkspaceSettings = () => {
   };
 
   return (
-    <Stack gap={6} maxW="2xl">
-      <Heading as="h1" size="lg">
-        Team settings
-      </Heading>
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <Stack gap={4}>
-          <Field
-            label="Team name"
-            invalid={!!errors.name}
-            required
-            errorText={errors.name?.message}
-          >
-            <Controller
-              name="name"
-              control={control}
-              render={({ field }) => <Input {...field} />}
-            />
-          </Field>
-          <Field
-            label="Team URL"
-            invalid={!!errors.slug}
-            required
-            errorText={errors.slug?.message}
-            helperText={`URL preview: /workspaces/${watchedSlug || workspace.slug}`}
-          >
-            <InputGroup startAddon="/workspaces/">
-              <Controller
-                name="slug"
-                control={control}
-                render={({ field }) => <Input {...field} />}
-              />
-            </InputGroup>
-          </Field>
-          {/* Slug-taken/reserved are already shown inline on the slug field, so
+    <>
+      <Stack gap={10} separator={<StackSeparator />}>
+        <SettingsSection
+          title="General"
+          description="Your team's display name and the URL it lives at. The URL appears in links members share."
+        >
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            {/* Inputs stay readable-width even though the section row spans the page. */}
+            <Stack gap={4} maxW="xl">
+              <Field
+                label="Team name"
+                invalid={!!errors.name}
+                required
+                errorText={errors.name?.message}
+              >
+                <Controller
+                  name="name"
+                  control={control}
+                  render={({ field }) => <Input {...field} />}
+                />
+              </Field>
+              <Field
+                label="Team URL"
+                invalid={!!errors.slug}
+                required
+                errorText={errors.slug?.message}
+                helperText={`URL preview: /workspaces/${watchedSlug || workspace.slug}`}
+              >
+                <InputGroup startAddon="/workspaces/">
+                  <Controller
+                    name="slug"
+                    control={control}
+                    render={({ field }) => <Input {...field} />}
+                  />
+                </InputGroup>
+              </Field>
+              {/* Slug-taken/reserved are already shown inline on the slug field, so
               the generic alert covers only the remaining failures, using the
               friendly mapped message rather than the raw server string. */}
-          {error &&
-            error.errorCode !== ApiErrorCode.WORKSPACE_SLUG_TAKEN &&
-            error.errorCode !== ApiErrorCode.WORKSPACE_SLUG_RESERVED && (
-              <InlineErrorAlert
-                title="Failed to save"
-                description={
-                  error.errorCode
-                    ? getStandardErrorCodeMessage(error.errorCode as ApiErrorCode)
-                    : error.message
-                }
-              />
-            )}
-          <Box>
-            <PrimaryActionButton
-              type="submit"
-              loading={isSubmitting}
-              loadingText="Saving..."
-              disabled={!isDirty}
-            >
-              Save
-            </PrimaryActionButton>
-          </Box>
-        </Stack>
-      </form>
-      <Stack gap={3}>
-        <Heading as="h2" size="md">
-          Integrations
-        </Heading>
-        <WorkspaceRedditConnectionSetting workspaceSlug={workspace.slug} />
+              {error &&
+                error.errorCode !== ApiErrorCode.WORKSPACE_SLUG_TAKEN &&
+                error.errorCode !== ApiErrorCode.WORKSPACE_SLUG_RESERVED && (
+                  <InlineErrorAlert
+                    title="Failed to save"
+                    description={
+                      error.errorCode
+                        ? getStandardErrorCodeMessage(error.errorCode as ApiErrorCode)
+                        : error.message
+                    }
+                  />
+                )}
+              <Box>
+                <PrimaryActionButton
+                  type="submit"
+                  loading={isSubmitting}
+                  loadingText="Saving..."
+                  disabled={!isDirty}
+                >
+                  Save
+                </PrimaryActionButton>
+              </Box>
+            </Stack>
+          </form>
+        </SettingsSection>
+        <SettingsSection
+          title="Integrations"
+          description="Third-party connections that feeds in this team fetch with. Any member can manage them."
+        >
+          <WorkspaceRedditConnectionSetting workspaceSlug={workspace.slug} />
+        </SettingsSection>
+        {/* Absent entirely when Paddle is not configured (self-host posture). */}
+        {isPaddleConfigured && (
+          <SettingsSection
+            title="Billing"
+            description="Manage the team's subscription, plan, and payment."
+          >
+            <Box>
+              <Button asChild variant="outline">
+                <RouterLink to={pages.workspaceBilling(workspace.slug)}>
+                  Manage billing <FaChevronRight aria-hidden />
+                </RouterLink>
+              </Button>
+            </Box>
+          </SettingsSection>
+        )}
       </Stack>
       <ConfirmModal
         open={confirmOpen}
@@ -196,6 +219,6 @@ export const WorkspaceSettings = () => {
           }
         }}
       />
-    </Stack>
+    </>
   );
 };

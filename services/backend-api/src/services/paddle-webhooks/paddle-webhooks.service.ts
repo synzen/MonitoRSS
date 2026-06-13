@@ -1,5 +1,6 @@
 import { createHmac } from "crypto";
 import logger from "../../infra/logger";
+import { WORKSPACE_BASE_TIER_KEYS } from "../../shared/utils/billing";
 import {
   SubscriptionProductKey,
   LegacySubscriptionProductKey,
@@ -184,29 +185,6 @@ export class PaddleWebhooksService {
       event.data.customer_id,
     );
 
-    let discordUserId: string | undefined;
-
-    if (event.data.custom_data?.userId) {
-      const foundUser = await this.deps.userRepository.findById(
-        event.data.custom_data.userId,
-      );
-
-      discordUserId = foundUser?.discordUserId;
-    }
-
-    if (!discordUserId) {
-      const foundUser =
-        await this.deps.userRepository.findByEmail(billingEmail);
-
-      discordUserId = foundUser?.discordUserId;
-    }
-
-    if (!discordUserId) {
-      throw new Error(
-        `Could not resolve discord user ID when updating subscription for customer ${event.data.customer_id}`,
-      );
-    }
-
     const extraFeedsToAdd = subscriptionItemsWithProduct.find(
       (p) => p.product.id === SubscriptionProductKey.Tier3AdditionalFeed,
     )?.item.quantity;
@@ -224,7 +202,7 @@ export class PaddleWebhooksService {
       maxUserFeeds: benefits.maxUserFeeds + (extraFeedsToAdd || 0),
     };
 
-    await this.deps.supporterRepository.upsertPaddleCustomer(discordUserId, {
+    const paddleCustomer = {
       customerId: event.data.customer_id,
       email: billingEmail,
       lastCurrencyCodeUsed: event.data.currency_code,
@@ -259,7 +237,75 @@ export class PaddleWebhooksService {
       },
       createdAt: new Date(event.data.created_at),
       updatedAt: new Date(event.data.updated_at),
-    });
+    };
+
+    // Checkout custom data carrying a workspace id marks the subscription as
+    // belonging to that workspace, not to any member's personal supporter
+    // record.
+    const workspaceId = event.data.custom_data?.workspaceId;
+
+    if (workspaceId) {
+      // Tier 1 / Free are personal-only plans; recording one on a workspace
+      // would grant the wrong benefits. Our checkout/update surfaces never
+      // produce this, so fail loudly (Paddle retries, the error is logged).
+      if (!WORKSPACE_BASE_TIER_KEYS.has(topLevelBenefitsProductKey)) {
+        throw new Error(
+          `Subscription product ${topLevelBenefitsProductKey} is not valid for workspace ${workspaceId}`,
+        );
+      }
+
+      const workspace = await this.deps.workspaceRepository.upsertPaddleCustomer(
+        workspaceId,
+        paddleCustomer,
+      );
+
+      if (!workspace) {
+        // The workspace may have been deleted while the event was in flight
+        // (deletion schedules the Paddle cancellation for period end, so
+        // events keep arriving until then). Retrying can never succeed, and a
+        // workspace-routed event must never fall through to the personal
+        // supporter path, so acknowledge it.
+        logger.warn(
+          `Ignoring subscription event for missing workspace ${workspaceId} (customer ${event.data.customer_id})`,
+        );
+
+        return;
+      }
+
+      // Every subscription transition (activation, tier change, quantity
+      // change) funnels into the single workspace enforcement entry point.
+      await this.enforceWorkspaceFeedLimits(workspaceId);
+
+      return;
+    }
+
+    let discordUserId: string | undefined;
+
+    if (event.data.custom_data?.userId) {
+      const foundUser = await this.deps.userRepository.findById(
+        event.data.custom_data.userId,
+      );
+
+      discordUserId = foundUser?.discordUserId;
+    }
+
+    if (!discordUserId) {
+      const foundUser =
+        await this.deps.userRepository.findByEmail(billingEmail);
+
+      discordUserId = foundUser?.discordUserId;
+    }
+
+    if (!discordUserId) {
+      throw new Error(
+        `Could not resolve discord user ID when updating subscription for customer ${event.data.customer_id}`,
+      );
+    }
+
+    await this.deps.supporterRepository.upsertPaddleCustomer(
+      discordUserId,
+      paddleCustomer,
+    );
 
     await this.enforceFeedLimits(discordUserId);
 
@@ -284,6 +330,20 @@ export class PaddleWebhooksService {
     const {
       data: { id: subscriptionId },
     } = event;
+
+    // A subscription id belongs to either a workspace or a personal supporter
+    // record, never both; the workspace lookup routes the lapse to dormancy
+    // enforcement (feeds disabled, nothing deleted).
+    const workspace =
+      await this.deps.workspaceRepository.nullifySubscriptionBySubscriptionId(
+        subscriptionId,
+      );
+
+    if (workspace) {
+      await this.enforceWorkspaceFeedLimits(workspace.id);
+
+      return;
+    }
 
     const supporter =
       await this.deps.supporterRepository.nullifySubscriptionBySubscriptionId(
@@ -330,6 +390,20 @@ export class PaddleWebhooksService {
       logger.error(
         `Error while enforcing feed limit after paddle webhook event`,
         {
+          stack: (err as Error).stack,
+        },
+      );
+    }
+  }
+
+  private async enforceWorkspaceFeedLimits(workspaceId: string): Promise<void> {
+    try {
+      await this.deps.userFeedsService.enforceWorkspaceFeedLimit(workspaceId);
+    } catch (err) {
+      logger.error(
+        `Error while enforcing workspace feed limit after paddle webhook event`,
+        {
+          workspaceId,
           stack: (err as Error).stack,
         },
       );

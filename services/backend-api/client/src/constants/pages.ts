@@ -17,7 +17,8 @@ const getConnectionPathByType = (type: FeedConnectionType) => {
  */
 export type RouteScope = { workspaceSlug?: string };
 
-const scopePrefix = (scope?: RouteScope) => (scope?.workspaceSlug ? `/workspaces/${scope.workspaceSlug}` : "");
+const scopePrefix = (scope?: RouteScope) =>
+  scope?.workspaceSlug ? `/workspaces/${scope.workspaceSlug}` : "";
 
 export const pages = {
   checkout: (priceId: string, feeds?: { quantity: number; priceId: string }) =>
@@ -31,6 +32,7 @@ export const pages = {
   addFeeds: (scope?: RouteScope) => `${scopePrefix(scope)}/add-feeds`,
   userSettings: () => "/settings",
   workspaceSettings: (workspaceSlug: string) => `/workspaces/${workspaceSlug}/settings`,
+  workspaceBilling: (workspaceSlug: string) => `/workspaces/${workspaceSlug}/settings/billing`,
   workspaceInvite: (inviteId: string) => `/invites/${inviteId}`,
   userFeeds: (scope?: RouteScope) => `${scopePrefix(scope)}/feeds`,
   notFound: () => "/not-found",

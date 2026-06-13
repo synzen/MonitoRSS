@@ -1,4 +1,4 @@
-import { boolean, InferType, mixed, number, object, string } from "yup";
+import { array, boolean, InferType, mixed, number, object, string } from "yup";
 
 export const WORKSPACE_ROLES = ["owner", "admin"] as const;
 
@@ -31,9 +31,31 @@ export const WorkspaceSchema = object({
     .nullable()
     .optional()
     .default(undefined),
+  // The workspace's own Paddle subscription (detail endpoint only). `null`
+  // means the workspace has no active subscription (dormant when billing is
+  // enabled; simply absent when self-hosted without Paddle).
+  subscription: object({
+    productKey: string().required(),
+    status: string().required(),
+    cancellationDate: string().nullable(),
+    nextBillDate: string().nullable(),
+    billingInterval: string().oneOf(["month", "year"]).required(),
+    billingPeriodEnd: string().required(),
+    currencyCode: string().required(),
+    addons: array(
+      object({
+        key: string().required(),
+        quantity: number().required(),
+      }).required(),
+    ).optional(),
+  })
+    .nullable()
+    .optional()
+    .default(undefined),
 }).required();
 
 export type Workspace = InferType<typeof WorkspaceSchema>;
+export type WorkspaceSubscription = NonNullable<Workspace["subscription"]>;
 
 /**
  * The fuller workspace document returned by create/update (`POST`/`PATCH /workspaces`),

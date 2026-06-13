@@ -10,6 +10,7 @@ import {
   CreateWorkspaceDialog,
   useIsWorkspacesEnabled,
   useWorkspaces,
+  WorkspaceDormantBanner,
   WorkspaceSwitcher,
 } from "@/features/workspaces";
 import { pages } from "../constants";
@@ -74,6 +75,10 @@ export const AppHeader = ({ invertBackground }: Props) => {
           />
         }
       />
+      {/* Workspace-level (account-scope) banner sits below the global header, above page
+          content — it self-gates via useCurrentWorkspace(), which is null outside a
+          workspace scope, so personal routes render nothing here. */}
+      <WorkspaceDormantBanner />
       {workspacesEnabled && (
         <CreateWorkspaceDialog
           isOpen={createWorkspaceDisclosure.open}

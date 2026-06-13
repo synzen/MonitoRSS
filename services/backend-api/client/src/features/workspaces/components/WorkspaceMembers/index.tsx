@@ -19,7 +19,7 @@ import { InferType, object, string } from "yup";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { DestructiveActionButton } from "@/components/DestructiveActionButton";
-import { ConfirmModal } from "@/components";
+import { ConfirmModal, SettingsSection } from "@/components";
 import { Field } from "@/components/ui/field";
 import { pages } from "@/constants";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
@@ -101,7 +101,8 @@ const InviteForm = ({ workspaceSlug }: { workspaceSlug: string }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
-      <Stack gap={3}>
+      {/* Inputs stay readable-width even though the section row spans the page. */}
+      <Stack gap={3} maxW="xl">
         <Field
           label="Invite by email"
           invalid={!!errors.email}
@@ -364,46 +365,46 @@ export const WorkspaceMembers = () => {
   const canRemoveOthers = workspace.myRole === "owner";
 
   return (
-    <Stack gap={8} maxW="2xl">
-      <Stack as="section" aria-label="Members" gap={4}>
-        <VisuallyHidden aria-live="polite">{LIVE_STATUS_TEXT[membersStatus] ?? ""}</VisuallyHidden>
-        <Heading as="h2" size="md">
-          Members
-        </Heading>
-        <InviteForm workspaceSlug={workspace.slug} />
-        {membersStatus === "loading" && (
-          <Stack gap={3} aria-busy="true">
-            <Skeleton height="60px" borderRadius="md" />
-            <Skeleton height="60px" borderRadius="md" />
-          </Stack>
-        )}
-        {membersStatus === "error" && (
-          <Box>
-            <InlineErrorAlert title="Failed to load members" description={membersError?.message} />
-            <Button size="sm" mt={3} onClick={() => refetchMembers()}>
-              Try again
-            </Button>
-          </Box>
-        )}
-        {membersStatus === "success" && (
-          <Stack as="ul" role="list" listStyleType="none" gap={3}>
-            {members?.map((member) => (
-              <MemberRow
-                key={member.userId}
-                member={member}
-                isSelf={!!selfUserId && member.userId === selfUserId}
-                canRemoveOthers={canRemoveOthers}
-                workspaceSlug={workspace.slug}
-              />
-            ))}
-          </Stack>
-        )}
-      </Stack>
-      <Stack as="section" aria-label="Pending invitations" gap={4}>
+    <SettingsSection
+      title="Members"
+      description="People with access to this team and its feeds. Invitations that haven't been accepted yet can be resent or revoked."
+    >
+      <VisuallyHidden aria-live="polite">{LIVE_STATUS_TEXT[membersStatus] ?? ""}</VisuallyHidden>
+      <InviteForm workspaceSlug={workspace.slug} />
+      {membersStatus === "loading" && (
+        <Stack gap={3} aria-busy="true">
+          <Skeleton height="60px" borderRadius="md" />
+          <Skeleton height="60px" borderRadius="md" />
+        </Stack>
+      )}
+      {membersStatus === "error" && (
+        <Box>
+          <InlineErrorAlert title="Failed to load members" description={membersError?.message} />
+          <Button size="sm" mt={3} onClick={() => refetchMembers()}>
+            Try again
+          </Button>
+        </Box>
+      )}
+      {membersStatus === "success" && (
+        <Stack as="ul" role="list" listStyleType="none" gap={3}>
+          {members?.map((member) => (
+            <MemberRow
+              key={member.userId}
+              member={member}
+              isSelf={!!selfUserId && member.userId === selfUserId}
+              canRemoveOthers={canRemoveOthers}
+              workspaceSlug={workspace.slug}
+            />
+          ))}
+        </Stack>
+      )}
+      {/* A facet of member management, not a peer section: the invite sent just
+          above lands here, so the loop closes within the same row. */}
+      <Stack as="section" aria-label="Pending invitations" gap={3} marginTop={4}>
         <VisuallyHidden aria-live="polite">
           {invitesStatus === "loading" ? "Loading invitations" : ""}
         </VisuallyHidden>
-        <Heading as="h2" size="md">
+        <Heading as="h3" size="sm">
           Pending invitations
         </Heading>
         {invitesStatus === "loading" && (
@@ -438,6 +439,6 @@ export const WorkspaceMembers = () => {
             <Text color="fg.muted">There are no pending invitations.</Text>
           ))}
       </Stack>
-    </Stack>
+    </SettingsSection>
   );
 };

@@ -202,6 +202,68 @@ describe("Workspace-associated user feeds", { concurrency: false }, () => {
     const res = await outsider.fetch(`/api/v1/user-feeds/${created.id}`);
     assert.strictEqual(res.status, 404);
   });
+
+  it("does not leave an orphaned feed when feed creation races workspace deletion", async () => {
+    const discordId = randomUUID();
+    await seedWorkspaceUser(discordId);
+    const user = await ctx.asUser(discordId);
+    const slug = `race-${discordId.slice(0, 8)}`;
+    const workspaceId = await createWorkspace(user, slug);
+
+    // URL validation takes real time (a network fetch), so the workspace can
+    // be deleted between addFeed's membership pre-check and its insert. The
+    // delayed mock holds validation open while the deletion completes.
+    const feedUrl = "https://example.com/race-feed.xml";
+    feedApiMockServer.registerRoute(
+      "POST",
+      "/v1/user-feeds/get-articles",
+      async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        return {
+          status: 200,
+          body: {
+            result: {
+              requestStatus: "SUCCESS",
+              articles: [],
+              totalArticles: 0,
+              selectedProperties: [],
+              url: feedUrl,
+              feedTitle: "Race Feed",
+            },
+          },
+        };
+      },
+    );
+
+    const createPromise = user.fetch("/api/v1/user-feeds", {
+      method: "POST",
+      body: JSON.stringify({ url: feedUrl, workspaceId }),
+    });
+
+    // Let the creation pass its membership pre-check and enter URL validation.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    const deleteRes = await user.fetch(`/api/v1/workspaces/${slug}`, {
+      method: "DELETE",
+    });
+    assert.strictEqual(deleteRes.status, 204);
+
+    const createRes = await createPromise;
+    assert.notStrictEqual(
+      createRes.status,
+      201,
+      "feed creation must not succeed once its workspace is deleted",
+    );
+
+    const remaining = await ctx.connection
+      .collection("userfeeds")
+      .countDocuments({ workspaceId: new Types.ObjectId(workspaceId) });
+    assert.strictEqual(
+      remaining,
+      0,
+      "no feed may survive referencing the deleted workspace",
+    );
+  });
 });
 
 describe(

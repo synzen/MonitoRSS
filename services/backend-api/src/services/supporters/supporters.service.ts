@@ -10,6 +10,8 @@ import type {
   ISupporter,
 } from "../../repositories/interfaces/supporter.types";
 import type { IUserFeedLimitOverrideRepository } from "../../repositories/interfaces/user-feed-limit-override.types";
+import type { WorkspaceMongooseRepository } from "../../repositories/mongoose/workspace.mongoose.repository";
+import type { IPaddleCustomerSubscription } from "../../repositories/interfaces/supporter.types";
 import {
   SubscriptionStatus,
   SubscriptionProductKey,
@@ -25,6 +27,7 @@ import type {
 } from "./types";
 import type { GuildSubscriptionFormatted } from "../guild-subscriptions/types";
 import logger from "../../infra/logger";
+import { isBillingEnabled } from "../../shared/utils/billing";
 
 export interface SupportersServiceDeps {
   config: Config;
@@ -33,6 +36,7 @@ export interface SupportersServiceDeps {
   discordApiService: DiscordApiService;
   supporterRepository: ISupporterRepository;
   userFeedLimitOverrideRepository: IUserFeedLimitOverrideRepository;
+  workspaceRepository: WorkspaceMongooseRepository;
 }
 
 export class SupportersService {
@@ -448,30 +452,80 @@ export class SupportersService {
     };
   }
 
+  // Whether a Paddle subscription record currently grants its benefits,
+  // matching the personal supporter semantics: active grants, past-due grants
+  // within the grace period, anything else does not.
+  static subscriptionGrantsBenefits(
+    subscription: IPaddleCustomerSubscription,
+  ): boolean {
+    if (subscription.status === SubscriptionStatus.Active) {
+      return true;
+    }
+
+    if (subscription.status === SubscriptionStatus.PastDue) {
+      const gracePeriodEndDate = SupportersService.calculateGracePeriodEndDate(
+        subscription.billingPeriodStart,
+      );
+
+      return dayjs().isBefore(dayjs(gracePeriodEndDate));
+    }
+
+    return false;
+  }
+
   /**
-   * Feed-related benefits for a WORKSPACE. Today the feed limit is the
-   * hardcoded `BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS` and the article/refresh
-   * limits use the default tier — workspace feeds are deliberately insulated
-   * from the creator's personal supporter perks.
+   * Feed-related benefits for a WORKSPACE — deliberately insulated from any
+   * member's personal supporter perks. Resolves three ways:
    *
-   * Forward-compat: when a workspace-level Paddle subscription exists, resolve
-   * it here (look up the workspace's subscription benefits) and return those
-   * instead. The return shape mirrors the fields `addFeed` consumes from
-   * `getBenefitsOfDiscordUser`, so the swap is local to this method.
+   * 1. Billing enabled + the workspace's own Paddle subscription grants
+   *    benefits → the subscription's stored tier benefits (add-on quantity is
+   *    already folded into maxUserFeeds by the webhook handler).
+   * 2. Billing enabled but no benefit-granting subscription → dormant: zero
+   *    feeds, no webhooks. Membership/invitations/settings are not gated here;
+   *    only feed capacity is.
+   * 3. Billing not configured (self-host) → the configured default workspace
+   *    benefits, with no dormancy.
    */
-  async getWorkspaceBenefits(_workspaceId: string): Promise<{
+  async getWorkspaceBenefits(workspaceId: string): Promise<{
     maxFeeds: number;
     maxDailyArticles: number;
     refreshRateSeconds: number;
     allowWebhooks: boolean;
+    dormant: boolean;
   }> {
-    // TODO: workspace Paddle subscription lookup slots in here (keyed on
-    // _workspaceId).
+    if (!isBillingEnabled(this.deps.config)) {
+      return {
+        maxFeeds: this.defaultMaxWorkspaceFeeds,
+        maxDailyArticles: this.maxDailyArticlesDefault,
+        refreshRateSeconds: this.defaultRefreshRateSeconds,
+        allowWebhooks: false,
+        dormant: false,
+      };
+    }
+
+    const workspace =
+      await this.deps.workspaceRepository.findById(workspaceId);
+    const subscription = workspace?.paddleCustomer?.subscription;
+
+    if (
+      subscription &&
+      SupportersService.subscriptionGrantsBenefits(subscription)
+    ) {
+      return {
+        maxFeeds: subscription.benefits.maxUserFeeds,
+        maxDailyArticles: subscription.benefits.dailyArticleLimit,
+        refreshRateSeconds: subscription.benefits.refreshRateSeconds,
+        allowWebhooks: subscription.benefits.allowWebhooks,
+        dormant: false,
+      };
+    }
+
     return {
-      maxFeeds: this.defaultMaxWorkspaceFeeds,
+      maxFeeds: 0,
       maxDailyArticles: this.maxDailyArticlesDefault,
       refreshRateSeconds: this.defaultRefreshRateSeconds,
       allowWebhooks: false,
+      dormant: true,
     };
   }
 
