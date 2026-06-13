@@ -6,10 +6,7 @@ import type {
 } from "../../repositories/mongoose/workspace.mongoose.repository";
 import type { IPaddleCustomerSubscription } from "../../repositories/interfaces/supporter.types";
 import type { PaddleService } from "../../services/paddle/paddle.service";
-import type {
-  PaddleSubscriptionPreviewResponse,
-  PaddleSubscriptionUpdatePaymentMethodResponse,
-} from "../../services/supporter-subscriptions/types";
+import type { PaddleSubscriptionPreviewResponse } from "../../services/supporter-subscriptions/types";
 import type { ISupporterRepository } from "../../repositories/interfaces/supporter.types";
 import type { IUserFeedRepository } from "../../repositories/interfaces/user-feed.types";
 import type { FeedCredentialsService } from "../../services/feed-credentials/feed-credentials.service";
@@ -25,8 +22,10 @@ import {
 } from "../../shared/exceptions/workspace-billing.exceptions";
 import {
   CONVERSION_GUARD_TTL_MS,
+  DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
   isBillingEnabled,
   resolvePersonalConvertibility,
+  resolveWorkspaceFeedLimit,
   WORKSPACE_BASE_TIER_KEYS,
   WORKSPACE_PRODUCT_KEYS,
 } from "../../shared/utils/billing";
@@ -62,6 +61,15 @@ export interface SubscriptionChangePreview {
     grandTotal: string;
     grandTotalFormatted: string;
   };
+  // Projected effect of the change on the workspace's feeds. A downgrade that
+  // drops below the workspace's current active feed count disables the overflow
+  // (feeds are disabled, never deleted), so the confirmation screen can warn
+  // before the owner commits.
+  feedImpact: {
+    newFeedLimit: number;
+    currentFeedCount: number;
+    willBeDisabledCount: number;
+  };
 }
 
 // Workspace counterpart of the personal supporter-subscriptions service:
@@ -76,13 +84,25 @@ export class WorkspaceBillingService {
     items: Array<{ priceId: string; quantity: number }>,
   ): Promise<SubscriptionChangePreview> {
     const subscription = this.getSubscriptionOrThrow(workspace);
-    await this.assertWorkspacePrices(items);
+    const productKeyByPriceId = await this.assertWorkspacePrices(items);
 
-    const response =
-      await this.deps.paddleService.updateSubscriptionItems<PaddleSubscriptionPreviewResponse>(
+    // The Paddle proration preview and the feed-impact count are independent
+    // (feed impact needs only the resolved product keys, not the Paddle
+    // response), so run them concurrently rather than stacking their latency on
+    // this interactive path.
+    const [response, feedImpact] = await Promise.all([
+      this.deps.paddleService.updateSubscriptionItems<PaddleSubscriptionPreviewResponse>(
         subscription.id,
         { items, currencyCode: subscription.currencyCode, preview: true },
-      );
+      ),
+      this.computeFeedImpact(
+        workspace.id,
+        items.map((item) => ({
+          productKey: productKeyByPriceId.get(item.priceId) ?? "",
+          quantity: item.quantity,
+        })),
+      ),
+    ]);
 
     const immediateTransaction = response.data.immediate_transaction;
 
@@ -126,6 +146,41 @@ export class WorkspaceBillingService {
           currencyCode,
         ),
       },
+      feedImpact,
+    };
+  }
+
+  // How many of the workspace's active feeds the previewed item set would push
+  // over the new limit. The count uses the same slot-occupying exclusion set as
+  // limit enforcement so an already over-limit workspace isn't double-counted,
+  // and the projected limit comes from the shared resolver the webhook also
+  // uses, so the preview and the eventual activation agree.
+  private async computeFeedImpact(
+    workspaceId: string,
+    items: Array<{ productKey: string; quantity: number }>,
+  ): Promise<SubscriptionChangePreview["feedImpact"]> {
+    const newFeedLimit = resolveWorkspaceFeedLimit(items);
+
+    // null here means the validated base tier has no entry in the feed-limit
+    // table (the two constants drifted). Fail loudly rather than reporting a
+    // bogus "all feeds will be disabled" warning from a 0/NaN limit.
+    if (newFeedLimit == null) {
+      throw new Error(
+        "Could not resolve a workspace feed limit for the previewed items; " +
+          "WORKSPACE_BASE_TIER_KEYS and WORKSPACE_TIER_FEED_LIMITS may have drifted",
+      );
+    }
+
+    const currentFeedCount =
+      await this.deps.userFeedRepository.countByWorkspaceExcludingDisabled(
+        workspaceId,
+        DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+      );
+
+    return {
+      newFeedLimit,
+      currentFeedCount,
+      willBeDisabledCount: Math.max(0, currentFeedCount - newFeedLimit),
     };
   }
 
@@ -159,12 +214,9 @@ export class WorkspaceBillingService {
   ): Promise<{ id: string }> {
     const subscription = this.getSubscriptionOrThrow(workspace);
 
-    const response =
-      await this.deps.paddleService.executeApiCall<PaddleSubscriptionUpdatePaymentMethodResponse>(
-        `/subscriptions/${subscription.id}/update-payment-method-transaction`,
-      );
-
-    return { id: response.data.id };
+    return this.deps.paddleService.getUpdatePaymentMethodTransaction(
+      subscription.id,
+    );
   }
 
   async cancelSubscription(workspace: IWorkspace): Promise<void> {
@@ -402,7 +454,7 @@ export class WorkspaceBillingService {
   // (Tier 1 / Free are personal-only).
   private async assertWorkspacePrices(
     items: Array<{ priceId: string; quantity: number }>,
-  ): Promise<void> {
+  ): Promise<Map<string, string>> {
     const { products } = await this.deps.paddleService.getProducts();
 
     const productKeyByPriceId = new Map<string, string>();
@@ -436,6 +488,8 @@ export class WorkspaceBillingService {
         "Workspace subscription changes must include a base workspace tier",
       );
     }
+
+    return productKeyByPriceId;
   }
 
   private async pollForSubscriptionChange(

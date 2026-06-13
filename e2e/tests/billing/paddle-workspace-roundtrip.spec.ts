@@ -100,6 +100,31 @@ test.describe("Paddle workspace roundtrip", () => {
     // the "Current plan" badge region, so scope to the heading to stay unique.
     await expect(page.getByRole("heading", { name: "Tier 2" })).toBeVisible();
 
+    // Change-plan confirmation discloses the prorated amount AND the recurring
+    // charge before committing. Open the Tier 3 switch and assert the dialog
+    // renders the price anchor, the itemized "Due today" breakdown, and the
+    // recurring "Then" line, all driven by the real Paddle proration preview.
+    await page.getByRole("button", { name: /switch to tier 3/i }).click();
+    const changeDialog = page.getByRole("dialog");
+    await expect(changeDialog.getByText("Confirm plan change")).toBeVisible();
+    // Before -> after framing names both tiers.
+    await expect(changeDialog.getByText(/Tier 2 \(70 feeds\)/)).toBeVisible();
+    await expect(changeDialog.getByText(/Tier 3 \(140 feeds\)/)).toBeVisible();
+    // Itemized due-today block. The amount comes from a live Paddle proration
+    // preview round-trip, which can run slow under sandbox latency, so give it a
+    // generous budget rather than racing the spinner.
+    await expect(changeDialog.getByText("Total due today")).toBeVisible({ timeout: 60000 });
+    await expect(changeDialog.getByText("Subtotal")).toBeVisible();
+    await expect(changeDialog.getByText("Tax")).toBeVisible();
+    // The compliance-critical recurring disclosure.
+    await expect(changeDialog.getByText("Then")).toBeVisible();
+    await expect(changeDialog.getByText(/\/ month, starting/)).toBeVisible();
+    await expect(changeDialog.getByText(/Renews automatically\. Cancel anytime\./)).toBeVisible();
+    // Dismiss without switching: this run only verifies the disclosure, and the
+    // teardown cancels the Tier 2 subscription it already created.
+    await changeDialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(changeDialog).toHaveCount(0);
+
     // The dormant CTA is gone and a feed can be added through the UI.
     await page.getByRole("button", { name: /Switch team/ }).click();
     await page.getByRole("menuitemradio", { name: /e2e paddle team/i }).click();

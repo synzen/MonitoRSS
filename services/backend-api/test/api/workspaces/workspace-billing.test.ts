@@ -88,6 +88,19 @@ describe("Workspace billing API", { concurrency: true }, () => {
             ],
           },
           {
+            id: "prod_tier2",
+            name: "Tier 2",
+            custom_data: { key: SubscriptionProductKey.Tier2 },
+            prices: [
+              {
+                id: "price_tier2_month",
+                status: "active",
+                custom_data: null,
+                billing_cycle: { interval: "month", frequency: 1 },
+              },
+            ],
+          },
+          {
             id: "prod_tier3",
             name: "Tier 3",
             custom_data: { key: SubscriptionProductKey.Tier3 },
@@ -561,6 +574,183 @@ describe("Workspace billing API", { concurrency: true }, () => {
     );
     assert.strictEqual(body.data.immediateTransaction.grandTotal, "450");
     assert.ok(body.data.immediateTransaction.grandTotalFormatted);
+  });
+
+  async function registerPreviewRoute(subscriptionId: string) {
+    paddleApi.server.registerRoute(
+      "PATCH",
+      `/subscriptions/${subscriptionId}/preview`,
+      {
+        status: 200,
+        body: {
+          data: {
+            immediate_transaction: {
+              billing_period: {
+                starts_at: "2027-01-01T00:00:00Z",
+                ends_at: "2027-01-31T23:59:59Z",
+              },
+              details: {
+                totals: {
+                  subtotal: "0",
+                  tax: "-82",
+                  credit: "0",
+                  total: "0",
+                  grand_total: "0",
+                },
+              },
+            },
+          },
+        },
+      },
+    );
+  }
+
+  async function seedWorkspaceFeeds(
+    userId: string,
+    discordUserId: string,
+    workspaceId: string,
+    count: number,
+  ) {
+    for (let i = 0; i < count; i += 1) {
+      await ctx.container.userFeedRepository.create({
+        title: `Workspace Feed ${i}`,
+        url: `https://example.com/${generateTestId()}.xml`,
+        user: { id: userId, discordUserId },
+        workspaceId,
+      });
+    }
+  }
+
+  it("reports the feeds a downgrade would disable in the preview", async () => {
+    const discordUserId = randomUUID();
+    const userId = await seedWorkspaceUser(ctx, discordUserId);
+    const { user, workspaceId, slug } =
+      await createWorkspaceAsUser(discordUserId);
+
+    const subscriptionId = generateTestId();
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      workspaceId,
+      buildPaddleCustomer({
+        subscriptionId,
+        productKey: SubscriptionProductKey.Tier3,
+      }),
+    );
+    await registerPreviewRoute(subscriptionId);
+
+    // 73 active feeds under the Tier 3 (140) limit; switching to Tier 2 (70)
+    // would put 3 over the new limit.
+    await seedWorkspaceFeeds(userId, discordUserId, workspaceId, 73);
+
+    const res = await user.fetch(
+      `/api/v1/workspaces/${slug}/billing/update-preview`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prices: [{ priceId: "price_tier2_month", quantity: 1 }],
+        }),
+      },
+    );
+
+    assert.strictEqual(res.status, 200);
+    const body = await readJson<{
+      data: {
+        feedImpact: {
+          newFeedLimit: number;
+          currentFeedCount: number;
+          willBeDisabledCount: number;
+        };
+      };
+    }>(res);
+
+    assert.strictEqual(body.data.feedImpact.newFeedLimit, 70);
+    assert.strictEqual(body.data.feedImpact.currentFeedCount, 73);
+    assert.strictEqual(body.data.feedImpact.willBeDisabledCount, 3);
+  });
+
+  it("reports zero feeds disabled for a within-limit change", async () => {
+    const discordUserId = randomUUID();
+    const userId = await seedWorkspaceUser(ctx, discordUserId);
+    const { user, workspaceId, slug } =
+      await createWorkspaceAsUser(discordUserId);
+
+    const subscriptionId = generateTestId();
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      workspaceId,
+      buildPaddleCustomer({
+        subscriptionId,
+        productKey: SubscriptionProductKey.Tier2,
+      }),
+    );
+    await registerPreviewRoute(subscriptionId);
+
+    // 10 feeds, well under either tier: an upgrade to Tier 3 disables nothing.
+    await seedWorkspaceFeeds(userId, discordUserId, workspaceId, 10);
+
+    const res = await user.fetch(
+      `/api/v1/workspaces/${slug}/billing/update-preview`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prices: [{ priceId: "price_tier3_month", quantity: 1 }],
+        }),
+      },
+    );
+
+    assert.strictEqual(res.status, 200);
+    const body = await readJson<{
+      data: {
+        feedImpact: { newFeedLimit: number; willBeDisabledCount: number };
+      };
+    }>(res);
+
+    assert.strictEqual(body.data.feedImpact.newFeedLimit, 140);
+    assert.strictEqual(body.data.feedImpact.willBeDisabledCount, 0);
+  });
+
+  it("counts add-on feeds toward the projected Tier 3 limit", async () => {
+    const discordUserId = randomUUID();
+    const userId = await seedWorkspaceUser(ctx, discordUserId);
+    const { user, workspaceId, slug } =
+      await createWorkspaceAsUser(discordUserId);
+
+    const subscriptionId = generateTestId();
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      workspaceId,
+      buildPaddleCustomer({
+        subscriptionId,
+        productKey: SubscriptionProductKey.Tier3,
+      }),
+    );
+    await registerPreviewRoute(subscriptionId);
+
+    await seedWorkspaceFeeds(userId, discordUserId, workspaceId, 145);
+
+    const res = await user.fetch(
+      `/api/v1/workspaces/${slug}/billing/update-preview`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prices: [
+            { priceId: "price_tier3_month", quantity: 1 },
+            { priceId: "price_t3feed_month", quantity: 10 },
+          ],
+        }),
+      },
+    );
+
+    assert.strictEqual(res.status, 200);
+    const body = await readJson<{
+      data: {
+        feedImpact: { newFeedLimit: number; willBeDisabledCount: number };
+      };
+    }>(res);
+
+    // 140 base + 10 add-ons = 150 limit; 145 feeds disables none.
+    assert.strictEqual(body.data.feedImpact.newFeedLimit, 150);
+    assert.strictEqual(body.data.feedImpact.willBeDisabledCount, 0);
   });
 });
 

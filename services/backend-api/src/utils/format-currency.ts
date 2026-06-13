@@ -31,21 +31,23 @@ export function formatCurrency(input: string, currencyCode: string): string {
     return `${input} ${currencyCode}`;
   }
 
+  const isNegative = input.startsWith("-");
+  const sign = isNegative ? "-" : "";
+  const magnitude = isNegative ? input.slice(1) : input;
+
   if (ZERO_DECIMAL_CURRENCIES.includes(currencyCode)) {
-    return formatter(input);
+    return `${sign}${formatter(magnitude)}`;
   }
 
-  if (input === "0") {
-    return formatter("0");
-  }
-
-  const decimalIndex = input.length - 2;
-  const beforeDecimal = input.slice(0, decimalIndex);
-  const afterDecimal = input.slice(decimalIndex);
+  // Paddle sends amounts in minor units (cents). Pad so even sub-dollar amounts
+  // keep their two-digit fractional part (e.g. "5" -> "0.05", not "0.50").
+  const padded = magnitude.padStart(3, "0");
+  const beforeDecimal = padded.slice(0, -2);
+  const afterDecimal = padded.slice(-2);
 
   if (afterDecimal === "00") {
-    return formatter(beforeDecimal);
+    return `${sign}${formatter(beforeDecimal)}`;
   }
 
-  return formatter(`${beforeDecimal || "0"}.${afterDecimal.padEnd(2, "0")}`);
+  return `${sign}${formatter(`${beforeDecimal}.${afterDecimal}`)}`;
 }

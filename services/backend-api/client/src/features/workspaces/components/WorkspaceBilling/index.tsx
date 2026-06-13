@@ -63,7 +63,11 @@ type BillingInterval = "month" | "year";
 const WORKSPACE_TIERS = [ProductKey.Tier2, ProductKey.Tier3] as const;
 type WorkspaceTier = (typeof WORKSPACE_TIERS)[number];
 
-const TIER_FEED_LIMITS: Record<WorkspaceTier, number> = {
+// Must match the backend's WORKSPACE_TIER_FEED_LIMITS (shared/utils/billing.ts),
+// which the activation webhook and change-preview both read. The client can't
+// import across the package boundary, so a guard test (WorkspaceBilling.test)
+// locks these values to keep the displayed limit and the granted limit in step.
+export const TIER_FEED_LIMITS: Record<WorkspaceTier, number> = {
   [ProductKey.Tier2]: 70,
   [ProductKey.Tier3]: 140,
 };
@@ -157,19 +161,53 @@ const TierCard = ({
 interface PendingChange {
   prices: Array<{ priceId: string; quantity: number }>;
   description: string;
+  // The recurring charge the owner is authorizing, surfaced alongside the
+  // prorated amount due today so the screen never implies the change is free.
+  recurringPriceFormatted?: string;
+  // Before -> after framing for a tier switch. Absent for an add-on-quantity
+  // change, which keeps its plain description instead.
+  tierChange?: { fromLabel: string; toLabel: string };
 }
 
 // Confirmation dialog for plan/quantity changes on an existing workspace
 // subscription: fetches the prorated preview, then applies the change. The
 // dialog hosts no Paddle checkout, so the modal/overlay inert interaction does
 // not apply here.
+// One labelled row in the "Due today" breakdown. Rendered as a description
+// term/detail pair so the amounts read as a real itemized list to assistive
+// tech, not visually-aligned prose.
+const AmountRow = ({
+  label,
+  value,
+  emphasized,
+  valueColor,
+}: {
+  label: string;
+  value: string;
+  emphasized?: boolean;
+  valueColor?: string;
+}) => (
+  <HStack as="div" justifyContent="space-between" gap={4}>
+    <Text as="dt" fontSize="sm" color={emphasized ? undefined : "fg.muted"}>
+      {label}
+    </Text>
+    <Text as="dd" fontSize="sm" fontWeight={emphasized ? "bold" : "normal"} color={valueColor}>
+      {value}
+    </Text>
+  </HStack>
+);
+
 const ChangeWorkspacePlanDialog = ({
   workspaceSlug,
   pendingChange,
+  interval,
+  nextBillDate,
   onClose,
 }: {
   workspaceSlug: string;
   pendingChange: PendingChange | null;
+  interval: BillingInterval;
+  nextBillDate: string | null;
   onClose: () => void;
 }) => {
   const { preview, status, error } = useWorkspaceBillingChangePreview({
@@ -191,6 +229,10 @@ const ChangeWorkspacePlanDialog = ({
     onClose();
   };
 
+  const immediate = preview?.immediateTransaction;
+  const willBeDisabledCount = preview?.feedImpact?.willBeDisabledCount ?? 0;
+  const newFeedLimit = preview?.feedImpact?.newFeedLimit;
+
   return (
     <DialogRoot open={!!pendingChange} onOpenChange={(e) => !e.open && onClose()}>
       <DialogContent>
@@ -199,22 +241,85 @@ const ChangeWorkspacePlanDialog = ({
         </DialogHeader>
         <DialogCloseTrigger />
         <DialogBody>
-          <Stack gap={4}>
-            <Text>{pendingChange?.description}</Text>
+          <Stack gap={5}>
+            {pendingChange?.tierChange ? (
+              <Text fontWeight="medium">
+                {pendingChange.tierChange.fromLabel}{" "}
+                <Text as="span" color="fg.muted" aria-label="changes to">
+                  &rarr;
+                </Text>{" "}
+                {pendingChange.tierChange.toLabel}
+              </Text>
+            ) : (
+              <Text fontWeight="medium">{pendingChange?.description}</Text>
+            )}
+            {pendingChange?.recurringPriceFormatted && (
+              <Text fontSize="lg" fontWeight="bold">
+                {pendingChange.recurringPriceFormatted}{" "}
+                <Text as="span" fontSize="sm" fontWeight="normal" color="fg.muted">
+                  / {interval}
+                </Text>
+              </Text>
+            )}
             {status === "loading" && <Spinner />}
             {error && (
               <InlineErrorAlert title="Failed to load change preview" description={error.message} />
             )}
-            {preview && (
-              <Stack gap={1}>
-                <Text>
-                  Due today: <strong>{preview.immediateTransaction.grandTotalFormatted}</strong>{" "}
-                  (includes {preview.immediateTransaction.taxFormatted} tax,{" "}
-                  {preview.immediateTransaction.creditFormatted} credit)
-                </Text>
-                <Text color="fg.muted" fontSize="sm">
-                  Prorated for the current billing period.
-                </Text>
+            {willBeDisabledCount > 0 && (
+              <Text color="text.warning" fontSize="sm">
+                {willBeDisabledCount} feed{willBeDisabledCount === 1 ? "" : "s"} over the new{" "}
+                {newFeedLimit}-feed limit will be disabled (not deleted). Re-subscribe to a higher
+                tier to re-enable them.
+              </Text>
+            )}
+            {immediate && (
+              <Stack gap={3}>
+                <Stack gap={1}>
+                  <Text fontWeight="medium" fontSize="sm">
+                    Due today
+                  </Text>
+                  <Stack as="dl" gap={1}>
+                    <AmountRow label="Subtotal" value={immediate.subtotalFormatted} />
+                    <AmountRow label="Tax" value={immediate.taxFormatted} />
+                    {/* Credit reduces the amount due, so it must read as a
+                        deduction (signed, success-colored) rather than another
+                        charge. Hidden when zero to avoid a noisy "-$0" row. */}
+                    {immediate.credit !== "0" && (
+                      <AmountRow
+                        label="Account credit"
+                        value={`-${immediate.creditFormatted}`}
+                        valueColor="text.success"
+                      />
+                    )}
+                    <Box borderTopWidth="1px" borderColor="border.emphasized" pt={1}>
+                      <AmountRow
+                        label="Total due today"
+                        value={immediate.grandTotalFormatted}
+                        emphasized
+                      />
+                    </Box>
+                  </Stack>
+                  <Text color="fg.muted" fontSize="xs">
+                    Prorated for the current billing period.
+                  </Text>
+                </Stack>
+                {pendingChange?.recurringPriceFormatted && (
+                  <Stack gap={1}>
+                    <Text fontWeight="medium" fontSize="sm">
+                      Then
+                    </Text>
+                    <Text fontSize="sm">
+                      {pendingChange.recurringPriceFormatted} / {interval}
+                      {nextBillDate
+                        ? `, starting ${dayjs(nextBillDate).format("D MMMM YYYY")}`
+                        : ""}
+                      .
+                    </Text>
+                    <Text color="fg.muted" fontSize="xs">
+                      Renews automatically. Cancel anytime.
+                    </Text>
+                  </Stack>
+                )}
               </Stack>
             )}
             {updateMutation.error && (
@@ -436,6 +541,9 @@ const WorkspacePaymentMethodSection = ({ workspaceSlug }: { workspaceSlug: strin
   const { updatePaymentMethod } = usePaddleContext();
   const { error, fetchStatus, refetch } = useWorkspaceUpdatePaymentMethodTransaction(workspaceSlug);
 
+  // Each click re-mints a transaction, so a failed attempt must stay retryable:
+  // refetch() resolves (it does not reject) and clears the previous error on a
+  // fresh fetch, so the error is purely for display and never blocks re-click.
   const onClick = async () => {
     try {
       const result = await refetch();
@@ -457,18 +565,7 @@ const WorkspacePaymentMethodSection = ({ workspaceSlug }: { workspaceSlug: strin
       description="Replace the card on file for this team's subscription. Card details are entered on Paddle's secure checkout, not stored here."
     >
       <Stack gap={3} alignItems="flex-start">
-        <SafeLoadingButton
-          variant="outline"
-          loading={fetchStatus === "fetching"}
-          aria-disabled={!!error}
-          onClick={() => {
-            if (error) {
-              return;
-            }
-
-            onClick();
-          }}
-        >
+        <SafeLoadingButton variant="outline" loading={fetchStatus === "fetching"} onClick={onClick}>
           Update payment method
         </SafeLoadingButton>
         {error && (
@@ -707,6 +804,13 @@ export const WorkspaceBilling = () => {
                                   },
                                 ],
                                 description: `Switch this team to ${PRODUCT_NAMES[tier]} (${TIER_FEED_LIMITS[tier]} feeds).`,
+                                recurringPriceFormatted: getTierPrice(tier, subscriptionInterval),
+                                tierChange: currentTier
+                                  ? {
+                                      fromLabel: `${PRODUCT_NAMES[currentTier]} (${TIER_FEED_LIMITS[currentTier]} feeds)`,
+                                      toLabel: `${PRODUCT_NAMES[tier]} (${TIER_FEED_LIMITS[tier]} feeds)`,
+                                    }
+                                  : undefined,
                               })
                             }
                           >
@@ -865,6 +969,8 @@ export const WorkspaceBilling = () => {
       <ChangeWorkspacePlanDialog
         workspaceSlug={workspaceSlug}
         pendingChange={pendingChange}
+        interval={subscriptionInterval}
+        nextBillDate={subscription?.nextBillDate ?? null}
         onClose={() => setPendingChange(null)}
       />
       {conversion?.eligible && (

@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
 import { PRICE_IDS, ProductKey } from "@/constants";
-import { WorkspaceBilling } from "./index";
+import { WorkspaceBilling, TIER_FEED_LIMITS } from "./index";
 import { usePaddleContext } from "@/features/subscriptionProducts";
 import { useCurrentWorkspace } from "../../contexts/CurrentWorkspaceContext";
 import {
@@ -16,6 +16,7 @@ import {
   useUpdateWorkspaceBilling,
   useConvertWorkspaceBilling,
   useWorkspaceUpdatePaymentMethodTransaction,
+  useWorkspaceBillingChangePreview,
 } from "../../hooks";
 import { usePersonalConvertibleFeeds } from "../../hooks/usePersonalConvertibleFeeds";
 
@@ -337,7 +338,7 @@ describe("WorkspaceBilling", () => {
     await waitFor(() => expect(h.updatePaymentMethod).toHaveBeenCalledWith("txn_update_card"));
   });
 
-  it("marks the update-payment-method button as aria-disabled and blocks re-click when the transaction fails to load", async () => {
+  it("surfaces a payment-method-update failure inline while keeping the button retryable", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     vi.mocked(useWorkspaceUpdatePaymentMethodTransaction).mockReturnValue({
@@ -351,16 +352,15 @@ describe("WorkspaceBilling", () => {
     expect(await screen.findByText(/failed to start payment method update/i)).toBeInTheDocument();
 
     const button = screen.getByRole("button", { name: /update payment method/i });
-    // SafeLoadingButton signals the failed state via aria-disabled (never the
-    // native disabled attribute), so the button stays focusable and announced
-    // rather than dropping out of the tab order.
-    expect(button).toHaveAttribute("aria-disabled", "true");
+    // The button must NOT be disabled by a prior error: a transient failure has
+    // to be retryable, and refetch() clears the error on a fresh attempt. A
+    // hard-disable here would strand the owner until a full page reload.
     expect(button).not.toBeDisabled();
+    expect(button).not.toHaveAttribute("aria-disabled", "true");
 
-    // Clicking while errored must not re-mint a transaction or reopen Paddle.
+    // Clicking after an error re-mints the transaction (the retry path).
     fireEvent.click(button);
-    expect(h.refetchPaymentMethodTransaction).not.toHaveBeenCalled();
-    expect(h.updatePaymentMethod).not.toHaveBeenCalled();
+    await waitFor(() => expect(h.refetchPaymentMethodTransaction).toHaveBeenCalled());
   });
 
   it("does not offer to update the payment method on a dormant workspace with no subscription", async () => {
@@ -636,5 +636,167 @@ describe("WorkspaceBilling", () => {
       screen.queryByRole("button", { name: /move my plan to this team/i }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/buy a team plan directly/i)).not.toBeInTheDocument();
+  });
+
+  const mockChangePreview = (overrides: Record<string, unknown> = {}) => {
+    vi.mocked(useWorkspaceBillingChangePreview).mockReturnValue({
+      preview: {
+        immediateTransaction: {
+          billingPeriod: {
+            startsAt: "2027-02-01T00:00:00.000Z",
+            endsAt: "2027-02-28T00:00:00.000Z",
+          },
+          subtotalFormatted: "$0",
+          taxFormatted: "-$0.82",
+          // A real proration credit (positive minor units). The dialog renders
+          // it as a deduction; a "0" credit hides the row entirely.
+          credit: "500",
+          creditFormatted: "$5.00",
+          grandTotalFormatted: "$0",
+        },
+        feedImpact: {
+          newFeedLimit: 140,
+          currentFeedCount: 10,
+          willBeDisabledCount: 0,
+        },
+        ...overrides,
+      },
+      status: "success",
+      error: null,
+    } as never);
+  };
+
+  const openChangeDialog = async () => {
+    // Wait for tier prices to load so the switch carries the recurring amount
+    // (the card shows a spinner until then, as it does in the app).
+    await screen.findByRole("button", { name: /switch to tier 3/i });
+    await waitFor(() =>
+      expect(screen.getAllByText("$20.00", { exact: false }).length).toBeGreaterThan(0),
+    );
+    // Current plan is Tier 2, so the Tier 3 card carries the switch action.
+    fireEvent.click(screen.getByRole("button", { name: /switch to tier 3/i }));
+  };
+
+  it("discloses the recurring charge and renewal date in the change-plan dialog", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    // The compliance-critical disclosure: not just what's due today, but the
+    // recurring amount, cadence, and when it starts. The amount/interval/date
+    // are separate JSX expressions, so match on the collapsed line text. The
+    // date is formatted in local time, so assert the stable parts (amount,
+    // interval, "starting", year) rather than a timezone-dependent day.
+    expect(await screen.findByText(/Then/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (_, el) =>
+          el?.tagName === "P" &&
+          /\$20\.00 \/ month, starting \d{1,2} \w+ 2027\./.test(el?.textContent ?? ""),
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Renews automatically\. Cancel anytime\./)).toBeInTheDocument();
+  });
+
+  it("anchors the change-plan dialog with the target tier's recurring price", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    // On a downgrade the "Due today" rows are all credits/zero, so the plan
+    // price must headline the dialog or the user sees only negative numbers.
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByText(
+        (_, el) => el?.tagName === "P" && /^\$20\.00\s*\/ month$/.test(el?.textContent ?? ""),
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("itemizes the prorated amount due today in the change-plan dialog", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    expect(await screen.findByText(/Total due today/)).toBeInTheDocument();
+    expect(screen.getByText("Subtotal")).toBeInTheDocument();
+    expect(screen.getByText("Account credit")).toBeInTheDocument();
+    expect(screen.getByText("Tax")).toBeInTheDocument();
+    // The negative tax renders with the sign outside the symbol, not "$-.82".
+    expect(screen.getByText("-$0.82")).toBeInTheDocument();
+    // Credit reduces the bill, so it must read as a deduction, not a charge:
+    // the value carries a leading minus even though Paddle sends it positive.
+    expect(screen.getByText("-$5.00")).toBeInTheDocument();
+  });
+
+  it("hides the account-credit row when there is no credit", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    // An upgrade with no proration credit: the row would otherwise read "-$0".
+    mockChangePreview({
+      immediateTransaction: {
+        billingPeriod: {
+          startsAt: "2027-02-01T00:00:00.000Z",
+          endsAt: "2027-02-28T00:00:00.000Z",
+        },
+        subtotalFormatted: "$20.00",
+        taxFormatted: "$2.00",
+        credit: "0",
+        creditFormatted: "$0",
+        grandTotalFormatted: "$22.00",
+      },
+    });
+
+    renderBilling();
+    await openChangeDialog();
+
+    await screen.findByText(/Total due today/);
+    expect(screen.queryByText("Account credit")).not.toBeInTheDocument();
+  });
+
+  it("warns when a downgrade would disable feeds over the new limit", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview({
+      feedImpact: { newFeedLimit: 70, currentFeedCount: 73, willBeDisabledCount: 3 },
+    });
+
+    renderBilling();
+    await openChangeDialog();
+
+    expect(
+      await screen.findByText(/3 feeds over the new 70-feed limit will be disabled/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows no disable warning for a within-limit change", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    await screen.findByText(/Total due today/);
+    expect(screen.queryByText(/will be disabled/i)).not.toBeInTheDocument();
+  });
+
+  // Guard against client/backend drift: these MUST match the backend's
+  // WORKSPACE_TIER_FEED_LIMITS (services/.../shared/utils/billing.ts), which the
+  // activation webhook grants and the change-preview projects. The two live in
+  // separate bundles and can't share an import, so if this fails because the
+  // backend limits changed, update both in lockstep.
+  it("keeps the client tier feed limits in step with the backend", () => {
+    expect(TIER_FEED_LIMITS[ProductKey.Tier2]).toBe(70);
+    expect(TIER_FEED_LIMITS[ProductKey.Tier3]).toBe(140);
   });
 });

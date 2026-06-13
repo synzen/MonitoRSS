@@ -1,4 +1,4 @@
-import { InferType, object, string } from "yup";
+import { InferType, number, object, string } from "yup";
 import fetchRest from "@/utils/fetchRest";
 
 export interface WorkspaceBillingPricesInput {
@@ -15,9 +15,20 @@ const WorkspaceBillingChangePreviewOutputSchema = object({
       }).required(),
       subtotalFormatted: string().required(),
       taxFormatted: string().required(),
+      // Raw minor-unit credit alongside the formatted string so the dialog can
+      // tell a real credit from a "0" and hide the row when there is none.
+      credit: string().required(),
       creditFormatted: string().required(),
       grandTotalFormatted: string().required(),
     }).required(),
+    // Projected effect of the change on the workspace's feeds. Optional so
+    // self-hosted/billing-disabled responses (and older payloads) still
+    // validate; the confirmation dialog only warns when present.
+    feedImpact: object({
+      newFeedLimit: number().required(),
+      currentFeedCount: number().required(),
+      willBeDisabledCount: number().required(),
+    }).optional(),
   }).required(),
 }).required();
 

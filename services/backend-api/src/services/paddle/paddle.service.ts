@@ -13,6 +13,7 @@ import type {
   PaddleProductResponse,
   PaddleSubscriptionResponse,
 } from "./types";
+import type { PaddleSubscriptionUpdatePaymentMethodResponse } from "../supporter-subscriptions/types";
 
 export class PaddleService {
   private readonly PADDLE_URL?: string;
@@ -98,6 +99,20 @@ export class PaddleService {
     return this.executeApiCall<PaddleSubscriptionResponse>(
       `/subscriptions/${subscriptionId}`,
     );
+  }
+
+  // Mints a Paddle transaction the client opens in the update-payment-method
+  // overlay. Shared by the personal and workspace billing services so the
+  // endpoint/response shape lives in one place.
+  async getUpdatePaymentMethodTransaction(
+    subscriptionId: string,
+  ): Promise<{ id: string }> {
+    const response =
+      await this.executeApiCall<PaddleSubscriptionUpdatePaymentMethodResponse>(
+        `/subscriptions/${subscriptionId}/update-payment-method-transaction`,
+      );
+
+    return { id: response.data.id };
   }
 
   // The one shape Paddle accepts for changing a subscription's item set

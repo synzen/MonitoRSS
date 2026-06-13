@@ -16,7 +16,6 @@ import {
 import type {
   PaddlePricingPreviewResponse,
   PaddleSubscriptionPreviewResponse,
-  PaddleSubscriptionUpdatePaymentMethodResponse,
 } from "./types";
 
 export interface SupporterSubscriptionsServiceDeps {
@@ -442,14 +441,9 @@ export class SupporterSubscriptionsService {
       );
     }
 
-    const response =
-      await this.deps.paddleService.executeApiCall<PaddleSubscriptionUpdatePaymentMethodResponse>(
-        `/subscriptions/${existingSubscriptionId}/update-payment-method-transaction`,
-      );
-
-    return {
-      id: response.data.id,
-    };
+    return this.deps.paddleService.getUpdatePaymentMethodTransaction(
+      existingSubscriptionId,
+    );
   }
 
   private async pollForSubscriptionChange({

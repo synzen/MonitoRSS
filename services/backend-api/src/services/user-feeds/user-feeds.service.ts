@@ -13,6 +13,7 @@ import {
   GetArticlesInput,
 } from "../feed-handler/types";
 import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective-refresh-rate";
+import { DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS } from "../../shared/utils/billing";
 import {
   BannedFeedException,
   FeedFetchTimeoutException,
@@ -66,11 +67,6 @@ dayjs.extend(timezone);
 type NextRetryReason = "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF";
 
 const MESSAGE_BROKER_QUEUE_FEED_DELETED = "feed-deleted";
-
-const DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS = [
-  UserFeedDisabledCode.ExceededFeedLimit,
-  UserFeedDisabledCode.Manual,
-];
 
 // The only disable states a successful manual request proves recovery from.
 // Other codes (Manual, ExceededFeedLimit, ExcessivelyActive, FeedTooLarge)

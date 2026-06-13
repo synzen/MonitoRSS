@@ -1,6 +1,9 @@
 import { createHmac } from "crypto";
 import logger from "../../infra/logger";
-import { WORKSPACE_BASE_TIER_KEYS } from "../../shared/utils/billing";
+import {
+  WORKSPACE_BASE_TIER_KEYS,
+  WORKSPACE_TIER_FEED_LIMITS,
+} from "../../shared/utils/billing";
 import {
   SubscriptionProductKey,
   LegacySubscriptionProductKey,
@@ -29,13 +32,13 @@ const BENEFITS_BY_TIER: Partial<
   [SubscriptionProductKey.Tier2]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
-    maxUserFeeds: 70,
+    maxUserFeeds: WORKSPACE_TIER_FEED_LIMITS[SubscriptionProductKey.Tier2],
     refreshRateSeconds: 120,
   },
   [SubscriptionProductKey.Tier3]: {
     allowWebhooks: true,
     dailyArticleLimit: 1000,
-    maxUserFeeds: 140,
+    maxUserFeeds: WORKSPACE_TIER_FEED_LIMITS[SubscriptionProductKey.Tier3],
     refreshRateSeconds: 120,
   },
   [LegacySubscriptionProductKey.Tier1Legacy]: {
