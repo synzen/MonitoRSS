@@ -78,6 +78,10 @@ export enum ApiErrorCode {
   WORKSPACE_NEVER_ACTIVATED_EXISTS = "WORKSPACE_NEVER_ACTIVATED_EXISTS",
   WORKSPACE_BILLING_NOT_CONFIGURED = "WORKSPACE_BILLING_NOT_CONFIGURED",
   WORKSPACE_INVALID_TIER = "WORKSPACE_INVALID_TIER",
+  WORKSPACE_PERSONAL_PLAN_NOT_CONVERTIBLE = "WORKSPACE_PERSONAL_PLAN_NOT_CONVERTIBLE",
+  WORKSPACE_ALREADY_SUBSCRIBED = "WORKSPACE_ALREADY_SUBSCRIBED",
+  WORKSPACE_INVALID_CONVERSION_FEEDS = "WORKSPACE_INVALID_CONVERSION_FEEDS",
+  WORKSPACE_CONVERSION_IN_PROGRESS = "WORKSPACE_CONVERSION_IN_PROGRESS",
   WORKSPACE_INSUFFICIENT_ROLE = "WORKSPACE_INSUFFICIENT_ROLE",
   WORKSPACE_SLUG_TAKEN = "WORKSPACE_SLUG_TAKEN",
   WORKSPACE_SLUG_RESERVED = "WORKSPACE_SLUG_RESERVED",
@@ -201,6 +205,14 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     "Workspace billing is not available on this instance",
   WORKSPACE_INVALID_TIER:
     "This plan is not available for workspaces",
+  WORKSPACE_PERSONAL_PLAN_NOT_CONVERTIBLE:
+    "A Tier 2 or Tier 3 personal plan is required to convert into a workspace plan",
+  WORKSPACE_ALREADY_SUBSCRIBED:
+    "This workspace already has its own subscription",
+  WORKSPACE_INVALID_CONVERSION_FEEDS:
+    "The selected feeds must all be your own personal feeds and fit within the plan's feed limit",
+  WORKSPACE_CONVERSION_IN_PROGRESS:
+    "A conversion is already in progress for this workspace. Please wait for it to finish",
   WORKSPACE_INSUFFICIENT_ROLE:
     "You do not have permission to perform this action in this workspace",
   WORKSPACE_SLUG_TAKEN: "This URL slug is already taken by another workspace",

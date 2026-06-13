@@ -96,7 +96,9 @@ test.describe("Paddle workspace roundtrip", () => {
     await expect(page.getByRole("heading", { name: "Current plan" })).toBeVisible({
       timeout: 120_000,
     });
-    await expect(page.getByText("Tier 2", { exact: true })).toBeVisible();
+    // The current-plan view renders the tier name both as a card heading and in
+    // the "Current plan" badge region, so scope to the heading to stay unique.
+    await expect(page.getByRole("heading", { name: "Tier 2" })).toBeVisible();
 
     // The dormant CTA is gone and a feed can be added through the UI.
     await page.getByRole("button", { name: /Switch team/ }).click();

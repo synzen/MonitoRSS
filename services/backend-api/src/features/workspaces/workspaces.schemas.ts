@@ -79,6 +79,17 @@ export type WorkspaceBillingUpdateBody = Static<
   typeof WorkspaceBillingUpdateBodySchema
 >;
 
+export const WorkspaceBillingConvertBodySchema = Type.Object(
+  {
+    feedIds: Type.Array(Type.String({ minLength: 1 })),
+  },
+  { additionalProperties: false },
+);
+
+export type WorkspaceBillingConvertBody = Static<
+  typeof WorkspaceBillingConvertBodySchema
+>;
+
 // userId accepts "@me" so a member can leave via DELETE .../members/@me; the
 // handler resolves it to the caller's own id before routing by identity.
 export const WorkspaceMemberParamsSchema = Type.Object(

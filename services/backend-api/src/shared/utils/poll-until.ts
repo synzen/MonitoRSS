@@ -5,10 +5,13 @@ export async function pollUntil<T>(
   fetchValue: () => Promise<T>,
   check: (value: T) => boolean,
   description: string,
+  options?: { intervalMs?: number; maxTries?: number },
 ): Promise<void> {
+  const intervalMs = options?.intervalMs ?? 1000;
+  const maxTries = options?.maxTries ?? 50;
   let tries = 0;
 
-  await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+  await new Promise<void>((resolve) => setTimeout(resolve, intervalMs));
 
   while (true) {
     const value = await fetchValue();
@@ -17,11 +20,11 @@ export async function pollUntil<T>(
       break;
     }
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+    await new Promise<void>((resolve) => setTimeout(resolve, intervalMs));
 
     tries++;
 
-    if (tries > 50) {
+    if (tries > maxTries) {
       throw new Error(`Timed out polling for ${description}`);
     }
   }

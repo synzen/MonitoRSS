@@ -63,6 +63,7 @@ describe("Workspace invite controls API", () => {
       workspaceRepository: ctx.container.workspaceRepository,
       userRepository: ctx.container.userRepository,
       userFeedRepository: ctx.container.userFeedRepository,
+      supporterRepository: ctx.container.supporterRepository,
       emailVerificationService: new EmailVerificationService({
         config: ctx.container.config,
         smtpTransport: fakeTransport,

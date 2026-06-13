@@ -533,6 +533,15 @@ export interface IUserFeedRepository {
   areAllValidIds(ids: string[]): boolean;
   countByIds(ids: string[]): Promise<number>;
   findByIds(ids: string[]): Promise<IUserFeed[]>;
+  // Re-parents the given feeds to a workspace (personal → workspace
+  // conversion). Returns the number of feeds moved.
+  reparentFeedsToWorkspace(
+    feedIds: string[],
+    workspaceId: string,
+  ): Promise<number>;
+  // Re-parents the given feeds back to a discord user as personal feeds
+  // (conversion rollback). Returns the number of feeds moved.
+  reparentFeedsToPersonal(feedIds: string[]): Promise<number>;
   findEligibleFeedsForDisable(
     feedIds: string[],
     eligibleDisabledCodes: UserFeedDisabledCode[],

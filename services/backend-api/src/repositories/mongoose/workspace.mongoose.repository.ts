@@ -65,6 +65,13 @@ export interface IWorkspace {
   // absence marks a "never-activated" workspace for the creation cap; lapsing
   // never clears it (activation permanently exits never-activated).
   firstActivatedAt?: Date | null;
+  // Transient marker set while a personal-subscription conversion is in flight
+  // (feeds re-parented, Paddle custom_data patched, webhook not yet landed).
+  // While set and fresh, feed-limit enforcement skips its disable step so the
+  // just-moved feeds aren't disabled before the subscription record exists.
+  // Cleared by the webhook that records the subscription; a TTL expires a stale
+  // one so a dropped webhook can never exempt the workspace indefinitely.
+  conversionInProgressAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -165,6 +172,7 @@ const WorkspaceSchema = new Schema(
     externalCredentials: { type: [WorkspaceExternalCredentialSchema] },
     paddleCustomer: { type: PaddleCustomerSchema },
     firstActivatedAt: { type: Date },
+    conversionInProgressAt: { type: Date },
   },
   { timestamps: true },
 );
@@ -263,6 +271,7 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
       createdByUserId: this.objectIdToString(doc.createdByUserId),
       paddleCustomer: (doc.paddleCustomer ?? null) as IPaddleCustomer | null,
       firstActivatedAt: doc.firstActivatedAt ?? null,
+      conversionInProgressAt: doc.conversionInProgressAt ?? null,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
@@ -279,7 +288,13 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
       return null;
     }
 
-    const update: Record<string, unknown> = { $set: { paddleCustomer } };
+    const update: Record<string, unknown> = {
+      $set: { paddleCustomer },
+      // The authoritative subscription write ends any in-flight conversion
+      // guard, so the guard's lifetime is bounded by the webhook, not by the
+      // converting caller staying online.
+      $unset: { conversionInProgressAt: "" },
+    };
 
     // First benefit-granting write permanently exits "never-activated" ($min
     // keeps the earliest stamp on later renewals/updates).
@@ -337,6 +352,79 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     return doc
       ? this.toEntity(doc as WorkspaceDoc & { _id: Types.ObjectId })
       : null;
+  }
+
+  // Atomically acquires the in-flight conversion guard. Returns true if this
+  // caller set it, false if a live guard (set within `liveSinceMs`) was already
+  // held — so two concurrent conversions can't both proceed. The webhook that
+  // records the subscription clears it; a TTL in enforcement expires a stale
+  // one. The filter treats a guard older than `liveSinceMs` as expired and lets
+  // a fresh conversion reclaim it.
+  async setConversionInProgress(
+    workspaceId: string,
+    liveSinceMs: number,
+  ): Promise<boolean> {
+    if (!Types.ObjectId.isValid(workspaceId)) {
+      return false;
+    }
+
+    const result = await this.workspaceModel.findOneAndUpdate(
+      {
+        _id: this.stringToObjectId(workspaceId),
+        $or: [
+          { conversionInProgressAt: { $exists: false } },
+          { conversionInProgressAt: null },
+          {
+            conversionInProgressAt: {
+              $lt: new Date(Date.now() - liveSinceMs),
+            },
+          },
+        ],
+      },
+      { $set: { conversionInProgressAt: new Date() } },
+    );
+
+    return result !== null;
+  }
+
+  // Bulk guard check for the feed-limit sweep: returns, in one query, which of
+  // the given workspaces have a live (set within `liveSinceMs`) conversion
+  // guard. Replaces a per-workspace findById fan-out on a hot path where the
+  // guard is set on essentially no workspaces at any moment.
+  async findWorkspaceIdsWithLiveConversionGuard(
+    workspaceIds: string[],
+    liveSinceMs: number,
+  ): Promise<string[]> {
+    const objectIds = workspaceIds
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => this.stringToObjectId(id));
+
+    if (!objectIds.length) {
+      return [];
+    }
+
+    const docs = await this.workspaceModel
+      .find({
+        _id: { $in: objectIds },
+        conversionInProgressAt: { $gte: new Date(Date.now() - liveSinceMs) },
+      })
+      .select("_id")
+      .lean();
+
+    return docs.map((doc) => this.objectIdToString(doc._id));
+  }
+
+  // Clears the guard. Used on conversion rollback (the webhook clears it on the
+  // happy path as part of recording the subscription).
+  async clearConversionInProgress(workspaceId: string): Promise<void> {
+    if (!Types.ObjectId.isValid(workspaceId)) {
+      return;
+    }
+
+    await this.workspaceModel.findByIdAndUpdate(
+      this.stringToObjectId(workspaceId),
+      { $unset: { conversionInProgressAt: "" } },
+    );
   }
 
   // Deletes the workspace and its dependent rows (memberships, invites) in

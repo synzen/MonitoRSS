@@ -1,6 +1,7 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import { randomUUID } from "node:crypto";
+import { Types } from "mongoose";
 import {
   createAppTestContext,
   type AppTestContext,
@@ -13,6 +14,7 @@ import {
   createWebhookSignature,
   createSubscriptionEvent,
   createMockPaddleApi,
+  buildPaddleCustomer,
 } from "../../helpers/paddle-fixtures";
 import { SubscriptionProductKey } from "../../../src/repositories/shared/enums";
 
@@ -367,6 +369,106 @@ describe("Workspace subscription webhook routing", { concurrency: true }, () => 
       await user.fetch(`/api/v1/workspaces/${slug}`),
     );
     assert.strictEqual(detail.result.subscription, null);
+  });
+
+  it("re-homes a converted subscription off the personal supporter record onto the workspace", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(ctx, discordUserId);
+    const { user, workspaceId, slug } =
+      await createWorkspaceAsUser(discordUserId);
+
+    const subscriptionId = generateTestId();
+    const customerId = generateTestId();
+
+    // The subscription currently belongs to the user's personal supporter
+    // record (the pre-conversion state).
+    await ctx.container.supporterRepository.upsertPaddleCustomer(
+      discordUserId,
+      buildPaddleCustomer({
+        subscriptionId,
+        customerId,
+        productKey: SubscriptionProductKey.Tier2,
+      }),
+    );
+
+    const productId = generateTestId();
+    registerPaddleProduct(productId, SubscriptionProductKey.Tier2);
+    registerPaddleCustomer(customerId, `${discordUserId}@example.com`);
+
+    // The conversion re-points custom_data and Paddle re-emits the update now
+    // carrying the workspace id.
+    const event = createSubscriptionEvent("subscription.updated", {
+      id: subscriptionId,
+      customer_id: customerId,
+      custom_data: { workspaceId },
+      items: [
+        {
+          quantity: 1,
+          price: { id: generateTestId(), product_id: productId },
+        },
+      ],
+    });
+    assert.strictEqual((await postWebhook(event)).status, 200);
+
+    // The workspace now holds the subscription...
+    const detail = await readJson<WorkspaceDetailResult>(
+      await user.fetch(`/api/v1/workspaces/${slug}`),
+    );
+    assert.strictEqual(
+      detail.result.subscription?.productKey,
+      SubscriptionProductKey.Tier2,
+    );
+
+    // ...and the personal supporter record no longer does (one subscription,
+    // one owner).
+    const supporter =
+      await ctx.container.supporterRepository.findById(discordUserId);
+    assert.strictEqual(
+      supporter?.paddleCustomer?.subscription ?? null,
+      null,
+      "personal supporter record must no longer hold the converted subscription",
+    );
+  });
+
+  it("clears an in-flight conversion guard when it records the subscription", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(ctx, discordUserId);
+    const { workspaceId } = await createWorkspaceAsUser(discordUserId);
+
+    // Simulate a conversion in flight: the guard is set, awaiting the webhook.
+    await ctx.connection
+      .collection("workspaces")
+      .updateOne(
+        { _id: new Types.ObjectId(workspaceId) },
+        { $set: { conversionInProgressAt: new Date() } },
+      );
+
+    const productId = generateTestId();
+    const customerId = generateTestId();
+    registerPaddleProduct(productId, SubscriptionProductKey.Tier2);
+    registerPaddleCustomer(customerId, `${discordUserId}@example.com`);
+
+    const event = createSubscriptionEvent("subscription.updated", {
+      id: generateTestId(),
+      customer_id: customerId,
+      custom_data: { workspaceId },
+      items: [
+        {
+          quantity: 1,
+          price: { id: generateTestId(), product_id: productId },
+        },
+      ],
+    });
+    assert.strictEqual((await postWebhook(event)).status, 200);
+
+    const workspaceDoc = await ctx.connection
+      .collection("workspaces")
+      .findOne({ _id: new Types.ObjectId(workspaceId) });
+    assert.strictEqual(
+      workspaceDoc?.conversionInProgressAt ?? null,
+      null,
+      "the authoritative subscription write must clear the conversion guard",
+    );
   });
 
   it("acks a workspace-routed event whose workspace no longer exists without creating any record", async () => {

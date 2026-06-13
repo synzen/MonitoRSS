@@ -1,4 +1,4 @@
-import type { Connection } from "mongoose";
+import { Types, type Connection } from "mongoose";
 import type { Config } from "../../src/config";
 import type {
   IUserFeed,
@@ -7,6 +7,7 @@ import type {
 import type { IDiscordChannelConnection } from "../../src/repositories/interfaces/feed-connection.types";
 import { UserFeedMongooseRepository } from "../../src/repositories/mongoose/user-feed.mongoose.repository";
 import { UserMongooseRepository } from "../../src/repositories/mongoose/user.mongoose.repository";
+import { SupporterMongooseRepository } from "../../src/repositories/mongoose/supporter.mongoose.repository";
 import { WorkspaceMongooseRepository } from "../../src/repositories/mongoose/workspace.mongoose.repository";
 import { WorkspacesService } from "../../src/features/workspaces/workspaces.service";
 import { RedditApiService } from "../../src/services/reddit-api/reddit-api.service";
@@ -112,6 +113,7 @@ export interface TestContext {
     ownerDiscordUserId: string,
     status?: UserFeedManagerStatus,
   ): Promise<IUserFeed>;
+  setConversionInProgress(workspaceId: string, at?: Date): Promise<void>;
   setDisabledCode(id: string, code: UserFeedDisabledCode | null): Promise<void>;
   setFields(id: string, fields: Record<string, unknown>): Promise<void>;
   setCreatedAt(id: string, date: Date): Promise<void>;
@@ -151,6 +153,9 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         workspaceRepository,
         userRepository,
         userFeedRepository,
+        supporterRepository: new SupporterMongooseRepository(
+          testContext.connection,
+        ),
         emailVerificationService: {} as EmailVerificationService,
         redditApiService: new RedditApiService({} as Config),
       });
@@ -338,6 +343,18 @@ export function createUserFeedsHarness(): UserFeedsHarness {
               invites: [{ discordUserId, status }],
             },
           });
+        },
+
+        async setConversionInProgress(workspaceId, at) {
+          // Seed the guard directly so tests can stamp an arbitrary (e.g.
+          // expired) timestamp; the production setter is an atomic
+          // compare-and-set that only stamps "now".
+          await testContext.connection
+            .collection("workspaces")
+            .updateOne(
+              { _id: new Types.ObjectId(workspaceId) },
+              { $set: { conversionInProgressAt: at ?? new Date() } },
+            );
         },
 
         async setDisabledCode(id, code) {

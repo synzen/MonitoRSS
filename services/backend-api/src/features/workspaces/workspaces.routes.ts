@@ -19,6 +19,7 @@ import {
   CreateWorkspaceBodySchema,
   CreateWorkspaceInviteBodySchema,
   UpdateWorkspaceBodySchema,
+  WorkspaceBillingConvertBodySchema,
   WorkspaceBillingUpdateBodySchema,
   WorkspaceInviteParamsSchema,
   WorkspaceMemberParamsSchema,
@@ -30,6 +31,7 @@ import {
   updateWorkspaceBillingHandler,
   cancelWorkspaceBillingHandler,
   resumeWorkspaceBillingHandler,
+  convertWorkspaceBillingHandler,
 } from "./workspace-billing.handlers";
 import { WORKSPACE_BILLING_EXCEPTION_ERROR_CODES } from "./workspace-billing.exception-codes";
 
@@ -148,6 +150,20 @@ export async function workspacesRoutes(app: FastifyInstance): Promise<void> {
     handler: withExceptionFilter(
       WORKSPACE_BILLING_EXCEPTION_ERROR_CODES,
       resumeWorkspaceBillingHandler,
+    ),
+  });
+
+  // Converts the owner's personal subscription into this workspace, bringing
+  // the selected personal feeds along.
+  app.post("/:workspaceSlug/billing/convert", {
+    preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
+    schema: {
+      params: WorkspaceSlugParamsSchema,
+      body: WorkspaceBillingConvertBodySchema,
+    },
+    handler: withExceptionFilter(
+      WORKSPACE_BILLING_EXCEPTION_ERROR_CODES,
+      convertWorkspaceBillingHandler,
     ),
   });
 

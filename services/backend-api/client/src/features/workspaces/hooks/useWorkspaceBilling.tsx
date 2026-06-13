@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import {
   cancelWorkspaceBilling,
+  convertWorkspaceBilling,
   previewWorkspaceBillingChange,
   resumeWorkspaceBilling,
   updateWorkspaceBilling,
@@ -47,6 +48,17 @@ export const useResumeWorkspaceBilling = () => {
 
   return useMutation<void, ApiAdapterError, { workspaceSlug: string }>(
     ({ workspaceSlug }) => resumeWorkspaceBilling(workspaceSlug),
+    {
+      onSuccess: invalidate,
+    },
+  );
+};
+
+export const useConvertWorkspaceBilling = () => {
+  const invalidate = useInvalidateWorkspace();
+
+  return useMutation<void, ApiAdapterError, { workspaceSlug: string; feedIds: string[] }>(
+    (input) => convertWorkspaceBilling(input),
     {
       onSuccess: invalidate,
     },

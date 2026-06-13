@@ -272,9 +272,26 @@ export class PaddleWebhooksService {
         return;
       }
 
+      // A subscription id belongs to either a workspace or a personal
+      // supporter record, never both. When a personal subscription is
+      // converted to a workspace, its custom_data is re-pointed and Paddle
+      // re-emits this event with the workspace id; the same subscription is
+      // still on the personal supporter record, so drop it there. (No-op for
+      // the common case where the workspace subscribed directly.)
+      const formerSupporter =
+        await this.deps.supporterRepository.nullifySubscriptionBySubscriptionId(
+          event.data.id,
+        );
+
       // Every subscription transition (activation, tier change, quantity
       // change) funnels into the single workspace enforcement entry point.
       await this.enforceWorkspaceFeedLimits(workspaceId);
+
+      // The former personal owner drops to the free allowance; enforce so any
+      // feeds they left behind are disabled.
+      if (formerSupporter?.id) {
+        await this.enforceFeedLimits(formerSupporter.id);
+      }
 
       return;
     }

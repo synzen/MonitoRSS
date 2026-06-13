@@ -44,6 +44,7 @@ The theme maps role → color in exactly one place.
 | link / accent-tinted text or icon | `color="text.link"` | `blue.fg`, `blue.300` |
 | error / success / warning text or icon | `color="text.error"` / `text.success"` / `text.warning"` | `red.fg`, `red.500`, `green.400`, `orange.500` |
 | the app accent on a control | `colorPalette="brand"` / `<PrimaryActionButton>` | `colorPalette="blue"` |
+| a destructive action button (delete / discard / cancel) | `<DestructiveActionButton>` | `<Button variant="outline" colorPalette="red">` |
 | an explicit accent color (stripe, accent border) | `color="brandSolid"` / `var(--app-accent-solid)` | `blue.solid`, `blue.500` |
 | secondary / subtle / primary neutral text | `fg.muted` / `fg.subtle` / `fg` | `gray.400`, `whiteAlpha.700` |
 | a card / dialog / raised surface | `<Panel>` / `bg.panel` / `bg.subtle` | `gray.800`, `gray.700` |
@@ -79,6 +80,15 @@ sweep is wrong because two cases look identical in source but differ in meaning:
   `colorPalette="red"`/`"green"`/`"orange"`, because danger/success/warning carry fixed meaning that
   does **not** rebrand. Promoting them to a role would be over-abstraction. The *shade* still comes
   from a per-palette semantic slot (`red.subtle`, `green.solid`), never a raw `red.500`.
+
+> **Status OUTLINE buttons are a trap — use `<DestructiveActionButton>`, not `<Button variant="outline"
+> colorPalette="red">`.** The button recipe (§4) pins **every** outline button's border to the neutral
+> `controlBorder`. So a status-colored *outline* button gets a red (or green) *label* inside a *grey*
+> box — the label and border disagree, and it reads as broken. `<DestructiveActionButton>` is the
+> Tier-2 component for this (the destructive analogue of `<PrimaryActionButton>`): it overrides the
+> border to `colorPalette.fg` so the edge matches the label. The loud final confirm inside a dialog
+> stays an explicit `<Button variant="solid" colorPalette="red">` (solid sets its own fill, no outline
+> border to clash). A fitness function (below) bans the broken outline/bare-status `<Button>` form.
 
 > **Why the global default is NOT flipped to `brand`.** Reaching zero `colorPalette` props by setting
 > the global default to blue/brand is tempting and wrong: the global default is `gray`, and many
@@ -217,6 +227,12 @@ treatment: a **fourth fitness function** — an ESLint rule banning raw palette 
   and the tree is clean of it. If a future raw ref is ever sanctioned (it shouldn't be), prefer an
   inline `// eslint-disable-next-line no-restricted-syntax` with a reason over re-adding a file to the
   exclusion list.
+- **Same rule, two more selectors — the status-outline-button guard (§2).** A `<Button>` with a status
+  `colorPalette` (`red`/`green`/`orange`) and either `variant="outline"` or no variant (which defaults
+  to outline) is flagged, because the recipe pins its border to the neutral `controlBorder` → a colored
+  label in a grey box. The message points to `<DestructiveActionButton>` (or `variant="solid"` for a
+  loud confirm). `DestructiveActionButton` itself carries the only sanctioned inline disable, since it
+  *is* the fixed implementation. Proven to fire; the tree is otherwise clean of it.
 
 > **Correction to this ADR's own premise.** The body above speaks of "~700 raw refs across ~110
 > files" — that was the migration's *starting* state. By the time the ratchet was wired, the migration

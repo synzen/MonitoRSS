@@ -13,6 +13,9 @@ import { forwardRef } from "react";
  * `<Button colorPalette="red">` still fits.
  */
 export const DestructiveActionButton = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => (
+  // This IS the sanctioned status-outline button: it fixes the grey-box bug the lint rule guards
+  // against by overriding borderColor to the label hue, so the rule is disabled for this one element.
+  // eslint-disable-next-line no-restricted-syntax
   <Button
     ref={ref}
     variant="outline"

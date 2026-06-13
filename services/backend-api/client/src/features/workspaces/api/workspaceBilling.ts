@@ -70,3 +70,19 @@ export const resumeWorkspaceBilling = async (workspaceSlug: string): Promise<voi
     skipJsonParse: true,
   });
 };
+
+export const convertWorkspaceBilling = async ({
+  workspaceSlug,
+  feedIds,
+}: {
+  workspaceSlug: string;
+  feedIds: string[];
+}): Promise<void> => {
+  await fetchRest(`/api/v1/workspaces/${workspaceSlug}/billing/convert`, {
+    requestOptions: {
+      method: "POST",
+      body: JSON.stringify({ feedIds }),
+    },
+    skipJsonParse: true,
+  });
+};

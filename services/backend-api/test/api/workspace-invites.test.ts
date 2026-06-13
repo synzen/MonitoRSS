@@ -82,6 +82,7 @@ describe("Workspace invites API", () => {
       workspaceRepository: ctx.container.workspaceRepository,
       userRepository: ctx.container.userRepository,
       userFeedRepository: ctx.container.userFeedRepository,
+      supporterRepository: ctx.container.supporterRepository,
       emailVerificationService,
       redditApiService: ctx.container.redditApiService,
     });
@@ -304,6 +305,7 @@ describe("Workspace invites API", () => {
       workspaceRepository: ctx.container.workspaceRepository,
       userRepository: ctx.container.userRepository,
       userFeedRepository: ctx.container.userFeedRepository,
+      supporterRepository: ctx.container.supporterRepository,
       emailVerificationService: new EmailVerificationService({
         config: ctx.container.config,
         smtpTransport: null,

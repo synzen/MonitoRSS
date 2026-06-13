@@ -180,6 +180,36 @@ export async function seedWorkspaceFeedsInDb(input: {
 }
 
 /**
+ * Seed personal feeds (no workspace) directly with distinct titles. The convert
+ * flow needs the owner to hold several personal feeds that are individually
+ * identifiable in the UI; the curated/paste add-flow names every feed after the
+ * source RSS title, so two added feeds would be indistinguishable. Seeding lets
+ * each carry its own title while the conversion itself (re-parenting + Paddle
+ * patch + webhook) still runs for real and is asserted through the UI.
+ */
+export async function seedPersonalFeedsInDb(input: {
+  userId: ObjectId;
+  discordUserId: string;
+  feeds: Array<{ title: string; url: string }>;
+}): Promise<void> {
+  await withDb(async (db) => {
+    const base = Date.now() - input.feeds.length * 60_000;
+
+    await db.collection("userfeeds").insertMany(
+      input.feeds.map((feed, index) => ({
+        title: feed.title,
+        url: feed.url,
+        healthStatus: "OK",
+        connections: { discordChannels: [] },
+        user: { id: input.userId, discordUserId: input.discordUserId },
+        createdAt: new Date(base + index * 60_000),
+        updatedAt: new Date(base + index * 60_000),
+      })),
+    );
+  });
+}
+
+/**
  * Resolve a Discord user id to the user's Mongo `_id`. Membership rows bind to the
  * Mongo user id (Discord-agnostic), so seeding the authenticated test user as a
  * member needs their `_id`, not their Discord id. The user document is created on

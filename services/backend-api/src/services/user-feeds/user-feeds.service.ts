@@ -1641,7 +1641,22 @@ export class UserFeedsService {
       () => maxFeeds,
     );
 
-    await this.applyWorkspaceLimitResults(results);
+    // While a conversion is in flight, the just-moved feeds outnumber the
+    // not-yet-recorded subscription's limit; suppress disabling so they aren't
+    // flicked off in the window before the subscription record lands. Enabling
+    // and refresh/webhook normalization still run.
+    const guarded =
+      await this.deps.workspacesService.isConversionInProgress(workspaceId);
+
+    await this.applyWorkspaceLimitResults(
+      guarded ? this.withoutDisables(results) : results,
+    );
+  }
+
+  private withoutDisables(
+    results: WorkspaceLimitEnforcementOutcome[],
+  ): WorkspaceLimitEnforcementOutcome[] {
+    return results.map((r) => ({ ...r, feedIdsToDisable: [] }));
   }
 
   async enforceAllWorkspaceFeedLimits(): Promise<void> {
@@ -1694,7 +1709,18 @@ export class UserFeedsService {
       (workspaceId) => benefitsByWorkspaceId.get(workspaceId)?.maxFeeds,
     );
 
-    await this.applyWorkspaceLimitResults(results);
+    // A fresh conversion guard suppresses disabling on the sweep too; an
+    // expired guard is reconciled normally (the sweep is the guard's backstop).
+    // Resolved in one query rather than a per-workspace read.
+    const guarded = await this.deps.workspacesService.conversionInProgressWorkspaceIds(
+      results.map((r) => r.workspaceId),
+    );
+
+    await this.applyWorkspaceLimitResults(
+      results.map((r) =>
+        guarded.has(r.workspaceId) ? this.withoutDisables([r])[0]! : r,
+      ),
+    );
   }
 
   private async collectFeedIdsForWorkspaceLimits(

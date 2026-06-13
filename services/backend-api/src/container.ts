@@ -285,14 +285,9 @@ export function createContainer(deps: {
     workspaceRepository,
     userRepository,
     userFeedRepository,
+    supporterRepository,
     emailVerificationService,
     redditApiService,
-  });
-
-  const workspaceBillingService = new WorkspaceBillingService({
-    config: deps.config,
-    workspaceRepository,
-    paddleService,
   });
 
   const notificationsService = new NotificationsService({
@@ -326,6 +321,15 @@ export function createContainer(deps: {
     config: deps.config,
     usersService,
     workspacesService,
+  });
+
+  const workspaceBillingService = new WorkspaceBillingService({
+    config: deps.config,
+    workspaceRepository,
+    paddleService,
+    supporterRepository,
+    userFeedRepository,
+    feedCredentialsService,
   });
 
   const feedConnectionsDiscordChannelsService =

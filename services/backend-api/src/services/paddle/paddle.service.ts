@@ -132,6 +132,19 @@ export class PaddleService {
     );
   }
 
+  // Re-points a live subscription's custom_data in place (no cancel/recreate,
+  // no proration). Paddle re-emits subscription.updated in response, which the
+  // webhook handler routes by the new custom_data.
+  async updateSubscriptionCustomData(
+    subscriptionId: string,
+    customData: Record<string, unknown>,
+  ): Promise<void> {
+    await this.executeApiCall(`/subscriptions/${subscriptionId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ custom_data: customData }),
+    });
+  }
+
   async executeApiCall<T>(endpoint: string, data?: RequestInit): Promise<T> {
     if (!this.PADDLE_KEY || !this.PADDLE_URL) {
       throw new Error(

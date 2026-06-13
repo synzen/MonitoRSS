@@ -8,7 +8,6 @@ import {
   TooManyRequestsError,
 } from "../../infra/error-handler";
 import { isReservedSlug, isValidSlug } from "../../shared/utils/slugify";
-import { isBillingEnabled } from "../../shared/utils/billing";
 import { normalizeEmail } from "../../shared/utils/normalizeEmail";
 import { reconcileFeedLookupKeys } from "../../shared/utils/reconcile-feed-lookup-keys";
 import dayjs from "dayjs";
@@ -20,6 +19,12 @@ import { decrypt } from "../../shared/utils/decrypt";
 import logger from "../../infra/logger";
 import type { UserMongooseRepository } from "../../repositories/mongoose/user.mongoose.repository";
 import type { IUserFeedRepository } from "../../repositories/interfaces/user-feed.types";
+import type { ISupporterRepository } from "../../repositories/interfaces/supporter.types";
+import {
+  isBillingEnabled,
+  resolvePersonalConvertibility,
+  CONVERSION_GUARD_TTL_MS,
+} from "../../shared/utils/billing";
 import type { RedditApiService } from "../../services/reddit-api/reddit-api.service";
 import {
   UserExternalCredentialStatus,
@@ -58,6 +63,18 @@ const INVITE_RESEND_COOLDOWN_MS = 60 * 1000;
 // (mass invite spam) and the unbounded growth of the invite collection.
 const MAX_PENDING_INVITES_PER_WORKSPACE = 25;
 
+// A conversion guard is "live" while it is set and within its TTL. Past the
+// TTL it is treated as expired, so a dropped webhook can't exempt a workspace
+// indefinitely (the webhook clears it on the happy path). Co-located with the
+// TTL so any reader applies the same expiry rule.
+function isConversionGuardLive(startedAt?: Date | null): boolean {
+  if (!startedAt) {
+    return false;
+  }
+
+  return Date.now() - startedAt.getTime() < CONVERSION_GUARD_TTL_MS;
+}
+
 // owner ⊇ admin. changeSettings/manageMembers/leaveWorkspace are open to every
 // member (all are ≥ admin); removeMember/deleteWorkspace/transferOwnership are
 // owner-gated. The function is the seam: handlers call can(), never compare role
@@ -74,12 +91,17 @@ type WorkspaceAction =
   | "transferOwnership"
   | "manageBilling";
 
+export type ConversionEligibility =
+  | { eligible: true; feedLimit: number }
+  | { eligible: false; ineligibleReason: "PERSONAL_PLAN_INELIGIBLE" };
+
 export interface WorkspacesServiceDeps {
   config: Config;
   smtpTransport: SmtpTransport;
   workspaceRepository: WorkspaceMongooseRepository;
   userRepository: UserMongooseRepository;
   userFeedRepository: IUserFeedRepository;
+  supporterRepository: ISupporterRepository;
   emailVerificationService: EmailVerificationService;
   redditApiService: RedditApiService;
 }
@@ -109,6 +131,70 @@ export class WorkspacesService {
       default:
         return false;
     }
+  }
+
+  // True while a personal→workspace conversion is in flight for this workspace
+  // (feeds re-parented, subscription webhook not yet landed). Feed-limit
+  // enforcement reads this to skip its disable step so just-moved feeds aren't
+  // disabled before the subscription record exists. A guard older than the TTL
+  // is treated as expired, so a dropped webhook can't exempt a workspace
+  // indefinitely (the webhook clears it on the happy path).
+  async isConversionInProgress(workspaceId: string): Promise<boolean> {
+    const workspace = await this.deps.workspaceRepository.findById(workspaceId);
+
+    return isConversionGuardLive(workspace?.conversionInProgressAt);
+  }
+
+  // Bulk counterpart of isConversionInProgress for the feed-limit sweep:
+  // resolves which of many workspaces are mid-conversion in a single query
+  // instead of one read per workspace.
+  async conversionInProgressWorkspaceIds(
+    workspaceIds: string[],
+  ): Promise<Set<string>> {
+    const guarded =
+      await this.deps.workspaceRepository.findWorkspaceIdsWithLiveConversionGuard(
+        workspaceIds,
+        CONVERSION_GUARD_TTL_MS,
+      );
+
+    return new Set(guarded);
+  }
+
+  // The conversion read model for the workspace detail response. Null when
+  // conversion is not on offer (not the owner, the workspace is already funded,
+  // or billing is not configured), so the client shows nothing. When the owner
+  // could convert but their personal plan is Free / Tier 1, eligible is false
+  // with a reason so the client can point them at buying a team plan directly.
+  async getConversionEligibility(
+    workspace: IWorkspace,
+    role: WorkspaceRole,
+    discordUserId: string,
+  ): Promise<ConversionEligibility | null> {
+    if (
+      !isBillingEnabled(this.deps.config) ||
+      !this.can("manageBilling", role) ||
+      workspace.paddleCustomer?.subscription ||
+      // A conversion is already in flight (guard set, subscription not yet
+      // recorded by the webhook). Don't re-offer the affordance — that would
+      // let a second tab or a refresh fire a duplicate conversion.
+      isConversionGuardLive(workspace.conversionInProgressAt)
+    ) {
+      return null;
+    }
+
+    const supporter = await this.deps.supporterRepository.findById(discordUserId);
+    const convertible = resolvePersonalConvertibility(
+      supporter?.paddleCustomer?.subscription,
+    );
+
+    if (!convertible) {
+      return { eligible: false, ineligibleReason: "PERSONAL_PLAN_INELIGIBLE" };
+    }
+
+    // feedLimit is the plan that would move, add-on capacity already folded
+    // into maxUserFeeds by the webhook handler — the same number the conversion
+    // endpoint caps on (both derive it from resolvePersonalConvertibility).
+    return { eligible: true, feedLimit: convertible.feedLimit };
   }
 
   async createWorkspace(

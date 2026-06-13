@@ -2,13 +2,18 @@ import type { Page } from "@playwright/test";
 import { test, expect } from "../../fixtures/test-fixtures";
 import { ensureFreeSubscriptionState } from "../../helpers/paddle-cleanup";
 
-const TIER_3_MONTHLY_PRICE_ID = "pri_01hbkj52vhxyayd7pdcezjvmmm";
+// Annual (not monthly) Tier 3: adding feeds immediately after subscribing
+// prorates the addon over the time remaining in the billing period. On a
+// monthly plan that prorated charge can fall under Paddle's $0.70 minimum and
+// the preview is rejected; over a full year it comfortably clears the minimum,
+// so the change preview is deterministic.
+const TIER_3_ANNUAL_PRICE_ID = "pri_01hbkj5t7qjkj6zs0febav3139";
 
 // The update flow PATCHes the real subscription in Paddle, so a simulated
 // (webhook-only) subscription is not enough — subscribe through the real
 // sandbox checkout first.
 async function subscribeToTier3(page: Page) {
-  await page.goto(`/paddle-checkout/${TIER_3_MONTHLY_PRICE_ID}`);
+  await page.goto(`/paddle-checkout/${TIER_3_ANNUAL_PRICE_ID}`);
 
   const checkoutHeading = page.getByRole("heading", {
     name: "Checkout Summary",
@@ -103,7 +108,8 @@ async function expectSubscriptionText(page: Page, pattern: RegExp) {
 
 test.describe("Paddle additional feeds quantity", () => {
   test.beforeEach(async ({ page }, testInfo) => {
-    testInfo.setTimeout(120_000);
+    // Cleanup waits on a sandbox cancellation webhook reaching free state.
+    testInfo.setTimeout(200_000);
     await ensureFreeSubscriptionState(page);
   });
 
@@ -199,7 +205,7 @@ test.describe("Paddle additional feeds quantity", () => {
 
     await expectSubscriptionText(
       page,
-      /You are currently on Tier 3 \(billed every month\)/,
+      /You are currently on Tier 3 \(billed every year\)/,
     );
     await expect(page.getByText(/additional feed/)).not.toBeVisible();
   });

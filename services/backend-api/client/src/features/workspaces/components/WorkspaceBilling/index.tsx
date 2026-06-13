@@ -25,6 +25,8 @@ import dayjs from "dayjs";
 import { FaCheck, FaChevronRight } from "react-icons/fa6";
 import { Link as RouterLink } from "react-router-dom";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { DestructiveActionButton } from "@/components/DestructiveActionButton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { SettingsSection } from "@/components/SettingsSection";
@@ -42,13 +44,16 @@ import { pages, PRICE_IDS, PRODUCT_NAMES, ProductKey } from "@/constants";
 import { usePaddleContext } from "@/features/subscriptionProducts";
 import type { PricePreview } from "@/types/PricePreview";
 import { useCurrentWorkspace } from "../../contexts/CurrentWorkspaceContext";
+import type { Workspace } from "../../types";
 import {
   useWorkspace,
   useCancelWorkspaceBilling,
   useResumeWorkspaceBilling,
   useUpdateWorkspaceBilling,
+  useConvertWorkspaceBilling,
   useWorkspaceBillingChangePreview,
 } from "../../hooks";
+import { usePersonalConvertibleFeeds } from "../../hooks/usePersonalConvertibleFeeds";
 
 type BillingInterval = "month" | "year";
 
@@ -79,6 +84,72 @@ const TIER_FEATURES: Record<WorkspaceTier, string[]> = {
     "2 minute refresh rate",
   ],
 };
+
+// A single tier card, shared by the activation grid and the change-plan
+// section so a subscribed owner deciding whether to switch sees the same
+// price/limit/feature scent they had when first choosing a plan. The footer
+// slot carries the context-specific action (subscribe, switch, or the
+// non-interactive "current plan" state).
+const TierCard = ({
+  tier,
+  price,
+  interval,
+  recommended,
+  current,
+  feedLimitDelta,
+  footer,
+}: {
+  tier: WorkspaceTier;
+  price: string | undefined;
+  interval: BillingInterval;
+  recommended?: boolean;
+  current?: boolean;
+  feedLimitDelta?: number;
+  footer: React.ReactNode;
+}) => (
+  <Stack
+    role="listitem"
+    borderWidth="1px"
+    borderColor={recommended || current ? "brandSolid" : "border.emphasized"}
+    borderRadius="md"
+    padding={4}
+    gap={3}
+  >
+    <HStack justifyContent="space-between">
+      <Heading as="h3" size="sm">
+        {PRODUCT_NAMES[tier]}
+      </Heading>
+      {current && <Badge colorPalette="brand">Current plan</Badge>}
+      {!current && recommended && <Badge colorPalette="brand">Recommended</Badge>}
+    </HStack>
+    <Box>
+      <Text fontSize="2xl" fontWeight="bold">
+        {price ?? <Spinner size="sm" />}
+        <Text as="span" fontSize="sm" fontWeight="normal" color="fg.muted">
+          {" "}
+          / {interval}
+        </Text>
+      </Text>
+      <Text fontSize="sm" color="fg.muted">
+        {TIER_FEED_LIMITS[tier]} feeds
+        {feedLimitDelta ? ` (${feedLimitDelta > 0 ? "+" : ""}${feedLimitDelta})` : ""}
+      </Text>
+    </Box>
+    <Stack as="ul" listStyleType="none" gap={2} flexGrow={1}>
+      {TIER_FEATURES[tier].map((feature) => (
+        <HStack key={feature} as="li" alignItems="flex-start">
+          <Flex bg="brandSolid" rounded="full" p={1} mt={1} aria-hidden>
+            <Icon width={3} height={3} color="brand.contrast">
+              <FaCheck />
+            </Icon>
+          </Flex>
+          <Text fontSize="sm">{feature}</Text>
+        </HStack>
+      ))}
+    </Stack>
+    {footer}
+  </Stack>
+);
 
 interface PendingChange {
   prices: Array<{ priceId: string; quantity: number }>;
@@ -173,6 +244,186 @@ const ChangeWorkspacePlanDialog = ({
 // the "activate this team" pitch. Session-scoped, keyed per workspace.
 const pendingActivationKey = (workspaceId: string) => `workspacePendingActivation:${workspaceId}`;
 
+// Entry point for moving the owner's personal subscription into this team. Only
+// rendered for an unsubscribed team; the parent gates it further on the
+// server-computed `conversion` read model (owner + convertible personal plan).
+const ConvertPersonalPlanSection = ({
+  conversion,
+  onStartConvert,
+}: {
+  conversion: NonNullable<Workspace["conversion"]>;
+  onStartConvert: () => void;
+}) => {
+  if (!conversion.eligible) {
+    return (
+      <Text fontSize="sm" color="fg.muted">
+        Your personal plan can&apos;t fund a team. Buy a team plan directly using one of the options
+        below.
+      </Text>
+    );
+  }
+
+  // A distinct "shortcut lane" sitting above the purchase flow: subtle surface
+  // (not a tier card) so it reads as an alternative route, with a secondary
+  // outline button that does not compete with the tier cards' primary CTAs.
+  return (
+    <Flex
+      maxW="40rem"
+      bg="bg.subtle"
+      borderWidth="1px"
+      borderColor="border.emphasized"
+      borderRadius="md"
+      padding={4}
+      gap={4}
+      direction={{ base: "column", md: "row" }}
+      alignItems={{ base: "stretch", md: "center" }}
+      justifyContent="space-between"
+    >
+      <Stack gap={1}>
+        <Text fontWeight="medium">Already paying for a personal plan?</Text>
+        <Text fontSize="sm" color="fg.muted">
+          Move it to this team and bring your feeds, instead of paying for two plans.
+        </Text>
+      </Stack>
+      <Button variant="outline" onClick={onStartConvert} flexShrink={0}>
+        Move my plan to this team
+      </Button>
+    </Flex>
+  );
+};
+
+// The selective feed-move dialog. Lists the owner's personal feeds (all
+// selected by default — the safe move that disables nothing), shows a live
+// "Selected N / M slots" counter against the moving plan's limit, marks
+// deselected feeds as ones that will be disabled, and confirms by typing the
+// team slug.
+const ConvertPersonalPlanDialog = ({
+  open,
+  onClose,
+  onConverted,
+  workspaceSlug,
+  feedLimit,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConverted: () => void;
+  workspaceSlug: string;
+  feedLimit: number;
+}) => {
+  const {
+    feeds,
+    status,
+    error: feedsError,
+  } = usePersonalConvertibleFeeds({
+    enabled: open,
+  });
+  const convertMutation = useConvertWorkspaceBilling();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [initialized, setInitialized] = useState(false);
+
+  // Default to bringing everything once the feeds load (nothing left behind,
+  // nothing disabled).
+  useEffect(() => {
+    if (open && status === "success" && !initialized) {
+      setSelectedIds(new Set(feeds.map((f) => f.id)));
+      setInitialized(true);
+    }
+
+    if (!open && initialized) {
+      setInitialized(false);
+    }
+  }, [open, status, initialized, feeds]);
+
+  const toggle = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+
+      return next;
+    });
+  };
+
+  const bringAll = () => setSelectedIds(new Set(feeds.map((f) => f.id)));
+
+  const selectedCount = selectedIds.size;
+  const overCapacity = selectedCount > feedLimit;
+  const leftBehindCount = feeds.length - selectedCount;
+
+  const onConfirm = async () => {
+    await convertMutation.mutateAsync({
+      workspaceSlug,
+      feedIds: [...selectedIds],
+    });
+    onConverted();
+    onClose();
+  };
+
+  return (
+    <ConfirmModal
+      open={open}
+      onOpenChange={(next) => !next && onClose()}
+      title="Move your personal plan to this team"
+      okText="Move plan"
+      confirmationPhrase={workspaceSlug}
+      okDisabled={overCapacity}
+      error={
+        convertMutation.error?.message ??
+        (overCapacity
+          ? `You can move at most ${feedLimit} feeds. Deselect ${selectedCount - feedLimit} to continue.`
+          : undefined)
+      }
+      onConfirm={onConfirm}
+      descriptionNode={
+        <Stack gap={4}>
+          <Text>
+            Your personal plan becomes {workspaceSlug}&apos;s plan, and the feeds you select move
+            with it. You will no longer have a personal plan. This is not easily reversible.
+          </Text>
+          <HStack justifyContent="space-between">
+            <Text fontWeight="medium">{`Selected ${selectedCount} / ${feedLimit} team slots`}</Text>
+            <Button size="xs" variant="outline" onClick={bringAll} disabled={status !== "success"}>
+              Bring all
+            </Button>
+          </HStack>
+          {leftBehindCount > 0 && (
+            <Text fontSize="sm" color="text.warning">
+              {leftBehindCount} feed{leftBehindCount === 1 ? "" : "s"} left behind will be disabled
+              (over the free limit).
+            </Text>
+          )}
+          {status === "loading" && <Spinner size="sm" />}
+          {status === "error" && (
+            <InlineErrorAlert title="Could not load your feeds" description={feedsError?.message} />
+          )}
+          <Stack as="ul" listStyleType="none" gap={2} maxH="20rem" overflowY="auto">
+            {feeds.map((feed) => {
+              const isSelected = selectedIds.has(feed.id);
+
+              return (
+                <HStack as="li" key={feed.id} justifyContent="space-between" gap={3}>
+                  <Checkbox checked={isSelected} onCheckedChange={() => toggle(feed.id)}>
+                    {feed.title}
+                  </Checkbox>
+                  {!isSelected && (
+                    <Text fontSize="xs" color="text.warning" flexShrink={0}>
+                      Will be disabled
+                    </Text>
+                  )}
+                </HStack>
+              );
+            })}
+          </Stack>
+        </Stack>
+      }
+    />
+  );
+};
+
 export const WorkspaceBilling = () => {
   const { isConfigured, isLoaded, openCheckout, getPricePreview } = usePaddleContext();
   const currentWorkspace = useCurrentWorkspace();
@@ -193,9 +444,11 @@ export const WorkspaceBilling = () => {
       window.sessionStorage.getItem(pendingActivationKey(currentWorkspace.id)) !== null,
   );
   const [additionalFeedsInput, setAdditionalFeedsInput] = useState<number | null>(null);
+  const [isConvertOpen, setIsConvertOpen] = useState(false);
 
   const isOwner = currentWorkspace?.myRole === "owner";
   const subscription = workspace?.subscription ?? null;
+  const conversion = workspace?.conversion ?? null;
   const workspaceSlug = currentWorkspace?.slug ?? "";
 
   // Tier prices power both the activation cards and the change-plan section.
@@ -361,32 +614,51 @@ export const WorkspaceBilling = () => {
           {isOwner && !subscription.cancellationDate && (
             <SettingsSection
               title="Change plan"
-              description="Switch this team to a different tier."
+              description="Compare tiers and switch this team to a different one. You will see the prorated cost before confirming."
             >
-              <HStack gap={3} flexWrap="wrap">
-                {WORKSPACE_TIERS.map((tier) => (
-                  <Button
-                    key={tier}
-                    variant="outline"
-                    disabled={tier === currentTier}
-                    onClick={() =>
-                      setPendingChange({
-                        prices: [
-                          {
-                            priceId: PRICE_IDS[tier][subscriptionInterval],
-                            quantity: 1,
-                          },
-                        ],
-                        description: `Switch this team to ${PRODUCT_NAMES[tier]} (${TIER_FEED_LIMITS[tier]} feeds).`,
-                      })
-                    }
-                  >
-                    {tier === currentTier
-                      ? `${PRODUCT_NAMES[tier]} (current plan)`
-                      : `Switch to ${PRODUCT_NAMES[tier]}`}
-                  </Button>
-                ))}
-              </HStack>
+              <SimpleGrid columns={{ base: 1, md: 2 }} gap={4} maxW="40rem" role="list">
+                {WORKSPACE_TIERS.map((tier) => {
+                  const isCurrent = tier === currentTier;
+                  const feedLimitDelta = currentTier
+                    ? TIER_FEED_LIMITS[tier] - TIER_FEED_LIMITS[currentTier]
+                    : 0;
+
+                  return (
+                    <TierCard
+                      key={tier}
+                      tier={tier}
+                      price={getTierPrice(tier, subscriptionInterval)}
+                      interval={subscriptionInterval}
+                      current={isCurrent}
+                      feedLimitDelta={isCurrent ? 0 : feedLimitDelta}
+                      footer={
+                        isCurrent ? (
+                          <Text fontSize="sm" color="fg.muted">
+                            This is your team&apos;s current plan.
+                          </Text>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              setPendingChange({
+                                prices: [
+                                  {
+                                    priceId: PRICE_IDS[tier][subscriptionInterval],
+                                    quantity: 1,
+                                  },
+                                ],
+                                description: `Switch this team to ${PRODUCT_NAMES[tier]} (${TIER_FEED_LIMITS[tier]} feeds).`,
+                              })
+                            }
+                          >
+                            Switch to {PRODUCT_NAMES[tier]}
+                          </Button>
+                        )
+                      }
+                    />
+                  );
+                })}
+              </SimpleGrid>
             </SettingsSection>
           )}
           {isOwner && !subscription.cancellationDate && currentTier === ProductKey.Tier3 && (
@@ -451,11 +723,7 @@ export const WorkspaceBilling = () => {
                   colorScheme="red"
                   error={cancelMutation.error?.message}
                   onConfirm={() => cancelMutation.mutateAsync({ workspaceSlug })}
-                  trigger={
-                    <Button variant="outline" colorPalette="red">
-                      Cancel subscription
-                    </Button>
-                  }
+                  trigger={<DestructiveActionButton>Cancel subscription</DestructiveActionButton>}
                 />
               </Box>
             </SettingsSection>
@@ -477,6 +745,12 @@ export const WorkspaceBilling = () => {
             </Text>
           ) : (
             <Stack gap={4}>
+              {conversion && (
+                <ConvertPersonalPlanSection
+                  conversion={conversion}
+                  onStartConvert={() => setIsConvertOpen(true)}
+                />
+              )}
               <HStack gap={3} flexWrap="wrap">
                 {intervalToggle}
                 <Badge colorPalette="green">Save 15% with a yearly plan!</Badge>
@@ -488,50 +762,20 @@ export const WorkspaceBilling = () => {
                 />
               )}
               <SimpleGrid columns={{ base: 1, md: 2 }} gap={4} maxW="40rem" role="list">
-                {WORKSPACE_TIERS.map((tier) => {
-                  const isRecommended = tier === ProductKey.Tier2;
-
-                  return (
-                    <Stack
-                      key={tier}
-                      role="listitem"
-                      borderWidth="1px"
-                      borderColor={isRecommended ? "brandSolid" : "border.emphasized"}
-                      borderRadius="md"
-                      padding={4}
-                      gap={3}
-                    >
-                      <HStack justifyContent="space-between">
-                        <Heading as="h3" size="sm">
-                          {PRODUCT_NAMES[tier]}
-                        </Heading>
-                        {isRecommended && <Badge colorPalette="brand">Recommended</Badge>}
-                      </HStack>
-                      <Text fontSize="2xl" fontWeight="bold">
-                        {getTierPrice(tier, interval) ?? <Spinner size="sm" />}
-                        <Text as="span" fontSize="sm" fontWeight="normal" color="fg.muted">
-                          {" "}
-                          / {interval}
-                        </Text>
-                      </Text>
-                      <Stack as="ul" listStyleType="none" gap={2} flexGrow={1}>
-                        {TIER_FEATURES[tier].map((feature) => (
-                          <HStack key={feature} as="li" alignItems="flex-start">
-                            <Flex bg="brandSolid" rounded="full" p={1} mt={1} aria-hidden>
-                              <Icon width={3} height={3} color="brand.contrast">
-                                <FaCheck />
-                              </Icon>
-                            </Flex>
-                            <Text fontSize="sm">{feature}</Text>
-                          </HStack>
-                        ))}
-                      </Stack>
+                {WORKSPACE_TIERS.map((tier) => (
+                  <TierCard
+                    key={tier}
+                    tier={tier}
+                    price={getTierPrice(tier, interval)}
+                    interval={interval}
+                    recommended={tier === ProductKey.Tier2}
+                    footer={
                       <PrimaryActionButton onClick={() => subscribe(tier)}>
                         Subscribe to {PRODUCT_NAMES[tier]}
                       </PrimaryActionButton>
-                    </Stack>
-                  );
-                })}
+                    }
+                  />
+                ))}
               </SimpleGrid>
               <Stack gap={1} maxW="40rem">
                 <Text fontSize="sm" color="fg.muted">
@@ -564,6 +808,21 @@ export const WorkspaceBilling = () => {
         pendingChange={pendingChange}
         onClose={() => setPendingChange(null)}
       />
+      {conversion?.eligible && (
+        <ConvertPersonalPlanDialog
+          open={isConvertOpen}
+          onClose={() => setIsConvertOpen(false)}
+          onConverted={() => {
+            // The subscription re-homes onto the workspace by webhook (the
+            // endpoint polls for it), so show the same "confirming" state as a
+            // fresh activation while the workspace read catches up.
+            window.sessionStorage.setItem(pendingActivationKey(currentWorkspace.id), "1");
+            setAwaitingActivation(true);
+          }}
+          workspaceSlug={workspaceSlug}
+          feedLimit={conversion.feedLimit ?? 0}
+        />
+      )}
     </Stack>
   );
 };

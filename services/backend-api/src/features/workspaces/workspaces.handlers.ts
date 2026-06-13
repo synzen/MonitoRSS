@@ -58,6 +58,15 @@ export async function getWorkspaceHandler(
       request.userId as string,
     );
 
+  const viewer = await userRepository.findById(request.userId as string);
+  const conversion = viewer?.discordUserId
+    ? await workspacesService.getConversionEligibility(
+        workspace,
+        role,
+        viewer.discordUserId,
+      )
+    : null;
+
   // The workspace's feed limit (hardcoded today; workspace Paddle subscription
   // later). Surfaced so the client can render the workspace's feed-limit bar.
   const { maxFeeds } = await supportersService.getWorkspaceBenefits(
@@ -114,6 +123,7 @@ export async function getWorkspaceHandler(
       maxFeeds,
       redditConnection,
       subscription,
+      conversion,
     },
   });
 }

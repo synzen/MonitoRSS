@@ -34,6 +34,13 @@ interface Props {
    * easy (e.g. deleting a resource that affects other people).
    */
   confirmationPhrase?: string;
+  /**
+   * When true, the confirm button is disabled regardless of the confirmation
+   * phrase. Use to gate confirmation on a caller-owned validity check (e.g. a
+   * selection that exceeds a limit) so an invalid action is blocked client-side
+   * rather than round-tripping to a server rejection.
+   */
+  okDisabled?: boolean;
 }
 
 export const ConfirmModal = ({
@@ -51,6 +58,7 @@ export const ConfirmModal = ({
   open: controlledOpen,
   onOpenChange,
   confirmationPhrase,
+  okDisabled,
 }: Props) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [phraseInput, setPhraseInput] = useState("");
@@ -137,7 +145,7 @@ export const ConfirmModal = ({
           </Button>
           <SafeLoadingButton
             loading={loading}
-            disabled={phraseMismatch}
+            disabled={phraseMismatch || okDisabled}
             colorPalette={colorScheme}
             variant="solid"
             onClick={onClickConfirm}

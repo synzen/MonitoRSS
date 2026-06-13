@@ -1090,6 +1090,35 @@ export class UserFeedMongooseRepository
     return result.modifiedCount;
   }
 
+  async reparentFeedsToWorkspace(
+    feedIds: string[],
+    workspaceId: string,
+  ): Promise<number> {
+    if (feedIds.length === 0) {
+      return 0;
+    }
+
+    const result = await this.model.updateMany(
+      { _id: { $in: feedIds.map((id) => this.stringToObjectId(id)) } },
+      { $set: { workspaceId: this.stringToObjectId(workspaceId) } },
+    );
+
+    return result.modifiedCount;
+  }
+
+  async reparentFeedsToPersonal(feedIds: string[]): Promise<number> {
+    if (feedIds.length === 0) {
+      return 0;
+    }
+
+    const result = await this.model.updateMany(
+      { _id: { $in: feedIds.map((id) => this.stringToObjectId(id)) } },
+      { $unset: { workspaceId: "" } },
+    );
+
+    return result.modifiedCount;
+  }
+
   areAllValidIds(ids: string[]): boolean {
     return ids.every((id) => Types.ObjectId.isValid(id));
   }

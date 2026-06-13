@@ -52,6 +52,21 @@ export const WorkspaceSchema = object({
     .nullable()
     .optional()
     .default(undefined),
+  // Whether the viewer can convert their personal subscription into this
+  // workspace (detail endpoint only). `null` when conversion is not on offer
+  // (not the owner, the workspace is already funded, or billing is disabled).
+  // `eligible: false` with a reason marks an owner whose personal plan is too
+  // low (Free / Tier 1) to fund a workspace.
+  conversion: object({
+    eligible: boolean().required(),
+    // Present when eligible: the moving plan's feed limit (base tier + carried
+    // add-ons), used for the "Selected N / M slots" capacity counter.
+    feedLimit: number().optional(),
+    ineligibleReason: string().oneOf(["PERSONAL_PLAN_INELIGIBLE"]).optional(),
+  })
+    .nullable()
+    .optional()
+    .default(undefined),
 }).required();
 
 export type Workspace = InferType<typeof WorkspaceSchema>;

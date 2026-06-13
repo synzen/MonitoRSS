@@ -234,6 +234,56 @@ describe("Workspace feed limit enforcement", () => {
     });
   });
 
+  // While a personal→workspace conversion is in flight, the feeds have already
+  // been re-parented to the workspace but the subscription record hasn't landed
+  // yet (it arrives by webhook). A transient guard suppresses the disable step
+  // so the just-moved feeds aren't flicked off in that window; a stale guard
+  // must not exempt a workspace forever.
+  describe("conversion-in-progress guard", () => {
+    it("does not disable over-limit workspace feeds while a fresh guard is set", async () => {
+      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const workspace = await ctx.createWorkspace();
+
+      const feedA = await ctx.createWorkspaceFeed(workspace.id);
+      const feedB = await ctx.createWorkspaceFeed(workspace.id);
+      await ctx.setCreatedAt(feedA.id, new Date("2020-01-01"));
+      await ctx.setCreatedAt(feedB.id, new Date("2021-01-01"));
+
+      await ctx.setConversionInProgress(workspace.id);
+
+      await ctx.service.enforceWorkspaceFeedLimit(workspace.id);
+
+      assert.strictEqual((await ctx.findById(feedA.id))?.disabledCode, undefined);
+      assert.strictEqual((await ctx.findById(feedB.id))?.disabledCode, undefined);
+      assert.strictEqual(ctx.workspaceDigests.length, 0);
+    });
+
+    it("disables over-limit workspace feeds when the guard has expired (TTL)", async () => {
+      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const workspace = await ctx.createWorkspace();
+
+      const oldest = await ctx.createWorkspaceFeed(workspace.id);
+      const newest = await ctx.createWorkspaceFeed(workspace.id);
+      await ctx.setCreatedAt(oldest.id, new Date("2020-01-01"));
+      await ctx.setCreatedAt(newest.id, new Date("2021-01-01"));
+
+      // A guard far older than the TTL: a dropped webhook must never exempt a
+      // workspace from enforcement indefinitely.
+      await ctx.setConversionInProgress(
+        workspace.id,
+        new Date(Date.now() - 60 * 60 * 1000),
+      );
+
+      await ctx.service.enforceWorkspaceFeedLimit(workspace.id);
+
+      assert.strictEqual(
+        (await ctx.findById(oldest.id))?.disabledCode,
+        UserFeedDisabledCode.ExceededFeedLimit,
+      );
+      assert.strictEqual((await ctx.findById(newest.id))?.disabledCode, undefined);
+    });
+  });
+
   describe("enforceAllWorkspaceFeedLimits", () => {
     it("enforces every workspace independently and digests per workspace", async () => {
       const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
@@ -279,6 +329,41 @@ describe("Workspace feed limit enforcement", () => {
         ctx.workspaceDigests.filter((d) => d.workspaceId === workspaceB.id)
           .length,
         0,
+      );
+    });
+
+    it("skips disabling for a fresh-guarded workspace but reconciles an expired-guard one", async () => {
+      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const fresh = await ctx.createWorkspace();
+      const expired = await ctx.createWorkspace();
+
+      const freshA = await ctx.createWorkspaceFeed(fresh.id);
+      const freshB = await ctx.createWorkspaceFeed(fresh.id);
+      const expiredA = await ctx.createWorkspaceFeed(expired.id);
+      const expiredB = await ctx.createWorkspaceFeed(expired.id);
+      await ctx.setCreatedAt(expiredA.id, new Date("2020-01-01"));
+      await ctx.setCreatedAt(expiredB.id, new Date("2021-01-01"));
+
+      await ctx.setConversionInProgress(fresh.id);
+      await ctx.setConversionInProgress(
+        expired.id,
+        new Date(Date.now() - 60 * 60 * 1000),
+      );
+
+      await ctx.service.enforceAllWorkspaceFeedLimits();
+
+      // Fresh guard: both feeds survive the sweep.
+      assert.strictEqual((await ctx.findById(freshA.id))?.disabledCode, undefined);
+      assert.strictEqual((await ctx.findById(freshB.id))?.disabledCode, undefined);
+
+      // Expired guard: the sweep reconciles it normally (oldest disabled).
+      assert.strictEqual(
+        (await ctx.findById(expiredA.id))?.disabledCode,
+        UserFeedDisabledCode.ExceededFeedLimit,
+      );
+      assert.strictEqual(
+        (await ctx.findById(expiredB.id))?.disabledCode,
+        undefined,
       );
     });
   });

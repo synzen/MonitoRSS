@@ -2,7 +2,10 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import { ApiErrorCode, ForbiddenError } from "../../infra/error-handler";
 import type { IWorkspace } from "../../repositories/mongoose/workspace.mongoose.repository";
 import type { WorkspaceSlugParams } from "./workspaces.schemas";
-import type { WorkspaceBillingUpdateBody } from "./workspaces.schemas";
+import type {
+  WorkspaceBillingConvertBody,
+  WorkspaceBillingUpdateBody,
+} from "./workspaces.schemas";
 
 // Owner-only resolution shared by every mutating billing endpoint. Non-members
 // fall out of the member lookup as 404 (no workspace-existence leak); admins
@@ -81,6 +84,31 @@ export async function resumeWorkspaceBillingHandler(
   const { workspaceBillingService } = request.container;
 
   await workspaceBillingService.resumeSubscription(workspace);
+
+  return reply.status(204).send();
+}
+
+export async function convertWorkspaceBillingHandler(
+  request: FastifyRequest<{
+    Params: WorkspaceSlugParams;
+    Body: WorkspaceBillingConvertBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const workspace = await resolveWorkspaceForBilling(request);
+  const { workspaceBillingService, userRepository } = request.container;
+
+  const caller = await userRepository.findById(request.userId as string);
+
+  if (!caller?.discordUserId) {
+    throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+  }
+
+  await workspaceBillingService.convertPersonalSubscriptionToWorkspace(
+    workspace,
+    caller.discordUserId,
+    request.body.feedIds,
+  );
 
   return reply.status(204).send();
 }

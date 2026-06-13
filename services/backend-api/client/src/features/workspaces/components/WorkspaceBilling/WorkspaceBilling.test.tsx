@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom";
 import { render, screen, fireEvent, waitFor, act, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -13,7 +14,9 @@ import {
   useCancelWorkspaceBilling,
   useResumeWorkspaceBilling,
   useUpdateWorkspaceBilling,
+  useConvertWorkspaceBilling,
 } from "../../hooks";
+import { usePersonalConvertibleFeeds } from "../../hooks/usePersonalConvertibleFeeds";
 
 const h = vi.hoisted(() => ({
   openCheckout: vi.fn(),
@@ -21,6 +24,7 @@ const h = vi.hoisted(() => ({
   cancel: vi.fn(),
   resume: vi.fn(),
   update: vi.fn(),
+  convert: vi.fn(),
   refetchWorkspace: vi.fn(),
 }));
 
@@ -37,11 +41,16 @@ vi.mock("../../hooks", () => ({
   useCancelWorkspaceBilling: vi.fn(),
   useResumeWorkspaceBilling: vi.fn(),
   useUpdateWorkspaceBilling: vi.fn(),
+  useConvertWorkspaceBilling: vi.fn(),
   useWorkspaceBillingChangePreview: vi.fn(() => ({
     preview: undefined,
     status: "idle",
     error: null,
   })),
+}));
+
+vi.mock("../../hooks/usePersonalConvertibleFeeds", () => ({
+  usePersonalConvertibleFeeds: vi.fn(),
 }));
 
 const PRICE_PREVIEWS = [
@@ -101,9 +110,11 @@ const mockPaddle = (overrides: Record<string, unknown> = {}) => {
 const mockWorkspace = ({
   role = "owner",
   subscription = null,
+  conversion = null,
 }: {
   role?: "owner" | "admin";
   subscription?: unknown;
+  conversion?: unknown;
 }) => {
   vi.mocked(useCurrentWorkspace).mockReturnValue({
     id: "workspace-1",
@@ -120,6 +131,7 @@ const mockWorkspace = ({
       role,
       maxFeeds: 0,
       subscription,
+      conversion,
     },
     status: "success",
     error: null,
@@ -168,6 +180,15 @@ describe("WorkspaceBilling", () => {
       mutateAsync: h.update,
       status: "idle",
       error: null,
+    } as never);
+    vi.mocked(useConvertWorkspaceBilling).mockReturnValue({
+      mutateAsync: h.convert,
+      status: "idle",
+      error: null,
+    } as never);
+    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
+      feeds: [],
+      status: "success",
     } as never);
   });
 
@@ -290,5 +311,258 @@ describe("WorkspaceBilling", () => {
     const { container } = renderBilling();
 
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("offers the owner a convert entry point when their personal plan is eligible", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 70 },
+    });
+
+    renderBilling();
+
+    expect(
+      await screen.findByRole("button", { name: /move my plan to this team/i }),
+    ).toBeInTheDocument();
+  });
+
+  const personalFeed = (overrides: Record<string, unknown> = {}) => ({
+    id: "feed-1",
+    title: "My Feed",
+    url: "https://example.com/feed.xml",
+    createdAt: "2024-01-01T00:00:00.000Z",
+    healthStatus: "ok",
+    computedStatus: "ok",
+    ownedByUser: true,
+    connectionCount: 1,
+    ...overrides,
+  });
+
+  const openConvertDialog = async () => {
+    fireEvent.click(await screen.findByRole("button", { name: /move my plan to this team/i }));
+  };
+
+  it("lists the owner's personal feeds in the convert dialog with a live capacity counter", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 70 },
+    });
+    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
+      feeds: [
+        personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+        personalFeed({ id: "feed-2", title: "Beta Feed" }),
+      ],
+      status: "success",
+    } as never);
+
+    renderBilling();
+    await openConvertDialog();
+
+    expect(await screen.findByText("Alpha Feed")).toBeInTheDocument();
+    expect(screen.getByText("Beta Feed")).toBeInTheDocument();
+    // Safe default: all feeds selected → 2 of 70 slots.
+    expect(screen.getByText(/Selected 2 \/ 70 team slots/)).toBeInTheDocument();
+  });
+
+  it("marks a deselected feed as one that will be disabled", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 70 },
+    });
+    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
+      feeds: [personalFeed({ id: "feed-1", title: "Alpha Feed" })],
+      status: "success",
+    } as never);
+
+    renderBilling();
+    await openConvertDialog();
+
+    const checkbox = await screen.findByRole("checkbox", { name: /alpha feed/i });
+    await userEvent.click(checkbox);
+
+    // The per-feed inline marker (distinct from the summary line).
+    expect(await screen.findByText(/^will be disabled$/i)).toBeInTheDocument();
+  });
+
+  it("converts the selected feeds after the owner types the team slug to confirm", async () => {
+    h.convert.mockResolvedValue(undefined);
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 70 },
+    });
+    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
+      feeds: [
+        personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+        personalFeed({ id: "feed-2", title: "Beta Feed" }),
+      ],
+      status: "success",
+    } as never);
+
+    renderBilling();
+    await openConvertDialog();
+
+    // Leave Beta behind.
+    await userEvent.click(await screen.findByRole("checkbox", { name: /beta feed/i }));
+
+    const confirmButton = screen.getByRole("button", { name: /^move plan$/i });
+    // SafeLoadingButton expresses "disabled" via aria-disabled (it never drops
+    // out of the focus order), so the gate is the aria attribute, not native.
+    expect(confirmButton).toHaveAttribute("aria-disabled", "true");
+
+    fireEvent.change(screen.getByLabelText(/type "my-team" to confirm/i), {
+      target: { value: "my-team" },
+    });
+    expect(confirmButton).not.toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(confirmButton);
+
+    await waitFor(() =>
+      expect(h.convert).toHaveBeenCalledWith({
+        workspaceSlug: "my-team",
+        feedIds: ["feed-1"],
+      }),
+    );
+  });
+
+  it("surfaces an error in the convert dialog when the personal feed list fails to load", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 70 },
+    });
+    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
+      feeds: [],
+      status: "error",
+      error: { message: "Failed to load feeds" },
+    } as never);
+
+    renderBilling();
+    await openConvertDialog();
+
+    // The fetch failure must be visible, not a silently empty feed list.
+    expect(await screen.findByText(/could not load your feeds/i)).toBeInTheDocument();
+  });
+
+  it("keeps the confirm button disabled while more feeds are selected than the plan allows", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 1 },
+    });
+    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
+      feeds: [
+        personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+        personalFeed({ id: "feed-2", title: "Beta Feed" }),
+      ],
+      status: "success",
+    } as never);
+
+    renderBilling();
+    await openConvertDialog();
+
+    // Both feeds selected by default, but the plan only allows 1: over capacity.
+    expect(await screen.findByText(/Selected 2 \/ 1 team slots/)).toBeInTheDocument();
+
+    const confirmButton = screen.getByRole("button", { name: /^move plan$/i });
+
+    // Typing the slug is not enough: an over-capacity selection must stay
+    // blocked client-side instead of round-tripping to a server rejection.
+    fireEvent.change(screen.getByLabelText(/type "my-team" to confirm/i), {
+      target: { value: "my-team" },
+    });
+    expect(confirmButton).toHaveAttribute("aria-disabled", "true");
+
+    // Deselecting back to within capacity unblocks it.
+    await userEvent.click(screen.getByRole("checkbox", { name: /beta feed/i }));
+    expect(confirmButton).not.toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("shows the confirming state after a successful conversion while the webhook lands", async () => {
+    h.convert.mockResolvedValue(undefined);
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 70 },
+    });
+    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
+      feeds: [personalFeed({ id: "feed-1", title: "Alpha Feed" })],
+      status: "success",
+    } as never);
+
+    renderBilling();
+    await openConvertDialog();
+
+    fireEvent.change(await screen.findByLabelText(/type "my-team" to confirm/i), {
+      target: { value: "my-team" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^move plan$/i }));
+
+    expect(await screen.findByText(/confirming your subscription/i)).toBeInTheDocument();
+  });
+
+  it("selects every feed with Bring all after some were deselected", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 70 },
+    });
+    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
+      feeds: [
+        personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+        personalFeed({ id: "feed-2", title: "Beta Feed" }),
+      ],
+      status: "success",
+    } as never);
+
+    renderBilling();
+    await openConvertDialog();
+
+    await userEvent.click(await screen.findByRole("checkbox", { name: /alpha feed/i }));
+    expect(await screen.findByText(/Selected 1 \/ 70 team slots/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /bring all/i }));
+    expect(await screen.findByText(/Selected 2 \/ 70 team slots/)).toBeInTheDocument();
+    expect(screen.queryByText(/will be disabled/i)).not.toBeInTheDocument();
+  });
+
+  it("tells a Free/Tier 1 owner to buy a team plan directly instead of offering conversion", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: false, ineligibleReason: "PERSONAL_PLAN_INELIGIBLE" },
+    });
+
+    renderBilling();
+
+    expect(await screen.findByText(/buy a team plan directly/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /move my plan to this team/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows no conversion entry point when conversion is not on offer", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null, conversion: null });
+
+    renderBilling();
+
+    // The activation pitch still renders, but nothing about conversion.
+    await screen.findByRole("button", { name: /subscribe to tier 2/i });
+    expect(
+      screen.queryByRole("button", { name: /move my plan to this team/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/buy a team plan directly/i)).not.toBeInTheDocument();
   });
 });
