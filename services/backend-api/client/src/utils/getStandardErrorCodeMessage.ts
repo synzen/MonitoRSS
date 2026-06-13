@@ -75,6 +75,7 @@ export enum ApiErrorCode {
   WORKSPACE_INVITE_RESEND_TOO_SOON = "WORKSPACE_INVITE_RESEND_TOO_SOON",
   WORKSPACE_INVITE_LIMIT_REACHED = "WORKSPACE_INVITE_LIMIT_REACHED",
   CANNOT_REMOVE_LAST_OWNER = "CANNOT_REMOVE_LAST_OWNER",
+  WORKSPACE_TRANSFER_TARGET_INVALID = "WORKSPACE_TRANSFER_TARGET_INVALID",
   SUBSCRIPTION_ALREADY_CANCELLED = "SUBSCRIPTION_ALREADY_CANCELLED",
   WORKSPACE_BILLING_NOT_CONFIGURED = "WORKSPACE_BILLING_NOT_CONFIGURED",
   WORKSPACE_INVALID_TIER = "WORKSPACE_INVALID_TIER",
@@ -178,6 +179,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
     "This team has reached its limit of pending invitations. Revoke a pending invitation before sending another.",
   CANNOT_REMOVE_LAST_OWNER:
     "A team must have at least one owner. Transfer ownership before removing this member.",
+  WORKSPACE_TRANSFER_TARGET_INVALID:
+    "Ownership can only be transferred to an existing admin member of this team.",
   SUBSCRIPTION_ALREADY_CANCELLED:
     "This subscription has already been cancelled. Try refreshing the page to see your current plan.",
   WORKSPACE_BILLING_NOT_CONFIGURED:

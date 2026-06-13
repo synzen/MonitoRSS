@@ -322,3 +322,18 @@ export async function removeWorkspaceMemberHandler(
 
   return reply.status(200).send({ result: { ok: true } });
 }
+
+export async function transferWorkspaceOwnershipHandler(
+  request: FastifyRequest<{ Params: WorkspaceMemberParams }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { workspacesService } = request.container;
+
+  await workspacesService.transferOwnership(
+    request.params.workspaceSlug,
+    request.userId as string,
+    request.params.userId,
+  );
+
+  return reply.status(200).send({ result: { ok: true } });
+}

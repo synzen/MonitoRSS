@@ -14,6 +14,7 @@ const h = vi.hoisted(() => ({
       name: "Acme",
       slug: "acme",
       myRole: "owner" as "owner" | "admin",
+      subscription: null as null | { status: string },
     },
   },
   members: {
@@ -41,6 +42,9 @@ const h = vi.hoisted(() => ({
   resend: vi.fn(),
   resendReset: vi.fn(),
   resendError: { current: null as null | { message: string; errorCode?: string } },
+  transfer: vi.fn(),
+  transferReset: vi.fn(),
+  transferError: { current: null as null | { message: string; errorCode?: string } },
   createSuccessAlert: vi.fn(),
   navigate: vi.fn(),
 }));
@@ -59,6 +63,14 @@ vi.mock("@/features/discordUser", () => ({
   useUserMe: () => ({ data: { result: { id: h.selfUserId.current } } }),
   // Resolve the snowflake to a readable username so rows show a name, not a raw id.
   DiscordUsername: ({ userId }: { userId: string }) => <span>{`user-${userId}`}</span>,
+  // MemberRow resolves the same username for its per-row button labels, so the
+  // accessible name matches the visible username rather than the raw snowflake.
+  useDiscordUser: ({ userId }: { userId: string }) => ({
+    data: { result: { username: `user-${userId}` } },
+    status: "success",
+    error: null,
+    isFetching: false,
+  }),
 }));
 
 vi.mock("@/contexts/PageAlertContext", () => ({
@@ -95,6 +107,11 @@ vi.mock("../../hooks", () => ({
     error: h.leaveError.current,
     reset: h.leaveReset,
   }),
+  useTransferWorkspaceOwnership: () => ({
+    mutateAsync: h.transfer,
+    error: h.transferError.current,
+    reset: h.transferReset,
+  }),
 }));
 
 const renderView = () =>
@@ -109,7 +126,13 @@ const renderView = () =>
 describe("WorkspaceMembers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    h.workspace.current = { id: "ws-1", name: "Acme", slug: "acme", myRole: "owner" };
+    h.workspace.current = {
+      id: "ws-1",
+      name: "Acme",
+      slug: "acme",
+      myRole: "owner",
+      subscription: null,
+    };
     h.selfUserId.current = "self";
     h.members.current = [
       { userId: "self", role: "owner", discordUserId: "1111" },
@@ -119,9 +142,11 @@ describe("WorkspaceMembers", () => {
     h.leaveError.current = null;
     h.removeError.current = null;
     h.resendError.current = null;
+    h.transferError.current = null;
     h.resend.mockResolvedValue(undefined);
     h.leave.mockResolvedValue(undefined);
     h.removeMember.mockResolvedValue(undefined);
+    h.transfer.mockResolvedValue(undefined);
   });
 
   const pendingInvite = (overrides?: Partial<(typeof h.invites.current)[number]>) => ({
@@ -186,8 +211,24 @@ describe("WorkspaceMembers", () => {
     expect(within(otherRow).getByRole("button", { name: /^remove/i })).toBeInTheDocument();
   });
 
+  it("names the Remove control with the member's username so rows are distinguishable", () => {
+    renderView();
+
+    // Without a per-row name every Remove button reads identically as "Remove".
+    // The accessible name must carry the resolved username of the target member.
+    expect(
+      screen.getByRole("button", { name: /remove user-2222 from the team/i }),
+    ).toBeInTheDocument();
+  });
+
   it("hides the Remove-other control from an admin but keeps Leave", () => {
-    h.workspace.current = { id: "ws-1", name: "Acme", slug: "acme", myRole: "admin" };
+    h.workspace.current = {
+      id: "ws-1",
+      name: "Acme",
+      slug: "acme",
+      myRole: "admin",
+      subscription: null,
+    };
 
     renderView();
 
@@ -377,6 +418,164 @@ describe("WorkspaceMembers", () => {
         description: expect.stringContaining("Acme"),
       }),
     );
+  });
+
+  it("shows a Make owner control on an admin member for an owner", () => {
+    renderView();
+
+    const region = screen.getByRole("region", { name: "Members" });
+    const adminRow = within(region)
+      .getAllByRole("listitem")
+      .find((el) => within(el).queryByText(/admin/i)) as HTMLElement;
+    expect(
+      within(adminRow).getByRole("button", { name: /make .* the owner/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("names Make owner with the username, never the raw Discord snowflake", () => {
+    renderView();
+
+    // The visible label is "Make owner"; the accessible name must add the
+    // resolved username for row context, not the unreadable snowflake "2222".
+    expect(screen.getByRole("button", { name: "Make user-2222 the owner" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /make 2222 the owner/i })).not.toBeInTheDocument();
+  });
+
+  it("hides Make owner from a non-owner admin", () => {
+    h.workspace.current = {
+      id: "ws-1",
+      name: "Acme",
+      slug: "acme",
+      myRole: "admin",
+      subscription: null,
+    };
+
+    renderView();
+
+    const region = screen.getByRole("region", { name: "Members" });
+    expect(
+      within(region).queryByRole("button", { name: /make .* the owner/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not offer Make owner on another owner's row", () => {
+    // A second owner exists; ownership is single-owner so there is no one to
+    // transfer to among owners. Only admins are valid targets.
+    h.members.current = [
+      { userId: "self", role: "owner", discordUserId: "1111" },
+      { userId: "other", role: "owner", discordUserId: "2222" },
+    ];
+
+    renderView();
+
+    const region = screen.getByRole("region", { name: "Members" });
+    expect(
+      within(region).queryByRole("button", { name: /make .* the owner/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("transfers ownership after typing the team name, then surfaces a success alert", async () => {
+    const user = userEvent.setup();
+
+    renderView();
+
+    const region = screen.getByRole("region", { name: "Members" });
+    const adminRow = within(region)
+      .getAllByRole("listitem")
+      .find((el) => within(el).queryByText(/admin/i)) as HTMLElement;
+    await user.click(within(adminRow).getByRole("button", { name: /make .* the owner/i }));
+
+    const dialog = await screen.findByRole("alertdialog");
+    const confirmButton = within(dialog).getByRole("button", { name: /transfer ownership/i });
+    // The confirmation phrase gates the action: it stays disabled until the
+    // exact team name is typed. SafeLoadingButton disables via aria-disabled
+    // rather than the native attribute.
+    expect(confirmButton).toHaveAttribute("aria-disabled", "true");
+
+    // A wrong phrase must NOT enable the action: the gate compares the exact
+    // team name, so any other text leaves the destructive confirm disabled.
+    const phraseInput = within(dialog).getByRole("textbox");
+    await user.type(phraseInput, "not the team name");
+    expect(confirmButton).toHaveAttribute("aria-disabled", "true");
+
+    await user.clear(phraseInput);
+    await user.type(phraseInput, "Acme");
+    expect(confirmButton).not.toHaveAttribute("aria-disabled", "true");
+    await user.click(confirmButton);
+
+    await waitFor(() =>
+      expect(h.transfer).toHaveBeenCalledWith({ workspaceSlug: "acme", userId: "other" }),
+    );
+    expect(h.createSuccessAlert).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Ownership transferred" }),
+    );
+  });
+
+  it("warns about the billing tail only when the team has a subscription", async () => {
+    const user = userEvent.setup();
+    h.workspace.current = {
+      id: "ws-1",
+      name: "Acme",
+      slug: "acme",
+      myRole: "owner",
+      subscription: { status: "active" },
+    };
+
+    renderView();
+
+    const region = screen.getByRole("region", { name: "Members" });
+    const adminRow = within(region)
+      .getAllByRole("listitem")
+      .find((el) => within(el).queryByText(/admin/i)) as HTMLElement;
+    await user.click(within(adminRow).getByRole("button", { name: /make .* the owner/i }));
+
+    const dialog = await screen.findByRole("alertdialog");
+    expect(within(dialog).getByText(/keep billing your payment method/i)).toBeInTheDocument();
+  });
+
+  it("omits the billing-tail warning when the team has no subscription", async () => {
+    const user = userEvent.setup();
+
+    renderView();
+
+    const region = screen.getByRole("region", { name: "Members" });
+    const adminRow = within(region)
+      .getAllByRole("listitem")
+      .find((el) => within(el).queryByText(/admin/i)) as HTMLElement;
+    await user.click(within(adminRow).getByRole("button", { name: /make .* the owner/i }));
+
+    const dialog = await screen.findByRole("alertdialog");
+    expect(within(dialog).queryByText(/keep billing your payment method/i)).not.toBeInTheDocument();
+  });
+
+  it("shows the friendly mapped message for a coded transfer error", async () => {
+    const user = userEvent.setup();
+    h.transfer.mockRejectedValue({ errorCode: "WORKSPACE_TRANSFER_TARGET_INVALID" });
+    h.transferError.current = {
+      message: "raw server detail",
+      errorCode: "WORKSPACE_TRANSFER_TARGET_INVALID",
+    };
+
+    renderView();
+
+    const region = screen.getByRole("region", { name: "Members" });
+    const adminRow = within(region)
+      .getAllByRole("listitem")
+      .find((el) => within(el).queryByText(/admin/i)) as HTMLElement;
+    await user.click(within(adminRow).getByRole("button", { name: /make .* the owner/i }));
+
+    const dialog = await screen.findByRole("alertdialog");
+    await user.type(within(dialog).getByRole("textbox"), "Acme");
+    await user.click(within(dialog).getByRole("button", { name: /transfer ownership/i }));
+
+    await waitFor(() => expect(h.transfer).toHaveBeenCalled());
+    expect(h.createSuccessAlert).not.toHaveBeenCalled();
+    expect(
+      within(await screen.findByRole("alertdialog")).getByText(
+        /ownership can only be transferred to an existing admin/i,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/raw server detail/i)).not.toBeInTheDocument();
   });
 
   it("shows the error in the dialog and fires no success alert when removing a member fails", async () => {

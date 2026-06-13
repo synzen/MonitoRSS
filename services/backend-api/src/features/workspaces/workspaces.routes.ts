@@ -13,6 +13,7 @@ import {
   revokeWorkspaceInviteHandler,
   listWorkspaceMembersHandler,
   removeWorkspaceMemberHandler,
+  transferWorkspaceOwnershipHandler,
   disconnectWorkspaceRedditHandler,
 } from "./workspaces.handlers";
 import {
@@ -187,5 +188,14 @@ export async function workspacesRoutes(app: FastifyInstance): Promise<void> {
     preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
     schema: { params: WorkspaceMemberParamsSchema },
     handler: removeWorkspaceMemberHandler,
+  });
+
+  // Transfers the owner role to an existing admin member (owner only). A pure
+  // role swap; the workspace's billing subscription is unchanged, so the new
+  // owner updates the payment method separately if they want to pay.
+  app.post("/:workspaceSlug/members/:userId/transfer-ownership", {
+    preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
+    schema: { params: WorkspaceMemberParamsSchema },
+    handler: transferWorkspaceOwnershipHandler,
   });
 }

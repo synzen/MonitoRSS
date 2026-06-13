@@ -98,6 +98,17 @@ export class CannotRemoveLastOwnerError extends Error {
   }
 }
 
+// Thrown when an ownership transfer target is not a valid recipient: not a
+// member, not an admin, or the same user as the current owner. The service
+// maps this to WORKSPACE_TRANSFER_TARGET_INVALID.
+export class InvalidOwnershipTransferTargetError extends Error {
+  constructor() {
+    super("Ownership can only transfer to an existing admin member");
+    this.name = "InvalidOwnershipTransferTargetError";
+  }
+}
+
+
 // A workspace's connection to an external service. Mirrors the per-user
 // IUserExternalCredential shape (same status/type enums, same encrypted data
 // map) with one addition: connectedByUserId records which member's personal
@@ -770,6 +781,75 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
       });
 
       return removed;
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  // Swaps the owner role from one member to another in one transaction
+  // (mirrors removeMembership) so the workspace is never momentarily ownerless
+  // or two-owned, and a concurrent transfer cannot race past the re-read.
+  // Membership-state validation happens inside the transaction against the live
+  // state:
+  //   - the caller must still be an owner (a concurrent transfer demoted them ⇒
+  //     InvalidOwnershipTransferTargetError, since they no longer hold the role)
+  //   - the target must be a different user and a current admin member
+  // The target's verified-email gate is enforced by the caller before this runs
+  // (verifiedEmail is set-once by the OTP flow, never cleared, so it cannot go
+  // stale between that check and this commit). Promotes the target before
+  // demoting the caller so owner count never dips below one.
+  async transferOwnership(
+    workspaceId: string,
+    fromUserId: string,
+    toUserId: string,
+  ): Promise<void> {
+    const workspaceObjectId = this.stringToObjectId(workspaceId);
+    const fromObjectId = this.stringToObjectId(fromUserId);
+    const toObjectId = this.stringToObjectId(toUserId);
+    const session = await this.membershipModel.db.startSession();
+
+    try {
+      await session.withTransaction(async () => {
+        const fromMembership = await this.membershipModel
+          .findOne(
+            { workspaceId: workspaceObjectId, userId: fromObjectId },
+            null,
+            { session },
+          )
+          .lean();
+
+        if (!fromMembership || fromMembership.role !== "owner") {
+          throw new InvalidOwnershipTransferTargetError();
+        }
+
+        const toMembership = await this.membershipModel
+          .findOne(
+            { workspaceId: workspaceObjectId, userId: toObjectId },
+            null,
+            { session },
+          )
+          .lean();
+
+        if (
+          fromUserId === toUserId ||
+          !toMembership ||
+          toMembership.role !== "admin"
+        ) {
+          throw new InvalidOwnershipTransferTargetError();
+        }
+
+        await this.membershipModel.updateOne(
+          { workspaceId: workspaceObjectId, userId: toObjectId },
+          { $set: { role: "owner" } },
+          { session },
+        );
+
+        await this.membershipModel.updateOne(
+          { workspaceId: workspaceObjectId, userId: fromObjectId },
+          { $set: { role: "admin" } },
+          { session },
+        );
+      });
     } finally {
       await session.endSession();
     }

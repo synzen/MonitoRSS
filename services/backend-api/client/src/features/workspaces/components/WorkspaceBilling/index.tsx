@@ -1014,28 +1014,41 @@ export const WorkspaceBilling = () => {
             title="Current plan"
             description="The team's active subscription and its renewal schedule."
           >
-            <HStack gap={3}>
-              <Text fontWeight="bold">
-                {PRODUCT_NAMES[subscription.productKey as ProductKey] ?? subscription.productKey}
-              </Text>
-              <Badge colorPalette={subscription.cancellationDate ? "orange" : "green"}>
-                {subscription.cancellationDate ? "Cancels soon" : subscription.status}
-              </Badge>
-            </HStack>
-            {currentAddonQuantity > 0 && <Text>Additional feeds: {currentAddonQuantity}</Text>}
-            {subscription.cancellationDate ? (
-              <Text>
-                Your subscription will be canceled on{" "}
-                {dayjs(subscription.cancellationDate).format("D MMMM YYYY")}. Feeds stay active
-                until then.
-              </Text>
-            ) : (
-              subscription.nextBillDate && (
-                <Text color="fg.muted">
-                  Renews on {dayjs(subscription.nextBillDate).format("D MMMM YYYY")}.
+            {/* Plan name, capacity, and renewal status are one block of plan
+                facts, so they sit tight together; the section's larger gap is
+                reserved for separating this block from the actions below. */}
+            <Stack gap={1}>
+              <HStack gap={3}>
+                <Text fontWeight="bold">
+                  {PRODUCT_NAMES[subscription.productKey as ProductKey] ?? subscription.productKey}
                 </Text>
-              )
-            )}
+                <Badge colorPalette={subscription.cancellationDate ? "orange" : "green"}>
+                  {subscription.cancellationDate ? "Cancels soon" : subscription.status}
+                </Badge>
+              </HStack>
+              {currentTier && (
+                <Text color="fg.muted">
+                  {currentAddonQuantity > 0
+                    ? `${TIER_FEED_LIMITS[currentTier] + currentAddonQuantity} feeds (${
+                        TIER_FEED_LIMITS[currentTier]
+                      } + ${currentAddonQuantity} additional)`
+                    : `${TIER_FEED_LIMITS[currentTier]} feeds`}
+                </Text>
+              )}
+              {subscription.cancellationDate ? (
+                <Text>
+                  Your subscription will be canceled on{" "}
+                  {dayjs(subscription.cancellationDate).format("D MMMM YYYY")}. Feeds stay active
+                  until then.
+                </Text>
+              ) : (
+                subscription.nextBillDate && (
+                  <Text color="fg.muted">
+                    Renews on {dayjs(subscription.nextBillDate).format("D MMMM YYYY")}.
+                  </Text>
+                )
+              )}
+            </Stack>
             {!isOwner && <Text>Only the team owner can manage billing.</Text>}
             {isOwner && subscription.cancellationDate && (
               <Box>

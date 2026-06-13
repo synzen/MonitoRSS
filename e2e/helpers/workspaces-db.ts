@@ -265,7 +265,13 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
   selfRole: "owner" | "admin";
   // Additional members keyed by an arbitrary identity (Discord id stands in for a
   // real co-member's user document, created here so the member list can render).
-  otherMembers?: Array<{ role: "owner" | "admin"; discordUserId: string }>;
+  // Pass `verifiedEmail` to give the co-member a verified email — required for a
+  // member to be a valid ownership-transfer target.
+  otherMembers?: Array<{
+    role: "owner" | "admin";
+    discordUserId: string;
+    verifiedEmail?: string;
+  }>;
   // Pending invitations addressed to these emails, all invited by the test user.
   invitedEmails?: string[];
   // Backdates the seeded invites' lastSentAt. Defaults to now (matching a freshly
@@ -299,9 +305,16 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
 
     for (const member of input.otherMembers ?? []) {
       const memberUserId = new ObjectId();
-      await db
-        .collection("users")
-        .insertOne({ _id: memberUserId, discordUserId: member.discordUserId });
+      await db.collection("users").insertOne({
+        _id: memberUserId,
+        discordUserId: member.discordUserId,
+        ...(member.verifiedEmail
+          ? {
+              verifiedEmail: member.verifiedEmail.trim().toLowerCase(),
+              verifiedEmailVerifiedAt: now,
+            }
+          : {}),
+      });
       memberships.push({
         workspaceId,
         userId: memberUserId,

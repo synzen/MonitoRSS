@@ -23,7 +23,7 @@ import { ConfirmModal, SettingsSection } from "@/components";
 import { Field } from "@/components/ui/field";
 import { pages } from "@/constants";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
-import { DiscordUsername, useUserMe } from "@/features/discordUser";
+import { DiscordUsername, useDiscordUser, useUserMe } from "@/features/discordUser";
 import { getStandardErrorCodeMessage, ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { useCurrentWorkspace } from "../../contexts";
@@ -33,6 +33,7 @@ import {
   useRemoveWorkspaceMember,
   useResendWorkspaceInvite,
   useRevokeWorkspaceInvite,
+  useTransferWorkspaceOwnership,
   useWorkspaceInvitesForWorkspace,
   useWorkspaceMembers,
 } from "../../hooks";
@@ -130,24 +131,35 @@ const InviteForm = ({ workspaceSlug }: { workspaceSlug: string }) => {
 const MemberRow = ({
   member,
   isSelf,
-  canRemoveOthers,
+  canManageOthers,
   workspaceSlug,
 }: {
   member: WorkspaceMember;
   isSelf: boolean;
-  canRemoveOthers: boolean;
+  canManageOthers: boolean;
   workspaceSlug: string;
 }) => {
   const navigate = useNavigate();
   const { createSuccessAlert } = usePageAlertContext();
   const workspace = useCurrentWorkspace();
+  // Resolve the same username DiscordUsername shows, so each row's controls get a
+  // human-readable accessible name instead of an undifferentiated "Remove" or a
+  // raw snowflake. React Query dedupes this against the DiscordUsername fetch.
+  const { data: discordUser } = useDiscordUser({ userId: member.discordUserId });
+  const memberName = discordUser?.result.username ?? "this member";
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
   const {
     mutateAsync: removeMember,
     error: removeError,
     reset: resetRemove,
   } = useRemoveWorkspaceMember();
   const { mutateAsync: leave, error: leaveError, reset: resetLeave } = useLeaveWorkspace();
+  const {
+    mutateAsync: transferOwnership,
+    error: transferError,
+    reset: resetTransfer,
+  } = useTransferWorkspaceOwnership();
 
   const onConfirm = async () => {
     if (isSelf) {
@@ -173,8 +185,27 @@ const MemberRow = ({
     }
   };
 
+  const onConfirmTransfer = async () => {
+    await transferOwnership({ workspaceSlug, userId: member.userId });
+    createSuccessAlert({
+      title: "Ownership transferred",
+      description: workspace?.name
+        ? `This member is now the owner of ${workspace.name}. You are now an admin.`
+        : "This member is now the owner of this team. You are now an admin.",
+    });
+  };
+
   const error = isSelf ? leaveError : removeError;
-  const showAction = isSelf || canRemoveOthers;
+  const showRemove = isSelf || canManageOthers;
+  // Ownership can only be handed to another admin (never to oneself or to a
+  // co-owner). The server re-checks eligibility, including the verified-email
+  // gate the client cannot see, so this only governs whether the affordance is
+  // offered, not the authorization itself.
+  const showTransfer = !isSelf && canManageOthers && member.role === "admin";
+  // The workspace's subscription stays on the previous owner's payment method
+  // after a transfer until the new owner updates it, so warn only when there is
+  // actually a live subscription to bill.
+  const hasSubscription = !!workspace?.subscription;
 
   const onOpenChange = (open: boolean) => {
     setConfirmOpen(open);
@@ -182,6 +213,14 @@ const MemberRow = ({
     if (!open) {
       resetLeave();
       resetRemove();
+    }
+  };
+
+  const onTransferOpenChange = (open: boolean) => {
+    setTransferOpen(open);
+
+    if (!open) {
+      resetTransfer();
     }
   };
 
@@ -206,10 +245,28 @@ const MemberRow = ({
           {member.role}
         </Text>
       </Box>
-      {showAction && (
-        <DestructiveActionButton size="sm" onClick={() => setConfirmOpen(true)}>
-          {isSelf ? "Leave team" : "Remove"}
-        </DestructiveActionButton>
+      {(showRemove || showTransfer) && (
+        <HStack gap={2}>
+          {showTransfer && (
+            <Button
+              size="sm"
+              variant="outline"
+              aria-label={`Make ${memberName} the owner`}
+              onClick={() => setTransferOpen(true)}
+            >
+              Make owner
+            </Button>
+          )}
+          {showRemove && (
+            <DestructiveActionButton
+              size="sm"
+              aria-label={isSelf ? "Leave team" : `Remove ${memberName} from the team`}
+              onClick={() => setConfirmOpen(true)}
+            >
+              {isSelf ? "Leave team" : "Remove"}
+            </DestructiveActionButton>
+          )}
+        </HStack>
       )}
       <ConfirmModal
         open={confirmOpen}
@@ -225,6 +282,31 @@ const MemberRow = ({
         error={resolveErrorMessage(error)}
         onConfirm={onConfirm}
       />
+      {showTransfer && (
+        <ConfirmModal
+          open={transferOpen}
+          onOpenChange={onTransferOpenChange}
+          title="Transfer ownership?"
+          descriptionNode={
+            <Stack gap={3}>
+              <Text>
+                This member will become the owner of this team, and you will become an admin. Only
+                the owner can delete the team or manage its billing.
+              </Text>
+              {hasSubscription && (
+                <Text>
+                  This team&apos;s subscription will keep billing your payment method until the new
+                  owner updates it from the billing settings.
+                </Text>
+              )}
+            </Stack>
+          }
+          confirmationPhrase={workspace?.name}
+          okText="Transfer ownership"
+          error={resolveErrorMessage(transferError)}
+          onConfirm={onConfirmTransfer}
+        />
+      )}
     </Stack>
   );
 };
@@ -362,7 +444,7 @@ export const WorkspaceMembers = () => {
   }
 
   const selfUserId = userMe?.result.id;
-  const canRemoveOthers = workspace.myRole === "owner";
+  const canManageOthers = workspace.myRole === "owner";
 
   return (
     <SettingsSection
@@ -392,7 +474,7 @@ export const WorkspaceMembers = () => {
               key={member.userId}
               member={member}
               isSelf={!!selfUserId && member.userId === selfUserId}
-              canRemoveOthers={canRemoveOthers}
+              canManageOthers={canManageOthers}
               workspaceSlug={workspace.slug}
             />
           ))}

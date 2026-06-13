@@ -32,6 +32,7 @@ import {
 } from "../../repositories/shared/enums";
 import {
   CannotRemoveLastOwnerError,
+  InvalidOwnershipTransferTargetError,
   WorkspaceInviteExistsError,
   WorkspaceSlugTakenError,
   type IWorkspace,
@@ -46,10 +47,14 @@ import {
 import type { EmailVerificationService } from "../users/email-verification.service";
 import WORKSPACE_INVITE_TEMPLATE from "./workspace-invite.template";
 import WORKSPACE_REDDIT_CONNECTION_LOST_TEMPLATE from "./workspace-reddit-connection-lost.template";
+import WORKSPACE_OWNERSHIP_TRANSFERRED_TEMPLATE from "./workspace-ownership-transferred.template";
 
 const inviteTemplate = Handlebars.compile(WORKSPACE_INVITE_TEMPLATE);
 const redditConnectionLostTemplate = Handlebars.compile(
   WORKSPACE_REDDIT_CONNECTION_LOST_TEMPLATE,
+);
+const ownershipTransferredTemplate = Handlebars.compile(
+  WORKSPACE_OWNERSHIP_TRANSFERRED_TEMPLATE,
 );
 
 // v1 invitations grant admin only; the role is stored for forward-compatibility.
@@ -758,6 +763,106 @@ export class WorkspacesService {
     }
 
     await this.handleRedditConnectionOnMemberExit(workspace, userId);
+  }
+
+  // Transfers the owner role to an existing admin member. Owner-only
+  // (can('transferOwnership')); the actor-vs-target identity decision lives
+  // here, keeping can() a pure (action, role) function. The target must be a
+  // current admin member with a verified email — the owner is the billing
+  // payer, so proven mailbox control is required, mirroring the invite gate.
+  // The role swap itself is transactional in the repository so the workspace is
+  // never momentarily ownerless or two-owned.
+  async transferOwnership(
+    slug: string,
+    actorUserId: string,
+    targetUserId: string,
+  ): Promise<void> {
+    const { workspace, role } = await this.getWorkspaceForMemberBySlug(
+      slug,
+      actorUserId,
+    );
+
+    if (!this.can("transferOwnership", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    // Validate the target is an eligible recipient (a current admin member,
+    // never the actor) before reading their email, so a non-member userId
+    // resolves to WORKSPACE_TRANSFER_TARGET_INVALID rather than disclosing the
+    // verified-email state of an arbitrary user through the EMAIL_NOT_VERIFIED
+    // path. The repository transaction re-checks this against live state, so
+    // this pre-check is for the error-shape, not the authorization.
+    const targetMembership =
+      await this.deps.workspaceRepository.findMembershipWithWorkspace(
+        workspace.id,
+        targetUserId,
+      );
+
+    if (
+      actorUserId === targetUserId ||
+      !targetMembership ||
+      targetMembership.role !== "admin"
+    ) {
+      throw new ConflictError(ApiErrorCode.WORKSPACE_TRANSFER_TARGET_INVALID);
+    }
+
+    const targetUser = await this.deps.userRepository.findById(targetUserId);
+
+    if (!targetUser?.verifiedEmail) {
+      throw new ForbiddenError(ApiErrorCode.EMAIL_NOT_VERIFIED);
+    }
+
+    try {
+      await this.deps.workspaceRepository.transferOwnership(
+        workspace.id,
+        actorUserId,
+        targetUserId,
+      );
+    } catch (err) {
+      if (err instanceof InvalidOwnershipTransferTargetError) {
+        throw new ConflictError(
+          ApiErrorCode.WORKSPACE_TRANSFER_TARGET_INVALID,
+        );
+      }
+
+      throw err;
+    }
+
+    await this.notifyOwnershipTransferred(workspace, targetUser.verifiedEmail);
+  }
+
+  // Best-effort notification to the new owner. A send failure (or absent SMTP)
+  // must never fail a transfer that has already committed, so this swallows and
+  // logs. The billing-tail note appears only when the workspace has a live
+  // subscription — it is still billed to the previous owner until the new owner
+  // updates the payment method.
+  private async notifyOwnershipTransferred(
+    workspace: IWorkspace,
+    newOwnerEmail: string,
+  ): Promise<void> {
+    if (!this.deps.smtpTransport) {
+      return;
+    }
+
+    try {
+      const settingsUrl = `${this.deps.config.BACKEND_API_LOGIN_REDIRECT_URI}/workspaces/${workspace.slug}/settings`;
+
+      await this.deps.smtpTransport.sendMail({
+        from: createFromFormatter(this.deps.config)("MonitoRSS", "noreply"),
+        to: newOwnerEmail,
+        subject: `You are now the owner of ${workspace.name} on MonitoRSS`,
+        html: ownershipTransferredTemplate({
+          workspaceName: workspace.name,
+          settingsUrl,
+          hasSubscription: !!workspace.paddleCustomer?.subscription,
+        }),
+      });
+    } catch (err) {
+      logger.error(
+        `Failed to notify the new owner of workspace ${workspace.id} after ownership transfer`,
+        { stack: (err as Error).stack },
+      );
+    }
   }
 
   private async removeMembershipEnforcingOwnerCount(

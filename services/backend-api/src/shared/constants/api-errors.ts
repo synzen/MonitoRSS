@@ -95,6 +95,7 @@ export enum ApiErrorCode {
   WORKSPACE_INVITE_RESEND_TOO_SOON = "WORKSPACE_INVITE_RESEND_TOO_SOON",
   WORKSPACE_INVITE_LIMIT_REACHED = "WORKSPACE_INVITE_LIMIT_REACHED",
   CANNOT_REMOVE_LAST_OWNER = "CANNOT_REMOVE_LAST_OWNER",
+  WORKSPACE_TRANSFER_TARGET_INVALID = "WORKSPACE_TRANSFER_TARGET_INVALID",
   WORKSPACE_FEED_SHARING_DISABLED = "WORKSPACE_FEED_SHARING_DISABLED",
   ROUTE_NOT_FOUND = "ROUTE_NOT_FOUND",
 }
@@ -236,6 +237,8 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     "This workspace has reached its limit of pending invitations. Revoke a pending invitation before sending another.",
   CANNOT_REMOVE_LAST_OWNER:
     "A workspace must have at least one owner. Transfer ownership or delete the workspace instead.",
+  WORKSPACE_TRANSFER_TARGET_INVALID:
+    "Ownership can only be transferred to an existing admin member of this workspace.",
   WORKSPACE_FEED_SHARING_DISABLED:
     "Per-user feed management invites are disabled for workspace feeds. Manage access through workspace members instead.",
   ROUTE_NOT_FOUND: "Not Found",
