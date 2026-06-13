@@ -13,7 +13,6 @@ import {
   Heading,
   HStack,
   Icon,
-  Input,
   Link,
   SimpleGrid,
   Spinner,
@@ -28,6 +27,7 @@ import { Link as RouterLink } from "react-router-dom";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 import { Checkbox } from "@/components/ui/checkbox";
+import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
@@ -42,7 +42,7 @@ import {
   DialogFooter,
   DialogCloseTrigger,
 } from "@/components/ui/dialog";
-import { pages, PRICE_IDS, PRODUCT_NAMES, ProductKey } from "@/constants";
+import { pages, PRICE_IDS, PRODUCT_NAMES, ProductKey, TIER_CONFIGS } from "@/constants";
 import { usePaddleContext } from "@/features/subscriptionProducts";
 import type { PricePreview } from "@/types/PricePreview";
 import { useCurrentWorkspace } from "../../contexts/CurrentWorkspaceContext";
@@ -57,11 +57,17 @@ import {
   useWorkspaceUpdatePaymentMethodTransaction,
 } from "../../hooks";
 import { usePersonalConvertibleFeeds } from "../../hooks/usePersonalConvertibleFeeds";
+import { useExpandableTierTotal } from "./useExpandableTierTotal";
 
 type BillingInterval = "month" | "year";
 
 const WORKSPACE_TIERS = [ProductKey.Tier2, ProductKey.Tier3] as const;
 type WorkspaceTier = (typeof WORKSPACE_TIERS)[number];
+
+// Whether a tier can be extended with the per-feed add-on, read from the shared
+// tier config rather than hardcoding Tier 3 so the rule stays in one place.
+const tierSupportsAddons = (tier: WorkspaceTier) =>
+  TIER_CONFIGS.find((c) => c.productId === tier)?.supportsAdditionalFeeds ?? false;
 
 // Must match the backend's WORKSPACE_TIER_FEED_LIMITS (shared/utils/billing.ts),
 // which the activation webhook and change-preview both read. The client can't
@@ -96,66 +102,140 @@ const TIER_FEATURES: Record<WorkspaceTier, string[]> = {
 // section so a subscribed owner deciding whether to switch sees the same
 // price/limit/feature scent they had when first choosing a plan. The footer
 // slot carries the context-specific action (subscribe, switch, or the
-// non-interactive "current plan" state).
+// non-interactive "current plan" state). The addonSlot, rendered just above the
+// footer, lets an expandable tier surface its extra-feed control at the
+// decision point; addonFeeds folds those extras into both the displayed feed
+// total and the headline price, so the card reflects what the owner is actually
+// buying. The price recomputes from Paddle's authoritative preview as the count
+// changes.
 const TierCard = ({
   tier,
   price,
   interval,
   recommended,
   current,
-  feedLimitDelta,
+  addonFeeds = 0,
+  addonSlot,
   footer,
+  getChargePreview,
 }: {
   tier: WorkspaceTier;
   price: string | undefined;
   interval: BillingInterval;
   recommended?: boolean;
   current?: boolean;
-  feedLimitDelta?: number;
+  addonFeeds?: number;
+  addonSlot?: React.ReactNode;
   footer: React.ReactNode;
-}) => (
-  <Stack
-    role="listitem"
-    borderWidth="1px"
-    borderColor={recommended || current ? "brandSolid" : "border.emphasized"}
-    borderRadius="md"
-    padding={4}
-    gap={3}
-  >
-    <HStack justifyContent="space-between">
-      <Heading as="h3" size="sm">
-        {PRODUCT_NAMES[tier]}
-      </Heading>
-      {current && <Badge colorPalette="brand">Current plan</Badge>}
-      {!current && recommended && <Badge colorPalette="brand">Recommended</Badge>}
-    </HStack>
-    <Box>
-      <Text fontSize="2xl" fontWeight="bold">
-        {price ?? <Spinner size="sm" />}
-        <Text as="span" fontSize="sm" fontWeight="normal" color="fg.muted">
-          {" "}
-          / {interval}
-        </Text>
-      </Text>
-      <Text fontSize="sm" color="fg.muted">
-        {TIER_FEED_LIMITS[tier]} feeds
-        {feedLimitDelta ? ` (${feedLimitDelta > 0 ? "+" : ""}${feedLimitDelta})` : ""}
-      </Text>
-    </Box>
-    <Stack as="ul" listStyleType="none" gap={2} flexGrow={1}>
-      {TIER_FEATURES[tier].map((feature) => (
-        <HStack key={feature} as="li" alignItems="flex-start">
-          <Flex bg="brandSolid" rounded="full" p={1} mt={1} aria-hidden>
-            <Icon width={3} height={3} color="brand.contrast">
-              <FaCheck />
-            </Icon>
-          </Flex>
-          <Text fontSize="sm">{feature}</Text>
+  getChargePreview: (
+    items: Array<{ priceId: string; quantity: number }>,
+  ) => Promise<{ totalFormatted: string }>;
+}) => {
+  const { price: effectivePrice, isUpdating } = useExpandableTierTotal({
+    tier,
+    addonFeeds,
+    interval,
+    basePrice: price,
+    getChargePreview,
+  });
+
+  return (
+    <Stack
+      role="listitem"
+      borderWidth="1px"
+      borderColor={recommended || current ? "brandSolid" : "border.emphasized"}
+      borderRadius="md"
+      padding={4}
+      gap={3}
+    >
+      <HStack justifyContent="space-between">
+        <Heading as="h3" size="sm">
+          {PRODUCT_NAMES[tier]}
+        </Heading>
+        {current && <Badge colorPalette="brand">Current plan</Badge>}
+        {!current && recommended && <Badge colorPalette="brand">Recommended</Badge>}
+      </HStack>
+      {/*
+        Price and feed count change together as the owner steps the add-on
+        count, but the stepper announces neither on its own. Make the pair one
+        polite live region so the settled summary ("$35.00 / month, 170 feeds")
+        is read once. aria-busy holds the announcement until the debounced price
+        resolves, so the instant feed-count change does not announce ahead of
+        the price or spam intermediate amounts. The spinner is decorative.
+      */}
+      <Box aria-live="polite" aria-busy={isUpdating}>
+        <HStack gap={2}>
+          <Text
+            fontSize="2xl"
+            fontWeight="bold"
+            // Dim only while updating so a stale figure does not read as final.
+            // Kept above 0.6 so the bold text stays within contrast even mid-update.
+            opacity={isUpdating ? 0.65 : 1}
+          >
+            {effectivePrice ?? <Spinner size="sm" />}
+            <Text as="span" fontSize="sm" fontWeight="normal" color="fg.muted">
+              {" "}
+              / {interval}
+            </Text>
+          </Text>
+          {isUpdating && <Spinner size="sm" aria-hidden />}
         </HStack>
-      ))}
+        <Text fontSize="sm" color="fg.muted">
+          {addonFeeds > 0
+            ? `${TIER_FEED_LIMITS[tier] + addonFeeds} feeds (${TIER_FEED_LIMITS[tier]} + ${addonFeeds})`
+            : `${TIER_FEED_LIMITS[tier]} feeds`}
+        </Text>
+      </Box>
+      <Stack as="ul" listStyleType="none" gap={2} flexGrow={1}>
+        {TIER_FEATURES[tier].map((feature) => (
+          <HStack key={feature} as="li" alignItems="flex-start">
+            <Flex bg="brandSolid" rounded="full" p={1} mt={1} aria-hidden>
+              <Icon width={3} height={3} color="brand.contrast">
+                <FaCheck />
+              </Icon>
+            </Flex>
+            <Text fontSize="sm">{feature}</Text>
+          </HStack>
+        ))}
+      </Stack>
+      {addonSlot}
+      {footer}
     </Stack>
-    {footer}
-  </Stack>
+  );
+};
+
+// The extra-feed control for an expandable tier, rendered inside its TierCard so
+// "Tier 3 + N feeds" is one decision and one transaction instead of a follow-up
+// trip. Uses the native spinbutton primitive for keyboard/arrow support and
+// min-clamping; announces the per-feed price as helper text.
+const AdditionalFeedsControl = ({
+  value,
+  onChange,
+  perFeedPrice,
+  interval,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  perFeedPrice: string | undefined;
+  interval: BillingInterval;
+}) => (
+  <Box borderTopWidth="1px" borderColor="border.emphasized" pt={3}>
+    <Field label="Additional feeds">
+      <NumberInputRoot
+        min={0}
+        value={String(value)}
+        onValueChange={(e) => onChange(Math.max(0, Math.floor(e.valueAsNumber) || 0))}
+        width="full"
+      >
+        <NumberInputField />
+      </NumberInputRoot>
+    </Field>
+    {perFeedPrice && (
+      <Text fontSize="xs" color="fg.muted" mt={1}>
+        {perFeedPrice} per feed / {interval}
+      </Text>
+    )}
+  </Box>
 );
 
 interface PendingChange {
@@ -580,7 +660,8 @@ const WorkspacePaymentMethodSection = ({ workspaceSlug }: { workspaceSlug: strin
 };
 
 export const WorkspaceBilling = () => {
-  const { isConfigured, isLoaded, openCheckout, getPricePreview } = usePaddleContext();
+  const { isConfigured, isLoaded, openCheckout, getPricePreview, getChargePreview } =
+    usePaddleContext();
   const currentWorkspace = useCurrentWorkspace();
   const { workspace, refetch } = useWorkspace({
     workspaceSlug: currentWorkspace?.slug,
@@ -599,6 +680,10 @@ export const WorkspaceBilling = () => {
       window.sessionStorage.getItem(pendingActivationKey(currentWorkspace.id)) !== null,
   );
   const [additionalFeedsInput, setAdditionalFeedsInput] = useState<number | null>(null);
+  // Add-on count chosen on the Tier 3 card during first-time activation, before
+  // any subscription exists. Folded into the checkout so "Tier 3 + N feeds" is a
+  // single purchase.
+  const [activationAddonFeeds, setActivationAddonFeeds] = useState(0);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
 
   const isOwner = currentWorkspace?.myRole === "owner";
@@ -612,12 +697,16 @@ export const WorkspaceBilling = () => {
       return;
     }
 
-    getPricePreview(
-      WORKSPACE_TIERS.flatMap((tier) => [
+    getPricePreview([
+      ...WORKSPACE_TIERS.flatMap((tier) => [
         { priceId: PRICE_IDS[tier].month, quantity: 1 },
         { priceId: PRICE_IDS[tier].year, quantity: 1 },
       ]),
-    )
+      // The per-feed add-on price, surfaced on the Tier 3 card's extra-feed
+      // control.
+      { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 1 },
+      { priceId: PRICE_IDS[ProductKey.Tier3Feed].year, quantity: 1 },
+    ])
       .then(setProducts)
       .catch(() => setPricesError(true));
   }, [isConfigured, isLoaded, isOwner]);
@@ -654,9 +743,19 @@ export const WorkspaceBilling = () => {
     products?.find((p) => p.id === tier)?.prices.find((p) => p.interval === useInterval)
       ?.formattedPrice;
 
-  const subscribe = (tier: WorkspaceTier) => {
+  const getAddonPerFeedPrice = (useInterval: BillingInterval) =>
+    products
+      ?.find((p) => p.id === ProductKey.Tier3Feed)
+      ?.prices.find((p) => p.interval === useInterval)?.formattedPrice;
+
+  const subscribe = (tier: WorkspaceTier, addonFeeds = 0) => {
     openCheckout({
-      prices: [{ priceId: PRICE_IDS[tier][interval], quantity: 1 }],
+      prices: [
+        { priceId: PRICE_IDS[tier][interval], quantity: 1 },
+        ...(tier === ProductKey.Tier3 && addonFeeds > 0
+          ? [{ priceId: PRICE_IDS[ProductKey.Tier3Feed][interval], quantity: addonFeeds }]
+          : []),
+      ],
       displayMode: "overlay",
       customData: { workspaceId: currentWorkspace.id },
       onCompleted: () => {
@@ -770,14 +869,47 @@ export const WorkspaceBilling = () => {
           {isOwner && !subscription.cancellationDate && (
             <SettingsSection
               title="Change plan"
-              description="Compare tiers and switch this team to a different one. You will see the prorated cost before confirming."
+              description="Compare tiers and switch this team to a different one. Tier 3 can be extended with additional feeds. You will see the prorated cost before confirming."
             >
               <SimpleGrid columns={{ base: 1, md: 2 }} gap={4} maxW="40rem" role="list">
                 {WORKSPACE_TIERS.map((tier) => {
                   const isCurrent = tier === currentTier;
-                  const feedLimitDelta = currentTier
-                    ? TIER_FEED_LIMITS[tier] - TIER_FEED_LIMITS[currentTier]
-                    : 0;
+                  const supportsAddons = tierSupportsAddons(tier);
+                  // The stepper lives on whichever card is Tier 3. When it is the
+                  // current plan, it defaults to the live add-on count so the
+                  // owner edits from where they are; when it is the switch
+                  // target, it starts at 0. Only one Tier 3 card exists, so a
+                  // single piece of state serves both.
+                  const stepperValue =
+                    additionalFeedsInput ?? (isCurrent ? currentAddonQuantity : 0);
+                  const addonFeeds = supportsAddons ? stepperValue : 0;
+                  const totalFeeds = TIER_FEED_LIMITS[tier] + addonFeeds;
+                  const addonChanged = isCurrent && addonFeeds !== currentAddonQuantity;
+
+                  const applyChange = () =>
+                    setPendingChange({
+                      prices: [
+                        { priceId: PRICE_IDS[tier][subscriptionInterval], quantity: 1 },
+                        ...(addonFeeds > 0
+                          ? [
+                              {
+                                priceId: PRICE_IDS[ProductKey.Tier3Feed][subscriptionInterval],
+                                quantity: addonFeeds,
+                              },
+                            ]
+                          : []),
+                      ],
+                      description: `Switch this team to ${PRODUCT_NAMES[tier]} (${totalFeeds} feeds).`,
+                      recurringPriceFormatted: getTierPrice(tier, subscriptionInterval),
+                      tierChange: currentTier
+                        ? {
+                            fromLabel: `${PRODUCT_NAMES[currentTier]} (${
+                              TIER_FEED_LIMITS[currentTier] + currentAddonQuantity
+                            } feeds)`,
+                            toLabel: `${PRODUCT_NAMES[tier]} (${totalFeeds} feeds)`,
+                          }
+                        : undefined,
+                    });
 
                   return (
                     <TierCard
@@ -786,33 +918,39 @@ export const WorkspaceBilling = () => {
                       price={getTierPrice(tier, subscriptionInterval)}
                       interval={subscriptionInterval}
                       current={isCurrent}
-                      feedLimitDelta={isCurrent ? 0 : feedLimitDelta}
+                      addonFeeds={addonFeeds}
+                      getChargePreview={getChargePreview}
+                      addonSlot={
+                        supportsAddons ? (
+                          <AdditionalFeedsControl
+                            value={stepperValue}
+                            onChange={setAdditionalFeedsInput}
+                            perFeedPrice={getAddonPerFeedPrice(subscriptionInterval)}
+                            interval={subscriptionInterval}
+                          />
+                        ) : undefined
+                      }
                       footer={
+                        // eslint-disable-next-line no-nested-ternary
                         isCurrent ? (
-                          <Text fontSize="sm" color="fg.muted">
-                            This is your team&apos;s current plan.
-                          </Text>
+                          supportsAddons ? (
+                            <Button
+                              variant="outline"
+                              disabled={!addonChanged}
+                              onClick={applyChange}
+                            >
+                              Update additional feeds
+                            </Button>
+                          ) : (
+                            <Text fontSize="sm" color="fg.muted">
+                              This is your team&apos;s current plan.
+                            </Text>
+                          )
                         ) : (
                           <Button
                             variant="outline"
-                            onClick={() =>
-                              setPendingChange({
-                                prices: [
-                                  {
-                                    priceId: PRICE_IDS[tier][subscriptionInterval],
-                                    quantity: 1,
-                                  },
-                                ],
-                                description: `Switch this team to ${PRODUCT_NAMES[tier]} (${TIER_FEED_LIMITS[tier]} feeds).`,
-                                recurringPriceFormatted: getTierPrice(tier, subscriptionInterval),
-                                tierChange: currentTier
-                                  ? {
-                                      fromLabel: `${PRODUCT_NAMES[currentTier]} (${TIER_FEED_LIMITS[currentTier]} feeds)`,
-                                      toLabel: `${PRODUCT_NAMES[tier]} (${TIER_FEED_LIMITS[tier]} feeds)`,
-                                    }
-                                  : undefined,
-                              })
-                            }
+                            onClick={applyChange}
+                            aria-label={`Switch to ${PRODUCT_NAMES[tier]}, ${totalFeeds} feeds total`}
                           >
                             Switch to {PRODUCT_NAMES[tier]}
                           </Button>
@@ -822,55 +960,6 @@ export const WorkspaceBilling = () => {
                   );
                 })}
               </SimpleGrid>
-            </SettingsSection>
-          )}
-          {isOwner && !subscription.cancellationDate && currentTier === ProductKey.Tier3 && (
-            <SettingsSection
-              title="Additional feeds"
-              description="Each additional feed extends the Tier 3 limit by one."
-            >
-              <Stack gap={3} maxW="20rem">
-                <Field label="Quantity">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={additionalFeedsInput ?? currentAddonQuantity}
-                    onChange={(e) =>
-                      setAdditionalFeedsInput(Math.max(0, Number(e.target.value) || 0))
-                    }
-                  />
-                </Field>
-                <Box>
-                  <Button
-                    variant="outline"
-                    disabled={
-                      additionalFeedsInput === null || additionalFeedsInput === currentAddonQuantity
-                    }
-                    onClick={() => {
-                      const quantity = additionalFeedsInput ?? 0;
-                      setPendingChange({
-                        prices: [
-                          {
-                            priceId: PRICE_IDS[ProductKey.Tier3][subscriptionInterval],
-                            quantity: 1,
-                          },
-                          ...(quantity > 0
-                            ? [
-                                {
-                                  priceId: PRICE_IDS[ProductKey.Tier3Feed][subscriptionInterval],
-                                  quantity,
-                                },
-                              ]
-                            : []),
-                        ],
-                        description: `Set additional feeds to ${quantity}.`,
-                      });
-                    }}
-                  >
-                    Update quantity
-                  </Button>
-                </Box>
-              </Stack>
             </SettingsSection>
           )}
           {isOwner && !subscription.cancellationDate && (
@@ -925,20 +1014,41 @@ export const WorkspaceBilling = () => {
                 />
               )}
               <SimpleGrid columns={{ base: 1, md: 2 }} gap={4} maxW="40rem" role="list">
-                {WORKSPACE_TIERS.map((tier) => (
-                  <TierCard
-                    key={tier}
-                    tier={tier}
-                    price={getTierPrice(tier, interval)}
-                    interval={interval}
-                    recommended={tier === ProductKey.Tier2}
-                    footer={
-                      <PrimaryActionButton onClick={() => subscribe(tier)}>
-                        Subscribe to {PRODUCT_NAMES[tier]}
-                      </PrimaryActionButton>
-                    }
-                  />
-                ))}
+                {WORKSPACE_TIERS.map((tier) => {
+                  const supportsAddons = tierSupportsAddons(tier);
+                  const addonFeeds = supportsAddons ? activationAddonFeeds : 0;
+                  const totalFeeds = TIER_FEED_LIMITS[tier] + addonFeeds;
+
+                  return (
+                    <TierCard
+                      key={tier}
+                      tier={tier}
+                      price={getTierPrice(tier, interval)}
+                      interval={interval}
+                      recommended={tier === ProductKey.Tier2}
+                      addonFeeds={addonFeeds}
+                      getChargePreview={getChargePreview}
+                      addonSlot={
+                        supportsAddons ? (
+                          <AdditionalFeedsControl
+                            value={activationAddonFeeds}
+                            onChange={setActivationAddonFeeds}
+                            perFeedPrice={getAddonPerFeedPrice(interval)}
+                            interval={interval}
+                          />
+                        ) : undefined
+                      }
+                      footer={
+                        <PrimaryActionButton
+                          onClick={() => subscribe(tier, addonFeeds)}
+                          aria-label={`Subscribe to ${PRODUCT_NAMES[tier]}, ${totalFeeds} feeds total`}
+                        >
+                          Subscribe to {PRODUCT_NAMES[tier]}
+                        </PrimaryActionButton>
+                      }
+                    />
+                  );
+                })}
               </SimpleGrid>
               <Stack gap={1} maxW="40rem">
                 <Text fontSize="sm" color="fg.muted">
@@ -971,7 +1081,12 @@ export const WorkspaceBilling = () => {
         pendingChange={pendingChange}
         interval={subscriptionInterval}
         nextBillDate={subscription?.nextBillDate ?? null}
-        onClose={() => setPendingChange(null)}
+        onClose={() => {
+          setPendingChange(null);
+          // Drop the local stepper edit so the current-plan card re-reads the
+          // freshly refetched add-on count instead of a stale typed value.
+          setAdditionalFeedsInput(null);
+        }}
       />
       {conversion?.eligible && (
         <ConvertPersonalPlanDialog

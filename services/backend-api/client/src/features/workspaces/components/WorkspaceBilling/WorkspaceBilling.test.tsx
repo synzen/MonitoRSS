@@ -23,6 +23,7 @@ import { usePersonalConvertibleFeeds } from "../../hooks/usePersonalConvertibleF
 const h = vi.hoisted(() => ({
   openCheckout: vi.fn(),
   getPricePreview: vi.fn(),
+  getChargePreview: vi.fn(),
   cancel: vi.fn(),
   resume: vi.fn(),
   update: vi.fn(),
@@ -99,6 +100,26 @@ const PRICE_PREVIEWS = [
       },
     ],
   },
+  {
+    id: ProductKey.Tier3Feed,
+    name: "Tier 3 Feed",
+    prices: [
+      {
+        id: PRICE_IDS[ProductKey.Tier3Feed].month,
+        interval: "month",
+        formattedPrice: "$0.50",
+        currencyCode: "USD",
+        quantity: 1,
+      },
+      {
+        id: PRICE_IDS[ProductKey.Tier3Feed].year,
+        interval: "year",
+        formattedPrice: "$5.00",
+        currencyCode: "USD",
+        quantity: 1,
+      },
+    ],
+  },
 ];
 
 const mockPaddle = (overrides: Record<string, unknown> = {}) => {
@@ -107,6 +128,7 @@ const mockPaddle = (overrides: Record<string, unknown> = {}) => {
     isLoaded: true,
     openCheckout: h.openCheckout,
     getPricePreview: h.getPricePreview,
+    getChargePreview: h.getChargePreview,
     updatePaymentMethod: h.updatePaymentMethod,
     isSubscriptionCreated: false,
     ...overrides,
@@ -172,6 +194,9 @@ describe("WorkspaceBilling", () => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
     h.getPricePreview.mockResolvedValue(PRICE_PREVIEWS);
+    // The Tier 3 card asks for the authoritative recurring total whenever extra
+    // feeds are chosen; default to a recognizable combined figure.
+    h.getChargePreview.mockResolvedValue({ totalFormatted: "$35.00" });
     vi.mocked(useCancelWorkspaceBilling).mockReturnValue({
       mutateAsync: h.cancel,
       status: "idle",
@@ -249,6 +274,79 @@ describe("WorkspaceBilling", () => {
       "href",
       "https://monitorss.xyz/privacy-policy",
     );
+  });
+
+  it("lets the owner add extra feeds to Tier 3 at activation and folds them into one checkout", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    // The add-on control is Tier 3 only: one spinbutton on the whole grid.
+    const stepper = await screen.findByRole("spinbutton", { name: /additional feeds/i });
+    // The per-feed price comes from the async price preview, so wait for it.
+    expect(await screen.findByText(/\$0\.50 per feed \/ month/)).toBeInTheDocument();
+
+    await userEvent.clear(stepper);
+    await userEvent.type(stepper, "30");
+
+    // The Tier 3 card reflects what is actually being bought: 140 base + 30.
+    expect(await screen.findByText("170 feeds (140 + 30)")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /subscribe to tier 3, 170 feeds total/i }));
+
+    expect(h.openCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prices: [
+          { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
+          { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 30 },
+        ],
+        customData: { workspaceId: "workspace-1" },
+      }),
+    );
+  });
+
+  it("updates the Tier 3 headline price from Paddle as extra feeds are chosen", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    const stepper = await screen.findByRole("spinbutton", { name: /additional feeds/i });
+    // Base price before any add-ons.
+    expect(await screen.findByText("$20.00", { exact: false })).toBeInTheDocument();
+
+    await userEvent.clear(stepper);
+    await userEvent.type(stepper, "30");
+
+    // The headline reflects the authoritative combined recurring total, and the
+    // preview was asked for the real basket (base tier + 30 add-on feeds).
+    const total = await screen.findByText("$35.00", { exact: false });
+    await waitFor(() =>
+      expect(h.getChargePreview).toHaveBeenCalledWith([
+        { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
+        { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 30 },
+      ]),
+    );
+
+    // The updating price is silent to screen readers unless announced: it must
+    // live in a polite live region that settles (aria-busy false) once resolved.
+    const liveRegion = total.closest('[aria-live="polite"]');
+    expect(liveRegion).not.toBeNull();
+    await waitFor(() => expect(liveRegion).toHaveAttribute("aria-busy", "false"));
+    // The feed count is announced together with the price (same live region).
+    expect(within(liveRegion as HTMLElement).getByText("170 feeds (140 + 30)")).toBeInTheDocument();
+  });
+
+  it("offers no additional-feeds control on the non-expandable Tier 2 card", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    await screen.findByText("Track 70 news feeds");
+    // Tier 2 is not expandable, so there is exactly one stepper (Tier 3's).
+    expect(screen.getAllByRole("spinbutton", { name: /additional feeds/i })).toHaveLength(1);
   });
 
   it("keeps showing the subscription-confirmation state across a remount while the webhook is pending", async () => {
@@ -788,6 +886,80 @@ describe("WorkspaceBilling", () => {
 
     await screen.findByText(/Total due today/);
     expect(screen.queryByText(/will be disabled/i)).not.toBeInTheDocument();
+  });
+
+  it("folds chosen extra feeds into a Tier 2 to Tier 3 switch as one change", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+
+    // The switch target (Tier 3) carries the add-on stepper, defaulting to 0.
+    const stepper = await screen.findByRole("spinbutton", { name: /additional feeds/i });
+    await userEvent.clear(stepper);
+    await userEvent.type(stepper, "10");
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /switch to tier 3, 150 feeds total/i }),
+    );
+
+    const dialog = await screen.findByRole("dialog");
+    // The before -> after framing reflects the extra feeds, not the bare tier.
+    expect(within(dialog).getByText(/Tier 2 \(70 feeds\)/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Tier 3 \(150 feeds\)/)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /confirm change/i }));
+
+    await waitFor(() =>
+      expect(h.update).toHaveBeenCalledWith({
+        workspaceSlug: "my-team",
+        prices: [
+          { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
+          { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 10 },
+        ],
+      }),
+    );
+  });
+
+  it("lets a Tier 3 owner edit additional feeds from the current-plan card", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({
+        productKey: "tier3",
+        addons: [{ key: ProductKey.Tier3Feed, quantity: 5 }],
+      }),
+    });
+    mockChangePreview();
+
+    renderBilling();
+
+    // The current Tier 3 card seeds the stepper with the live add-on count.
+    const stepper = await screen.findByRole("spinbutton", { name: /additional feeds/i });
+    expect(stepper).toHaveValue("5");
+
+    // No change yet: the update action stays disabled until the count differs.
+    const updateButton = screen.getByRole("button", { name: /update additional feeds/i });
+    expect(updateButton).toBeDisabled();
+
+    await userEvent.clear(stepper);
+    await userEvent.type(stepper, "12");
+    expect(updateButton).toBeEnabled();
+    fireEvent.click(updateButton);
+
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /confirm change/i }));
+
+    await waitFor(() =>
+      expect(h.update).toHaveBeenCalledWith({
+        workspaceSlug: "my-team",
+        prices: [
+          { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
+          { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 12 },
+        ],
+      }),
+    );
   });
 
   // Guard against client/backend drift: these MUST match the backend's
