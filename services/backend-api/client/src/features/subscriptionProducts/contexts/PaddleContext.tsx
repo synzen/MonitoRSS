@@ -69,7 +69,7 @@ export type PaddleCheckoutUpdatedEvent = PaddleCheckoutLoadedEvent;
 
 interface ContextProps {
   checkoutLoadedData?: CheckoutSummaryData;
-  updatePaymentMethod: (transactionId: string) => void;
+  updatePaymentMethod: (transactionId: string, options?: { onClose?: () => void }) => void;
   updateCheckout: (data: {
     prices: Array<{
       priceId: string;
@@ -408,8 +408,15 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   );
 
   const updatePaymentMethod = useCallback(
-    (transactionId: string) => {
+    (transactionId: string, options?: { onClose?: () => void }) => {
       setIsSubscriptionCreated(false);
+      // Wire the same overlay-lifecycle refs as openCheckout so the shared
+      // checkout.closed handler fires the caller's onClose on cancel. Updating
+      // a card has no completion side effect here, so only the close path
+      // matters; the overlay shows its own success and dismisses.
+      checkoutCompletedRef.current = false;
+      checkoutClosedCallbackRef.current = options?.onClose;
+      lastCheckoutWasOverlayRef.current = true;
 
       paddle?.Checkout.open({
         transactionId,

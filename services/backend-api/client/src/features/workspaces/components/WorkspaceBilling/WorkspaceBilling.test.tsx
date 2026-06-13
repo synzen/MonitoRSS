@@ -276,6 +276,95 @@ describe("WorkspaceBilling", () => {
     );
   });
 
+  it("places the payment-terms consent above the Subscribe buttons so it is read before committing", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    // Subscribing is the act of consent: a keyboard/screen-reader user must meet
+    // the terms before, not after, the button that binds them. Assert the
+    // disclosure precedes the first Subscribe button in DOM (and tab) order.
+    const terms = await screen.findByRole("link", { name: /terms and conditions/i });
+    const firstSubscribe = screen.getAllByRole("button", { name: /subscribe to/i })[0];
+    expect(terms.compareDocumentPosition(firstSubscribe)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it("marks the Subscribe buttons as opening a dialog", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    // The Subscribe button opens the Paddle overlay (a dialog), so it declares
+    // that up front for assistive tech.
+    const subscribeButtons = await screen.findAllByRole("button", { name: /subscribe to/i });
+    subscribeButtons.forEach((button) => expect(button).toHaveAttribute("aria-haspopup", "dialog"));
+  });
+
+  it("announces the checkout opening to screen readers", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    const subscribeButton = (await screen.findAllByRole("button", { name: /subscribe to/i }))[0];
+    fireEvent.click(subscribeButton);
+
+    // The overlay is a third-party iframe with no announcement of its own, so a
+    // polite live region must tell a screen reader the checkout opened. The
+    // announcement is deliberately delayed past Paddle's focus grab, so wait for
+    // it to land in the live status region.
+    await waitFor(
+      () =>
+        expect(screen.getByTestId("checkout-announcer")).toHaveTextContent(
+          /checkout opened in a secure window/i,
+        ),
+      { timeout: 2000 },
+    );
+  });
+
+  it("returns focus to the Subscribe button when checkout is cancelled", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    const subscribeButton = (await screen.findAllByRole("button", { name: /subscribe to/i }))[0];
+    subscribeButton.focus();
+    fireEvent.click(subscribeButton);
+
+    // Cancelling leaves the page unchanged, so focus must go back to the opener
+    // rather than being stranded at the top of the document.
+    const { onClose } = h.openCheckout.mock.calls[0][0] as { onClose: () => void };
+    act(() => onClose());
+
+    expect(subscribeButton).toHaveFocus();
+  });
+
+  it("moves focus to the confirming status when checkout completes", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    const subscribeButton = (await screen.findAllByRole("button", { name: /subscribe to/i }))[0];
+    subscribeButton.focus();
+    fireEvent.click(subscribeButton);
+
+    // On success the Subscribe button unmounts as the page flips to the
+    // confirming state, so focus must follow the transition to that status
+    // region (a button-restore would land on the document body instead).
+    const { onCompleted } = h.openCheckout.mock.calls[0][0] as { onCompleted: () => void };
+    act(() => onCompleted());
+
+    const confirming = (await screen.findByText(/confirming your subscription/i)).closest(
+      '[role="status"]',
+    ) as HTMLElement;
+    expect(confirming).not.toBeNull();
+    await waitFor(() => expect(confirming).toHaveFocus());
+  });
+
   it("lets the owner add extra feeds to Tier 3 at activation and folds them into one checkout", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
@@ -433,7 +522,62 @@ describe("WorkspaceBilling", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /update payment method/i }));
 
-    await waitFor(() => expect(h.updatePaymentMethod).toHaveBeenCalledWith("txn_update_card"));
+    await waitFor(() =>
+      expect(h.updatePaymentMethod).toHaveBeenCalledWith(
+        "txn_update_card",
+        expect.objectContaining({ onClose: expect.any(Function) }),
+      ),
+    );
+  });
+
+  it("tells screen readers the update-payment button opens an overlay before it is activated", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+
+    renderBilling();
+
+    // aria-haspopup announces "opens dialog" on focus, so the user knows the
+    // silent Paddle overlay is coming before committing to the click.
+    const button = await screen.findByRole("button", { name: /update payment method/i });
+    expect(button).toHaveAttribute("aria-haspopup", "dialog");
+  });
+
+  it("announces the checkout opening when the owner updates the payment method", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+
+    renderBilling();
+
+    fireEvent.click(await screen.findByRole("button", { name: /update payment method/i }));
+
+    // The update-payment overlay is the same silent third-party iframe as
+    // subscribe, so it must announce itself through the shared live region.
+    await waitFor(
+      () =>
+        expect(screen.getByTestId("checkout-announcer")).toHaveTextContent(
+          /checkout opened in a secure window/i,
+        ),
+      { timeout: 2000 },
+    );
+  });
+
+  it("returns focus to the update-payment button when its overlay is cancelled", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+
+    renderBilling();
+
+    const button = await screen.findByRole("button", { name: /update payment method/i });
+    button.focus();
+    fireEvent.click(button);
+
+    await waitFor(() => expect(h.updatePaymentMethod).toHaveBeenCalled());
+    // Cancelling changes nothing, so focus returns to the opener instead of
+    // being stranded on the document body when Paddle dismisses the overlay.
+    const { onClose } = h.updatePaymentMethod.mock.calls[0][1] as { onClose: () => void };
+    act(() => onClose());
+
+    expect(button).toHaveFocus();
   });
 
   it("surfaces a payment-method-update failure inline while keeping the button retryable", async () => {

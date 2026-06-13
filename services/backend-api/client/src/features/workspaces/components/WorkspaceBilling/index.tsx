@@ -19,6 +19,7 @@ import {
   Stack,
   StackSeparator,
   Text,
+  VisuallyHidden,
 } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { captureException } from "@sentry/react";
@@ -617,9 +618,18 @@ const ConvertPersonalPlanDialog = ({
 // dialog, which would inert the overlay). Updating the card flips no
 // subscription field, so completion is silent: Paddle's own overlay shows
 // success and closes, leaving the page intact.
-const WorkspacePaymentMethodSection = ({ workspaceSlug }: { workspaceSlug: string }) => {
+const WorkspacePaymentMethodSection = ({
+  workspaceSlug,
+  announceCheckoutOpen,
+}: {
+  workspaceSlug: string;
+  announceCheckoutOpen: () => void;
+}) => {
   const { updatePaymentMethod } = usePaddleContext();
   const { error, fetchStatus, refetch } = useWorkspaceUpdatePaymentMethodTransaction(workspaceSlug);
+  // The button that opened the overlay, so focus can return to it on cancel
+  // (Paddle would otherwise strand focus on the document body).
+  const openerRef = useRef<HTMLButtonElement | null>(null);
 
   // Each click re-mints a transaction, so a failed attempt must stay retryable:
   // refetch() resolves (it does not reject) and clears the previous error on a
@@ -633,7 +643,13 @@ const WorkspacePaymentMethodSection = ({ workspaceSlug }: { workspaceSlug: strin
         return;
       }
 
-      updatePaymentMethod(transactionId);
+      updatePaymentMethod(transactionId, {
+        // Cancelled: nothing changed, so send focus back to the button that
+        // opened the overlay.
+        onClose: () => openerRef.current?.focus(),
+      });
+      // The overlay is a silent third-party iframe; announce that it opened.
+      announceCheckoutOpen();
     } catch (err) {
       captureException(err);
     }
@@ -642,10 +658,18 @@ const WorkspacePaymentMethodSection = ({ workspaceSlug }: { workspaceSlug: strin
   return (
     <SettingsSection
       title="Payment method"
-      description="Replace the card on file for this team's subscription. Card details are entered on Paddle's secure checkout, not stored here."
+      description="Replace the card on file for this team's subscription. A secure Paddle checkout window opens to enter the new card; details are not stored here."
     >
       <Stack gap={3} alignItems="flex-start">
-        <SafeLoadingButton variant="outline" loading={fetchStatus === "fetching"} onClick={onClick}>
+        <SafeLoadingButton
+          ref={openerRef}
+          variant="outline"
+          // Tells a screen reader, on focus, that activating this opens an
+          // overlay, before the otherwise-silent Paddle iframe takes over.
+          aria-haspopup="dialog"
+          loading={fetchStatus === "fetching"}
+          onClick={onClick}
+        >
           Update payment method
         </SafeLoadingButton>
         {error && (
@@ -685,6 +709,18 @@ export const WorkspaceBilling = () => {
   // single purchase.
   const [activationAddonFeeds, setActivationAddonFeeds] = useState(0);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
+  // Focus management around the Paddle overlay, which is a third-party iframe we
+  // do not own. We cannot push focus into it (Paddle's overlay auto-focuses its
+  // first field), but we own the handoff and both return trips, which differ:
+  //  - Open: announce the overlay (otherwise silent to a screen reader).
+  //  - Cancel (onClose): nothing changed, so return focus to the Subscribe
+  //    button that opened it instead of stranding the user at the top of the doc.
+  //  - Complete (onCompleted): the page transitions and the Subscribe button
+  //    unmounts, so returning focus there is meaningless. Move focus to the
+  //    "Confirming your subscription" status that appears in its place.
+  const [checkoutAnnouncement, setCheckoutAnnouncement] = useState("");
+  const checkoutOpenerRef = useRef<HTMLElement | null>(null);
+  const confirmingStatusRef = useRef<HTMLDivElement | null>(null);
 
   const isOwner = currentWorkspace?.myRole === "owner";
   const subscription = workspace?.subscription ?? null;
@@ -748,7 +784,22 @@ export const WorkspaceBilling = () => {
       ?.find((p) => p.id === ProductKey.Tier3Feed)
       ?.prices.find((p) => p.interval === useInterval)?.formattedPrice;
 
+  // Both checkout paths (subscribe, update payment method) open the same silent
+  // Paddle overlay, so both announce it the same way. Announce AFTER opening:
+  // Paddle injects the overlay and pulls focus into its iframe synchronously,
+  // which preempts a polite announcement fired in the same tick. Delaying past
+  // that focus change lets the screen reader settle and actually read it (the
+  // app's navigation announcer uses the same trick). Reset to empty first so a
+  // repeat open re-triggers the same text as a change.
+  const announceCheckoutOpen = () => {
+    setCheckoutAnnouncement("");
+    window.setTimeout(() => setCheckoutAnnouncement("Checkout opened in a secure window."), 600);
+  };
+
   const subscribe = (tier: WorkspaceTier, addonFeeds = 0) => {
+    // Remember the button that opened the overlay so focus can return to it.
+    checkoutOpenerRef.current = document.activeElement as HTMLElement | null;
+
     openCheckout({
       prices: [
         { priceId: PRICE_IDS[tier][interval], quantity: 1 },
@@ -758,11 +809,22 @@ export const WorkspaceBilling = () => {
       ],
       displayMode: "overlay",
       customData: { workspaceId: currentWorkspace.id },
+      onClose: () => {
+        // Cancelled: the page is unchanged, so send focus back to the button
+        // that opened the overlay.
+        checkoutOpenerRef.current?.focus?.();
+      },
       onCompleted: () => {
         window.sessionStorage.setItem(pendingActivationKey(currentWorkspace.id), "1");
         setAwaitingActivation(true);
+        // The Subscribe button is unmounting as the page flips to the confirming
+        // state; move focus to that status (rendered next tick) so it is not lost
+        // to the document body.
+        window.setTimeout(() => confirmingStatusRef.current?.focus?.(), 0);
       },
     });
+
+    announceCheckoutOpen();
   };
 
   const subscriptionInterval = (subscription?.billingInterval ?? "month") as BillingInterval;
@@ -793,6 +855,15 @@ export const WorkspaceBilling = () => {
 
   return (
     <Stack gap={8}>
+      {/* Announces the otherwise-silent Paddle overlay opening to screen readers. */}
+      <VisuallyHidden
+        data-testid="checkout-announcer"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {checkoutAnnouncement}
+      </VisuallyHidden>
       <BreadcrumbRoot>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -820,10 +891,18 @@ export const WorkspaceBilling = () => {
         </Text>
       </Stack>
       {awaitingActivation && !subscription && (
-        <HStack>
-          <Spinner size="sm" />
-          <Text>Confirming your subscription…</Text>
-        </HStack>
+        <Box
+          ref={confirmingStatusRef}
+          tabIndex={-1}
+          role="status"
+          aria-live="polite"
+          outline="none"
+        >
+          <HStack>
+            <Spinner size="sm" />
+            <Text>Confirming your subscription…</Text>
+          </HStack>
+        </Box>
       )}
       {subscription ? (
         <Stack gap={10} separator={<StackSeparator />}>
@@ -865,7 +944,12 @@ export const WorkspaceBilling = () => {
               </Box>
             )}
           </SettingsSection>
-          {isOwner && <WorkspacePaymentMethodSection workspaceSlug={workspaceSlug} />}
+          {isOwner && (
+            <WorkspacePaymentMethodSection
+              workspaceSlug={workspaceSlug}
+              announceCheckoutOpen={announceCheckoutOpen}
+            />
+          )}
           {isOwner && !subscription.cancellationDate && (
             <SettingsSection
               title="Change plan"
@@ -1007,6 +1091,25 @@ export const WorkspaceBilling = () => {
                 {intervalToggle}
                 <Badge colorPalette="green">Save 15% with a yearly plan!</Badge>
               </HStack>
+              {/*
+                Subscribing is the act of consent, so the terms it binds the
+                owner to must be readable before the Subscribe buttons, not
+                discovered after the overlay has already opened over them. Only
+                the consent gate itself leads; the longer reassurance and Paddle
+                disclosure are fine print, kept below the cards so the prices are
+                not buried behind a wall of grey text.
+              */}
+              <Text fontSize="sm" color="fg.muted" maxW="40rem">
+                By proceeding to payment, you are agreeing to our{" "}
+                <Link target="_blank" href="https://monitorss.xyz/terms" color="text.link">
+                  terms and conditions
+                </Link>{" "}
+                and our{" "}
+                <Link target="_blank" href="https://monitorss.xyz/privacy-policy" color="text.link">
+                  privacy policy
+                </Link>
+                .
+              </Text>
               {pricesError && (
                 <InlineErrorAlert
                   title="Failed to load prices"
@@ -1041,6 +1144,7 @@ export const WorkspaceBilling = () => {
                       footer={
                         <PrimaryActionButton
                           onClick={() => subscribe(tier, addonFeeds)}
+                          aria-haspopup="dialog"
                           aria-label={`Subscribe to ${PRODUCT_NAMES[tier]}, ${totalFeeds} feeds total`}
                         >
                           Subscribe to {PRODUCT_NAMES[tier]}
@@ -1050,25 +1154,15 @@ export const WorkspaceBilling = () => {
                   );
                 })}
               </SimpleGrid>
+              {/* Reassurance and Paddle disclosure: fine print, not a consent
+                  gate, so it sits below the cards. */}
               <Stack gap={1} maxW="40rem">
                 <Text fontSize="sm" color="fg.muted">
                   Cancel anytime. Feeds stay active until the end of the paid period, and you can
                   switch tiers with prorated billing.
                 </Text>
                 <Text fontSize="sm" color="fg.muted">
-                  By proceeding to payment, you are agreeing to our{" "}
-                  <Link target="_blank" href="https://monitorss.xyz/terms" color="text.link">
-                    terms and conditions
-                  </Link>{" "}
-                  and our{" "}
-                  <Link
-                    target="_blank"
-                    href="https://monitorss.xyz/privacy-policy"
-                    color="text.link"
-                  >
-                    privacy policy
-                  </Link>
-                  . The checkout process is handled by our reseller and Merchant of Record,
+                  The checkout process is handled by our reseller and Merchant of Record,
                   Paddle.com. Prices will be localized to your location.
                 </Text>
               </Stack>

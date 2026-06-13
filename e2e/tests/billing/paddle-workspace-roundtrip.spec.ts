@@ -100,6 +100,20 @@ test.describe("Paddle workspace roundtrip", () => {
 
     const workspaceSlug = await createTeamAndOpenBilling(page);
 
+    // Subscribing is the act of consent, so the payment terms must sit above the
+    // Subscribe buttons (read before committing), not below where the overlay
+    // would open over them. Assert the terms link precedes the first Subscribe
+    // button in document order, which is also the tab order.
+    const termsLink = page.getByRole("link", { name: /terms and conditions/i });
+    const firstSubscribe = page.getByRole("button", { name: /subscribe to/i }).first();
+    await expect(termsLink).toBeVisible();
+    const termsBeforeSubscribe = await termsLink.evaluate(
+      (terms, subscribe) =>
+        !!(terms.compareDocumentPosition(subscribe) & Node.DOCUMENT_POSITION_FOLLOWING),
+      await firstSubscribe.elementHandle(),
+    );
+    expect(termsBeforeSubscribe).toBe(true);
+
     // Subscribe to Tier 2 (monthly default): opens the Paddle overlay checkout.
     await page.getByRole("button", { name: /subscribe to tier 2/i }).click();
     await completeOverlayCheckout(page);
