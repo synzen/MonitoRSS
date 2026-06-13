@@ -30,6 +30,7 @@ const h = vi.hoisted(() => ({
   convert: vi.fn(),
   refetchWorkspace: vi.fn(),
   updatePaymentMethod: vi.fn(),
+  resetCheckoutData: vi.fn(),
   refetchPaymentMethodTransaction: vi.fn(),
 }));
 
@@ -130,6 +131,7 @@ const mockPaddle = (overrides: Record<string, unknown> = {}) => {
     getPricePreview: h.getPricePreview,
     getChargePreview: h.getChargePreview,
     updatePaymentMethod: h.updatePaymentMethod,
+    resetCheckoutData: h.resetCheckoutData,
     isSubscriptionCreated: false,
     ...overrides,
   } as never);
@@ -245,13 +247,19 @@ describe("WorkspaceBilling", () => {
 
     fireEvent.click(subscribeButtons[0]);
 
-    expect(h.openCheckout).toHaveBeenCalledWith(
-      expect.objectContaining({
-        displayMode: "overlay",
-        prices: [{ priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 }],
-        customData: { workspaceId: "workspace-1" },
-      }),
+    // Checkout renders inline inside a dialog (frameTarget), never as Paddle's
+    // own page-leaking overlay. The open is gated on the frame container
+    // mounting, so wait for the call.
+    await waitFor(() =>
+      expect(h.openCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          frameTarget: expect.any(String),
+          prices: [{ priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 }],
+          customData: { workspaceId: "workspace-1" },
+        }),
+      ),
     );
+    expect(h.openCheckout.mock.calls[0][0]).not.toHaveProperty("displayMode", "overlay");
   });
 
   it("shows tier features, the recommended tier, and payment terms on the activation cards", async () => {
@@ -276,6 +284,36 @@ describe("WorkspaceBilling", () => {
     );
   });
 
+  it("keeps the tier price regions silent at rest so closing the checkout dialog does not re-read every card", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    // At rest (no add-ons configured) the price regions must not be live: when
+    // the checkout dialog closes, its inert lifts off the page and a live region
+    // inside a freshly revealed subtree gets re-announced by screen readers.
+    const tier2Price = (await screen.findByText("$10.00", { exact: false })).closest(
+      "[aria-live]",
+    ) as HTMLElement;
+    const tier3Price = (await screen.findByText("$20.00", { exact: false })).closest(
+      "[aria-live]",
+    ) as HTMLElement;
+    expect(tier2Price).toHaveAttribute("aria-live", "off");
+    expect(tier3Price).toHaveAttribute("aria-live", "off");
+
+    // Once the owner is actively configuring add-ons, the price summary becomes
+    // live so the settled figure is announced as it changes.
+    const stepper = await screen.findByRole("spinbutton", { name: /additional feeds/i });
+    await userEvent.clear(stepper);
+    await userEvent.type(stepper, "5");
+
+    const tier3PriceAfter = (await screen.findByText("145 feeds (140 + 5)")).closest(
+      "[aria-live]",
+    ) as HTMLElement;
+    await waitFor(() => expect(tier3PriceAfter).toHaveAttribute("aria-live", "polite"));
+  });
+
   it("places the payment-terms consent above the Subscribe buttons so it is read before committing", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
@@ -296,13 +334,13 @@ describe("WorkspaceBilling", () => {
 
     renderBilling();
 
-    // The Subscribe button opens the Paddle overlay (a dialog), so it declares
-    // that up front for assistive tech.
+    // The Subscribe button opens the checkout dialog, so it declares that up
+    // front for assistive tech.
     const subscribeButtons = await screen.findAllByRole("button", { name: /subscribe to/i });
     subscribeButtons.forEach((button) => expect(button).toHaveAttribute("aria-haspopup", "dialog"));
   });
 
-  it("announces the checkout opening to screen readers", async () => {
+  it("opens a titled, secure checkout dialog when the owner subscribes", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
 
@@ -311,17 +349,33 @@ describe("WorkspaceBilling", () => {
     const subscribeButton = (await screen.findAllByRole("button", { name: /subscribe to/i }))[0];
     fireEvent.click(subscribeButton);
 
-    // The overlay is a third-party iframe with no announcement of its own, so a
-    // polite live region must tell a screen reader the checkout opened. The
-    // announcement is deliberately delayed past Paddle's focus grab, so wait for
-    // it to land in the live status region.
-    await waitFor(
-      () =>
-        expect(screen.getByTestId("checkout-announcer")).toHaveTextContent(
-          /checkout opened in a secure window/i,
-        ),
-      { timeout: 2000 },
-    );
+    // A real titled dialog hosts the checkout, so it announces itself to a
+    // screen reader on open (no separate live-region narration needed). The
+    // accessible name carries the action, and the secure-payment reassurance is
+    // visible to everyone in the body.
+    const dialog = await screen.findByRole("dialog", { name: /subscribe to tier 2/i });
+    expect(within(dialog).getByText(/payment is handled securely by paddle/i)).toBeInTheDocument();
+  });
+
+  it("hosts the checkout inline inside the dialog (not Paddle's page-leaking overlay)", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    fireEvent.click((await screen.findAllByRole("button", { name: /subscribe to/i }))[0]);
+
+    // The dialog hosts an app-owned container that Paddle paints into inline, so
+    // the frame lives inside the dialog (Chakra inerts the page around it) rather
+    // than as a body-sibling overlay the page can tab behind. The dialog is
+    // portalled, so query the document, then assert containment in the dialog.
+    const dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(h.openCheckout).toHaveBeenCalled());
+    const frameTarget = h.openCheckout.mock.calls[0][0].frameTarget as string;
+    expect(frameTarget).toBeTruthy();
+    const frame = document.querySelector(`.${frameTarget}`);
+    expect(frame).not.toBeNull();
+    expect(dialog.contains(frame)).toBe(true);
   });
 
   it("returns focus to the Subscribe button when checkout is cancelled", async () => {
@@ -336,13 +390,15 @@ describe("WorkspaceBilling", () => {
 
     // Cancelling leaves the page unchanged, so focus must go back to the opener
     // rather than being stranded at the top of the document.
+    await waitFor(() => expect(h.openCheckout).toHaveBeenCalled());
     const { onClose } = h.openCheckout.mock.calls[0][0] as { onClose: () => void };
     act(() => onClose());
 
-    expect(subscribeButton).toHaveFocus();
+    // Focus is restored after the dialog closes (deferred past its own restore).
+    await waitFor(() => expect(subscribeButton).toHaveFocus());
   });
 
-  it("moves focus to the confirming status when checkout completes", async () => {
+  it("moves focus to the page heading when checkout completes", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
 
@@ -353,16 +409,47 @@ describe("WorkspaceBilling", () => {
     fireEvent.click(subscribeButton);
 
     // On success the Subscribe button unmounts as the page flips to the
-    // confirming state, so focus must follow the transition to that status
-    // region (a button-restore would land on the document body instead).
+    // confirming state, so focus must follow the transition. The transient
+    // confirming-status region unmounts once the subscription lands, so focus
+    // goes to the always-present page heading instead (a button-restore would
+    // land on the document body).
+    await waitFor(() => expect(h.openCheckout).toHaveBeenCalled());
     const { onCompleted } = h.openCheckout.mock.calls[0][0] as { onCompleted: () => void };
     act(() => onCompleted());
 
-    const confirming = (await screen.findByText(/confirming your subscription/i)).closest(
-      '[role="status"]',
-    ) as HTMLElement;
-    expect(confirming).not.toBeNull();
-    await waitFor(() => expect(confirming).toHaveFocus());
+    const heading = await screen.findByRole("heading", { level: 1, name: /billing/i });
+    await waitFor(() => expect(heading).toHaveFocus());
+  });
+
+  it("announces payment success, then activation, through a polite status region", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    const { rerender } = renderBilling();
+
+    fireEvent.click((await screen.findAllByRole("button", { name: /subscribe to/i }))[0]);
+    await waitFor(() => expect(h.openCheckout).toHaveBeenCalled());
+    const { onCompleted } = h.openCheckout.mock.calls[0][0] as { onCompleted: () => void };
+    act(() => onCompleted());
+
+    // Stage one: payment captured, dialog closed, activation pending.
+    const status = await screen.findByRole("status");
+    await waitFor(() =>
+      expect(status).toHaveTextContent(/payment successful\. confirming your subscription/i),
+    );
+
+    // The activation webhook lands; the workspace read now returns a
+    // subscription. Stage two announces provisioning is complete.
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    rerender(
+      <MemoryRouter>
+        <ChakraProvider value={system}>
+          <WorkspaceBilling />
+        </ChakraProvider>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(status).toHaveTextContent(/your tier 2 is now active/i));
   });
 
   it("lets the owner add extra feeds to Tier 3 at activation and folds them into one checkout", async () => {
@@ -384,14 +471,16 @@ describe("WorkspaceBilling", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /subscribe to tier 3, 170 feeds total/i }));
 
-    expect(h.openCheckout).toHaveBeenCalledWith(
-      expect.objectContaining({
-        prices: [
-          { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
-          { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 30 },
-        ],
-        customData: { workspaceId: "workspace-1" },
-      }),
+    await waitFor(() =>
+      expect(h.openCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          prices: [
+            { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
+            { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 30 },
+          ],
+          customData: { workspaceId: "workspace-1" },
+        }),
+      ),
     );
   });
 
@@ -445,10 +534,15 @@ describe("WorkspaceBilling", () => {
     const firstMount = renderBilling();
 
     fireEvent.click((await screen.findAllByRole("button", { name: /subscribe/i }))[0]);
+    await waitFor(() => expect(h.openCheckout).toHaveBeenCalled());
     const { onCompleted } = h.openCheckout.mock.calls[0][0] as { onCompleted: () => void };
     act(() => onCompleted());
 
-    expect(await screen.findByText(/confirming your subscription/i)).toBeInTheDocument();
+    // The visible spinner text and the live-region announcement both mention
+    // "confirming", so target the visible paragraph specifically.
+    expect(
+      await screen.findByText("Confirming your subscription…", { selector: "p" }),
+    ).toBeInTheDocument();
 
     // The owner navigates away and back before the activation webhook lands;
     // payment already succeeded, so the page must not fall back to the
@@ -456,7 +550,9 @@ describe("WorkspaceBilling", () => {
     firstMount.unmount();
     renderBilling();
 
-    expect(await screen.findByText(/confirming your subscription/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText("Confirming your subscription…", { selector: "p" }),
+    ).toBeInTheDocument();
   });
 
   it("shows subscription status to admins with no billing controls", async () => {
@@ -511,7 +607,7 @@ describe("WorkspaceBilling", () => {
     await waitFor(() => expect(h.resume).toHaveBeenCalled());
   });
 
-  it("lets the owner update the payment method, opening the Paddle overlay with the fetched transaction", async () => {
+  it("lets the owner update the payment method, opening an inline checkout with the fetched transaction", async () => {
     h.refetchPaymentMethodTransaction.mockResolvedValue({
       data: { data: { paddleTransactionId: "txn_update_card" } },
     });
@@ -522,27 +618,32 @@ describe("WorkspaceBilling", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /update payment method/i }));
 
+    // Inline (frameTarget) so the checkout renders inside the dialog, not
+    // Paddle's page-leaking overlay; the open is gated on the frame mounting.
     await waitFor(() =>
       expect(h.updatePaymentMethod).toHaveBeenCalledWith(
         "txn_update_card",
-        expect.objectContaining({ onClose: expect.any(Function) }),
+        expect.objectContaining({
+          onClose: expect.any(Function),
+          frameTarget: expect.any(String),
+        }),
       ),
     );
   });
 
-  it("tells screen readers the update-payment button opens an overlay before it is activated", async () => {
+  it("tells screen readers the update-payment button opens a dialog before it is activated", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
 
     renderBilling();
 
     // aria-haspopup announces "opens dialog" on focus, so the user knows the
-    // silent Paddle overlay is coming before committing to the click.
+    // checkout dialog is coming before committing to the click.
     const button = await screen.findByRole("button", { name: /update payment method/i });
     expect(button).toHaveAttribute("aria-haspopup", "dialog");
   });
 
-  it("announces the checkout opening when the owner updates the payment method", async () => {
+  it("opens a titled, secure checkout dialog when the owner updates the payment method", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
 
@@ -550,18 +651,13 @@ describe("WorkspaceBilling", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /update payment method/i }));
 
-    // The update-payment overlay is the same silent third-party iframe as
-    // subscribe, so it must announce itself through the shared live region.
-    await waitFor(
-      () =>
-        expect(screen.getByTestId("checkout-announcer")).toHaveTextContent(
-          /checkout opened in a secure window/i,
-        ),
-      { timeout: 2000 },
-    );
+    // The update-payment checkout is hosted in a real titled dialog, so it
+    // self-announces on open; the secure-payment reassurance is in the body.
+    const dialog = await screen.findByRole("dialog", { name: /update payment method/i });
+    expect(within(dialog).getByText(/payment is handled securely by paddle/i)).toBeInTheDocument();
   });
 
-  it("returns focus to the update-payment button when its overlay is cancelled", async () => {
+  it("returns focus to the update-payment button when its checkout is cancelled", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
 
@@ -573,11 +669,11 @@ describe("WorkspaceBilling", () => {
 
     await waitFor(() => expect(h.updatePaymentMethod).toHaveBeenCalled());
     // Cancelling changes nothing, so focus returns to the opener instead of
-    // being stranded on the document body when Paddle dismisses the overlay.
+    // being stranded on the document body when the dialog closes.
     const { onClose } = h.updatePaymentMethod.mock.calls[0][1] as { onClose: () => void };
     act(() => onClose());
 
-    expect(button).toHaveFocus();
+    await waitFor(() => expect(button).toHaveFocus());
   });
 
   it("surfaces a payment-method-update failure inline while keeping the button retryable", async () => {
@@ -821,7 +917,9 @@ describe("WorkspaceBilling", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /^move plan$/i }));
 
-    expect(await screen.findByText(/confirming your subscription/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText("Confirming your subscription…", { selector: "p" }),
+    ).toBeInTheDocument();
   });
 
   it("selects every feed with Bring all after some were deselected", async () => {

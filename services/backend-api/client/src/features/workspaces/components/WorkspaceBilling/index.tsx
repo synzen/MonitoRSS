@@ -39,6 +39,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogBody,
   DialogFooter,
   DialogCloseTrigger,
@@ -158,13 +159,18 @@ const TierCard = ({
       </HStack>
       {/*
         Price and feed count change together as the owner steps the add-on
-        count, but the stepper announces neither on its own. Make the pair one
+        count, but the stepper announces neither on its own. Make the pair a
         polite live region so the settled summary ("$35.00 / month, 170 feeds")
         is read once. aria-busy holds the announcement until the debounced price
         resolves, so the instant feed-count change does not announce ahead of
         the price or spam intermediate amounts. The spinner is decorative.
+
+        The region is only live once the owner is actually configuring add-ons
+        (addonFeeds > 0). At rest it is aria-live="off" so that revealing the
+        card (e.g. when the checkout dialog closes and its inert lifts off the
+        page) does not make the screen reader re-read every card's price.
       */}
-      <Box aria-live="polite" aria-busy={isUpdating}>
+      <Box aria-live={addonFeeds > 0 ? "polite" : "off"} aria-busy={isUpdating}>
         <HStack gap={2}>
           <Text
             fontSize="2xl"
@@ -613,22 +619,122 @@ const ConvertPersonalPlanDialog = ({
   );
 };
 
-// Replaces the card on the team's existing subscription. The Paddle overlay is
-// opened straight from this page-level button (never from inside a Chakra
-// dialog, which would inert the overlay). Updating the card flips no
-// subscription field, so completion is silent: Paddle's own overlay shows
-// success and closes, leaving the page intact.
+// The two workspace checkout actions the dialog below can host. Subscribe
+// carries the basket + workspace id; updating the card carries a pre-minted
+// Paddle transaction. Both render Paddle inline (see WorkspaceCheckoutDialog).
+type WorkspaceCheckoutIntent =
+  | {
+      kind: "subscribe";
+      prices: Array<{ priceId: string; quantity: number }>;
+      workspaceId: string;
+      title: string;
+    }
+  | { kind: "updatePaymentMethod"; transactionId: string; title: string };
+
+// The class Paddle renders its inline checkout frame into. A stable string (not
+// a generated id) because Paddle selects the target by class name.
+const CHECKOUT_FRAME_CLASS = "workspace-checkout-frame";
+
+// Hosts the Paddle checkout INLINE inside a Chakra modal dialog rather than
+// Paddle's own overlay. Paddle's overlay is a document.body sibling that never
+// inerts the host page, so focus and Tab leak to the controls behind it. A
+// Chakra dialog inerts its siblings, giving a correct focus trap; because the
+// inline frame renders INSIDE the dialog, the dialog's inert excludes it (an
+// OVERLAY-mode frame, a body sibling, would instead be inerted and unclickable).
+// The dialog is titled so it announces itself to screen readers on open, which
+// is why no separate live-region announcement is needed.
+const WorkspaceCheckoutDialog = ({
+  intent,
+  onCancel,
+  onCompleted,
+}: {
+  intent: WorkspaceCheckoutIntent | null;
+  onCancel: () => void;
+  onCompleted: () => void;
+}) => {
+  const { openCheckout, updatePaymentMethod, resetCheckoutData } = usePaddleContext();
+  const [frameEl, setFrameEl] = useState<HTMLDivElement | null>(null);
+
+  // Open Paddle only once both the intent and the frame container exist: Paddle
+  // resolves the frameTarget class synchronously, so the container must be in
+  // the DOM first. A callback ref drives a state update, so this re-runs after
+  // the dialog content (portalled) commits and the frame is mountable.
+  useEffect(() => {
+    if (!intent || !frameEl) {
+      return;
+    }
+
+    if (intent.kind === "subscribe") {
+      openCheckout({
+        prices: intent.prices,
+        frameTarget: CHECKOUT_FRAME_CLASS,
+        customData: { workspaceId: intent.workspaceId },
+        onClose: onCancel,
+        onCompleted,
+      });
+    } else {
+      updatePaymentMethod(intent.transactionId, {
+        frameTarget: CHECKOUT_FRAME_CLASS,
+        onClose: onCancel,
+        onCompleted,
+      });
+    }
+  }, [intent, frameEl]);
+
+  // Clear Paddle's per-checkout state when the dialog closes so a second open
+  // starts clean instead of replaying the previous summary.
+  useEffect(() => {
+    if (!intent) {
+      resetCheckoutData();
+    }
+  }, [intent]);
+
+  return (
+    <DialogRoot
+      open={!!intent}
+      onOpenChange={(e) => !e.open && onCancel()}
+      size="lg"
+      scrollBehavior="inside"
+      // A stray backdrop click must not discard a half-entered card; the user
+      // dismisses deliberately via Escape or the close button.
+      closeOnInteractOutside={false}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{intent?.title}</DialogTitle>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
+          <Stack gap={3}>
+            <DialogDescription>Payment is handled securely by Paddle.</DialogDescription>
+            {/* Paddle paints its checkout onto this container; the white surface
+                matches the third-party checkout surface used by the personal
+                checkout flow. */}
+            <Box
+              className={CHECKOUT_FRAME_CLASS}
+              ref={setFrameEl}
+              bg="white"
+              minH="634px"
+              w="100%"
+            />
+          </Stack>
+        </DialogBody>
+      </DialogContent>
+    </DialogRoot>
+  );
+};
+
+// The "Update payment method" entry on an existing subscription. Mints a Paddle
+// transaction, then hands it to the page-level checkout dialog. The button
+// keeps owning its retry/error UI; the dialog owns the focus trap.
 const WorkspacePaymentMethodSection = ({
   workspaceSlug,
-  announceCheckoutOpen,
+  onStartUpdatePayment,
 }: {
   workspaceSlug: string;
-  announceCheckoutOpen: () => void;
+  onStartUpdatePayment: (transactionId: string, opener: HTMLElement | null) => void;
 }) => {
-  const { updatePaymentMethod } = usePaddleContext();
   const { error, fetchStatus, refetch } = useWorkspaceUpdatePaymentMethodTransaction(workspaceSlug);
-  // The button that opened the overlay, so focus can return to it on cancel
-  // (Paddle would otherwise strand focus on the document body).
   const openerRef = useRef<HTMLButtonElement | null>(null);
 
   // Each click re-mints a transaction, so a failed attempt must stay retryable:
@@ -643,13 +749,7 @@ const WorkspacePaymentMethodSection = ({
         return;
       }
 
-      updatePaymentMethod(transactionId, {
-        // Cancelled: nothing changed, so send focus back to the button that
-        // opened the overlay.
-        onClose: () => openerRef.current?.focus(),
-      });
-      // The overlay is a silent third-party iframe; announce that it opened.
-      announceCheckoutOpen();
+      onStartUpdatePayment(transactionId, openerRef.current);
     } catch (err) {
       captureException(err);
     }
@@ -658,14 +758,13 @@ const WorkspacePaymentMethodSection = ({
   return (
     <SettingsSection
       title="Payment method"
-      description="Replace the card on file for this team's subscription. A secure Paddle checkout window opens to enter the new card; details are not stored here."
+      description="Replace the card on file for this team's subscription. A secure Paddle checkout opens to enter the new card; details are not stored here."
     >
       <Stack gap={3} alignItems="flex-start">
         <SafeLoadingButton
           ref={openerRef}
           variant="outline"
-          // Tells a screen reader, on focus, that activating this opens an
-          // overlay, before the otherwise-silent Paddle iframe takes over.
+          // Tells a screen reader, on focus, that activating this opens a dialog.
           aria-haspopup="dialog"
           loading={fetchStatus === "fetching"}
           onClick={onClick}
@@ -684,8 +783,7 @@ const WorkspacePaymentMethodSection = ({
 };
 
 export const WorkspaceBilling = () => {
-  const { isConfigured, isLoaded, openCheckout, getPricePreview, getChargePreview } =
-    usePaddleContext();
+  const { isConfigured, isLoaded, getPricePreview, getChargePreview } = usePaddleContext();
   const currentWorkspace = useCurrentWorkspace();
   const { workspace, refetch } = useWorkspace({
     workspaceSlug: currentWorkspace?.slug,
@@ -709,18 +807,27 @@ export const WorkspaceBilling = () => {
   // single purchase.
   const [activationAddonFeeds, setActivationAddonFeeds] = useState(0);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
-  // Focus management around the Paddle overlay, which is a third-party iframe we
-  // do not own. We cannot push focus into it (Paddle's overlay auto-focuses its
-  // first field), but we own the handoff and both return trips, which differ:
-  //  - Open: announce the overlay (otherwise silent to a screen reader).
-  //  - Cancel (onClose): nothing changed, so return focus to the Subscribe
-  //    button that opened it instead of stranding the user at the top of the doc.
-  //  - Complete (onCompleted): the page transitions and the Subscribe button
-  //    unmounts, so returning focus there is meaningless. Move focus to the
-  //    "Confirming your subscription" status that appears in its place.
-  const [checkoutAnnouncement, setCheckoutAnnouncement] = useState("");
+  // The checkout dialog is page-level so its focus trap is unaffected by where
+  // the triggering button lives. We still own the two return trips:
+  //  - Cancel (onClose): nothing changed, so return focus to the button that
+  //    opened the dialog (the dialog itself only restores focus to its trigger,
+  //    which for the update-payment flow lives in a child component).
+  //  - Complete (onCompleted): the page transitions and the opener unmounts, so
+  //    returning focus there is meaningless. Move focus to the page heading,
+  //    which is always present and survives the confirming -> active swap.
+  const [checkoutIntent, setCheckoutIntent] = useState<WorkspaceCheckoutIntent | null>(null);
   const checkoutOpenerRef = useRef<HTMLElement | null>(null);
-  const confirmingStatusRef = useRef<HTMLDivElement | null>(null);
+  // A single persistent polite live region. The visible UI change on success is
+  // silent to screen readers, so we announce the outcome explicitly in two
+  // stages: payment captured (dialog closes), then provisioning complete (the
+  // webhook activates the workspace). Driving one stable region by its text
+  // makes each announcement deterministic, rather than relying on blocks
+  // mounting/unmounting (which announced unpredictably and over-spoke).
+  const [billingAnnouncement, setBillingAnnouncement] = useState("");
+  // The page heading is always rendered, so it is a stable focus target across
+  // the confirming -> active transition. The transient "Confirming" status
+  // region unmounts when the subscription lands, so focus must not live there.
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
 
   const isOwner = currentWorkspace?.myRole === "owner";
   const subscription = workspace?.subscription ?? null;
@@ -747,12 +854,20 @@ export const WorkspaceBilling = () => {
       .catch(() => setPricesError(true));
   }, [isConfigured, isLoaded, isOwner]);
 
-  // After overlay checkout completes, the webhook activates the workspace;
-  // poll the workspace read until the subscription shows up.
+  // After checkout completes, the webhook activates the workspace; poll the
+  // workspace read until the subscription shows up.
   const refetchRef = useRef(refetch);
   refetchRef.current = refetch;
   useEffect(() => {
     if (!awaitingActivation || subscription) {
+      // Stage two of the announcement: the subscription landing while we were
+      // awaiting activation is the genuine provisioning-complete transition.
+      if (awaitingActivation && subscription) {
+        setBillingAnnouncement(
+          `Your ${PRODUCT_NAMES[subscription.productKey as ProductKey] ?? "subscription"} is now active.`,
+        );
+      }
+
       if (subscription) {
         setAwaitingActivation(false);
 
@@ -784,47 +899,46 @@ export const WorkspaceBilling = () => {
       ?.find((p) => p.id === ProductKey.Tier3Feed)
       ?.prices.find((p) => p.interval === useInterval)?.formattedPrice;
 
-  // Both checkout paths (subscribe, update payment method) open the same silent
-  // Paddle overlay, so both announce it the same way. Announce AFTER opening:
-  // Paddle injects the overlay and pulls focus into its iframe synchronously,
-  // which preempts a polite announcement fired in the same tick. Delaying past
-  // that focus change lets the screen reader settle and actually read it (the
-  // app's navigation announcer uses the same trick). Reset to empty first so a
-  // repeat open re-triggers the same text as a change.
-  const announceCheckoutOpen = () => {
-    setCheckoutAnnouncement("");
-    window.setTimeout(() => setCheckoutAnnouncement("Checkout opened in a secure window."), 600);
-  };
-
   const subscribe = (tier: WorkspaceTier, addonFeeds = 0) => {
-    // Remember the button that opened the overlay so focus can return to it.
+    // Remember the button that opened the dialog so focus can return to it on
+    // cancel.
     checkoutOpenerRef.current = document.activeElement as HTMLElement | null;
 
-    openCheckout({
+    setCheckoutIntent({
+      kind: "subscribe",
       prices: [
         { priceId: PRICE_IDS[tier][interval], quantity: 1 },
         ...(tier === ProductKey.Tier3 && addonFeeds > 0
           ? [{ priceId: PRICE_IDS[ProductKey.Tier3Feed][interval], quantity: addonFeeds }]
           : []),
       ],
-      displayMode: "overlay",
-      customData: { workspaceId: currentWorkspace.id },
-      onClose: () => {
-        // Cancelled: the page is unchanged, so send focus back to the button
-        // that opened the overlay.
-        checkoutOpenerRef.current?.focus?.();
-      },
-      onCompleted: () => {
-        window.sessionStorage.setItem(pendingActivationKey(currentWorkspace.id), "1");
-        setAwaitingActivation(true);
-        // The Subscribe button is unmounting as the page flips to the confirming
-        // state; move focus to that status (rendered next tick) so it is not lost
-        // to the document body.
-        window.setTimeout(() => confirmingStatusRef.current?.focus?.(), 0);
-      },
+      workspaceId: currentWorkspace.id,
+      title: `Subscribe to ${PRODUCT_NAMES[tier]}`,
     });
+  };
 
-    announceCheckoutOpen();
+  // Cancelled: the page is unchanged, so close the dialog and send focus back to
+  // the button that opened it. Defer the focus past the close so it is not
+  // overwritten by the dialog's own focus-restore (which lands on its trigger).
+  const onCheckoutCancel = () => {
+    setCheckoutIntent(null);
+    window.setTimeout(() => checkoutOpenerRef.current?.focus?.(), 0);
+  };
+
+  // Paid: record the pending activation (survives a navigate-away) and close the
+  // dialog. The opener button unmounts as the page transitions, so Chakra's
+  // focus-restore would land on a detached node (dropping focus to the body);
+  // move focus to the always-present page heading instead. The heading is a
+  // stable target that survives the confirming -> active swap, unlike the
+  // transient status region, so focus is never lost mid-transition. The polite
+  // status region still announces "Confirming"; it is no longer the focus
+  // target, so its later unmount cannot strand focus.
+  const onCheckoutCompleted = () => {
+    window.sessionStorage.setItem(pendingActivationKey(currentWorkspace.id), "1");
+    setAwaitingActivation(true);
+    setBillingAnnouncement("Payment successful. Confirming your subscription…");
+    setCheckoutIntent(null);
+    window.setTimeout(() => headingRef.current?.focus?.(), 0);
   };
 
   const subscriptionInterval = (subscription?.billingInterval ?? "month") as BillingInterval;
@@ -855,15 +969,6 @@ export const WorkspaceBilling = () => {
 
   return (
     <Stack gap={8}>
-      {/* Announces the otherwise-silent Paddle overlay opening to screen readers. */}
-      <VisuallyHidden
-        data-testid="checkout-announcer"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {checkoutAnnouncement}
-      </VisuallyHidden>
       <BreadcrumbRoot>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -882,7 +987,7 @@ export const WorkspaceBilling = () => {
         </BreadcrumbList>
       </BreadcrumbRoot>
       <Stack gap={2}>
-        <Heading as="h1" size="lg">
+        <Heading as="h1" size="lg" ref={headingRef} tabIndex={-1} outline="none">
           Billing
         </Heading>
         <Text color="fg.muted">
@@ -890,14 +995,13 @@ export const WorkspaceBilling = () => {
           member&apos;s personal plan.
         </Text>
       </Stack>
+      {/* Outcome announcements (payment captured, then activation complete) go
+          through one persistent polite live region so each is announced once
+          and the text is fully under our control. The visible spinner below is
+          decorative; it no longer carries its own live role. */}
+      <VisuallyHidden role="status">{billingAnnouncement}</VisuallyHidden>
       {awaitingActivation && !subscription && (
-        <Box
-          ref={confirmingStatusRef}
-          tabIndex={-1}
-          role="status"
-          aria-live="polite"
-          outline="none"
-        >
+        <Box>
           <HStack>
             <Spinner size="sm" />
             <Text>Confirming your subscription…</Text>
@@ -947,7 +1051,14 @@ export const WorkspaceBilling = () => {
           {isOwner && (
             <WorkspacePaymentMethodSection
               workspaceSlug={workspaceSlug}
-              announceCheckoutOpen={announceCheckoutOpen}
+              onStartUpdatePayment={(transactionId, opener) => {
+                checkoutOpenerRef.current = opener;
+                setCheckoutIntent({
+                  kind: "updatePaymentMethod",
+                  transactionId,
+                  title: "Update payment method",
+                });
+              }}
             />
           )}
           {isOwner && !subscription.cancellationDate && (
@@ -1170,6 +1281,11 @@ export const WorkspaceBilling = () => {
           )}
         </SettingsSection>
       )}
+      <WorkspaceCheckoutDialog
+        intent={checkoutIntent}
+        onCancel={onCheckoutCancel}
+        onCompleted={onCheckoutCompleted}
+      />
       <ChangeWorkspacePlanDialog
         workspaceSlug={workspaceSlug}
         pendingChange={pendingChange}
@@ -1191,6 +1307,7 @@ export const WorkspaceBilling = () => {
             // endpoint polls for it), so show the same "confirming" state as a
             // fresh activation while the workspace read catches up.
             window.sessionStorage.setItem(pendingActivationKey(currentWorkspace.id), "1");
+            setBillingAnnouncement("Confirming your subscription…");
             setAwaitingActivation(true);
           }}
           workspaceSlug={workspaceSlug}

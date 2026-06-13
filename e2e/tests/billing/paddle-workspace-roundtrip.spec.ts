@@ -53,14 +53,22 @@ async function createTeamAndOpenBilling(page: Page): Promise<string> {
   return workspaceSlug as string;
 }
 
-// Fill and submit the Paddle overlay checkout that the subscribe button opens,
-// then wait for the webhook to flip the page to the active current-plan view.
-async function completeOverlayCheckout(page: Page): Promise<void> {
-  // The overlay iframe is not the page's only iframe — target it explicitly.
-  const overlayIframe = page.locator('iframe[name*="paddle"], iframe[src*="paddle"]');
+// Fill and submit the Paddle checkout the subscribe button opens, then wait for
+// the webhook to flip the page to the active current-plan view. The checkout
+// renders INLINE inside a Chakra dialog (not Paddle's page-leaking overlay), so
+// the Paddle iframe lives within the [role=dialog]; scope to it.
+async function completeInlineCheckout(page: Page): Promise<void> {
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible({ timeout: 15000 });
+
+  // The checkout iframe is not the page's only iframe — target it within the
+  // dialog explicitly.
+  const overlayIframe = dialog.locator('iframe[name*="paddle"], iframe[src*="paddle"]');
   await expect(overlayIframe.first()).toBeVisible({ timeout: 15000 });
 
-  const paddleFrame = page.frameLocator('iframe[name*="paddle"], iframe[src*="paddle"]').first();
+  const paddleFrame = dialog
+    .frameLocator('iframe[name*="paddle"], iframe[src*="paddle"]')
+    .first();
   const cardInput = paddleFrame.getByRole("textbox", { name: "Card number" });
   await expect(cardInput).toBeVisible({ timeout: 30000 });
 
@@ -110,13 +118,63 @@ test.describe("Paddle workspace roundtrip", () => {
     const termsBeforeSubscribe = await termsLink.evaluate(
       (terms, subscribe) =>
         !!(terms.compareDocumentPosition(subscribe) & Node.DOCUMENT_POSITION_FOLLOWING),
-      await firstSubscribe.elementHandle(),
+      (await firstSubscribe.elementHandle())!,
     );
     expect(termsBeforeSubscribe).toBe(true);
 
-    // Subscribe to Tier 2 (monthly default): opens the Paddle overlay checkout.
+    // Grab a handle to a control behind the soon-to-open dialog WHILE it is still
+    // in the accessibility tree. Once the dialog opens it inerts its siblings,
+    // which removes the breadcrumb from the a11y tree, so a role-based locator
+    // would no longer resolve it (the handle still references the DOM node).
+    const breadcrumbHandle = await page
+      .getByRole("link", { name: "Team settings" })
+      .elementHandle();
+
+    // Subscribe to Tier 2 (monthly default): opens the inline checkout dialog.
     await page.getByRole("button", { name: /subscribe to tier 2/i }).click();
-    await completeOverlayCheckout(page);
+
+    // The checkout is hosted in a modal dialog that must trap focus: a keyboard
+    // user must not be able to reach the page behind it. The dialog inerts its
+    // siblings, so trying to focus the breadcrumb is a no-op and focus stays
+    // within the dialog.
+    const checkoutDialog = page.getByRole("dialog");
+    await expect(checkoutDialog).toBeVisible({ timeout: 15000 });
+    const trapped = await breadcrumbHandle!.evaluate((el) => {
+      (el as HTMLElement).focus();
+
+      return (
+        document.activeElement !== el && !!document.activeElement?.closest('[role="dialog"]')
+      );
+    });
+    expect(trapped).toBe(true);
+
+    // Cancel and reopen once: a second open must repaint the inline Paddle frame
+    // into a freshly-mounted container (the dialog tears the previous one down),
+    // so the card field must appear again rather than a blank frame.
+    await page.keyboard.press("Escape");
+    await expect(checkoutDialog).toHaveCount(0);
+    // Inert is lifted, so the breadcrumb can hold focus again (the dialog
+    // returned focus to its opener, but the breadcrumb is reachable regardless).
+    const reReachable = await breadcrumbHandle!.evaluate((el) => {
+      (el as HTMLElement).focus();
+
+      return document.activeElement === el;
+    });
+    expect(reReachable).toBe(true);
+    await page.getByRole("button", { name: /subscribe to tier 2/i }).click();
+    await expect(checkoutDialog).toBeVisible({ timeout: 15000 });
+
+    await completeInlineCheckout(page);
+
+    // The dialog closed itself on success; the page behind is interactive again,
+    // so the breadcrumb can take focus once more (inert lifted).
+    await expect(checkoutDialog).toHaveCount(0);
+    const restored = await breadcrumbHandle!.evaluate((el) => {
+      (el as HTMLElement).focus();
+
+      return document.activeElement === el;
+    });
+    expect(restored).toBe(true);
 
     // The current-plan view renders the tier name both as a card heading and in
     // the "Current plan" badge region, so scope to the heading to stay unique.
@@ -199,7 +257,7 @@ test.describe("Paddle workspace roundtrip", () => {
     // it, so the addon change preview is deterministic.
     await page.getByRole("button", { name: "Yearly" }).click();
     await page.getByRole("button", { name: /subscribe to tier 3/i }).click();
-    await completeOverlayCheckout(page);
+    await completeInlineCheckout(page);
     await expect(page.getByRole("heading", { name: "Tier 3" })).toBeVisible();
 
     // The Tier 3 card in the change-plan section carries the additional-feeds

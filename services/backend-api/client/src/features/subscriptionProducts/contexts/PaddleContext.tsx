@@ -69,7 +69,10 @@ export type PaddleCheckoutUpdatedEvent = PaddleCheckoutLoadedEvent;
 
 interface ContextProps {
   checkoutLoadedData?: CheckoutSummaryData;
-  updatePaymentMethod: (transactionId: string, options?: { onClose?: () => void }) => void;
+  updatePaymentMethod: (
+    transactionId: string,
+    options?: { onClose?: () => void; onCompleted?: () => void; frameTarget?: string },
+  ) => void;
   updateCheckout: (data: {
     prices: Array<{
       priceId: string;
@@ -408,23 +411,38 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   );
 
   const updatePaymentMethod = useCallback(
-    (transactionId: string, options?: { onClose?: () => void }) => {
+    (
+      transactionId: string,
+      options?: { onClose?: () => void; onCompleted?: () => void; frameTarget?: string },
+    ) => {
       setIsSubscriptionCreated(false);
-      // Wire the same overlay-lifecycle refs as openCheckout so the shared
-      // checkout.closed handler fires the caller's onClose on cancel. Updating
-      // a card has no completion side effect here, so only the close path
-      // matters; the overlay shows its own success and dismisses.
+      // Wire the same lifecycle refs as openCheckout so the shared event handler
+      // fires the caller's callbacks. A frameTarget means the caller hosts the
+      // checkout inline (in their own container), so it is NOT an overlay: the
+      // completed handler must not call Checkout.close(), which would blank the
+      // inline frame. Without a frameTarget this stays an overlay, as before.
+      const inline = !!options?.frameTarget;
       checkoutCompletedRef.current = false;
       checkoutClosedCallbackRef.current = options?.onClose;
-      lastCheckoutWasOverlayRef.current = true;
+      checkoutCompletedCallbackRef.current = options?.onCompleted;
+      lastCheckoutWasOverlayRef.current = !inline;
 
       paddle?.Checkout.open({
         transactionId,
-        settings: {
-          allowLogout: false,
-          theme: "dark",
-          displayMode: "overlay",
-        },
+        settings: inline
+          ? {
+              displayMode: "inline",
+              frameTarget: options?.frameTarget,
+              frameInitialHeight: 634,
+              allowLogout: false,
+              frameStyle:
+                "width: 100%; height: 100%; min-width: 312px; min-height:634px; padding-left: 8px; padding-right: 8px;",
+            }
+          : {
+              allowLogout: false,
+              theme: "dark",
+              displayMode: "overlay",
+            },
       });
     },
     [!!paddle],
