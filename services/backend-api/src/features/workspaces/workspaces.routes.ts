@@ -29,6 +29,7 @@ import { withExceptionFilter } from "../../shared/filters/exception-filter";
 import {
   previewWorkspaceBillingChangeHandler,
   updateWorkspaceBillingHandler,
+  updateWorkspacePaymentMethodHandler,
   cancelWorkspaceBillingHandler,
   resumeWorkspaceBillingHandler,
   convertWorkspaceBillingHandler,
@@ -132,6 +133,19 @@ export async function workspacesRoutes(app: FastifyInstance): Promise<void> {
     handler: withExceptionFilter(
       WORKSPACE_BILLING_EXCEPTION_ERROR_CODES,
       updateWorkspaceBillingHandler,
+    ),
+  });
+
+  // Fetches a Paddle update-payment-method transaction for the workspace's own
+  // subscription; the client opens the Paddle overlay with it. POST despite
+  // being read-like because it mints a transaction on Paddle's side and to
+  // match the family convention.
+  app.post("/:workspaceSlug/billing/update-payment-method", {
+    preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
+    schema: { params: WorkspaceSlugParamsSchema },
+    handler: withExceptionFilter(
+      WORKSPACE_BILLING_EXCEPTION_ERROR_CODES,
+      updateWorkspacePaymentMethodHandler,
     ),
   });
 

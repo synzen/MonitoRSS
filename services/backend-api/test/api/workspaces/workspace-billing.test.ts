@@ -230,6 +230,7 @@ describe("Workspace billing API", { concurrency: true }, () => {
       },
       { path: `/api/v1/workspaces/${slug}/billing/cancel` },
       { path: `/api/v1/workspaces/${slug}/billing/resume` },
+      { path: `/api/v1/workspaces/${slug}/billing/update-payment-method` },
     ];
 
     for (const endpoint of endpoints) {
@@ -395,6 +396,7 @@ describe("Workspace billing API", { concurrency: true }, () => {
       },
       { path: `/api/v1/workspaces/${slug}/billing/cancel` },
       { path: `/api/v1/workspaces/${slug}/billing/resume` },
+      { path: `/api/v1/workspaces/${slug}/billing/update-payment-method` },
     ];
 
     for (const endpoint of endpoints) {
@@ -459,6 +461,38 @@ describe("Workspace billing API", { concurrency: true }, () => {
       result: { subscription: { cancellationDate: string | null } };
     }>(await user.fetch(`/api/v1/workspaces/${slug}`));
     assert.strictEqual(detail.result.subscription.cancellationDate, null);
+  });
+
+  it("lets the owner fetch an update-payment-method transaction for the workspace subscription", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(ctx, discordUserId);
+    const { user, workspaceId, slug } =
+      await createWorkspaceAsUser(discordUserId);
+
+    const subscriptionId = generateTestId();
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      workspaceId,
+      buildPaddleCustomer({ subscriptionId }),
+    );
+
+    const transactionId = generateTestId();
+    paddleApi.server.registerRoute(
+      "GET",
+      `/subscriptions/${subscriptionId}/update-payment-method-transaction`,
+      {
+        status: 200,
+        body: { data: { id: transactionId } },
+      },
+    );
+
+    const res = await user.fetch(
+      `/api/v1/workspaces/${slug}/billing/update-payment-method`,
+      { method: "POST" },
+    );
+
+    assert.strictEqual(res.status, 200);
+    const body = await readJson<{ data: { paddleTransactionId: string } }>(res);
+    assert.strictEqual(body.data.paddleTransactionId, transactionId);
   });
 
   it("returns a formatted preview of a subscription change", async () => {
@@ -567,6 +601,7 @@ describe(
         },
         { path: `/api/v1/workspaces/${slug}/billing/cancel` },
         { path: `/api/v1/workspaces/${slug}/billing/resume` },
+        { path: `/api/v1/workspaces/${slug}/billing/update-payment-method` },
       ];
 
       for (const endpoint of endpoints) {

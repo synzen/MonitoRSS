@@ -64,6 +64,18 @@ export async function updateWorkspaceBillingHandler(
   return reply.status(204).send();
 }
 
+export async function updateWorkspacePaymentMethodHandler(
+  request: FastifyRequest<{ Params: WorkspaceSlugParams }>,
+): Promise<{ data: { paddleTransactionId: string } }> {
+  const workspace = await resolveWorkspaceForBilling(request);
+  const { workspaceBillingService } = request.container;
+
+  const { id } =
+    await workspaceBillingService.getUpdatePaymentMethodTransaction(workspace);
+
+  return { data: { paddleTransactionId: id } };
+}
+
 export async function cancelWorkspaceBillingHandler(
   request: FastifyRequest<{ Params: WorkspaceSlugParams }>,
   reply: FastifyReply,

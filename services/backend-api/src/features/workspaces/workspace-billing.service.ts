@@ -8,6 +8,7 @@ import type { IPaddleCustomerSubscription } from "../../repositories/interfaces/
 import type { PaddleService } from "../../services/paddle/paddle.service";
 import type {
   PaddleSubscriptionPreviewResponse,
+  PaddleSubscriptionUpdatePaymentMethodResponse,
 } from "../../services/supporter-subscriptions/types";
 import type { ISupporterRepository } from "../../repositories/interfaces/supporter.types";
 import type { IUserFeedRepository } from "../../repositories/interfaces/user-feed.types";
@@ -147,6 +148,23 @@ export class WorkspaceBillingService {
 
       return !!latestUpdatedAt && latestUpdatedAt.getTime() > currentUpdatedAt;
     });
+  }
+
+  // Returns a Paddle update-payment-method transaction for the workspace's own
+  // subscription. Reuses getSubscriptionOrThrow, so a dormant workspace maps to
+  // a structured 4xx (not a 500). Updating the card flips no subscription
+  // field, so there is nothing to poll for.
+  async getUpdatePaymentMethodTransaction(
+    workspace: IWorkspace,
+  ): Promise<{ id: string }> {
+    const subscription = this.getSubscriptionOrThrow(workspace);
+
+    const response =
+      await this.deps.paddleService.executeApiCall<PaddleSubscriptionUpdatePaymentMethodResponse>(
+        `/subscriptions/${subscription.id}/update-payment-method-transaction`,
+      );
+
+    return { id: response.data.id };
   }
 
   async cancelSubscription(workspace: IWorkspace): Promise<void> {

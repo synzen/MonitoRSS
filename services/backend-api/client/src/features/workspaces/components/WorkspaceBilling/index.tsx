@@ -22,6 +22,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import dayjs from "dayjs";
+import { captureException } from "@sentry/react";
 import { FaCheck, FaChevronRight } from "react-icons/fa6";
 import { Link as RouterLink } from "react-router-dom";
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -29,6 +30,7 @@ import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { SettingsSection } from "@/components/SettingsSection";
 import { Field } from "@/components/ui/field";
 import {
@@ -52,6 +54,7 @@ import {
   useUpdateWorkspaceBilling,
   useConvertWorkspaceBilling,
   useWorkspaceBillingChangePreview,
+  useWorkspaceUpdatePaymentMethodTransaction,
 } from "../../hooks";
 import { usePersonalConvertibleFeeds } from "../../hooks/usePersonalConvertibleFeeds";
 
@@ -424,6 +427,61 @@ const ConvertPersonalPlanDialog = ({
   );
 };
 
+// Replaces the card on the team's existing subscription. The Paddle overlay is
+// opened straight from this page-level button (never from inside a Chakra
+// dialog, which would inert the overlay). Updating the card flips no
+// subscription field, so completion is silent: Paddle's own overlay shows
+// success and closes, leaving the page intact.
+const WorkspacePaymentMethodSection = ({ workspaceSlug }: { workspaceSlug: string }) => {
+  const { updatePaymentMethod } = usePaddleContext();
+  const { error, fetchStatus, refetch } = useWorkspaceUpdatePaymentMethodTransaction(workspaceSlug);
+
+  const onClick = async () => {
+    try {
+      const result = await refetch();
+      const transactionId = result.data?.data.paddleTransactionId;
+
+      if (!transactionId) {
+        return;
+      }
+
+      updatePaymentMethod(transactionId);
+    } catch (err) {
+      captureException(err);
+    }
+  };
+
+  return (
+    <SettingsSection
+      title="Payment method"
+      description="Replace the card on file for this team's subscription. Card details are entered on Paddle's secure checkout, not stored here."
+    >
+      <Stack gap={3} alignItems="flex-start">
+        <SafeLoadingButton
+          variant="outline"
+          loading={fetchStatus === "fetching"}
+          aria-disabled={!!error}
+          onClick={() => {
+            if (error) {
+              return;
+            }
+
+            onClick();
+          }}
+        >
+          Update payment method
+        </SafeLoadingButton>
+        {error && (
+          <InlineErrorAlert
+            title="Failed to start payment method update"
+            description={error.message}
+          />
+        )}
+      </Stack>
+    </SettingsSection>
+  );
+};
+
 export const WorkspaceBilling = () => {
   const { isConfigured, isLoaded, openCheckout, getPricePreview } = usePaddleContext();
   const currentWorkspace = useCurrentWorkspace();
@@ -611,6 +669,7 @@ export const WorkspaceBilling = () => {
               </Box>
             )}
           </SettingsSection>
+          {isOwner && <WorkspacePaymentMethodSection workspaceSlug={workspaceSlug} />}
           {isOwner && !subscription.cancellationDate && (
             <SettingsSection
               title="Change plan"

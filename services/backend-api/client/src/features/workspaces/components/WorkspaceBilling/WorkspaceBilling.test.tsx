@@ -15,6 +15,7 @@ import {
   useResumeWorkspaceBilling,
   useUpdateWorkspaceBilling,
   useConvertWorkspaceBilling,
+  useWorkspaceUpdatePaymentMethodTransaction,
 } from "../../hooks";
 import { usePersonalConvertibleFeeds } from "../../hooks/usePersonalConvertibleFeeds";
 
@@ -26,6 +27,8 @@ const h = vi.hoisted(() => ({
   update: vi.fn(),
   convert: vi.fn(),
   refetchWorkspace: vi.fn(),
+  updatePaymentMethod: vi.fn(),
+  refetchPaymentMethodTransaction: vi.fn(),
 }));
 
 vi.mock("@/features/subscriptionProducts", () => ({
@@ -42,6 +45,7 @@ vi.mock("../../hooks", () => ({
   useResumeWorkspaceBilling: vi.fn(),
   useUpdateWorkspaceBilling: vi.fn(),
   useConvertWorkspaceBilling: vi.fn(),
+  useWorkspaceUpdatePaymentMethodTransaction: vi.fn(),
   useWorkspaceBillingChangePreview: vi.fn(() => ({
     preview: undefined,
     status: "idle",
@@ -102,6 +106,7 @@ const mockPaddle = (overrides: Record<string, unknown> = {}) => {
     isLoaded: true,
     openCheckout: h.openCheckout,
     getPricePreview: h.getPricePreview,
+    updatePaymentMethod: h.updatePaymentMethod,
     isSubscriptionCreated: false,
     ...overrides,
   } as never);
@@ -190,6 +195,14 @@ describe("WorkspaceBilling", () => {
       feeds: [],
       status: "success",
     } as never);
+    h.refetchPaymentMethodTransaction.mockResolvedValue({
+      data: { data: { paddleTransactionId: "txn_default" } },
+    });
+    vi.mocked(useWorkspaceUpdatePaymentMethodTransaction).mockReturnValue({
+      refetch: h.refetchPaymentMethodTransaction,
+      error: null,
+      fetchStatus: "idle",
+    } as never);
   });
 
   it("offers Tier 2/Tier 3 checkout to the owner of an unsubscribed workspace, carrying the workspace id", async () => {
@@ -267,6 +280,9 @@ describe("WorkspaceBilling", () => {
     expect(await screen.findByText(/tier 2/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /subscribe/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /cancel subscription/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /update payment method/i }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/only the team owner can manage billing/i)).toBeInTheDocument();
   });
 
@@ -298,10 +314,66 @@ describe("WorkspaceBilling", () => {
     renderBilling();
 
     expect(await screen.findByText(/will be canceled/i)).toBeInTheDocument();
+    // Updating the card stays available even with a cancellation scheduled, so
+    // the owner can keep the subscription billable if they later resume.
+    expect(screen.getByRole("button", { name: /update payment method/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /keep subscription/i }));
 
     await waitFor(() => expect(h.resume).toHaveBeenCalled());
+  });
+
+  it("lets the owner update the payment method, opening the Paddle overlay with the fetched transaction", async () => {
+    h.refetchPaymentMethodTransaction.mockResolvedValue({
+      data: { data: { paddleTransactionId: "txn_update_card" } },
+    });
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+
+    renderBilling();
+
+    fireEvent.click(await screen.findByRole("button", { name: /update payment method/i }));
+
+    await waitFor(() => expect(h.updatePaymentMethod).toHaveBeenCalledWith("txn_update_card"));
+  });
+
+  it("marks the update-payment-method button as aria-disabled and blocks re-click when the transaction fails to load", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    vi.mocked(useWorkspaceUpdatePaymentMethodTransaction).mockReturnValue({
+      refetch: h.refetchPaymentMethodTransaction,
+      error: { message: "Could not reach Paddle" },
+      fetchStatus: "idle",
+    } as never);
+
+    renderBilling();
+
+    expect(await screen.findByText(/failed to start payment method update/i)).toBeInTheDocument();
+
+    const button = screen.getByRole("button", { name: /update payment method/i });
+    // SafeLoadingButton signals the failed state via aria-disabled (never the
+    // native disabled attribute), so the button stays focusable and announced
+    // rather than dropping out of the tab order.
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(button).not.toBeDisabled();
+
+    // Clicking while errored must not re-mint a transaction or reopen Paddle.
+    fireEvent.click(button);
+    expect(h.refetchPaymentMethodTransaction).not.toHaveBeenCalled();
+    expect(h.updatePaymentMethod).not.toHaveBeenCalled();
+  });
+
+  it("does not offer to update the payment method on a dormant workspace with no subscription", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    // The activation pitch renders, but there is no card to update yet.
+    await screen.findByRole("button", { name: /subscribe to tier 2/i });
+    expect(
+      screen.queryByRole("button", { name: /update payment method/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders nothing when Paddle is not configured", () => {

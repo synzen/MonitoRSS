@@ -3,10 +3,12 @@ import ApiAdapterError from "@/utils/ApiAdapterError";
 import {
   cancelWorkspaceBilling,
   convertWorkspaceBilling,
+  getWorkspaceUpdatePaymentMethodTransaction,
   previewWorkspaceBillingChange,
   resumeWorkspaceBilling,
   updateWorkspaceBilling,
   type WorkspaceBillingChangePreviewOutput,
+  type WorkspaceUpdatePaymentMethodOutput,
 } from "../api/workspaceBilling";
 
 // All billing mutations invalidate the workspace detail query: the webhook has
@@ -63,6 +65,25 @@ export const useConvertWorkspaceBilling = () => {
       onSuccess: invalidate,
     },
   );
+};
+
+// Lazily fetched on the owner's click: minting a Paddle transaction has a
+// side effect, so it must not run on render. The caller invokes refetch(),
+// then opens the Paddle overlay with the returned transaction id.
+export const useWorkspaceUpdatePaymentMethodTransaction = (workspaceSlug: string) => {
+  const { error, fetchStatus, refetch } = useQuery<
+    WorkspaceUpdatePaymentMethodOutput,
+    ApiAdapterError
+  >(
+    ["workspace-update-payment-method-transaction", workspaceSlug],
+    async () => getWorkspaceUpdatePaymentMethodTransaction(workspaceSlug),
+    {
+      cacheTime: 0,
+      enabled: false,
+    },
+  );
+
+  return { error, fetchStatus, refetch };
 };
 
 export const useWorkspaceBillingChangePreview = ({

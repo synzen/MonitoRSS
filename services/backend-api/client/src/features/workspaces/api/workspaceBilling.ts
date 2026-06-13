@@ -71,6 +71,29 @@ export const resumeWorkspaceBilling = async (workspaceSlug: string): Promise<voi
   });
 };
 
+const WorkspaceUpdatePaymentMethodOutputSchema = object({
+  data: object({
+    paddleTransactionId: string().required(),
+  }).required(),
+}).required();
+
+export type WorkspaceUpdatePaymentMethodOutput = InferType<
+  typeof WorkspaceUpdatePaymentMethodOutputSchema
+>;
+
+export const getWorkspaceUpdatePaymentMethodTransaction = async (
+  workspaceSlug: string,
+): Promise<WorkspaceUpdatePaymentMethodOutput> => {
+  const res = await fetchRest(`/api/v1/workspaces/${workspaceSlug}/billing/update-payment-method`, {
+    validateSchema: WorkspaceUpdatePaymentMethodOutputSchema,
+    requestOptions: {
+      method: "POST",
+    },
+  });
+
+  return res as WorkspaceUpdatePaymentMethodOutput;
+};
+
 export const convertWorkspaceBilling = async ({
   workspaceSlug,
   feedIds,
