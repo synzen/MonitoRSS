@@ -12,6 +12,7 @@ import type {
   CreateUserInput,
   UpdateUserPreferencesInput,
   SetExternalCredentialInput,
+  SetVerifiedEmailResult,
   IUserExternalCredential,
 } from "../interfaces/user.types";
 import {
@@ -226,11 +227,22 @@ export class UserMongooseRepository
     return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
   }
 
-  async setVerifiedEmail(userId: string, email: string): Promise<void> {
-    await this.model.updateOne(
-      { _id: this.stringToObjectId(userId) },
-      { $set: { verifiedEmail: email, verifiedEmailVerifiedAt: new Date() } },
-    );
+  async setVerifiedEmail(
+    userId: string,
+    email: string,
+  ): Promise<SetVerifiedEmailResult> {
+    // Read-before semantics: findOneAndUpdate with new:false returns the
+    // pre-update document, so the previous verified email is captured in the
+    // same atomic write rather than a racy read-then-write.
+    const previous = await this.model
+      .findOneAndUpdate(
+        { _id: this.stringToObjectId(userId) },
+        { $set: { verifiedEmail: email, verifiedEmailVerifiedAt: new Date() } },
+        { new: false },
+      )
+      .lean();
+
+    return { previousVerifiedEmail: previous?.verifiedEmail ?? null };
   }
 
   async updatePreferencesByDiscordId(

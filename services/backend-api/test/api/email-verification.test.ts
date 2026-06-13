@@ -20,6 +20,7 @@ interface ErrorResult {
 describe("Email verification API", () => {
   let ctx: AppTestContext;
   let sent: Array<{ to: string; code: string }>;
+  let mail: Array<{ to: string; subject: string; html: string }>;
 
   before(async () => {
     // A from-domain is required for the sender address (createFromFormatter);
@@ -37,8 +38,10 @@ describe("Email verification API", () => {
   // exercised without an SMTP server (the harness leaves SMTP unconfigured).
   beforeEach(() => {
     sent = [];
+    mail = [];
     const fakeTransport = {
-      sendMail: async (msg: { to: string; html: string }) => {
+      sendMail: async (msg: { to: string; subject: string; html: string }) => {
+        mail.push({ to: msg.to, subject: msg.subject, html: String(msg.html) });
         const match = /(\d{6})/.exec(String(msg.html));
         sent.push({ to: msg.to, code: match?.[1] ?? "" });
         return {};
@@ -350,6 +353,121 @@ describe("Email verification API", () => {
       /^[0-9a-f]{64}$/,
       "codeHash must be a 64-char lowercase hex string",
     );
+  });
+
+  // Drives the real send + confirm endpoints to verify `email` for `user`,
+  // returning the captured OTP. Mirrors the happy-path test above. A dedicated
+  // source IP isolates the caller from the shared per-IP send bucket (trustProxy
+  // is on), matching the rate-limit tests above.
+  async function verifyEmailThroughFlow(
+    user: Awaited<ReturnType<typeof makeUser>>["user"],
+    email: string,
+    headers: Record<string, string>,
+  ): Promise<void> {
+    const sendRes = await user.fetch("/api/v1/users/@me/email-verification", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ email }),
+    });
+    assert.strictEqual(sendRes.status, 200);
+    const captured = sent[sent.length - 1];
+    assert.ok(captured);
+    const confirmRes = await user.fetch(
+      "/api/v1/users/@me/email-verification/confirm",
+      { method: "POST", body: JSON.stringify({ email, code: captured.code }) },
+    );
+    assert.strictEqual(confirmRes.status, 200);
+  }
+
+  function dedicatedIp(): Record<string, string> {
+    return {
+      "x-forwarded-for": `198.51.100.${Math.floor(Math.random() * 250) + 1}`,
+    };
+  }
+
+  it("overwrites an existing verified email when a different address is confirmed", async () => {
+    const { user, internalId } = await makeUser();
+    const headers = dedicatedIp();
+    const firstEmail = `${randomUUID()}@example.com`;
+    const secondEmail = `${randomUUID()}@example.com`;
+
+    await verifyEmailThroughFlow(user, firstEmail, headers);
+    await verifyEmailThroughFlow(user, secondEmail, headers);
+
+    const updated = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(updated?.verifiedEmail, secondEmail.toLowerCase());
+  });
+
+  it("sends a change notice disclosing the full new address to the old address", async () => {
+    const { user } = await makeUser();
+    const headers = dedicatedIp();
+    const oldEmail = `old-${randomUUID()}@example.com`;
+    const newEmail = `new-${randomUUID()}@example.com`;
+
+    await verifyEmailThroughFlow(user, oldEmail, headers);
+    await verifyEmailThroughFlow(user, newEmail, headers);
+
+    const notice = mail.find(
+      (m) => m.to === oldEmail.toLowerCase() && !/\b\d{6}\b/.test(m.html),
+    );
+    assert.ok(notice, "a change notice should be sent to the old address");
+    assert.ok(
+      notice.html.includes(newEmail.toLowerCase()),
+      "the change notice should disclose the full new address",
+    );
+  });
+
+  it("sends no change notice on first-time verification (no previous address)", async () => {
+    const { user } = await makeUser();
+    const headers = dedicatedIp();
+    const email = `first-${randomUUID()}@example.com`;
+
+    await verifyEmailThroughFlow(user, email, headers);
+
+    const notice = mail.find((m) => !/\b\d{6}\b/.test(m.html));
+    assert.strictEqual(
+      notice,
+      undefined,
+      "no change notice should be sent on first-time verification",
+    );
+  });
+
+  it("sends no change notice on an idempotent same-address re-verify", async () => {
+    const { user } = await makeUser();
+    const headers = dedicatedIp();
+    const email = `same-${randomUUID()}@example.com`;
+
+    await verifyEmailThroughFlow(user, email, headers);
+    // Clear the active code so the cooldown does not block the second send.
+    await ctx.connection
+      .collection("emailverifications")
+      .deleteMany({ email: email.toLowerCase() });
+    await verifyEmailThroughFlow(user, email, headers);
+
+    const notice = mail.find((m) => !/\b\d{6}\b/.test(m.html));
+    assert.strictEqual(
+      notice,
+      undefined,
+      "no change notice should be sent when re-verifying the same address",
+    );
+  });
+
+  it("returns the previous verified email from setVerifiedEmail", async () => {
+    const { internalId } = await makeUser();
+    const firstEmail = `prev-${randomUUID()}@example.com`.toLowerCase();
+    const secondEmail = `prev2-${randomUUID()}@example.com`.toLowerCase();
+
+    const first = await ctx.container.userRepository.setVerifiedEmail(
+      internalId,
+      firstEmail,
+    );
+    assert.strictEqual(first.previousVerifiedEmail, null);
+
+    const second = await ctx.container.userRepository.setVerifiedEmail(
+      internalId,
+      secondEmail,
+    );
+    assert.strictEqual(second.previousVerifiedEmail, firstEmail);
   });
 
   it("rejects confirming an email already verified by another user (409)", async () => {

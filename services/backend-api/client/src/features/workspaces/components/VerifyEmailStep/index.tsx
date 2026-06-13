@@ -220,7 +220,7 @@ export const VerifyEmailStep = ({
                 ? undefined
                 : (sendAttempted && !emailValid) || guardError
                   ? undefined
-                  : "Pre-filled with your Discord email — change it if you'd prefer a different address."
+                  : "Pre-filled with your Discord email. Change it if you'd prefer a different address."
             }
           >
             <Input

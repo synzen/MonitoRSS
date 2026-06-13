@@ -81,6 +81,12 @@ export interface UpdateUserPreferencesInput {
   lastActiveWorkspaceSlug?: string | null;
 }
 
+export interface SetVerifiedEmailResult {
+  // The verified email that was set on the user before this write, captured
+  // atomically in the same update. Null when no email was previously verified.
+  previousVerifiedEmail: string | null;
+}
+
 export interface SetExternalCredentialInput {
   type: UserExternalCredentialType;
   data: Record<string, string>;
@@ -97,7 +103,7 @@ export interface IUserRepository {
     discordUserId: string,
     email: string,
   ): Promise<IUser | null>;
-  setVerifiedEmail(userId: string, email: string): Promise<void>;
+  setVerifiedEmail(userId: string, email: string): Promise<SetVerifiedEmailResult>;
   updatePreferencesByDiscordId(
     discordUserId: string,
     preferences: UpdateUserPreferencesInput,

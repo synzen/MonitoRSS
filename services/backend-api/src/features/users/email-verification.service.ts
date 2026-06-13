@@ -12,9 +12,14 @@ import {
   ServiceUnavailableError,
   TooManyRequestsError,
 } from "../../infra/error-handler";
+import logger from "../../infra/logger";
 import EMAIL_VERIFICATION_TEMPLATE from "./email-verification.template";
+import VERIFIED_EMAIL_CHANGED_TEMPLATE from "./verified-email-changed.template";
 
 const verificationTemplate = Handlebars.compile(EMAIL_VERIFICATION_TEMPLATE);
+const verifiedEmailChangedTemplate = Handlebars.compile(
+  VERIFIED_EMAIL_CHANGED_TEMPLATE,
+);
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
@@ -163,8 +168,12 @@ export class EmailVerificationService {
       throw new BadRequestError(ApiErrorCode.EMAIL_VERIFICATION_INVALID_CODE);
     }
 
+    let previousVerifiedEmail: string | null;
     try {
-      await this.deps.userRepository.setVerifiedEmail(userId, email);
+      ({ previousVerifiedEmail } = await this.deps.userRepository.setVerifiedEmail(
+        userId,
+        email,
+      ));
     } catch (err) {
       if (this.isDuplicateKeyError(err)) {
         throw new ConflictError(ApiErrorCode.EMAIL_ALREADY_IN_USE);
@@ -176,6 +185,36 @@ export class EmailVerificationService {
       userId,
       email,
     );
+
+    // Notify the previous address that the verified email moved. Suppressed on
+    // first-time verification (no previous address) and on idempotent
+    // same-address re-verify (nothing changed). Best-effort: a send failure must
+    // never fail or roll back the email change that already committed.
+    if (previousVerifiedEmail && previousVerifiedEmail !== email) {
+      await this.notifyVerifiedEmailChanged(previousVerifiedEmail, email);
+    }
+  }
+
+  private async notifyVerifiedEmailChanged(
+    oldEmail: string,
+    newEmail: string,
+  ): Promise<void> {
+    // Reaching confirm() implies a code was successfully sent, which requires a
+    // configured transport (sendCode throws otherwise), so no extra
+    // is-SMTP-configured guard is needed at this call site.
+    try {
+      await this.deps.smtpTransport!.sendMail({
+        from: createFromFormatter(this.deps.config)("MonitoRSS", "noreply"),
+        to: oldEmail,
+        subject: "Your MonitoRSS verified email was changed",
+        html: verifiedEmailChangedTemplate({ oldEmail, newEmail }),
+      });
+    } catch (err) {
+      logger.error(
+        "Failed to send verified-email-changed notice to the previous address",
+        { stack: (err as Error).stack },
+      );
+    }
   }
 
   private codesMatch(a: string, b: string): boolean {

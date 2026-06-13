@@ -249,7 +249,7 @@ export const InvitePage = () => {
                 ) : (
                   <>
                     To accept this invitation, verify that you own{" "}
-                    <strong>{invitedEmailDisplay}</strong> — the address it was sent to. We&apos;ll
+                    <strong>{invitedEmailDisplay}</strong>, the address it was sent to. We&apos;ll
                     send a one-time code to confirm it.
                   </>
                 )

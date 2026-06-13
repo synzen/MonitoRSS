@@ -794,10 +794,11 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
   //   - the caller must still be an owner (a concurrent transfer demoted them ⇒
   //     InvalidOwnershipTransferTargetError, since they no longer hold the role)
   //   - the target must be a different user and a current admin member
-  // The target's verified-email gate is enforced by the caller before this runs
-  // (verifiedEmail is set-once by the OTP flow, never cleared, so it cannot go
-  // stale between that check and this commit). Promotes the target before
-  // demoting the caller so owner count never dips below one.
+  // The target's verified-email gate is enforced by the caller before this runs,
+  // which re-reads and re-validates the target's verified email against live
+  // state at transfer time, so a verified email that was since changed cannot
+  // let a stale value slip past. Promotes the target before demoting the caller
+  // so owner count never dips below one.
   async transferOwnership(
     workspaceId: string,
     fromUserId: string,

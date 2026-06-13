@@ -126,8 +126,7 @@ export const WorkspaceSettings = () => {
           description="Your team's display name and the URL it lives at. The URL appears in links members share."
         >
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            {/* Inputs stay readable-width even though the section row spans the page. */}
-            <Stack gap={4} maxW="xl">
+            <Stack gap={4}>
               <Field
                 label="Team name"
                 invalid={!!errors.name}

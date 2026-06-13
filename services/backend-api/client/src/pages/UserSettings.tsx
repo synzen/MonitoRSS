@@ -37,7 +37,11 @@ import { ProductKey } from "../constants";
 import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
 import { PricingDialogContext, usePaddleContext } from "@/features/subscriptionProducts";
 import { DatePreferencesForm, RedditConnectionSetting } from "@/features/feed";
-import { WorkspacesSettingsSection } from "@/features/workspaces";
+import {
+  VerifiedEmailSettingsRow,
+  WorkspacesSettingsSection,
+  useIsWorkspacesEnabled,
+} from "@/features/workspaces";
 import {
   PageAlertContextOutlet,
   PageAlertProvider,
@@ -207,6 +211,7 @@ const UserSettingsInner = () => {
   } = formMethods;
   const formFocusRef = useRef<HTMLFormElement>(null);
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
+  const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
   const hasLoaded = status !== "loading";
 
   useEffect(() => {
@@ -336,21 +341,38 @@ const UserSettingsInner = () => {
       </Stack>
       <SettingsSection
         title="Email"
-        description="The email tied to your Discord account, used for notifications and billing receipts."
+        description={
+          workspacesEnabled
+            ? "Your Discord email is used for billing receipts and notifications. Your verified email is used for team invitations, and for member notices when it is set. Member notices fall back to your Discord email if you have not verified one."
+            : "The email tied to your Discord account, used for notifications and billing receipts."
+        }
       >
-        <Flex justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={4}>
-          <Box>
-            <Input
-              aria-label="Email"
-              readOnly
-              value={data?.result.email || "(no email available)"}
-            />
-          </Box>
-          <Button variant="plain" color="text.link" onClick={onClickGrantEmailAccess}>
-            <FaArrowsRotate />
-            <span>Refresh Email</span>
-          </Button>
-        </Flex>
+        <Stack gap={6}>
+          <Field
+            label={workspacesEnabled ? "Discord email" : undefined}
+            helperText={
+              workspacesEnabled
+                ? "Sourced from your Discord account. Refresh it if it has changed there."
+                : undefined
+            }
+          >
+            <HStack gap={2} alignSelf="stretch" alignItems="center">
+              <Input
+                aria-label="Email"
+                flex="1"
+                readOnly
+                value={data?.result.email || "(no email available)"}
+              />
+              <Button variant="plain" color="text.link" onClick={onClickGrantEmailAccess}>
+                <FaArrowsRotate />
+                <span>Refresh Email</span>
+              </Button>
+            </HStack>
+          </Field>
+          <VerifiedEmailSettingsRow
+            onChanged={() => createSuccessAlert({ title: "Your verified email has been updated." })}
+          />
+        </Stack>
       </SettingsSection>
       {data?.result.enableBilling && (
         <>

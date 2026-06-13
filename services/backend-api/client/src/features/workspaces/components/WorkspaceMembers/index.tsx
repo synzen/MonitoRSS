@@ -102,20 +102,19 @@ const InviteForm = ({ workspaceSlug }: { workspaceSlug: string }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
-      {/* Inputs stay readable-width even though the section row spans the page. */}
-      <Stack gap={3} maxW="xl">
+      <Stack gap={3}>
         <Field
           label="Invite by email"
           invalid={!!errors.email}
           errorText={errors.email?.message}
           helperText="The invitee will receive an email to join this team."
         >
-          <HStack gap={2} alignItems="flex-start">
+          <HStack gap={2} alignSelf="stretch" alignItems="flex-start">
             <Controller
               name="email"
               control={control}
               render={({ field }) => (
-                <Input {...field} type="email" placeholder="name@example.com" />
+                <Input {...field} flex="1" type="email" placeholder="name@example.com" />
               )}
             />
             <PrimaryActionButton type="submit" loading={isSubmitting} loadingText="Sending...">
