@@ -467,7 +467,7 @@ export const WorkspaceMembers = () => {
         </Box>
       )}
       {membersStatus === "success" && (
-        <Stack as="ul" role="list" listStyleType="none" gap={3}>
+        <Stack as="ul" role="list" aria-label="Team members" listStyleType="none" gap={3}>
           {members?.map((member) => (
             <MemberRow
               key={member.userId}
@@ -506,7 +506,13 @@ export const WorkspaceMembers = () => {
         )}
         {invitesStatus === "success" &&
           (invites?.length ? (
-            <Stack as="ul" role="list" listStyleType="none" gap={3}>
+            <Stack
+              as="ul"
+              role="list"
+              aria-label="Pending invitations"
+              listStyleType="none"
+              gap={3}
+            >
               {invites.map((invite) => (
                 <InviteRow
                   key={invite.id}

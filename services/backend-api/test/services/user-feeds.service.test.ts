@@ -714,6 +714,42 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
     });
 
+    it("gates changing a feed's URL to a reddit url without an active connection", async () => {
+      const ctx = harness.createContext({
+        redditClientId: "test-reddit-client-id",
+        feedHandler: { url: "https://www.reddit.com/r/gaming/.rss" },
+      });
+      const feed = await ctx.createFeed({});
+
+      await assert.rejects(
+        ctx.service.updateFeedById(
+          { id: feed.id },
+          { url: "https://www.reddit.com/r/gaming/.rss" },
+        ),
+        RedditConnectionRequiredException,
+      );
+    });
+
+    it("allows changing a feed's URL to a reddit url with an active connection", async () => {
+      const ctx = harness.createContext({
+        redditClientId: "test-reddit-client-id",
+        externalCredentials: [{ type: "reddit", status: "ACTIVE", data: {} }],
+        feedHandler: {
+          url: "https://www.reddit.com/r/gaming/.rss",
+          feedTitle: "gaming",
+        },
+      });
+      const feed = await ctx.createFeed({});
+
+      const result = await ctx.service.updateFeedById(
+        { id: feed.id },
+        { url: "https://www.reddit.com/r/gaming/.rss" },
+      );
+
+      assert.ok(result);
+      assert.strictEqual(result.url, "https://www.reddit.com/r/gaming/.rss");
+    });
+
     it("throws BannedFeedException if URL resolves to a banned feed", async () => {
       const ctx = harness.createContext({
         bannedFeedDetails: { reason: "spam" },

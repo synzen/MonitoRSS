@@ -59,10 +59,19 @@ test.describe("Workspace member management (owner/admin view)", () => {
       timeout: 15000,
     });
 
-    // Two member rows: the owner (the test user) and the co-admin, each showing
-    // its role.
-    const ownerRow = members.getByRole("listitem").filter({ hasText: /owner/i });
-    const adminRow = members.getByRole("listitem").filter({ hasText: /admin/i });
+    // Two member rows: the owner (the test user) and the co-admin. Scope to the
+    // named members list (the "Members" region also nests the pending invitations
+    // list). Match each row by its exact role label rather than a loose substring:
+    // an admin row also carries a "Make owner" transfer button, so /owner/i would
+    // match it too.
+    const memberList = members.getByRole("list", { name: "Team members" });
+    await expect(memberList.getByRole("listitem")).toHaveCount(2);
+    const ownerRow = memberList
+      .getByRole("listitem")
+      .filter({ has: page.getByText("owner", { exact: true }) });
+    const adminRow = memberList
+      .getByRole("listitem")
+      .filter({ has: page.getByText("admin", { exact: true }) });
     await expect(ownerRow).toHaveCount(1);
     await expect(adminRow).toHaveCount(1);
   });
@@ -218,15 +227,16 @@ test.describe("Workspace member management (owner/admin view)", () => {
     await gotoMembers(page, workspaceName);
 
     const members = page.getByRole("region", { name: "Members" });
+    const memberList = members.getByRole("list", { name: "Team members" });
     // The other member's row carries a Remove control (owner-only).
-    const otherRow = members.getByRole("listitem").filter({ hasText: /admin/i });
+    const otherRow = memberList.getByRole("listitem").filter({ hasText: /admin/i });
     await expect(otherRow).toBeVisible({ timeout: 15000 });
 
     await otherRow.getByRole("button", { name: /^remove/i }).click();
     const dialog = page.getByRole("alertdialog");
     await dialog.getByRole("button", { name: /remove/i }).click();
 
-    await expect(members.getByRole("listitem").filter({ hasText: /admin/i })).toHaveCount(0, {
+    await expect(memberList.getByRole("listitem").filter({ hasText: /admin/i })).toHaveCount(0, {
       timeout: 15000,
     });
   });
@@ -254,7 +264,10 @@ test.describe("Workspace member management (owner/admin view)", () => {
     await gotoMembers(page, workspaceName);
 
     const members = page.getByRole("region", { name: "Members" });
-    const ownerRow = members.getByRole("listitem").filter({ hasText: /owner/i });
+    const ownerRow = members
+      .getByRole("list", { name: "Team members" })
+      .getByRole("listitem")
+      .filter({ hasText: /owner/i });
     await expect(ownerRow).toBeVisible({ timeout: 15000 });
 
     // No remove-other control is rendered anywhere in the members list for an admin.
@@ -346,6 +359,7 @@ test.describe("Workspace member management (owner/admin view)", () => {
     // appears in the switcher.
     await dialog.getByRole("button", { name: /cancel/i }).click();
     const selfRow = members
+      .getByRole("list", { name: "Team members" })
       .getByRole("listitem")
       .filter({ hasText: /owner/i })
       .filter({ hasText: /you/i });

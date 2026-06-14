@@ -709,10 +709,34 @@ export class UserFeedsService {
     }
 
     if (updates.url) {
+      // Resolve credentials and lookup details from the NEW url, not the feed's
+      // existing one: changing to a Reddit url must apply the authenticated lookup
+      // (and gate on a connection), otherwise the validation fetch hits the raw
+      // Reddit url and is rate-limited. Mirrors the create/clone paths.
+      const credentialSource =
+        await this.deps.feedCredentialsService.resolveCredentialSource(
+          feed,
+          user,
+        );
+
+      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+        updates.url,
+        credentialSource,
+      );
+
       const { finalUrl } = await this.checkUrlIsValid(
         updates.url,
-        await this.deps.feedCredentialsService.getLookupDetails({ feed, user }),
+        this.deps.feedCredentialsService.getLookupDetailsFromSource({
+          feed: { url: updates.url, feedRequestLookupKey: randomUUID() },
+          credentials: credentialSource,
+        }),
       );
+
+      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+        finalUrl,
+        credentialSource,
+      );
+
       useUpdateObject.$set!.url = finalUrl;
       useUpdateObject.$set!.inputUrl = updates.url;
 
@@ -855,6 +879,10 @@ export class UserFeedsService {
     );
 
     if (updates.url) {
+      // A url change can flip the feed's credential requirement (e.g. to/from a
+      // Reddit url), so resync the lookup key or delivery fetches with a stale key.
+      await this.deps.feedCredentialsService.syncLookupKeys({ feedIds: [id] });
+
       await this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
         data: { feed: { id } },
       });

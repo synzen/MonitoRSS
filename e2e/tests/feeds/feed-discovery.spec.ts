@@ -377,7 +377,7 @@ test.describe("Feed Discovery", () => {
         page.getByRole("button", { name: /^Remove .+ feed$/i }),
       ).toBeVisible({ timeout: 10000 });
 
-      await expect(page.getByText(/1 feed added/)).toBeVisible();
+      await expect(page.getByRole("heading", { name: /1 feed added!/ })).toBeVisible();
 
       await page.getByRole("button", { name: /View your feeds/ }).click();
 
@@ -1115,9 +1115,12 @@ test.describe("Feed Discovery", () => {
 
       await page.getByRole("button", { name: "Close" }).click();
 
-      await expect(page.getByText(/1 feed added/)).toBeVisible({
-        timeout: 5000,
-      });
+      // Returning user (already has feeds): closing the modal raises a page alert,
+      // not the empty-state discovery heading. Scope to the alert so a FeedCard
+      // status announcement that also reads "<title> feed added" can't collide.
+      await expect(
+        page.getByRole("alert").filter({ hasText: /1 feed added/ }),
+      ).toBeVisible({ timeout: 5000 });
     });
   });
 

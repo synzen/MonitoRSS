@@ -84,6 +84,21 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   const isRedditConnectionRequired = error?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
   const showCta = canResolveError || isRedditConnectionRequired;
 
+  // Set while the post-connect Reddit retry is driving the save. A subreddit URL
+  // resolves during validation, which normally pauses on a confirm step; but the
+  // user already committed to saving by connecting, so the retry carries straight
+  // through the resolution instead of stranding the dialog on confirm.
+  const isAutoRetryingRef = useRef(false);
+
+  // A Reddit gate is pending a connect-driven retry. Tracked in a ref (not read
+  // live in the connect effect) because connecting can clear the gate error a
+  // render before the connected-edge fires, which would otherwise drop the retry.
+  const redditGatePendingRef = useRef(false);
+
+  if (isRedditConnectionRequired) {
+    redditGatePendingRef.current = true;
+  }
+
   const onSubmit = async ({ title, url }: FormData) => {
     if (!isDirty) {
       onClose();
@@ -91,8 +106,14 @@ export const EditUserFeedDialog: React.FC<Props> = ({
       return;
     }
 
+    // The post-connect Reddit retry saves directly: the user already committed by
+    // connecting, and the server resolves the URL and re-checks the (now satisfied)
+    // gate itself, so the dialog's own validate -> confirm -> save pre-flight would
+    // only re-prompt and risks stranding the dialog on the confirm step.
+    const skipPreValidation = isAutoRetryingRef.current;
+
     try {
-      if (url && !feedUrlValidationData) {
+      if (url && !feedUrlValidationData && !skipPreValidation) {
         const { result } = await createUserFeedUrlValidation({ details: { url } });
 
         if (result.resolvedToUrl) {
@@ -106,6 +127,8 @@ export const EditUserFeedDialog: React.FC<Props> = ({
       reset({ title, url: useUrl });
     } catch {
       // Surfaced to the user via the `error` prop; keep the dialog open on failure
+    } finally {
+      isAutoRetryingRef.current = false;
     }
   };
 
@@ -125,7 +148,9 @@ export const EditUserFeedDialog: React.FC<Props> = ({
     const justConnected = hasRedditConnected && !prevHasRedditConnectedRef.current;
     prevHasRedditConnectedRef.current = hasRedditConnected;
 
-    if (justConnected && showCta) {
+    if (justConnected && redditGatePendingRef.current) {
+      redditGatePendingRef.current = false;
+      isAutoRetryingRef.current = true;
       handleSubmit(onSubmit)();
     }
   }, [hasRedditConnected]);
@@ -133,6 +158,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   useEffect(() => {
     reset(defaultValues);
     resetValidationMutation();
+    redditGatePendingRef.current = false;
   }, [isOpen]);
 
   const formErrorCount = Object.keys(errors).length;

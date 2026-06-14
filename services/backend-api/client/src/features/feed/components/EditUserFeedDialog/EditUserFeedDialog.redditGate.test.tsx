@@ -22,25 +22,38 @@ const redditError = new ApiAdapterError("Reddit connection required", {
   statusCode: 403,
 });
 
+// When set, the validation mock resolves the submitted URL to this value (mimicking
+// the real subreddit -> authenticated-feed substitution), which exercises the
+// confirm-step path. Default null = already-valid, so onSubmit proceeds to onUpdate.
+let resolvedToUrl: string | null = null;
+
 // Stateful validation mock: returns a non-resolving (already-valid) result so onSubmit proceeds
 // straight to onUpdate, which is where the gate is enforced in this test.
 vi.mock("../../hooks/useCreateUserFeedUrlValidation", () => ({
   useCreateUserFeedUrlValidation: () => {
-    const [status, setStatus] = useState<
-      "idle" | "loading" | "success" | "error"
-    >("idle");
+    const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+    const [data, setData] = useState<{ result: { resolvedToUrl: string | null } } | undefined>(
+      undefined,
+    );
 
     return {
       status,
       error: null,
-      data: undefined,
-      reset: () => setStatus("idle"),
+      data,
+      reset: () => {
+        setStatus("idle");
+        setData(undefined);
+      },
       mutateAsync: async () => {
         setStatus("loading");
         await Promise.resolve();
         setStatus("success");
+        const result = { result: { resolvedToUrl } };
+        // Mirror the real hook, which exposes the result via `data` so the dialog's
+        // confirm step (gated on feedUrlValidationData) can render.
+        setData(result);
 
-        return { result: { resolvedToUrl: null } };
+        return result;
       },
     };
   },
@@ -105,6 +118,7 @@ const renderDialog = (
 describe("EditUserFeedDialog - Reddit connect gate", () => {
   beforeEach(() => {
     redditAccount = undefined;
+    resolvedToUrl = null;
     userMeListeners.clear();
   });
 
@@ -139,9 +153,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
       </ChakraProvider>,
     );
 
-    expect(
-      await screen.findByText("Connect your Reddit account to continue"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();
   });
 
   it("does not render the gate for a generic (non-reddit) error", () => {
@@ -154,9 +166,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
       }),
     );
 
-    expect(
-      screen.queryByText("Connect your Reddit account to continue"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Connect your Reddit account to continue")).not.toBeInTheDocument();
     expect(screen.getByText("Something went wrong")).toBeInTheDocument();
   });
 
@@ -190,9 +200,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     await user.clear(urlInput);
     await user.type(urlInput, "https://www.reddit.com/r/gaming");
 
-    expect(
-      await screen.findByText("Reconnect your Reddit account"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Reconnect your Reddit account")).toBeInTheDocument();
 
     // No connect event has fired, so the blocked update must not have been retried.
     await new Promise((resolve) => {
@@ -230,13 +238,9 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     await user.clear(urlInput);
     await user.type(urlInput, "https://www.reddit.com/r/gaming");
 
-    expect(
-      await screen.findByText("Connect your Reddit account to continue"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("button", { name: "Connect Reddit in popup window" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Connect Reddit in popup window" }));
 
     await act(async () => {
       window.postMessage("reddit", "*");
@@ -249,5 +253,95 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     expect(onUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ url: "https://www.reddit.com/r/gaming" }),
     );
+  });
+
+  it("saves directly (skipping the confirm step) on the post-connect retry, even for a resolving URL", async () => {
+    // A subreddit URL would resolve during the dialog's own pre-validation, normally
+    // pausing on a confirm step. The post-connect retry must skip that pre-flight and
+    // save the entered URL directly (the server resolves it and re-checks the now
+    // satisfied gate), so the dialog closes instead of stranding on confirm. The
+    // resolving mock would force the confirm step if pre-validation still ran.
+    resolvedToUrl = "https://www.reddit.com/r/gaming.rss?auth=1";
+    const onClose = vi.fn();
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+
+    const user = userEvent.setup();
+    render(
+      <ChakraProvider value={system}>
+        <MemoryRouter>
+          <EditUserFeedDialog
+            isOpen
+            onClose={onClose}
+            onUpdate={onUpdate}
+            defaultValues={{
+              title: "Existing title",
+              url: "https://example.com/feed.xml",
+            }}
+            error={redditError}
+          />
+        </MemoryRouter>
+      </ChakraProvider>,
+    );
+
+    const urlInput = screen.getByDisplayValue("https://example.com/feed.xml");
+    await user.clear(urlInput);
+    await user.type(urlInput, "https://www.reddit.com/r/gaming");
+
+    expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Connect Reddit in popup window" }));
+
+    await act(async () => {
+      window.postMessage("reddit", "*");
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+    });
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    // Saved with the entered URL (server does the resolution), not the confirm step.
+    expect(onUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ url: "https://www.reddit.com/r/gaming" }),
+    );
+  });
+
+  it("still pauses on the confirm step for a normal (non-retry) resolved URL", async () => {
+    // Without a connect retry, a resolving URL must NOT auto-save: the manual confirm
+    // step is preserved so the user sees and confirms the substituted URL.
+    resolvedToUrl = "https://www.reddit.com/r/gaming.rss?auth=1";
+    const onClose = vi.fn();
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    // Connected from the start, so no gate and no auto-retry: a plain edit + Save.
+    redditAccount = { type: "reddit", status: "ACTIVE" };
+
+    const user = userEvent.setup();
+    render(
+      <ChakraProvider value={system}>
+        <MemoryRouter>
+          <EditUserFeedDialog
+            isOpen
+            onClose={onClose}
+            onUpdate={onUpdate}
+            defaultValues={{
+              title: "Existing title",
+              url: "https://example.com/feed.xml",
+            }}
+            error={null}
+          />
+        </MemoryRouter>
+      </ChakraProvider>,
+    );
+
+    const urlInput = screen.getByDisplayValue("https://example.com/feed.xml");
+    await user.clear(urlInput);
+    await user.type(urlInput, "https://www.reddit.com/r/gaming");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    // The first Save resolves the URL and pauses on confirm: no save, no close.
+    await waitFor(() =>
+      expect(screen.getByText("https://www.reddit.com/r/gaming.rss?auth=1")).toBeInTheDocument(),
+    );
+    expect(onUpdate).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

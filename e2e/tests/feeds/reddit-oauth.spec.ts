@@ -44,7 +44,9 @@ test.describe("Reddit OAuth (personal)", () => {
     await expect(page.getByText("Connect your Reddit account to continue")).toHaveCount(0);
 
     await addButton.click();
-    await expect(page.getByText(/1 feed added/)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /1 feed added!/ })).toBeVisible({
+      timeout: 10000,
+    });
 
     // The feed (titled from the authenticated fetch's channel title) is in the table.
     await page.getByRole("button", { name: /View your feeds/ }).click();
@@ -95,7 +97,9 @@ test.describe("Reddit OAuth (personal)", () => {
     await expect(addButton).toBeVisible({ timeout: 30000 });
 
     await addButton.click();
-    await expect(page.getByText(/1 feed added/)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /1 feed added!/ })).toBeVisible({
+      timeout: 10000,
+    });
 
     await page.getByRole("button", { name: /View your feeds/ }).click();
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });

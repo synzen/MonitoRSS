@@ -130,7 +130,9 @@ test.describe("Workspace Reddit connection", () => {
     const addButton = page.getByRole("button", { name: /^Add .+ feed$/i }).first();
     await expect(addButton).toBeVisible({ timeout: 30000 });
     await addButton.click();
-    await expect(page.getByText(/1 feed added/)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /1 feed added!/ })).toBeVisible({
+      timeout: 10000,
+    });
 
     // No fallback in reverse: the workspace's connection never unlocks PERSONAL feeds.
     await switchToPersonalScope(page);
@@ -181,7 +183,12 @@ test.describe("Workspace Reddit connection", () => {
     await expect(addButton).toBeVisible({ timeout: 30000 });
     await expect(page.getByText("Connect a Reddit account to continue")).toHaveCount(0);
     await addButton.click();
-    await expect(page.getByText(/1 feed added/)).toBeVisible({ timeout: 10000 });
+    // Target the confirmation heading specifically: the discovery search also emits
+    // an aria-live status that reads "<feed> feed added", so a bare text match for
+    // "feed added" would resolve to two elements.
+    await expect(
+      page.getByRole("heading", { name: /1 feed added!/ }),
+    ).toBeVisible({ timeout: 10000 });
     await page.getByRole("button", { name: /View your feeds/ }).click();
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
     // exact-named link: the row also renders the URL link, which contains the title.

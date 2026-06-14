@@ -127,11 +127,15 @@ test.describe("Workspace invite self-accept guard", () => {
     ).toHaveCount(1, { timeout: 20000 });
 
     // 2) The member list still shows exactly one member (no phantom second member).
+    // Scope to the named members list: the "Members" region also nests the pending
+    // invitations list, so a region-wide listitem query would also count invites.
     const members = page.getByRole("region", { name: "Members" });
     await expect(members.getByRole("heading", { name: "Members" })).toBeVisible({
       timeout: 20000,
     });
-    await expect(members.getByRole("listitem")).toHaveCount(1, { timeout: 20000 });
+    await expect(
+      members.getByRole("list", { name: "Team members" }).getByRole("listitem"),
+    ).toHaveCount(1, { timeout: 20000 });
 
     // 3) The owner's verified email is untouched: re-opening the create team dialog
     // lands directly on the name field (it skips the verify step only when a
