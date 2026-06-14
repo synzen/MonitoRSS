@@ -226,7 +226,7 @@ test.describe("Paddle workspace roundtrip", () => {
     await expect(page.getByText("This team is not subscribed")).toHaveCount(0);
 
     await expect(
-      page.getByRole("heading", { name: "Get news delivered to your Discord" }),
+      page.getByRole("heading", { name: "Add feeds for your team" }),
     ).toBeVisible({ timeout: 15000 });
     const search = page.getByRole("textbox", { name: "Search popular feeds or paste a URL" });
     await search.fill(MOCK_RSS_FEED_URL);
@@ -305,7 +305,9 @@ test.describe("Paddle workspace roundtrip", () => {
     // the confirmed change; reload until it reflects the 2 extra feeds.
     await expect(async () => {
       await page.reload();
-      await expect(page.getByText("Additional feeds: 2")).toBeVisible({ timeout: 5000 });
+      await expect(page.getByText("142 feeds (140 + 2 additional)")).toBeVisible({
+        timeout: 5000,
+      });
     }).toPass({ timeout: 120_000, intervals: [3000] });
 
     // Teardown: deleting the workspace cancels the sandbox subscription.
