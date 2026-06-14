@@ -9,15 +9,28 @@ import {
   Alert,
   Link as ChakraLink,
   IconButton,
-  Portal,
   Skeleton,
   SimpleGrid,
   Icon,
 } from "@chakra-ui/react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FaPlus, FaCircleCheck, FaChevronDown, FaGear, FaTrash, FaCopy } from "react-icons/fa6";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  FaPlus,
+  FaCircleCheck,
+  FaChevronDown,
+  FaGear,
+  FaTrash,
+  FaCopy,
+} from "react-icons/fa6";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { IoDuplicate } from "react-icons/io5";
 import { useUserMe, useDiscordUserMe } from "../features/discordUser";
@@ -48,7 +61,10 @@ import ApiAdapterError from "../utils/ApiAdapterError";
 import { pages } from "../constants";
 import { BoxConstrained, ConfirmModal, Panel } from "../components";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
-import { UserFeedStatusFilterContext, useMultiSelectUserFeedContext } from "@/features/feed";
+import {
+  UserFeedStatusFilterContext,
+  useMultiSelectUserFeedContext,
+} from "@/features/feed";
 
 import {
   PageAlertContextOutlet,
@@ -59,45 +75,31 @@ import { CopyUserFeedSettingsDialog } from "../features/feed/components/CopyUser
 import { SetupChecklist } from "../features/feed/components/SetupChecklist";
 import { useUnconfiguredFeeds } from "../features/feed/hooks/useUnconfiguredFeeds";
 import { ReducedLimitAlert } from "@/features/subscriptionProducts";
-import { useCurrentWorkspace, WorkspaceActivationEmptyState } from "@/features/workspaces";
-import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
+import {
+  useCurrentWorkspace,
+  WorkspaceActivationEmptyState,
+} from "@/features/workspaces";
+import {
+  MenuRoot,
+  MenuTrigger,
+  MenuContent,
+  MenuItem,
+  MenuSeparator,
+} from "@/components/ui/menu";
 
 export const UserFeeds = () => {
   return (
-    <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
+    <BoxConstrained.Wrapper
+      justifyContent="flex-start"
+      height="100%"
+      overflow="visible"
+    >
       <BoxConstrained.Container gap={6} height="100%">
         <PageAlertProvider>
           <UserFeedsInner />
         </PageAlertProvider>
       </BoxConstrained.Container>
     </BoxConstrained.Wrapper>
-  );
-};
-
-const CopyUserFeedSettingsMenuItem = ({
-  selectedFeedId,
-  onSuccess,
-}: {
-  selectedFeedId?: string;
-  onSuccess: () => void;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <>
-      <MenuItem disabled={!selectedFeedId} value="copy-settings" onClick={() => setIsOpen(true)}>
-        <FaCopy />
-        Copy settings to...
-      </MenuItem>
-      <Portal>
-        <CopyUserFeedSettingsDialog
-          feedId={selectedFeedId}
-          isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
-          onSuccess={onSuccess}
-        />
-      </Portal>
-    </>
   );
 };
 
@@ -130,12 +132,15 @@ const UserFeedsInner: React.FC = () => {
     limit: 1,
     offset: 0,
   });
-  const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
+  const { statusFilters, setStatusFilters } = useContext(
+    UserFeedStatusFilterContext,
+  );
   const { selectedFeeds, clearSelection } = useMultiSelectUserFeedContext();
   const { mutateAsync: enableUserFeeds } = useEnableUserFeeds();
   const { mutateAsync: disableUserFeeds } = useDisableUserFeeds();
   const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
-  const { createSuccessAlert, createErrorAlert, createInfoAlert } = usePageAlertContext();
+  const { createSuccessAlert, createErrorAlert, createInfoAlert } =
+    usePageAlertContext();
   const { data: discordUserMe } = useDiscordUserMe();
   const { mutateAsync: createUserFeed } = useCreateUserFeed();
   const { mutateAsync: deleteUserFeed } = useDeleteUserFeed();
@@ -157,24 +162,32 @@ const UserFeedsInner: React.FC = () => {
   // session opened in the previous (empty) scope cannot be read as active under the new
   // scope and flash discovery over a populated feeds table.
   const scopeKey = workspaceSlug ?? "personal";
-  const [addingSessionScope, setAddingSessionScope] = useState<string | null>(null);
+  const [addingSessionScope, setAddingSessionScope] = useState<string | null>(
+    null,
+  );
   const isAddingSession = addingSessionScope === scopeKey;
-  const [feedActionStates, setFeedActionStates] = useState<Record<string, FeedActionState>>({});
+  const [feedActionStates, setFeedActionStates] = useState<
+    Record<string, FeedActionState>
+  >({});
   const [isBrowseModalOpen, setIsBrowseModalOpen] = useState(false);
   const [browseModalInitialCategory, setBrowseModalInitialCategory] = useState<
     string | undefined
   >();
-  const [browseModalInitialSearchQuery, setBrowseModalInitialSearchQuery] = useState<
-    string | undefined
-  >();
+  const [browseModalInitialSearchQuery, setBrowseModalInitialSearchQuery] =
+    useState<string | undefined>();
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [pendingBulkAction, setPendingBulkAction] = useState<BulkAction | null>(null);
+  const [pendingBulkAction, setPendingBulkAction] = useState<BulkAction | null>(
+    null,
+  );
+  const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+  const [copySettingsOpen, setCopySettingsOpen] = useState(false);
   const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
   const limitAlertShownRef = useRef(false);
   const addFeedParamConsumed = useRef(false);
 
   const totalFeedCount = userFeedsResults?.total;
-  const feedsWithoutConnections = userFeedsResults?.feedsWithoutConnections ?? 0;
+  const feedsWithoutConnections =
+    userFeedsResults?.feedsWithoutConnections ?? 0;
   const [setupDismissed, setSetupDismissed] = useState(false);
   const hadUnconfiguredFeeds = useRef(false);
 
@@ -182,9 +195,12 @@ const UserFeedsInner: React.FC = () => {
     hadUnconfiguredFeeds.current = true;
   }
 
-  const { data: unconfiguredFeedsData, refetch: refetchUnconfiguredFeeds } = useUnconfiguredFeeds({
-    enabled: feedsWithoutConnections > 0 || (hadUnconfiguredFeeds.current && !setupDismissed),
-  });
+  const { data: unconfiguredFeedsData, refetch: refetchUnconfiguredFeeds } =
+    useUnconfiguredFeeds({
+      enabled:
+        feedsWithoutConnections > 0 ||
+        (hadUnconfiguredFeeds.current && !setupDismissed),
+    });
 
   const hasCompletedSetup =
     !setupDismissed &&
@@ -193,7 +209,8 @@ const UserFeedsInner: React.FC = () => {
     unconfiguredFeedsData.results.length === 0;
   const unconfiguredFeedsLoaded = unconfiguredFeedsData !== undefined;
   const showSetupChecklist =
-    (feedsWithoutConnections > 0 && unconfiguredFeedsLoaded) || hasCompletedSetup;
+    (feedsWithoutConnections > 0 && unconfiguredFeedsLoaded) ||
+    hasCompletedSetup;
   const navigatedAlertTitle = state?.alertTitle;
   const navigatedAlertDescription = state?.alertDescription;
 
@@ -314,7 +331,10 @@ const UserFeedsInner: React.FC = () => {
 
   const handleCuratedFeedAdd = useCallback(
     async (feed: CuratedFeed) => {
-      setFeedActionStates((prev) => ({ ...prev, [feed.id]: { status: "adding" } }));
+      setFeedActionStates((prev) => ({
+        ...prev,
+        [feed.id]: { status: "adding" },
+      }));
 
       try {
         const { result } = await createUserFeed({
@@ -333,7 +353,10 @@ const UserFeedsInner: React.FC = () => {
         const apiError = err as ApiAdapterError;
 
         if (apiError.errorCode === ApiErrorCode.FEED_LIMIT_REACHED) {
-          setFeedActionStates((prev) => ({ ...prev, [feed.id]: { status: "limit-reached" } }));
+          setFeedActionStates((prev) => ({
+            ...prev,
+            [feed.id]: { status: "limit-reached" },
+          }));
 
           if (!limitAlertShownRef.current) {
             limitAlertShownRef.current = true;
@@ -365,14 +388,18 @@ const UserFeedsInner: React.FC = () => {
 
       if (
         !currentState ||
-        (currentState.status !== "added" && currentState.status !== "remove-error")
+        (currentState.status !== "added" &&
+          currentState.status !== "remove-error")
       ) {
         return;
       }
 
       const { feedId, settingsUrl } = currentState;
 
-      setFeedActionStates((prev) => ({ ...prev, [feedKey]: { status: "removing" } }));
+      setFeedActionStates((prev) => ({
+        ...prev,
+        [feedKey]: { status: "removing" },
+      }));
 
       try {
         await deleteUserFeed({ feedId });
@@ -542,7 +569,8 @@ const UserFeedsInner: React.FC = () => {
     }
   };
 
-  const totalFeedsRequiringAttention = userFeedsRequireAttentionResults?.total || 0;
+  const totalFeedsRequiringAttention =
+    userFeedsRequireAttentionResults?.total || 0;
   const totalManagementInvites = managementInvitesCount?.total || 0;
 
   // In-scope settings affordance: once inside a workspace, its name, a one-line
@@ -591,39 +619,43 @@ const UserFeedsInner: React.FC = () => {
             }}
           />
           <ReducedLimitAlert />
-          {totalFeedsRequiringAttention !== undefined && totalFeedsRequiringAttention > 0 && (
-            <Alert.Root status="warning" mt={2}>
-              <Alert.Indicator />
-              <Box>
-                <Alert.Title>
-                  {totalFeedsRequiringAttention} feed
-                  {totalFeedsRequiringAttention > 1 ? "s" : ""} require
-                  {totalFeedsRequiringAttention > 1 ? "" : "s"} your attention!
-                </Alert.Title>
-                <Alert.Description>
-                  Article delivery may be fully or partially paused.{" "}
-                  <ChakraLink
-                    textAlign="left"
-                    as="button"
-                    color="text.link"
-                    onClick={onApplyRequiresAttentionFilters}
-                  >
-                    Click here to apply filters and see which ones they are.
-                  </ChakraLink>
-                  {hasFailedFeedAlertsDisabled && (
-                    <>
-                      {" "}
-                      You can also{" "}
-                      <ChakraLink asChild color="text.link">
-                        <Link to={pages.userSettings()}>get notified when failures occur</Link>
-                      </ChakraLink>
-                      .
-                    </>
-                  )}
-                </Alert.Description>
-              </Box>
-            </Alert.Root>
-          )}
+          {totalFeedsRequiringAttention !== undefined &&
+            totalFeedsRequiringAttention > 0 && (
+              <Alert.Root status="warning" mt={2}>
+                <Alert.Indicator />
+                <Box>
+                  <Alert.Title>
+                    {totalFeedsRequiringAttention} feed
+                    {totalFeedsRequiringAttention > 1 ? "s" : ""} require
+                    {totalFeedsRequiringAttention > 1 ? "" : "s"} your
+                    attention!
+                  </Alert.Title>
+                  <Alert.Description>
+                    Article delivery may be fully or partially paused.{" "}
+                    <ChakraLink
+                      textAlign="left"
+                      as="button"
+                      color="text.link"
+                      onClick={onApplyRequiresAttentionFilters}
+                    >
+                      Click here to apply filters and see which ones they are.
+                    </ChakraLink>
+                    {hasFailedFeedAlertsDisabled && (
+                      <>
+                        {" "}
+                        You can also{" "}
+                        <ChakraLink asChild color="text.link">
+                          <Link to={pages.userSettings()}>
+                            get notified when failures occur
+                          </Link>
+                        </ChakraLink>
+                        .
+                      </>
+                    )}
+                  </Alert.Description>
+                </Box>
+              </Alert.Root>
+            )}
           <Alert.Root
             hidden={!totalManagementInvites}
             mt={2}
@@ -659,7 +691,12 @@ const UserFeedsInner: React.FC = () => {
         </Stack>
         {isInDiscoveryMode === false && (
           <>
-            <Flex alignItems="center" justifyContent="space-between" gap="4" flexWrap="wrap">
+            <Flex
+              alignItems="center"
+              justifyContent="space-between"
+              gap="4"
+              flexWrap="wrap"
+            >
               <Flex alignItems="center" gap={4}>
                 <Heading as={currentWorkspace ? "h2" : "h1"} size="lg" tabIndex={-1}>
                   {t("pages.userFeeds.title")}{" "}
@@ -669,7 +706,9 @@ const UserFeedsInner: React.FC = () => {
                       `(${selectedFeeds.length}/${totalFeedCount})`}
                   </span>
                   <span>
-                    {totalFeedCount !== undefined && !selectedFeeds.length && `(${totalFeedCount})`}
+                    {totalFeedCount !== undefined &&
+                      !selectedFeeds.length &&
+                      `(${totalFeedCount})`}
                   </span>
                 </Heading>
               </Flex>
@@ -679,7 +718,9 @@ const UserFeedsInner: React.FC = () => {
                     <Button
                       variant="outline"
                       aria-disabled={selectedFeeds.length === 0}
-                      data-disabled={selectedFeeds.length === 0 ? "" : undefined}
+                      data-disabled={
+                        selectedFeeds.length === 0 ? "" : undefined
+                      }
                     >
                       Feed Actions
                       <FaChevronDown />
@@ -689,7 +730,9 @@ const UserFeedsInner: React.FC = () => {
                     <MenuItem
                       disabled={
                         !selectedFeeds.length ||
-                        !selectedFeeds.some((f) => f.disabledCode === UserFeedDisabledCode.Manual)
+                        !selectedFeeds.some(
+                          (f) => f.disabledCode === UserFeedDisabledCode.Manual,
+                        )
                       }
                       value="enable"
                       onClick={() => setPendingBulkAction("enable")}
@@ -703,7 +746,8 @@ const UserFeedsInner: React.FC = () => {
                         selectedFeeds.every(
                           (r) =>
                             !!r.disabledCode &&
-                            r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
+                            r.disabledCode !==
+                              UserFeedDisabledCode.ExceededFeedLimit,
                         )
                       }
                       value="disable"
@@ -712,25 +756,22 @@ const UserFeedsInner: React.FC = () => {
                       <FaPause />
                       Disable
                     </MenuItem>
-                    <CloneUserFeedDialog
-                      feedId={selectedFeeds[0]?.id}
-                      trigger={
-                        <MenuItem disabled={selectedFeeds.length !== 1} value="clone">
-                          <IoDuplicate />
-                          Clone
-                        </MenuItem>
-                      }
-                      defaultValues={{
-                        title: `${selectedFeeds[0]?.title} (Clone)`,
-                        url: selectedFeeds[0]?.url,
-                      }}
-                    />
-                    <CopyUserFeedSettingsMenuItem
-                      selectedFeedId={selectedFeeds.length === 1 ? selectedFeeds[0]?.id : undefined}
-                      onSuccess={() => {
-                        clearSelection();
-                      }}
-                    />
+                    <MenuItem
+                      disabled={selectedFeeds.length !== 1}
+                      value="clone"
+                      onClick={() => setCloneDialogOpen(true)}
+                    >
+                      <IoDuplicate />
+                      Clone
+                    </MenuItem>
+                    <MenuItem
+                      disabled={selectedFeeds.length !== 1}
+                      value="copy-settings"
+                      onClick={() => setCopySettingsOpen(true)}
+                    >
+                      <FaCopy />
+                      Copy settings to...
+                    </MenuItem>
                     <MenuSeparator />
                     <MenuItem
                       value="delete"
@@ -742,6 +783,25 @@ const UserFeedsInner: React.FC = () => {
                     </MenuItem>
                   </MenuContent>
                 </MenuRoot>
+                <CloneUserFeedDialog
+                  feedId={selectedFeeds[0]?.id}
+                  open={cloneDialogOpen}
+                  onOpenChange={setCloneDialogOpen}
+                  defaultValues={{
+                    title: `${selectedFeeds[0]?.title} (Clone)`,
+                    url: selectedFeeds[0]?.url,
+                  }}
+                />
+                <CopyUserFeedSettingsDialog
+                  feedId={
+                    selectedFeeds.length === 1
+                      ? selectedFeeds[0]?.id
+                      : undefined
+                  }
+                  isOpen={copySettingsOpen}
+                  onClose={() => setCopySettingsOpen(false)}
+                  onSuccess={clearSelection}
+                />
                 <ConfirmModal
                   open={pendingBulkAction === "enable"}
                   onOpenChange={(open) => !open && setPendingBulkAction(null)}
@@ -800,8 +860,9 @@ const UserFeedsInner: React.FC = () => {
             </Flex>
             <HStack gap={6}>
               <Text>
-                Every feed represents a news source that you can subscribe to. After adding a feed,
-                you may then specify where you want articles for that feed to be sent to.
+                Every feed represents a news source that you can subscribe to.
+                After adding a feed, you may then specify where you want
+                articles for that feed to be sent to.
               </Text>
             </HStack>
           </>
@@ -820,15 +881,24 @@ const UserFeedsInner: React.FC = () => {
                   p={6}
                   alignItems="center"
                 >
-                  <Icon as={FaCircleCheck} color="text.success" boxSize={8} aria-hidden="true" />
+                  <Icon
+                    as={FaCircleCheck}
+                    color="text.success"
+                    boxSize={8}
+                    aria-hidden="true"
+                  />
                   <Heading as="h2" size="lg">
-                    {addedFeedKeys.length} feed{addedFeedKeys.length !== 1 ? "s" : ""} added!
+                    {addedFeedKeys.length} feed
+                    {addedFeedKeys.length !== 1 ? "s" : ""} added!
                   </Heading>
                   <Text color="fg.muted">
                     Add more feeds below, or view your feeds to set up delivery.
                   </Text>
                   <Box>
-                    <PrimaryActionButton size="sm" onClick={handleExitDiscovery}>
+                    <PrimaryActionButton
+                      size="sm"
+                      onClick={handleExitDiscovery}
+                    >
                       View your feeds{" "}
                       <Box as="span" aria-hidden="true">
                         &rarr;
@@ -862,8 +932,8 @@ const UserFeedsInner: React.FC = () => {
               />
               {!isSearchActive && (
                 <Text color="fg.muted" fontSize="sm" textAlign="center">
-                  Many websites support feeds - try pasting a YouTube channel, subreddit, blog, or
-                  news site URL
+                  Many websites support feeds - try pasting a YouTube channel,
+                  subreddit, blog, or news site URL
                 </Text>
               )}
               <FeedLimitBar showOnlyWhenConstrained />
@@ -891,14 +961,17 @@ const UserFeedsInner: React.FC = () => {
                 </Alert.Description>
               </Alert.Root>
             )}
-            {!isSearchActive && curatedData && !curatedLoading && curatedData.feeds.length > 0 && (
-              <CategoryGrid
-                categories={curatedData.categories}
-                totalFeedCount={curatedData.feeds.length ?? 0}
-                getCategoryPreviewText={getCategoryPreviewText}
-                onSelectCategory={handleOpenBrowseModal}
-              />
-            )}
+            {!isSearchActive &&
+              curatedData &&
+              !curatedLoading &&
+              curatedData.feeds.length > 0 && (
+                <CategoryGrid
+                  categories={curatedData.categories}
+                  totalFeedCount={curatedData.feeds.length ?? 0}
+                  getCategoryPreviewText={getCategoryPreviewText}
+                  onSelectCategory={handleOpenBrowseModal}
+                />
+              )}
           </Stack>
         </Box>
       )}

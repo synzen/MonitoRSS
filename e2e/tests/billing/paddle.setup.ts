@@ -2,7 +2,10 @@ import { test as setup } from "@playwright/test";
 import { writeFileSync } from "fs";
 import { join } from "path";
 import { startTunnel } from "../../helpers/tunnel";
-import { updateNotificationUrl } from "../../helpers/paddle-api";
+import {
+  updateNotificationUrl,
+  setNotificationTrafficSource,
+} from "../../helpers/paddle-api";
 import { instanceSuffix } from "../../helpers/instance";
 
 const REQUIRED_ENV_VARS = [
@@ -34,6 +37,9 @@ setup("start tunnel and configure Paddle", async () => {
 
   const tunnelUrl = await startTunnel(BACKEND_PORT);
   await updateNotificationUrl(`${tunnelUrl}${WEBHOOK_PATH}`);
+  // Deliver simulation webhooks (not just live platform traffic) for the whole
+  // run, so parallel tests don't each have to toggle this shared global.
+  await setNotificationTrafficSource("all");
 
   writeFileSync(
     PADDLE_STATE_PATH,

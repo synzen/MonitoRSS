@@ -21,7 +21,12 @@ import {
   Box,
   SimpleGrid,
 } from "@chakra-ui/react";
-import { useParams, Link as RouterLink, useNavigate, useLocation } from "react-router-dom";
+import {
+  useParams,
+  Link as RouterLink,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   FaPlus,
@@ -53,7 +58,10 @@ import RouteParams from "@/types/RouteParams";
 import { FeedConnectionDisabledCode } from "@/types";
 import { UserFeedManagerStatus, pages } from "@/constants";
 import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
-import { PageAlertContextOutlet, usePageAlertContext } from "@/contexts/PageAlertContext";
+import {
+  PageAlertContextOutlet,
+  usePageAlertContext,
+} from "@/contexts/PageAlertContext";
 import {
   formatRefreshRateSeconds,
   getEffectiveRefreshRateSeconds,
@@ -75,7 +83,13 @@ import { UserFeedLogs } from "../UserFeedLogs";
 import { UserFeedHealthAlert } from "../UserFeedHealthAlert";
 import { CopyUserFeedSettingsDialog } from "../CopyUserFeedSettingsDialog";
 import { Tooltip } from "@/components/ui/tooltip";
-import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
+import {
+  MenuRoot,
+  MenuTrigger,
+  MenuContent,
+  MenuItem,
+  MenuSeparator,
+} from "@/components/ui/menu";
 import {
   PopoverRoot,
   PopoverTrigger,
@@ -103,7 +117,13 @@ const tabLabelsByIndex = new Map<number, string>([
   [4, "Logs"],
 ]);
 
-const tabValues = ["connections", "comparisons", "external-properties", "settings", "logs"];
+const tabValues = [
+  "connections",
+  "comparisons",
+  "external-properties",
+  "settings",
+  "logs",
+];
 
 export const UserFeedDetail: React.FC = () => {
   const { feedId } = useParams<RouteParams>();
@@ -111,11 +131,35 @@ export const UserFeedDetail: React.FC = () => {
   const { workspaceSlug } = useFeedScope();
   const scope = workspaceSlug ? { workspaceSlug } : undefined;
   const scopeCrumbLabel = useScopeCrumbLabel();
-  const { open: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const {
+    open: editIsOpen,
+    onClose: editOnClose,
+    onOpen: editOnOpen,
+  } = useDisclosure();
   const {
     open: copySettingsIsOpen,
     onClose: copySettingsOnClose,
     onOpen: copySettingsOnOpen,
+  } = useDisclosure();
+  const {
+    open: cloneIsOpen,
+    onOpen: cloneOnOpen,
+    onClose: cloneOnClose,
+  } = useDisclosure();
+  const {
+    open: deleteFeedIsOpen,
+    onOpen: deleteFeedOnOpen,
+    onClose: deleteFeedOnClose,
+  } = useDisclosure();
+  const {
+    open: disableFeedIsOpen,
+    onOpen: disableFeedOnOpen,
+    onClose: disableFeedOnClose,
+  } = useDisclosure();
+  const {
+    open: removeAccessIsOpen,
+    onOpen: removeAccessOnOpen,
+    onClose: removeAccessOnClose,
   } = useDisclosure();
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { t } = useTranslation();
@@ -142,7 +186,8 @@ export const UserFeedDetail: React.FC = () => {
     error: deleteError,
     reset: resetDeleteError,
   } = useDeleteUserFeed();
-  const { mutateAsync: updateInvite } = useUpdateUserFeedManagementInviteStatus();
+  const { mutateAsync: updateInvite } =
+    useUpdateUserFeedManagementInviteStatus();
   const isSharedWithMe = !!feed?.sharedAccessDetails?.inviteId;
   const isNewFeed = state?.isNewFeed as boolean | undefined;
 
@@ -156,7 +201,8 @@ export const UserFeedDetail: React.FC = () => {
     if (isNewFeed) {
       createSuccessAlert({
         title: "Successfully added feed.",
-        description: " Add connections to specify where articles should be sent to.",
+        description:
+          " Add connections to specify where articles should be sent to.",
       });
     }
   }, [isNewFeed]);
@@ -184,7 +230,10 @@ export const UserFeedDetail: React.FC = () => {
     });
   };
 
-  const onUpdateFeed = async ({ url, ...rest }: UpdateUserFeedInput["data"]) => {
+  const onUpdateFeed = async ({
+    url,
+    ...rest
+  }: UpdateUserFeedInput["data"]) => {
     if (!feedId) {
       return;
     }
@@ -244,7 +293,8 @@ export const UserFeedDetail: React.FC = () => {
 
   const tabIndex = tabIndexBySearchParam.get(urlSearch);
 
-  const urlIsDifferentFromInput = feed?.inputUrl && feed?.url !== feed?.inputUrl;
+  const urlIsDifferentFromInput =
+    feed?.inputUrl && feed?.url !== feed?.inputUrl;
 
   return (
     <>
@@ -288,8 +338,67 @@ export const UserFeedDetail: React.FC = () => {
           onCloseRef={menuButtonRef}
           feedId={feedId}
         />
+        {feed && (
+          <CloneUserFeedDialog
+            open={cloneIsOpen}
+            onOpenChange={(open) => !open && cloneOnClose()}
+            defaultValues={{
+              title: feed.title,
+              url: feed.url,
+            }}
+            feedId={feed.id}
+          />
+        )}
+        {feed?.sharedAccessDetails?.inviteId && (
+          <ConfirmModal
+            open={removeAccessIsOpen}
+            onOpenChange={(open) => !open && removeAccessOnClose()}
+            title="Remove my shared access"
+            description="Are you sure you want to remove your access to this feed? You will no longer be able to view or manage this feed."
+            okText={t("common.buttons.yes")}
+            colorScheme="red"
+            onConfirm={onRemoveMyAccess}
+            onClosed={resetUpdateError}
+            error={updateError?.message}
+          />
+        )}
+        {feed && feed.disabledCode !== UserFeedDisabledCode.Manual && (
+          <ConfirmModal
+            open={disableFeedIsOpen}
+            onOpenChange={(open) => !open && disableFeedOnClose()}
+            title={t("pages.userFeed.disableFeedConfirmTitle")}
+            description={t("pages.userFeed.disableFeedConfirmDescription")}
+            okText="Disable feed"
+            colorScheme="blue"
+            onConfirm={async () =>
+              onUpdateFeed({
+                disabledCode: UserFeedDisabledCode.Manual,
+              })
+            }
+            onClosed={resetUpdateError}
+            error={updateError?.message}
+          />
+        )}
+        {feedId && (
+          <ConfirmModal
+            open={deleteFeedIsOpen}
+            onOpenChange={(open) => !open && deleteFeedOnClose()}
+            title={t("pages.userFeed.deleteConfirmTitle")}
+            description={t("pages.userFeed.deleteConfirmDescription")}
+            okText={t("pages.userFeed.deleteConfirmOk")}
+            colorScheme="red"
+            onConfirm={onDeleteFeed}
+            error={deleteError?.message}
+            onClosed={resetDeleteError}
+          />
+        )}
         <Stack width="100%" minWidth="100%" alignItems="center">
-          <Stack maxWidth="1400px" width="100%" paddingX={{ base: 4, md: 8, lg: 12 }} gap={4}>
+          <Stack
+            maxWidth="1400px"
+            width="100%"
+            paddingX={{ base: 4, md: 8, lg: 12 }}
+            gap={4}
+          >
             <Stack gap={6}>
               <Stack gap={4}>
                 <Stack flex={1}>
@@ -330,7 +439,12 @@ export const UserFeedDetail: React.FC = () => {
                     >
                       <Stack width="fit-content">
                         <Flex alignItems="center" gap={0}>
-                          <Heading as="h1" size="lg" marginRight={4} tabIndex={-1}>
+                          <Heading
+                            as="h1"
+                            size="lg"
+                            marginRight={4}
+                            tabIndex={-1}
+                          >
                             {feed?.title}
                           </Heading>
                           {feed && feed?.sharedAccessDetails?.inviteId && (
@@ -343,7 +457,7 @@ export const UserFeedDetail: React.FC = () => {
                           )}
                         </Flex>
                       </Stack>
-                      <MenuRoot lazyMount={false} unmountOnExit={false}>
+                      <MenuRoot>
                         <MenuTrigger asChild>
                           <Button variant="outline" ref={menuButtonRef}>
                             <span>Feed Actions</span>
@@ -351,95 +465,63 @@ export const UserFeedDetail: React.FC = () => {
                           </Button>
                         </MenuTrigger>
                         <MenuContent>
-                          <MenuItem aria-label="Edit" onClick={editOnOpen} value="configure">
+                          <MenuItem
+                            aria-label="Edit"
+                            onClick={editOnOpen}
+                            value="configure"
+                          >
                             <FaGear />
                             {t("common.buttons.configure")}
                           </MenuItem>
-                          <MenuItem onClick={copySettingsOnOpen} value="copy-settings">
+                          <MenuItem
+                            onClick={copySettingsOnOpen}
+                            value="copy-settings"
+                          >
                             <FaCopy />
                             Copy settings to...
                           </MenuItem>
                           {feed && (
-                            <CloneUserFeedDialog
-                              trigger={
-                                <MenuItem value="clone">
-                                  <IoDuplicate />
-                                  <span>Clone</span>
-                                </MenuItem>
-                              }
-                              defaultValues={{
-                                title: feed.title,
-                                url: feed.url,
-                              }}
-                              feedId={feed.id}
-                            />
+                            <MenuItem value="clone" onClick={cloneOnOpen}>
+                              <IoDuplicate />
+                              <span>Clone</span>
+                            </MenuItem>
                           )}
                           {feed?.sharedAccessDetails?.inviteId && (
-                            <ConfirmModal
-                              title="Remove my shared access"
-                              description="Are you sure you want to remove your access to this feed? You will no longer be able to view or manage this feed."
-                              trigger={
-                                <MenuItem
-                                  disabled={updatingStatus === "loading"}
-                                  value="remove-access"
-                                >
-                                  <FaUserSlash />
-                                  <span>Remove my shared access</span>
-                                </MenuItem>
-                              }
-                              okText={t("common.buttons.yes")}
-                              colorScheme="red"
-                              onConfirm={onRemoveMyAccess}
-                              onClosed={resetUpdateError}
-                              error={updateError?.message}
-                            />
+                            <MenuItem
+                              disabled={updatingStatus === "loading"}
+                              value="remove-access"
+                              onClick={removeAccessOnOpen}
+                            >
+                              <FaUserSlash />
+                              <span>Remove my shared access</span>
+                            </MenuItem>
                           )}
-                          {feed && feed.disabledCode !== UserFeedDisabledCode.Manual && (
-                            <ConfirmModal
-                              title={t("pages.userFeed.disableFeedConfirmTitle")}
-                              description={t("pages.userFeed.disableFeedConfirmDescription")}
-                              trigger={
-                                <MenuItem
-                                  disabled={updatingStatus === "loading"}
-                                  value="disable-feed"
-                                >
-                                  <FaPause />
-                                  <span>{t("pages.userFeed.disableFeedButtonText")}</span>
-                                </MenuItem>
-                              }
-                              okText="Disable feed"
-                              colorScheme="blue"
-                              onConfirm={async () =>
-                                onUpdateFeed({
-                                  disabledCode: UserFeedDisabledCode.Manual,
-                                })
-                              }
-                              onClosed={resetUpdateError}
-                              error={updateError?.message}
-                            />
-                          )}
+                          {feed &&
+                            feed.disabledCode !==
+                              UserFeedDisabledCode.Manual && (
+                              <MenuItem
+                                disabled={updatingStatus === "loading"}
+                                value="disable-feed"
+                                onClick={disableFeedOnOpen}
+                              >
+                                <FaPause />
+                                <span>
+                                  {t("pages.userFeed.disableFeedButtonText")}
+                                </span>
+                              </MenuItem>
+                            )}
                           <MenuSeparator />
                           {feedId && (
-                            <ConfirmModal
-                              title={t("pages.userFeed.deleteConfirmTitle")}
-                              description={t("pages.userFeed.deleteConfirmDescription")}
-                              trigger={
-                                <MenuItem
-                                  disabled={deleteingStatus === "loading"}
-                                  value="delete-feed"
-                                  color="text.error"
-                                  _icon={{ color: "text.error" }}
-                                >
-                                  <FaTrash />
-                                  <Text>{t("common.buttons.delete")}</Text>
-                                </MenuItem>
-                              }
-                              okText={t("pages.userFeed.deleteConfirmOk")}
-                              colorScheme="red"
-                              onConfirm={onDeleteFeed}
-                              error={deleteError?.message}
-                              onClosed={resetDeleteError}
-                            />
+                            <MenuItem
+                              disabled={deleteingStatus === "loading"}
+                              value="delete-feed"
+                              color="text.error"
+                              _icon={{ color: "text.error" }}
+                              onClick={deleteFeedOnOpen}
+                            >
+                              <FaTrash />
+                              <Text>{t("common.buttons.delete")}</Text>
+                            </MenuItem>
                           )}
                         </MenuContent>
                       </MenuRoot>
@@ -490,7 +572,11 @@ export const UserFeedDetail: React.FC = () => {
                                 size="xs"
                                 aria-label="What is cache duration?"
                               >
-                                <FaCircleQuestion fontSize={12} tabIndex={-1} aria-hidden />
+                                <FaCircleQuestion
+                                  fontSize={12}
+                                  tabIndex={-1}
+                                  aria-hidden
+                                />
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent>
@@ -498,8 +584,9 @@ export const UserFeedDetail: React.FC = () => {
                               <PopoverCloseTrigger />
                               <PopoverBody>
                                 <Text>
-                                  The feed link that is actually being used since the original link
-                                  was not a valid RSS feed feed.
+                                  The feed link that is actually being used
+                                  since the original link was not a valid RSS
+                                  feed feed.
                                 </Text>
                               </PopoverBody>
                             </PopoverContent>
@@ -519,7 +606,11 @@ export const UserFeedDetail: React.FC = () => {
                     as="ul"
                   >
                     <CategoryText title={t("pages.feed.refreshRateLabel")}>
-                      {feed ? formatRefreshRateSeconds(getEffectiveRefreshRateSeconds(feed)) : null}
+                      {feed
+                        ? formatRefreshRateSeconds(
+                            getEffectiveRefreshRateSeconds(feed),
+                          )
+                        : null}
                     </CategoryText>
                     <CategoryText title={t("pages.feed.createdAtLabel")}>
                       {feed?.createdAt}
@@ -532,8 +623,12 @@ export const UserFeedDetail: React.FC = () => {
                       }}
                     >
                       <HStack>
-                        <Text color={isAtLimit ? "text.error" : ""} display="block">
-                          {dailyLimit && `${dailyLimit.current}/${dailyLimit.max}`}
+                        <Text
+                          color={isAtLimit ? "text.error" : ""}
+                          display="block"
+                        >
+                          {dailyLimit &&
+                            `${dailyLimit.current}/${dailyLimit.max}`}
                         </Text>
                         {dailyLimit && !userMe?.result.enableBilling && (
                           <IconButton
@@ -666,15 +761,20 @@ export const UserFeedDetail: React.FC = () => {
                           </PrimaryActionButton>
                         )}
                       </Flex>
-                      <Text>{t("pages.feed.connectionSectionDescription")}</Text>
+                      <Text>
+                        {t("pages.feed.connectionSectionDescription")}
+                      </Text>
                     </Stack>
                     {showEmptyConnectionsAlert && (
                       <Stack>
-                        <Alert status="warning" title="You have no connections set up!">
+                        <Alert
+                          status="warning"
+                          title="You have no connections set up!"
+                        >
                           <Stack>
                             <Text>
-                              You&apos;ll need to set up at least one connection to tell the bot
-                              where to send new articles!
+                              You&apos;ll need to set up at least one connection
+                              to tell the bot where to send new articles!
                             </Text>
                             <PrimaryActionButton onClick={onAddConnection} alignSelf="flex-start">
                               <FaPlus fontSize="sm" />
@@ -693,7 +793,11 @@ export const UserFeedDetail: React.FC = () => {
                         ]}
                       >
                         {feed?.connections
-                          ?.filter((c) => c.disabledCode !== FeedConnectionDisabledCode.Manual)
+                          ?.filter(
+                            (c) =>
+                              c.disabledCode !==
+                              FeedConnectionDisabledCode.Manual,
+                          )
                           ?.map((connection) => {
                             return (
                               <ConnectionCard
@@ -735,7 +839,13 @@ export const UserFeedDetail: React.FC = () => {
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </Tabs.Content>
-          <Tabs.Content value="comparisons" padding={0} py={4} width="100%" tabIndex={-1}>
+          <Tabs.Content
+            value="comparisons"
+            padding={0}
+            py={4}
+            width="100%"
+            tabIndex={-1}
+          >
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>
@@ -754,7 +864,12 @@ export const UserFeedDetail: React.FC = () => {
               </BoxConstrained.Container>
             </BoxConstrained.Wrapper>
           </Tabs.Content>
-          <Tabs.Content value="external-properties" padding={0} py={4} width="100%">
+          <Tabs.Content
+            value="external-properties"
+            padding={0}
+            py={4}
+            width="100%"
+          >
             <BoxConstrained.Wrapper>
               <BoxConstrained.Container>
                 <TabContentContainer>
