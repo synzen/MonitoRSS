@@ -44,6 +44,16 @@ export interface MockPaddleService {
   getUpdatePaymentMethodTransaction: Mock<
     (subscriptionId: string) => Promise<{ id: string }>
   >;
+  updateSubscriptionItems: Mock<
+    <T>(
+      subscriptionId: string,
+      options: {
+        items: Array<{ priceId: string; quantity: number }>;
+        currencyCode: string;
+        preview?: boolean;
+      },
+    ) => Promise<T>
+  >;
 }
 
 export interface MockSupportersService {
@@ -91,6 +101,14 @@ export interface SupporterSubscriptionsContextOptions {
       }>;
     }>;
     executeApiCall?: <T>(endpoint: string, data?: RequestInit) => Promise<T>;
+    updateSubscriptionItems?: <T>(
+      subscriptionId: string,
+      options: {
+        items: Array<{ priceId: string; quantity: number }>;
+        currencyCode: string;
+        preview?: boolean;
+      },
+    ) => Promise<T>;
   };
   supportersService?: {
     getSupporterSubscription?: (params: {
@@ -168,6 +186,19 @@ function createMockPaddleService(
 
       return { id: response.data.id };
     }),
+    // Mirror the real PaddleService: route through executeApiCall so a test that
+    // stubs executeApiCall still drives the returned preview/change response.
+    updateSubscriptionItems: mock.fn(
+      options.updateSubscriptionItems ??
+        (async <T>(
+          subscriptionId: string,
+          { preview }: { preview?: boolean },
+        ): Promise<T> =>
+          executeApiCall<T>(
+            `/subscriptions/${subscriptionId}${preview ? "/preview" : ""}`,
+            { method: "PATCH" },
+          )),
+    ),
   };
 }
 
