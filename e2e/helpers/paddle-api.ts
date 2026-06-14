@@ -35,6 +35,7 @@ async function paddleRequest<T>(
 interface PaddleSubscription {
   id: string;
   status: string;
+  customer_id: string;
   custom_data?: { userId?: string };
 }
 
@@ -103,6 +104,43 @@ export async function listActiveSubscriptions(): Promise<PaddleSubscription[]> {
     "/subscriptions?status=active",
   );
   return result.data;
+}
+
+// The Paddle sandbox is one shared account, so scope cleanup to the test's own
+// customer (looked up by its unique email) rather than every active subscription,
+// otherwise a parallel test cancels another's subscription mid-run.
+export async function findCustomerIdByEmail(
+  email: string,
+): Promise<string | undefined> {
+  const result = await paddleRequest<PaddleListResponse<{ id: string }>>(
+    `/customers?email=${encodeURIComponent(email)}`,
+  );
+  return result.data[0]?.id;
+}
+
+export async function cancelActiveSubscriptionsForEmail(
+  email: string,
+): Promise<string[]> {
+  const customerId = await findCustomerIdByEmail(email);
+  if (!customerId) {
+    return [];
+  }
+
+  const result = await paddleRequest<PaddleListResponse<PaddleSubscription>>(
+    `/subscriptions?status=active&customer_id=${customerId}`,
+  );
+
+  const cancelledIds: string[] = [];
+  for (const sub of result.data) {
+    try {
+      await cancelSubscription(sub.id);
+      cancelledIds.push(sub.id);
+    } catch (err) {
+      console.warn(`Failed to cancel subscription ${sub.id}:`, err);
+    }
+  }
+
+  return cancelledIds;
 }
 
 export async function cancelSubscription(

@@ -2,13 +2,17 @@ import type { Page } from "@playwright/test";
 import { test, expect } from "../../fixtures/test-fixtures";
 import { ensureFreeSubscriptionState } from "../../helpers/paddle-cleanup";
 
-const TIER_3_MONTHLY_PRICE_ID = "pri_01hbkj52vhxyayd7pdcezjvmmm";
+// Annual, not monthly: adding feeds to a just-created subscription prorates
+// against the time left on the current term, and Paddle rejects any preview
+// whose total is under its $0.70 minimum. A monthly term leaves seconds of
+// proration (well under $0.70); an annual term leaves a year, clearing it.
+const TIER_3_ANNUAL_PRICE_ID = "pri_01hbkj5t7qjkj6zs0febav3139";
 
 // The update flow PATCHes the real subscription in Paddle, so a simulated
 // (webhook-only) subscription is not enough — subscribe through the real
 // sandbox checkout first.
 async function subscribeToTier3(page: Page) {
-  await page.goto(`/paddle-checkout/${TIER_3_MONTHLY_PRICE_ID}`);
+  await page.goto(`/paddle-checkout/${TIER_3_ANNUAL_PRICE_ID}`);
 
   const checkoutHeading = page.getByRole("heading", {
     name: "Checkout Summary",
@@ -199,7 +203,7 @@ test.describe("Paddle additional feeds quantity", () => {
 
     await expectSubscriptionText(
       page,
-      /You are currently on Tier 3 \(billed every month\)/,
+      /You are currently on Tier 3 \(billed every year\)/,
     );
     await expect(page.getByText(/additional feed/)).not.toBeVisible();
   });

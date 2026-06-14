@@ -1,14 +1,20 @@
 import { Page } from "@playwright/test";
 import {
-  cancelAllActiveSubscriptions,
+  cancelActiveSubscriptionsForEmail,
   createPaddleCustomer,
-  listActiveSubscriptions,
-  setNotificationTrafficSource,
   simulateSubscriptionCreation,
 } from "./paddle-api";
 
+async function getUserEmail(page: Page): Promise<string> {
+  const response = await page.request.get("/api/v1/users/@me");
+  const data = await response.json();
+  return data.result.email;
+}
+
 const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = process.env.CI ? 60000 : 30000;
+// Real Paddle webhook delivery over the cloudflared tunnel occasionally exceeds
+// 60s end to end, so give CI generous headroom; the per-test timeout (120s+) caps it.
+const POLL_TIMEOUT_MS = process.env.CI ? 90000 : 60000;
 
 async function waitForFreeState(page: Page): Promise<void> {
   const startTime = Date.now();
@@ -89,14 +95,10 @@ export async function ensurePaidSubscriptionState(
     );
   }
 
-  await setNotificationTrafficSource("all");
-
-  try {
-    await simulateSubscriptionCreation({ customerId, priceId: opts.priceId });
-    await waitForPaidState(page);
-  } finally {
-    await setNotificationTrafficSource("platform");
-  }
+  // Traffic source is set to "all" once in paddle.setup.ts and left there;
+  // toggling it per-test races other parallel tests' webhook delivery.
+  await simulateSubscriptionCreation({ customerId, priceId: opts.priceId });
+  await waitForPaidState(page);
 
   await page.goto("about:blank");
   await page.evaluate(() => {
@@ -110,17 +112,17 @@ export async function ensurePaidSubscriptionState(
 }
 
 export async function ensureFreeSubscriptionState(page: Page): Promise<void> {
-  const activeSubscriptions = await listActiveSubscriptions();
+  const email = await getUserEmail(page);
+  const cancelledIds = await cancelActiveSubscriptionsForEmail(email);
 
-  if (activeSubscriptions.length === 0) {
+  if (cancelledIds.length === 0) {
     return;
   }
 
   console.log(
-    `Found ${activeSubscriptions.length} active subscription(s), cancelling...`,
+    `Cancelled ${cancelledIds.length} active subscription(s) for ${email}`,
   );
 
-  await cancelAllActiveSubscriptions();
   await waitForFreeState(page);
 
   await page.goto("about:blank");
