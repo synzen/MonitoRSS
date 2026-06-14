@@ -1,4 +1,3 @@
-import { VisuallyHidden } from "@chakra-ui/react";
 import {
   DialogRoot,
   DialogContent,
@@ -27,8 +26,16 @@ export const ChangeVerifiedEmailDialog = ({ isOpen, onClose, currentEmail, onCha
         <DialogBody>
           {/* Empty field by default, current address shown as context in the
               intro so the user is not forced to clear a value they're moving
-              away from. The underlying step refetches user-me on confirm. */}
+              away from. The underlying step refetches user-me on confirm.
+              Keyed on `isOpen` so a sent-but-unconfirmed attempt does not persist
+              into the next open: the dialog stays mounted while closed, so without
+              a fresh key the step would reopen on its code-entry screen. (Ark's
+              `unmountOnExit` only unmounts on the exit-animation end, which doesn't
+              reset synchronously, so the explicit key is the reliable reset here.)
+              VerifyEmailStep owns its own polite live region for send/verify
+              status, so the dialog adds none. */}
           <VerifyEmailStep
+            key={isOpen ? "open" : "closed"}
             onVerified={() => {
               onChanged();
               onClose();
@@ -40,7 +47,6 @@ export const ChangeVerifiedEmailDialog = ({ isOpen, onClose, currentEmail, onCha
               </>
             }
           />
-          <VisuallyHidden aria-live="polite" />
         </DialogBody>
       </DialogContent>
     </DialogRoot>

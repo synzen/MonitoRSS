@@ -216,7 +216,7 @@ export const VerifyEmailStep = ({
             }
             helperText={
               // eslint-disable-next-line no-nested-ternary
-              lockEmail
+              lockEmail || !defaultEmail
                 ? undefined
                 : (sendAttempted && !emailValid) || guardError
                   ? undefined

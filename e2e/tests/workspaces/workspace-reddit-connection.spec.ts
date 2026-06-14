@@ -87,13 +87,12 @@ async function gotoWorkspaceFeedsViaSwitcher(page: Page, workspaceName: string):
 }
 
 async function pasteUrlIntoInlineDiscovery(page: Page, url: string): Promise<void> {
-  // 0 feeds in scope -> the discovery UI renders directly on the feeds page.
-  await expect(
-    page.getByRole("heading", { name: "Get news delivered to your Discord" }),
-  ).toBeVisible({ timeout: 15000 });
+  // 0 feeds in scope -> the discovery UI renders directly on the feeds page. The
+  // heading differs by scope, so wait on the scope-agnostic search box instead.
   const searchInput = page.getByRole("textbox", {
     name: "Search popular feeds or paste a URL",
   });
+  await expect(searchInput).toBeVisible({ timeout: 15000 });
   await searchInput.fill(url);
   await page.getByRole("button", { name: "Go", exact: true }).click();
 }

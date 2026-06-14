@@ -599,6 +599,53 @@ describe("UserFeeds - Non-discovery mode", () => {
     expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
     expect(screen.queryByTestId("user-feeds-table")).not.toBeInTheDocument();
   });
+
+  it("shows a fresh intro, not a stale 'feeds added' panel, after deleting all feeds back to empty", async () => {
+    mockCreateUserFeed.mockResolvedValue({ result: { id: "feed-123" } });
+    let totalFeeds = 0;
+    mockUseUserFeedsReturn.mockImplementation(() => ({
+      data: { results: [], total: totalFeeds, feedsWithoutConnections: 0 },
+    }));
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const renderUserFeeds = () => (
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <UserFeeds />
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+    const user = userEvent.setup();
+    const { rerender } = render(renderUserFeeds());
+
+    // Add a feed in discovery, then exit to the table once it appears.
+    const searchInput = screen.getByLabelText("Search popular feeds or paste a URL");
+    await user.type(searchInput, "Gaming");
+    await user.click(screen.getByRole("button", { name: "Go" }));
+    const addButtons = screen.getAllByRole("button", { name: /^Add .+ feed$/ });
+    await user.click(addButtons[0]);
+    expect(screen.getByRole("button", { name: /View your feeds/ })).toBeInTheDocument();
+
+    totalFeeds = 1;
+    await user.click(screen.getByRole("button", { name: /View your feeds/ }));
+    expect(screen.getByTestId("user-feeds-table")).toBeInTheDocument();
+
+    // Delete every feed: the scope returns to empty and discovery re-enters.
+    totalFeeds = 0;
+    rerender(renderUserFeeds());
+
+    // The re-entered discovery must show the plain intro, not the prior session's
+    // "N feeds added!" success panel (the per-session add state is cleared on the
+    // transition back to empty).
+    expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
+    expect(screen.queryByText(/feed.*added!/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /View your feeds/ })).not.toBeInTheDocument();
+  });
 });
 
 describe("UserFeeds - Returning user Add Feed button", () => {

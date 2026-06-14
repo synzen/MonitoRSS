@@ -83,6 +83,10 @@ export const useUserFeeds = (
     setSearch,
     isFetchingNewPage,
     isFetching,
+    // True while `data` still holds the previous query key's result (e.g. the prior
+    // scope's feeds during a scope switch, kept by keepPreviousData until the refetch
+    // resolves). Callers deriving state from `data` should ignore it while stale.
+    isPreviousData,
     refetch,
     search: search || "",
     updateCachedFeed,

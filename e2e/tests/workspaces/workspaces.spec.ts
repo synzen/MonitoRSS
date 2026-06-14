@@ -39,10 +39,10 @@ test.describe("Workspaces", () => {
     await dialog.getByRole("button", { name: "Create team" }).click();
 
     // Redirected into the workspace — a fresh workspace has no feeds, so the
-    // scoped feeds page renders the same discovery UI as the personal dashboard.
+    // scoped feeds page renders the discovery UI with the workspace heading.
     await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
     await expect(
-      page.getByRole("heading", { name: "Get news delivered to your Discord" }),
+      page.getByRole("heading", { name: "Add feeds for your team" }),
     ).toBeVisible();
 
     // The switcher now exists in the header and reflects the active workspace.

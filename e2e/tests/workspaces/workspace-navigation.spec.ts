@@ -34,12 +34,13 @@ async function createWorkspace(page: Page, workspaceName: string): Promise<strin
 }
 
 async function addFeedViaDiscovery(page: Page): Promise<void> {
-  await expect(
-    page.getByRole("heading", { name: "Get news delivered to your Discord" }),
-  ).toBeVisible({ timeout: 15000 });
+  // The discovery heading differs by scope ("...to your Discord" personal,
+  // "Add feeds for your team" in a workspace); the search box is scope-agnostic,
+  // so use it as the discovery-ready signal.
   const search = page.getByRole("textbox", {
     name: "Search popular feeds or paste a URL",
   });
+  await expect(search).toBeVisible({ timeout: 15000 });
   await search.fill(MOCK_RSS_FEED_URL);
   await page.getByRole("button", { name: "Go", exact: true }).click();
   await page

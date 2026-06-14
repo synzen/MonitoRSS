@@ -103,6 +103,9 @@ const CopyUserFeedSettingsMenuItem = ({
 
 type BulkAction = "enable" | "disable" | "delete";
 
+const DISCOVERY_BROWSE_HINT =
+  "Browse popular feeds to get started, or paste a URL to check any website.";
+
 const UserFeedsInner: React.FC = () => {
   const { t } = useTranslation();
   const { state } = useLocation();
@@ -119,7 +122,11 @@ const UserFeedsInner: React.FC = () => {
     },
   });
   const { data: managementInvitesCount } = useUserFeedManagementInvitesCount();
-  const { data: userFeedsResults, refetch: refetchUserFeedsSummary } = useUserFeeds({
+  const {
+    data: userFeedsResults,
+    refetch: refetchUserFeedsSummary,
+    isPreviousData: userFeedsResultsAreStale,
+  } = useUserFeeds({
     limit: 1,
     offset: 0,
   });
@@ -140,7 +147,18 @@ const UserFeedsInner: React.FC = () => {
     refetch: curatedRefetch,
   } = useCuratedFeeds();
 
-  const [isInDiscoveryMode, setIsInDiscoveryMode] = useState<boolean | null>(null);
+  // Holds the scope (workspace slug, or "personal") of an open add-first-feeds session:
+  // the scope was seen empty, so discovery stays up (for the "feeds added" panel) even
+  // once feeds appear, until the user leaves via "View your feeds". A returning user with
+  // feeds never enters a session, so adding via the modal does not pull them into discovery.
+  //
+  // The session is stored against its scope, not as a bare boolean, so that on the single
+  // render after a scope switch — before the scope-change effect below resets it — a
+  // session opened in the previous (empty) scope cannot be read as active under the new
+  // scope and flash discovery over a populated feeds table.
+  const scopeKey = workspaceSlug ?? "personal";
+  const [addingSessionScope, setAddingSessionScope] = useState<string | null>(null);
+  const isAddingSession = addingSessionScope === scopeKey;
   const [feedActionStates, setFeedActionStates] = useState<Record<string, FeedActionState>>({});
   const [isBrowseModalOpen, setIsBrowseModalOpen] = useState(false);
   const [browseModalInitialCategory, setBrowseModalInitialCategory] = useState<
@@ -210,16 +228,55 @@ const UserFeedsInner: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Per-scope session state. Switching to an already-visited workspace does NOT remount
+  // this component (its workspace query is cached, so the scope layout shows no loading
+  // gate), so the session must be cleared explicitly on scope change. Without it, an
+  // add-session opened on an empty scope would leak into a populated scope switched to
+  // afterward and wrongly keep discovery up there.
+  const prevWorkspaceSlugRef = useRef(workspaceSlug);
+  const prevTotalRef = useRef<number | undefined>(undefined);
+
+  const resetSessionState = useCallback(() => {
+    setFeedActionStates({});
+    setIsSearchActive(false);
+    limitAlertShownRef.current = false;
+  }, []);
+
   useEffect(() => {
-    if (isInDiscoveryMode === null && userFeedsResults) {
-      setIsInDiscoveryMode(userFeedsResults.total === 0);
-    } else if (isInDiscoveryMode === false && userFeedsResults && userFeedsResults.total === 0) {
-      setIsInDiscoveryMode(true);
-      setFeedActionStates({});
-      setIsSearchActive(false);
-      limitAlertShownRef.current = false;
+    if (prevWorkspaceSlugRef.current !== workspaceSlug) {
+      prevWorkspaceSlugRef.current = workspaceSlug;
+      prevTotalRef.current = undefined;
+      setAddingSessionScope(null);
+      resetSessionState();
     }
-  }, [userFeedsResults, isInDiscoveryMode]);
+  }, [workspaceSlug, resetSessionState]);
+
+  // Seeing the current scope empty (re)starts an add-first-feeds session, keeping discovery
+  // up past the moment feeds appear so the "feeds added" panel survives the post-add
+  // refetch. The empty scope already renders discovery via the `total === 0` term below, so
+  // there is no frame where the wrong view shows.
+  //
+  // Session state is cleared on a genuine return-to-empty (all feeds deleted): a real
+  // positive count gave way to 0 and no add-session is in progress. It is NOT cleared
+  // when a transient/lagging refetch re-delivers total === 0 mid add-session, which would
+  // otherwise wipe the "N feeds added" badges for feeds whose own refetch hasn't landed.
+  useEffect(() => {
+    if (userFeedsResultsAreStale || userFeedsResults?.total === undefined) {
+      return;
+    }
+
+    const { total } = userFeedsResults;
+    const wentPositiveToEmpty = total === 0 && (prevTotalRef.current ?? 0) > 0;
+    prevTotalRef.current = total;
+
+    if (total === 0) {
+      setAddingSessionScope(scopeKey);
+    }
+
+    if (wentPositiveToEmpty && !isAddingSession) {
+      resetSessionState();
+    }
+  }, [userFeedsResults, userFeedsResultsAreStale, isAddingSession, resetSessionState, scopeKey]);
 
   const isAtLimit = !!(
     userFeedsResults &&
@@ -234,6 +291,26 @@ const UserFeedsInner: React.FC = () => {
         .map(([key]) => key),
     [feedActionStates],
   );
+
+  // Derived, not stored. `null` means feed data for the current scope hasn't loaded yet
+  // (or is the previous scope's, kept by keepPreviousData during a switch) — render
+  // neither the table nor discovery rather than flashing the wrong one. Otherwise
+  // discovery shows when the scope is empty, or while an add-first-feeds session is still
+  // open (until "View your feeds"). A populated scope with no session shows the table.
+  const isInDiscoveryMode: boolean | null =
+    !userFeedsResults || userFeedsResultsAreStale
+      ? null
+      : userFeedsResults.total === 0 || isAddingSession;
+
+  const discoveryIntro = currentWorkspace
+    ? {
+        heading: "Add feeds for your team",
+        body: `Feeds added here belong to the team and are shared with its members. ${DISCOVERY_BROWSE_HINT}`,
+      }
+    : {
+        heading: "Get news delivered to your Discord",
+        body: DISCOVERY_BROWSE_HINT,
+      };
 
   const handleCuratedFeedAdd = useCallback(
     async (feed: CuratedFeed) => {
@@ -347,7 +424,7 @@ const UserFeedsInner: React.FC = () => {
   }, []);
 
   const handleExitDiscovery = useCallback(() => {
-    setIsInDiscoveryMode(false);
+    setAddingSessionScope(null);
   }, []);
 
   const handleSetupConnectionCreated = useCallback(() => {
@@ -468,6 +545,28 @@ const UserFeedsInner: React.FC = () => {
   const totalFeedsRequiringAttention = userFeedsRequireAttentionResults?.total || 0;
   const totalManagementInvites = managementInvitesCount?.total || 0;
 
+  // In-scope settings affordance: once inside a workspace, its name, a one-line
+  // description, and its settings are shown on-page rather than buried in the header
+  // switcher menu. Shared between the dormant and active returns so the two stay in sync.
+  const workspaceHeader = currentWorkspace && (
+    <Flex alignItems="center" justifyContent="space-between" gap={4} flexWrap="wrap" mt={4}>
+      <Stack gap={0}>
+        <Heading as="h1" size="lg" tabIndex={-1}>
+          {currentWorkspace.name}
+        </Heading>
+        <Text color="fg.muted" fontSize="sm">
+          Team workspace. Feeds here are shared with members.
+        </Text>
+      </Stack>
+      <Button asChild variant="outline" size="sm">
+        <Link to={pages.workspaceSettings(currentWorkspace.slug)}>
+          <FaGear aria-hidden="true" />
+          Team settings
+        </Link>
+      </Button>
+    </Flex>
+  );
+
   // Pay-at-blocked-intent: a dormant workspace with no feeds shows the
   // activation empty state instead of the add-feed experience (which the
   // server would reject anyway). With existing (disabled) feeds, the list
@@ -475,19 +574,7 @@ const UserFeedsInner: React.FC = () => {
   if (workspaceDormant && userFeedsResults && userFeedsResults.total === 0) {
     return (
       <Stack gap={4}>
-        {currentWorkspace && (
-          <Flex alignItems="center" justifyContent="space-between" gap={4} flexWrap="wrap" mt={4}>
-            <Heading as="h1" size="lg" tabIndex={-1}>
-              {currentWorkspace.name}
-            </Heading>
-            <Button asChild variant="outline" size="sm">
-              <Link to={pages.workspaceSettings(currentWorkspace.slug)}>
-                <FaGear aria-hidden="true" />
-                Team settings
-              </Link>
-            </Button>
-          </Flex>
-        )}
+        {workspaceHeader}
         <WorkspaceActivationEmptyState />
       </Stack>
     );
@@ -496,21 +583,7 @@ const UserFeedsInner: React.FC = () => {
   return (
     <>
       <Stack gap={4}>
-        {/* In-scope settings affordance: once inside a workspace, its settings are one
-            visible on-page click rather than buried in the header switcher menu. */}
-        {currentWorkspace && (
-          <Flex alignItems="center" justifyContent="space-between" gap={4} flexWrap="wrap" mt={4}>
-            <Heading as="h1" size="lg" tabIndex={-1}>
-              {currentWorkspace.name}
-            </Heading>
-            <Button asChild variant="outline" size="sm">
-              <Link to={pages.workspaceSettings(currentWorkspace.slug)}>
-                <FaGear aria-hidden="true" />
-                Team settings
-              </Link>
-            </Button>
-          </Flex>
-        )}
+        {workspaceHeader}
         <Stack gap={2}>
           <PageAlertContextOutlet
             containerProps={{
@@ -766,11 +839,9 @@ const UserFeedsInner: React.FC = () => {
               ) : (
                 <>
                   <Heading as="h2" size="lg">
-                    Get news delivered to your Discord
+                    {discoveryIntro.heading}
                   </Heading>
-                  <Text color="fg.muted">
-                    Browse popular feeds to get started, or paste a URL to check any website.
-                  </Text>
+                  <Text color="fg.muted">{discoveryIntro.body}</Text>
                 </>
               )}
             </Stack>

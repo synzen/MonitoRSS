@@ -55,7 +55,7 @@ test.describe("Workspace self-host posture (Paddle not configured)", () => {
 
     // Fully active: the regular discovery UI renders, not an activation state.
     await expect(
-      page.getByRole("heading", { name: "Get news delivered to your Discord" }),
+      page.getByRole("heading", { name: "Add feeds for your team" }),
     ).toBeVisible({ timeout: 15000 });
     await expectNoBillingUi(page);
 

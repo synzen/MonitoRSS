@@ -59,6 +59,12 @@ describe("ChangeVerifiedEmailDialog", () => {
     expect(input.value).toBe("");
   });
 
+  it("does not show the 'pre-filled with your Discord email' helper, since nothing is pre-filled", () => {
+    renderDialog({ currentEmail: "current@example.com" });
+
+    expect(screen.queryByText(/pre-filled with your discord email/i)).not.toBeInTheDocument();
+  });
+
   it("calls onChanged and onClose after the new address is verified", async () => {
     const onChanged = vi.fn();
     const onClose = vi.fn();
@@ -78,5 +84,36 @@ describe("ChangeVerifiedEmailDialog", () => {
     expect(h.confirmCode).toHaveBeenCalledWith({
       details: { email: "new@example.com", code: "123456" },
     });
+  });
+
+  it("resets to a fresh empty step when reopened after a sent-but-unconfirmed attempt", async () => {
+    const { rerender } = renderDialog({ isOpen: true });
+
+    // Send a code (advances the step to the code-entry screen) but do not confirm.
+    fireEvent.change(screen.getByLabelText(/email address/i), {
+      target: { value: "new@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /send code/i }));
+    await screen.findByLabelText(/verification code/i);
+
+    // Close and reopen the dialog.
+    const reopen = (open: boolean) => (
+      <ChakraProvider value={system}>
+        <ChangeVerifiedEmailDialog
+          isOpen={open}
+          onClose={vi.fn()}
+          onChanged={vi.fn()}
+          currentEmail="old@example.com"
+        />
+      </ChakraProvider>
+    );
+    rerender(reopen(false));
+    rerender(reopen(true));
+
+    // The reopened dialog is back on the empty email step, not the stale
+    // code-entry screen from the prior attempt.
+    const input = screen.getByLabelText(/email address/i) as HTMLInputElement;
+    expect(input.value).toBe("");
+    expect(screen.queryByLabelText(/verification code/i)).not.toBeInTheDocument();
   });
 });
