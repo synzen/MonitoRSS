@@ -27,7 +27,6 @@ import { FaCheck, FaChevronRight } from "react-icons/fa6";
 import { Link as RouterLink } from "react-router-dom";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { DestructiveActionButton } from "@/components/DestructiveActionButton";
-import { Checkbox } from "@/components/ui/checkbox";
 import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
@@ -54,12 +53,11 @@ import {
   useCancelWorkspaceBilling,
   useResumeWorkspaceBilling,
   useUpdateWorkspaceBilling,
-  useConvertWorkspaceBilling,
   useWorkspaceBillingChangePreview,
   useWorkspaceUpdatePaymentMethodTransaction,
 } from "../../hooks";
-import { usePersonalConvertibleFeeds } from "../../hooks/usePersonalConvertibleFeeds";
 import { useExpandableTierTotal } from "./useExpandableTierTotal";
+import { ConvertPersonalPlanDialog } from "./ConvertPersonalPlanDialog";
 
 type BillingInterval = "month" | "year";
 
@@ -484,138 +482,6 @@ const ConvertPersonalPlanSection = ({
         Move my plan to this team
       </Button>
     </Flex>
-  );
-};
-
-// The selective feed-move dialog. Lists the owner's personal feeds (all
-// selected by default — the safe move that disables nothing), shows a live
-// "Selected N / M slots" counter against the moving plan's limit, marks
-// deselected feeds as ones that will be disabled, and confirms by typing the
-// team slug.
-const ConvertPersonalPlanDialog = ({
-  open,
-  onClose,
-  onConverted,
-  workspaceSlug,
-  feedLimit,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onConverted: () => void;
-  workspaceSlug: string;
-  feedLimit: number;
-}) => {
-  const {
-    feeds,
-    status,
-    error: feedsError,
-  } = usePersonalConvertibleFeeds({
-    enabled: open,
-  });
-  const convertMutation = useConvertWorkspaceBilling();
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [initialized, setInitialized] = useState(false);
-
-  // Default to bringing everything once the feeds load (nothing left behind,
-  // nothing disabled).
-  useEffect(() => {
-    if (open && status === "success" && !initialized) {
-      setSelectedIds(new Set(feeds.map((f) => f.id)));
-      setInitialized(true);
-    }
-
-    if (!open && initialized) {
-      setInitialized(false);
-    }
-  }, [open, status, initialized, feeds]);
-
-  const toggle = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-
-      return next;
-    });
-  };
-
-  const bringAll = () => setSelectedIds(new Set(feeds.map((f) => f.id)));
-
-  const selectedCount = selectedIds.size;
-  const overCapacity = selectedCount > feedLimit;
-  const leftBehindCount = feeds.length - selectedCount;
-
-  const onConfirm = async () => {
-    await convertMutation.mutateAsync({
-      workspaceSlug,
-      feedIds: [...selectedIds],
-    });
-    onConverted();
-    onClose();
-  };
-
-  return (
-    <ConfirmModal
-      open={open}
-      onOpenChange={(next) => !next && onClose()}
-      title="Move your personal plan to this team"
-      okText="Move plan"
-      confirmationPhrase={workspaceSlug}
-      okDisabled={overCapacity}
-      error={
-        convertMutation.error?.message ??
-        (overCapacity
-          ? `You can move at most ${feedLimit} feeds. Deselect ${selectedCount - feedLimit} to continue.`
-          : undefined)
-      }
-      onConfirm={onConfirm}
-      descriptionNode={
-        <Stack gap={4}>
-          <Text>
-            Your personal plan becomes {workspaceSlug}&apos;s plan, and the feeds you select move
-            with it. You will no longer have a personal plan. This is not easily reversible.
-          </Text>
-          <HStack justifyContent="space-between">
-            <Text fontWeight="medium">{`Selected ${selectedCount} / ${feedLimit} team slots`}</Text>
-            <Button size="xs" variant="outline" onClick={bringAll} disabled={status !== "success"}>
-              Bring all
-            </Button>
-          </HStack>
-          {leftBehindCount > 0 && (
-            <Text fontSize="sm" color="text.warning">
-              {leftBehindCount} feed{leftBehindCount === 1 ? "" : "s"} left behind will be disabled
-              (over the free limit).
-            </Text>
-          )}
-          {status === "loading" && <Spinner size="sm" />}
-          {status === "error" && (
-            <InlineErrorAlert title="Could not load your feeds" description={feedsError?.message} />
-          )}
-          <Stack as="ul" listStyleType="none" gap={2} maxH="20rem" overflowY="auto">
-            {feeds.map((feed) => {
-              const isSelected = selectedIds.has(feed.id);
-
-              return (
-                <HStack as="li" key={feed.id} justifyContent="space-between" gap={3}>
-                  <Checkbox checked={isSelected} onCheckedChange={() => toggle(feed.id)}>
-                    {feed.title}
-                  </Checkbox>
-                  {!isSelected && (
-                    <Text fontSize="xs" color="text.warning" flexShrink={0}>
-                      Will be disabled
-                    </Text>
-                  )}
-                </HStack>
-              );
-            })}
-          </Stack>
-        </Stack>
-      }
-    />
   );
 };
 

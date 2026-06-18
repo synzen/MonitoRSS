@@ -18,7 +18,8 @@ import {
   useWorkspaceUpdatePaymentMethodTransaction,
   useWorkspaceBillingChangePreview,
 } from "../../hooks";
-import { usePersonalConvertibleFeeds } from "../../hooks/usePersonalConvertibleFeeds";
+import { useUserFeedsInfinite } from "../../../feed/hooks/useUserFeedsInfinite";
+import { getUserFeeds } from "../../../feed/api";
 
 const h = vi.hoisted(() => ({
   openCheckout: vi.fn(),
@@ -56,9 +57,44 @@ vi.mock("../../hooks", () => ({
   })),
 }));
 
-vi.mock("../../hooks/usePersonalConvertibleFeeds", () => ({
-  usePersonalConvertibleFeeds: vi.fn(),
+vi.mock("../../../feed/hooks/useUserFeedsInfinite", () => ({
+  useUserFeedsInfinite: vi.fn(),
 }));
+
+// The convert dialog's auto-pick ("Select them for me") fetches the cap's worth
+// of feeds directly. Mocked so the over-limit flow can be driven without a
+// network round-trip; the detailed auto-pick contract lives in the feed-list
+// unit test.
+vi.mock("../../../feed/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../feed/api")>()),
+  getUserFeeds: vi.fn(),
+}));
+
+// Drives the convert dialog's feed list. Feeds are returned as a single page by
+// default (the common case is a handful of feeds); pass multiple pages to
+// exercise pagination. `total` defaults to the flattened feed count.
+const mockConvertibleFeeds = (
+  feeds: Array<{ id: string; title: string }>,
+  opts: { status?: string; error?: unknown; total?: number; hasNextPage?: boolean } = {},
+) => {
+  // Reset first: a mockImplementation set elsewhere (e.g. the feed-list unit
+  // test's paginated fake, which shares this mocked module) would otherwise take
+  // precedence over mockReturnValue and feed this suite the wrong data.
+  vi.mocked(useUserFeedsInfinite).mockReset();
+  vi.mocked(useUserFeedsInfinite).mockReturnValue({
+    data: {
+      pages: [{ total: opts.total ?? feeds.length, results: feeds }],
+    },
+    status: opts.status ?? "success",
+    error: opts.error ?? null,
+    fetchNextPage: vi.fn(),
+    isFetching: false,
+    setSearch: vi.fn(),
+    hasNextPage: opts.hasNextPage ?? false,
+    isFetchingNextPage: false,
+    search: "",
+  } as never);
+};
 
 const PRICE_PREVIEWS = [
   {
@@ -219,10 +255,7 @@ describe("WorkspaceBilling", () => {
       status: "idle",
       error: null,
     } as never);
-    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
-      feeds: [],
-      status: "success",
-    } as never);
+    mockConvertibleFeeds([]);
     h.refetchPaymentMethodTransaction.mockResolvedValue({
       data: { data: { paddleTransactionId: "txn_default" } },
     });
@@ -738,66 +771,61 @@ describe("WorkspaceBilling", () => {
     ).toBeInTheDocument();
   });
 
-  const personalFeed = (overrides: Record<string, unknown> = {}) => ({
-    id: "feed-1",
-    title: "My Feed",
-    url: "https://example.com/feed.xml",
-    createdAt: "2024-01-01T00:00:00.000Z",
-    healthStatus: "ok",
-    computedStatus: "ok",
-    ownedByUser: true,
-    connectionCount: 1,
-    ...overrides,
-  });
+  const personalFeed = (overrides: { id: string; title: string }) => overrides;
 
   const openConvertDialog = async () => {
     fireEvent.click(await screen.findByRole("button", { name: /move my plan to this team/i }));
   };
 
-  it("lists the owner's personal feeds in the convert dialog with a live capacity counter", async () => {
+  // Under the limit, the feed list is tucked behind a disclosure; expand it to
+  // reach the per-feed checkboxes.
+  const expandFeedList = async () => {
+    fireEvent.click(await screen.findByText(/choose which feeds to bring/i));
+  };
+
+  it("defaults to bringing every feed with a live capacity counter", async () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
       subscription: null,
       conversion: { eligible: true, feedLimit: 70 },
     });
-    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
-      feeds: [
-        personalFeed({ id: "feed-1", title: "Alpha Feed" }),
-        personalFeed({ id: "feed-2", title: "Beta Feed" }),
-      ],
-      status: "success",
-    } as never);
+    mockConvertibleFeeds([
+      personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+      personalFeed({ id: "feed-2", title: "Beta Feed" }),
+    ]);
 
     renderBilling();
     await openConvertDialog();
 
+    // Safe default: every feed selected → 2 of 70 feeds.
+    expect(await screen.findByText(/2 of 70 feeds selected/)).toBeInTheDocument();
+
+    await expandFeedList();
     expect(await screen.findByText("Alpha Feed")).toBeInTheDocument();
     expect(screen.getByText("Beta Feed")).toBeInTheDocument();
-    // Safe default: all feeds selected → 2 of 70 slots.
-    expect(screen.getByText(/Selected 2 \/ 70 team slots/)).toBeInTheDocument();
   });
 
-  it("marks a deselected feed as one that will be disabled", async () => {
+  it("marks a deselected feed as one that stays personal", async () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
       subscription: null,
       conversion: { eligible: true, feedLimit: 70 },
     });
-    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
-      feeds: [personalFeed({ id: "feed-1", title: "Alpha Feed" })],
-      status: "success",
-    } as never);
+    mockConvertibleFeeds([personalFeed({ id: "feed-1", title: "Alpha Feed" })]);
 
     renderBilling();
     await openConvertDialog();
+    await expandFeedList();
 
     const checkbox = await screen.findByRole("checkbox", { name: /alpha feed/i });
-    await userEvent.click(checkbox);
+    const marker = screen.getByText(/^stays personal$/i);
+    // Selected by default: the consequence marker is present but hidden.
+    expect(marker).not.toBeVisible();
 
-    // The per-feed inline marker (distinct from the summary line).
-    expect(await screen.findByText(/^will be disabled$/i)).toBeInTheDocument();
+    await userEvent.click(checkbox);
+    expect(marker).toBeVisible();
   });
 
   it("converts the selected feeds after the owner types the team slug to confirm", async () => {
@@ -808,16 +836,14 @@ describe("WorkspaceBilling", () => {
       subscription: null,
       conversion: { eligible: true, feedLimit: 70 },
     });
-    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
-      feeds: [
-        personalFeed({ id: "feed-1", title: "Alpha Feed" }),
-        personalFeed({ id: "feed-2", title: "Beta Feed" }),
-      ],
-      status: "success",
-    } as never);
+    mockConvertibleFeeds([
+      personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+      personalFeed({ id: "feed-2", title: "Beta Feed" }),
+    ]);
 
     renderBilling();
     await openConvertDialog();
+    await expandFeedList();
 
     // Leave Beta behind.
     await userEvent.click(await screen.findByRole("checkbox", { name: /beta feed/i }));
@@ -848,44 +874,81 @@ describe("WorkspaceBilling", () => {
       subscription: null,
       conversion: { eligible: true, feedLimit: 70 },
     });
-    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
-      feeds: [],
+    mockConvertibleFeeds([], {
       status: "error",
       error: { message: "Failed to load feeds" },
-    } as never);
+      total: 0,
+    });
 
     renderBilling();
     await openConvertDialog();
+    await expandFeedList();
 
     // The fetch failure must be visible, not a silently empty feed list.
     expect(await screen.findByText(/could not load your feeds/i)).toBeInTheDocument();
   });
 
-  it("keeps the confirm button disabled while more feeds are selected than the plan allows", async () => {
+  it("opens empty with triage framing when over the plan limit, so the owner chooses", async () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
       subscription: null,
       conversion: { eligible: true, feedLimit: 1 },
     });
-    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
-      feeds: [
-        personalFeed({ id: "feed-1", title: "Alpha Feed" }),
-        personalFeed({ id: "feed-2", title: "Beta Feed" }),
-      ],
-      status: "success",
-    } as never);
+    // Two feeds, plan fits one: over the limit. No invisible machine default;
+    // the dialog opens with nothing selected and the owner picks.
+    mockConvertibleFeeds([
+      personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+      personalFeed({ id: "feed-2", title: "Beta Feed" }),
+    ]);
 
     renderBilling();
     await openConvertDialog();
 
-    // Both feeds selected by default, but the plan only allows 1: over capacity.
-    expect(await screen.findByText(/Selected 2 \/ 1 team slots/)).toBeInTheDocument();
+    // Nothing selected on open (0 of 1, shown in the list's capacity meter), and
+    // the list is shown up front (no disclosure to expand) with the choose-which
+    // framing.
+    expect(await screen.findByText(/0 of 1 selected/)).toBeInTheDocument();
+    expect(screen.getByText(/more feeds than this plan allows/i)).toBeInTheDocument();
 
     const confirmButton = screen.getByRole("button", { name: /^move plan$/i });
+    fireEvent.change(screen.getByLabelText(/type "my-team" to confirm/i), {
+      target: { value: "my-team" },
+    });
+    // Typing the slug is not enough while nothing is selected: there is nothing
+    // to move.
+    expect(confirmButton).toHaveAttribute("aria-disabled", "true");
 
-    // Typing the slug is not enough: an over-capacity selection must stay
-    // blocked client-side instead of round-tripping to a server rejection.
+    // Choosing a feed unblocks confirm.
+    await userEvent.click(await screen.findByRole("checkbox", { name: /alpha feed/i }));
+    expect(await screen.findByText(/1 of 1 selected/)).toBeInTheDocument();
+    expect(confirmButton).not.toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("blocks confirm when the owner selects more feeds than the plan allows", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 1 },
+    });
+    mockConvertibleFeeds([
+      personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+      personalFeed({ id: "feed-2", title: "Beta Feed" }),
+    ]);
+
+    renderBilling();
+    await openConvertDialog();
+
+    // Over-limit opens empty; selecting both feeds exceeds the 1-feed plan. The
+    // second check is allowed (never blocked) so the owner can triage — the
+    // guard is on confirm, not the checkbox.
+    expect(await screen.findByText(/0 of 1 selected/)).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("checkbox", { name: /alpha feed/i }));
+    await userEvent.click(await screen.findByRole("checkbox", { name: /beta feed/i }));
+    expect(await screen.findByText(/2 of 1 selected/)).toBeInTheDocument();
+
+    const confirmButton = screen.getByRole("button", { name: /^move plan$/i });
     fireEvent.change(screen.getByLabelText(/type "my-team" to confirm/i), {
       target: { value: "my-team" },
     });
@@ -896,6 +959,75 @@ describe("WorkspaceBilling", () => {
     expect(confirmButton).not.toHaveAttribute("aria-disabled", "true");
   });
 
+  it("auto-picks the cap's worth of feeds from the over-limit dialog in one action", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 1 },
+    });
+    mockConvertibleFeeds([
+      personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+      personalFeed({ id: "feed-2", title: "Beta Feed" }),
+    ]);
+    // Auto-pick fetches the cap's worth (1) directly; return the newest one.
+    vi.mocked(getUserFeeds).mockResolvedValue({
+      results: [{ id: "feed-2", title: "Beta Feed", createdAt: "2020-01-02T00:00:00.000Z" }],
+      total: 2,
+      feedsWithoutConnections: 0,
+    } as never);
+
+    h.convert.mockResolvedValue(undefined);
+    renderBilling();
+    await openConvertDialog();
+
+    expect(await screen.findByText(/0 of 1 selected/)).toBeInTheDocument();
+    // One action fills to the cap, never past it: 1 of 1, not 2.
+    await userEvent.click(screen.getByRole("button", { name: /select my newest 1 feeds/i }));
+    expect(await screen.findByText(/1 of 1 selected/)).toBeInTheDocument();
+
+    // The conversion moves exactly the auto-picked feed, not both.
+    fireEvent.change(screen.getByLabelText(/type "my-team" to confirm/i), {
+      target: { value: "my-team" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^move plan$/i }));
+    await waitFor(() =>
+      expect(h.convert).toHaveBeenCalledWith({ workspaceSlug: "my-team", feedIds: ["feed-2"] }),
+    );
+  });
+
+  it("moves only the in-capacity feeds after the owner trims an over-cap selection", async () => {
+    h.convert.mockResolvedValue(undefined);
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: null,
+      conversion: { eligible: true, feedLimit: 1 },
+    });
+    mockConvertibleFeeds([
+      personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+      personalFeed({ id: "feed-2", title: "Beta Feed" }),
+    ]);
+
+    renderBilling();
+    await openConvertDialog();
+
+    // Over-select (allowed), then trim back to capacity, then convert: the move
+    // carries only what remains selected.
+    await userEvent.click(await screen.findByRole("checkbox", { name: /alpha feed/i }));
+    await userEvent.click(await screen.findByRole("checkbox", { name: /beta feed/i }));
+    expect(await screen.findByText(/2 of 1 selected/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("checkbox", { name: /beta feed/i }));
+
+    fireEvent.change(screen.getByLabelText(/type "my-team" to confirm/i), {
+      target: { value: "my-team" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^move plan$/i }));
+    await waitFor(() =>
+      expect(h.convert).toHaveBeenCalledWith({ workspaceSlug: "my-team", feedIds: ["feed-1"] }),
+    );
+  });
+
   it("shows the confirming state after a successful conversion while the webhook lands", async () => {
     h.convert.mockResolvedValue(undefined);
     mockPaddle();
@@ -904,10 +1036,7 @@ describe("WorkspaceBilling", () => {
       subscription: null,
       conversion: { eligible: true, feedLimit: 70 },
     });
-    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
-      feeds: [personalFeed({ id: "feed-1", title: "Alpha Feed" })],
-      status: "success",
-    } as never);
+    mockConvertibleFeeds([personalFeed({ id: "feed-1", title: "Alpha Feed" })]);
 
     renderBilling();
     await openConvertDialog();
@@ -922,30 +1051,36 @@ describe("WorkspaceBilling", () => {
     ).toBeInTheDocument();
   });
 
-  it("selects every feed with Bring all after some were deselected", async () => {
+  it("re-selecting a deselected feed restores the count and clears the warning", async () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
       subscription: null,
       conversion: { eligible: true, feedLimit: 70 },
     });
-    vi.mocked(usePersonalConvertibleFeeds).mockReturnValue({
-      feeds: [
-        personalFeed({ id: "feed-1", title: "Alpha Feed" }),
-        personalFeed({ id: "feed-2", title: "Beta Feed" }),
-      ],
-      status: "success",
-    } as never);
+    mockConvertibleFeeds([
+      personalFeed({ id: "feed-1", title: "Alpha Feed" }),
+      personalFeed({ id: "feed-2", title: "Beta Feed" }),
+    ]);
 
     renderBilling();
     await openConvertDialog();
+    await expandFeedList();
 
-    await userEvent.click(await screen.findByRole("checkbox", { name: /alpha feed/i }));
-    expect(await screen.findByText(/Selected 1 \/ 70 team slots/)).toBeInTheDocument();
+    const alpha = await screen.findByRole("checkbox", { name: /alpha feed/i });
+    // The marker is always in the DOM (its space is reserved so toggling never
+    // reflows the list); selection toggles its visibility, not its presence.
+    const alphaRow = alpha.closest("li") as HTMLElement;
+    const alphaMarker = within(alphaRow).getByText(/^stays personal$/i);
+    expect(alphaMarker).not.toBeVisible();
 
-    await userEvent.click(screen.getByRole("button", { name: /bring all/i }));
-    expect(await screen.findByText(/Selected 2 \/ 70 team slots/)).toBeInTheDocument();
-    expect(screen.queryByText(/will be disabled/i)).not.toBeInTheDocument();
+    await userEvent.click(alpha);
+    expect(await screen.findByText(/1 of 70 feeds selected/)).toBeInTheDocument();
+    expect(alphaMarker).toBeVisible();
+
+    await userEvent.click(alpha);
+    expect(await screen.findByText(/2 of 70 feeds selected/)).toBeInTheDocument();
+    expect(alphaMarker).not.toBeVisible();
   });
 
   it("tells a Free/Tier 1 owner to buy a team plan directly instead of offering conversion", async () => {

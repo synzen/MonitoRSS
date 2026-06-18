@@ -8,12 +8,17 @@ export const useUserFeedsInfinite = (
   input: Omit<GetUserFeedsInput, "search">,
   opts?: {
     disabled?: boolean;
+    // Forces the personal feed list regardless of the page's ambient feed
+    // scope. Without this, input.workspaceId === undefined falls through to the
+    // current scope, which is wrong for callers (e.g. the personal→workspace
+    // conversion dialog) that always need the personal list.
+    forcePersonal?: boolean;
   },
 ) => {
   const [search, setSearch] = useState("");
   const useLimit = input.limit || 10;
   const { workspaceId } = useFeedScope();
-  const scopedWorkspaceId = input.workspaceId ?? workspaceId;
+  const scopedWorkspaceId = opts?.forcePersonal ? undefined : (input.workspaceId ?? workspaceId);
 
   const queryKey = [
     "user-feeds",

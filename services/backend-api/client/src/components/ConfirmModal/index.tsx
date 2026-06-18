@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { CloseButton } from "@/components/ui/close-button";
 import { Field } from "@/components/ui/field";
 import { InlineErrorAlert } from "../InlineErrorAlert";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
@@ -41,6 +42,13 @@ interface Props {
    * rather than round-tripping to a server rejection.
    */
   okDisabled?: boolean;
+  /**
+   * When true, renders a top-right close button. The button is an explicit,
+   * aimed exit (it calls the close path directly), so it works even though this
+   * modal blocks Ark's own dismissal — Escape and backdrop clicks stay disabled
+   * so a reflexive keypress can't drop a high-impact action mid-confirmation.
+   */
+  showCloseButton?: boolean;
 }
 
 export const ConfirmModal = ({
@@ -59,6 +67,7 @@ export const ConfirmModal = ({
   onOpenChange,
   confirmationPhrase,
   okDisabled,
+  showCloseButton,
 }: Props) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [phraseInput, setPhraseInput] = useState("");
@@ -76,6 +85,14 @@ export const ConfirmModal = ({
     }
 
     onOpenChange?.(next);
+  };
+
+  // The top-right close button. Ark's own dismissal (Escape, backdrop) is
+  // blocked via onRequestDismiss, so the X closes through the explicit path and
+  // fires onClosed itself (controlled callers reset their state from it).
+  const onClickClose = () => {
+    setOpen(false);
+    onClosed?.();
   };
 
   const { t } = useTranslation();
@@ -115,6 +132,9 @@ export const ConfirmModal = ({
     >
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent>
+        {showCloseButton && (
+          <CloseButton size="sm" position="absolute" top="2" insetEnd="2" onClick={onClickClose} />
+        )}
         {title && (
           <DialogHeader marginRight={4}>
             <DialogTitle>{title}</DialogTitle>

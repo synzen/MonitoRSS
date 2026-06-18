@@ -802,7 +802,10 @@ export class UserFeedMongooseRepository
           },
         },
       },
-      { $sort: { [sortKey]: sortDirection } },
+      // _id is a stable tiebreaker: without it, feeds sharing a sort-key value
+      // (e.g. a batch import with identical createdAt) reorder between $skip
+      // windows, so offset pagination can repeat or drop rows across pages.
+      { $sort: { [sortKey]: sortDirection, _id: 1 } },
       { $skip: offset },
       { $limit: limit },
       {

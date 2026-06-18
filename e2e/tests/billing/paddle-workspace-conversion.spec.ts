@@ -119,10 +119,12 @@ test.describe("Paddle workspace conversion", () => {
 
     const convertDialog = page.getByRole("alertdialog");
     await expect(convertDialog).toBeVisible({ timeout: 15000 });
-    // All 7 feeds selected by default (the safe move).
-    await expect(convertDialog.getByText(/Selected 7 \/ 70 team slots/)).toBeVisible({
+    // All 7 feeds selected by default (the safe move). 7 < 70, so the per-feed
+    // list is tucked behind a disclosure; expand it to pick which feeds to move.
+    await expect(convertDialog.getByText(/7 of 70 feeds selected/)).toBeVisible({
       timeout: 15000,
     });
+    await convertDialog.getByText(/choose which feeds to bring/i).click();
 
     // Move only "Keep Feed": deselect every feed that should stay personal.
     // The Chakra v3 checkbox INPUT is visually hidden (offscreen), so clicking
@@ -139,7 +141,7 @@ test.describe("Paddle workspace conversion", () => {
       await label.click();
       await expect(checkbox).not.toBeChecked();
     }
-    await expect(convertDialog.getByText(/Selected 1 \/ 70 team slots/)).toBeVisible();
+    await expect(convertDialog.getByText(/1 of 70 feeds selected/)).toBeVisible();
 
     await convertDialog
       .getByLabel(new RegExp(`type "${workspaceSlug}" to confirm`, "i"))
@@ -176,6 +178,128 @@ test.describe("Paddle workspace conversion", () => {
 
     // Teardown: deleting the team cancels the sandbox subscription so the
     // sandbox does not accumulate live subscriptions across runs.
+    const deleteRes = await page.request.delete(`/api/v1/workspaces/${workspaceSlug}`);
+    expect(deleteRes.status()).toBe(204);
+  });
+
+  test("auto-picks the newest feeds to fit the plan when the owner has more feeds than the cap", async ({
+    page,
+  }) => {
+    test.setTimeout(300_000);
+
+    await ensureFreeSubscriptionState(page);
+
+    await page.goto("/feeds");
+    await waitForAuthenticatedApp(page);
+
+    const discordUserId = await getDiscordUserIdFromPage(page);
+    await enableWorkspacesFeatureInDb(discordUserId);
+    await setVerifiedEmailInDb(discordUserId, `verified-${discordUserId}@example.com`);
+
+    // 1. Buy a personal Tier 2 subscription (70-feed cap).
+    await page.goto(`/paddle-checkout/${TIER_2_MONTHLY_PRICE_ID}`);
+    await expect(page.getByRole("heading", { name: "Checkout Summary" })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByText(/(Monthly|Annual)/)).toBeVisible({ timeout: 30000 });
+    await completeSandboxCheckout(page, page.frameLocator("iframe").first());
+    await expect(
+      page.getByRole("heading", { name: "Your benefits have been provisioned." }),
+      // Sandbox provisioning occasionally runs past 60s; allow the wider budget
+      // the rest of the billing suite uses for webhook-gated waits.
+    ).toBeVisible({ timeout: 90000 });
+
+    // 2. Seed 77 personal feeds — more than the 70 cap, so the conversion dialog
+    //    opens in its over-limit triage mode. seedPersonalFeedsInDb stamps an
+    //    increasing createdAt per feed, so "Newest Feed" (seeded last) is the
+    //    newest and "Oldest Feed" (seeded first) is the oldest. Auto-pick keeps
+    //    the newest 70, leaving 7 behind on the personal plan — over the free
+    //    limit of 5, so the oldest ones get disabled.
+    const selfUserId = await getUserMongoIdFromDiscordId(discordUserId);
+    const fillerCount = 75;
+    await seedPersonalFeedsInDb({
+      userId: selfUserId,
+      discordUserId,
+      feeds: [
+        { title: "Oldest Feed", url: MOCK_RSS_FEED_URL },
+        ...Array.from({ length: fillerCount }, (_, i) => ({
+          title: `Filler Feed ${i + 1}`,
+          url: MOCK_RSS_FEED_URL,
+        })),
+        { title: "Newest Feed", url: MOCK_RSS_FEED_URL },
+      ],
+    });
+
+    // 3. Create a team.
+    await page.goto("/feeds");
+    await waitForAuthenticatedApp(page);
+    await page.getByRole("button", { name: "Account settings" }).click();
+    await page.getByRole("menuitem", { name: /create a team/i }).click();
+    const createDialog = page.getByRole("dialog");
+    const workspaceName = `E2E Convert Overlimit ${Date.now()}`;
+    await createDialog.getByLabel("Team name").fill(workspaceName);
+    await createDialog.getByRole("button", { name: "Create team" }).click();
+    await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
+    const workspaceSlug = page.url().match(/\/workspaces\/([^/]+)\/feeds/)?.[1] as string;
+    expect(workspaceSlug).toBeTruthy();
+
+    // 4. Open the conversion dialog from Billing; it opens in over-limit mode.
+    await page.goto(`/workspaces/${workspaceSlug}/settings/billing`);
+    await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
+    await page.getByRole("button", { name: /move my plan to this team/i }).click();
+
+    const convertDialog = page.getByRole("alertdialog");
+    await expect(convertDialog).toBeVisible({ timeout: 15000 });
+    // Over-limit: the meter opens empty and the triage framing is shown up front
+    // (no disclosure to expand).
+    await expect(convertDialog.getByText(/0 of 70 selected/)).toBeVisible({ timeout: 15000 });
+    await expect(convertDialog.getByText(/more feeds than this plan allows/i)).toBeVisible();
+
+    // 5. Auto-pick the newest 70. The control reads "Bring my [newest] 70 feeds"
+    //    with a "Select them for me" action; newest is the default direction.
+    await convertDialog.getByRole("button", { name: /select my newest 70 feeds/i }).click();
+
+    // The meter fills to the cap, and the result is stated in plain language.
+    // The result wording renders twice (the visible line + a live-region copy
+    // for assistive tech), so assert at least one is shown.
+    await expect(convertDialog.getByText(/70 of 70 selected/)).toBeVisible({ timeout: 15000 });
+    await expect(convertDialog.getByText(/Selected your newest 70 feeds/i).first()).toBeVisible();
+    // The newest feed (off the first loaded page) is now pinned to the top and
+    // checked; the oldest, which fell outside the newest 70, is not selected.
+    await expect(
+      convertDialog.getByRole("checkbox", { name: /^Newest Feed$/ }),
+    ).toBeChecked({ timeout: 15000 });
+
+    await convertDialog
+      .getByLabel(new RegExp(`type "${workspaceSlug}" to confirm`, "i"))
+      .fill(workspaceSlug);
+    await convertDialog.getByRole("button", { name: /^move plan$/i }).click();
+
+    // 6. The webhook re-homes the subscription onto the team.
+    await expect(page.getByRole("heading", { name: "Current plan" })).toBeVisible({
+      timeout: 120_000,
+    });
+
+    // 6a. The newest feed moved into the team and is active.
+    await page.goto(`/workspaces/${workspaceSlug}/feeds`);
+    await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
+    const newestRow = page.getByRole("row").filter({
+      has: page.getByRole("link", { name: "Newest Feed", exact: true }),
+    });
+    await expect(newestRow.getByLabel("Ok")).toBeVisible({ timeout: 15000 });
+
+    // 6b. The oldest feed was left behind (outside the newest 70) and is disabled
+    //     on the personal side, now over the free limit.
+    await page.goto("/feeds");
+    await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
+    const oldestRow = page.getByRole("row").filter({
+      has: page.getByRole("link", { name: "Oldest Feed", exact: true }),
+    });
+    await expect(oldestRow.getByLabel("Disabled (feed limit exceeded)")).toBeVisible({
+      timeout: 15000,
+    });
+
+    // Teardown: deleting the team cancels the sandbox subscription.
     const deleteRes = await page.request.delete(`/api/v1/workspaces/${workspaceSlug}`);
     expect(deleteRes.status()).toBe(204);
   });
