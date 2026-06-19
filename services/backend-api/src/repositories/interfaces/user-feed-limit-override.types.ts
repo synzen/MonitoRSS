@@ -7,6 +7,7 @@ export interface IUserFeedLimitOverrideRepository {
   findById(id: string): Promise<IUserFeedLimitOverride | null>;
   findByIdsNotIn(excludeIds: string[]): Promise<IUserFeedLimitOverride[]>;
   deleteAll(): Promise<void>;
+  deleteById(id: string): Promise<void>;
   upsertIncrement(
     id: string,
     incrementAmount: number,

@@ -38,7 +38,11 @@ describe("OAuth verified-email security invariant", () => {
     capturedCodes = [];
     const fakeTransport = {
       sendMail: async (msg: { to: string; html: string }) => {
-        const match = /(\d{6})/.exec(String(msg.html));
+        // Scope to the code cell so the email shell's 6-digit style constants
+        // are not mistaken for the verification code.
+        const match = /class="email-code"[^>]*>\s*(\d{6})\s*</.exec(
+          String(msg.html),
+        );
         capturedCodes.push({ to: msg.to, code: match?.[1] ?? "" });
         return {};
       },

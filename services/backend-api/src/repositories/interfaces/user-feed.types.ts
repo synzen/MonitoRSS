@@ -502,6 +502,12 @@ export interface IUserFeedRepository {
   countByOwnership(discordUserId: string): Promise<number>;
   countByWorkspace(workspaceId: string): Promise<number>;
   findIdsByWorkspace(workspaceId: string): Promise<string[]>;
+  // Ids of personal feeds (no workspaceId) the user owns directly, excluding
+  // feeds they only co-manage via an invite. Used by account erasure.
+  findPersonalFeedIdsByOwner(discordUserId: string): Promise<string[]>;
+  // Removes the user from every feed's co-manage invites list, across all
+  // feeds where they appear as an invitee. Used by account erasure.
+  removeInvitesForUser(discordUserId: string): Promise<void>;
   countByOwnershipExcludingDisabled(
     discordUserId: string,
     excludeDisabledCodes: UserFeedDisabledCode[],

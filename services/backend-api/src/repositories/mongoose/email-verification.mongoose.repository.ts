@@ -155,6 +155,14 @@ export class EmailVerificationMongooseRepository extends BaseMongooseRepository<
     });
   }
 
+  // Drops every in-flight verification code and send-audit row for a user,
+  // across all addresses. Used by account erasure.
+  async deleteAllForUser(userId: string): Promise<void> {
+    const id = this.stringToObjectId(userId);
+    await this.model.deleteMany({ userId: id });
+    await this.sendModel.deleteMany({ userId: id });
+  }
+
   // Append a row to the send audit (used by the distinct-target cap). Separate
   // from createCode so the audit survives the per-(user,email) wipe on resend.
   async recordSend(userId: string, email: string): Promise<void> {

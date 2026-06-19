@@ -217,6 +217,10 @@ export class UserMongooseRepository
     return this.toEntity(doc.toObject());
   }
 
+  async deleteById(userId: string): Promise<void> {
+    await this.model.deleteOne({ _id: this.stringToObjectId(userId) });
+  }
+
   async updateEmailByDiscordId(
     discordUserId: string,
     email: string,

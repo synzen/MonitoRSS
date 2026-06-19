@@ -392,6 +392,9 @@ describe("UsersService", { concurrency: true }, () => {
         supportersService:
           ctx.supportersService as unknown as SupportersService,
         paddleService: ctx.paddleService as unknown as PaddleService,
+        redditApiService: {
+          revokeRefreshToken: () => Promise.resolve(),
+        } as never,
       });
 
       await assert.rejects(

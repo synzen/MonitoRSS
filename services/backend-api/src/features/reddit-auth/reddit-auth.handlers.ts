@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { decrypt } from "../../shared/utils/decrypt";
 import logger from "../../infra/logger";
 
 declare module "@fastify/secure-session" {
@@ -48,29 +47,12 @@ export async function removeHandler(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  const { usersService, redditApiService, config } = request.container;
+  const { usersService } = request.container;
   const discordUserId = request.discordUserId;
 
-  const encryptionKey = config.BACKEND_API_ENCRYPTION_KEY_HEX;
-  if (!encryptionKey) {
-    throw new Error("Encryption key not found");
-  }
-
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const redditCreds = await usersService.getRedditCredentials(user.id);
 
-  if (!redditCreds?.data.refreshToken) {
-    reply.header("Cache-Control", "no-store");
-    return reply.status(204).send();
-  }
-
-  await redditApiService.revokeRefreshToken(
-    decrypt(redditCreds.data.refreshToken, encryptionKey),
-  );
-
-  await usersService.removeRedditCredentials(user.id);
-
-  await usersService.syncLookupKeys({ userIds: [user.id] });
+  await usersService.disconnectReddit(user.id);
 
   reply.header("Cache-Control", "no-store");
   return reply.status(204).send();

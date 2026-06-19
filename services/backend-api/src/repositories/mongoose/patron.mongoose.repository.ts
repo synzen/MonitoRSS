@@ -75,4 +75,13 @@ export class PatronMongooseRepository
   async deleteAll(): Promise<void> {
     await this.model.deleteMany({});
   }
+
+  // The schema marks email required, but a raw $unset update bypasses
+  // document-level validation, so the row is retained without the identifier.
+  async clearEmailByDiscordId(discordUserId: string): Promise<void> {
+    await this.model.updateMany(
+      { discord: discordUserId },
+      { $unset: { email: "" } },
+    );
+  }
 }

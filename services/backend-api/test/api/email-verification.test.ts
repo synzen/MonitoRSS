@@ -42,7 +42,11 @@ describe("Email verification API", () => {
     const fakeTransport = {
       sendMail: async (msg: { to: string; subject: string; html: string }) => {
         mail.push({ to: msg.to, subject: msg.subject, html: String(msg.html) });
-        const match = /(\d{6})/.exec(String(msg.html));
+        // Scope to the code cell so the email shell's 6-digit style constants
+        // are not mistaken for the verification code.
+        const match = /class="email-code"[^>]*>\s*(\d{6})\s*</.exec(
+          String(msg.html),
+        );
         sent.push({ to: msg.to, code: match?.[1] ?? "" });
         return {};
       },
@@ -408,7 +412,8 @@ describe("Email verification API", () => {
     await verifyEmailThroughFlow(user, newEmail, headers);
 
     const notice = mail.find(
-      (m) => m.to === oldEmail.toLowerCase() && !/\b\d{6}\b/.test(m.html),
+      (m) =>
+        m.to === oldEmail.toLowerCase() && !m.html.includes('class="email-code"'),
     );
     assert.ok(notice, "a change notice should be sent to the old address");
     assert.ok(
@@ -424,7 +429,7 @@ describe("Email verification API", () => {
 
     await verifyEmailThroughFlow(user, email, headers);
 
-    const notice = mail.find((m) => !/\b\d{6}\b/.test(m.html));
+    const notice = mail.find((m) => !m.html.includes('class="email-code"'));
     assert.strictEqual(
       notice,
       undefined,
@@ -444,7 +449,7 @@ describe("Email verification API", () => {
       .deleteMany({ email: email.toLowerCase() });
     await verifyEmailThroughFlow(user, email, headers);
 
-    const notice = mail.find((m) => !/\b\d{6}\b/.test(m.html));
+    const notice = mail.find((m) => !m.html.includes('class="email-code"'));
     assert.strictEqual(
       notice,
       undefined,

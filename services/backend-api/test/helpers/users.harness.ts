@@ -228,6 +228,9 @@ export function createUsersHarness(): UsersHarness {
           supporterRepository as unknown as ISupporterRepository,
         supportersService: supportersService as unknown as SupportersService,
         paddleService: paddleService as unknown as PaddleService,
+        redditApiService: {
+          revokeRefreshToken: mock.fn(() => Promise.resolve()),
+        } as never,
       });
 
       return {

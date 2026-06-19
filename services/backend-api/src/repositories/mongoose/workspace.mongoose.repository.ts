@@ -567,6 +567,81 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     }));
   }
 
+  // The workspaces a user owns, paired with that workspace's current owner
+  // count. Account erasure uses this for its sole-owner pre-check: any entry
+  // with ownerCount === 1 is a workspace the user solely owns, which must be
+  // resolved (transferred or deleted) before the account can be deleted.
+  async listOwnedWorkspacesWithOwnerCount(
+    userId: string,
+  ): Promise<Array<{ workspaceId: string; ownerCount: number }>> {
+    const results = await this.membershipModel.aggregate<{
+      _id: Types.ObjectId;
+      ownerCount: number;
+    }>([
+      { $match: { userId: this.stringToObjectId(userId), role: "owner" } },
+      {
+        $lookup: {
+          from: this.membershipModel.collection.name,
+          let: { wsId: "$workspaceId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$workspaceId", "$$wsId"] },
+                    { $eq: ["$role", "owner"] },
+                  ],
+                },
+              },
+            },
+            { $count: "count" },
+          ],
+          as: "owners",
+        },
+      },
+      {
+        $project: {
+          _id: "$workspaceId",
+          ownerCount: {
+            $ifNull: [{ $arrayElemAt: ["$owners.count", 0] }, 0],
+          },
+        },
+      },
+    ]);
+
+    return results.map((r) => ({
+      workspaceId: this.objectIdToString(r._id),
+      ownerCount: r.ownerCount,
+    }));
+  }
+
+  // Removes all of a user's memberships across every workspace in one delete.
+  // Account erasure calls this AFTER the sole-owner pre-check has confirmed no
+  // workspace would be orphaned, so the ≥1-owner invariant is preserved without
+  // a per-membership re-check here.
+  async removeAllMembershipsForUser(userId: string): Promise<void> {
+    await this.membershipModel.deleteMany({
+      userId: this.stringToObjectId(userId),
+    });
+  }
+
+  // Deletes pending invitations a user sent (invitedByUserId) and invitations
+  // addressed to their verified email, for account erasure.
+  async deleteInvitesByInviterOrEmail(
+    userId: string,
+    email?: string | null,
+  ): Promise<void> {
+    const or: Record<string, unknown>[] = [
+      { invitedByUserId: this.stringToObjectId(userId) },
+    ];
+
+    if (email) {
+      or.push({ email: normalizeEmail(email) });
+    }
+
+    await this.inviteModel.deleteMany({ $or: or });
+  }
+
   // The set of workspace ids a user belongs to, for workspace-feed
   // authorization. Served by the userId-prefix of the unique membership index.
   async listWorkspaceIdsForUser(userId: string): Promise<string[]> {

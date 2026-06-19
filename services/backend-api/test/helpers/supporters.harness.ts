@@ -204,6 +204,7 @@ export function createSupportersHarness(): SupportersHarness {
         discordApiService: discordApiService as unknown as DiscordApiService,
         supporterRepository,
         userFeedLimitOverrideRepository,
+        patronRepository,
         workspaceRepository,
       });
 

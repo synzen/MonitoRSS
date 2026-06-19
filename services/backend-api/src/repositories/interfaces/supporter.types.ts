@@ -129,4 +129,7 @@ export interface ISupporterRepository {
   nullifySubscriptionBySubscriptionId(
     subscriptionId: string,
   ): Promise<ISupporter | null>;
+  // Strips the personal email from the supporter's Paddle subdocument, keeping
+  // the financial record (legal-retention exemption).
+  clearPaddleEmailById(discordUserId: string): Promise<void>;
 }

@@ -10,6 +10,7 @@ import type {
   ISupporter,
 } from "../../repositories/interfaces/supporter.types";
 import type { IUserFeedLimitOverrideRepository } from "../../repositories/interfaces/user-feed-limit-override.types";
+import type { IPatronRepository } from "../../repositories/interfaces/patron.types";
 import type { WorkspaceMongooseRepository } from "../../repositories/mongoose/workspace.mongoose.repository";
 import type { IPaddleCustomerSubscription } from "../../repositories/interfaces/supporter.types";
 import {
@@ -36,6 +37,7 @@ export interface SupportersServiceDeps {
   discordApiService: DiscordApiService;
   supporterRepository: ISupporterRepository;
   userFeedLimitOverrideRepository: IUserFeedLimitOverrideRepository;
+  patronRepository: IPatronRepository;
   workspaceRepository: WorkspaceMongooseRepository;
 }
 
@@ -830,5 +832,15 @@ export class SupportersService {
         supporterBenefits: serverBenefits,
       });
     });
+  }
+
+  // Account erasure: strips the user's personal email from the billing records
+  // (the supporter's Paddle subdocument and any patron rows) while keeping the
+  // rows themselves under a legal-retention exemption. The Paddle subscription
+  // is not cancelled here; that is the operator's billing-side duty. Idempotent:
+  // safe when no billing rows or emails exist.
+  async stripBillingEmailForUser(discordUserId: string): Promise<void> {
+    await this.deps.supporterRepository.clearPaddleEmailById(discordUserId);
+    await this.deps.patronRepository.clearEmailByDiscordId(discordUserId);
   }
 }

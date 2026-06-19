@@ -888,6 +888,22 @@ export class UserFeedMongooseRepository
     return docs.map((d) => String(d._id));
   }
 
+  async findPersonalFeedIdsByOwner(discordUserId: string): Promise<string[]> {
+    const docs = await this.model
+      .find({ "user.discordUserId": discordUserId, workspaceId: null })
+      .select("_id")
+      .lean();
+
+    return docs.map((d) => String(d._id));
+  }
+
+  async removeInvitesForUser(discordUserId: string): Promise<void> {
+    await this.model.updateMany(
+      { "shareManageOptions.invites.discordUserId": discordUserId },
+      { $pull: { "shareManageOptions.invites": { discordUserId } } },
+    );
+  }
+
   async countByOwnershipExcludingDisabled(
     discordUserId: string,
     excludeDisabledCodes: UserFeedDisabledCode[],

@@ -58,6 +58,7 @@ import { FeedSchedulingService } from "./services/feed-scheduling/feed-schedulin
 import { FeedsService } from "./services/feeds/feeds.service";
 import { NotificationsService } from "./services/notifications/notifications.service";
 import { EmailVerificationService } from "./features/users/email-verification.service";
+import { AccountService } from "./features/account/account.service";
 import { WorkspacesService } from "./features/workspaces/workspaces.service";
 import { WorkspaceBillingService } from "./features/workspaces/workspace-billing.service";
 import { DiscordServersService } from "./services/discord-servers/discord-servers.service";
@@ -130,6 +131,7 @@ export interface Container {
   feedsService: FeedsService;
   notificationsService: NotificationsService;
   emailVerificationService: EmailVerificationService;
+  accountService: AccountService;
   workspacesService: WorkspacesService;
   workspaceBillingService: WorkspaceBillingService;
   discordServersService: DiscordServersService;
@@ -237,6 +239,7 @@ export function createContainer(deps: {
     discordApiService,
     supporterRepository,
     userFeedLimitOverrideRepository,
+    patronRepository,
     workspaceRepository,
   });
 
@@ -247,6 +250,7 @@ export function createContainer(deps: {
     supporterRepository,
     supportersService,
     paddleService,
+    redditApiService,
   });
 
   const discordUsersService = new DiscordUsersService({
@@ -372,6 +376,18 @@ export function createContainer(deps: {
     },
   );
 
+  const accountService = new AccountService({
+    userRepository,
+    emailVerificationService,
+    usersService,
+    userFeedsService,
+    workspacesService,
+    supportersService,
+    userFeedLimitOverrideRepository,
+    supporterRepository,
+    patronRepository,
+  });
+
   const paddleWebhooksService = new PaddleWebhooksService({
     config: deps.config,
     paddleService,
@@ -472,6 +488,7 @@ export function createContainer(deps: {
     feedsService,
     notificationsService,
     emailVerificationService,
+    accountService,
     workspacesService,
     workspaceBillingService,
     discordServersService,

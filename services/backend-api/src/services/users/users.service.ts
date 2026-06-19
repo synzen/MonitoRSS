@@ -8,6 +8,8 @@ import type { IUserFeedRepository } from "../../repositories/interfaces/user-fee
 import type { ISupporterRepository } from "../../repositories/interfaces/supporter.types";
 import type { SupportersService } from "../supporters/supporters.service";
 import type { PaddleService } from "../paddle/paddle.service";
+import type { RedditApiService } from "../reddit-api/reddit-api.service";
+import { decrypt } from "../../shared/utils/decrypt";
 import {
   SubscriptionStatus,
   SubscriptionProductKey,
@@ -38,6 +40,7 @@ export interface UsersServiceDeps {
   supporterRepository: ISupporterRepository;
   supportersService: SupportersService;
   paddleService: PaddleService;
+  redditApiService: RedditApiService;
 }
 
 export class UsersService {
@@ -295,6 +298,39 @@ export class UsersService {
       userId,
       credentialId,
     );
+  }
+
+  // Revokes the user's personal Reddit grant at Reddit, drops the stored
+  // credential, and resyncs feed lookup keys so feeds stop fetching with the
+  // dead token. Idempotent: a user with no reddit credential is a no-op.
+  // Returns true when a credential was present and disconnected.
+  async disconnectReddit(userId: string): Promise<boolean> {
+    const credential = await this.getRedditCredentials(userId);
+
+    if (!credential?.data.refreshToken) {
+      return false;
+    }
+
+    if (!this.encryptionKeyHex) {
+      throw new Error("Encryption key not set while disconnecting reddit");
+    }
+
+    await this.deps.redditApiService.revokeRefreshToken(
+      decrypt(credential.data.refreshToken, this.encryptionKeyHex),
+    );
+
+    await this.removeRedditCredentials(userId);
+
+    await this.syncLookupKeys({ userIds: [userId] });
+
+    return true;
+  }
+
+  // Hard-deletes the user document, removing the email, verifiedEmail,
+  // discordUserId, preferences, and the embedded reddit tokens in one
+  // operation. Account erasure calls this last.
+  async deleteUser(userId: string): Promise<void> {
+    await this.deps.userRepository.deleteById(userId);
   }
 
   async syncLookupKeys(data?: {

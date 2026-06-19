@@ -770,6 +770,53 @@ export class WorkspacesService {
     await this.handleRedditConnectionOnMemberExit(workspace, userId);
   }
 
+  // Account-erasure pre-check: throws if the user is the only owner of any
+  // workspace. A solely-owned workspace would be orphaned by their departure,
+  // so it must be transferred or deleted first. Co-owned workspaces are fine.
+  async assertNotSoleWorkspaceOwner(userId: string): Promise<void> {
+    const owned =
+      await this.deps.workspaceRepository.listOwnedWorkspacesWithOwnerCount(
+        userId,
+      );
+
+    if (owned.some((w) => w.ownerCount <= 1)) {
+      throw new ConflictError(
+        ApiErrorCode.ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER,
+      );
+    }
+  }
+
+  // Account erasure: removes the user from every workspace they belong to and
+  // deletes the invitations they sent or that were addressed to them. The
+  // sole-owner pre-check (assertNotSoleWorkspaceOwner) must have run first, so
+  // no workspace is orphaned by the membership removal. Reddit connections the
+  // departing member backed are revoked per workspace before their memberships
+  // are dropped, mirroring the single-member-exit path. Idempotent: a user with
+  // no memberships or invites is a no-op.
+  async removeUserFromAllWorkspaces(
+    userId: string,
+    verifiedEmail?: string | null,
+  ): Promise<void> {
+    const workspaceIds =
+      await this.deps.workspaceRepository.listWorkspaceIdsForUser(userId);
+
+    for (const workspaceId of workspaceIds) {
+      const workspace =
+        await this.deps.workspaceRepository.findById(workspaceId);
+
+      if (workspace) {
+        await this.handleRedditConnectionOnMemberExit(workspace, userId);
+      }
+    }
+
+    await this.deps.workspaceRepository.removeAllMembershipsForUser(userId);
+
+    await this.deps.workspaceRepository.deleteInvitesByInviterOrEmail(
+      userId,
+      verifiedEmail,
+    );
+  }
+
   // Transfers the owner role to an existing admin member. Owner-only
   // (can('transferOwnership')); the actor-vs-target identity decision lives
   // here, keeping can() a pure (action, role) function. The target must be a

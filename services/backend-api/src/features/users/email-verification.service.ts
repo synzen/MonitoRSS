@@ -136,6 +136,12 @@ export class EmailVerificationService {
     });
   }
 
+  // Drops every in-flight verification code and send-audit row for a user.
+  // Used by account erasure to clear the user's verification state.
+  async deleteAllForUser(userId: string): Promise<void> {
+    await this.deps.emailVerificationRepository.deleteAllForUser(userId);
+  }
+
   async confirm(userId: string, rawEmail: string, code: string): Promise<void> {
     const email = this.normalizeEmail(rawEmail);
     const record = await this.deps.emailVerificationRepository.findByUserEmail(
@@ -198,6 +204,59 @@ export class EmailVerificationService {
     if (previousVerifiedEmail && previousVerifiedEmail !== email) {
       await this.notifyVerifiedEmailChanged(previousVerifiedEmail, email);
     }
+  }
+
+  // Identity confirmation that checks a code WITHOUT mutating the user's
+  // verified email (unlike confirm, which sets it). Used to gate an
+  // irreversible action — account deletion — behind proof of mailbox control.
+  // The code is consumed on success; failures increment attempts and surface
+  // the same error codes as confirm. Throws on an invalid, expired, or
+  // exhausted code.
+  async verifyCodeOnly(
+    userId: string,
+    rawEmail: string,
+    code: string,
+  ): Promise<void> {
+    const email = this.normalizeEmail(rawEmail);
+    const record = await this.deps.emailVerificationRepository.findByUserEmail(
+      userId,
+      email,
+    );
+
+    if (!record) {
+      throw new BadRequestError(ApiErrorCode.EMAIL_VERIFICATION_INVALID_CODE);
+    }
+
+    if (record.expiresAt.getTime() < Date.now()) {
+      await this.deps.emailVerificationRepository.deleteForUserEmail(
+        userId,
+        email,
+      );
+      throw new BadRequestError(ApiErrorCode.EMAIL_VERIFICATION_EXPIRED);
+    }
+
+    if (record.attempts >= MAX_ATTEMPTS) {
+      await this.deps.emailVerificationRepository.deleteForUserEmail(
+        userId,
+        email,
+      );
+      throw new TooManyRequestsError(
+        ApiErrorCode.EMAIL_VERIFICATION_TOO_MANY_ATTEMPTS,
+      );
+    }
+
+    if (!this.codesMatch(this.hashCode(code), record.codeHash)) {
+      await this.deps.emailVerificationRepository.incrementAttempts(
+        userId,
+        email,
+      );
+      throw new BadRequestError(ApiErrorCode.EMAIL_VERIFICATION_INVALID_CODE);
+    }
+
+    await this.deps.emailVerificationRepository.deleteForUserEmail(
+      userId,
+      email,
+    );
   }
 
   private async notifyVerifiedEmailChanged(
