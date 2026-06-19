@@ -23,11 +23,11 @@ test.describe("Workspace deletion", () => {
 
     // Create the workspace that will be deleted.
     await page.getByRole("button", { name: "Account settings" }).click();
-    await page.getByRole("menuitem", { name: /create a team/i }).click();
+    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
     const createDialog = page.getByRole("dialog");
     const workspaceName = `E2E Deletion ${discordUserId}`;
-    await createDialog.getByLabel("Team name").fill(workspaceName);
-    await createDialog.getByRole("button", { name: "Create team" }).click();
+    await createDialog.getByLabel("Workspace name").fill(workspaceName);
+    await createDialog.getByRole("button", { name: "Create workspace" }).click();
     await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
     const workspaceUrl = page.url();
 
@@ -35,21 +35,21 @@ test.describe("Workspace deletion", () => {
     // Settings -> Your teams -> settings link.
     await page.getByRole("button", { name: "Account settings" }).click();
     await page.getByRole("menuitem", { name: /account settings/i }).click();
-    await expect(page.getByRole("heading", { name: "Your teams" })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Your workspaces" })).toBeVisible({
       timeout: 15000,
     });
     await page.getByRole("link", { name: `${workspaceName} settings` }).click();
-    await expect(page.getByRole("heading", { name: "Team settings" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Workspace settings" })).toBeVisible();
 
     // The delete section sits at the bottom of the page, below Members.
-    await page.getByRole("button", { name: "Delete team" }).click();
+    await page.getByRole("button", { name: "Delete workspace" }).click();
     const confirmDialog = page.getByRole("alertdialog");
     await expect(confirmDialog).toBeVisible();
 
     // Confirmation is gated on typing the exact team name; a wrong phrase keeps
     // the destructive action unavailable (aria-disabled, since the button stays
     // focusable for assistive tech).
-    const confirmButton = confirmDialog.getByRole("button", { name: "Delete team" });
+    const confirmButton = confirmDialog.getByRole("button", { name: "Delete workspace" });
     await expect(confirmButton).toHaveAttribute("aria-disabled", "true");
     const phraseInput = confirmDialog.getByLabel(`Type "${workspaceName}" to confirm`);
     await phraseInput.fill("wrong name");
@@ -60,13 +60,13 @@ test.describe("Workspace deletion", () => {
 
     // Lands back on the personal dashboard with a persistent alert.
     await expect(page).toHaveURL(/\/feeds$/, { timeout: 15000 });
-    await expect(page.getByText("Team deleted")).toBeVisible();
+    await expect(page.getByText("Workspace deleted")).toBeVisible();
     await expect(
       page.getByText(`${workspaceName} and all of its feeds have been deleted.`),
     ).toBeVisible();
 
     // Back to zero workspaces: the header switcher is gone entirely.
-    await expect(page.getByRole("button", { name: /switch team/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /switch workspace/i })).toHaveCount(0);
 
     // A stale bookmark to the deleted workspace resolves to the not-found page.
     await page.goto(workspaceUrl);

@@ -20,9 +20,9 @@ import { useUpdateWorkspace } from "../../hooks";
 import { WorkspaceRedditConnectionSetting } from "../WorkspaceRedditConnectionSetting";
 
 const formSchema = object({
-  name: string().required("Team name is required").max(100, "Team name is too long"),
+  name: string().required("Workspace name is required").max(100, "Workspace name is too long"),
   slug: string()
-    .required("Team URL is required")
+    .required("Workspace URL is required")
     .min(2, "Must be at least 2 characters")
     .max(50, "Must be 50 characters or fewer")
     .matches(SLUG_PATTERN, "Lowercase letters, numbers, and hyphens only (not at start or end)")
@@ -86,7 +86,7 @@ export const WorkspaceSettings = () => {
       const newSlug = result.result.slug;
       reset({ name: result.result.name, slug: newSlug });
       createSuccessAlert({
-        title: "Team updated",
+        title: "Workspace updated",
         description: "Your changes have been saved.",
       });
 
@@ -123,12 +123,12 @@ export const WorkspaceSettings = () => {
       <Stack gap={10} separator={<StackSeparator />}>
         <SettingsSection
           title="General"
-          description="Your team's display name and the URL it lives at. The URL appears in links members share."
+          description="Your workspace's display name and the URL it lives at. The URL appears in links members share."
         >
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <Stack gap={4}>
               <Field
-                label="Team name"
+                label="Workspace name"
                 invalid={!!errors.name}
                 required
                 errorText={errors.name?.message}
@@ -140,7 +140,7 @@ export const WorkspaceSettings = () => {
                 />
               </Field>
               <Field
-                label="Team URL"
+                label="Workspace URL"
                 invalid={!!errors.slug}
                 required
                 errorText={errors.slug?.message}
@@ -184,7 +184,7 @@ export const WorkspaceSettings = () => {
         </SettingsSection>
         <SettingsSection
           title="Integrations"
-          description="Third-party connections that feeds in this team fetch with. Any member can manage them."
+          description="Third-party connections that feeds in this workspace fetch with. Any member can manage them."
         >
           <WorkspaceRedditConnectionSetting workspaceSlug={workspace.slug} />
         </SettingsSection>
@@ -192,7 +192,7 @@ export const WorkspaceSettings = () => {
         {isPaddleConfigured && (
           <SettingsSection
             title="Billing"
-            description="Manage the team's subscription, plan, and payment."
+            description="Manage the workspace's subscription, plan, and payment."
           >
             <Box>
               <Button asChild variant="outline">
@@ -207,8 +207,8 @@ export const WorkspaceSettings = () => {
       <ConfirmModal
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Change team URL?"
-        description="Changing your team URL will break any existing links or bookmarks. Anyone using the old URL will land on the not-found page."
+        title="Change workspace URL?"
+        description="Changing your workspace URL will break any existing links or bookmarks. Anyone using the old URL will land on the not-found page."
         colorScheme="red"
         okText="Yes, change URL"
         onConfirm={async () => {

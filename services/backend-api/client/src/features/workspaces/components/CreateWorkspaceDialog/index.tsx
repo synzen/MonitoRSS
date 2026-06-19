@@ -26,9 +26,9 @@ import { useCreateWorkspace } from "../../hooks";
 import { VerifyEmailStep } from "../VerifyEmailStep";
 
 const formSchema = object({
-  name: string().required("Team name is required").max(100, "Team name is too long"),
+  name: string().required("Workspace name is required").max(100, "Workspace name is too long"),
   slug: string()
-    .required("Team URL is required")
+    .required("Workspace URL is required")
     .min(2, "Must be at least 2 characters")
     .max(50, "Must be 50 characters or fewer")
     .matches(SLUG_PATTERN, "Lowercase letters, numbers, and hyphens only (not at start or end)")
@@ -46,12 +46,12 @@ interface Props {
 
 const FORM_ID = "create-workspace-form";
 
-const TEAM_VALUE_EXPLAINER =
-  "A team is a shared space where you and others manage feeds together, with more team features on the way.";
+const WORKSPACE_VALUE_EXPLAINER =
+  "A workspace is a shared space where you and others manage feeds together, with more workspace features on the way.";
 
-const TEAM_BILLING_EXPLAINER =
-  "Creating a team is free, but adding feeds to it needs a separate team plan. Your personal" +
-  ` feeds stay free and aren't affected. ${TEAM_VALUE_EXPLAINER}`;
+const WORKSPACE_BILLING_EXPLAINER =
+  "Creating a workspace is free, but adding feeds to it needs a separate workspace plan. Your personal" +
+  ` feeds stay free and aren't affected. ${WORKSPACE_VALUE_EXPLAINER}`;
 
 export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
   const navigate = useNavigate();
@@ -125,25 +125,27 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create a team</DialogTitle>
+          <DialogTitle>Create a workspace</DialogTitle>
         </DialogHeader>
         <DialogCloseTrigger />
         <DialogBody>
           <Text color="fg.muted" mb={4}>
-            {billingConfigured ? TEAM_BILLING_EXPLAINER : TEAM_VALUE_EXPLAINER}
+            {billingConfigured ? WORKSPACE_BILLING_EXPLAINER : WORKSPACE_VALUE_EXPLAINER}
           </Text>
           {!verifiedEmail ? (
             <VerifyEmailStep
               defaultEmail={discordEmail}
               onVerified={() =>
-                setAnnouncement("Your email is verified. Enter a team name to create your team.")
+                setAnnouncement(
+                  "Your email is verified. Enter a workspace name to create your workspace.",
+                )
               }
             />
           ) : (
             <form id={FORM_ID} onSubmit={handleSubmit(onSubmit)} noValidate>
               <Stack gap={4}>
                 <Field
-                  label="Team name"
+                  label="Workspace name"
                   invalid={!!errors.name}
                   required
                   errorText={errors.name?.message}
@@ -163,7 +165,7 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
                   />
                 </Field>
                 <Field
-                  label="Team URL"
+                  label="Workspace URL"
                   invalid={!!errors.slug}
                   required
                   errorText={errors.slug?.message}
@@ -177,7 +179,7 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
                         <Input
                           {...field}
                           onFocus={() => setSlugTouched(true)}
-                          placeholder="my-team"
+                          placeholder="my-workspace"
                         />
                       )}
                     />
@@ -190,7 +192,7 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
                   error.errorCode !== ApiErrorCode.WORKSPACE_SLUG_TAKEN &&
                   error.errorCode !== ApiErrorCode.WORKSPACE_SLUG_RESERVED && (
                     <InlineErrorAlert
-                      title="Failed to create team"
+                      title="Failed to create workspace"
                       description={
                         error.errorCode
                           ? getStandardErrorCodeMessage(error.errorCode as ApiErrorCode)
@@ -214,7 +216,7 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
               loading={isSubmitting}
               loadingText="Creating..."
             >
-              Create team
+              Create workspace
             </PrimaryActionButton>
           )}
         </DialogFooter>

@@ -24,10 +24,10 @@ async function enableWorkspacesForCurrentUser(page: Page): Promise<void> {
 
 async function createWorkspace(page: Page, workspaceName: string): Promise<void> {
   await page.getByRole("button", { name: "Account settings" }).click();
-  await page.getByRole("menuitem", { name: /create a team/i }).click();
+  await page.getByRole("menuitem", { name: /create a workspace/i }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Team name").fill(workspaceName);
-  await dialog.getByRole("button", { name: "Create team" }).click();
+  await dialog.getByLabel("Workspace name").fill(workspaceName);
+  await dialog.getByRole("button", { name: "Create workspace" }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
 }
 
@@ -35,7 +35,7 @@ async function addFeedViaDiscovery(page: Page): Promise<void> {
   // 0 workspace feeds -> the page renders the discovery UI, with the workspace-scoped
   // heading (personal scope uses "Get news delivered to your Discord").
   await expect(
-    page.getByRole("heading", { name: "Add feeds for your team" }),
+    page.getByRole("heading", { name: "Add feeds for your workspace" }),
   ).toBeVisible({ timeout: 15000 });
   const search = page.getByRole("textbox", {
     name: "Search popular feeds or paste a URL",
@@ -83,7 +83,7 @@ test.describe("Workspace feeds", () => {
     await expect(page.getByRole("link", { name: /^Configure/ })).toBeVisible();
 
     // Switch back to the personal workspace; the workspace feed must not be listed.
-    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
     await page.getByRole("menuitemradio", { name: /personal/i }).click();
     await expect(page).toHaveURL(/\/feeds$/);
     await expect(page.getByRole("link", { name: /^Configure/ })).toHaveCount(0);

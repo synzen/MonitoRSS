@@ -32,7 +32,7 @@ async function waitForAuthenticatedApp(page: Page, context = "app"): Promise<voi
 async function gotoMembers(page: Page, workspaceName: string): Promise<void> {
   await page.getByRole("button", { name: "Account settings" }).click();
   await page.getByRole("menuitem", { name: /account settings/i }).click();
-  await expect(page.getByRole("heading", { name: "Your teams" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Your workspaces" })).toBeVisible({
     timeout: 20000,
   });
   await page.getByRole("link", { name: `${workspaceName} settings` }).click();
@@ -124,7 +124,7 @@ async function inviteeAcceptsViaLink(
 
     // The invitee themselves can now see they're part of the team: the workspace
     // they just joined is listed in their own switcher.
-    const switcher = page.getByRole("button", { name: /Switch team/ });
+    const switcher = page.getByRole("button", { name: /Switch workspace/ });
     await expect(switcher).toBeVisible({ timeout: 20000 });
     await switcher.click();
     await expect(

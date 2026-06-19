@@ -26,17 +26,17 @@ async function enableWorkspacesForCurrentUser(page: Page): Promise<void> {
 // the account menu at 0 workspaces and moves into the workspace switcher once one exists,
 // so try the switcher first and fall back to the account menu.
 async function createWorkspace(page: Page, workspaceName: string): Promise<string> {
-  const switcher = page.getByRole("button", { name: /Switch team/ });
+  const switcher = page.getByRole("button", { name: /Switch workspace/ });
   if (await switcher.isVisible().catch(() => false)) {
     await switcher.click();
-    await page.getByRole("menuitem", { name: /create team/i }).click();
+    await page.getByRole("menuitem", { name: /create workspace/i }).click();
   } else {
     await page.getByRole("button", { name: "Account settings" }).click();
-    await page.getByRole("menuitem", { name: /create a team/i }).click();
+    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
   }
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Team name").fill(workspaceName);
-  await dialog.getByRole("button", { name: "Create team" }).click();
+  await dialog.getByLabel("Workspace name").fill(workspaceName);
+  await dialog.getByRole("button", { name: "Create workspace" }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
   const slug = page.url().match(/\/workspaces\/([^/]+)\/feeds/)?.[1];
   expect(slug).toBeTruthy();
@@ -44,10 +44,10 @@ async function createWorkspace(page: Page, workspaceName: string): Promise<strin
 }
 
 async function switchToWorkspace(page: Page, workspaceName: string): Promise<void> {
-  await page.getByRole("button", { name: /Switch team/ }).click();
+  await page.getByRole("button", { name: /Switch workspace/ }).click();
   await page.getByRole("menuitemradio", { name: workspaceName }).click();
   await expect(
-    page.getByRole("button", { name: `Switch team, current: ${workspaceName}` }),
+    page.getByRole("button", { name: `Switch workspace, current: ${workspaceName}` }),
   ).toBeVisible();
 }
 
@@ -85,7 +85,7 @@ test.describe("Workspace switch discovery regression", () => {
     const workspaceBName = `E2E Switch B ${Date.now()}`;
     await createWorkspace(page, workspaceBName);
     await expect(
-      page.getByRole("heading", { name: "Add feeds for your team" }),
+      page.getByRole("heading", { name: "Add feeds for your workspace" }),
     ).toBeVisible({ timeout: 15000 });
 
     // Switch back to workspace A. Its feed is still there, so the table must reappear,
@@ -93,6 +93,6 @@ test.describe("Workspace switch discovery regression", () => {
     await switchToWorkspace(page, workspaceAName);
 
     await expect(page.getByRole("link", { name: /^Configure/ })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByRole("heading", { name: "Add feeds for your team" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Add feeds for your workspace" })).toHaveCount(0);
   });
 });

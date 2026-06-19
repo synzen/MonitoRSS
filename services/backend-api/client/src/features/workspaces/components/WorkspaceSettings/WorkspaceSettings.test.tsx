@@ -79,11 +79,11 @@ describe("WorkspaceSettings", () => {
 
     renderSettings();
 
-    const nameInput = screen.getByRole("textbox", { name: /team name/i });
+    const nameInput = screen.getByRole("textbox", { name: /workspace name/i });
     expect(nameInput).toHaveValue("Acme Marketing");
     expect(nameInput).not.toHaveAttribute("readonly");
 
-    const slugInput = screen.getByRole("textbox", { name: /team url/i });
+    const slugInput = screen.getByRole("textbox", { name: /workspace url/i });
     expect(slugInput).toHaveValue("acme-marketing");
     expect(slugInput).not.toHaveAttribute("readonly");
 
@@ -95,10 +95,10 @@ describe("WorkspaceSettings", () => {
 
     renderSettings();
 
-    const nameInput = screen.getByRole("textbox", { name: /team name/i });
+    const nameInput = screen.getByRole("textbox", { name: /workspace name/i });
     expect(nameInput).not.toHaveAttribute("readonly");
 
-    const slugInput = screen.getByRole("textbox", { name: /team url/i });
+    const slugInput = screen.getByRole("textbox", { name: /workspace url/i });
     expect(slugInput).not.toHaveAttribute("readonly");
 
     expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
@@ -111,7 +111,7 @@ describe("WorkspaceSettings", () => {
 
     expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("aria-disabled", "true");
 
-    fireEvent.change(screen.getByRole("textbox", { name: /team name/i }), {
+    fireEvent.change(screen.getByRole("textbox", { name: /workspace name/i }), {
       target: { value: "Acme Renamed" },
     });
 
@@ -128,7 +128,7 @@ describe("WorkspaceSettings", () => {
 
     renderSettings();
 
-    fireEvent.change(screen.getByRole("textbox", { name: /team name/i }), {
+    fireEvent.change(screen.getByRole("textbox", { name: /workspace name/i }), {
       target: { value: "Acme Renamed" },
     });
     const save = screen.getByRole("button", { name: "Save" });
@@ -150,7 +150,7 @@ describe("WorkspaceSettings", () => {
 
     renderSettings();
 
-    fireEvent.change(screen.getByRole("textbox", { name: /team url/i }), {
+    fireEvent.change(screen.getByRole("textbox", { name: /workspace url/i }), {
       target: { value: "acme-new-slug" },
     });
     const save = screen.getByRole("button", { name: "Save" });
@@ -158,7 +158,7 @@ describe("WorkspaceSettings", () => {
     fireEvent.click(save);
 
     expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
-    expect(screen.getByText(/changing your team url/i)).toBeInTheDocument();
+    expect(screen.getByText(/changing your workspace url/i)).toBeInTheDocument();
   });
 
   it("navigates to the new slug after confirming a slug change", async () => {
@@ -169,7 +169,7 @@ describe("WorkspaceSettings", () => {
 
     renderSettings();
 
-    fireEvent.change(screen.getByRole("textbox", { name: /team url/i }), {
+    fireEvent.change(screen.getByRole("textbox", { name: /workspace url/i }), {
       target: { value: "acme-new-slug" },
     });
     const save = screen.getByRole("button", { name: "Save" });
@@ -238,14 +238,14 @@ describe("WorkspaceSettings", () => {
 
     renderSettings();
 
-    const nameInput = screen.getByRole("textbox", { name: /team name/i });
+    const nameInput = screen.getByRole("textbox", { name: /workspace name/i });
     // Clearing a required field and blurring must NOT surface an error (mode:
     // onSubmit). waitFor polls, so an async mode:"all" error would fail this.
     fireEvent.change(nameInput, { target: { value: "" } });
     fireEvent.blur(nameInput);
 
     await waitFor(() => {
-      expect(screen.queryByText(/team name is required/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/workspace name is required/i)).not.toBeInTheDocument();
     });
 
     // The error only appears once the user submits.
@@ -253,7 +253,7 @@ describe("WorkspaceSettings", () => {
     await waitFor(() => expect(save).not.toHaveAttribute("aria-disabled"));
     await userEvent.click(save);
 
-    expect(await screen.findByText(/team name is required/i)).toBeInTheDocument();
+    expect(await screen.findByText(/workspace name is required/i)).toBeInTheDocument();
     expect(h.update).not.toHaveBeenCalled();
   });
 });

@@ -43,7 +43,7 @@ test.describe("Change verified email", () => {
     await openAccountSettings(page);
 
     // The verified-email row shows the current address and a change action.
-    await expect(page.getByRole("textbox", { name: "Verified team email" })).toHaveValue(oldEmail);
+    await expect(page.getByRole("textbox", { name: "Verified workspace email" })).toHaveValue(oldEmail);
     await page.getByRole("button", { name: /change email/i }).click();
 
     const dialog = page.getByRole("dialog");
@@ -65,6 +65,6 @@ test.describe("Change verified email", () => {
     await expect(page.getByText(/your verified email has been updated/i)).toBeVisible({
       timeout: 15000,
     });
-    await expect(page.getByRole("textbox", { name: "Verified team email" })).toHaveValue(newEmail);
+    await expect(page.getByRole("textbox", { name: "Verified workspace email" })).toHaveValue(newEmail);
   });
 });

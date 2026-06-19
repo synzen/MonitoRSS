@@ -62,7 +62,7 @@ describe("UserFeedDisabledAlert", () => {
 
     expect(screen.queryByRole("button", { name: /Attempt to re-enable/ })).not.toBeInTheDocument();
     expect(
-      screen.getByText(/can't be re-enabled because the team is not subscribed/),
+      screen.getByText(/can't be re-enabled because the workspace is not subscribed/),
     ).toBeInTheDocument();
   });
 

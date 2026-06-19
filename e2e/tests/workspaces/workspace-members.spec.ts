@@ -25,7 +25,7 @@ async function waitForAuthenticatedApp(page: Page): Promise<void> {
 async function gotoMembers(page: Page, workspaceName: string): Promise<void> {
   await page.getByRole("button", { name: "Account settings" }).click();
   await page.getByRole("menuitem", { name: /account settings/i }).click();
-  await expect(page.getByRole("heading", { name: "Your teams" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Your workspaces" })).toBeVisible({
     timeout: 15000,
   });
   await page.getByRole("link", { name: `${workspaceName} settings` }).click();
@@ -64,7 +64,7 @@ test.describe("Workspace member management (owner/admin view)", () => {
     // list). Match each row by its exact role label rather than a loose substring:
     // an admin row also carries a "Make owner" transfer button, so /owner/i would
     // match it too.
-    const memberList = members.getByRole("list", { name: "Team members" });
+    const memberList = members.getByRole("list", { name: "Workspace members" });
     await expect(memberList.getByRole("listitem")).toHaveCount(2);
     const ownerRow = memberList
       .getByRole("listitem")
@@ -227,7 +227,7 @@ test.describe("Workspace member management (owner/admin view)", () => {
     await gotoMembers(page, workspaceName);
 
     const members = page.getByRole("region", { name: "Members" });
-    const memberList = members.getByRole("list", { name: "Team members" });
+    const memberList = members.getByRole("list", { name: "Workspace members" });
     // The other member's row carries a Remove control (owner-only).
     const otherRow = memberList.getByRole("listitem").filter({ hasText: /admin/i });
     await expect(otherRow).toBeVisible({ timeout: 15000 });
@@ -265,7 +265,7 @@ test.describe("Workspace member management (owner/admin view)", () => {
 
     const members = page.getByRole("region", { name: "Members" });
     const ownerRow = members
-      .getByRole("list", { name: "Team members" })
+      .getByRole("list", { name: "Workspace members" })
       .getByRole("listitem")
       .filter({ hasText: /owner/i });
     await expect(ownerRow).toBeVisible({ timeout: 15000 });
@@ -309,7 +309,7 @@ test.describe("Workspace member management (owner/admin view)", () => {
 
     // After leaving, the workspace is no longer in the switcher.
     await expect(page).toHaveURL(/\/feeds$/, { timeout: 15000 });
-    await expect(page.getByRole("button", { name: `Switch team, current: ${workspaceName}` })).toHaveCount(
+    await expect(page.getByRole("button", { name: `Switch workspace, current: ${workspaceName}` })).toHaveCount(
       0,
     );
   });
@@ -350,7 +350,7 @@ test.describe("Workspace member management (owner/admin view)", () => {
     // is rejected — the dialog stays open showing the CANNOT_REMOVE_LAST_OWNER message.
     await expect(
       dialog.getByText(
-        /A team must have at least one owner\. Transfer ownership before removing this member\./i,
+        /A workspace must have at least one owner\. Transfer ownership before removing this member\./i,
       ),
     ).toBeVisible({ timeout: 15000 });
 
@@ -359,13 +359,13 @@ test.describe("Workspace member management (owner/admin view)", () => {
     // appears in the switcher.
     await dialog.getByRole("button", { name: /cancel/i }).click();
     const selfRow = members
-      .getByRole("list", { name: "Team members" })
+      .getByRole("list", { name: "Workspace members" })
       .getByRole("listitem")
       .filter({ hasText: /owner/i })
       .filter({ hasText: /you/i });
     await expect(selfRow).toHaveCount(1);
     await expect(
-      page.getByRole("button", { name: `Switch team, current: ${workspaceName}` }),
+      page.getByRole("button", { name: `Switch workspace, current: ${workspaceName}` }),
     ).toBeVisible();
   });
 });

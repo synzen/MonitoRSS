@@ -29,7 +29,7 @@ async function waitForAuthenticatedApp(page: Page): Promise<void> {
 async function gotoMembers(page: Page, workspaceName: string): Promise<void> {
   await page.getByRole("button", { name: "Account settings" }).click();
   await page.getByRole("menuitem", { name: /account settings/i }).click();
-  await expect(page.getByRole("heading", { name: "Your teams" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Your workspaces" })).toBeVisible({
     timeout: 20000,
   });
   await page.getByRole("link", { name: `${workspaceName} settings` }).click();
@@ -65,7 +65,7 @@ test.describe("Workspace invite self-accept guard", () => {
 
     // --- Create a workspace through the UI, verifying ownerEmail via real OTP. ---
     await page.getByRole("button", { name: "Account settings" }).click();
-    await page.getByRole("menuitem", { name: /create a team/i }).click();
+    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
 
     const dialog = page.getByRole("dialog");
     // Workspace creation is gated behind a verified email, so the dialog opens on
@@ -78,8 +78,8 @@ test.describe("Workspace invite self-accept guard", () => {
     await dialog.getByRole("button", { name: /verify|confirm/i }).click();
 
     const workspaceName = `Self Accept WS ${ownerDiscordId}`;
-    await dialog.getByLabel("Team name").fill(workspaceName);
-    await dialog.getByRole("button", { name: "Create team" }).click();
+    await dialog.getByLabel("Workspace name").fill(workspaceName);
+    await dialog.getByRole("button", { name: "Create workspace" }).click();
 
     await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 20000 });
 
@@ -134,7 +134,7 @@ test.describe("Workspace invite self-accept guard", () => {
       timeout: 20000,
     });
     await expect(
-      members.getByRole("list", { name: "Team members" }).getByRole("listitem"),
+      members.getByRole("list", { name: "Workspace members" }).getByRole("listitem"),
     ).toHaveCount(1, { timeout: 20000 });
 
     // 3) The owner's verified email is untouched: re-opening the create team dialog
@@ -144,10 +144,10 @@ test.describe("Workspace invite self-accept guard", () => {
     //
     // Once the user has a workspace, "Create team" lives in the workspace switcher
     // (the account-menu entry only appears at zero workspaces), so open it there.
-    await page.getByRole("button", { name: /switch team, current:/i }).click();
-    await page.getByRole("menuitem", { name: /create team/i }).click();
+    await page.getByRole("button", { name: /switch workspace, current:/i }).click();
+    await page.getByRole("menuitem", { name: /create workspace/i }).click();
     const dialog2 = page.getByRole("dialog");
-    await expect(dialog2.getByLabel("Team name")).toBeVisible({ timeout: 20000 });
+    await expect(dialog2.getByLabel("Workspace name")).toBeVisible({ timeout: 20000 });
     await expect(dialog2.getByRole("button", { name: /send code/i })).toHaveCount(0);
   });
 });

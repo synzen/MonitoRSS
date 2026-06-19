@@ -217,7 +217,7 @@ describe("WorkspaceMembers", () => {
     // Without a per-row name every Remove button reads identically as "Remove".
     // The accessible name must carry the resolved username of the target member.
     expect(
-      screen.getByRole("button", { name: /remove user-2222 from the team/i }),
+      screen.getByRole("button", { name: /remove user-2222 from the workspace/i }),
     ).toBeInTheDocument();
   });
 
@@ -259,14 +259,14 @@ describe("WorkspaceMembers", () => {
 
   it("clears a stale leave error by resetting the mutation when the modal is closed", async () => {
     const user = userEvent.setup();
-    // Self is the only member so the row shows "Leave team". The hook reports a
+    // Self is the only member so the row shows "Leave workspace". The hook reports a
     // prior failure via `error` (react-query's error channel, mirrored here).
     h.members.current = [{ userId: "self", role: "owner", discordUserId: "1111" }];
     h.leaveError.current = { message: "Cannot leave" };
 
     renderView();
 
-    await user.click(screen.getByRole("button", { name: /leave team/i }));
+    await user.click(screen.getByRole("button", { name: /leave workspace/i }));
     const dialog = await screen.findByRole("alertdialog");
     // The stale error from the prior attempt is shown inside the dialog.
     expect(within(dialog).getByText(/cannot leave/i)).toBeInTheDocument();
@@ -289,10 +289,12 @@ describe("WorkspaceMembers", () => {
 
     renderView();
 
-    await user.click(screen.getByRole("button", { name: /leave team/i }));
+    await user.click(screen.getByRole("button", { name: /leave workspace/i }));
     const dialog = await screen.findByRole("alertdialog");
 
-    expect(within(dialog).getByText(/a team must have at least one owner/i)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/a workspace must have at least one owner/i),
+    ).toBeInTheDocument();
     expect(within(dialog).queryByText(/raw server detail/i)).not.toBeInTheDocument();
   });
 
@@ -370,7 +372,7 @@ describe("WorkspaceMembers", () => {
 
   it("confirms a successful leave by navigating to feeds with a persistent alert", async () => {
     const user = userEvent.setup();
-    // Self is the only member so the row shows "Leave team". Leaving navigates
+    // Self is the only member so the row shows "Leave workspace". Leaving navigates
     // away, so the confirmation is carried in navigation state and raised as a
     // persistent (dismissable) alert on the feeds page — a page-scoped alert
     // raised here would unmount before it could be seen.
@@ -378,16 +380,16 @@ describe("WorkspaceMembers", () => {
 
     renderView();
 
-    await user.click(screen.getByRole("button", { name: /leave team/i }));
+    await user.click(screen.getByRole("button", { name: /leave workspace/i }));
     const dialog = await screen.findByRole("alertdialog");
-    await user.click(within(dialog).getByRole("button", { name: /leave team/i }));
+    await user.click(within(dialog).getByRole("button", { name: /leave workspace/i }));
 
     await waitFor(() => expect(h.leave).toHaveBeenCalledWith("acme"));
     expect(h.navigate).toHaveBeenCalledWith(
       "/feeds",
       expect.objectContaining({
         state: expect.objectContaining({
-          alertTitle: "Left team",
+          alertTitle: "Left workspace",
           alertDescription: expect.stringContaining("Acme"),
         }),
       }),
@@ -474,7 +476,7 @@ describe("WorkspaceMembers", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("transfers ownership after typing the team name, then surfaces a success alert", async () => {
+  it("transfers ownership after typing the workspace name, then surfaces a success alert", async () => {
     const user = userEvent.setup();
 
     renderView();
@@ -488,14 +490,14 @@ describe("WorkspaceMembers", () => {
     const dialog = await screen.findByRole("alertdialog");
     const confirmButton = within(dialog).getByRole("button", { name: /transfer ownership/i });
     // The confirmation phrase gates the action: it stays disabled until the
-    // exact team name is typed. SafeLoadingButton disables via aria-disabled
+    // exact workspace name is typed. SafeLoadingButton disables via aria-disabled
     // rather than the native attribute.
     expect(confirmButton).toHaveAttribute("aria-disabled", "true");
 
     // A wrong phrase must NOT enable the action: the gate compares the exact
     // team name, so any other text leaves the destructive confirm disabled.
     const phraseInput = within(dialog).getByRole("textbox");
-    await user.type(phraseInput, "not the team name");
+    await user.type(phraseInput, "not the workspace name");
     expect(confirmButton).toHaveAttribute("aria-disabled", "true");
 
     await user.clear(phraseInput);
@@ -511,7 +513,7 @@ describe("WorkspaceMembers", () => {
     );
   });
 
-  it("warns about the billing tail only when the team has a subscription", async () => {
+  it("warns about the billing tail only when the workspace has a subscription", async () => {
     const user = userEvent.setup();
     h.workspace.current = {
       id: "ws-1",
@@ -533,7 +535,7 @@ describe("WorkspaceMembers", () => {
     expect(within(dialog).getByText(/keep billing your payment method/i)).toBeInTheDocument();
   });
 
-  it("omits the billing-tail warning when the team has no subscription", async () => {
+  it("omits the billing-tail warning when the workspace has no subscription", async () => {
     const user = userEvent.setup();
 
     renderView();

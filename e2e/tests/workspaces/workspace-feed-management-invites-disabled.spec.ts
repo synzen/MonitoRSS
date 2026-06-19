@@ -25,10 +25,10 @@ async function enableWorkspacesForCurrentUser(page: Page): Promise<void> {
 
 async function createWorkspace(page: Page, workspaceName: string): Promise<void> {
   await page.getByRole("button", { name: "Account settings" }).click();
-  await page.getByRole("menuitem", { name: /create a team/i }).click();
+  await page.getByRole("menuitem", { name: /create a workspace/i }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Team name").fill(workspaceName);
-  await dialog.getByRole("button", { name: "Create team" }).click();
+  await dialog.getByLabel("Workspace name").fill(workspaceName);
+  await dialog.getByRole("button", { name: "Create workspace" }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
 }
 

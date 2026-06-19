@@ -56,15 +56,15 @@ test.describe("Dormant workspace failed-feed retry", () => {
     // Enter the workspace through the switcher and anchor on the committed scope.
     await page.reload();
     await waitForAuthenticatedApp(page);
-    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
     await page.getByRole("menuitemradio", { name: workspaceName }).click();
     await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/feeds$`), { timeout: 15000 });
     await expect(
-      page.getByRole("button", { name: `Switch team, current: ${workspaceName}` }),
+      page.getByRole("button", { name: `Switch workspace, current: ${workspaceName}` }),
     ).toBeVisible({ timeout: 15000 });
 
     // The never-subscribed workspace is dormant.
-    await expect(page.getByText("This team is not subscribed")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("This workspace is not subscribed")).toBeVisible({ timeout: 15000 });
 
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
     await page.getByRole("link", { name: "Failing Feed", exact: true }).click();
@@ -74,7 +74,7 @@ test.describe("Dormant workspace failed-feed retry", () => {
     // blocked by the feed limit (0) for as long as the workspace is dormant.
     await expect(page.getByText(FAILED_REQUESTS_ALERT_TEXT)).toBeVisible({ timeout: 15000 });
     await expect(
-      page.getByText(/can't be re-enabled because the team is not subscribed/),
+      page.getByText(/can't be re-enabled because the workspace is not subscribed/),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Attempt to re-enable" })).not.toBeVisible();
   });

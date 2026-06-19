@@ -34,7 +34,7 @@ test.describe("Workspaces on initial load", () => {
     await waitForAuthenticatedApp(page);
 
     // The count-gated switcher renders because the user already has a workspace.
-    const switcher = page.getByRole("button", { name: /Switch team/ });
+    const switcher = page.getByRole("button", { name: /Switch workspace/ });
     await expect(switcher).toBeVisible();
     await switcher.click();
     await expect(page.getByRole("menuitemradio", { name: workspaceName })).toBeVisible();
@@ -43,7 +43,7 @@ test.describe("Workspaces on initial load", () => {
     // The workspace is listed under "Your workspaces" in Account Settings.
     await page.getByRole("button", { name: "Account settings" }).click();
     await page.getByRole("menuitem", { name: /account settings/i }).click();
-    await expect(page.getByRole("heading", { name: "Your teams" })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Your workspaces" })).toBeVisible({
       timeout: 15000,
     });
     // The workspace's Settings link is unique to the "Your workspaces" row.

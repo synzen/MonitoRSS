@@ -370,7 +370,7 @@ export const ConvertPersonalPlanFeedList = ({
         maxHeight={overLimit ? 520 : 350}
         overflow="auto"
       >
-        <VisuallyHidden as="legend">Feeds to bring to this team</VisuallyHidden>
+        <VisuallyHidden as="legend">Feeds to bring to this workspace</VisuallyHidden>
         {overLimit && (
           // A sticky control header: the capacity meter, progress bar, and the
           // one bulk action stay in view while the list scrolls, and sit at the

@@ -33,11 +33,11 @@ export const WorkspaceDormantBanner = () => {
     <Alert.Root status="warning" role="status" borderRadius={0}>
       <Alert.Indicator />
       <Alert.Content>
-        <Alert.Title>This team is not subscribed</Alert.Title>
+        <Alert.Title>This workspace is not subscribed</Alert.Title>
         <Alert.Description>
           {isOwner
-            ? "Feeds are disabled until the team is activated."
-            : "Feeds are disabled until the team owner activates a subscription."}{" "}
+            ? "Feeds are disabled until the workspace is activated."
+            : "Feeds are disabled until the workspace owner activates a subscription."}{" "}
           Your personal feeds are not affected.{" "}
           <ChakraLink asChild color="text.link" textDecoration="underline">
             <RouterLink to={pages.userFeeds()}>Go to your personal feeds</RouterLink>
@@ -49,7 +49,7 @@ export const WorkspaceDormantBanner = () => {
            dark mode, which reads as the banner's CTA — an outline's gray edge competes with
            the alert's own status-colored border on the tinted fill. */
         <Button asChild size="sm" alignSelf="center" variant="solid">
-          <RouterLink to={pages.workspaceBilling(workspaceSlug)}>Activate team</RouterLink>
+          <RouterLink to={pages.workspaceBilling(workspaceSlug)}>Activate workspace</RouterLink>
         </Button>
       )}
     </Alert.Root>
@@ -70,16 +70,16 @@ export const WorkspaceActivationEmptyState = () => {
   return (
     <Stack alignItems="center" textAlign="center" gap={4} paddingY={16} paddingX={4}>
       <Heading as="h2" size="lg">
-        Activate your team to start adding feeds
+        Activate your workspace to start adding feeds
       </Heading>
       {isOwner ? (
         <>
           <Text color="fg.muted" maxW="40rem">
-            Your team is set up. Members, invitations, and settings all work. Subscribe to a team
-            plan to enable feeds.
+            Your workspace is set up. Members, invitations, and settings all work. Subscribe to a
+            workspace plan to enable feeds.
           </Text>
           <Button asChild size="lg" colorPalette="brand">
-            <RouterLink to={pages.workspaceBilling(workspaceSlug)}>Activate team</RouterLink>
+            <RouterLink to={pages.workspaceBilling(workspaceSlug)}>Activate workspace</RouterLink>
           </Button>
           <Text fontSize="sm" color="fg.muted" maxW="40rem">
             Not ready? Your personal feeds stay free.{" "}
@@ -91,8 +91,8 @@ export const WorkspaceActivationEmptyState = () => {
       ) : (
         <>
           <Text color="fg.muted" maxW="40rem">
-            Feeds are disabled because this team has no active subscription. Ask the team owner to
-            activate it from the team&apos;s Billing page.
+            Feeds are disabled because this workspace has no active subscription. Ask the workspace
+            owner to activate it from the workspace&apos;s Billing page.
           </Text>
           <Text fontSize="sm" color="fg.muted" maxW="40rem">
             Your personal feeds are not affected.{" "}

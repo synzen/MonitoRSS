@@ -40,7 +40,7 @@ describe("VerifiedEmailSettingsRow", () => {
   it("renders the verified email and a change action for workspace-enabled users", () => {
     renderRow();
 
-    const input = screen.getByLabelText(/verified team email/i) as HTMLInputElement;
+    const input = screen.getByLabelText(/verified workspace email/i) as HTMLInputElement;
     expect(input.value).toBe("verified@example.com");
     expect(screen.getByRole("button", { name: /change email/i })).toBeInTheDocument();
   });

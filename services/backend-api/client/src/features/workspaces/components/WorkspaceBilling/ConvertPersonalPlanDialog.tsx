@@ -65,7 +65,7 @@ export const ConvertPersonalPlanDialog = ({
     <ConfirmModal
       open={open}
       onOpenChange={(next) => !next && onClose()}
-      title="Move your personal plan to this team"
+      title="Move your personal plan to this workspace"
       okText="Move plan"
       showCloseButton
       // Over the limit this is a triage surface (pick 70 of 100+), so it widens
@@ -85,8 +85,8 @@ export const ConvertPersonalPlanDialog = ({
       descriptionNode={
         <Stack gap={4}>
           <Text>
-            Your personal plan becomes the plan for this team, and the feeds you choose move with
-            it. You will no longer have a personal plan. This is not easily reversible.
+            Your personal plan becomes the plan for this workspace, and the feeds you choose move
+            with it. You will no longer have a personal plan. This is not easily reversible.
           </Text>
           {/* Over the limit the feed list shows its own always-visible capacity
               meter, so a second counter here would be redundant. Under the limit

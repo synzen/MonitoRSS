@@ -23,10 +23,10 @@ async function enableWorkspacesForCurrentUser(page: Page): Promise<void> {
 
 async function createWorkspace(page: Page, workspaceName: string): Promise<string> {
   await page.getByRole("button", { name: "Account settings" }).click();
-  await page.getByRole("menuitem", { name: /create a team/i }).click();
+  await page.getByRole("menuitem", { name: /create a workspace/i }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Team name").fill(workspaceName);
-  await dialog.getByRole("button", { name: "Create team" }).click();
+  await dialog.getByLabel("Workspace name").fill(workspaceName);
+  await dialog.getByRole("button", { name: "Create workspace" }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
   const slug = page.url().match(/\/workspaces\/([^/]+)\/feeds/)?.[1];
   expect(slug).toBeTruthy();
@@ -76,15 +76,15 @@ test.describe("Workspace navigation", () => {
     await page.goto("/");
     await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/feeds$`), { timeout: 15000 });
     await expect(
-      page.getByRole("button", { name: `Switch team, current: ${workspaceName}` }),
+      page.getByRole("button", { name: `Switch workspace, current: ${workspaceName}` }),
     ).toBeVisible();
 
     // Switching to personal updates the recorded scope; "/" now lands on personal feeds.
     const personalRecorded = waitForScopeRecording(page);
-    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
     await page.getByRole("menuitemradio", { name: /personal/i }).click();
     await expect(
-      page.getByRole("button", { name: "Switch team, current: Personal" }),
+      page.getByRole("button", { name: "Switch workspace, current: Personal" }),
     ).toBeVisible();
     await personalRecorded;
 
@@ -92,7 +92,7 @@ test.describe("Workspace navigation", () => {
     await expect(page).toHaveURL(/\/feeds$/, { timeout: 15000 });
     expect(page.url()).not.toContain("/workspaces/");
     await expect(
-      page.getByRole("button", { name: "Switch team, current: Personal" }),
+      page.getByRole("button", { name: "Switch workspace, current: Personal" }),
     ).toBeVisible();
   });
 
@@ -113,9 +113,9 @@ test.describe("Workspace navigation", () => {
     await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/feeds$`));
 
     // Settings is one visible on-page click — no switcher menu required.
-    await page.getByRole("link", { name: "Team settings" }).click();
+    await page.getByRole("link", { name: "Workspace settings" }).click();
     await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/settings$`), { timeout: 15000 });
-    await expect(page.getByRole("heading", { name: "Team settings" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Workspace settings" })).toBeVisible();
   });
 
   test("switching scopes moves focus to the new page's heading", async ({ page }) => {
@@ -130,10 +130,10 @@ test.describe("Workspace navigation", () => {
     const workspaceName = `E2E Nav Focus ${Date.now()}`;
     await createWorkspace(page, workspaceName);
 
-    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
     await page.getByRole("menuitemradio", { name: /personal/i }).click();
     await expect(
-      page.getByRole("button", { name: "Switch team, current: Personal" }),
+      page.getByRole("button", { name: "Switch workspace, current: Personal" }),
     ).toBeVisible();
 
     // The navigation announcer moves focus to the new page's h1 (after its 500ms delay).
@@ -141,10 +141,10 @@ test.describe("Workspace navigation", () => {
       timeout: 5000,
     });
 
-    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
     await page.getByRole("menuitemradio", { name: workspaceName }).click();
     await expect(
-      page.getByRole("button", { name: `Switch team, current: ${workspaceName}` }),
+      page.getByRole("button", { name: `Switch workspace, current: ${workspaceName}` }),
     ).toBeVisible();
 
     // In workspace scope the h1 is the workspace name, so focusing it announces the new scope.
@@ -171,10 +171,10 @@ test.describe("Workspace navigation", () => {
     await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/feeds$`));
 
     // In personal scope the same crumb says "Personal" once the user has a workspace.
-    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
     await page.getByRole("menuitemradio", { name: /personal/i }).click();
     await expect(
-      page.getByRole("button", { name: "Switch team, current: Personal" }),
+      page.getByRole("button", { name: "Switch workspace, current: Personal" }),
     ).toBeVisible();
 
     await addFeedViaDiscovery(page);

@@ -28,20 +28,20 @@ async function createTeamAndOpenBilling(page: Page): Promise<string> {
   await waitForAuthenticatedApp(page);
 
   await page.getByRole("button", { name: "Account settings" }).click();
-  await page.getByRole("menuitem", { name: /create a team/i }).click();
+  await page.getByRole("menuitem", { name: /create a workspace/i }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Team name").fill(`E2E Paddle Team ${Date.now()}`);
-  await dialog.getByRole("button", { name: "Create team" }).click();
+  await dialog.getByLabel("Workspace name").fill(`E2E Paddle Team ${Date.now()}`);
+  await dialog.getByRole("button", { name: "Create workspace" }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
   const workspaceSlug = page.url().match(/\/workspaces\/([^/]+)\/feeds/)?.[1];
   expect(workspaceSlug).toBeTruthy();
 
   await expect(
-    page.getByRole("heading", { name: /Activate your team to start adding feeds/i }),
+    page.getByRole("heading", { name: /Activate your workspace to start adding feeds/i }),
   ).toBeVisible({ timeout: 15000 });
 
   await page
-    .getByRole("link", { name: /activate team/i })
+    .getByRole("link", { name: /activate workspace/i })
     .first()
     .click();
   await expect(page).toHaveURL(new RegExp(`/workspaces/${workspaceSlug}/settings/billing$`));
@@ -127,7 +127,7 @@ test.describe("Paddle workspace roundtrip", () => {
     // which removes the breadcrumb from the a11y tree, so a role-based locator
     // would no longer resolve it (the handle still references the DOM node).
     const breadcrumbHandle = await page
-      .getByRole("link", { name: "Team settings" })
+      .getByRole("link", { name: "Workspace settings" })
       .elementHandle();
 
     // Subscribe to Tier 2 (monthly default): opens the inline checkout dialog.
@@ -217,16 +217,16 @@ test.describe("Paddle workspace roundtrip", () => {
     await expect(changeDialog).toHaveCount(0);
 
     // The dormant CTA is gone and a feed can be added through the UI.
-    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
     await page.getByRole("menuitemradio", { name: /e2e paddle team/i }).click();
     await expect(page).toHaveURL(new RegExp(`/workspaces/${workspaceSlug}/feeds$`));
     await expect(
-      page.getByRole("heading", { name: /Activate your team to start adding feeds/i }),
+      page.getByRole("heading", { name: /Activate your workspace to start adding feeds/i }),
     ).toHaveCount(0);
-    await expect(page.getByText("This team is not subscribed")).toHaveCount(0);
+    await expect(page.getByText("This workspace is not subscribed")).toHaveCount(0);
 
     await expect(
-      page.getByRole("heading", { name: "Add feeds for your team" }),
+      page.getByRole("heading", { name: "Add feeds for your workspace" }),
     ).toBeVisible({ timeout: 15000 });
     const search = page.getByRole("textbox", { name: "Search popular feeds or paste a URL" });
     await search.fill(MOCK_RSS_FEED_URL);

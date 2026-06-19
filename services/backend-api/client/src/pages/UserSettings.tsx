@@ -343,7 +343,7 @@ const UserSettingsInner = () => {
         title="Email"
         description={
           workspacesEnabled
-            ? "Your Discord email is used for billing receipts and notifications. Your verified email is used for team invitations, and for member notices when it is set. Member notices fall back to your Discord email if you have not verified one."
+            ? "Your Discord email is used for billing receipts and notifications. Your verified email is used for workspace invitations, and for member notices when it is set. Member notices fall back to your Discord email if you have not verified one."
             : "The email tied to your Discord account, used for notifications and billing receipts."
         }
       >

@@ -85,13 +85,13 @@ describe("CreateWorkspaceDialog", () => {
     h.paddleConfigured.current = true;
   });
 
-  it("discloses the team plan and free personal feeds before email verification", () => {
+  it("discloses the workspace plan and free personal feeds before email verification", () => {
     mockUnverified();
 
     renderDialog();
 
-    expect(screen.getByText(/creating a team is free/i)).toBeInTheDocument();
-    expect(screen.getByText(/needs a separate team plan/i)).toBeInTheDocument();
+    expect(screen.getByText(/creating a workspace is free/i)).toBeInTheDocument();
+    expect(screen.getByText(/needs a separate workspace plan/i)).toBeInTheDocument();
     expect(
       screen.getByText(/your personal feeds stay free and aren't affected/i),
     ).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe("CreateWorkspaceDialog", () => {
 
     renderDialog();
 
-    expect(screen.getByText(/creating a team is free/i)).toBeInTheDocument();
+    expect(screen.getByText(/creating a workspace is free/i)).toBeInTheDocument();
   });
 
   it("shows only the value explainer when billing is not configured", () => {
@@ -112,9 +112,9 @@ describe("CreateWorkspaceDialog", () => {
     renderDialog();
 
     expect(
-      screen.getByText(/a team is a shared space where you and others manage feeds together/i),
+      screen.getByText(/a workspace is a shared space where you and others manage feeds together/i),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/team plan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/workspace plan/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/free/i)).not.toBeInTheDocument();
   });
 
@@ -125,8 +125,8 @@ describe("CreateWorkspaceDialog", () => {
 
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /send code/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /create team/i })).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/team name/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /create workspace/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/workspace name/i)).not.toBeInTheDocument();
   });
 
   it("pre-fills the Discord email in the verification step", () => {
@@ -142,9 +142,9 @@ describe("CreateWorkspaceDialog", () => {
 
     renderDialog();
 
-    expect(screen.getByLabelText(/team name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/team url/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /create team/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/workspace name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/workspace url/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /create workspace/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /send code/i })).not.toBeInTheDocument();
   });
 
@@ -152,12 +152,12 @@ describe("CreateWorkspaceDialog", () => {
     mockVerified();
     renderDialog();
 
-    fireEvent.change(screen.getByLabelText(/team name/i), {
+    fireEvent.change(screen.getByLabelText(/workspace name/i), {
       target: { value: "My Awesome Workspace" },
     });
 
     await waitFor(() =>
-      expect(screen.getByLabelText(/team url/i)).toHaveValue("my-awesome-workspace"),
+      expect(screen.getByLabelText(/workspace url/i)).toHaveValue("my-awesome-workspace"),
     );
   });
 
@@ -165,11 +165,11 @@ describe("CreateWorkspaceDialog", () => {
     mockVerified();
     renderDialog();
 
-    const slugInput = screen.getByLabelText(/team url/i);
+    const slugInput = screen.getByLabelText(/workspace url/i);
     fireEvent.focus(slugInput);
     fireEvent.change(slugInput, { target: { value: "my-custom-slug" } });
 
-    fireEvent.change(screen.getByLabelText(/team name/i), {
+    fireEvent.change(screen.getByLabelText(/workspace name/i), {
       target: { value: "Other Name" },
     });
 
@@ -184,11 +184,13 @@ describe("CreateWorkspaceDialog", () => {
     h.create.mockResolvedValue({ result: { id: "workspace-x", slug: "my-workspace" } });
     const onClose = renderDialog();
 
-    fireEvent.change(screen.getByLabelText(/team name/i), {
+    fireEvent.change(screen.getByLabelText(/workspace name/i), {
       target: { value: "My Workspace" },
     });
-    await waitFor(() => expect(screen.getByLabelText(/team url/i)).toHaveValue("my-workspace"));
-    fireEvent.click(screen.getByRole("button", { name: /create team/i }));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/workspace url/i)).toHaveValue("my-workspace"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create workspace/i }));
 
     await waitFor(() =>
       expect(h.create).toHaveBeenCalledWith({
@@ -204,11 +206,13 @@ describe("CreateWorkspaceDialog", () => {
     h.create.mockRejectedValue(new Error("boom"));
     const onClose = renderDialog();
 
-    fireEvent.change(screen.getByLabelText(/team name/i), {
+    fireEvent.change(screen.getByLabelText(/workspace name/i), {
       target: { value: "My Workspace" },
     });
-    await waitFor(() => expect(screen.getByLabelText(/team url/i)).toHaveValue("my-workspace"));
-    fireEvent.click(screen.getByRole("button", { name: /create team/i }));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/workspace url/i)).toHaveValue("my-workspace"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create workspace/i }));
 
     await waitFor(() => expect(h.create).toHaveBeenCalled());
     expect(h.navigate).not.toHaveBeenCalled();
@@ -222,11 +226,13 @@ describe("CreateWorkspaceDialog", () => {
     );
     renderDialog();
 
-    fireEvent.change(screen.getByLabelText(/team name/i), {
+    fireEvent.change(screen.getByLabelText(/workspace name/i), {
       target: { value: "My Workspace" },
     });
-    await waitFor(() => expect(screen.getByLabelText(/team url/i)).toHaveValue("my-workspace"));
-    fireEvent.click(screen.getByRole("button", { name: /create team/i }));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/workspace url/i)).toHaveValue("my-workspace"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create workspace/i }));
 
     expect(await screen.findByText(/this url is already taken/i)).toBeInTheDocument();
   });
@@ -237,7 +243,7 @@ describe("CreateWorkspaceDialog", () => {
 
     renderDialog();
 
-    expect(screen.getByText("Failed to create team")).toBeInTheDocument();
+    expect(screen.getByText("Failed to create workspace")).toBeInTheDocument();
     expect(screen.getByText("Workspace name already taken")).toBeInTheDocument();
   });
 
@@ -247,12 +253,12 @@ describe("CreateWorkspaceDialog", () => {
 
     renderDialog();
 
-    expect(screen.getByText("Failed to create team")).toBeInTheDocument();
+    expect(screen.getByText("Failed to create workspace")).toBeInTheDocument();
     expect(screen.getByText(/a verified email is required/i)).toBeInTheDocument();
     expect(screen.queryByText(/raw server detail/i)).not.toBeInTheDocument();
   });
 
-  it("explains the never-activated team cap when creation is rejected for it", () => {
+  it("explains the never-activated workspace cap when creation is rejected for it", () => {
     mockVerified();
     h.createError.current = {
       message: "raw server detail",
@@ -261,7 +267,7 @@ describe("CreateWorkspaceDialog", () => {
 
     renderDialog();
 
-    expect(screen.getByText("Failed to create team")).toBeInTheDocument();
+    expect(screen.getByText("Failed to create workspace")).toBeInTheDocument();
     expect(screen.getByText(/hasn't been activated/i)).toBeInTheDocument();
     expect(screen.queryByText(/raw server detail/i)).not.toBeInTheDocument();
   });
@@ -274,16 +280,16 @@ describe("CreateWorkspaceDialog", () => {
 
     renderDialog();
 
-    expect(screen.queryByText("Failed to create team")).not.toBeInTheDocument();
+    expect(screen.queryByText("Failed to create workspace")).not.toBeInTheDocument();
   });
 
   it("blocks submission and shows a validation error for an empty name", async () => {
     mockVerified();
     renderDialog();
 
-    fireEvent.click(screen.getByRole("button", { name: /create team/i }));
+    fireEvent.click(screen.getByRole("button", { name: /create workspace/i }));
 
-    expect(await screen.findByText("Team name is required")).toBeInTheDocument();
+    expect(await screen.findByText("Workspace name is required")).toBeInTheDocument();
     expect(h.create).not.toHaveBeenCalled();
   });
 
@@ -291,13 +297,13 @@ describe("CreateWorkspaceDialog", () => {
     mockVerified();
     renderDialog();
 
-    const slugInput = screen.getByLabelText(/team url/i);
+    const slugInput = screen.getByLabelText(/workspace url/i);
     fireEvent.focus(slugInput);
     fireEvent.change(slugInput, { target: { value: "settings" } });
-    fireEvent.change(screen.getByLabelText(/team name/i), {
+    fireEvent.change(screen.getByLabelText(/workspace name/i), {
       target: { value: "My Workspace" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /create team/i }));
+    fireEvent.click(screen.getByRole("button", { name: /create workspace/i }));
 
     expect(await screen.findByText(/this url is reserved/i)).toBeInTheDocument();
     expect(h.create).not.toHaveBeenCalled();
@@ -310,11 +316,13 @@ describe("CreateWorkspaceDialog", () => {
     );
     renderDialog();
 
-    fireEvent.change(screen.getByLabelText(/team name/i), {
+    fireEvent.change(screen.getByLabelText(/workspace name/i), {
       target: { value: "My Workspace" },
     });
-    await waitFor(() => expect(screen.getByLabelText(/team url/i)).toHaveValue("my-workspace"));
-    fireEvent.click(screen.getByRole("button", { name: /create team/i }));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/workspace url/i)).toHaveValue("my-workspace"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /create workspace/i }));
 
     expect(await screen.findByText(/this url is reserved/i)).toBeInTheDocument();
   });
@@ -323,12 +331,12 @@ describe("CreateWorkspaceDialog", () => {
     mockVerified();
     renderDialog();
 
-    const nameInput = screen.getByLabelText(/team name/i);
+    const nameInput = screen.getByLabelText(/workspace name/i);
     fireEvent.focus(nameInput);
     fireEvent.blur(nameInput);
 
     await waitFor(() => {
-      expect(screen.queryByText("Team name is required")).not.toBeInTheDocument();
+      expect(screen.queryByText("Workspace name is required")).not.toBeInTheDocument();
     });
   });
 

@@ -102,11 +102,11 @@ test.describe("Paddle workspace conversion", () => {
     await page.goto("/feeds");
     await waitForAuthenticatedApp(page);
     await page.getByRole("button", { name: "Account settings" }).click();
-    await page.getByRole("menuitem", { name: /create a team/i }).click();
+    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
     const createDialog = page.getByRole("dialog");
     const workspaceName = `E2E Convert Team ${Date.now()}`;
-    await createDialog.getByLabel("Team name").fill(workspaceName);
-    await createDialog.getByRole("button", { name: "Create team" }).click();
+    await createDialog.getByLabel("Workspace name").fill(workspaceName);
+    await createDialog.getByRole("button", { name: "Create workspace" }).click();
     await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
     const workspaceSlug = page.url().match(/\/workspaces\/([^/]+)\/feeds/)?.[1] as string;
     expect(workspaceSlug).toBeTruthy();
@@ -115,7 +115,7 @@ test.describe("Paddle workspace conversion", () => {
     await page.goto(`/workspaces/${workspaceSlug}/settings/billing`);
     await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
 
-    await page.getByRole("button", { name: /move my plan to this team/i }).click();
+    await page.getByRole("button", { name: /move my plan to this workspace/i }).click();
 
     const convertDialog = page.getByRole("alertdialog");
     await expect(convertDialog).toBeVisible({ timeout: 15000 });
@@ -176,10 +176,10 @@ test.describe("Paddle workspace conversion", () => {
     //     plan is gone, so it is over the free limit). Switch scope IN-APP rather
     //     than reloading, so the personal feed list is exercised through the
     //     live cache.
-    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
     await page.getByRole("menuitemradio", { name: /personal/i }).click();
     await expect(
-      page.getByRole("button", { name: "Switch team, current: Personal" }),
+      page.getByRole("button", { name: "Switch workspace, current: Personal" }),
     ).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
     const leftRow = page.getByRole("row").filter({
@@ -247,11 +247,11 @@ test.describe("Paddle workspace conversion", () => {
     await page.goto("/feeds");
     await waitForAuthenticatedApp(page);
     await page.getByRole("button", { name: "Account settings" }).click();
-    await page.getByRole("menuitem", { name: /create a team/i }).click();
+    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
     const createDialog = page.getByRole("dialog");
     const workspaceName = `E2E Convert Overlimit ${Date.now()}`;
-    await createDialog.getByLabel("Team name").fill(workspaceName);
-    await createDialog.getByRole("button", { name: "Create team" }).click();
+    await createDialog.getByLabel("Workspace name").fill(workspaceName);
+    await createDialog.getByRole("button", { name: "Create workspace" }).click();
     await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
     const workspaceSlug = page.url().match(/\/workspaces\/([^/]+)\/feeds/)?.[1] as string;
     expect(workspaceSlug).toBeTruthy();
@@ -259,7 +259,7 @@ test.describe("Paddle workspace conversion", () => {
     // 4. Open the conversion dialog from Billing; it opens in over-limit mode.
     await page.goto(`/workspaces/${workspaceSlug}/settings/billing`);
     await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
-    await page.getByRole("button", { name: /move my plan to this team/i }).click();
+    await page.getByRole("button", { name: /move my plan to this workspace/i }).click();
 
     const convertDialog = page.getByRole("alertdialog");
     await expect(convertDialog).toBeVisible({ timeout: 15000 });
@@ -312,10 +312,10 @@ test.describe("Paddle workspace conversion", () => {
     //     on the personal side, now over the free limit. Switch scope IN-APP
     //     rather than reloading, so the personal feed list is exercised through
     //     the live cache.
-    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
     await page.getByRole("menuitemradio", { name: /personal/i }).click();
     await expect(
-      page.getByRole("button", { name: "Switch team, current: Personal" }),
+      page.getByRole("button", { name: "Switch workspace, current: Personal" }),
     ).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
     const oldestRow = page.getByRole("row").filter({

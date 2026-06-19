@@ -21,7 +21,7 @@ async function waitForAuthenticatedApp(page: Page): Promise<void> {
 async function gotoMembers(page: Page, workspaceName: string): Promise<void> {
   await page.getByRole("button", { name: "Account settings" }).click();
   await page.getByRole("menuitem", { name: /account settings/i }).click();
-  await expect(page.getByRole("heading", { name: "Your teams" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Your workspaces" })).toBeVisible({
     timeout: 15000,
   });
   await page.getByRole("link", { name: `${workspaceName} settings` }).click();

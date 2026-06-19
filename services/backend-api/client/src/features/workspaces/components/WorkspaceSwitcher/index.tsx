@@ -20,8 +20,8 @@ const PERSONAL_VALUE = "personal";
 const FILTER_THRESHOLD = 7;
 
 const LIVE_STATUS_TEXT: Record<string, string> = {
-  loading: "Loading teams",
-  success: "Teams loaded",
+  loading: "Loading workspaces",
+  success: "Workspaces loaded",
 };
 
 /**
@@ -49,7 +49,7 @@ export const WorkspaceSwitcher = ({ onCreateWorkspace }: { onCreateWorkspace: ()
       return "Personal";
     }
 
-    return workspaces?.find((t) => t.slug === workspaceSlug)?.name ?? "Team";
+    return workspaces?.find((t) => t.slug === workspaceSlug)?.name ?? "Workspace";
   }, [workspaceSlug, workspaces]);
 
   const visibleWorkspaces = useMemo(() => {
@@ -83,7 +83,7 @@ export const WorkspaceSwitcher = ({ onCreateWorkspace }: { onCreateWorkspace: ()
           maxW="220px"
           fontSize="md"
           fontWeight="medium"
-          aria-label={`Switch team, current: ${activeName}`}
+          aria-label={`Switch workspace, current: ${activeName}`}
         >
           <Text as="span" lineClamp={1}>
             {activeName}
@@ -98,8 +98,8 @@ export const WorkspaceSwitcher = ({ onCreateWorkspace }: { onCreateWorkspace: ()
             <Input
               type="search"
               size="sm"
-              placeholder="Filter teams…"
-              aria-label="Filter teams"
+              placeholder="Filter workspaces…"
+              aria-label="Filter workspaces"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()}
@@ -114,7 +114,7 @@ export const WorkspaceSwitcher = ({ onCreateWorkspace }: { onCreateWorkspace: ()
         )}
         {status === "error" && (
           <Box px={3} py={2}>
-            <InlineErrorAlert title="Couldn't load teams" description={error?.message} />
+            <InlineErrorAlert title="Couldn't load workspaces" description={error?.message} />
             <Button size="sm" mt={2} onClick={() => refetch()}>
               Retry
             </Button>
@@ -123,7 +123,7 @@ export const WorkspaceSwitcher = ({ onCreateWorkspace }: { onCreateWorkspace: ()
         {status === "success" && (
           <MenuRadioItemGroup
             value={activeValue}
-            title="Switch team"
+            title="Switch workspace"
             onValueChange={(e) => handleSelect(e.value)}
           >
             <MenuRadioItem value={PERSONAL_VALUE}>Personal</MenuRadioItem>
@@ -136,7 +136,7 @@ export const WorkspaceSwitcher = ({ onCreateWorkspace }: { onCreateWorkspace: ()
             ))}
             {showFilter && visibleWorkspaces.length === 0 && (
               <Text px={3} py={2} fontSize="sm" color="fg.muted">
-                No matching teams.
+                No matching workspaces.
               </Text>
             )}
           </MenuRadioItemGroup>
@@ -153,7 +153,7 @@ export const WorkspaceSwitcher = ({ onCreateWorkspace }: { onCreateWorkspace: ()
         )}
         <MenuItem value="create-workspace" onClick={onCreateWorkspace}>
           <FaPlus />
-          Create team
+          Create workspace
         </MenuItem>
       </MenuContent>
     </MenuRoot>

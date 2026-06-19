@@ -21,8 +21,8 @@ import { CreateWorkspaceDialog } from "../CreateWorkspaceDialog";
 import { PendingInvitationsList } from "../PendingInvitationsList";
 
 const LIVE_STATUS_TEXT: Record<string, string> = {
-  loading: "Loading your teams",
-  success: "Teams loaded",
+  loading: "Loading your workspaces",
+  success: "Workspaces loaded",
 };
 
 /**
@@ -45,13 +45,13 @@ export const WorkspacesSettingsSection = () => {
     <>
       <Separator />
       <SettingsSection
-        title="Your teams"
-        description="Teams let you collaborate on feeds with others. Open a team to work in it, or change its settings."
+        title="Your workspaces"
+        description="Workspaces let you collaborate on feeds with others. Open a workspace to work in it, or change its settings."
       >
         <Box>
           <PrimaryActionButton size="sm" onClick={createDisclosure.onOpen}>
             <FaPlus />
-            Create team
+            Create workspace
           </PrimaryActionButton>
         </Box>
         <VisuallyHidden aria-live="polite">{LIVE_STATUS_TEXT[status] ?? ""}</VisuallyHidden>
@@ -63,14 +63,16 @@ export const WorkspacesSettingsSection = () => {
         )}
         {status === "error" && (
           <Box>
-            <InlineErrorAlert title="Failed to load your teams" description={error?.message} />
+            <InlineErrorAlert title="Failed to load your workspaces" description={error?.message} />
             <Button size="sm" mt={3} onClick={() => refetch()}>
               Try again
             </Button>
           </Box>
         )}
         {status === "success" && workspaces?.length === 0 && (
-          <Text color="fg.muted">You&apos;re not in any teams yet. Create one to get started.</Text>
+          <Text color="fg.muted">
+            You&apos;re not in any workspaces yet. Create one to get started.
+          </Text>
         )}
         {status === "success" && !!workspaces?.length && (
           <Stack as="ul" listStyleType="none" gap={3}>

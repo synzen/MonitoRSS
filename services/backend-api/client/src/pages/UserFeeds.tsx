@@ -278,8 +278,8 @@ const UserFeedsInner: React.FC = () => {
 
   const discoveryIntro = currentWorkspace
     ? {
-        heading: "Add feeds for your team",
-        body: `Feeds added here belong to the team and are shared with its members. ${DISCOVERY_BROWSE_HINT}`,
+        heading: "Add feeds for your workspace",
+        body: `Feeds added here belong to the workspace and are shared with its members. ${DISCOVERY_BROWSE_HINT}`,
       }
     : {
         heading: "Get news delivered to your Discord",
@@ -538,13 +538,13 @@ const UserFeedsInner: React.FC = () => {
           {currentWorkspace.name}
         </Heading>
         <Text color="fg.muted" fontSize="sm">
-          Team workspace. Feeds here are shared with members.
+          Workspace. Feeds here are shared with members.
         </Text>
       </Stack>
       <Button asChild variant="outline" size="sm">
         <Link to={pages.workspaceSettings(currentWorkspace.slug)}>
           <FaGear aria-hidden="true" />
-          Team settings
+          Workspace settings
         </Link>
       </Button>
     </Flex>

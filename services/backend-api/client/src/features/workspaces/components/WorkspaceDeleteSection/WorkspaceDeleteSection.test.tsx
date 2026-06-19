@@ -53,7 +53,7 @@ const renderSection = () =>
   );
 
 const openDeleteDialog = async () => {
-  fireEvent.click(screen.getByRole("button", { name: "Delete team" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete workspace" }));
 
   return screen.findByRole("alertdialog");
 };
@@ -70,7 +70,7 @@ describe("WorkspaceDeleteSection", () => {
 
     renderSection();
 
-    expect(screen.getByRole("button", { name: "Delete team" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete workspace" })).toBeInTheDocument();
   });
 
   it("renders nothing for admins", () => {
@@ -81,13 +81,13 @@ describe("WorkspaceDeleteSection", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("keeps the confirm button disabled until the team name is typed exactly", async () => {
+  it("keeps the confirm button disabled until the workspace name is typed exactly", async () => {
     asRole("owner");
 
     renderSection();
 
     const dialog = await openDeleteDialog();
-    const confirmButton = within(dialog).getByRole("button", { name: "Delete team" });
+    const confirmButton = within(dialog).getByRole("button", { name: "Delete workspace" });
     expect(confirmButton).toHaveAttribute("aria-disabled", "true");
 
     const phraseInput = within(dialog).getByLabelText(/type "acme marketing" to confirm/i);
@@ -110,14 +110,14 @@ describe("WorkspaceDeleteSection", () => {
     fireEvent.change(within(dialog).getByLabelText(/type "acme marketing" to confirm/i), {
       target: { value: "Acme Marketing" },
     });
-    fireEvent.click(within(dialog).getByRole("button", { name: "Delete team" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete workspace" }));
 
     await waitFor(() => expect(h.deleteWorkspace).toHaveBeenCalledWith("acme-marketing"));
     expect(h.navigate).toHaveBeenCalledWith(
       "/feeds",
       expect.objectContaining({
         state: expect.objectContaining({
-          alertTitle: "Team deleted",
+          alertTitle: "Workspace deleted",
           alertDescription: expect.stringContaining("Acme Marketing"),
         }),
       }),
@@ -158,7 +158,7 @@ describe("WorkspaceDeleteSection", () => {
     fireEvent.change(within(dialog).getByLabelText(/type "acme marketing" to confirm/i), {
       target: { value: "Acme Marketing" },
     });
-    fireEvent.click(within(dialog).getByRole("button", { name: "Delete team" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete workspace" }));
 
     expect(await within(dialog).findByText("boom")).toBeInTheDocument();
     expect(h.navigate).not.toHaveBeenCalled();
@@ -179,7 +179,7 @@ describe("WorkspaceDeleteSection", () => {
     fireEvent.change(within(dialog).getByLabelText(/type "acme marketing" to confirm/i), {
       target: { value: "Acme Marketing" },
     });
-    fireEvent.click(within(dialog).getByRole("button", { name: "Delete team" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete workspace" }));
 
     expect(await within(dialog).findByText(/you do not have permission/i)).toBeInTheDocument();
     expect(within(dialog).queryByText(/raw server detail/i)).not.toBeInTheDocument();

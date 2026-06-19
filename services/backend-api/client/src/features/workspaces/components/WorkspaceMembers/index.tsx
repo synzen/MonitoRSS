@@ -107,7 +107,7 @@ const InviteForm = ({ workspaceSlug }: { workspaceSlug: string }) => {
           label="Invite by email"
           invalid={!!errors.email}
           errorText={errors.email?.message}
-          helperText="The invitee will receive an email to join this team."
+          helperText="The invitee will receive an email to join this workspace."
         >
           <HStack gap={2} alignSelf="stretch" alignItems="flex-start">
             <Controller
@@ -167,7 +167,7 @@ const MemberRow = ({
       // alert there; a page-scoped alert raised here would unmount on navigate.
       navigate(pages.userFeeds(), {
         state: {
-          alertTitle: "Left team",
+          alertTitle: "Left workspace",
           alertDescription: workspace?.name
             ? `You are no longer a member of ${workspace.name}.`
             : undefined,
@@ -179,7 +179,7 @@ const MemberRow = ({
         title: "Member removed",
         description: workspace?.name
           ? `This member no longer has access to ${workspace.name} and its feeds.`
-          : "This member no longer has access to this team and its feeds.",
+          : "This member no longer has access to this workspace and its feeds.",
       });
     }
   };
@@ -190,7 +190,7 @@ const MemberRow = ({
       title: "Ownership transferred",
       description: workspace?.name
         ? `This member is now the owner of ${workspace.name}. You are now an admin.`
-        : "This member is now the owner of this team. You are now an admin.",
+        : "This member is now the owner of this workspace. You are now an admin.",
     });
   };
 
@@ -259,10 +259,10 @@ const MemberRow = ({
           {showRemove && (
             <DestructiveActionButton
               size="sm"
-              aria-label={isSelf ? "Leave team" : `Remove ${memberName} from the team`}
+              aria-label={isSelf ? "Leave workspace" : `Remove ${memberName} from the workspace`}
               onClick={() => setConfirmOpen(true)}
             >
-              {isSelf ? "Leave team" : "Remove"}
+              {isSelf ? "Leave workspace" : "Remove"}
             </DestructiveActionButton>
           )}
         </HStack>
@@ -270,14 +270,14 @@ const MemberRow = ({
       <ConfirmModal
         open={confirmOpen}
         onOpenChange={onOpenChange}
-        title={isSelf ? "Leave this team?" : "Remove this member?"}
+        title={isSelf ? "Leave this workspace?" : "Remove this member?"}
         description={
           isSelf
-            ? "You will lose access to this team and its feeds. You can rejoin only if invited again."
-            : "This member will lose access to this team and its feeds. They can rejoin only if invited again."
+            ? "You will lose access to this workspace and its feeds. You can rejoin only if invited again."
+            : "This member will lose access to this workspace and its feeds. They can rejoin only if invited again."
         }
         colorScheme="red"
-        okText={isSelf ? "Leave team" : "Remove member"}
+        okText={isSelf ? "Leave workspace" : "Remove member"}
         error={resolveErrorMessage(error)}
         onConfirm={onConfirm}
       />
@@ -289,13 +289,13 @@ const MemberRow = ({
           descriptionNode={
             <Stack gap={3}>
               <Text>
-                This member will become the owner of this team, and you will become an admin. Only
-                the owner can delete the team or manage its billing.
+                This member will become the owner of this workspace, and you will become an admin.
+                Only the owner can delete the workspace or manage its billing.
               </Text>
               {hasSubscription && (
                 <Text>
-                  This team&apos;s subscription will keep billing your payment method until the new
-                  owner updates it from the billing settings.
+                  This workspace&apos;s subscription will keep billing your payment method until the
+                  new owner updates it from the billing settings.
                 </Text>
               )}
             </Stack>
@@ -448,7 +448,7 @@ export const WorkspaceMembers = () => {
   return (
     <SettingsSection
       title="Members"
-      description="People with access to this team and its feeds. Invitations that haven't been accepted yet can be resent or revoked."
+      description="People with access to this workspace and its feeds. Invitations that haven't been accepted yet can be resent or revoked."
     >
       <VisuallyHidden aria-live="polite">{LIVE_STATUS_TEXT[membersStatus] ?? ""}</VisuallyHidden>
       <InviteForm workspaceSlug={workspace.slug} />
@@ -467,7 +467,7 @@ export const WorkspaceMembers = () => {
         </Box>
       )}
       {membersStatus === "success" && (
-        <Stack as="ul" role="list" aria-label="Team members" listStyleType="none" gap={3}>
+        <Stack as="ul" role="list" aria-label="Workspace members" listStyleType="none" gap={3}>
           {members?.map((member) => (
             <MemberRow
               key={member.userId}

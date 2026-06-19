@@ -434,11 +434,11 @@ const ChangeWorkspacePlanDialog = ({
 
 // Pending activation must survive a navigate-away-and-back while the webhook
 // is in flight: payment already succeeded, so the page must not fall back to
-// the "activate this team" pitch. Session-scoped, keyed per workspace.
+// the "activate this workspace" pitch. Session-scoped, keyed per workspace.
 const pendingActivationKey = (workspaceId: string) => `workspacePendingActivation:${workspaceId}`;
 
-// Entry point for moving the owner's personal subscription into this team. Only
-// rendered for an unsubscribed team; the parent gates it further on the
+// Entry point for moving the owner's personal subscription into this workspace. Only
+// rendered for an unsubscribed workspace; the parent gates it further on the
 // server-computed `conversion` read model (owner + convertible personal plan).
 const ConvertPersonalPlanSection = ({
   conversion,
@@ -450,8 +450,8 @@ const ConvertPersonalPlanSection = ({
   if (!conversion.eligible) {
     return (
       <Text fontSize="sm" color="fg.muted">
-        Your personal plan can&apos;t fund a team. Buy a team plan directly using one of the options
-        below.
+        Your personal plan can&apos;t fund a workspace. Buy a workspace plan directly using one of
+        the options below.
       </Text>
     );
   }
@@ -475,11 +475,11 @@ const ConvertPersonalPlanSection = ({
       <Stack gap={1}>
         <Text fontWeight="medium">Already paying for a personal plan?</Text>
         <Text fontSize="sm" color="fg.muted">
-          Move it to this team and bring your feeds, instead of paying for two plans.
+          Move it to this workspace and bring your feeds, instead of paying for two plans.
         </Text>
       </Stack>
       <Button variant="outline" onClick={onStartConvert} flexShrink={0}>
-        Move my plan to this team
+        Move my plan to this workspace
       </Button>
     </Flex>
   );
@@ -624,7 +624,7 @@ const WorkspacePaymentMethodSection = ({
   return (
     <SettingsSection
       title="Payment method"
-      description="Replace the card on file for this team's subscription. A secure Paddle checkout opens to enter the new card; details are not stored here."
+      description="Replace the card on file for this workspace's subscription. A secure Paddle checkout opens to enter the new card; details are not stored here."
     >
       <Stack gap={3} alignItems="flex-start">
         <SafeLoadingButton
@@ -840,7 +840,7 @@ export const WorkspaceBilling = () => {
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
               <RouterLink to={pages.workspaceSettings(currentWorkspace.slug)}>
-                Team settings
+                Workspace settings
               </RouterLink>
             </BreadcrumbLink>
           </BreadcrumbItem>
@@ -878,7 +878,7 @@ export const WorkspaceBilling = () => {
         <Stack gap={10} separator={<StackSeparator />}>
           <SettingsSection
             title="Current plan"
-            description="The team's active subscription and its renewal schedule."
+            description="The workspace's active subscription and its renewal schedule."
           >
             {/* Plan name, capacity, and renewal status are one block of plan
                 facts, so they sit tight together; the section's larger gap is
@@ -915,7 +915,7 @@ export const WorkspaceBilling = () => {
                 )
               )}
             </Stack>
-            {!isOwner && <Text>Only the team owner can manage billing.</Text>}
+            {!isOwner && <Text>Only the workspace owner can manage billing.</Text>}
             {isOwner && subscription.cancellationDate && (
               <Box>
                 <PrimaryActionButton
@@ -943,7 +943,7 @@ export const WorkspaceBilling = () => {
           {isOwner && !subscription.cancellationDate && (
             <SettingsSection
               title="Change plan"
-              description="Compare tiers and switch this team to a different one. Tier 3 can be extended with additional feeds. You will see the prorated cost before confirming."
+              description="Compare tiers and switch this workspace to a different one. Tier 3 can be extended with additional feeds. You will see the prorated cost before confirming."
             >
               <SimpleGrid columns={{ base: 1, md: 2 }} gap={4} maxW="40rem" role="list">
                 {WORKSPACE_TIERS.map((tier) => {
@@ -973,7 +973,7 @@ export const WorkspaceBilling = () => {
                             ]
                           : []),
                       ],
-                      description: `Switch this team to ${PRODUCT_NAMES[tier]} (${totalFeeds} feeds).`,
+                      description: `Switch this workspace to ${PRODUCT_NAMES[tier]} (${totalFeeds} feeds).`,
                       recurringPriceFormatted: getTierPrice(tier, subscriptionInterval),
                       tierChange: currentTier
                         ? {
@@ -1017,7 +1017,7 @@ export const WorkspaceBilling = () => {
                             </Button>
                           ) : (
                             <Text fontSize="sm" color="fg.muted">
-                              This is your team&apos;s current plan.
+                              This is your workspace&apos;s current plan.
                             </Text>
                           )
                         ) : (
@@ -1039,12 +1039,12 @@ export const WorkspaceBilling = () => {
           {isOwner && !subscription.cancellationDate && (
             <SettingsSection
               title="Cancel subscription"
-              description="Stops the team's subscription at the end of the current billing period."
+              description="Stops the workspace's subscription at the end of the current billing period."
             >
               <Box>
                 <ConfirmModal
-                  title="Cancel team subscription?"
-                  description="The subscription stays active until the end of the paid period. After that, the team's feeds are disabled (not deleted) until you resubscribe."
+                  title="Cancel workspace subscription?"
+                  description="The subscription stays active until the end of the paid period. After that, the workspace's feeds are disabled (not deleted) until you resubscribe."
                   okText="Confirm"
                   colorScheme="red"
                   error={cancelMutation.error?.message}
@@ -1057,17 +1057,17 @@ export const WorkspaceBilling = () => {
         </Stack>
       ) : (
         <SettingsSection
-          title="Activate this team"
+          title="Activate this workspace"
           description={
             isOwner
-              ? "Subscribe to enable feeds for this team. Members and settings keep working either way."
+              ? "Subscribe to enable feeds for this workspace. Members and settings keep working either way."
               : undefined
           }
         >
           {!isOwner ? (
             <Text>
-              This team doesn&apos;t have an active subscription. Only the team owner can manage
-              billing.
+              This workspace doesn&apos;t have an active subscription. Only the workspace owner can
+              manage billing.
             </Text>
           ) : (
             <Stack gap={4}>

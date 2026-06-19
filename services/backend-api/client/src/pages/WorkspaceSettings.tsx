@@ -19,10 +19,10 @@ export const WorkspaceSettingsPage = () => {
           <Stack gap={10}>
             <Stack gap={1}>
               <Heading as="h1" size="lg">
-                Team settings
+                Workspace settings
               </Heading>
               <Text color="fg.muted">
-                Manage this team&apos;s profile, integrations, and members.
+                Manage this workspace&apos;s profile, integrations, and members.
               </Text>
             </Stack>
             <Stack gap={10} separator={<StackSeparator />}>

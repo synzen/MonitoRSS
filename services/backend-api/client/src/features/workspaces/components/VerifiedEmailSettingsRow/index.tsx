@@ -26,8 +26,8 @@ export const VerifiedEmailSettingsRow = ({ onChanged }: Props) => {
   return (
     <>
       <Field
-        label="Verified team email"
-        helperText="Used for team invitations and member notices. Change it to verify a different address you own."
+        label="Verified workspace email"
+        helperText="Used for workspace invitations and member notices. Change it to verify a different address you own."
       >
         <HStack gap={2} alignSelf="stretch" alignItems="center">
           <Input flex="1" readOnly value={verifiedEmail || "(no verified email)"} />

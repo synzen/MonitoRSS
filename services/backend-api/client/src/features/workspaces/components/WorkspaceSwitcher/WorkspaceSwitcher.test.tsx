@@ -59,7 +59,7 @@ describe("WorkspaceSwitcher", () => {
 
     expect(
       screen.getByRole("button", {
-        name: "Switch team, current: Personal",
+        name: "Switch workspace, current: Personal",
       }),
     ).toBeInTheDocument();
   });
@@ -72,7 +72,9 @@ describe("WorkspaceSwitcher", () => {
 
     renderSwitcher();
 
-    expect(screen.getByRole("button", { name: "Switch team, current: Acme" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Switch workspace, current: Acme" }),
+    ).toBeInTheDocument();
   });
 
   it("lists Personal plus each workspace, with the active one checked", async () => {
@@ -85,7 +87,7 @@ describe("WorkspaceSwitcher", () => {
     });
 
     renderSwitcher();
-    fireEvent.click(screen.getByRole("button", { name: /switch team/i }));
+    fireEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
 
     expect(await screen.findByRole("menuitemradio", { name: "Personal" })).toHaveAttribute(
       "aria-checked",
@@ -104,7 +106,7 @@ describe("WorkspaceSwitcher", () => {
     });
 
     renderSwitcher();
-    await userEvent.click(screen.getByRole("button", { name: /switch team/i }));
+    await userEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
     await userEvent.click(await screen.findByRole("menuitemradio", { name: "Personal" }));
 
     expect(h.navigate).toHaveBeenCalledWith("/feeds");
@@ -116,7 +118,7 @@ describe("WorkspaceSwitcher", () => {
     });
 
     renderSwitcher();
-    await userEvent.click(screen.getByRole("button", { name: /switch team/i }));
+    await userEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
     await userEvent.click(await screen.findByRole("menuitemradio", { name: "Acme" }));
 
     expect(h.navigate).toHaveBeenCalledWith("/workspaces/acme-marketing/feeds");
@@ -128,9 +130,9 @@ describe("WorkspaceSwitcher", () => {
     });
 
     renderSwitcher();
-    fireEvent.click(screen.getByRole("button", { name: /switch team/i }));
+    fireEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
 
-    expect(await screen.findByRole("menuitem", { name: /create team/i })).toBeInTheDocument();
+    expect(await screen.findByRole("menuitem", { name: /create workspace/i })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /settings/i })).not.toBeInTheDocument();
   });
 
@@ -141,7 +143,7 @@ describe("WorkspaceSwitcher", () => {
     });
 
     renderSwitcher();
-    fireEvent.click(screen.getByRole("button", { name: /switch team/i }));
+    fireEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
 
     expect(await screen.findByRole("menuitem", { name: /Acme settings/i })).toBeInTheDocument();
   });
@@ -152,9 +154,9 @@ describe("WorkspaceSwitcher", () => {
     });
 
     const onCreateWorkspace = renderSwitcher();
-    fireEvent.click(screen.getByRole("button", { name: /switch team/i }));
+    fireEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
     const items = await screen.findAllByRole("menuitem", {
-      name: /create team/i,
+      name: /create workspace/i,
     });
     fireEvent.click(items[items.length - 1]);
 
@@ -171,9 +173,9 @@ describe("WorkspaceSwitcher", () => {
     });
 
     renderSwitcher();
-    fireEvent.click(screen.getByRole("button", { name: /switch team/i }));
+    fireEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't load teams");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't load workspaces");
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(refetch).toHaveBeenCalled();
   });

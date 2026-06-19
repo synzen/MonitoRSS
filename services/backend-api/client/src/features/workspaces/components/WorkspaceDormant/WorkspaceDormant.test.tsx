@@ -64,7 +64,7 @@ describe("WorkspaceDormantBanner", () => {
 
     renderInRouter(<WorkspaceDormantBanner />);
 
-    expect(screen.getByText(/team owner/i)).toBeInTheDocument();
+    expect(screen.getByText(/workspace owner/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /activate/i })).not.toBeInTheDocument();
   });
 
@@ -125,7 +125,7 @@ describe("WorkspaceActivationEmptyState", () => {
 
     renderInRouter(<WorkspaceActivationEmptyState />);
 
-    expect(screen.getByText(/team owner/i)).toBeInTheDocument();
+    expect(screen.getByText(/workspace owner/i)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /activate/i })).not.toBeInTheDocument();
   });
 

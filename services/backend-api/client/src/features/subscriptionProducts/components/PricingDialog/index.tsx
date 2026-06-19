@@ -731,7 +731,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                             with them. Note that each shared feed counts toward the feed limit of
                             the person who accepts it.
                             {workspacesEnabled &&
-                              " If you want a fully shared space instead, you can create a team with its own plan. Feeds in a team count against the team's limit, not any member's personal limit."}
+                              " If you want a fully shared space instead, you can create a workspace with its own plan. Feeds in a workspace count against the workspace's limit, not any member's personal limit."}
                           </Text>
                         ),
                       },
@@ -742,8 +742,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                               a: (
                                 <Text>
                                   Not a personal one. Personal plans only cover feeds that you own.
-                                  To manage feeds together, create a team: the team subscribes to a
-                                  plan of its own, and every member manages the team&apos;s feeds.
+                                  To manage feeds together, create a workspace: the workspace
+                                  subscribes to a plan of its own, and every member manages the
+                                  workspace&apos;s feeds.
                                 </Text>
                               ),
                             },

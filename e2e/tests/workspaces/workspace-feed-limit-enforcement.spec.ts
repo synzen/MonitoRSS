@@ -148,11 +148,11 @@ test.describe("Workspace feed limit enforcement", () => {
     // Enter the workspace through the switcher and anchor on the committed scope.
     await page.reload();
     await waitForAuthenticatedApp(page);
-    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
     await page.getByRole("menuitemradio", { name: workspaceName }).click();
     await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/feeds$`), { timeout: 15000 });
     await expect(
-      page.getByRole("button", { name: `Switch team, current: ${workspaceName}` }),
+      page.getByRole("button", { name: `Switch workspace, current: ${workspaceName}` }),
     ).toBeVisible({ timeout: 15000 });
 
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });

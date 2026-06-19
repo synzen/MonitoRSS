@@ -43,8 +43,8 @@ export const UserFeedDisabledAlert = () => {
   const retryAction =
     feed?.isWorkspaceFeed && workspaceDormant ? (
       <Text>
-        This feed can&apos;t be re-enabled because the team is not subscribed. The team owner can
-        activate a subscription from the team&apos;s Billing page.
+        This feed can&apos;t be re-enabled because the workspace is not subscribed. The workspace
+        owner can activate a subscription from the workspace&apos;s Billing page.
       </Text>
     ) : (
       <RefreshUserFeedButton />
@@ -132,11 +132,13 @@ export const UserFeedDisabledAlert = () => {
       return (
         <Alert.Root status="error">
           <Alert.Content>
-            <Alert.Title>This feed is disabled because the team is not subscribed.</Alert.Title>
+            <Alert.Title>
+              This feed is disabled because the workspace is not subscribed.
+            </Alert.Title>
             <Alert.Description display="block">
               <span>
-                Feeds are restored automatically when the team owner activates a subscription from
-                the team&apos;s Billing page.
+                Feeds are restored automatically when the workspace owner activates a subscription
+                from the workspace&apos;s Billing page.
               </span>
             </Alert.Description>
           </Alert.Content>

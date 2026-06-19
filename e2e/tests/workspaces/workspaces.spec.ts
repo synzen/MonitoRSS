@@ -29,37 +29,37 @@ test.describe("Workspaces", () => {
     await waitForAuthenticatedApp(page);
 
     // 0 workspaces -> no switcher; the create entry lives in the account menu.
-    await expect(page.getByRole("button", { name: /switch team/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /switch workspace/i })).toHaveCount(0);
     await page.getByRole("button", { name: "Account settings" }).click();
-    await page.getByRole("menuitem", { name: /create a team/i }).click();
+    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
 
     const dialog = page.getByRole("dialog");
     const workspaceName = `E2E Workspace ${discordUserId}`;
-    await dialog.getByLabel("Team name").fill(workspaceName);
-    await dialog.getByRole("button", { name: "Create team" }).click();
+    await dialog.getByLabel("Workspace name").fill(workspaceName);
+    await dialog.getByRole("button", { name: "Create workspace" }).click();
 
     // Redirected into the workspace — a fresh workspace has no feeds, so the
     // scoped feeds page renders the discovery UI with the workspace heading.
     await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
     await expect(
-      page.getByRole("heading", { name: "Add feeds for your team" }),
+      page.getByRole("heading", { name: "Add feeds for your workspace" }),
     ).toBeVisible();
 
     // The switcher now exists in the header and reflects the active workspace.
     await expect(
-      page.getByRole("button", { name: `Switch team, current: ${workspaceName}` }),
+      page.getByRole("button", { name: `Switch workspace, current: ${workspaceName}` }),
     ).toBeVisible();
 
     // The workspace is also listed under "Your workspaces" in Account Settings
     // (upgrade path B), with a working Settings link into its settings page.
     await page.getByRole("button", { name: "Account settings" }).click();
     await page.getByRole("menuitem", { name: /account settings/i }).click();
-    await expect(page.getByRole("heading", { name: "Your teams" })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Your workspaces" })).toBeVisible({
       timeout: 15000,
     });
     await page.getByRole("link", { name: `${workspaceName} settings` }).click();
     await expect(page).toHaveURL(/\/workspaces\/[^/]+\/settings$/, { timeout: 15000 });
-    await expect(page.getByRole("heading", { name: "Team settings" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Workspace settings" })).toBeVisible();
   });
 
   test("gates workspace creation behind email verification when no verified email exists", async ({
@@ -75,14 +75,14 @@ test.describe("Workspaces", () => {
     await waitForAuthenticatedApp(page);
 
     await page.getByRole("button", { name: "Account settings" }).click();
-    await page.getByRole("menuitem", { name: /create a team/i }).click();
+    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByLabel("Email address")).toBeVisible();
     await expect(dialog.getByRole("button", { name: /send code/i })).toBeVisible();
     // The name form / create action is not reachable until an email is verified.
-    await expect(dialog.getByLabel("Team name")).toHaveCount(0);
-    await expect(dialog.getByRole("button", { name: "Create team" })).toHaveCount(0);
+    await expect(dialog.getByLabel("Workspace name")).toHaveCount(0);
+    await expect(dialog.getByRole("button", { name: "Create workspace" })).toHaveCount(0);
   });
 
   test("exposes no workspaces UI without the feature flag", async ({ page }) => {
@@ -91,9 +91,9 @@ test.describe("Workspaces", () => {
     // No workspaces flag seeded for this user.
 
     // No switcher, and no create-workspace entry in the account menu.
-    await expect(page.getByRole("button", { name: /switch team/i })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /switch workspace/i })).toHaveCount(0);
     await page.getByRole("button", { name: "Account settings" }).click();
-    await expect(page.getByRole("menuitem", { name: /create a team/i })).toHaveCount(0);
+    await expect(page.getByRole("menuitem", { name: /create a workspace/i })).toHaveCount(0);
   });
 
   test("leaves the personal feeds dashboard unchanged", async ({ page }) => {

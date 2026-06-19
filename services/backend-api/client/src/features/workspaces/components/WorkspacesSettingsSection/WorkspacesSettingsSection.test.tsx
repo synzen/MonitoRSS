@@ -19,7 +19,7 @@ vi.mock("../CreateWorkspaceDialog", () => ({
 }));
 
 // The pending-invitations list has its own hook dependencies and is covered by
-// its own test; stub it so this test stays focused on the "Your teams" section.
+// its own test; stub it so this test stays focused on the "Your workspaces" section.
 vi.mock("../PendingInvitationsList", () => ({
   PendingInvitationsList: () => null,
 }));
@@ -55,8 +55,8 @@ describe("WorkspacesSettingsSection", () => {
 
     renderSection();
 
-    expect(screen.queryByRole("heading", { name: "Your teams" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /create team/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Your workspaces" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /create workspace/i })).not.toBeInTheDocument();
   });
 
   it("shows an empty state when the user is in no workspaces", () => {
@@ -65,8 +65,8 @@ describe("WorkspacesSettingsSection", () => {
 
     renderSection();
 
-    expect(screen.getByRole("heading", { name: "Your teams" })).toBeInTheDocument();
-    expect(screen.getByText(/not in any teams yet/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your workspaces" })).toBeInTheDocument();
+    expect(screen.getByText(/not in any workspaces yet/i)).toBeInTheDocument();
   });
 
   it("lists each workspace with Open and Settings links using slug, and shows the role", () => {
@@ -105,7 +105,7 @@ describe("WorkspacesSettingsSection", () => {
     mockWorkspaces({ workspaces: [] });
 
     renderSection();
-    fireEvent.click(screen.getByRole("button", { name: /create team/i }));
+    fireEvent.click(screen.getByRole("button", { name: /create workspace/i }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
@@ -122,7 +122,7 @@ describe("WorkspacesSettingsSection", () => {
 
     renderSection();
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Failed to load your teams");
+    expect(screen.getByRole("alert")).toHaveTextContent("Failed to load your workspaces");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(refetch).toHaveBeenCalled();
   });

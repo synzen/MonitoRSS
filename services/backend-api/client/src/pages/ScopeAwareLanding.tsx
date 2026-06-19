@@ -1,4 +1,4 @@
-import { Spinner } from "@chakra-ui/react";
+import { Center, Spinner } from "@chakra-ui/react";
 import { Navigate } from "react-router-dom";
 import { pages } from "../constants";
 import { useUserMe } from "@/features/discordUser";
@@ -21,12 +21,20 @@ export const ScopeAwareLanding = () => {
   const { workspace, status: workspaceStatus } = useWorkspace({ workspaceSlug });
 
   if (flagStatus === "loading") {
-    return <Spinner mt={24} />;
+    return (
+      <Center height="100%" mt={24}>
+        <Spinner />
+      </Center>
+    );
   }
 
   if (workspaceSlug) {
     if (workspaceStatus === "loading") {
-      return <Spinner mt={24} />;
+      return (
+        <Center height="100%" mt={24}>
+          <Spinner />
+        </Center>
+      );
     }
 
     if (workspace) {

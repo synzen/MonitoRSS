@@ -579,7 +579,7 @@ describe("WorkspaceBilling", () => {
 
     // The owner navigates away and back before the activation webhook lands;
     // payment already succeeded, so the page must not fall back to the
-    // "activate this team" pitch as if nothing happened.
+    // "activate this workspace" pitch as if nothing happened.
     firstMount.unmount();
     renderBilling();
 
@@ -600,7 +600,7 @@ describe("WorkspaceBilling", () => {
     expect(
       screen.queryByRole("button", { name: /update payment method/i }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText(/only the team owner can manage billing/i)).toBeInTheDocument();
+    expect(screen.getByText(/only the workspace owner can manage billing/i)).toBeInTheDocument();
   });
 
   it("lets the owner cancel an active subscription after confirming", async () => {
@@ -767,14 +767,14 @@ describe("WorkspaceBilling", () => {
     renderBilling();
 
     expect(
-      await screen.findByRole("button", { name: /move my plan to this team/i }),
+      await screen.findByRole("button", { name: /move my plan to this workspace/i }),
     ).toBeInTheDocument();
   });
 
   const personalFeed = (overrides: { id: string; title: string }) => overrides;
 
   const openConvertDialog = async () => {
-    fireEvent.click(await screen.findByRole("button", { name: /move my plan to this team/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /move my plan to this workspace/i }));
   };
 
   // Under the limit, the feed list is tucked behind a disclosure; expand it to
@@ -828,7 +828,7 @@ describe("WorkspaceBilling", () => {
     expect(marker).toBeVisible();
   });
 
-  it("converts the selected feeds after the owner types the team slug to confirm", async () => {
+  it("converts the selected feeds after the owner types the workspace slug to confirm", async () => {
     h.convert.mockResolvedValue(undefined);
     mockPaddle();
     mockWorkspace({
@@ -1083,7 +1083,7 @@ describe("WorkspaceBilling", () => {
     expect(alphaMarker).not.toBeVisible();
   });
 
-  it("tells a Free/Tier 1 owner to buy a team plan directly instead of offering conversion", async () => {
+  it("tells a Free/Tier 1 owner to buy a workspace plan directly instead of offering conversion", async () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
@@ -1093,9 +1093,9 @@ describe("WorkspaceBilling", () => {
 
     renderBilling();
 
-    expect(await screen.findByText(/buy a team plan directly/i)).toBeInTheDocument();
+    expect(await screen.findByText(/buy a workspace plan directly/i)).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /move my plan to this team/i }),
+      screen.queryByRole("button", { name: /move my plan to this workspace/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -1108,9 +1108,9 @@ describe("WorkspaceBilling", () => {
     // The activation pitch still renders, but nothing about conversion.
     await screen.findByRole("button", { name: /subscribe to tier 2/i });
     expect(
-      screen.queryByRole("button", { name: /move my plan to this team/i }),
+      screen.queryByRole("button", { name: /move my plan to this workspace/i }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText(/buy a team plan directly/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/buy a workspace plan directly/i)).not.toBeInTheDocument();
   });
 
   const mockChangePreview = (overrides: Record<string, unknown> = {}) => {

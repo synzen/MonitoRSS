@@ -27,7 +27,7 @@ interface Props {
  *
  * Workspaces: the workspace switcher is count-gated here — it renders only when the
  * feature is enabled AND the user belongs to >=1 workspace. At 0 workspaces the header is
- * unchanged except for a "Create a team" entry in the account menu.
+ * unchanged except for a "Create a workspace" entry in the account menu.
  */
 export const AppHeader = ({ invertBackground }: Props) => {
   const { data: discordBotData, status, error } = useDiscordBot();
@@ -60,7 +60,7 @@ export const AppHeader = ({ invertBackground }: Props) => {
           workspacesEnabled && !hasWorkspaces ? (
             <MenuItem value="create-workspace" onClick={createWorkspaceDisclosure.onOpen}>
               <FaPlus />
-              Create a team
+              Create a workspace
             </MenuItem>
           ) : undefined
         }

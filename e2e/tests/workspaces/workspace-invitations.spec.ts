@@ -102,7 +102,7 @@ test.describe("Workspace invitations (invitee side)", () => {
       timeout: 15000,
     });
 
-    const switcher = page.getByRole("button", { name: /Switch team/ });
+    const switcher = page.getByRole("button", { name: /Switch workspace/ });
     await expect(switcher).toBeVisible({ timeout: 15000 });
     await switcher.click();
     await expect(page.getByRole("menuitemradio", { name: workspaceA })).toBeVisible();

@@ -41,14 +41,14 @@ async function waitForCommittedScope(page: Page, scopeName: string | RegExp): Pr
     page.getByRole("button", {
       name:
         typeof scopeName === "string"
-          ? `Switch team, current: ${scopeName}`
+          ? `Switch workspace, current: ${scopeName}`
           : scopeName,
     }),
   ).toBeVisible({ timeout: 15000 });
 }
 
 async function switchToPersonalScope(page: Page): Promise<void> {
-  await page.getByRole("button", { name: /Switch team/ }).click();
+  await page.getByRole("button", { name: /Switch workspace/ }).click();
   await page.getByRole("menuitemradio", { name: /personal/i }).click();
   await expect(page).toHaveURL(/\/feeds$/, { timeout: 15000 });
   await waitForCommittedScope(page, "Personal");
@@ -56,14 +56,14 @@ async function switchToPersonalScope(page: Page): Promise<void> {
 
 async function createWorkspace(page: Page, workspaceName: string): Promise<string> {
   await page.getByRole("button", { name: "Account settings" }).click();
-  await page.getByRole("menuitem", { name: /create a team/i }).click();
+  await page.getByRole("menuitem", { name: /create a workspace/i }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Team name").fill(workspaceName);
-  await dialog.getByRole("button", { name: "Create team" }).click();
+  await dialog.getByLabel("Workspace name").fill(workspaceName);
+  await dialog.getByRole("button", { name: "Create workspace" }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
   // The switcher may briefly label the fresh workspace "Team" until the workspaces
   // list refetches, so anchor on "any non-Personal scope" rather than the exact name.
-  await waitForCommittedScope(page, /Switch team, current: (?!Personal$)/);
+  await waitForCommittedScope(page, /Switch workspace, current: (?!Personal$)/);
   const slug = page.url().match(/\/workspaces\/([^/]+)\/feeds/)?.[1];
   expect(slug).toBeTruthy();
   return slug as string;
@@ -71,7 +71,7 @@ async function createWorkspace(page: Page, workspaceName: string): Promise<strin
 
 // In workspace scope, the switcher menu carries a direct "<name> settings" entry.
 async function gotoWorkspaceSettingsViaSwitcher(page: Page, workspaceName: string): Promise<void> {
-  await page.getByRole("button", { name: /Switch team/ }).click();
+  await page.getByRole("button", { name: /Switch workspace/ }).click();
   await page.getByRole("menuitem", { name: `${workspaceName} settings` }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/settings$/, { timeout: 15000 });
 }
@@ -80,7 +80,7 @@ async function gotoWorkspaceSettingsViaSwitcher(page: Page, workspaceName: strin
 // navigation, so hop through Personal and back to land on the workspace feeds page.
 async function gotoWorkspaceFeedsViaSwitcher(page: Page, workspaceName: string): Promise<void> {
   await switchToPersonalScope(page);
-  await page.getByRole("button", { name: /Switch team/ }).click();
+  await page.getByRole("button", { name: /Switch workspace/ }).click();
   await page.getByRole("menuitemradio", { name: workspaceName }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
   await waitForCommittedScope(page, workspaceName);
@@ -285,7 +285,7 @@ test.describe("Workspace Reddit connection", () => {
       await pageB.reload();
       await waitForAuthenticatedApp(pageB);
 
-      await pageB.getByRole("button", { name: /Switch team/ }).click();
+      await pageB.getByRole("button", { name: /Switch workspace/ }).click();
       await pageB.getByRole("menuitemradio", { name: workspaceName }).click();
       await expect(pageB).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
       await gotoWorkspaceSettingsViaSwitcher(pageB, workspaceName);
@@ -307,7 +307,7 @@ test.describe("Workspace Reddit connection", () => {
     await waitForAuthenticatedApp(page);
     await page.getByRole("button", { name: "Account settings" }).click();
     await page.getByRole("menuitem", { name: /account settings/i }).click();
-    await expect(page.getByRole("heading", { name: "Your teams" })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "Your workspaces" })).toBeVisible({
       timeout: 15000,
     });
     await page.getByRole("link", { name: `${workspaceName} settings` }).click();

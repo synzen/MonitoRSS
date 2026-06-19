@@ -157,36 +157,36 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   TOO_MANY_REQUESTS: "Too many requests. Please wait a moment and try again.",
   EMAIL_ALREADY_IN_USE: "This email is already in use by another account.",
   EMAIL_NOT_VERIFIED: "A verified email is required to perform this action.",
-  WORKSPACE_NOT_FOUND: "This team no longer exists, or you do not have access to it.",
+  WORKSPACE_NOT_FOUND: "This workspace no longer exists, or you do not have access to it.",
   WORKSPACE_NOT_SUBSCRIBED:
-    "This team doesn't have an active subscription, so feeds can't be added. Activate the team from its Billing page.",
+    "This workspace doesn't have an active subscription, so feeds can't be added. Activate the workspace from its Billing page.",
   WORKSPACE_NEVER_ACTIVATED_EXISTS:
-    "You already have a team that hasn't been activated. Activate or delete it before creating another team.",
+    "You already have a workspace that hasn't been activated. Activate or delete it before creating another workspace.",
   WORKSPACE_INSUFFICIENT_ROLE: "You do not have permission to do this.",
-  WORKSPACE_SLUG_TAKEN: "This URL is already taken by another team.",
+  WORKSPACE_SLUG_TAKEN: "This URL is already taken by another workspace.",
   WORKSPACE_SLUG_RESERVED: "This URL is reserved. Please choose another.",
   WORKSPACE_INVITE_NOT_FOUND:
     "This invitation no longer exists. It may have already been accepted, declined, or revoked.",
   WORKSPACE_INVITE_EMAIL_UNVERIFIED: "Verify the invited email address to accept this invitation.",
   WORKSPACE_INVITE_EMAIL_MISMATCH: "Verify the invited email address to accept this invitation.",
-  WORKSPACE_MEMBER_ALREADY_EXISTS: "This email already belongs to a member of this team.",
-  WORKSPACE_INVITE_ALREADY_MEMBER: "You are already a member of this team.",
-  WORKSPACE_ALREADY_INVITED: "This email already has a pending invitation to this team.",
+  WORKSPACE_MEMBER_ALREADY_EXISTS: "This email already belongs to a member of this workspace.",
+  WORKSPACE_INVITE_ALREADY_MEMBER: "You are already a member of this workspace.",
+  WORKSPACE_ALREADY_INVITED: "This email already has a pending invitation to this workspace.",
   WORKSPACE_INVITE_EMAIL_UNAVAILABLE:
     "The invitation email could not be sent because email delivery is currently unavailable. Please try again later.",
   WORKSPACE_INVITE_RESEND_TOO_SOON: "Please wait a moment before resending this invitation.",
   WORKSPACE_INVITE_LIMIT_REACHED:
-    "This team has reached its limit of pending invitations. Revoke a pending invitation before sending another.",
+    "This workspace has reached its limit of pending invitations. Revoke a pending invitation before sending another.",
   CANNOT_REMOVE_LAST_OWNER:
-    "A team must have at least one owner. Transfer ownership before removing this member.",
+    "A workspace must have at least one owner. Transfer ownership before removing this member.",
   WORKSPACE_TRANSFER_TARGET_INVALID:
-    "Ownership can only be transferred to an existing admin member of this team.",
+    "Ownership can only be transferred to an existing admin member of this workspace.",
   SUBSCRIPTION_ALREADY_CANCELLED:
     "This subscription has already been cancelled. Try refreshing the page to see your current plan.",
   WORKSPACE_BILLING_NOT_CONFIGURED:
-    "Billing is not available on this instance, so team subscriptions cannot be managed here.",
+    "Billing is not available on this instance, so workspace subscriptions cannot be managed here.",
   WORKSPACE_INVALID_TIER:
-    "This plan is not available for teams. Choose one of the team plans and try again.",
+    "This plan is not available for workspaces. Choose one of the workspace plans and try again.",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

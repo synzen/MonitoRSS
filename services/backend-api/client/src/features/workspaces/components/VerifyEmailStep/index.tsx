@@ -11,7 +11,7 @@ interface Props {
   defaultEmail?: string;
   onVerified: () => void;
   /**
-   * Replaces the default "verify an email to create a team" intro. Used by the
+   * Replaces the default "verify an email to create a workspace" intro. Used by the
    * invitation flow, where the email being verified is the invited address.
    */
   intro?: React.ReactNode;
@@ -200,8 +200,8 @@ export const VerifyEmailStep = ({
           <Text>
             {intro ?? (
               <>
-                To create a team, first verify an email address you own. We&apos;ll send a one-time
-                code to confirm it.
+                To create a workspace, first verify an email address you own. We&apos;ll send a
+                one-time code to confirm it.
               </>
             )}
           </Text>

@@ -28,7 +28,7 @@ export const WorkspaceDeleteSection = () => {
     // alert there; a page-scoped alert raised here would unmount on navigate.
     navigate(pages.userFeeds(), {
       state: {
-        alertTitle: "Team deleted",
+        alertTitle: "Workspace deleted",
         alertDescription: `${workspace.name} and all of its feeds have been deleted.`,
       },
     });
@@ -36,12 +36,12 @@ export const WorkspaceDeleteSection = () => {
 
   return (
     <SettingsSection
-      title="Delete team"
-      description="Permanently delete this team and all of its feeds for every member. This cannot be undone."
+      title="Delete workspace"
+      description="Permanently delete this workspace and all of its feeds for every member. This cannot be undone."
     >
       <Box>
         <DestructiveActionButton onClick={() => setConfirmOpen(true)}>
-          Delete team
+          Delete workspace
         </DestructiveActionButton>
       </Box>
       <ConfirmModal
@@ -54,13 +54,13 @@ export const WorkspaceDeleteSection = () => {
             reset();
           }
         }}
-        title="Delete this team?"
+        title="Delete this workspace?"
         description={`This will permanently delete ${workspace.name} and all of its feeds for every member.${
           isPaddleConfigured ? " Any active subscription will be cancelled." : ""
         } This cannot be undone.`}
         confirmationPhrase={workspace.name}
         colorScheme="red"
-        okText="Delete team"
+        okText="Delete workspace"
         error={
           error
             ? (error.errorCode && getStandardErrorCodeMessage(error.errorCode as ApiErrorCode)) ||
