@@ -12,6 +12,7 @@ import { SendTestArticleProvider } from "./features/feedConnections/discordChann
 import Pages from "./pages";
 import { ScopeNavigationContainer } from "./pages/ScopeNavigationContainer";
 import { AccessibleNavigationAnnouncer } from "./components/AccessibleNavigationAnnouncer";
+import { AppFooter } from "./components";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -27,6 +28,7 @@ const App: React.FC = () => {
         <ScopeNavigationContainer>
           <Pages />
         </ScopeNavigationContainer>
+        <AppFooter />
       </SendTestArticleProvider>
     </Box>
   );

@@ -13,6 +13,7 @@ export * from "./InlineErrorAlert";
 export * from "./HelpDialog";
 export * from "./AnimatedComponent";
 export * from "./NewHeader";
+export * from "./AppFooter";
 export * from "./SaveUnsavedChangesPopupBar";
 export * from "./FAQ";
 export * from "./ResizablePanel";
