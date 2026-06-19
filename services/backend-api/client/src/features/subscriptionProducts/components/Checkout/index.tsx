@@ -6,6 +6,7 @@ import {
   Flex,
   Heading,
   HStack,
+  Icon,
   Skeleton,
   Stack,
   TableRoot,
@@ -200,7 +201,12 @@ export const Checkout = ({ cancelUrl }: Props) => {
                     alignItems="center"
                     h="100%"
                   >
-                    <FaCircleCheck color="var(--app-text-success)" fontSize={52} />
+                    <Icon
+                      as={FaCircleCheck}
+                      color="text.success"
+                      boxSize={14}
+                      aria-hidden="true"
+                    />
                     <Heading ref={headingRef} fontWeight={600} fontSize="lg" as="h1" tabIndex={-1}>
                       Your benefits have been provisioned.
                     </Heading>

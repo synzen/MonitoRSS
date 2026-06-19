@@ -50,7 +50,7 @@ export const AccessibleNavigationAnnouncer = () => {
         const h1Element = document.querySelector("h1");
 
         if (h1Element) {
-          h1Element.focus();
+          h1Element.focus({ preventScroll: true });
         }
       }, 500);
     } else {

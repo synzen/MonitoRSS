@@ -157,8 +157,15 @@ test.describe("Paddle workspace conversion", () => {
     // the "Current plan" badge region, so scope to the heading to stay unique.
     await expect(page.getByRole("heading", { name: "Tier 2" })).toBeVisible();
 
-    // 6a. The moved feed is active in the team scope.
-    await page.goto(`/workspaces/${workspaceSlug}/feeds`);
+    // 6a. The moved feed is active in the team scope. Navigate IN-APP (the
+    //     scope-relative logo routes to the team feeds) rather than page.goto,
+    //     so the SPA's React Query cache stays alive: a full reload would refetch
+    //     from scratch and mask a missing post-conversion cache invalidation.
+    //     The moved feed must appear without a hard refresh.
+    await page.getByRole("link", { name: "MonitoRSS Home" }).click();
+    await expect(page).toHaveURL(new RegExp(`/workspaces/${workspaceSlug}/feeds$`), {
+      timeout: 15000,
+    });
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
     const keptRow = page.getByRole("row").filter({
       has: page.getByRole("link", { name: "Keep Feed", exact: true }),
@@ -166,8 +173,14 @@ test.describe("Paddle workspace conversion", () => {
     await expect(keptRow.getByLabel("Ok")).toBeVisible({ timeout: 15000 });
 
     // 6b. The left-behind feed is disabled on the personal side (the personal
-    //     plan is gone, so it is over the free limit).
-    await page.goto("/feeds");
+    //     plan is gone, so it is over the free limit). Switch scope IN-APP rather
+    //     than reloading, so the personal feed list is exercised through the
+    //     live cache.
+    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("menuitemradio", { name: /personal/i }).click();
+    await expect(
+      page.getByRole("button", { name: "Switch team, current: Personal" }),
+    ).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
     const leftRow = page.getByRole("row").filter({
       has: page.getByRole("link", { name: "Leave Feed", exact: true }),
@@ -280,8 +293,15 @@ test.describe("Paddle workspace conversion", () => {
       timeout: 120_000,
     });
 
-    // 6a. The newest feed moved into the team and is active.
-    await page.goto(`/workspaces/${workspaceSlug}/feeds`);
+    // 6a. The newest feed moved into the team and is active. Navigate IN-APP
+    //     (the scope-relative logo routes to the team feeds) rather than
+    //     page.goto, so the SPA's React Query cache stays alive: a full reload
+    //     would refetch from scratch and mask a missing post-conversion cache
+    //     invalidation. The moved feed must appear without a hard refresh.
+    await page.getByRole("link", { name: "MonitoRSS Home" }).click();
+    await expect(page).toHaveURL(new RegExp(`/workspaces/${workspaceSlug}/feeds$`), {
+      timeout: 15000,
+    });
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
     const newestRow = page.getByRole("row").filter({
       has: page.getByRole("link", { name: "Newest Feed", exact: true }),
@@ -289,8 +309,14 @@ test.describe("Paddle workspace conversion", () => {
     await expect(newestRow.getByLabel("Ok")).toBeVisible({ timeout: 15000 });
 
     // 6b. The oldest feed was left behind (outside the newest 70) and is disabled
-    //     on the personal side, now over the free limit.
-    await page.goto("/feeds");
+    //     on the personal side, now over the free limit. Switch scope IN-APP
+    //     rather than reloading, so the personal feed list is exercised through
+    //     the live cache.
+    await page.getByRole("button", { name: /Switch team/ }).click();
+    await page.getByRole("menuitemradio", { name: /personal/i }).click();
+    await expect(
+      page.getByRole("button", { name: "Switch team, current: Personal" }),
+    ).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
     const oldestRow = page.getByRole("row").filter({
       has: page.getByRole("link", { name: "Oldest Feed", exact: true }),

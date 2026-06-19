@@ -1,7 +1,9 @@
 import { mock, type Mock } from "node:test";
 import { randomBytes } from "node:crypto";
+import { Types } from "mongoose";
 import { UserFeedMongooseRepository } from "../../src/repositories/mongoose/user-feed.mongoose.repository";
 import { UserMongooseRepository } from "../../src/repositories/mongoose/user.mongoose.repository";
+import { WorkspaceMongooseRepository } from "../../src/repositories/mongoose/workspace.mongoose.repository";
 import type { IUserFeed } from "../../src/repositories/interfaces/user-feed.types";
 import { UserExternalCredentialType } from "../../src/repositories/shared/enums";
 import {
@@ -23,6 +25,13 @@ export function generateEncryptionKey(): string {
   return randomBytes(32).toString("hex");
 }
 
+export interface MockWorkspaceBenefits {
+  maxFeeds: number;
+  maxDailyArticles: number;
+  refreshRateSeconds: number;
+  allowWebhooks: boolean;
+}
+
 export interface MockSupportersServiceOptions {
   allUserBenefits?: Array<{
     discordUserId: string;
@@ -32,6 +41,9 @@ export interface MockSupportersServiceOptions {
     isSupporter: boolean;
   }>;
   maxDailyArticlesDefault?: number;
+  // Per-workspace benefits resolved by getWorkspaceBenefits(workspaceId).
+  // Workspaces not listed fall back to the default (free-tier) benefits.
+  workspaceBenefits?: Record<string, MockWorkspaceBenefits>;
 }
 
 export interface MockMessageBrokerService {
@@ -64,6 +76,7 @@ export interface ScheduleHandlerContextOptions {
 
 export interface CreateFeedWithConnectionInput {
   discordUserId?: string;
+  workspaceId?: string;
   url?: string;
   title?: string;
   refreshRateSeconds?: number;
@@ -80,6 +93,7 @@ export interface ScheduleHandlerContext {
   service: ScheduleHandlerService;
   userFeedRepository: UserFeedMongooseRepository;
   userRepository: UserMongooseRepository;
+  workspaceRepository: WorkspaceMongooseRepository;
   messageBrokerService: MockMessageBrokerService;
   userFeedsService: MockUserFeedsService;
   usersService: MockUsersService;
@@ -108,6 +122,11 @@ export interface ScheduleHandlerContext {
   ): Promise<IUserFeed>;
   createUserWithRedditCredentials(
     discordUserId: string,
+    accessToken: string,
+  ): Promise<void>;
+  createWorkspace(): Promise<string>;
+  setWorkspaceRedditCredentials(
+    workspaceId: string,
     accessToken: string,
   ): Promise<void>;
   setFields(id: string, fields: Record<string, unknown>): Promise<void>;
@@ -141,12 +160,20 @@ function createMockSupportersService(
       refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
       isSupporter: false,
     })),
-    getWorkspaceBenefits: mock.fn(async () => ({
-      maxFeeds: 5,
-      maxDailyArticles: DEFAULT_MAX_DAILY_ARTICLES,
-      refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
-      allowWebhooks: false,
-    })),
+    getWorkspaceBenefits: mock.fn(async (workspaceId: string) => {
+      const override = options.workspaceBenefits?.[workspaceId];
+
+      if (override) {
+        return override;
+      }
+
+      return {
+        maxFeeds: 5,
+        maxDailyArticles: DEFAULT_MAX_DAILY_ARTICLES,
+        refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
+        allowWebhooks: false,
+      };
+    }),
   } as unknown as ScheduleHandlerServiceDeps["supportersService"];
 }
 
@@ -173,6 +200,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
   let testContext: ServiceTestContext;
   let userFeedRepository: UserFeedMongooseRepository;
   let userRepository: UserMongooseRepository;
+  let workspaceRepository: WorkspaceMongooseRepository;
 
   return {
     async setup() {
@@ -181,6 +209,9 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
         testContext.connection,
       );
       userRepository = new UserMongooseRepository(testContext.connection);
+      workspaceRepository = new WorkspaceMongooseRepository(
+        testContext.connection,
+      );
     },
 
     async teardown() {
@@ -223,6 +254,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
         service,
         userFeedRepository,
         userRepository,
+        workspaceRepository,
         messageBrokerService,
         userFeedsService,
         usersService,
@@ -263,6 +295,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
             title: input.title ?? "Test Feed",
             url: input.url ?? `https://example.com/${generateTestId()}.xml`,
             user: { id: generateTestId(), discordUserId: feedDiscordUserId },
+            workspaceId: input.workspaceId,
             refreshRateSeconds:
               input.refreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
             userRefreshRateSeconds: input.userRefreshRateSeconds,
@@ -314,6 +347,30 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
           await userRepository.setExternalCredential(user.id, {
             type: UserExternalCredentialType.Reddit,
             data: { accessToken: encryptedToken },
+          });
+        },
+
+        async createWorkspace() {
+          const workspace = await workspaceRepository.createWorkspaceWithOwner({
+            name: `Test Workspace ${generateTestId()}`,
+            slug: `test-workspace-${generateTestId()}`,
+            ownerUserId: new Types.ObjectId().toString(),
+          });
+
+          return workspace.id;
+        },
+
+        async setWorkspaceRedditCredentials(workspaceId, accessToken) {
+          if (!encryptionKey) {
+            throw new Error(
+              "encryptionKey must be set in context options to create workspaces with credentials",
+            );
+          }
+          const encryptedToken = encrypt(accessToken, encryptionKey);
+          await workspaceRepository.setExternalCredential(workspaceId, {
+            type: UserExternalCredentialType.Reddit,
+            data: { accessToken: encryptedToken },
+            connectedByUserId: new Types.ObjectId().toString(),
           });
         },
 

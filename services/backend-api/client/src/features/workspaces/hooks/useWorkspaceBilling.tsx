@@ -58,11 +58,19 @@ export const useResumeWorkspaceBilling = () => {
 
 export const useConvertWorkspaceBilling = () => {
   const invalidate = useInvalidateWorkspace();
+  const queryClient = useQueryClient();
 
   return useMutation<void, ApiAdapterError, { workspaceSlug: string; feedIds: string[] }>(
     (input) => convertWorkspaceBilling(input),
     {
-      onSuccess: invalidate,
+      onSuccess: async () => {
+        await invalidate();
+        // Conversion re-homes the chosen feeds onto the workspace; the feed
+        // list is cached per scope, so the workspace feeds page would otherwise
+        // keep showing its stale (empty) cache. Invalidate every user-feeds
+        // query (personal loses the feeds, workspace gains them).
+        await queryClient.invalidateQueries({ queryKey: ["user-feeds"] });
+      },
     },
   );
 };

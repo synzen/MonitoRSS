@@ -1,5 +1,5 @@
 import { Icon } from "@chakra-ui/react";
-import { FaCircleExclamation, FaClock } from "react-icons/fa6";
+import { FaCircleExclamation, FaClock, FaCircleMinus } from "react-icons/fa6";
 import { FaCheckCircle, FaPauseCircle } from "react-icons/fa";
 import { UserFeedComputedStatus } from "../../types";
 
@@ -35,17 +35,23 @@ export const UserFeedStatusTag: React.FC<Props> = ({ status, ariaHidden }) => {
 
   if (status === UserFeedComputedStatus.ManuallyDisabled) {
     return (
-      <Icon as={FaPauseCircle} aria-label="Manually disabled" boxSize={5} color="fg" aria-hidden />
+      <Icon
+        as={FaPauseCircle}
+        aria-label="Manually disabled"
+        boxSize={5}
+        color="fg"
+        aria-hidden={ariaHidden}
+      />
     );
   }
 
   if (status === UserFeedComputedStatus.FeedLimitExceeded) {
     return (
       <Icon
-        as={FaPauseCircle}
-        aria-label="Disabled (feed limit exceeded)"
+        as={FaCircleMinus}
+        aria-label="Feed limit exceeded"
         boxSize={5}
-        color="fg"
+        color="text.warning"
         aria-hidden={ariaHidden}
       />
     );

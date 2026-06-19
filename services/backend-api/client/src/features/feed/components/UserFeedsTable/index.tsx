@@ -43,7 +43,7 @@ export const UserFeedsTable: React.FC = () => {
   );
 
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
-  const { selectedFeeds, setSelectedFeeds } = useMultiSelectUserFeedContext();
+  const { rowSelection, setRowSelection, setLoadedFeeds } = useMultiSelectUserFeedContext();
   const { workspaceSlug } = useFeedScope();
 
   // Preferences (sorting, column visibility, column order)
@@ -109,31 +109,12 @@ export const UserFeedsTable: React.FC = () => {
 
   const hasActiveFilters = !!urlSearch || statusFilters.length > 0;
 
-  // Row selection sync with context
-  const rowSelection = useMemo(
-    () =>
-      selectedFeeds.reduce(
-        (acc, feed) => {
-          acc[feed.id] = true;
-
-          return acc;
-        },
-        {} as Record<string, boolean>,
-      ),
-    [selectedFeeds],
-  );
-
-  const onRowSelectionChange: OnChangeFn<RowSelectionState> = useCallback(
-    (newValOrUpdater) => {
-      if (typeof newValOrUpdater === "function") {
-        const newVal = newValOrUpdater(rowSelection);
-        setSelectedFeeds(flatData.filter((feed) => newVal[feed.id]));
-      } else {
-        setSelectedFeeds(flatData.filter((r) => newValOrUpdater[r.id]));
-      }
-    },
-    [rowSelection, flatData, setSelectedFeeds],
-  );
+  // Selection is owned by the multi-select context as a feed-id map (TanStack's
+  // native RowSelectionState). The table is the controlled view of it: toggles
+  // write the next id map straight through, never touching the loaded data, so
+  // there is no stale-data race. The context derives the selected feed objects
+  // by intersecting these ids with the loaded feeds published below.
+  const onRowSelectionChange: OnChangeFn<RowSelectionState> = setRowSelection;
 
   // Column drag-and-drop handler
   const handleDragEnd = useCallback(
@@ -174,15 +155,14 @@ export const UserFeedsTable: React.FC = () => {
     onColumnOrderChange: setColumnOrder,
   });
 
-  const { getHeaderGroups, getRowModel, getSelectedRowModel } = tableInstance;
-  const selectedRows = getSelectedRowModel().flatRows;
+  const { getHeaderGroups, getRowModel } = tableInstance;
 
-  // Sync selected rows to context
-  const selectedFeedIds = useMemo(() => selectedRows.map((row) => row.original.id), [selectedRows]);
-
+  // Publish the loaded feeds so the context can derive the selected feed objects
+  // (selected ids ∩ loaded feeds). When a bulk delete drops feeds from the list,
+  // they fall out of the derived selection on the next render with no pruning.
   useEffect(() => {
-    setSelectedFeeds(selectedRows.map((r) => r.original));
-  }, [JSON.stringify(selectedFeedIds)]);
+    setLoadedFeeds(flatData);
+  }, [flatData, setLoadedFeeds]);
 
   // Status filter handler
   const onStatusSelect = useCallback(

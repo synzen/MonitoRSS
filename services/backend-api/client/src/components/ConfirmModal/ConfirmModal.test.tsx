@@ -101,6 +101,110 @@ describe("ConfirmModal", () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
+  // By default the modal stays open until onConfirm resolves, so a slow/failing
+  // action can surface its outcome inline (via the `error` prop) and be retried.
+  it("by default keeps the dialog open while onConfirm is pending", async () => {
+    let resolveConfirm: () => void = () => {};
+
+    const onConfirm = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveConfirm = resolve;
+        }),
+    );
+    const onOpenChange = vi.fn();
+
+    renderWithProvider(
+      <ConfirmModal
+        open
+        onOpenChange={onOpenChange}
+        title="Confirm?"
+        okText="Go"
+        onConfirm={onConfirm}
+      />,
+    );
+
+    const dialog = await screen.findByRole("alertdialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Go" }));
+
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    // Still open: onConfirm has not resolved, so the close path has not run.
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    expect(screen.getByRole("alertdialog")).toBeVisible();
+
+    resolveConfirm();
+  });
+
+  // closeOnConfirm is the "gate" mode: the modal reports nothing inline, so it
+  // dismisses the instant confirm is clicked instead of holding a backdrop over
+  // the page for the whole (here: never-resolving) request.
+  it("with closeOnConfirm, closes immediately without waiting for onConfirm", async () => {
+    // A promise that never resolves stands in for an in-flight request.
+    const onConfirm = vi.fn(() => new Promise<void>(() => {}));
+    const onOpenChange = vi.fn();
+
+    renderWithProvider(
+      <ConfirmModal
+        open
+        onOpenChange={onOpenChange}
+        title="Confirm?"
+        okText="Go"
+        onConfirm={onConfirm}
+        closeOnConfirm
+      />,
+    );
+
+    const dialog = await screen.findByRole("alertdialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Go" }));
+
+    // Closed right away even though onConfirm is still pending.
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  // Escape is blocked by default: a reflexive keypress must not drop a
+  // high-impact (e.g. irreversible) action mid-confirmation.
+  it("ignores Escape by default", async () => {
+    const onOpenChange = vi.fn();
+
+    renderWithProvider(
+      <ConfirmModal open onOpenChange={onOpenChange} title="Confirm?" onConfirm={vi.fn()} />,
+    );
+
+    const dialog = await screen.findByRole("alertdialog");
+    await userEvent.keyboard("{Escape}");
+
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    expect(dialog).toBeVisible();
+  });
+
+  // allowEscape opts reversible actions into a quick keyboard exit.
+  it("closes on Escape (without confirming) when allowEscape is set", async () => {
+    const onConfirm = vi.fn();
+    const onOpenChange = vi.fn();
+    const onClosed = vi.fn();
+
+    renderWithProvider(
+      <ConfirmModal
+        open
+        allowEscape
+        onOpenChange={onOpenChange}
+        onClosed={onClosed}
+        title="Confirm?"
+        onConfirm={onConfirm}
+      />,
+    );
+
+    await screen.findByRole("alertdialog");
+    await userEvent.keyboard("{Escape}");
+
+    // Escape routes through the explicit close path (like the X): it closes and
+    // fires onClosed, but never confirms.
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onClosed).toHaveBeenCalledTimes(1);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
   // Regression: the bulk-delete confirmation opened from a menu item closed
   // immediately because the modal's open state lived inside the menu content,
   // which unmounts when the menu closes. The fix lifts the open state above the

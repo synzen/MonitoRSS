@@ -45,10 +45,28 @@ interface Props {
   /**
    * When true, renders a top-right close button. The button is an explicit,
    * aimed exit (it calls the close path directly), so it works even though this
-   * modal blocks Ark's own dismissal — Escape and backdrop clicks stay disabled
-   * so a reflexive keypress can't drop a high-impact action mid-confirmation.
+   * modal blocks Ark's own dismissal — backdrop clicks stay disabled (and Escape
+   * too, unless `allowEscape` is set) so a reflexive interaction can't drop a
+   * high-impact action mid-confirmation.
    */
   showCloseButton?: boolean;
+  /**
+   * When true, the modal closes the instant confirm is clicked instead of
+   * staying open until `onConfirm` resolves. Use when the action reports its own
+   * outcome elsewhere (e.g. a page-level alert) and the modal is purely a yes/no
+   * gate — otherwise the modal (and its backdrop) sits over the page for the
+   * whole request, blocking the controls beneath it. Leave false (the default)
+   * when the modal surfaces failures inline via `error` and the user may retry.
+   */
+  closeOnConfirm?: boolean;
+  /**
+   * When true, the Escape key cancels the modal. Backdrop clicks stay blocked
+   * either way: Escape is a deliberate keypress (so honoring it can't be a
+   * misclick), whereas a backdrop click on a confirmation is ambiguous. Enable
+   * for reversible actions where a quick keyboard exit is welcome; leave false
+   * (the default) for irreversible ones, where every exit should be aimed.
+   */
+  allowEscape?: boolean;
 }
 
 export const ConfirmModal = ({
@@ -68,6 +86,8 @@ export const ConfirmModal = ({
   confirmationPhrase,
   okDisabled,
   showCloseButton,
+  closeOnConfirm,
+  allowEscape,
 }: Props) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [phraseInput, setPhraseInput] = useState("");
@@ -87,9 +107,9 @@ export const ConfirmModal = ({
     onOpenChange?.(next);
   };
 
-  // The top-right close button. Ark's own dismissal (Escape, backdrop) is
-  // blocked via onRequestDismiss, so the X closes through the explicit path and
-  // fires onClosed itself (controlled callers reset their state from it).
+  // The top-right close button. Backdrop dismissal is disabled (and Escape too,
+  // unless opted in), so the X is an explicit exit that closes and fires onClosed
+  // itself (controlled callers reset their state from it).
   const onClickClose = () => {
     setOpen(false);
     onClosed?.();
@@ -100,6 +120,16 @@ export const ConfirmModal = ({
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
   const onClickConfirm = async () => {
+    // Gate mode: dismiss now and let the action run in the background. The modal
+    // reports nothing inline, so keeping it (and its backdrop) up for the whole
+    // request would only block the page beneath it.
+    if (closeOnConfirm) {
+      setOpen(false);
+      onConfirm();
+
+      return;
+    }
+
     setLoading(true);
 
     // A rejecting onConfirm keeps the modal open so the caller's `error` prop can be
@@ -127,7 +157,12 @@ export const ConfirmModal = ({
         }
       }}
       size={size as never}
-      onRequestDismiss={(e) => e.preventDefault()}
+      // A confirmation must not be dismissed by a misclick on the backdrop. Escape
+      // is a deliberate keypress, so it is allowed only for reversible actions
+      // that opt in via `allowEscape`; otherwise every exit is an aimed click
+      // (Cancel, or the optional X).
+      closeOnInteractOutside={false}
+      closeOnEscape={!!allowEscape}
       initialFocusEl={() => cancelRef.current}
     >
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}

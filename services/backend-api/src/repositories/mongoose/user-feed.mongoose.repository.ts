@@ -275,9 +275,9 @@ export class UserFeedMongooseRepository
       externalProperties: doc.externalProperties,
       healthStatus: doc.healthStatus,
       connections: {
-        discordChannels: discordChannels.map((conn) =>
+        discordChannels: discordChannels?.map((conn) =>
           this.mapDiscordChannelConnection(conn),
-        ),
+        ) || [],
       },
       user: {
         id: this.objectIdToString(doc.user.id),
