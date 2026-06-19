@@ -38,6 +38,13 @@ const NotificationDeliveryAttemptSchema = new Schema(
   { collection: "notification_delivery_attempts", timestamps: true },
 );
 
+// Storage-limitation TTL: this is a delivery audit log keyed to recipient email,
+// so reap records 90 days after the attempt rather than retaining them forever.
+NotificationDeliveryAttemptSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 90 * 24 * 60 * 60 },
+);
+
 type NotificationDeliveryAttemptDoc = InferSchemaType<
   typeof NotificationDeliveryAttemptSchema
 >;

@@ -98,6 +98,12 @@ const configSchema = z.object({
     .string()
     .transform((val) => val !== "false")
     .default("true"),
+  // Optional disclosures rendered in the shared email footer. Both are
+  // omitted from the footer when unset, so a self-host instance sends no
+  // legal boilerplate it has not configured. The hosted instance sets them
+  // to render a privacy link and the operator's identity/postal address.
+  BACKEND_API_EMAIL_PRIVACY_POLICY_URL: z.string().optional(),
+  BACKEND_API_EMAIL_FOOTER_ADDRESS: z.string().optional(),
 
   // Paddle
   BACKEND_API_PADDLE_KEY: z.string().optional(),

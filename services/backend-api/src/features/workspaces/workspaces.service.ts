@@ -14,6 +14,7 @@ import dayjs from "dayjs";
 import type { Config } from "../../config";
 import type { SmtpTransport } from "../../infra/smtp";
 import { createFromFormatter } from "../../infra/email-from";
+import { createEmailRenderer, type RenderEmail } from "../../infra/email-render";
 import { encrypt } from "../../utils/encrypt";
 import { decrypt } from "../../shared/utils/decrypt";
 import logger from "../../infra/logger";
@@ -112,7 +113,11 @@ export interface WorkspacesServiceDeps {
 }
 
 export class WorkspacesService {
-  constructor(private readonly deps: WorkspacesServiceDeps) {}
+  private readonly renderEmail: RenderEmail;
+
+  constructor(private readonly deps: WorkspacesServiceDeps) {
+    this.renderEmail = createEmailRenderer(deps.config);
+  }
 
   // Authorization seam: callers check can(...) rather than comparing roles.
   can(action: WorkspaceAction, role: WorkspaceRole): boolean {
@@ -460,7 +465,7 @@ export class WorkspacesService {
       from: createFromFormatter(this.deps.config)("MonitoRSS", "noreply"),
       to: email,
       subject: `You've been invited to ${workspaceName} on MonitoRSS`,
-      html: inviteTemplate({ workspaceName, inviteUrl }),
+      html: this.renderEmail(inviteTemplate, { workspaceName, inviteUrl }),
     });
   }
 
@@ -851,7 +856,7 @@ export class WorkspacesService {
         from: createFromFormatter(this.deps.config)("MonitoRSS", "noreply"),
         to: newOwnerEmail,
         subject: `You are now the owner of ${workspace.name} on MonitoRSS`,
-        html: ownershipTransferredTemplate({
+        html: this.renderEmail(ownershipTransferredTemplate, {
           workspaceName: workspace.name,
           settingsUrl,
           hasSubscription: !!workspace.paddleCustomer?.subscription,
@@ -1071,7 +1076,7 @@ export class WorkspacesService {
             ),
             to: email,
             subject: `Reddit connection lost for ${workspace.name}`,
-            html: redditConnectionLostTemplate({
+            html: this.renderEmail(redditConnectionLostTemplate, {
               workspaceName: workspace.name,
               settingsUrl,
             }),

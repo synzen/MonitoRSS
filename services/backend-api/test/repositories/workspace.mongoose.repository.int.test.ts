@@ -71,6 +71,26 @@ describe(
       assert.strictEqual(accepted, true);
     }
 
+    describe("invitation TTL", () => {
+      it("registers a 60-day TTL index on lastSentAt", async () => {
+        const inviteModel = testContext.connection.model("WorkspaceInvite");
+        await inviteModel.syncIndexes();
+
+        const indexes = (await inviteModel.collection.indexes()) as Array<{
+          key: Record<string, number>;
+          expireAfterSeconds?: number;
+        }>;
+
+        const ttlIndex = indexes.find(
+          (index) =>
+            index.key.lastSentAt === 1 && index.expireAfterSeconds !== undefined,
+        );
+
+        assert.ok(ttlIndex, "expected a TTL index keyed on lastSentAt");
+        assert.strictEqual(ttlIndex.expireAfterSeconds, 60 * 24 * 60 * 60);
+      });
+    });
+
     describe("getMemberAlertEmails", () => {
       it("returns only members who opted into disabled-feed alerts", async () => {
         const owner = await createUser({

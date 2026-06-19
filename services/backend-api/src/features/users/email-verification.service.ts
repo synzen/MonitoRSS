@@ -3,6 +3,7 @@ import Handlebars from "handlebars";
 import type { Config } from "../../config";
 import type { SmtpTransport } from "../../infra/smtp";
 import { createFromFormatter } from "../../infra/email-from";
+import { createEmailRenderer, type RenderEmail } from "../../infra/email-render";
 import type { IUserRepository } from "../../repositories/interfaces/user.types";
 import type { EmailVerificationMongooseRepository } from "../../repositories/mongoose/email-verification.mongoose.repository";
 import {
@@ -41,7 +42,11 @@ export interface EmailVerificationServiceDeps {
 export class EmailVerificationService {
   private readonly otpKey: Buffer;
 
+  private readonly renderEmail: RenderEmail;
+
   constructor(private readonly deps: EmailVerificationServiceDeps) {
+    this.renderEmail = createEmailRenderer(deps.config);
+
     // Domain-separated subkey derived from the session secret: keeps OTP
     // hashing cryptographically independent of session signing (key separation)
     // without requiring a dedicated secret env var.
@@ -127,7 +132,7 @@ export class EmailVerificationService {
       from: createFromFormatter(this.deps.config)("MonitoRSS", "noreply"),
       to: email,
       subject: "Verify your email for MonitoRSS",
-      html: verificationTemplate({ code }),
+      html: this.renderEmail(verificationTemplate, { code }),
     });
   }
 
@@ -207,7 +212,10 @@ export class EmailVerificationService {
         from: createFromFormatter(this.deps.config)("MonitoRSS", "noreply"),
         to: oldEmail,
         subject: "Your MonitoRSS verified email was changed",
-        html: verifiedEmailChangedTemplate({ oldEmail, newEmail }),
+        html: this.renderEmail(verifiedEmailChangedTemplate, {
+          oldEmail,
+          newEmail,
+        }),
       });
     } catch (err) {
       logger.error(

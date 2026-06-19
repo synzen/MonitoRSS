@@ -224,7 +224,9 @@ WorkspaceMembershipSchema.index({ workspaceId: 1, role: 1 });
 
 // An invitation is bound to an email, never a Discord/user identity, keeping
 // the workspace model decoupled from Discord. Existence-based lifecycle: a row
-// exists (pending) or is gone (accepted/declined/revoked) — no status, no TTL.
+// exists (pending) or is gone (accepted/declined/revoked) — no status. A
+// pending invitation expires 60 days after its last send so an invited address
+// is not retained indefinitely; resending renews it via lastSentAt.
 const WorkspaceInviteSchema = new Schema(
   {
     workspaceId: { type: Schema.Types.ObjectId, required: true },
@@ -245,6 +247,13 @@ WorkspaceInviteSchema.index({ workspaceId: 1, email: 1 }, { unique: true });
 // Supports the "which invitations are waiting for this just-verified address?"
 // lookup keyed on email across workspaces.
 WorkspaceInviteSchema.index({ email: 1 });
+// Storage-limitation TTL: reap pending invitations 60 days after their last
+// send. lastSentAt is set on creation and bumped on every resend, so an
+// actively-resent invite stays alive while an abandoned one self-deletes.
+WorkspaceInviteSchema.index(
+  { lastSentAt: 1 },
+  { expireAfterSeconds: 60 * 24 * 60 * 60 },
+);
 
 type WorkspaceDoc = InferSchemaType<typeof WorkspaceSchema>;
 type WorkspaceMembershipDoc = InferSchemaType<typeof WorkspaceMembershipSchema>;

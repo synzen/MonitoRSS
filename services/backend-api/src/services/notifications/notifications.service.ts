@@ -2,6 +2,7 @@ import Handlebars from "handlebars";
 import type { Config } from "../../config";
 import type { SmtpTransport } from "../../infra/smtp";
 import { createFromFormatter, type FormatFrom } from "../../infra/email-from";
+import { createEmailRenderer, type RenderEmail } from "../../infra/email-render";
 import type { INotificationDeliveryAttemptRepository } from "../../repositories/interfaces/notification-delivery-attempt.types";
 import type {
   IUserFeed,
@@ -61,9 +62,11 @@ export class NotificationsService {
   // would crash app startup rather than only the (optional) email send.
   private formatFrom: FormatFrom;
   private loginRedirectUrl: string;
+  private renderEmail: RenderEmail;
 
   constructor(private readonly deps: NotificationsServiceDeps) {
     this.formatFrom = createFromFormatter(deps.config);
+    this.renderEmail = createEmailRenderer(deps.config);
     this.loginRedirectUrl =
       deps.config.BACKEND_API_LOGIN_REDIRECT_URI || "https://my.monitorss.xyz";
   }
@@ -124,7 +127,7 @@ export class NotificationsService {
         from: this.formatFrom("MonitoRSS Alerts", "alerts"),
         to: emails,
         subject: `Feed has been disabled: ${feed.title}`,
-        html: disabledFeedTemplate(templateData),
+        html: this.renderEmail(disabledFeedTemplate, templateData),
       });
 
       await this.updateDeliveryAttemptStatus(
@@ -188,7 +191,7 @@ export class NotificationsService {
         from: this.formatFrom("MonitoRSS Alerts", "alerts"),
         to: emails,
         subject: `Feed connection has been disabled: ${connection.name} (feed: ${feed.title})`,
-        html: disabledFeedTemplate(templateData),
+        html: this.renderEmail(disabledFeedTemplate, templateData),
       });
 
       await this.updateDeliveryAttemptStatus(
@@ -276,7 +279,7 @@ export class NotificationsService {
         from: this.formatFrom("MonitoRSS Alerts", "alerts"),
         to: emails,
         subject: `Feeds have been disabled in workspace "${workspace.name}": feed limit exceeded`,
-        html: workspaceFeedsDisabledDigestTemplate(templateData),
+        html: this.renderEmail(workspaceFeedsDisabledDigestTemplate, templateData),
       });
 
       await this.updateDeliveryAttemptStatus(
