@@ -38,6 +38,7 @@ describe("WorkspaceBillingService.convertPersonalSubscriptionToWorkspace", () =>
 
     return {
       config: {
+        BACKEND_API_ENABLE_SUPPORTERS: true,
         BACKEND_API_PADDLE_KEY: "key",
         BACKEND_API_PADDLE_URL: "https://paddle.test",
       } as Config,

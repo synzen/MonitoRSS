@@ -70,7 +70,11 @@ describe("GET /api/v1/users/@me", { concurrency: true }, () => {
     before(async () => {
       ctx = await createAppTestContext({
         configOverrides: {
+          // enableBilling is on only when billing is fully enabled: supporters
+          // plus Paddle configured.
           BACKEND_API_ENABLE_SUPPORTERS: true,
+          BACKEND_API_PADDLE_KEY: "test-paddle-key",
+          BACKEND_API_PADDLE_URL: "https://sandbox-api.paddle.com",
         },
       });
     });
@@ -250,6 +254,65 @@ describe("GET /api/v1/users/@me", { concurrency: true }, () => {
         assert.ok(body.result.subscription.billingPeriod);
         assert.strictEqual(body.result.creditBalance.availableFormatted, "$5");
         assert.strictEqual(body.result.enableBilling, true);
+      });
+    },
+  );
+
+  describe(
+    "Authenticated user with a stored Paddle customer but billing disabled",
+    { concurrency: true },
+    () => {
+      // Self-host posture: a user can carry a leftover paddleCustomer (e.g. from
+      // prior hosted use) while the instance runs with billing off. The credit
+      // balance must NOT be fetched from Paddle, since no Paddle client is
+      // configured and the call would throw on every page load.
+      let ctx: AppTestContext;
+
+      before(async () => {
+        ctx = await createAppTestContext();
+      });
+
+      after(async () => {
+        await ctx.teardown();
+      });
+
+      it("returns the profile with a zero credit balance and never calls Paddle", async () => {
+        const discordUserId = generateSnowflake();
+
+        await ctx.container.userRepository.create({
+          discordUserId,
+          email: `${discordUserId}@test.com`,
+        });
+
+        await ctx.container.supporterRepository.create({
+          id: discordUserId,
+          guilds: [],
+          paddleCustomer: {
+            customerId: generateTestId(),
+            email: `${discordUserId}@billing.com`,
+            lastCurrencyCodeUsed: "USD",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+
+        const user = await ctx.asUser(discordUserId);
+        const response = await user.fetch("/api/v1/users/@me");
+
+        assert.strictEqual(response.status, 200);
+        const body = (await response.json()) as {
+          result: {
+            discordUserId: string;
+            subscription: { product: { key: string } };
+            creditBalance: { availableFormatted: string };
+            enableBilling: boolean;
+          };
+        };
+
+        assert.strictEqual(body.result.discordUserId, discordUserId);
+        assert.strictEqual(body.result.subscription.product.key, "free");
+        assert.strictEqual(body.result.creditBalance.availableFormatted, "0");
+        assert.strictEqual(body.result.enableBilling, false);
       });
     },
   );

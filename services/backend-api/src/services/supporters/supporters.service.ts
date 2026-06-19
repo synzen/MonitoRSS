@@ -44,7 +44,7 @@ export class SupportersService {
   readonly defaultRefreshRateSeconds: number;
   readonly defaultSupporterRefreshRateSeconds = 120;
   readonly defaultMaxUserFeeds: number;
-  readonly defaultMaxWorkspaceFeeds: number;
+  readonly defaultMaxWorkspaceFeeds?: number;
   readonly defaultMaxSupporterUserFeeds: number;
   readonly maxDailyArticlesSupporter: number;
   readonly maxDailyArticlesDefault: number;
@@ -65,9 +65,10 @@ export class SupportersService {
     this.defaultMaxUserFeeds = Number(
       config.BACKEND_API_DEFAULT_MAX_USER_FEEDS,
     );
-    this.defaultMaxWorkspaceFeeds = Number(
-      config.BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS,
-    );
+    this.defaultMaxWorkspaceFeeds =
+      config.BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS == null
+        ? undefined
+        : Number(config.BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS);
     this.defaultMaxSupporterUserFeeds = Number(
       config.BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS,
     );
@@ -483,8 +484,10 @@ export class SupportersService {
    * 2. Billing enabled but no benefit-granting subscription → dormant: zero
    *    feeds, no webhooks. Membership/invitations/settings are not gated here;
    *    only feed capacity is.
-   * 3. Billing not configured (self-host) → the configured default workspace
-   *    benefits, with no dormancy.
+   * 3. Billing not configured (self-host) → webhooks allowed, no dormancy, and
+   *    unlimited feeds unless the operator opts into a cap via
+   *    BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS. The per-tier cap is a billing
+   *    construct, so a self-host instance is uncapped by default.
    */
   async getWorkspaceBenefits(workspaceId: string): Promise<{
     maxFeeds: number;
@@ -495,10 +498,10 @@ export class SupportersService {
   }> {
     if (!isBillingEnabled(this.deps.config)) {
       return {
-        maxFeeds: this.defaultMaxWorkspaceFeeds,
+        maxFeeds: this.defaultMaxWorkspaceFeeds ?? Number.MAX_SAFE_INTEGER,
         maxDailyArticles: this.maxDailyArticlesDefault,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
-        allowWebhooks: false,
+        allowWebhooks: true,
         dormant: false,
       };
     }

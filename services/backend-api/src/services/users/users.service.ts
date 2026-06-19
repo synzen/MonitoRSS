@@ -16,6 +16,7 @@ import {
 import { formatCurrency } from "../../utils/format-currency";
 import { encrypt } from "../../utils/encrypt";
 import { reconcileFeedLookupKeys } from "../../shared/utils/reconcile-feed-lookup-keys";
+import { isBillingEnabled } from "../../shared/utils/billing";
 import logger from "../../infra/logger";
 import type {
   GetUserByDiscordIdOutput,
@@ -42,11 +43,11 @@ export interface UsersServiceDeps {
 
 export class UsersService {
   private encryptionKeyHex?: string;
-  private enableSupporters: boolean;
+  private billingEnabled: boolean;
 
   constructor(private readonly deps: UsersServiceDeps) {
     this.encryptionKeyHex = deps.config.BACKEND_API_ENCRYPTION_KEY_HEX;
-    this.enableSupporters = deps.config.BACKEND_API_ENABLE_SUPPORTERS;
+    this.billingEnabled = isBillingEnabled(deps.config);
   }
 
   async initDiscordUser(
@@ -72,7 +73,10 @@ export class UsersService {
         const supporter =
           await this.deps.supporterRepository.findById(discordUserId);
 
-        if (supporter?.paddleCustomer?.customerId) {
+        if (
+          supporter?.paddleCustomer?.customerId &&
+          isBillingEnabled(this.deps.config)
+        ) {
           try {
             await this.deps.paddleService.updateCustomer(
               supporter.paddleCustomer.customerId,
@@ -137,7 +141,7 @@ export class UsersService {
       return {
         user: {
           ...user,
-          enableBilling: this.enableSupporters,
+          enableBilling: this.billingEnabled,
         },
         creditBalance: {
           availableFormatted: "0",
@@ -159,7 +163,7 @@ export class UsersService {
 
     let creditAvailableBalanceFormatted = "0";
 
-    if (customer) {
+    if (customer && isBillingEnabled(this.deps.config)) {
       const { data: creditBalances } =
         await this.deps.paddleService.getCustomerCreditBalanace(customer.id);
 
@@ -178,7 +182,7 @@ export class UsersService {
       return {
         user: {
           ...user,
-          enableBilling: this.enableSupporters,
+          enableBilling: this.billingEnabled,
         },
         creditBalance: {
           availableFormatted: creditAvailableBalanceFormatted,
@@ -197,7 +201,7 @@ export class UsersService {
     return {
       user: {
         ...user,
-        enableBilling: this.enableSupporters,
+        enableBilling: this.billingEnabled,
       },
       creditBalance: {
         availableFormatted: creditAvailableBalanceFormatted,

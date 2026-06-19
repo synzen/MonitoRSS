@@ -2,7 +2,9 @@ import "@testing-library/jest-dom";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { useContext } from "react";
 import { system } from "@/utils/theme";
+import { useUserMe } from "@/features/discordUser";
 
 const h = vi.hoisted(() => {
   // The provider reads the client token at module load; without it the Paddle
@@ -46,16 +48,33 @@ vi.mock("@/features/discordUser", () => ({
 }));
 
 // eslint-disable-next-line import/first
-import { PaddleContextProvider } from "./PaddleContext";
+import { PaddleContext, PaddleContextProvider } from "./PaddleContext";
 
-const renderProvider = () =>
+const renderProvider = (child = <div />) =>
   render(
     <ChakraProvider value={system}>
-      <PaddleContextProvider>
-        <div />
-      </PaddleContextProvider>
+      <PaddleContextProvider>{child}</PaddleContextProvider>
     </ChakraProvider>,
   );
+
+const IsConfiguredProbe = () => {
+  const { isConfigured } = useContext(PaddleContext);
+
+  return <span data-testid="is-configured">{String(isConfigured)}</span>;
+};
+
+const mockUserMe = (overrides: { enableBilling?: boolean }) => {
+  vi.mocked(useUserMe).mockReturnValue({
+    data: {
+      result: {
+        id: "user-1",
+        email: "user@example.com",
+        subscription: { product: { key: "free" } },
+        ...overrides,
+      },
+    },
+  } as never);
+};
 
 const emitCheckoutCompleted = (customData: Record<string, string>) =>
   act(() => {
@@ -64,6 +83,33 @@ const emitCheckoutCompleted = (customData: Record<string, string>) =>
       data: { custom_data: customData },
     });
   });
+
+describe("PaddleContextProvider isConfigured", () => {
+  beforeEach(() => {
+    h.eventCallback = undefined;
+    vi.clearAllMocks();
+  });
+
+  it("is false when billing is disabled even though a client token is present", async () => {
+    // The exact self-host leak: a leftover VITE_PADDLE_CLIENT_TOKEN must not
+    // surface billing UI when the instance reports billing off.
+    mockUserMe({ enableBilling: false });
+    renderProvider(<IsConfiguredProbe />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("is-configured")).toHaveTextContent("false"),
+    );
+  });
+
+  it("is true when billing is enabled and a client token is present", async () => {
+    mockUserMe({ enableBilling: true });
+    renderProvider(<IsConfiguredProbe />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("is-configured")).toHaveTextContent("true"),
+    );
+  });
+});
 
 describe("PaddleContextProvider checkout.completed routing", () => {
   beforeEach(() => {

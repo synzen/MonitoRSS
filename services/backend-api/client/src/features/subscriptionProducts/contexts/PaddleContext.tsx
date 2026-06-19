@@ -549,7 +549,11 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       updatePaymentMethod,
       updateCheckout,
       isLoaded: !!paddle,
-      isConfigured: !!clientToken,
+      // Billing is usable only when the instance has it enabled (the backend's
+      // master switch: supporters enabled and Paddle configured) AND a Paddle
+      // client token is present to render checkout. A leftover client token
+      // alone must not surface billing UI when billing is off (self-host).
+      isConfigured: !!clientToken && !!user?.result.enableBilling,
       openCheckout,
       getPricePreview,
       resetCheckoutData,
@@ -560,6 +564,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
     [
       JSON.stringify(checkoutLoadedData),
       !!paddle,
+      !!user?.result.enableBilling,
       updateCheckout,
       updatePaymentMethod,
       openCheckout,

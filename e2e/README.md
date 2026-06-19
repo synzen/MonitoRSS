@@ -56,8 +56,8 @@ repo-root `.env` (which Docker Compose auto-loads from its project directory reg
 or CI workflow env cannot leak in.
 
 This matches what the `e2e-web` specs assume: feeds work in workspaces without subscriptions
-(`BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS` applies), and `workspace-self-host-posture.spec.ts`
-asserts billing UI is absent entirely. A spec that needs a billing-enabled backend (e.g.
+(unlimited by default, capped only when the stack sets `BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS`),
+and `workspace-self-host-posture.spec.ts` asserts billing UI is absent entirely. A spec that needs a billing-enabled backend (e.g.
 `dormant-workspace-feed-retry.spec.ts` — dormant workspaces only exist when Paddle is configured)
 must live in `tests/billing/` and be listed in `PADDLE_CHECKOUT_TESTS` so it runs under
 `e2e-paddle` with the real env.

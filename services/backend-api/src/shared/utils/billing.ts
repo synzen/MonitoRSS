@@ -15,11 +15,16 @@ export const DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS = [
 ];
 
 // Workspace billing (subscriptions, dormancy, the never-activated creation
-// cap) only exists when Paddle is configured. Self-hosted instances without
-// Paddle keep fully active workspaces with default benefits.
+// cap) is on only when the supporter program is enabled AND Paddle is
+// configured. BACKEND_API_ENABLE_SUPPORTERS is the master switch: turning it
+// off yields the self-host posture (fully active workspaces, default benefits)
+// even if Paddle credentials are still present. Paddle remains required so the
+// billing endpoints never run without a Paddle client behind them.
 export function isBillingEnabled(config: Config): boolean {
   return Boolean(
-    config.BACKEND_API_PADDLE_KEY && config.BACKEND_API_PADDLE_URL,
+    config.BACKEND_API_ENABLE_SUPPORTERS &&
+      config.BACKEND_API_PADDLE_KEY &&
+      config.BACKEND_API_PADDLE_URL,
   );
 }
 

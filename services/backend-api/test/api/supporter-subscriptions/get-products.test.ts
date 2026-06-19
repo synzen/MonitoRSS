@@ -105,6 +105,7 @@ describe("GET /api/v1/subscription-products", { concurrency: true }, () => {
       paddleApi = createMockPaddleApi();
       ctx = await createAppTestContext({
         configOverrides: {
+          BACKEND_API_ENABLE_SUPPORTERS: true,
           BACKEND_API_PADDLE_URL: paddleApi.server.host,
           BACKEND_API_PADDLE_KEY: "test-paddle-key",
         },

@@ -4,9 +4,10 @@ import { pages } from "@/constants";
 import { usePaddleContext } from "@/features/subscriptionProducts";
 import { useCurrentWorkspace } from "../../contexts/CurrentWorkspaceContext";
 
-// A workspace is dormant when billing exists on this instance but the
-// workspace has no active subscription. Self-hosted instances without Paddle
-// never show any dormant UI.
+// A workspace is dormant when billing is enabled on this instance but the
+// workspace has no active subscription. Self-hosted instances with billing off
+// never show any dormant UI. `isConfigured` reflects the billing master switch
+// (supporters enabled and Paddle configured), not merely a Paddle client token.
 const useWorkspaceDormancy = () => {
   const { isConfigured } = usePaddleContext();
   const workspace = useCurrentWorkspace();

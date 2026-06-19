@@ -52,10 +52,11 @@ const configSchema = z.object({
   BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: z.coerce.number().default(10),
   BACKEND_API_DEFAULT_MAX_FEEDS: z.coerce.number().default(5),
   BACKEND_API_DEFAULT_MAX_USER_FEEDS: z.coerce.number().default(5),
-  // Hardcoded workspace feed limit. Forward-compatible: a future
-  // workspace-level Paddle subscription will resolve this dynamically per
-  // workspace.
-  BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS: z.coerce.number().default(140),
+  // Self-host workspace feed cap. Unset means unlimited: the per-tier cap is a
+  // billing construct, so a self-host instance (no Paddle) is uncapped unless
+  // the operator opts into a limit. Ignored when Paddle is configured, where the
+  // workspace subscription tier dictates the cap.
+  BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS: z.coerce.number().optional(),
   BACKEND_API_DEFAULT_DATE_FORMAT: z
     .string()
     .default("ddd, D MMMM YYYY, h:mm A z"),

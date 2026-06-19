@@ -19,6 +19,7 @@ import {
 import { generateTestId } from "./test-id";
 
 const DEFAULT_CONFIG = {
+  BACKEND_API_ENABLE_SUPPORTERS: true,
   BACKEND_API_PADDLE_KEY: "test-paddle-key",
   BACKEND_API_PADDLE_URL: "https://sandbox-api.paddle.com",
 } as Config;

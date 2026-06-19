@@ -110,12 +110,29 @@ async function stopCompose(): Promise<void> {
   });
 }
 
+// Billing is on only when the supporter program is enabled AND Paddle is
+// configured. When it's off the stack runs in the self-host posture (workspaces
+// fully active, no subscriptions), so there is no webhook to receive and the
+// tunnel + notification PATCH are skipped entirely. Mirrors isBillingEnabled in
+// the backend (ENABLE_SUPPORTERS master switch + PADDLE_KEY + PADDLE_URL).
+function isBillingEnabled(): boolean {
+  return Boolean(
+    process.env.BACKEND_API_ENABLE_SUPPORTERS === "true" &&
+      process.env.BACKEND_API_PADDLE_KEY &&
+      process.env.BACKEND_API_PADDLE_URL,
+  );
+}
+
 async function main() {
   loadEnvFile(join(REPO_ROOT, ".env.local"));
   loadEnvFile(join(__dirname, "..", ".env"));
 
   const port = Number(process.env.BACKEND_API_PORT ?? 8000);
-  process.env.E2E_PADDLE_NOTIFICATION_SETTING_ID = resolveNotificationSettingId();
+  const billingEnabled = isBillingEnabled();
+  if (billingEnabled) {
+    process.env.E2E_PADDLE_NOTIFICATION_SETTING_ID =
+      resolveNotificationSettingId();
+  }
 
   let shuttingDown = false;
   await composeUp();
@@ -136,6 +153,15 @@ async function main() {
   process.on("SIGINT", () => void shutdown(0));
   process.on("SIGTERM", () => void shutdown(0));
   compose.on("exit", (code) => void shutdown(code ?? 0));
+
+  if (!billingEnabled) {
+    console.log("\n========================================================");
+    console.log("  Billing disabled (self-host posture).");
+    console.log("  Skipping cloudflared tunnel and webhook setup.");
+    console.log("  Dev stack is running with --watch. Ctrl+C to stop.");
+    console.log("========================================================\n");
+    return;
+  }
 
   console.log(`Opening cloudflared tunnel to http://localhost:${port}...`);
   const tunnelUrl = await startTunnel(port);
