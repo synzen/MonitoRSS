@@ -185,7 +185,7 @@ test.describe("Paddle workspace conversion", () => {
     const leftRow = page.getByRole("row").filter({
       has: page.getByRole("link", { name: "Leave Feed", exact: true }),
     });
-    await expect(leftRow.getByLabel("Disabled (feed limit exceeded)")).toBeVisible({
+    await expect(leftRow.getByLabel("Feed limit exceeded")).toBeVisible({
       timeout: 15000,
     });
 
@@ -321,7 +321,7 @@ test.describe("Paddle workspace conversion", () => {
     const oldestRow = page.getByRole("row").filter({
       has: page.getByRole("link", { name: "Oldest Feed", exact: true }),
     });
-    await expect(oldestRow.getByLabel("Disabled (feed limit exceeded)")).toBeVisible({
+    await expect(oldestRow.getByLabel("Feed limit exceeded")).toBeVisible({
       timeout: 15000,
     });
 

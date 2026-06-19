@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Navigate, Outlet, useParams } from "react-router-dom";
-import { Spinner } from "@chakra-ui/react";
+import { LoadingFallback } from "@/components";
 import { pages } from "@/constants";
 import { FeedScopeProvider } from "@/features/feed";
 import RouteParams from "@/types/RouteParams";
@@ -32,7 +32,7 @@ export const WorkspaceScopeLayout = () => {
   } = useWorkspace({ workspaceSlug: enabled ? workspaceSlug : undefined });
 
   if (flagStatus === "loading") {
-    return <Spinner mt={24} />;
+    return <LoadingFallback />;
   }
 
   if (!enabled) {
@@ -40,7 +40,7 @@ export const WorkspaceScopeLayout = () => {
   }
 
   if (workspaceStatus === "loading") {
-    return <Spinner mt={24} />;
+    return <LoadingFallback />;
   }
 
   if (error || !workspace) {
@@ -70,7 +70,7 @@ export const WorkspaceScopeLayout = () => {
           refreshRedditConnection: refetch,
         }}
       >
-        <Suspense fallback={<Spinner mt={24} />}>
+        <Suspense fallback={<LoadingFallback />}>
           <Outlet />
         </Suspense>
       </FeedScopeProvider>

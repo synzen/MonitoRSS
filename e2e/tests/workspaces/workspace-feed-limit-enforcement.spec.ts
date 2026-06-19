@@ -176,7 +176,7 @@ test.describe("Workspace feed limit enforcement", () => {
 
     await expect(feedRow(page, "Paused Feed").getByLabel("Ok")).toBeVisible({ timeout: 10000 });
     await expect(
-      feedRow(page, "Oldest Feed").getByLabel("Disabled (feed limit exceeded)"),
+      feedRow(page, "Oldest Feed").getByLabel("Feed limit exceeded"),
     ).toBeVisible({
       timeout: 10000,
     });

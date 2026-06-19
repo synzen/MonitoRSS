@@ -1,5 +1,6 @@
 export * from "./CategoryText";
 export * from "./Loading";
+export * from "./LoadingFallback";
 export * from "./Menu";
 export * from "./Navbar";
 export * from "./SidebarHeading";

@@ -1,13 +1,13 @@
 import { Route, Routes, Navigate } from "react-router-dom";
 import * as Sentry from "@sentry/react";
-import { Heading, Spinner, Stack } from "@chakra-ui/react";
+import { Heading, Stack } from "@chakra-ui/react";
 import { Suspense } from "react";
 import { RequireAuth } from "@/features/auth";
 import { PageContentV2 } from "../components/PageContentV2";
 import { AppHeader } from "./AppHeader";
 import { pages } from "../constants";
 import { FeedConnectionType } from "../types";
-import { Loading } from "../components";
+import { Loading, LoadingFallback } from "../components";
 import { UserFeedStatusFilterProvider, MultiSelectUserFeedProvider } from "@/features/feed";
 import { WorkspaceScopeLayout, InvitePage } from "@/features/workspaces";
 import { NotFound } from "./NotFound";
@@ -71,7 +71,7 @@ const Pages: React.FC = () => (
         <RequireAuth>
           <PageContentV2 header={<AppHeader invertBackground />}>
             <SuspenseErrorBoundary>
-              <Suspense fallback={<Spinner mt={24} />}>
+              <Suspense fallback={<LoadingFallback />}>
                 <Checkout cancelUrl={pages.userFeeds()} />
               </Suspense>
             </SuspenseErrorBoundary>
@@ -85,7 +85,7 @@ const Pages: React.FC = () => (
         <RequireAuth>
           <PageContentV2 header={<AppHeader />}>
             <SuspenseErrorBoundary>
-              <Suspense fallback={<Spinner mt={24} />}>
+              <Suspense fallback={<LoadingFallback />}>
                 <UserSettings />
               </Suspense>
             </SuspenseErrorBoundary>
@@ -98,7 +98,7 @@ const Pages: React.FC = () => (
       element={
         <RequireAuth waitForUserFetch>
           <AppHeader invertBackground />
-          <Suspense fallback={<Spinner mt={24} />}>
+          <Suspense fallback={<LoadingFallback />}>
             <AddUserFeeds />
           </Suspense>
         </RequireAuth>
@@ -109,7 +109,7 @@ const Pages: React.FC = () => (
       element={
         <RequireAuth waitForUserFetch>
           <AppHeader />
-          <Suspense fallback={<Spinner mt={24} />}>
+          <Suspense fallback={<LoadingFallback />}>
             <MultiSelectUserFeedProvider>
               <UserFeedStatusFilterProvider>
                 <UserFeeds />
@@ -124,7 +124,7 @@ const Pages: React.FC = () => (
       element={
         <RequireAuth>
           <PageContentV2 header={<AppHeader />}>
-            <Suspense fallback={<Spinner mt={24} />}>
+            <Suspense fallback={<LoadingFallback />}>
               <UserFeed />
             </Suspense>
           </PageContentV2>
@@ -140,7 +140,7 @@ const Pages: React.FC = () => (
       element={
         <RequireAuth>
           <PageContentV2 header={<AppHeader />}>
-            <Suspense fallback={<Spinner mt={24} />}>
+            <Suspense fallback={<LoadingFallback />}>
               <ConnectionSettings connectionType={FeedConnectionType.DiscordChannel} />
             </Suspense>
           </PageContentV2>
@@ -189,7 +189,7 @@ const Pages: React.FC = () => (
         element={
           <>
             <AppHeader />
-            <Suspense fallback={<Spinner mt={24} />}>
+            <Suspense fallback={<LoadingFallback />}>
               <MultiSelectUserFeedProvider>
                 <UserFeedStatusFilterProvider>
                   <UserFeeds />
@@ -204,7 +204,7 @@ const Pages: React.FC = () => (
         element={
           <>
             <AppHeader invertBackground />
-            <Suspense fallback={<Spinner mt={24} />}>
+            <Suspense fallback={<LoadingFallback />}>
               <AddUserFeeds />
             </Suspense>
           </>
@@ -214,7 +214,7 @@ const Pages: React.FC = () => (
         path="feeds/:feedId"
         element={
           <PageContentV2 header={<AppHeader />}>
-            <Suspense fallback={<Spinner mt={24} />}>
+            <Suspense fallback={<LoadingFallback />}>
               <UserFeed />
             </Suspense>
           </PageContentV2>
@@ -224,7 +224,7 @@ const Pages: React.FC = () => (
         path="feeds/:feedId/discord-channel-connections/:connectionId"
         element={
           <PageContentV2 header={<AppHeader />}>
-            <Suspense fallback={<Spinner mt={24} />}>
+            <Suspense fallback={<LoadingFallback />}>
               <ConnectionSettings connectionType={FeedConnectionType.DiscordChannel} />
             </Suspense>
           </PageContentV2>

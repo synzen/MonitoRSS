@@ -67,15 +67,32 @@ function resolveNotificationSettingId(): string {
   );
 }
 
-function startCompose(): ChildProcess {
-  const proc = spawn(
-    "docker",
-    ["compose", "-f", COMPOSE_FILE, "up", "--watch"],
-    { cwd: REPO_ROOT, stdio: "inherit" },
-  );
+// Bring the stack up detached so its container logs don't flood the terminal.
+async function composeUp(): Promise<void> {
+  await new Promise<void>((resolveUp, rejectUp) => {
+    const up = spawn("docker", ["compose", "-f", COMPOSE_FILE, "up", "-d"], {
+      cwd: REPO_ROOT,
+      stdio: "inherit",
+    });
+    up.on("error", rejectUp);
+    up.on("exit", (code) =>
+      code === 0
+        ? resolveUp()
+        : rejectUp(new Error(`docker compose up exited with code ${code}`)),
+    );
+  });
+}
+
+// Run `docker compose watch` in the foreground for just the sync/rebuild
+// output. The returned process owns the session lifecycle.
+function startWatch(): ChildProcess {
+  const proc = spawn("docker", ["compose", "-f", COMPOSE_FILE, "watch"], {
+    cwd: REPO_ROOT,
+    stdio: "inherit",
+  });
 
   proc.on("error", (err) => {
-    console.error(`Failed to start docker compose: ${err.message}`);
+    console.error(`Failed to start docker compose watch: ${err.message}`);
     process.exit(1);
   });
 
@@ -101,7 +118,8 @@ async function main() {
   process.env.E2E_PADDLE_NOTIFICATION_SETTING_ID = resolveNotificationSettingId();
 
   let shuttingDown = false;
-  const compose = startCompose();
+  await composeUp();
+  const compose = startWatch();
 
   async function shutdown(code: number) {
     if (shuttingDown) return;
