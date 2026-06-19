@@ -162,8 +162,8 @@ test.describe("Workspace invitations (inviter -> invitee round-trip)", () => {
       selfRole: "owner",
     });
 
-    // A fresh invitee address (no 6-digit run, so the captured code is never
-    // confused with digits in the address).
+    // A fresh, unique invitee address so this spec's captured mail can't collide
+    // with a sibling spec's.
     const invitedEmail = `invitee-${Date.now().toString(36)}-${Math.random()
       .toString(36)
       .slice(2, 8)}@example.com`;

@@ -56,8 +56,6 @@ test.describe("Workspace invite self-accept guard", () => {
     // Two addresses. The owner verifies `ownerEmail` to create the workspace, then
     // invites a DIFFERENT address `invitedEmail`. Inviting an address you ALREADY
     // own is blocked at creation, so the scenario needs a distinct invited address.
-    // Fresh addresses with no 6-digit run, so a captured code is never confused
-    // with digits in the address.
     const suffix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     const ownerEmail = `owner-${suffix}@example.com`;
     const invitedEmail = `invited-${suffix}@example.com`;

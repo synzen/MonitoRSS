@@ -10,6 +10,8 @@ import { generateTestId } from "./test-id";
 
 const DEFAULT_CONFIG = {
   BACKEND_API_ENABLE_SUPPORTERS: true,
+  BACKEND_API_PADDLE_KEY: "paddle-key",
+  BACKEND_API_PADDLE_URL: "https://paddle.test",
   BACKEND_API_ENCRYPTION_KEY_HEX: "0".repeat(64),
 } as Config;
 

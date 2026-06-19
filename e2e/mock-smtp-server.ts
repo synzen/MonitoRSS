@@ -36,7 +36,7 @@ function extractRecipient(rcptLine: string): string | null {
 // Nodemailer transfer-encodes the body (quoted-printable, sometimes base64), and
 // quoted-printable soft-wraps long lines with "=\r\n" — which can fall in the
 // middle of the 6-digit code. Decode both so the code is contiguous before
-// extracting. The verification email renders the code as the only 6-digit run.
+// extracting.
 function decodeQuotedPrintable(input: string): string {
   return input
     .replace(/=\r?\n/g, "") // soft line breaks
@@ -45,10 +45,9 @@ function decodeQuotedPrintable(input: string): string {
     );
 }
 
-// Drop the SMTP/MIME headers (everything up to the first blank line) so a
-// 6-digit run in a header — notably the recipient address, which in tests may
-// contain digits — is never mistaken for the code. Only the message body is
-// scanned.
+// Drop the SMTP/MIME headers (everything up to the first blank line) so only the
+// message body is scanned for the code, invite link, and /message content, never
+// header values like the recipient address.
 function stripHeaders(raw: string): string {
   const blank = raw.search(/\r?\n\r?\n/);
   return blank === -1 ? raw : raw.slice(blank);
@@ -74,8 +73,12 @@ function decodeBodyCandidates(raw: string): string[] {
 }
 
 function extractCode(body: string): string | null {
+  // The verification email is the only code-bearing email, and it renders the
+  // code inside <td class="email-code" ...>{{code}}</td>. Anchor on that cell: a
+  // blind scan for the first 6-digit run would instead grab one of the shell's
+  // 6-digit hex style constants (e.g. #141417, #212124) from the <head> CSS.
   for (const candidate of decodeBodyCandidates(body)) {
-    const match = /(?<!\d)(\d{6})(?!\d)/.exec(candidate);
+    const match = /class="email-code"[^>]*>\s*(\d{6})\s*</.exec(candidate);
     if (match) return match[1];
   }
   return null;

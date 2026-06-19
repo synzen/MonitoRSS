@@ -33,6 +33,11 @@ const PADDLE_CHECKOUT_TESTS = [
   // workspaces only exist when Paddle is configured), and e2e-mock.sh blanks
   // the Paddle vars for every non-billing run.
   "**/billing/dormant-workspace-feed-retry.spec.ts",
+  // Also not a checkout test: it opens the pricing dialog from the account
+  // settings page, which only renders when enableBilling is true (Paddle
+  // configured). Without this it runs under e2e-web with Paddle blanked, so the
+  // "Manage Subscription" button never appears and the test times out.
+  "**/billing/pricing-dialog-focus.spec.ts",
 ];
 
 export default defineConfig({
