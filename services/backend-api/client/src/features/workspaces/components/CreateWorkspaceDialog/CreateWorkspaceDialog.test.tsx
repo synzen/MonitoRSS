@@ -85,24 +85,24 @@ describe("CreateWorkspaceDialog", () => {
     h.paddleConfigured.current = true;
   });
 
-  it("discloses the workspace plan and free personal feeds before email verification", () => {
+  it("discloses that creating is free but feeds need a plan before email verification", () => {
     mockUnverified();
 
     renderDialog();
 
-    expect(screen.getByText(/creating a workspace is free/i)).toBeInTheDocument();
-    expect(screen.getByText(/needs a separate workspace plan/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/your personal feeds stay free and aren't affected/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/creating one is free/i)).toBeInTheDocument();
+    expect(screen.getByText(/adding feeds needs a separate workspace plan/i)).toBeInTheDocument();
   });
 
-  it("keeps the disclosure visible on the create form step", () => {
+  it("keeps the disclosure visible, with the full reassurance, on the create form step", () => {
     mockVerified();
 
     renderDialog();
 
-    expect(screen.getByText(/creating a workspace is free/i)).toBeInTheDocument();
+    expect(screen.getByText(/creating one is free/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/your personal feeds stay free and aren't affected/i),
+    ).toBeInTheDocument();
   });
 
   it("shows only the value explainer when billing is not configured", () => {
@@ -112,7 +112,9 @@ describe("CreateWorkspaceDialog", () => {
     renderDialog();
 
     expect(
-      screen.getByText(/a workspace is a shared space where you and others manage feeds together/i),
+      screen.getByText(
+        /a workspace is a shared space where you and your team manage feeds together/i,
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/workspace plan/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/free/i)).not.toBeInTheDocument();

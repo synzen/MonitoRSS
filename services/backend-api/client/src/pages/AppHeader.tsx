@@ -1,6 +1,6 @@
 import { useDisclosure } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
-import { FaPlus, FaRightFromBracket } from "react-icons/fa6";
+import { FaRightFromBracket } from "react-icons/fa6";
 import { useParams } from "react-router-dom";
 import { MenuItem } from "@/components/ui/menu";
 import { LogoutButton } from "@/features/auth";
@@ -9,7 +9,6 @@ import { SearchFeedsModal } from "@/features/feed";
 import {
   CreateWorkspaceDialog,
   useIsWorkspacesEnabled,
-  useWorkspaces,
   WorkspaceDormantBanner,
   WorkspaceSwitcher,
 } from "@/features/workspaces";
@@ -25,9 +24,10 @@ interface Props {
  * App-shell header container. Lives in the page layer (the composition root,
  * which may import features) so the shared-base NewHeader can stay feature-free.
  *
- * Workspaces: the workspace switcher is count-gated here — it renders only when the
- * feature is enabled AND the user belongs to >=1 workspace. At 0 workspaces the header is
- * unchanged except for a "Create a workspace" entry in the account menu.
+ * Workspaces: the workspace switcher renders whenever the feature is enabled, including at
+ * 0 workspaces (where it shows the "Personal" scope and surfaces "Create a workspace" inside
+ * its menu). Discovery and switching share one place rather than splitting create-workspace
+ * into a separate account-menu entry.
  */
 export const AppHeader = ({ invertBackground }: Props) => {
   const { data: discordBotData, status, error } = useDiscordBot();
@@ -37,8 +37,6 @@ export const AppHeader = ({ invertBackground }: Props) => {
   const { workspaceSlug } = useParams<RouteParams>();
 
   const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
-  const { workspaces } = useWorkspaces({ enabled: workspacesEnabled });
-  const hasWorkspaces = (workspaces?.length ?? 0) > 0;
   const createWorkspaceDisclosure = useDisclosure();
 
   return (
@@ -51,19 +49,11 @@ export const AppHeader = ({ invertBackground }: Props) => {
         user={discordUserMe}
         logoHref={pages.userFeeds(workspaceSlug ? { workspaceSlug } : undefined)}
         workspaceSlot={
-          workspacesEnabled && hasWorkspaces ? (
+          workspacesEnabled ? (
             <WorkspaceSwitcher onCreateWorkspace={createWorkspaceDisclosure.onOpen} />
           ) : undefined
         }
         searchSlot={<SearchFeedsModal />}
-        accountMenuSlot={
-          workspacesEnabled && !hasWorkspaces ? (
-            <MenuItem value="create-workspace" onClick={createWorkspaceDisclosure.onOpen}>
-              <FaPlus />
-              Create a workspace
-            </MenuItem>
-          ) : undefined
-        }
         logoutSlot={
           <LogoutButton
             trigger={

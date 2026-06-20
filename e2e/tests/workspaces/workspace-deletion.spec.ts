@@ -22,7 +22,7 @@ test.describe("Workspace deletion", () => {
     await waitForAuthenticatedApp(page);
 
     // Create the workspace that will be deleted.
-    await page.getByRole("button", { name: "Account settings" }).click();
+    await page.getByRole("button", { name: /switch workspace/i }).click();
     await page.getByRole("menuitem", { name: /create a workspace/i }).click();
     const createDialog = page.getByRole("dialog");
     const workspaceName = `E2E Deletion ${discordUserId}`;
@@ -65,8 +65,11 @@ test.describe("Workspace deletion", () => {
       page.getByText(`${workspaceName} and all of its feeds have been deleted.`),
     ).toBeVisible();
 
-    // Back to zero workspaces: the header switcher is gone entirely.
-    await expect(page.getByRole("button", { name: /switch workspace/i })).toHaveCount(0);
+    // Back to zero workspaces: the switcher stays in the header (it's the create
+    // entry point in every scope) and returns to the personal scope.
+    await expect(
+      page.getByRole("button", { name: "Switch workspace, current: Personal" }),
+    ).toBeVisible();
 
     // A stale bookmark to the deleted workspace resolves to the not-found page.
     await page.goto(workspaceUrl);

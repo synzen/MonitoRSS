@@ -47,11 +47,21 @@ interface Props {
 const FORM_ID = "create-workspace-form";
 
 const WORKSPACE_VALUE_EXPLAINER =
-  "A workspace is a shared space where you and others manage feeds together, with more workspace features on the way.";
+  "A workspace is a shared space where you and your team manage feeds together.";
 
+// Short, honest billing line shown from the first screen so a "this is free"
+// assumption can't form before the user invests any effort.
+const WORKSPACE_BILLING_CAVEAT =
+  "Creating one is free. Adding feeds needs a separate workspace plan.";
+
+// Fuller reassurance shown once the user is committing (naming the workspace),
+// where the "your personal feeds aren't affected" comfort matters most.
 const WORKSPACE_BILLING_EXPLAINER =
-  "Creating a workspace is free, but adding feeds to it needs a separate workspace plan. Your personal" +
-  ` feeds stay free and aren't affected. ${WORKSPACE_VALUE_EXPLAINER}`;
+  `${WORKSPACE_VALUE_EXPLAINER} Creating one is free. Your personal feeds stay free and aren't` +
+  " affected. Adding feeds to a workspace needs a separate workspace plan.";
+
+const VERIFY_EMAIL_INTRO =
+  "Workspaces let you invite people by email, so first let's confirm yours.";
 
 export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
   const navigate = useNavigate();
@@ -121,6 +131,20 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
     }
   };
 
+  // Before verification, lead with the value one-liner plus a short billing caveat;
+  // the fuller reassurance ("personal feeds aren't affected") is reserved for the
+  // naming step, where the user is committing. With billing unconfigured (self-host),
+  // no billing copy is shown at all.
+  const resolveExplainer = () => {
+    if (!billingConfigured) {
+      return WORKSPACE_VALUE_EXPLAINER;
+    }
+
+    return verifiedEmail
+      ? WORKSPACE_BILLING_EXPLAINER
+      : `${WORKSPACE_VALUE_EXPLAINER} ${WORKSPACE_BILLING_CAVEAT}`;
+  };
+
   return (
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
       <DialogContent>
@@ -130,11 +154,12 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
         <DialogCloseTrigger />
         <DialogBody>
           <Text color="fg.muted" mb={4}>
-            {billingConfigured ? WORKSPACE_BILLING_EXPLAINER : WORKSPACE_VALUE_EXPLAINER}
+            {resolveExplainer()}
           </Text>
           {!verifiedEmail ? (
             <VerifyEmailStep
               defaultEmail={discordEmail}
+              intro={VERIFY_EMAIL_INTRO}
               onVerified={() =>
                 setAnnouncement(
                   "Your email is verified. Enter a workspace name to create your workspace.",

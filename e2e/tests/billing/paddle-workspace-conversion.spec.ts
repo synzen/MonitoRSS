@@ -101,7 +101,7 @@ test.describe("Paddle workspace conversion", () => {
     // 3. Create a team (never-activated; allowed while nothing else is funded).
     await page.goto("/feeds");
     await waitForAuthenticatedApp(page);
-    await page.getByRole("button", { name: "Account settings" }).click();
+    await page.getByRole("button", { name: /switch workspace/i }).click();
     await page.getByRole("menuitem", { name: /create a workspace/i }).click();
     const createDialog = page.getByRole("dialog");
     const workspaceName = `E2E Convert Team ${Date.now()}`;
@@ -246,7 +246,7 @@ test.describe("Paddle workspace conversion", () => {
     // 3. Create a team.
     await page.goto("/feeds");
     await waitForAuthenticatedApp(page);
-    await page.getByRole("button", { name: "Account settings" }).click();
+    await page.getByRole("button", { name: /switch workspace/i }).click();
     await page.getByRole("menuitem", { name: /create a workspace/i }).click();
     const createDialog = page.getByRole("dialog");
     const workspaceName = `E2E Convert Overlimit ${Date.now()}`;

@@ -21,7 +21,7 @@ async function waitForAuthenticatedApp(page: Page): Promise<void> {
 }
 
 async function openCreateTeamVerifyStep(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Account settings" }).click();
+  await page.getByRole("button", { name: /switch workspace/i }).click();
   await page.getByRole("menuitem", { name: /create a workspace/i }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("button", { name: /send code/i })).toBeVisible({

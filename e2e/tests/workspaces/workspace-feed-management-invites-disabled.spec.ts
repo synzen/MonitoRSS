@@ -24,7 +24,7 @@ async function enableWorkspacesForCurrentUser(page: Page): Promise<void> {
 }
 
 async function createWorkspace(page: Page, workspaceName: string): Promise<void> {
-  await page.getByRole("button", { name: "Account settings" }).click();
+  await page.getByRole("button", { name: /switch workspace/i }).click();
   await page.getByRole("menuitem", { name: /create a workspace/i }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Workspace name").fill(workspaceName);

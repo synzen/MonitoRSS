@@ -48,8 +48,8 @@ test.describe("Workspace self-host posture (Paddle not configured)", () => {
     await waitForAuthenticatedApp(page);
     await enableWorkspacesForCurrentUser(page);
 
-    // First workspace via the account menu (the entry point at 0 workspaces).
-    await page.getByRole("button", { name: "Account settings" }).click();
+    // First workspace via the workspace switcher (the entry point in every scope).
+    await page.getByRole("button", { name: /switch workspace/i }).click();
     await page.getByRole("menuitem", { name: /create a workspace/i }).click();
     await fillAndSubmitCreateTeamDialog(page, `E2E SelfHost Team ${Date.now()}`);
 
@@ -83,9 +83,9 @@ test.describe("Workspace self-host posture (Paddle not configured)", () => {
     await expect(page.getByRole("link", { name: /manage billing/i })).toHaveCount(0);
 
     // No creation cap without billing: a second never-activated workspace is
-    // allowed (entry point moves to the team switcher once a team exists).
+    // allowed.
     await page.getByRole("button", { name: /Switch workspace/ }).click();
-    await page.getByRole("menuitem", { name: /create workspace/i }).click();
+    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
     await fillAndSubmitCreateTeamDialog(page, `E2E SelfHost Team B ${Date.now()}`);
     await expectNoBillingUi(page);
   });

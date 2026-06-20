@@ -16,7 +16,7 @@ async function waitForAuthenticatedApp(page: Page): Promise<void> {
 }
 
 test.describe("Workspaces", () => {
-  test("creates a workspace from the account menu and lands in workspace scope", async ({
+  test("creates a workspace from the switcher and lands in workspace scope", async ({
     page,
   }) => {
     await page.goto("/feeds");
@@ -28,9 +28,9 @@ test.describe("Workspaces", () => {
     await page.reload();
     await waitForAuthenticatedApp(page);
 
-    // 0 workspaces -> no switcher; the create entry lives in the account menu.
-    await expect(page.getByRole("button", { name: /switch workspace/i })).toHaveCount(0);
-    await page.getByRole("button", { name: "Account settings" }).click();
+    // The switcher is present even at 0 workspaces, and "Create a workspace" lives
+    // inside it.
+    await page.getByRole("button", { name: /switch workspace/i }).click();
     await page.getByRole("menuitem", { name: /create a workspace/i }).click();
 
     const dialog = page.getByRole("dialog");
@@ -74,7 +74,7 @@ test.describe("Workspaces", () => {
     await page.reload();
     await waitForAuthenticatedApp(page);
 
-    await page.getByRole("button", { name: "Account settings" }).click();
+    await page.getByRole("button", { name: /switch workspace/i }).click();
     await page.getByRole("menuitem", { name: /create a workspace/i }).click();
 
     const dialog = page.getByRole("dialog");
@@ -90,10 +90,15 @@ test.describe("Workspaces", () => {
     await waitForAuthenticatedApp(page);
     // No workspaces flag seeded for this user.
 
-    // No switcher, and no create-workspace entry in the account menu.
+    // No switcher in the header, and no "Your workspaces" section on the account
+    // settings page (the section self-gates on the feature flag).
     await expect(page.getByRole("button", { name: /switch workspace/i })).toHaveCount(0);
     await page.getByRole("button", { name: "Account settings" }).click();
-    await expect(page.getByRole("menuitem", { name: /create a workspace/i })).toHaveCount(0);
+    await page.getByRole("menuitem", { name: /account settings/i }).click();
+    await expect(page.getByRole("heading", { name: "Account Settings" })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByRole("heading", { name: "Your workspaces" })).toHaveCount(0);
   });
 
   test("leaves the personal feeds dashboard unchanged", async ({ page }) => {

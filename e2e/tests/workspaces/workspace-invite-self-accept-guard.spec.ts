@@ -62,7 +62,7 @@ test.describe("Workspace invite self-accept guard", () => {
     await resetCapturedMail([ownerEmail, invitedEmail]);
 
     // --- Create a workspace through the UI, verifying ownerEmail via real OTP. ---
-    await page.getByRole("button", { name: "Account settings" }).click();
+    await page.getByRole("button", { name: /switch workspace/i }).click();
     await page.getByRole("menuitem", { name: /create a workspace/i }).click();
 
     const dialog = page.getByRole("dialog");
@@ -140,10 +140,9 @@ test.describe("Workspace invite self-accept guard", () => {
     // verified email is still set). Had the invite flow overwritten the verified
     // email, this would instead show the verify step.
     //
-    // Once the user has a workspace, "Create team" lives in the workspace switcher
-    // (the account-menu entry only appears at zero workspaces), so open it there.
+    // "Create a workspace" lives in the workspace switcher, so open it there.
     await page.getByRole("button", { name: /switch workspace, current:/i }).click();
-    await page.getByRole("menuitem", { name: /create workspace/i }).click();
+    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
     const dialog2 = page.getByRole("dialog");
     await expect(dialog2.getByLabel("Workspace name")).toBeVisible({ timeout: 20000 });
     await expect(dialog2.getByRole("button", { name: /send code/i })).toHaveCount(0);

@@ -22,18 +22,11 @@ async function enableWorkspacesForCurrentUser(page: Page): Promise<void> {
   await waitForAuthenticatedApp(page);
 }
 
-// Creates a workspace from whichever scope is active. The "Create team" entry lives in
-// the account menu at 0 workspaces and moves into the workspace switcher once one exists,
-// so try the switcher first and fall back to the account menu.
+// Creates a workspace from whichever scope is active. "Create a workspace" lives in the
+// workspace switcher in every scope, including at 0 workspaces.
 async function createWorkspace(page: Page, workspaceName: string): Promise<string> {
-  const switcher = page.getByRole("button", { name: /Switch workspace/ });
-  if (await switcher.isVisible().catch(() => false)) {
-    await switcher.click();
-    await page.getByRole("menuitem", { name: /create workspace/i }).click();
-  } else {
-    await page.getByRole("button", { name: "Account settings" }).click();
-    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
-  }
+  await page.getByRole("button", { name: /switch workspace/i }).click();
+  await page.getByRole("menuitem", { name: /create a workspace/i }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Workspace name").fill(workspaceName);
   await dialog.getByRole("button", { name: "Create workspace" }).click();

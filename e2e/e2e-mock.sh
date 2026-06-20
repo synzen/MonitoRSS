@@ -18,7 +18,11 @@ STRIDE=1000
 # stack, a leaked mock-server from a prior run, or another e2e instance). Uses bash's
 # /dev/tcp so it needs no lsof/netstat and behaves the same on Git Bash and Linux CI.
 port_in_use() {
+  # Probe BOTH loopback stacks: a dev server may listen on IPv6 only (e.g. vite on
+  # [::1]) while Playwright binds the port dual-stack, so an IPv4-only check would
+  # miss the listener and let the run pick an already-taken instance.
   (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && exec 3>&- && return 0
+  (exec 3<>"/dev/tcp/::1/$1") 2>/dev/null && exec 3>&- && return 0
   return 1
 }
 

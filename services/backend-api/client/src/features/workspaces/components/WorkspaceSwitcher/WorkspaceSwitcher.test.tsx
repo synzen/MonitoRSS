@@ -132,7 +132,7 @@ describe("WorkspaceSwitcher", () => {
     renderSwitcher();
     fireEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
 
-    expect(await screen.findByRole("menuitem", { name: /create workspace/i })).toBeInTheDocument();
+    expect(await screen.findByRole("menuitem", { name: /create a workspace/i })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /settings/i })).not.toBeInTheDocument();
   });
 
@@ -156,11 +156,62 @@ describe("WorkspaceSwitcher", () => {
     const onCreateWorkspace = renderSwitcher();
     fireEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
     const items = await screen.findAllByRole("menuitem", {
-      name: /create workspace/i,
+      name: /create a workspace/i,
     });
     fireEvent.click(items[items.length - 1]);
 
     expect(onCreateWorkspace).toHaveBeenCalled();
+  });
+
+  it("renders the trigger and a create-workspace pitch when the user has no workspaces", async () => {
+    mockWorkspaces({ workspaces: [] });
+
+    renderSwitcher();
+
+    const trigger = screen.getByRole("button", {
+      name: "Switch workspace, current: Personal",
+    });
+    expect(trigger).toBeInTheDocument();
+
+    fireEvent.click(trigger);
+
+    expect(await screen.findByRole("menuitem", { name: /create a workspace/i })).toHaveTextContent(
+      "Collaborate with a team",
+    );
+  });
+
+  it("labels the trigger 'My feeds' at zero workspaces, keeping 'Personal' as its accessible name", () => {
+    mockWorkspaces({ workspaces: [] });
+
+    renderSwitcher();
+
+    const trigger = screen.getByRole("button", {
+      name: "Switch workspace, current: Personal",
+    });
+    expect(trigger).toHaveTextContent("My feeds");
+    expect(trigger).not.toHaveTextContent("Personal");
+  });
+
+  it("shows 'Personal' on the trigger once at least one workspace exists", () => {
+    mockWorkspaces({
+      workspaces: [{ id: "t1", name: "Acme", slug: "acme-marketing", role: "admin" }],
+    });
+
+    renderSwitcher();
+
+    expect(
+      screen.getByRole("button", { name: "Switch workspace, current: Personal" }),
+    ).toHaveTextContent("Personal");
+  });
+
+  it("uses 'Your feeds' as the scope group label at zero workspaces", async () => {
+    mockWorkspaces({ workspaces: [] });
+
+    renderSwitcher();
+    fireEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
+
+    expect(await screen.findByText("Your feeds")).toBeInTheDocument();
+    expect(screen.queryByText("Switch scope")).not.toBeInTheDocument();
   });
 
   it("surfaces a retryable error when the workspaces query fails", async () => {
