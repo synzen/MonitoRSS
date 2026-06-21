@@ -267,9 +267,7 @@ export class PaddleWebhooksService {
         await this.deps.workspaceRepository.findById(workspaceId);
 
       if (!existingWorkspace) {
-        logger.warn(
-          `Ignoring subscription event for missing workspace ${workspaceId} (customer ${event.data.customer_id})`,
-        );
+        this.logMissingWorkspace(event, workspaceId);
 
         return;
       }
@@ -297,9 +295,7 @@ export class PaddleWebhooksService {
 
       if (!workspace) {
         // Deleted between the existence check above and this write; ack as well.
-        logger.warn(
-          `Ignoring subscription event for missing workspace ${workspaceId} (customer ${event.data.customer_id})`,
-        );
+        this.logMissingWorkspace(event, workspaceId);
 
         return;
       }
@@ -430,6 +426,36 @@ export class PaddleWebhooksService {
     }
 
     return mapped;
+  }
+
+  // A workspace-routed event whose workspace no longer exists is acknowledged
+  // (Paddle stops retrying), but the severity differs by event type. The benign
+  // case is the cancellation tail: deleting a workspace schedules a period-end
+  // Paddle cancellation, so subscription.updated events keep arriving for an
+  // already-gone workspace. An activation, by contrast, is a brand-new paid
+  // subscription with no workspace to attach it to: the customer was charged and
+  // nothing surfaces the subscription to them. That must page (logger.error ->
+  // Datadog), not sit quietly in warn-level logs.
+  private logMissingWorkspace(
+    event: PaddleEventSubscriptionUpdated | PaddleEventSubscriptionActivated,
+    workspaceId: string,
+  ): void {
+    const message = `Ignoring subscription event for missing workspace ${workspaceId} (customer ${event.data.customer_id})`;
+
+    if (event.event_type === "subscription.activated") {
+      logger.error(
+        `Paid subscription activated against missing workspace; customer charged with no workspace to attach it to. ${message}`,
+        {
+          workspaceId,
+          customerId: event.data.customer_id,
+          subscriptionId: event.data.id,
+        },
+      );
+
+      return;
+    }
+
+    logger.warn(message);
   }
 
   private async enforceFeedLimits(discordUserId: string): Promise<void> {

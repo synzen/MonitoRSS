@@ -1,4 +1,4 @@
-import { describe, it, before, after } from "node:test";
+import { describe, it, before, after, mock } from "node:test";
 import assert from "node:assert";
 import dayjs from "dayjs";
 import {
@@ -8,6 +8,7 @@ import {
 } from "../../src/repositories/shared/enums";
 import { createPaddleWebhooksHarness } from "../helpers/paddle-webhooks.harness";
 import { PaddleSubscriptionStatus } from "../../src/services/paddle-webhooks/types";
+import logger from "../../src/infra/logger";
 
 describe("PaddleWebhooksService", { concurrency: true }, () => {
   const harness = createPaddleWebhooksHarness();
@@ -339,6 +340,110 @@ describe("PaddleWebhooksService", { concurrency: true }, () => {
 
       const updated = await ctx.workspaceRepository.findById(workspace.id);
       assert.strictEqual(updated?.paddleCustomer, null);
+    });
+
+    // A subscription routed to a workspace id that no longer exists is always
+    // acknowledged, but a fresh activation (customer just paid) must escalate to
+    // error-level so it pages, while the benign post-delete cancellation tail
+    // (subscription.updated) stays at warn. Serialized because they spy on the
+    // shared logger singleton.
+    describe("missing workspace severity", { concurrency: false }, () => {
+      it("logs an ERROR when a subscription is ACTIVATED against a missing workspace", async () => {
+        const ctx = harness.createContext({
+          paddleService: {
+            getProduct: async () => ({
+              paddleProductId: "prod-tier2",
+              id: SubscriptionProductKey.Tier2,
+            }),
+          },
+        });
+        const now = new Date();
+        const missingWorkspaceId = ctx.generateId();
+
+        const event = ctx.createSubscriptionActivatedEvent({
+          custom_data: { workspaceId: missingWorkspaceId },
+          current_billing_period: {
+            starts_at: now.toISOString(),
+            ends_at: now.toISOString(),
+          },
+        });
+
+        const errorSpy = mock.method(logger, "error", () => {});
+        const warnSpy = mock.method(logger, "warn", () => {});
+
+        try {
+          await ctx.service.handleSubscriptionUpdatedEvent(event);
+
+          // Filter by this event's ids: the suite runs concurrently and a
+          // sibling test could independently log at either level.
+          const errorCall = errorSpy.mock.calls.find(
+            (call) =>
+              (
+                call.arguments[1] as { workspaceId?: string } | undefined
+              )?.workspaceId === missingWorkspaceId,
+          );
+          assert.ok(errorCall, "expected an error log for the missing workspace");
+          const meta = errorCall.arguments[1] as {
+            workspaceId: string;
+            customerId: string;
+            subscriptionId: string;
+          };
+          assert.strictEqual(meta.customerId, event.data.customer_id);
+          assert.strictEqual(meta.subscriptionId, event.data.id);
+
+          const warnedForThis = warnSpy.mock.calls.some((call) =>
+            String(call.arguments[0]).includes(missingWorkspaceId),
+          );
+          assert.strictEqual(warnedForThis, false);
+        } finally {
+          errorSpy.mock.restore();
+          warnSpy.mock.restore();
+        }
+      });
+
+      it("logs only a WARN when an UPDATE arrives for a missing workspace (cancellation tail)", async () => {
+        const ctx = harness.createContext({
+          paddleService: {
+            getProduct: async () => ({
+              paddleProductId: "prod-tier2",
+              id: SubscriptionProductKey.Tier2,
+            }),
+          },
+        });
+        const now = new Date();
+
+        const missingWorkspaceId = ctx.generateId();
+        const event = ctx.createSubscriptionUpdatedEvent({
+          custom_data: { workspaceId: missingWorkspaceId },
+          current_billing_period: {
+            starts_at: now.toISOString(),
+            ends_at: now.toISOString(),
+          },
+        });
+
+        const errorSpy = mock.method(logger, "error", () => {});
+        const warnSpy = mock.method(logger, "warn", () => {});
+
+        try {
+          await ctx.service.handleSubscriptionUpdatedEvent(event);
+
+          const warnedForThis = warnSpy.mock.calls.some((call) =>
+            String(call.arguments[0]).includes(missingWorkspaceId),
+          );
+          assert.ok(warnedForThis, "expected a warn log for the missing workspace");
+
+          const erroredForThis = errorSpy.mock.calls.some(
+            (call) =>
+              (
+                call.arguments[1] as { workspaceId?: string } | undefined
+              )?.workspaceId === missingWorkspaceId,
+          );
+          assert.strictEqual(erroredForThis, false);
+        } finally {
+          errorSpy.mock.restore();
+          warnSpy.mock.restore();
+        }
+      });
     });
 
     it("correctly calculates benefits including extra feeds addon", async () => {

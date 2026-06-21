@@ -38,6 +38,7 @@ const PADDLE_CHECKOUT_TESTS = [
   // configured). Without this it runs under e2e-web with Paddle blanked, so the
   // "Manage Subscription" button never appears and the test times out.
   "**/billing/pricing-dialog-focus.spec.ts",
+  "**/billing/paddle-workspace-slug-reuse-regression.spec.ts",
 ];
 
 export default defineConfig({
