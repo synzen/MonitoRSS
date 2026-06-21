@@ -108,6 +108,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
   const [chosenFeedCount, setChosenFeedCount] = useState<number | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const workspaceRegionRef = useRef<HTMLDivElement>(null);
+  // Remember which pricing action navigated away from the dialog (e.g. opening the
+  // change-subscription dialog) so that when this dialog reopens we restore focus
+  // to that button instead of dumping focus on the heading.
+  const focusTargetIdRef = useRef<string | null>(null);
 
   // When opened from the feed-limit wall (target="workspace"), bring the
   // workspace region into view and move focus there so a keyboard/screen-reader
@@ -155,6 +159,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
     if (!priceId || !productId || !userSubscription) {
       return;
     }
+
+    focusTargetIdRef.current = `pricing-action-${productId}`;
 
     if (userSubscription.product.key === ProductKey.Free) {
       navigate(pages.checkout(priceId));
@@ -300,7 +306,12 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
         size="xl"
         motionPreset="slide-in-bottom"
         scrollBehavior="inside"
-        initialFocusEl={() => headingRef.current}
+        initialFocusEl={() => {
+          const targetId = focusTargetIdRef.current;
+          focusTargetIdRef.current = null;
+
+          return (targetId ? document.getElementById(targetId) : null) ?? headingRef.current;
+        }}
       >
         <DialogContent
           bg="none"
@@ -471,6 +482,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                 {userSubscription?.product.key !== ProductKey.Free && (
                   <Flex justifyContent="center">
                     <DestructiveActionButton
+                      id={`pricing-action-${ProductKey.Free}`}
                       onClick={() => onClickPrice("free-monthly", ProductKey.Free, true)}
                     >
                       <span>Cancel Subscription</span>
