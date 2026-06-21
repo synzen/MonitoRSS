@@ -106,7 +106,7 @@ test.describe("Branding Fields - Paddle Overlay", () => {
       .click();
     await expect(upgradeRegion).toBeVisible();
 
-    await upgradeRegion.getByRole("button", { name: /Get Tier 1/ }).click();
+    await upgradeRegion.getByRole("button", { name: /Get Personal/ }).click();
 
     const paddleFrame = page.locator(
       'iframe[name*="paddle"], iframe[src*="paddle"]',

@@ -106,7 +106,7 @@ test.describe("Paddle Branding Checkout", () => {
     ).toBeVisible();
 
     // Phase 4: Open Paddle overlay checkout
-    await upgradeRegion.getByRole("button", { name: /Get Tier 1/ }).click();
+    await upgradeRegion.getByRole("button", { name: /Get Personal/ }).click();
 
     const paddleFrame = page.locator("iframe").first();
     await expect(paddleFrame).toBeVisible({ timeout: 15000 });
