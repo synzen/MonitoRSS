@@ -1,22 +1,27 @@
 import { useState } from "react";
-import { FaCheck, FaXmark } from "react-icons/fa6";
 import {
   Box,
   Card,
-  Flex,
   HStack,
   Heading,
-  Icon,
   Link,
   Separator,
   Stack,
   Text,
   Spinner,
-  VisuallyHidden,
 } from "@chakra-ui/react";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { Slider } from "@/components/ui/slider";
-import { useWorkspaceSliderPrice, WORKSPACE_DETENTS } from "@/shared/workspaceCapacity";
+import {
+  useWorkspaceSliderPrice,
+  WORKSPACE_DETENTS,
+  WORKSPACE_FEATURES,
+  FeatureRow,
+} from "@/shared/workspaceCapacity";
+
+// FeatureRow is defined once in the shared capacity module; re-export it here so
+// the sibling PricingDialog/index.tsx keeps importing it from this panel.
+export { FeatureRow };
 
 // New user-facing copy uses periods/commas, no em dashes (project convention).
 // "Team" is the plan you buy; "workspace" is the place you operate in once you
@@ -34,16 +39,6 @@ const WORKSPACE_REASSURANCE =
 const OWNER_CTA_LABEL = "Go to your workspace";
 const OWNER_REASSURANCE = "You already have a workspace. Pick your capacity and subscribe there.";
 
-// Capability leads ahead of collaboration: prod data shows buyers want the
-// higher capacity and external-properties capability more than the member
-// invites, so those bullets come first. "Workspace" never appears as a bullet.
-const WORKSPACE_FEATURES = [
-  "Everything in Personal",
-  "External properties (scrape external links)",
-  "One shared bill for everyone",
-  "Invite members to co-manage feeds",
-];
-
 const WORKSPACE_SLIDER_LABEL = "How many feeds do you need?";
 // The slider domain is the detent INDEX (0..n-1), so each step is one detent and
 // every tick is a real, reachable stop. Labels show the feed count at each index;
@@ -53,36 +48,6 @@ const WORKSPACE_SLIDER_MARKS = WORKSPACE_DETENTS.map((value, index) => ({
   value: index,
   label: index === WORKSPACE_SLIDER_MAX_INDEX ? `${value}+` : `${value}`,
 }));
-
-// A single feature row. An excluded feature must be conveyed to assistive tech,
-// not by the crossed icon/color alone, so it carries visually-hidden status text.
-export const FeatureRow = ({
-  included,
-  children,
-}: {
-  included: boolean;
-  children: React.ReactNode;
-}) => (
-  <HStack as="li" align="flex-start">
-    {included ? (
-      <Flex bg="brandSolid" rounded="full" p={1} mt={1} aria-hidden>
-        <Icon width={3} height={3} fontSize="md" color="brand.contrast">
-          <FaCheck />
-        </Icon>
-      </Flex>
-    ) : (
-      <Flex bg="bg.subtle" rounded="full" p={1.5} mt={1} aria-hidden>
-        <Icon width={2} height={2} fontSize="sm">
-          <FaXmark />
-        </Icon>
-      </Flex>
-    )}
-    <Text fontSize="md">
-      {children}
-      {!included && <VisuallyHidden> (not included)</VisuallyHidden>}
-    </Text>
-  </HStack>
-);
 
 // The dominant Workspace panel: a capacity slider drives a live hero price (from
 // Paddle previews) and a CTA that names the chosen feed count. The slider always

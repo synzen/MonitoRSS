@@ -317,6 +317,18 @@ describe("WorkspaceBilling", () => {
     expect(h.openCheckout.mock.calls[0][0]).not.toHaveProperty("displayMode", "overlay");
   });
 
+  it("frames activation around co-managing feeds, not creating a workspace the owner already has", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    // The owner is already inside the workspace, so the pitch is the one real
+    // benefit of paying (a team managing shared feeds), not "create a workspace".
+    expect(await screen.findByText(/manage this workspace's feeds together/i)).toBeInTheDocument();
+    expect(screen.queryByText(/create a shared workspace/i)).not.toBeInTheDocument();
+  });
+
   it("shows the base price, capacity, and payment terms on the activation slider", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });

@@ -62,8 +62,12 @@ const SliderMarks = React.forwardRef<HTMLDivElement, SliderMarksProps>(
     const { marks } = props;
     if (!marks?.length) return null;
 
+    // Chakra's recipe insets the marker group by --slider-marker-inset on the
+    // inline axis, but thumbs are positioned against the un-inset control. That
+    // gap leaves the under-thumb marker dot off-center (most visible at the end
+    // detents). Zero the inset so markers and thumbs share one coordinate origin.
     return (
-      <ChakraSlider.MarkerGroup ref={ref}>
+      <ChakraSlider.MarkerGroup ref={ref} css={{ "--slider-marker-inset": "0px" }}>
         {marks.map((mark, index) => {
           const value = typeof mark === "number" ? mark : mark.value;
           const label = typeof mark === "number" ? undefined : mark.label;

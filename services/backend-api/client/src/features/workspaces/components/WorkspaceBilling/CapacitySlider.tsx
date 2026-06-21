@@ -38,7 +38,10 @@ export const CapacitySlider = ({
   index: number;
   onChange: (index: number) => void;
 }) => (
-  <Box bg="bg.subtle" rounded="l3" p={4}>
+  // Extra horizontal padding so the end thumbs/labels (at 0% and 100% of the
+  // track) clear the box edges instead of sitting flush against them, and extra
+  // bottom padding to seat the mark labels that render below the track.
+  <Box bg="bg.subtle" rounded="l3" px={6} pt={4} pb={6}>
     <Slider
       label={WORKSPACE_SLIDER_LABEL}
       min={0}

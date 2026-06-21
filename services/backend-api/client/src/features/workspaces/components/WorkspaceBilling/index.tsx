@@ -867,8 +867,8 @@ export const WorkspaceBilling = () => {
         >
           {!isOwner ? (
             <Text>
-              This workspace doesn&apos;t have an active subscription. Only the workspace owner can
-              manage billing.
+              This workspace&apos;s feeds are paused until the owner activates a subscription. Ask
+              the owner to activate it to turn feeds back on.
             </Text>
           ) : (
             <Stack gap={4}>
@@ -916,7 +916,8 @@ export const WorkspaceBilling = () => {
                     {getPlanDisplayName(ProductKey.Tier2)}
                   </Heading>
                   <Text color="fg.muted" fontSize="sm">
-                    Create a shared workspace to co-manage feeds with others.
+                    Activate your subscription so your team can manage this workspace&apos;s feeds
+                    together.
                   </Text>
                 </Stack>
                 <CapacitySummary
