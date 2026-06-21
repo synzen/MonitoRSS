@@ -32,7 +32,11 @@ export const pages = {
   addFeeds: (scope?: RouteScope) => `${scopePrefix(scope)}/add-feeds`,
   userSettings: () => "/settings",
   workspaceSettings: (workspaceSlug: string) => `/workspaces/${workspaceSlug}/settings`,
-  workspaceBilling: (workspaceSlug: string) => `/workspaces/${workspaceSlug}/settings/billing`,
+  workspaceBilling: (workspaceSlug: string, opts?: { feeds?: number }) => {
+    const path = `/workspaces/${workspaceSlug}/settings/billing`;
+
+    return opts?.feeds ? `${path}?feeds=${opts.feeds}` : path;
+  },
   workspaceInvite: (inviteId: string) => `/invites/${inviteId}`,
   userFeeds: (scope?: RouteScope) => `${scopePrefix(scope)}/feeds`,
   notFound: () => "/not-found",

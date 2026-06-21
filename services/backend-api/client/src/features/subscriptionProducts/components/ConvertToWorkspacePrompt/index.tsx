@@ -7,6 +7,7 @@ import { ProductKey } from "@/constants";
 import { useUserMe } from "@/features/discordUser";
 import {
   CreateWorkspaceDialog,
+  findOwnedWorkspace,
   useIsWorkspacesEnabled,
   useWorkspaces,
 } from "@/features/workspaces";
@@ -46,7 +47,7 @@ export const ConvertToWorkspacePrompt = ({ variant }: { variant: "banner" | "car
   // own a workspace, that flow is the wrong door: they should convert from that
   // workspace's billing page (which hosts the real convert action), not spin up
   // a second one. So suppress once they own any workspace.
-  const ownsAWorkspace = !!workspaces?.some((w) => w.role === "owner");
+  const ownsAWorkspace = !!findOwnedWorkspace(workspaces);
   const eligible = hasConvertiblePlan && !ownsAWorkspace;
 
   if (!workspacesEnabled || !eligible || (variant === "card" && dismissed)) {

@@ -2,15 +2,15 @@ import "@testing-library/jest-dom";
 import { render, screen, within, waitFor, fireEvent } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
-import { PRICE_IDS, ProductKey } from "@/constants";
+import { PRICE_IDS, pages, ProductKey } from "@/constants";
 import { PricingDialog } from "./index";
 import { usePricingData } from "../../hooks";
 import { usePaddleContext } from "../../contexts/PaddleContext";
 import { useUserMe } from "../../../discordUser";
-import { useIsWorkspacesEnabled } from "../../../workspaces";
+import { useIsWorkspacesEnabled, useWorkspaces } from "../../../workspaces";
 
 vi.mock("../../hooks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../hooks")>()),
@@ -102,6 +102,14 @@ const mockPricingData = (overrides: Record<string, unknown> = {}) => {
   } as never);
 };
 
+// Surfaces the router's current path so navigation can be asserted as observable
+// behavior (where the user lands), not by mocking useNavigate.
+const LocationDisplay = () => {
+  const location = useLocation();
+
+  return <div data-testid="location-display">{`${location.pathname}${location.search}`}</div>;
+};
+
 const renderDialog = (props: { target?: "workspace" } = {}) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -113,6 +121,7 @@ const renderDialog = (props: { target?: "workspace" } = {}) => {
         <ChakraProvider value={system}>
           <PricingDialog isOpen onClose={vi.fn()} onOpen={vi.fn()} target={props.target} />
         </ChakraProvider>
+        <LocationDisplay />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -338,5 +347,130 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     // base tier + add-on feeds, not hardcoded math.
     await waitFor(() => expect(getChargePreview).toHaveBeenCalled());
     expect(await within(forTeam).findByText("$13.00")).toBeInTheDocument();
+  });
+});
+
+describe("PricingDialog workspace CTA when the user already owns a workspace", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPricingData();
+    vi.mocked(usePaddleContext).mockReturnValue({
+      resetCheckoutData: vi.fn(),
+      initCancellationFlow: vi.fn(),
+      getChargePreview: vi.fn().mockResolvedValue({ totalFormatted: "$13.00" }),
+    } as never);
+    vi.mocked(useUserMe).mockReturnValue({
+      data: {
+        result: { subscription: { subscriptionId: undefined, product: { key: ProductKey.Free } } },
+      },
+    } as never);
+    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({ enabled: true } as never);
+  });
+
+  it("reroutes to an owned workspace that NEEDS BILLING, carrying the chosen feed count", async () => {
+    vi.mocked(useWorkspaces).mockReturnValue({
+      workspaces: [{ id: "w1", name: "Acme", slug: "acme", role: "owner", needsBilling: true }],
+    } as never);
+
+    renderDialog();
+
+    const forTeam = await screen.findByRole("region", { name: /for your team/i });
+    // An owner of a workspace needing billing sees a reroute CTA, never the
+    // create-a-second-workspace CTA.
+    const cta = within(forTeam).getByRole("button", { name: /go to your workspace/i });
+    expect(
+      within(forTeam).queryByRole("button", { name: /create workspace/i }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(cta);
+
+    // The chosen capacity (base detent 70) is carried into the workspace's
+    // billing page so the plan selection starts where the user left the slider.
+    await waitFor(() =>
+      expect(screen.getByTestId("location-display")).toHaveTextContent(
+        `${pages.workspaceBilling("acme")}?feeds=70`,
+      ),
+    );
+  });
+
+  it("reroutes a LAPSED (cancelled) owned workspace to billing, not the create CTA", async () => {
+    // A cancelled workspace has its subscription nullified, so it surfaces as
+    // needsBilling exactly like a never-activated one: the returning owner wants
+    // to re-bill the workspace they have, not create a second one.
+    vi.mocked(useWorkspaces).mockReturnValue({
+      workspaces: [{ id: "w1", name: "Acme", slug: "acme", role: "owner", needsBilling: true }],
+    } as never);
+
+    renderDialog();
+
+    const forTeam = await screen.findByRole("region", { name: /for your team/i });
+    expect(
+      within(forTeam).queryByRole("button", { name: /create workspace/i }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(within(forTeam).getByRole("button", { name: /go to your workspace/i }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("location-display")).toHaveTextContent(
+        `${pages.workspaceBilling("acme")}?feeds=70`,
+      ),
+    );
+  });
+
+  it("still offers the create CTA to an owner of only already-paid workspaces", async () => {
+    // A paid (active) workspace does not need billing, so its owner is allowed
+    // to create another; the reroute must not fire and suppress it.
+    vi.mocked(useWorkspaces).mockReturnValue({
+      workspaces: [{ id: "w1", name: "Acme", slug: "acme", role: "owner", needsBilling: false }],
+    } as never);
+
+    renderDialog();
+
+    const forTeam = await screen.findByRole("region", { name: /for your team/i });
+    expect(
+      within(forTeam).getByRole("button", { name: /create workspace for 70 feeds/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(forTeam).queryByRole("button", { name: /go to your workspace/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("still offers the create CTA to an admin who only belongs to someone else's workspace", async () => {
+    // Being a member (admin) of a workspace is not owning one: the user can
+    // still create their own, so the reroute must not fire on a non-owner role.
+    vi.mocked(useWorkspaces).mockReturnValue({
+      workspaces: [{ id: "w1", name: "Acme", slug: "acme", role: "admin", needsBilling: false }],
+    } as never);
+
+    renderDialog();
+
+    const forTeam = await screen.findByRole("region", { name: /for your team/i });
+    expect(
+      within(forTeam).getByRole("button", { name: /create workspace for 70 feeds/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(forTeam).queryByRole("button", { name: /go to your workspace/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("reroutes to the owned workspace that needs billing, not a paid one the user also owns", async () => {
+    // Mixed ownership: the reroute targets the workspace that needs billing, not
+    // an already-paid one.
+    vi.mocked(useWorkspaces).mockReturnValue({
+      workspaces: [
+        { id: "w1", name: "Paid", slug: "paid", role: "owner", needsBilling: false },
+        { id: "w2", name: "Mine", slug: "mine", role: "owner", needsBilling: true },
+      ],
+    } as never);
+
+    renderDialog();
+
+    const forTeam = await screen.findByRole("region", { name: /for your team/i });
+    fireEvent.click(within(forTeam).getByRole("button", { name: /go to your workspace/i }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("location-display")).toHaveTextContent(
+        `${pages.workspaceBilling("mine")}?feeds=70`,
+      ),
+    );
   });
 });

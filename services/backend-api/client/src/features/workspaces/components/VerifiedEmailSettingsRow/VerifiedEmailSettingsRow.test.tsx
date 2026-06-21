@@ -14,6 +14,8 @@ const h = vi.hoisted(() => ({
 vi.mock("../../hooks", () => ({
   useIsWorkspacesEnabled: () => ({ enabled: h.enabled }),
   useWorkspaces: () => ({ workspaces: h.workspaces }),
+  findOwnedWorkspace: (workspaces?: Array<{ role: string }>) =>
+    workspaces?.find((w) => w.role === "owner"),
 }));
 
 vi.mock("@/features/discordUser", () => ({

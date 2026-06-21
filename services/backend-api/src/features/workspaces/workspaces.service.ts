@@ -101,6 +101,12 @@ export type ConversionEligibility =
   | { eligible: true; feedLimit: number }
   | { eligible: false; ineligibleReason: "PERSONAL_PLAN_INELIGIBLE" };
 
+// A workspace as returned by the list endpoint: identity, the caller's role, and
+// the derived needs-billing flag (in place of the raw subscription presence).
+export type WorkspaceListItem = Omit<IWorkspaceWithRole, "hasSubscription"> & {
+  needsBilling: boolean;
+};
+
 export interface WorkspacesServiceDeps {
   config: Config;
   smtpTransport: SmtpTransport;
@@ -257,8 +263,20 @@ export class WorkspacesService {
     }
   }
 
-  async listWorkspaces(userId: string): Promise<IWorkspaceWithRole[]> {
-    return this.deps.workspaceRepository.listWorkspacesForUser(userId);
+  async listWorkspaces(userId: string): Promise<WorkspaceListItem[]> {
+    const workspaces =
+      await this.deps.workspaceRepository.listWorkspacesForUser(userId);
+    // Needs billing = billing exists on this instance and the workspace has no
+    // usable subscription, whether it never activated one or had it cancelled
+    // (the webhook nullifies a cancelled subscription, so both look the same).
+    // Lets clients route an owner to that workspace's billing without a per-
+    // workspace detail fetch. When billing is disabled (self-host), always false.
+    const billingEnabled = isBillingEnabled(this.deps.config);
+
+    return workspaces.map(({ hasSubscription, ...workspace }) => ({
+      ...workspace,
+      needsBilling: billingEnabled && !hasSubscription,
+    }));
   }
 
   // The workspace ids a user belongs to, for workspace-feed authorization.

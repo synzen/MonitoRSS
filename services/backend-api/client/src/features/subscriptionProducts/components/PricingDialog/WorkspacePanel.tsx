@@ -27,6 +27,13 @@ const TEAM_PLAN_SUBHEAD = "Create a shared workspace to co-manage feeds with oth
 const WORKSPACE_REASSURANCE =
   "Working alone? A workspace of one gives you all of this. Invite people later.";
 
+// Shown when the viewer already owns a workspace that needs billing (never
+// activated, or cancelled): the CTA takes them there to subscribe rather than
+// offering to create another. Copy avoids "finish"/"reactivate" so it reads
+// true whether they are subscribing for the first time or coming back.
+const OWNER_CTA_LABEL = "Go to your workspace";
+const OWNER_REASSURANCE = "You already have a workspace. Pick your capacity and subscribe there.";
+
 // Capability leads ahead of collaboration: prod data shows buyers want the
 // higher capacity and external-properties capability more than the member
 // invites, so those bullets come first. "Workspace" never appears as a bullet.
@@ -86,7 +93,9 @@ export const WorkspacePanel = ({
   baseWorkspacePrice,
   getChargePreview,
   workspacesEnabled,
+  ownsWorkspaceNeedingBilling,
   onCreateWorkspace,
+  onGoToWorkspace,
 }: {
   interval: "month" | "year";
   baseWorkspacePrice: string | undefined;
@@ -94,7 +103,13 @@ export const WorkspacePanel = ({
     items: Array<{ priceId: string; quantity: number }>,
   ) => Promise<{ totalFormatted: string }>;
   workspacesEnabled: boolean;
+  // The viewer already owns a workspace that needs billing (never activated, or
+  // cancelled), so the CTA reroutes to it to subscribe instead of offering to
+  // create another. An owner of only already-paid workspaces can still create,
+  // so this is false for them.
+  ownsWorkspaceNeedingBilling: boolean;
   onCreateWorkspace: (feedCount: number) => void;
+  onGoToWorkspace: (feedCount: number) => void;
 }) => {
   // The slider is driven by detent INDEX (0..n-1, step 1), not raw feed counts.
   // Indexing makes every arrow-key press land on a real detent and move cleanly
@@ -172,11 +187,19 @@ export const WorkspacePanel = ({
           </Stack>
           {workspacesEnabled ? (
             <Stack gap={2}>
-              <PrimaryActionButton width="100%" size="lg" onClick={() => onCreateWorkspace(feeds)}>
-                Create workspace for {feeds} feeds
+              <PrimaryActionButton
+                width="100%"
+                size="lg"
+                onClick={() =>
+                  ownsWorkspaceNeedingBilling ? onGoToWorkspace(feeds) : onCreateWorkspace(feeds)
+                }
+              >
+                {ownsWorkspaceNeedingBilling
+                  ? OWNER_CTA_LABEL
+                  : `Create workspace for ${feeds} feeds`}
               </PrimaryActionButton>
               <Text fontSize="xs" color="fg.muted" textAlign="center">
-                {WORKSPACE_REASSURANCE}
+                {ownsWorkspaceNeedingBilling ? OWNER_REASSURANCE : WORKSPACE_REASSURANCE}
               </Text>
             </Stack>
           ) : (

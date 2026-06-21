@@ -1,5 +1,6 @@
 export * from "./useWorkspaces";
 export * from "./useWorkspace";
+export * from "./useOwnedWorkspace";
 export * from "./useCreateWorkspace";
 export * from "./useUpdateWorkspace";
 export * from "./useSendEmailVerification";

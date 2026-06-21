@@ -1,6 +1,11 @@
 import { test, expect, type Page } from "../../fixtures/test-fixtures";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
-import { enableWorkspacesFeatureInDb, setVerifiedEmailInDb } from "../../helpers/workspaces-db";
+import {
+  enableWorkspacesFeatureInDb,
+  getUserMongoIdFromDiscordId,
+  seedWorkspaceWithMembershipsInDb,
+  setVerifiedEmailInDb,
+} from "../../helpers/workspaces-db";
 import { cancelAndDeleteWorkspace } from "../../helpers/paddle-cleanup";
 import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
 
@@ -263,6 +268,101 @@ test.describe("Paddle workspace roundtrip", () => {
     // (deletion is gated on cancellation first), so the Paddle sandbox does not
     // accumulate live subscriptions across runs.
     await cancelAndDeleteWorkspace(page, workspaceSlug);
+  });
+
+  test("pricing dialog reroutes the team CTA to an owned workspace that needs billing", async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+
+    // Owning a workspace that needs billing (here, never activated) must turn the
+    // pricing dialog's "create a workspace" CTA into a reroute to that workspace,
+    // so the owner bills the one they have instead of creating another. The
+    // workspace is seeded directly so this assertion does not depend on the slow
+    // create-and-activate flow the other tests already cover.
+    await page.goto("/feeds");
+    await waitForAuthenticatedApp(page);
+    const discordUserId = await getDiscordUserIdFromPage(page);
+    await enableWorkspacesFeatureInDb(discordUserId);
+    const selfUserId = await getUserMongoIdFromDiscordId(discordUserId);
+    const { slug: workspaceSlug } = await seedWorkspaceWithMembershipsInDb({
+      workspaceName: `E2E CTA Team ${discordUserId}`,
+      selfUserId,
+      selfRole: "owner",
+    });
+    await page.reload();
+    await waitForAuthenticatedApp(page);
+
+    // Open the pricing dialog from account settings (billing is enabled for this
+    // account, so the Manage Subscription entry is present).
+    await page.getByRole("button", { name: "Account settings" }).click();
+    await page.getByRole("menuitem", { name: /account settings/i }).click();
+    await expect(page.getByRole("heading", { name: "Account Settings" })).toBeVisible({
+      timeout: 15000,
+    });
+    await page.getByRole("button", { name: "Manage Subscription" }).click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: "Pricing", level: 1 })).toBeVisible({
+      timeout: 15000,
+    });
+
+    // The team region offers a reroute, never the create-a-second-workspace CTA.
+    const forTeam = dialog.getByRole("region", { name: /for your team/i });
+    await expect(
+      forTeam.getByRole("button", { name: /create workspace for \d+ feeds/i }),
+    ).toHaveCount(0);
+    await forTeam.getByRole("button", { name: /go to your workspace/i }).click();
+
+    // Landing on the owned workspace's billing page, carrying the slider capacity.
+    await expect(page).toHaveURL(
+      new RegExp(`/workspaces/${workspaceSlug}/settings/billing\\?feeds=\\d+$`),
+      { timeout: 15000 },
+    );
+    await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
+  });
+
+  test("pricing dialog keeps the create CTA for an owner of only a paid workspace", async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+
+    // A workspace with an active subscription does not need billing, so its owner
+    // is allowed to create another. The pricing dialog must keep the create CTA
+    // for them and not reroute. The seeded workspace carries an active
+    // subscription to stand in for one already paid for.
+    await page.goto("/feeds");
+    await waitForAuthenticatedApp(page);
+    const discordUserId = await getDiscordUserIdFromPage(page);
+    await enableWorkspacesFeatureInDb(discordUserId);
+    const selfUserId = await getUserMongoIdFromDiscordId(discordUserId);
+    await seedWorkspaceWithMembershipsInDb({
+      workspaceName: `E2E Paid Team ${discordUserId}`,
+      selfUserId,
+      selfRole: "owner",
+      withActiveSubscription: true,
+    });
+    await page.reload();
+    await waitForAuthenticatedApp(page);
+
+    await page.getByRole("button", { name: "Account settings" }).click();
+    await page.getByRole("menuitem", { name: /account settings/i }).click();
+    await expect(page.getByRole("heading", { name: "Account Settings" })).toBeVisible({
+      timeout: 15000,
+    });
+    await page.getByRole("button", { name: "Manage Subscription" }).click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: "Pricing", level: 1 })).toBeVisible({
+      timeout: 15000,
+    });
+
+    // The team region still offers creation, never the owner reroute.
+    const forTeam = dialog.getByRole("region", { name: /for your team/i });
+    await expect(
+      forTeam.getByRole("button", { name: /create workspace for \d+ feeds/i }),
+    ).toBeVisible();
+    await expect(forTeam.getByRole("button", { name: /go to your workspace/i })).toHaveCount(0);
   });
 
   test("raises a team's capacity via the slider and the new limit is reflected in the UI", async ({

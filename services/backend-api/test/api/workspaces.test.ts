@@ -21,7 +21,13 @@ interface WorkspaceResult {
   };
 }
 interface WorkspaceListResult {
-  result: Array<{ id: string; name: string; slug: string; role: string }>;
+  result: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    role: string;
+    needsBilling: boolean;
+  }>;
 }
 interface ErrorResult {
   code: string;
@@ -90,6 +96,9 @@ describe("Workspaces API", { concurrency: true }, () => {
     assert.strictEqual(list.result.length, 1);
     assert.strictEqual(list.result[0]?.slug, slug);
     assert.strictEqual(list.result[0]?.role, "owner");
+    // Billing is disabled in this context (self-host posture), so no workspace
+    // ever needs billing: it behaves as fully active without a subscription.
+    assert.strictEqual(list.result[0]?.needsBilling, false);
   });
 
   it("rejects workspace creation without a verified email", async () => {
@@ -509,5 +518,112 @@ describe("Workspaces API", { concurrency: true }, () => {
       ).status,
       404,
     );
+  });
+});
+
+describe("Workspaces API list needsBilling (billing enabled)", { concurrency: true }, () => {
+  let ctx: AppTestContext;
+
+  before(async () => {
+    ctx = await createAppTestContext({
+      configOverrides: {
+        BACKEND_API_ENABLE_SUPPORTERS: true,
+        BACKEND_API_PADDLE_KEY: "test-paddle-key",
+        BACKEND_API_PADDLE_URL: "https://sandbox-api.paddle.com",
+      },
+    });
+  });
+
+  after(async () => {
+    await ctx.teardown();
+  });
+
+  // Seeds a workspace with the given paddle subscription state and returns its id.
+  async function createWorkspaceWithSubscription(
+    discordId: string,
+    slug: string,
+    subscription: Record<string, unknown> | null,
+  ): Promise<void> {
+    const user = await ctx.asUser(discordId);
+    const created = await readJson<WorkspaceResult>(
+      await user.fetch("/api/v1/workspaces", {
+        method: "POST",
+        body: JSON.stringify({ name: slug, slug }),
+      }),
+    );
+
+    await ctx.connection.collection("workspaces").updateOne(
+      { _id: new Types.ObjectId(created.result.id) },
+      {
+        $set: {
+          paddleCustomer: { customerId: `ctm_${slug}`, email: "o@e.com", subscription },
+        },
+      },
+    );
+  }
+
+  async function listItem(discordId: string, slug: string) {
+    const user = await ctx.asUser(discordId);
+    const list = await readJson<WorkspaceListResult>(
+      await user.fetch("/api/v1/workspaces"),
+    );
+    return list.result.find((w) => w.slug === slug);
+  }
+
+  it("flags a never-activated workspace as needing billing", async () => {
+    const discordId = randomUUID();
+    await seedWorkspaceUser(ctx, discordId);
+    const slug = `dormant-${discordId.slice(0, 8)}`;
+    await createWorkspaceWithSubscription(discordId, slug, null);
+
+    assert.strictEqual((await listItem(discordId, slug))?.needsBilling, true);
+  });
+
+  it("flags a lapsed (cancelled, nullified) workspace as needing billing", async () => {
+    // A fully cancelled subscription is nullified off the workspace by the
+    // webhook, so it presents exactly like a never-activated one: subscription
+    // null. The user owns a workspace that needs paying for again.
+    const discordId = randomUUID();
+    await seedWorkspaceUser(ctx, discordId);
+    const slug = `lapsed-${discordId.slice(0, 8)}`;
+    await createWorkspaceWithSubscription(discordId, slug, null);
+
+    assert.strictEqual((await listItem(discordId, slug))?.needsBilling, true);
+  });
+
+  it("does not flag a workspace with an active subscription", async () => {
+    const discordId = randomUUID();
+    await seedWorkspaceUser(ctx, discordId);
+    const slug = `active-${discordId.slice(0, 8)}`;
+    await createWorkspaceWithSubscription(discordId, slug, {
+      productKey: "tier2",
+      status: "ACTIVE",
+      billingInterval: "month",
+      billingPeriodEnd: new Date(),
+      currencyCode: "USD",
+      addons: [],
+    });
+
+    assert.strictEqual((await listItem(discordId, slug))?.needsBilling, false);
+  });
+
+  it("does not flag a workspace scheduled to cancel but still live", async () => {
+    // A subscription with a cancellationDate is still present (live until the
+    // period ends), so the owner is still paying and should not be prompted to
+    // re-bill. Only a fully gone subscription needs billing.
+    const discordId = randomUUID();
+    await seedWorkspaceUser(ctx, discordId);
+    const slug = `scheduled-${discordId.slice(0, 8)}`;
+    await createWorkspaceWithSubscription(discordId, slug, {
+      productKey: "tier2",
+      status: "ACTIVE",
+      cancellationDate: new Date(),
+      billingInterval: "month",
+      billingPeriodEnd: new Date(),
+      currencyCode: "USD",
+      addons: [],
+    });
+
+    assert.strictEqual((await listItem(discordId, slug))?.needsBilling, false);
   });
 });

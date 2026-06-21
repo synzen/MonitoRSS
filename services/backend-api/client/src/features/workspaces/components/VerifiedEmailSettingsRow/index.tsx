@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button, HStack, Input } from "@chakra-ui/react";
 import { Field } from "@/components/ui/field";
 import { useUserMe } from "@/features/discordUser";
-import { useIsWorkspacesEnabled, useWorkspaces } from "../../hooks";
+import { findOwnedWorkspace, useIsWorkspacesEnabled, useWorkspaces } from "../../hooks";
 import { ChangeVerifiedEmailDialog } from "../ChangeVerifiedEmailDialog";
 
 interface Props {
@@ -23,7 +23,7 @@ export const VerifiedEmailSettingsRow = ({ onChanged }: Props) => {
   }
 
   const verifiedEmail = data?.result.verifiedEmail;
-  const ownsWorkspace = !!workspaces?.some((w) => w.role === "owner");
+  const ownsWorkspace = !!findOwnedWorkspace(workspaces);
   const helperText = ownsWorkspace
     ? "Used for workspace invitations, member notices, and billing for the workspaces you own. Change it to verify a different address you own."
     : "Used for workspace invitations and member notices. Change it to verify a different address you own.";

@@ -16,6 +16,11 @@ export const WorkspaceSchema = object({
   role: mixed<WorkspaceRole>()
     .oneOf([...WORKSPACE_ROLES])
     .required(),
+  // Whether the workspace has no usable subscription and so needs billing,
+  // whether it never activated one or had it cancelled. Present on the list
+  // endpoint so callers can route an owner to billing without a per-slug detail
+  // fetch. Always false when billing is disabled (self-host).
+  needsBilling: boolean().optional().default(false),
   // The workspace's feed limit. Present on the detail endpoint; the list endpoint
   // omits it, so it is optional.
   maxFeeds: number().optional(),

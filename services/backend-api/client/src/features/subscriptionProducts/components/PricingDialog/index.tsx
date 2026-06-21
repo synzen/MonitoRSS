@@ -28,7 +28,12 @@ import { usePaddleContext } from "../../contexts/PaddleContext";
 import { useUserMe } from "@/features/discordUser";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { usePricingData } from "@/features/subscriptionProducts";
-import { CreateWorkspaceDialog, useIsWorkspacesEnabled } from "@/features/workspaces";
+import {
+  CreateWorkspaceDialog,
+  findOwnedWorkspace,
+  useIsWorkspacesEnabled,
+  useWorkspaces,
+} from "@/features/workspaces";
 import { Switch } from "@/components/ui/switch";
 import {
   DialogRoot,
@@ -90,6 +95,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
   const { resetCheckoutData, initCancellationFlow, getChargePreview } = usePaddleContext();
   const { data: userData } = useUserMe();
   const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
+  // Gate the list fetch on the dialog being open: this component is mounted
+  // app-wide by the provider, so without the isOpen term the request would fire
+  // for every workspace-enabled user on every page. Mirrors usePricingData below.
+  const { workspaces } = useWorkspaces({ enabled: workspacesEnabled && isOpen });
   const navigate = useNavigate();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
@@ -205,6 +214,23 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
     setIsCreateWorkspaceOpen(true);
   };
 
+  // The create flow is the wrong door when the user already owns a workspace that
+  // needs billing (never activated, or cancelled): they want to bill the one they
+  // have, not spin up another. Route them to its billing page, carrying the chosen
+  // capacity to seed its slider. An owner of only already-paid workspaces is
+  // allowed to create another, so they keep the create CTA.
+  const ownedWorkspace = findOwnedWorkspace(workspaces);
+  const workspaceNeedingBilling = ownedWorkspace?.needsBilling ? ownedWorkspace : undefined;
+
+  const onGoToOwnedWorkspace = (feedCount: number) => {
+    if (!workspaceNeedingBilling) {
+      return;
+    }
+
+    onClose();
+    navigate(pages.workspaceBilling(workspaceNeedingBilling.slug, { feeds: feedCount }));
+  };
+
   const changeSubscriptionDetailsWithProduct = changeSubscriptionDetails?.prices
     .map((price) => {
       if (price.priceId === "free-monthly") {
@@ -263,8 +289,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
           // Carry the picked capacity into billing so the new workspace's plan
           // selection starts at the count the user chose on the slider, instead
           // of dropping it on the floor.
-          const billingPath = pages.workspaceBilling(slug);
-          navigate(chosenFeedCount ? `${billingPath}?feeds=${chosenFeedCount}` : billingPath);
+          navigate(pages.workspaceBilling(slug, { feeds: chosenFeedCount ?? undefined }));
         }}
       />
       <DialogRoot
@@ -435,7 +460,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                           baseWorkspacePrice={getProductPrice(ProductKey.Tier2)?.formattedPrice}
                           getChargePreview={getChargePreview}
                           workspacesEnabled={workspacesEnabled}
+                          ownsWorkspaceNeedingBilling={!!workspaceNeedingBilling}
                           onCreateWorkspace={onChooseWorkspace}
+                          onGoToWorkspace={onGoToOwnedWorkspace}
                         />
                       </Stack>
                     </Flex>

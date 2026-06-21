@@ -24,6 +24,8 @@ vi.mock("../../hooks", () => ({
     error: null,
   }),
   useWorkspaces: () => ({ workspaces: h.workspaces }),
+  findOwnedWorkspace: (workspaces?: Array<{ role: string }>) =>
+    workspaces?.find((w) => w.role === "owner"),
 }));
 
 const renderDialog = (

@@ -250,7 +250,14 @@ const handlers = [
     }
 
     const id = `workspace-${workspacesStore.length + 1}`;
-    workspacesStore.push({ id, name: body.name, slug: body.slug, role: "owner" });
+    // A freshly created workspace has no subscription yet, so it needs billing.
+    workspacesStore.push({
+      id,
+      name: body.name,
+      slug: body.slug,
+      role: "owner",
+      needsBilling: true,
+    });
 
     return HttpResponse.json<CreateWorkspaceOutput>({
       result: {
@@ -284,6 +291,7 @@ const handlers = [
         name: workspace.name,
         slug: workspace.slug,
         role: workspace.role,
+        needsBilling: workspace.needsBilling,
       },
     });
   }),

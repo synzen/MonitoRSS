@@ -81,6 +81,10 @@ export interface IWorkspaceWithRole {
   name: string;
   slug: string;
   role: WorkspaceRole;
+  // Whether the workspace currently has a usable Paddle subscription. False for a
+  // never-activated workspace and for one whose subscription was cancelled (the
+  // webhook nullifies it). The service derives `needsBilling` from it.
+  hasSubscription: boolean;
 }
 
 export interface IWorkspaceMember {
@@ -564,6 +568,7 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
       name: w.name,
       slug: w.slug,
       role: roleByWorkspaceId.get(w._id.toString()) as WorkspaceRole,
+      hasSubscription: !!w.paddleCustomer?.subscription,
     }));
   }
 

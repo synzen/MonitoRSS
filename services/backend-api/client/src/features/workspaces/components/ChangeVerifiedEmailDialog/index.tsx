@@ -8,7 +8,7 @@ import {
   DialogCloseTrigger,
 } from "@/components/ui/dialog";
 import { VerifyEmailStep } from "../VerifyEmailStep";
-import { useWorkspaces } from "../../hooks";
+import { findOwnedWorkspace, useWorkspaces } from "../../hooks";
 
 interface Props {
   isOpen: boolean;
@@ -22,7 +22,7 @@ export const ChangeVerifiedEmailDialog = ({ isOpen, onClose, currentEmail, onCha
   // A workspace the user owns is billed to their verified email, so changing it
   // moves where Paddle sends that workspace's receipts. Surfaced only to owners;
   // admins and non-members have no billing tied to their address.
-  const ownsWorkspace = !!workspaces?.some((w) => w.role === "owner");
+  const ownsWorkspace = !!findOwnedWorkspace(workspaces);
 
   return (
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()}>

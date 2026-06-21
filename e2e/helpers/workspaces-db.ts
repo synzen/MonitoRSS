@@ -278,6 +278,10 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
   // sent invite); pass an older date to put the invite past its resend cooldown so
   // a resend succeeds immediately rather than tripping the per-invite window.
   invitedLastSentAt?: Date;
+  // Gives the workspace an active Paddle subscription so it does not "need
+  // billing". Omit to leave it without a subscription (the freshly-created
+  // default, which surfaces as needsBilling when billing is enabled).
+  withActiveSubscription?: boolean;
 }): Promise<{ workspaceId: string; slug: string }> {
   return withDb(async (db) => {
     const now = new Date();
@@ -291,6 +295,23 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
       createdByUserId: input.selfUserId,
       createdAt: now,
       updatedAt: now,
+      ...(input.withActiveSubscription
+        ? {
+            firstActivatedAt: now,
+            paddleCustomer: {
+              customerId: `ctm_${workspaceId.toHexString()}`,
+              email: "seeded-owner@example.com",
+              subscription: {
+                productKey: "tier2",
+                status: "ACTIVE",
+                billingInterval: "month",
+                billingPeriodEnd: now,
+                currencyCode: "USD",
+                addons: [],
+              },
+            },
+          }
+        : {}),
     });
 
     const memberships: Array<Record<string, unknown>> = [
