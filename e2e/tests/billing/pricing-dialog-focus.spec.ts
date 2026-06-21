@@ -47,20 +47,20 @@ test.describe("Pricing dialog focus management", () => {
       dialog.getByRole("heading", { name: "Pricing", level: 1 }),
     ).toBeVisible({ timeout: 15000 });
 
-    // A1: the two labelled regions render, the personal region shows external
-    // properties as not-included, and the workspace region carries the capacity
-    // slider, the dynamic CTA, and the "workspace of one" reassurance.
+    // A1: the two labelled regions render. External properties only applies at
+    // delivery on the workspace tier, so it is a workspace benefit (named by its
+    // benefit, not the jargon) and is no longer a crossed-out line on Personal.
     const forYou = dialog.getByRole("region", { name: /^for you$/i });
     await expect(forYou.getByRole("heading", { name: /^Free$/ })).toBeVisible();
     await expect(forYou.getByRole("heading", { name: /^Personal$/ })).toBeVisible();
-    // The Personal card lists external properties as not-included, conveyed to
-    // assistive tech (not by color alone). The same row carries both the feature
-    // name and the visually-hidden status, so assert both are present.
-    await expect(forYou.getByText(/external properties/i)).toBeVisible();
-    await expect(forYou.getByText(/not included/i).first()).toBeAttached();
+    await expect(forYou.getByText(/external properties/i)).toHaveCount(0);
+    await expect(forYou.getByText(/rich content from article pages/i)).toHaveCount(0);
 
     const forTeam = dialog.getByRole("region", { name: /for your team/i });
     await expect(forTeam.getByRole("heading", { name: /^Team$/ })).toBeVisible();
+    // Benefit-led wording, never the in-product "external properties" jargon.
+    await expect(forTeam.getByText(/rich content from article pages/i)).toBeVisible();
+    await expect(forTeam.getByText(/external properties/i)).toHaveCount(0);
     await expect(
       forTeam.getByRole("slider", { name: /how many feeds/i }),
     ).toBeVisible();
@@ -70,6 +70,22 @@ test.describe("Pricing dialog focus management", () => {
     await expect(
       forTeam.getByText(/a workspace of one gives you all of this/i),
     ).toBeVisible();
+
+    // The external-properties explainer is a keyboard-accessible disclosure: the
+    // info button is reachable and named, Enter opens the popover (revealing the
+    // <51 articles caveat that used to be an orphaned footnote), and Escape
+    // closes it and returns focus to the trigger.
+    const infoButton = forTeam.getByRole("button", {
+      name: /about rich content from article pages/i,
+    });
+    await expect(infoButton).toBeVisible();
+    await infoButton.focus();
+    await expect(infoButton).toBeFocused();
+    await infoButton.press("Enter");
+    await expect(page.getByText(/fewer than 51 articles/i)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByText(/fewer than 51 articles/i)).toBeHidden();
+    await expect(infoButton).toBeFocused();
 
     // The slider must be operable in BOTH directions with the keyboard (a
     // round-up-only snap would trap it at the 70-feed base). Climb a detent, then

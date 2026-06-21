@@ -23,7 +23,7 @@ import { FAQ } from "@/components/FAQ";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 import { ConvertToWorkspacePrompt } from "../ConvertToWorkspacePrompt";
 import { getPlanDisplayName, pages, ProductKey } from "@/constants";
-import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "@/constants/externalPropertiesMaxArticles";
+import { FREE_DAILY_ARTICLE_LIMIT, PAID_DAILY_ARTICLE_LIMIT } from "@/constants/dailyArticleLimits";
 import { usePaddleContext } from "../../contexts/PaddleContext";
 import { useUserMe } from "@/features/discordUser";
 import { notifySuccess } from "@/utils/notifySuccess";
@@ -62,10 +62,13 @@ const PERSONAL_FEED_COUNT = 35;
 
 const PERSONAL_FEATURES: Array<{ label: string; included: boolean }> = [
   { label: `Track ${PERSONAL_FEED_COUNT} feeds`, included: true },
+  {
+    label: `${PAID_DAILY_ARTICLE_LIMIT.toLocaleString()} articles per day, per feed`,
+    included: true,
+  },
   { label: "Branded message delivery", included: true },
   { label: "Custom placeholders", included: true },
   { label: "2 minute refresh rate", included: true },
-  { label: "External properties", included: false },
 ];
 
 const SectionLabel = ({
@@ -386,9 +389,11 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                               </Text>
                               <Stack as="ul" listStyleType="none" gap={2}>
                                 <FeatureRow included>A handful of feeds</FeatureRow>
-                                <FeatureRow included={false}>
-                                  Branded delivery and placeholders
+                                <FeatureRow included>
+                                  {FREE_DAILY_ARTICLE_LIMIT} articles per day, per feed
                                 </FeatureRow>
+                                <FeatureRow included={false}>Branded message delivery</FeatureRow>
+                                <FeatureRow included={false}>Custom placeholders</FeatureRow>
                               </Stack>
                               {isOnFreePlan && (
                                 <Button width="100%" variant="outline" aria-disabled>
@@ -482,9 +487,8 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                 <Box mt={12}>
                   <Box textAlign="center" pb={3} fontSize="lg">
                     <Text fontSize="sm">
-                      If you are having issues after clicking &quot;Choose&quot;, try using
-                      incognito mode or a different browser. If you are still having issues, please
-                      contact us at{" "}
+                      If you are having issues during checkout, try using incognito mode or a
+                      different browser. If you are still having issues, please contact us at{" "}
                       <Link color="text.link" href="mailto:support@monitorss.xyz">
                         support@monitorss.xyz
                       </Link>
@@ -492,8 +496,6 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                     </Text>
                   </Box>
                   <Text textAlign="center" color="fg.muted">
-                    * External properties are currently limited to feeds with fewer than{" "}
-                    {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles <br /> <br />
                     By proceeding to payment, you are agreeing to our{" "}
                     <Link target="_blank" href="https://monitorss.xyz/terms" color="text.link">
                       terms and conditions
@@ -509,7 +511,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                     .<br />
                     The checkout process is handled by our reseller and Merchant of Record,
                     Paddle.com, who also handles subscription-related inquiries. Prices will be
-                    localized your location.
+                    localized to your location.
                   </Text>
                 </Box>
               )}
@@ -524,9 +526,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                         q: "Is a workspace overkill if it's just me?",
                         a: (
                           <Text>
-                            No. A workspace with one member is exactly the high-capacity personal
-                            plan, plus the option to invite people later. You get the same feeds at
-                            the same price, and you can add members whenever you want.
+                            Not at all. A workspace with a single member gives you the same feed
+                            capacity as a solo plan, plus the option to invite people whenever
+                            you&apos;re ready. Same feeds, same price, with no commitment to add
+                            anyone.
                           </Text>
                         ),
                       },
@@ -534,11 +537,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                         q: "Can I switch between plans?",
                         a: (
                           <Text>
-                            Yes! You can easily upgrade or downgrade your plan, at any time. If you
-                            upgrade, the amount you have already paid for the current period will be
-                            pro-rated and applied to the new plan. If you downgrade, the amount you
-                            have already paid for the current period will be pro-rated and applied
-                            as a credit to the new plan.
+                            Yes, you can upgrade or downgrade anytime. Whatever you&apos;ve already
+                            paid for the current period is pro-rated. On an upgrade it&apos;s
+                            applied toward the new plan; on a downgrade it becomes account credit
+                            toward future charges.
                           </Text>
                         ),
                       },
@@ -549,25 +551,6 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                             Yes, you can cancel your subscription at any time from your account
                             page. Your subscription will remain active until the end of the period
                             you have paid for, and will then expire with no further charges.
-                          </Text>
-                        ),
-                      },
-                      {
-                        q: "What payment methods are accepted?",
-                        a: (
-                          <Text>
-                            Cards (Mastercard, Visa, Maestro, American Express, Discover, Diners
-                            Club, JCB, UnionPay, and Mada), PayPal, Google Pay (only on Google
-                            Chrome), and Apple Pay (only on Safari).
-                          </Text>
-                        ),
-                      },
-                      {
-                        q: "What currencies are supported?",
-                        a: (
-                          <Text>
-                            The supported currencies are USD, EUR, GBP, ARS, AUD, BRL, CAD, CHF,
-                            COP, CNY, CZK, DKK, HKD, HUF, INR, ILS, JPY, KRW, MXN, NOK, NZD, PLN.
                           </Text>
                         ),
                       },
@@ -590,21 +573,64 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                         ),
                       },
                       {
-                        q: "How many Discord servers does my subscription apply to?",
+                        q: "What payment methods are accepted?",
                         a: (
                           <Text>
-                            Your subscription applies to all the feeds that you own, regardless of
-                            what server it is in.
+                            We accept all major credit and debit cards, PayPal, Apple Pay, and
+                            Google Pay, plus local payment methods in many regions. The methods
+                            available to you will appear at checkout.
                           </Text>
                         ),
                       },
                       {
-                        q: "Do my benefits applied to feeds that I co-manage but do not own?",
+                        q: "What currencies are supported?",
                         a: (
                           <Text>
-                            Unfortunately, no. Your benefits only apply to feeds that you own.
-                            Consider asking the feed owner to transfer ownership to you if you have
-                            the desired benefits.
+                            We support a wide range of currencies, including USD, EUR, GBP, AUD,
+                            CAD, JPY, and INR. Where your local currency is supported, prices are
+                            shown in it automatically.
+                          </Text>
+                        ),
+                      },
+                      {
+                        q: "Who/what is Paddle?",
+                        a: (
+                          <Text>
+                            Paddle (paddle.com) is our reseller and Merchant of Record. They handle
+                            the checkout and billing process. All emails related to billing will be
+                            sent from Paddle.
+                          </Text>
+                        ),
+                      },
+                      {
+                        q: "Does my subscription cover feeds across multiple Discord servers?",
+                        a: (
+                          <Text>
+                            Yes. Your subscription applies to all the feeds you own, regardless of
+                            which server they&apos;re in.
+                          </Text>
+                        ),
+                      },
+                      {
+                        q: "I co-manage someone else's feed. Do my benefits apply to it?",
+                        a: (
+                          <Text>
+                            No. A feed&apos;s benefits, like its limit and refresh rate, come from
+                            its owner, not from co-managers. The feed also counts as one of your own
+                            feeds while you have access. If you want your benefits on a feed, ask
+                            the owner to transfer it to you.
+                          </Text>
+                        ),
+                      },
+                      {
+                        q: "In a workspace, do feeds share the workspace's plan?",
+                        a: (
+                          <Text>
+                            Yes. Every feed in a workspace draws on the workspace&apos;s plan, no
+                            matter which member created it, and all of them count toward the
+                            workspace&apos;s shared total. (The co-management invites above are a
+                            personal-plan feature; workspaces share access through membership
+                            instead.)
                           </Text>
                         ),
                       },
@@ -620,16 +646,6 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                               support@monitorss.xyz
                             </Link>{" "}
                             and we will be happy to discuss a custom plan.
-                          </Text>
-                        ),
-                      },
-                      {
-                        q: "Who/what is Paddle?",
-                        a: (
-                          <Text>
-                            Paddle (paddle.com) is our reseller and Merchant of Record. They handle
-                            the checkout and billing process. All emails related to billing will be
-                            sent from Paddle.
                           </Text>
                         ),
                       },

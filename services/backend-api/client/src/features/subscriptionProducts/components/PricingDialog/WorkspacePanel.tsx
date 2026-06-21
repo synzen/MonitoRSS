@@ -16,6 +16,7 @@ import {
   useWorkspaceSliderPrice,
   WORKSPACE_DETENTS,
   WORKSPACE_FEATURES,
+  WorkspaceFeatureRow,
   FeatureRow,
 } from "@/shared/workspaceCapacity";
 
@@ -145,9 +146,7 @@ export const WorkspacePanel = ({
           <Separator />
           <Stack as="ul" listStyleType="none" gap={2}>
             {WORKSPACE_FEATURES.map((feature) => (
-              <FeatureRow key={feature} included>
-                {feature}
-              </FeatureRow>
+              <WorkspaceFeatureRow key={feature.label} feature={feature} />
             ))}
           </Stack>
           {workspacesEnabled ? (

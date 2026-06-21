@@ -171,15 +171,57 @@ describe("PricingDialog two-region layout", () => {
     });
   });
 
-  it("shows external properties as not-included on the Personal card, conveyed to assistive tech", async () => {
+  it("does not list external properties on the Personal card (Workspace-only capability)", async () => {
     renderDialog();
 
     const forYou = await screen.findByRole("region", { name: /^for you$/i });
-    // The crossed-out feature must be conveyed to AT, not by color alone: the
-    // list item is marked as not included via accessible text.
-    const externalProps = within(forYou).getByText(/external properties/i);
-    const listItem = externalProps.closest("li") as HTMLElement;
-    expect(within(listItem).getByText(/not included/i)).toBeInTheDocument();
+    // External properties only applies at delivery on the Workspace tier, so it
+    // is no longer surfaced as a crossed-out line on the Personal card where it
+    // would read as something a Personal buyer is missing out on.
+    expect(within(forYou).queryByText(/external properties/i)).not.toBeInTheDocument();
+    expect(within(forYou).queryByText(/rich content from article pages/i)).not.toBeInTheDocument();
+  });
+
+  it("lists external properties last on the Team card, benefit-led, not as jargon", async () => {
+    renderDialog();
+
+    const forTeam = await screen.findByRole("region", { name: /for your team/i });
+    // The buy screen leads with the benefit, never the in-product jargon name.
+    expect(within(forTeam).getByText(/rich content from article pages/i)).toBeInTheDocument();
+    expect(within(forTeam).queryByText(/external properties/i)).not.toBeInTheDocument();
+
+    // It sits last, below the collaboration bullet, per usage data.
+    const bullets = within(forTeam).getAllByRole("listitem");
+    const last = bullets[bullets.length - 1];
+    expect(last.textContent ?? "").toMatch(/rich content from article pages/i);
+  });
+
+  it("explains external properties via a keyboard-accessible info popover with the article caveat", async () => {
+    renderDialog();
+
+    const forTeam = await screen.findByRole("region", { name: /for your team/i });
+    // The info affordance is a real button with an accessible name, not a bare
+    // icon, so screen-reader and keyboard users can reach and identify it.
+    const infoButton = within(forTeam).getByRole("button", {
+      name: /about rich content from article pages/i,
+    });
+
+    fireEvent.click(infoButton);
+
+    // The explanation (and the <51 articles caveat that used to be an orphaned
+    // footnote) is revealed on activation.
+    expect(await screen.findByText(/pull extra images, links, or thumbnails/i)).toBeInTheDocument();
+    expect(screen.getByText(/fewer than 51 articles/i)).toBeInTheDocument();
+  });
+
+  it("surfaces the per-feed daily article limit on the Free and Personal cards", async () => {
+    renderDialog();
+
+    const forYou = await screen.findByRole("region", { name: /^for you$/i });
+    // The 20x uplift is the selling point, so both the low free allowance and
+    // the high paid allowance are visible for the contrast to land.
+    expect(within(forYou).getByText(/50 articles per day, per feed/i)).toBeInTheDocument();
+    expect(within(forYou).getByText(/1,000 articles per day, per feed/i)).toBeInTheDocument();
   });
 
   it("shows the workspace reassurance line under the CTA", async () => {

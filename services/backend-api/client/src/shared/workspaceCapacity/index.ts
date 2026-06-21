@@ -8,4 +8,4 @@ export {
   feedCountToAddonQuantity,
   WORKSPACE_BASE_FEEDS,
 } from "./useWorkspaceSliderPrice";
-export { WORKSPACE_FEATURES, FeatureRow } from "./features";
+export { WORKSPACE_FEATURES, FeatureRow, WorkspaceFeatureRow } from "./features";
