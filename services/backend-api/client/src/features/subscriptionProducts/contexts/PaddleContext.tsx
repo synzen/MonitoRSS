@@ -329,6 +329,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
               id: string;
               interval: "month" | "year" | "day" | "week";
               formattedPrice: string;
+              unitAmount: number;
               currencyCode: string;
               quantity: number;
             }>;
@@ -348,6 +349,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         for (let i = 0; i < details.lineItems.length; i += 1) {
           const {
             formattedTotals,
+            unitTotals,
             product,
             price: { billingCycle, id: priceId },
             quantity,
@@ -362,6 +364,9 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
             id: priceId,
             interval: billingCycle.interval,
             formattedPrice: formattedTotals.total,
+            // Paddle returns minor-unit integers as strings; keep numeric so
+            // callers can do exact per-unit arithmetic.
+            unitAmount: Number(unitTotals.total),
             currencyCode,
             quantity,
           };
@@ -385,6 +390,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
             id: d.id,
             interval: d.interval,
             formattedPrice: d.formattedPrice,
+            unitAmount: d.unitAmount,
             currencyCode: d.currencyCode,
             quantity: d.quantity,
           })),

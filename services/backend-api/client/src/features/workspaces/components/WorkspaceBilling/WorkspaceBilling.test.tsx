@@ -111,6 +111,7 @@ const PRICE_PREVIEWS = [
         id: PRICE_IDS[ProductKey.Tier2].month,
         interval: "month",
         formattedPrice: "$10.00",
+        unitAmount: 1000,
         currencyCode: "USD",
         quantity: 1,
       },
@@ -118,6 +119,7 @@ const PRICE_PREVIEWS = [
         id: PRICE_IDS[ProductKey.Tier2].year,
         interval: "year",
         formattedPrice: "$100.00",
+        unitAmount: 10000,
         currencyCode: "USD",
         quantity: 1,
       },
@@ -151,6 +153,7 @@ const PRICE_PREVIEWS = [
         id: PRICE_IDS[ProductKey.Tier3Feed].month,
         interval: "month",
         formattedPrice: "$0.50",
+        unitAmount: 50,
         currencyCode: "USD",
         quantity: 1,
       },
@@ -158,6 +161,7 @@ const PRICE_PREVIEWS = [
         id: PRICE_IDS[ProductKey.Tier3Feed].year,
         interval: "year",
         formattedPrice: "$5.00",
+        unitAmount: 500,
         currencyCode: "USD",
         quantity: 1,
       },
@@ -241,6 +245,10 @@ describe("WorkspaceBilling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
+    // One price preview powers the whole capacity slider: it carries the Tier2
+    // base and Tier3Feed per-feed unit prices (with unitAmount in minor units),
+    // from which the slider derives any detent. $10.00 base + $0.50/feed, so 70
+    // feeds = $10.00 and 100 feeds = 1000 + 30*50 = $25.00.
     h.getPricePreview.mockResolvedValue(PRICE_PREVIEWS);
     // The Tier 3 card asks for the authoritative recurring total whenever extra
     // feeds are chosen; default to a recognizable combined figure.
@@ -336,7 +344,8 @@ describe("WorkspaceBilling", () => {
     renderBilling();
 
     // At the base detent the headline is the base workspace price for 70 feeds.
-    expect(await screen.findByText("$10.00", { exact: false })).toBeInTheDocument();
+    // formatCurrency drops a trailing ".00", so $10.00 renders as "$10".
+    expect(await screen.findByText("$10", { exact: false })).toBeInTheDocument();
     expect(screen.getByText(/70 feeds \/ month/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /terms and conditions/i })).toHaveAttribute(
       "href",
@@ -354,23 +363,19 @@ describe("WorkspaceBilling", () => {
 
     renderBilling();
 
-    // Base price before moving the slider.
-    expect(await screen.findByText("$10.00", { exact: false })).toBeInTheDocument();
+    // Base price before moving the slider (formatCurrency drops the ".00").
+    expect(await screen.findByText("$10", { exact: false })).toBeInTheDocument();
 
     // Slide one detent up: 70 -> 100 feeds, i.e. 30 add-on feeds above the base.
     const slider = await screen.findByRole("slider", { name: /how many feeds/i });
     slider.focus();
     await userEvent.keyboard("{ArrowRight}");
 
-    // The headline reflects the authoritative combined recurring total, and the
-    // preview was asked for the real basket (base Tier 2 + 30 add-on feeds).
-    const total = await screen.findByText("$35.00", { exact: false });
-    await waitFor(() =>
-      expect(h.getChargePreview).toHaveBeenCalledWith([
-        { priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 },
-        { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 30 },
-      ]),
-    );
+    // The headline reflects the combined recurring total derived from the single
+    // preview (base $10.00 + 30 add-on feeds * $0.50 = $25.00, rendered "$25" as
+    // formatCurrency drops the ".00"), with no per-detent round-trip: the whole
+    // range is priced from that one preview.
+    const total = await screen.findByText("$25", { exact: false });
 
     // The price summary is a polite live region that settles once resolved.
     const liveRegion = total.closest('[aria-live="polite"]');

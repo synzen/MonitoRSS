@@ -24,9 +24,11 @@ import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
 import { ConvertToWorkspacePrompt } from "../ConvertToWorkspacePrompt";
 import { getPlanDisplayName, pages, ProductKey } from "@/constants";
 import { FREE_DAILY_ARTICLE_LIMIT, PAID_DAILY_ARTICLE_LIMIT } from "@/constants/dailyArticleLimits";
+import { FREE_REFRESH_LABEL, PAID_REFRESH_LABEL } from "@/constants/refreshRates";
 import { usePaddleContext } from "../../contexts/PaddleContext";
 import { useUserMe } from "@/features/discordUser";
 import { notifySuccess } from "@/utils/notifySuccess";
+import formatCurrency from "@/utils/formatCurrency";
 import { usePricingData } from "@/features/subscriptionProducts";
 import {
   CreateWorkspaceDialog,
@@ -66,9 +68,9 @@ const PERSONAL_FEATURES: Array<{ label: string; included: boolean }> = [
     label: `${PAID_DAILY_ARTICLE_LIMIT.toLocaleString()} articles per day, per feed`,
     included: true,
   },
+  { label: PAID_REFRESH_LABEL, included: true },
   { label: "Branded message delivery", included: true },
   { label: "Custom placeholders", included: true },
-  { label: "2 minute refresh rate", included: true },
 ];
 
 const SectionLabel = ({
@@ -95,7 +97,7 @@ interface ChangeSubscriptionDetails {
 }
 
 export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
-  const { resetCheckoutData, initCancellationFlow, getChargePreview } = usePaddleContext();
+  const { resetCheckoutData, initCancellationFlow } = usePaddleContext();
   const { data: userData } = useUserMe();
   const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
   // Gate the list fetch on the dialog being open: this component is mounted
@@ -142,6 +144,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
     billingPeriodEndsAt,
     additionalFeedPricePreview,
     getProductPrice,
+    getWorkspaceFeedPricing,
   } = usePricingData({ isOpen });
 
   const onClosePricingModal = () => {
@@ -217,6 +220,18 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
   const personalDisplayPrice = personalBasePrice.endsWith(".00")
     ? personalBasePrice.slice(0, -3)
     : personalBasePrice;
+
+  // The free tier has no Paddle price to localize, so borrow the currency of a
+  // fetched paid price to render a zero amount in the viewer's currency (e.g.
+  // "€0", "¥0") rather than a hard-coded "$0". formatCurrency returns its raw
+  // input unchanged for a currency it has no formatter for, so a bare "0" (no
+  // symbol) signals that case; fall back to "$0" there, and before the preview
+  // lands.
+  const localizedFreeZero = personalPrice
+    ? formatCurrency("0", personalPrice.currencyCode)
+    : undefined;
+  const freeDisplayPrice =
+    localizedFreeZero && localizedFreeZero !== "0" ? localizedFreeZero : "$0";
 
   const onChooseWorkspace = (feedCount: number) => {
     setChosenFeedCount(feedCount);
@@ -396,13 +411,14 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                           <Card.Body>
                             <Stack gap={6}>
                               <Text fontSize="4xl" fontWeight="bold" lineHeight="1">
-                                $0
+                                {freeDisplayPrice}
                               </Text>
                               <Stack as="ul" listStyleType="none" gap={2}>
-                                <FeatureRow included>A handful of feeds</FeatureRow>
+                                <FeatureRow included>Track up to 3 feeds</FeatureRow>
                                 <FeatureRow included>
                                   {FREE_DAILY_ARTICLE_LIMIT} articles per day, per feed
                                 </FeatureRow>
+                                <FeatureRow included>{FREE_REFRESH_LABEL}</FeatureRow>
                                 <FeatureRow included={false}>Branded message delivery</FeatureRow>
                                 <FeatureRow included={false}>Custom placeholders</FeatureRow>
                               </Stack>
@@ -473,10 +489,12 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                         </SectionLabel>
                         <WorkspacePanel
                           interval={interval}
-                          baseWorkspacePrice={getProductPrice(ProductKey.Tier2)?.formattedPrice}
-                          getChargePreview={getChargePreview}
+                          pricing={getWorkspaceFeedPricing(interval)}
                           workspacesEnabled={workspacesEnabled}
                           ownsWorkspaceNeedingBilling={!!workspaceNeedingBilling}
+                          // Opened from the feed-limit wall: the user came for
+                          // capacity, so start the sizer expanded.
+                          defaultSizerOpen={target === "workspace"}
                           onCreateWorkspace={onChooseWorkspace}
                           onGoToWorkspace={onGoToOwnedWorkspace}
                         />
@@ -542,6 +560,15 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                             capacity as a solo plan, plus the option to invite people whenever
                             you&apos;re ready. Same feeds, same price, with no commitment to add
                             anyone.
+                          </Text>
+                        ),
+                      },
+                      {
+                        q: "Do the people I invite to a workspace have to pay?",
+                        a: (
+                          <Text>
+                            No. Only the workspace owner pays. Anyone you invite can join and
+                            co-manage feeds for free, as long as they have a verified email.
                           </Text>
                         ),
                       },
@@ -624,13 +651,14 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                         ),
                       },
                       {
-                        q: "I co-manage someone else's feed. Do my benefits apply to it?",
+                        q: "If I co-manage a feed, does it use up my own feed limit?",
                         a: (
                           <Text>
-                            No. A feed&apos;s benefits, like its limit and refresh rate, come from
-                            its owner, not from co-managers. The feed also counts as one of your own
-                            feeds while you have access. If you want your benefits on a feed, ask
-                            the owner to transfer it to you.
+                            On a personal plan, yes. A feed you co-manage counts as one of your own
+                            feeds while you have access, and its benefits, like its limit and
+                            refresh rate, come from its owner, not from you. In a shared workspace
+                            this goes away: shared feeds belong to the workspace, so they don&apos;t
+                            count against any member&apos;s personal limit.
                           </Text>
                         ),
                       },

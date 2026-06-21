@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom";
 import { render, screen, within, waitFor, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -36,6 +37,9 @@ const price = (id: string, interval: "month" | "year", formattedPrice: string) =
   id,
   interval,
   formattedPrice,
+  // Minor-unit integer matching the formatted string (e.g. "$10.00" -> 1000),
+  // the figure the capacity slider derives detent totals from.
+  unitAmount: Math.round(Number(formattedPrice.replace(/[^0-9.]/g, "")) * 100),
   currencyCode: "USD",
   quantity: 1,
 });
@@ -98,6 +102,22 @@ const mockPricingData = (overrides: Record<string, unknown> = {}) => {
     getProductPrice: (productId: ProductKey) =>
       PRODUCTS.find((p) => p.id === productId)?.prices.find((p) => p.interval === "month"),
     getProduct: (productId: ProductKey) => PRODUCTS.find((p) => p.id === productId),
+    getWorkspaceFeedPricing: (forInterval: "month" | "year") => {
+      const base = PRODUCTS.find((p) => p.id === ProductKey.Tier2)?.prices.find(
+        (p) => p.interval === forInterval,
+      );
+      const feed = PRODUCTS.find((p) => p.id === ProductKey.Tier3Feed)?.prices.find(
+        (p) => p.interval === forInterval,
+      );
+
+      return base && feed
+        ? {
+            baseUnitAmount: base.unitAmount,
+            perFeedUnitAmount: feed.unitAmount,
+            currencyCode: base.currencyCode,
+          }
+        : undefined;
+    },
     ...overrides,
   } as never);
 };
@@ -127,6 +147,17 @@ const renderDialog = (props: { target?: "workspace" } = {}) => {
   );
 };
 
+// The capacity slider sits inside the collapsed "Size your plan" sizer, demoted
+// under the collaboration pitch. Open it so the slider is mounted before the
+// keyboard/CTA assertions run.
+const openSizer = async (forTeam: HTMLElement) => {
+  // Ark's accordion toggles on a full pointer sequence, not a bare click event,
+  // so drive it with userEvent.
+  await userEvent.click(within(forTeam).getByRole("button", { name: /size your plan/i }));
+
+  return within(forTeam).findByRole("slider", { name: /how many feeds/i });
+};
+
 describe("PricingDialog two-region layout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -134,7 +165,6 @@ describe("PricingDialog two-region layout", () => {
     vi.mocked(usePaddleContext).mockReturnValue({
       resetCheckoutData: vi.fn(),
       initCancellationFlow: vi.fn(),
-      getChargePreview: vi.fn().mockResolvedValue({ totalFormatted: "$13.00" }),
     } as never);
     vi.mocked(useUserMe).mockReturnValue({
       data: {
@@ -150,6 +180,44 @@ describe("PricingDialog two-region layout", () => {
     const forYou = await screen.findByRole("region", { name: /^for you$/i });
     expect(within(forYou).getByRole("heading", { name: /^Free$/ })).toBeInTheDocument();
     expect(within(forYou).getByRole("heading", { name: /^Personal$/ })).toBeInTheDocument();
+  });
+
+  it("renders the Free card's zero price in the viewer's currency, not a hard-coded $", async () => {
+    const eurProducts = PRODUCTS.map((p) => ({
+      ...p,
+      prices: p.prices.map((pr) => ({ ...pr, currencyCode: "EUR" })),
+    }));
+    mockPricingData({
+      products: eurProducts,
+      getProductPrice: (productId: ProductKey) =>
+        eurProducts.find((p) => p.id === productId)?.prices.find((p) => p.interval === "month"),
+    });
+
+    renderDialog();
+
+    const forYou = await screen.findByRole("region", { name: /^for you$/i });
+    expect(within(forYou).getByText("€0")).toBeInTheDocument();
+    expect(within(forYou).queryByText("$0")).not.toBeInTheDocument();
+  });
+
+  it("falls back to $0 on the Free card when the viewer's currency has no formatter", async () => {
+    // INR has no entry in formatCurrency's map, so formatCurrency("0", "INR")
+    // returns a bare "0" (no symbol). The Free card must show "$0", not "0".
+    const inrProducts = PRODUCTS.map((p) => ({
+      ...p,
+      prices: p.prices.map((pr) => ({ ...pr, currencyCode: "INR" })),
+    }));
+    mockPricingData({
+      products: inrProducts,
+      getProductPrice: (productId: ProductKey) =>
+        inrProducts.find((p) => p.id === productId)?.prices.find((p) => p.interval === "month"),
+    });
+
+    renderDialog();
+
+    const forYou = await screen.findByRole("region", { name: /^for you$/i });
+    expect(within(forYou).getByText("$0")).toBeInTheDocument();
+    expect(within(forYou).queryByText(/^0$/)).not.toBeInTheDocument();
   });
 
   it("renders a 'For your team' region with the Team plan card", async () => {
@@ -263,7 +331,6 @@ describe("PricingDialog FAQ", () => {
     vi.mocked(usePaddleContext).mockReturnValue({
       resetCheckoutData: vi.fn(),
       initCancellationFlow: vi.fn(),
-      getChargePreview: vi.fn().mockResolvedValue({ totalFormatted: "$13.00" }),
     } as never);
     vi.mocked(useUserMe).mockReturnValue({
       data: {
@@ -295,7 +362,6 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     vi.mocked(usePaddleContext).mockReturnValue({
       resetCheckoutData: vi.fn(),
       initCancellationFlow: vi.fn(),
-      getChargePreview: vi.fn().mockResolvedValue({ totalFormatted: "$13.00" }),
     } as never);
     vi.mocked(useUserMe).mockReturnValue({
       data: {
@@ -309,7 +375,7 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     renderDialog();
 
     const forTeam = await screen.findByRole("region", { name: /for your team/i });
-    const slider = within(forTeam).getByRole("slider", { name: /how many feeds/i });
+    const slider = await openSizer(forTeam);
     expect(slider).toBeInTheDocument();
     // The thumb announces the feed count it represents (not the raw detent index)
     // so a screen-reader user hears "70 feeds" at the base anchor.
@@ -324,7 +390,7 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
       within(forTeam).getByRole("button", { name: /create workspace for 70 feeds/i }),
     ).toBeInTheDocument();
 
-    const slider = within(forTeam).getByRole("slider", { name: /how many feeds/i });
+    const slider = await openSizer(forTeam);
     slider.focus();
     // Each step is one detent, so ArrowRight from the 70 base lands on 100.
     fireEvent.keyDown(slider, { key: "ArrowRight" });
@@ -341,7 +407,7 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     renderDialog();
 
     const forTeam = await screen.findByRole("region", { name: /for your team/i });
-    const slider = within(forTeam).getByRole("slider", { name: /how many feeds/i });
+    const slider = await openSizer(forTeam);
 
     // Climb one detent: index 0 (70) -> index 1 (100).
     slider.focus();
@@ -367,28 +433,24 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     expect(slider).toHaveAttribute("aria-valuetext", "70 feeds");
   });
 
-  it("updates the hero price from a Paddle preview when feeds are added above the base", async () => {
-    const getChargePreview = vi.fn().mockResolvedValue({ totalFormatted: "$13.00" });
-    vi.mocked(usePaddleContext).mockReturnValue({
-      resetCheckoutData: vi.fn(),
-      initCancellationFlow: vi.fn(),
-      getChargePreview,
-    } as never);
-
+  it("derives the hero price from the page preview when feeds are added above the base", async () => {
+    // The Team hero is priced entirely from the page-level price preview (Tier2
+    // base + Tier3Feed per-feed unit), not a Paddle call of its own: moving the
+    // slider just re-derives the total locally.
     renderDialog();
 
     const forTeam = await screen.findByRole("region", { name: /for your team/i });
-    // At the base count the hero shows the base workspace price, no preview call.
-    expect(within(forTeam).getByText("$10.00")).toBeInTheDocument();
+    // At the base count the hero shows the base workspace price ($10.00, rendered
+    // "$10" as formatCurrency drops the ".00").
+    expect(await within(forTeam).findByText("$10")).toBeInTheDocument();
 
-    const slider = within(forTeam).getByRole("slider", { name: /how many feeds/i });
+    const slider = await openSizer(forTeam);
     slider.focus();
     fireEvent.keyDown(slider, { key: "ArrowRight" });
 
-    // The live hero price comes from Paddle's authoritative preview of the
-    // base tier + add-on feeds, not hardcoded math.
-    await waitFor(() => expect(getChargePreview).toHaveBeenCalled());
-    expect(await within(forTeam).findByText("$13.00")).toBeInTheDocument();
+    // 70 -> 100 feeds = base $10.00 + 30 * $0.50 = $25.00 ("$25"), derived from
+    // the preview's authoritative per-feed unit price.
+    expect(await within(forTeam).findByText("$25")).toBeInTheDocument();
   });
 });
 
@@ -399,7 +461,6 @@ describe("PricingDialog workspace CTA when the user already owns a workspace", (
     vi.mocked(usePaddleContext).mockReturnValue({
       resetCheckoutData: vi.fn(),
       initCancellationFlow: vi.fn(),
-      getChargePreview: vi.fn().mockResolvedValue({ totalFormatted: "$13.00" }),
     } as never);
     vi.mocked(useUserMe).mockReturnValue({
       data: {

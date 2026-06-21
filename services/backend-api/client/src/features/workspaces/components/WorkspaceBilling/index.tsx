@@ -44,7 +44,9 @@ import { usePaddleContext } from "@/features/subscriptionProducts";
 import {
   useWorkspaceSliderPrice,
   feedCountToAddonQuantity,
+  workspaceFeedPricingFromProducts,
   WORKSPACE_BASE_FEEDS,
+  WorkspaceFeedPricing,
 } from "@/shared/workspaceCapacity";
 import {
   CapacitySlider,
@@ -323,8 +325,7 @@ const ChangeCapacityDialog = ({
   currentFeeds,
   interval,
   nextBillDate,
-  baseWorkspacePrice,
-  getChargePreview,
+  pricing,
   buildBasket,
 }: {
   open: boolean;
@@ -333,10 +334,9 @@ const ChangeCapacityDialog = ({
   currentFeeds: number;
   interval: BillingInterval;
   nextBillDate: string | null;
-  baseWorkspacePrice: string | undefined;
-  getChargePreview: (
-    items: Array<{ priceId: string; quantity: number }>,
-  ) => Promise<{ totalFormatted: string }>;
+  // Base + per-feed unit prices for the subscribed interval, from the page's
+  // single preview. Undefined while it loads. Drives the slider's derived totals.
+  pricing: WorkspaceFeedPricing | undefined;
   buildBasket: (feeds: number) => Array<{ priceId: string; quantity: number }>;
 }) => {
   // Seed at the current capacity (next detent at or above it) so the owner edits
@@ -354,12 +354,7 @@ const ChangeCapacityDialog = ({
   const decreasing = nextFeeds < currentFeeds;
   const prices = buildBasket(nextFeeds);
 
-  const { price: recurringPrice, isUpdating } = useWorkspaceSliderPrice({
-    feeds: nextFeeds,
-    interval,
-    baseWorkspacePrice,
-    getChargePreview,
-  });
+  const { price: recurringPrice } = useWorkspaceSliderPrice({ feeds: nextFeeds, pricing });
 
   const { preview, status, error } = useWorkspaceBillingChangePreview({
     workspaceSlug,
@@ -395,7 +390,7 @@ const ChangeCapacityDialog = ({
                 through the same node. The slider sits above it so its own value
                 announcements are not re-read and it never remounts across the
                 swap (thumb focus is preserved). */}
-            <Box aria-live="polite" aria-busy={isUpdating}>
+            <Box aria-live="polite" aria-busy={!recurringPrice}>
               {decreasing ? (
                 <>
                   <VisuallyHidden>
@@ -415,13 +410,8 @@ const ChangeCapacityDialog = ({
                 </>
               ) : (
                 <>
-                  <Text
-                    fontSize="xl"
-                    fontWeight="bold"
-                    color="text.link"
-                    opacity={isUpdating ? 0.65 : 1}
-                  >
-                    {recurringPrice ?? <Spinner size="sm" />}{" "}
+                  <Text fontSize="xl" fontWeight="bold" color="text.link">
+                    {recurringPrice ?? <Spinner size="sm" aria-label="Loading price" />}{" "}
                     <Text as="span" fontSize="sm" fontWeight="normal" color="fg.muted">
                       / {interval}
                     </Text>
@@ -521,7 +511,7 @@ const ChangeCapacityDialog = ({
 };
 
 export const WorkspaceBilling = () => {
-  const { isConfigured, isLoaded, getPricePreview, getChargePreview } = usePaddleContext();
+  const { isConfigured, isLoaded, getPricePreview } = usePaddleContext();
   const currentWorkspace = useCurrentWorkspace();
   const { workspace, refetch } = useWorkspace({
     workspaceSlug: currentWorkspace?.slug,
@@ -579,27 +569,11 @@ export const WorkspaceBilling = () => {
       refetch,
     });
 
-  // The base workspace-tier price the slider always carries; the slider price
-  // hook adds the live add-on total above it. Read from the loaded previews
-  // (undefined until they arrive, which the slider summary handles with a spinner).
-  const baseWorkspacePrice = products
-    ?.find((p) => p.id === ProductKey.Tier2)
-    ?.prices.find((p) => p.interval === interval)?.formattedPrice;
-
-  // Live recurring price for the activation slider's chosen capacity. Hooks must
-  // run before the early return below, so this lives here even though it only
-  // feeds the unsubscribed activation view.
-  const activationFeeds = feedsForDetentIndex(activationIndex);
-  const { price: activationPrice, isUpdating: activationPriceUpdating } = useWorkspaceSliderPrice({
-    feeds: activationFeeds,
-    interval,
-    baseWorkspacePrice,
-    getChargePreview,
-  });
-
-  // The capacity slider only needs the base workspace-tier price (the floor it
-  // builds on) and the per-feed add-on price; the live recurring total for any
-  // capacity comes from getChargePreview on the actual basket.
+  // One price preview powers every capacity slider on this page: it carries the
+  // Tier2 base and Tier3Feed per-feed unit prices for both intervals, from which
+  // the slider derives any detent's total locally. So this is the page's only
+  // pricing round-trip, no matter how the owner drags the slider or toggles the
+  // interval. Owners are the only ones who can subscribe, so gate on ownership.
   useEffect(() => {
     if (!isConfigured || !isLoaded || !isOwner) {
       return;
@@ -614,6 +588,20 @@ export const WorkspaceBilling = () => {
       .then(setProducts)
       .catch(() => setPricesError(true));
   }, [isConfigured, isLoaded, isOwner]);
+
+  // The slider's pricing inputs for an interval, derived from that single preview.
+  // The lookup is shared with the pricing dialog (ADR-009).
+  const feedPricingFor = (forInterval: BillingInterval) =>
+    workspaceFeedPricingFromProducts(products, forInterval);
+
+  // Live recurring price for the activation slider's chosen capacity. Hooks must
+  // run before the early return below, so this lives here even though it only
+  // feeds the unsubscribed activation view.
+  const activationFeeds = feedsForDetentIndex(activationIndex);
+  const { price: activationPrice } = useWorkspaceSliderPrice({
+    feeds: activationFeeds,
+    pricing: feedPricingFor(interval),
+  });
 
   if (!isConfigured || !currentWorkspace) {
     return null;
@@ -678,11 +666,6 @@ export const WorkspaceBilling = () => {
   const currentCapacityFeeds = currentTier
     ? TIER_FEED_LIMITS[currentTier] + currentAddonQuantity
     : WORKSPACE_BASE_FEEDS;
-  // The base workspace-tier price for the subscribed interval, the floor the
-  // change-capacity slider's live price builds on.
-  const baseWorkspacePriceForSubscription = products
-    ?.find((p) => p.id === ProductKey.Tier2)
-    ?.prices.find((p) => p.interval === subscriptionInterval)?.formattedPrice;
 
   const intervalToggle = (
     <HStack role="group" aria-label="Billing interval">
@@ -924,7 +907,6 @@ export const WorkspaceBilling = () => {
                   feeds={activationFeeds}
                   price={activationPrice}
                   interval={interval}
-                  isUpdating={activationPriceUpdating}
                 />
                 <CapacitySlider index={activationIndex} onChange={setActivationIndex} />
                 <Box>
@@ -972,8 +954,7 @@ export const WorkspaceBilling = () => {
         currentFeeds={currentCapacityFeeds}
         interval={subscriptionInterval}
         nextBillDate={subscription?.nextBillDate ?? null}
-        baseWorkspacePrice={baseWorkspacePriceForSubscription}
-        getChargePreview={getChargePreview}
+        pricing={feedPricingFor(subscriptionInterval)}
         buildBasket={(feeds) => capacityBasket(feeds, subscriptionInterval)}
       />
       {conversion?.eligible && (

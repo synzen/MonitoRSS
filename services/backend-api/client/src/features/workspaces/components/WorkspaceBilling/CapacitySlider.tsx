@@ -1,4 +1,4 @@
-import { Box, HStack, Spinner, Text } from "@chakra-ui/react";
+import { Box, Spinner, Text } from "@chakra-ui/react";
 import { Slider } from "@/components/ui/slider";
 import { WORKSPACE_DETENTS } from "@/shared/workspaceCapacity";
 
@@ -103,26 +103,18 @@ export const CapacitySummary = ({
   feeds,
   price,
   interval,
-  isUpdating,
 }: {
   feeds: number;
   price: string | undefined;
   interval: "month" | "year";
-  isUpdating: boolean;
 }) => (
-  <Box aria-live="polite" aria-busy={isUpdating}>
-    <HStack gap={2} alignItems="flex-end">
-      <Text
-        fontSize={{ base: "3xl", md: "4xl" }}
-        fontWeight="bold"
-        lineHeight="1"
-        color="text.link"
-        opacity={isUpdating ? 0.65 : 1}
-      >
-        {price ?? <Spinner size="md" />}
-      </Text>
-      {isUpdating && <Spinner size="sm" aria-hidden mb={1} />}
-    </HStack>
+  // The price is derived instantly from the already-fetched preview, so it only
+  // shows a spinner until that preview lands; there is no per-detent "updating"
+  // state. aria-busy holds the announcement until the first price is ready.
+  <Box aria-live="polite" aria-busy={!price}>
+    <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="bold" lineHeight="1" color="text.link">
+      {price ?? <Spinner size="md" aria-label="Loading price" />}
+    </Text>
     <Text color="fg.muted" mt={1}>
       {feeds} feeds / {interval === "month" ? "month" : "year"}
     </Text>

@@ -31,13 +31,17 @@ interface WorkspaceFeature {
 
 // The canonical workspace benefits copy, shared by the buy moment (pricing
 // dialog) and the manage moment (billing activation) so the two surfaces never
-// drift. Capacity and collaboration lead; external properties is a <0.1%-of-feeds
-// capability per prod data, so it sits last as an "and also". "Workspace" never
-// appears as a bullet.
+// drift. Every row is a capability, not a billing mechanic: collaboration value
+// leads (shared feeds don't tax any member's personal limit, and teammates join
+// free without being charged), because prod data shows that is the real draw,
+// not feed capacity. The one payment fact we keep is the purchase-unblocker
+// ("never charged"), folded into a feature line rather than stated as billing.
+// External properties is a <0.1%-of-feeds capability, so it sits last as an
+// "and also". "Workspace" never appears as a bullet.
 export const WORKSPACE_FEATURES: WorkspaceFeature[] = [
   { label: "Everything in Personal" },
-  { label: "One shared bill for everyone" },
-  { label: "Invite members to co-manage feeds" },
+  { label: "Add teammates without using up your feed limit" },
+  { label: "Teammates join free, never charged" },
   {
     label: EXTERNAL_PROPERTIES_LABEL,
     info: { title: EXTERNAL_PROPERTIES_INFO_TITLE, body: EXTERNAL_PROPERTIES_INFO_BODY },

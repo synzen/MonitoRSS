@@ -62,13 +62,21 @@ test.describe("Pricing dialog focus management", () => {
     await expect(forTeam.getByText(/rich content from article pages/i)).toBeVisible();
     await expect(forTeam.getByText(/external properties/i)).toHaveCount(0);
     await expect(
-      forTeam.getByRole("slider", { name: /how many feeds/i }),
-    ).toBeVisible();
-    await expect(
       forTeam.getByRole("button", { name: /create workspace for \d+ feeds/i }),
     ).toBeVisible();
     await expect(
       forTeam.getByText(/a workspace of one gives you all of this/i),
+    ).toBeVisible();
+
+    // The capacity sizer is collapsed by default (capacity is demoted under the
+    // collaboration pitch). Opening it from Account Settings shows the trigger,
+    // not the slider; expanding "Size your plan" reveals the slider.
+    const sizerTrigger = forTeam.getByRole("button", { name: /size your plan/i });
+    await expect(sizerTrigger).toBeVisible();
+    await expect(forTeam.getByRole("slider", { name: /how many feeds/i })).toBeHidden();
+    await sizerTrigger.click();
+    await expect(
+      forTeam.getByRole("slider", { name: /how many feeds/i }),
     ).toBeVisible();
 
     // The external-properties explainer is a keyboard-accessible disclosure: the
@@ -127,10 +135,13 @@ test.describe("Pricing dialog focus management", () => {
     const forYou = dialog.getByRole("region", { name: /^for you$/i });
     const forTeam = dialog.getByRole("region", { name: /for your team/i });
     await expect(forYou.getByRole("heading", { name: /^Personal$/ })).toBeVisible();
-    await expect(forTeam.getByRole("slider", { name: /how many feeds/i })).toBeVisible();
     await expect(
       forTeam.getByRole("button", { name: /create workspace for \d+ feeds/i }),
     ).toBeVisible();
+
+    // Expand the collapsed-by-default sizer to reveal the slider.
+    await forTeam.getByRole("button", { name: /size your plan/i }).click();
+    await expect(forTeam.getByRole("slider", { name: /how many feeds/i })).toBeVisible();
 
     // The narrow-left region stacks ABOVE the dominant-right region (column
     // layout) rather than sitting beside it, and neither overflows the viewport.
