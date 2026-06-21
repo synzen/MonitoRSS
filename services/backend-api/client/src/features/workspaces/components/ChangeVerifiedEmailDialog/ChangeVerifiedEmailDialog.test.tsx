@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   sendCode: vi.fn(),
   confirmCode: vi.fn(),
   resetSend: vi.fn(),
+  workspaces: [] as Array<{ role: string }>,
 }));
 
 vi.mock("../../hooks", () => ({
@@ -22,6 +23,7 @@ vi.mock("../../hooks", () => ({
     status: "idle",
     error: null,
   }),
+  useWorkspaces: () => ({ workspaces: h.workspaces }),
 }));
 
 const renderDialog = (
@@ -44,6 +46,21 @@ describe("ChangeVerifiedEmailDialog", () => {
     vi.clearAllMocks();
     h.sendCode.mockResolvedValue(undefined);
     h.confirmCode.mockResolvedValue(undefined);
+    h.workspaces = [];
+  });
+
+  it("warns that the billing email moves when the user owns a workspace", () => {
+    h.workspaces = [{ role: "owner" }];
+    renderDialog();
+
+    expect(screen.getByText(/billing email/i)).toBeInTheDocument();
+  });
+
+  it("shows no billing warning when the user owns no workspace", () => {
+    h.workspaces = [{ role: "admin" }];
+    renderDialog();
+
+    expect(screen.queryByText(/billing email/i)).not.toBeInTheDocument();
   });
 
   it("shows the current verified email as context in the intro", () => {

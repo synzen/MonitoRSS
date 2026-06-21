@@ -587,7 +587,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                 <Heading as="h2" size="md" id="limits">
                   Limits
                 </Heading>
-                <Button variant="outline" onClick={onOpenPricingDialog}>
+                <Button variant="outline" onClick={() => onOpenPricingDialog()}>
                   <FaArrowUp />
                   Increase Limits
                 </Button>
@@ -783,7 +783,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                     You can increase your limits by choosing to support MonitoRSS&apos;s open-source
                     development and upgrading your plan.
                   </Text>
-                  <Button mt={2} onClick={onOpenPricingDialog}>
+                  <Button mt={2} onClick={() => onOpenPricingDialog()}>
                     <FaArrowUp />
                     Upgrade Plan
                   </Button>

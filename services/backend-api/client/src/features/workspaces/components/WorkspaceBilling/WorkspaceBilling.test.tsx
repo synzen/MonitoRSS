@@ -2,6 +2,7 @@ import "@testing-library/jest-dom";
 import { render, screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
@@ -35,7 +36,8 @@ const h = vi.hoisted(() => ({
   refetchPaymentMethodTransaction: vi.fn(),
 }));
 
-vi.mock("@/features/subscriptionProducts", () => ({
+vi.mock("@/features/subscriptionProducts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/subscriptionProducts")>()),
   usePaddleContext: vi.fn(),
 }));
 
@@ -43,7 +45,11 @@ vi.mock("../../contexts/CurrentWorkspaceContext", () => ({
   useCurrentWorkspace: vi.fn(),
 }));
 
-vi.mock("../../hooks", () => ({
+// The activation-polling hook is the real implementation: the confirming ->
+// active flow these tests assert on is exactly its behavior, so mocking it would
+// test the mock. Everything else in the barrel is faked.
+vi.mock("../../hooks", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../hooks")>()),
   useWorkspace: vi.fn(),
   useCancelWorkspaceBilling: vi.fn(),
   useResumeWorkspaceBilling: vi.fn(),
@@ -220,11 +226,15 @@ const activeSubscription = (overrides: Record<string, unknown> = {}) => ({
 
 const renderBilling = () =>
   render(
-    <MemoryRouter>
-      <ChakraProvider value={system}>
-        <WorkspaceBilling />
-      </ChakraProvider>
-    </MemoryRouter>,
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <MemoryRouter>
+        <ChakraProvider value={system}>
+          <WorkspaceBilling />
+        </ChakraProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
 describe("WorkspaceBilling", () => {
@@ -266,23 +276,35 @@ describe("WorkspaceBilling", () => {
     } as never);
   });
 
-  it("offers Tier 2/Tier 3 checkout to the owner of an unsubscribed workspace, carrying the workspace id", async () => {
+  it("offers a single Team plan with a capacity slider (not separate tier cards) to the owner of an unsubscribed workspace", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
 
     renderBilling();
 
-    expect(await screen.findByText("$10.00", { exact: false })).toBeInTheDocument();
-    expect(screen.getByText("$20.00", { exact: false })).toBeInTheDocument();
+    // The capacity selector is one slider over the whole Team plan, not a grid of
+    // Tier 2 / Tier 3 cards each with their own price and Subscribe button.
+    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
+    expect(slider).toBeInTheDocument();
+    // The slider starts at the base capacity and announces feeds, not an index.
+    expect(slider).toHaveAttribute("aria-valuetext", "70 feeds");
 
-    const subscribeButtons = screen.getAllByRole("button", { name: /subscribe/i });
-    expect(subscribeButtons).toHaveLength(2);
+    // One Subscribe action for the single plan, not one per tier.
+    expect(screen.getAllByRole("button", { name: /subscribe/i })).toHaveLength(1);
+  });
 
-    fireEvent.click(subscribeButtons[0]);
+  it("subscribes the unsubscribed owner at the base capacity, carrying the workspace id, via an inline dialog", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: null });
 
-    // Checkout renders inline inside a dialog (frameTarget), never as Paddle's
-    // own page-leaking overlay. The open is gated on the frame container
-    // mounting, so wait for the call.
+    renderBilling();
+
+    const subscribeButton = await screen.findByRole("button", { name: /subscribe/i });
+    fireEvent.click(subscribeButton);
+
+    // At base capacity the basket is just the Tier 2 base. Checkout renders inline
+    // inside a dialog (frameTarget), never as Paddle's page-leaking overlay; the
+    // open is gated on the frame container mounting, so wait for the call.
     await waitFor(() =>
       expect(h.openCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -295,18 +317,15 @@ describe("WorkspaceBilling", () => {
     expect(h.openCheckout.mock.calls[0][0]).not.toHaveProperty("displayMode", "overlay");
   });
 
-  it("shows tier features, the recommended tier, and payment terms on the activation cards", async () => {
+  it("shows the base price, capacity, and payment terms on the activation slider", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
 
     renderBilling();
 
-    const tier2Card = (await screen.findByText("Track 70 news feeds")).closest(
-      '[role="listitem"]',
-    ) as HTMLElement;
-    expect(screen.getByText("Track 140 news feeds")).toBeInTheDocument();
-    expect(screen.getByText("Expandable with additional feeds")).toBeInTheDocument();
-    expect(within(tier2Card).getByText("Recommended")).toBeInTheDocument();
+    // At the base detent the headline is the base workspace price for 70 feeds.
+    expect(await screen.findByText("$10.00", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText(/70 feeds \/ month/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /terms and conditions/i })).toHaveAttribute(
       "href",
       "https://monitorss.xyz/terms",
@@ -317,34 +336,48 @@ describe("WorkspaceBilling", () => {
     );
   });
 
-  it("keeps the tier price regions silent at rest so closing the checkout dialog does not re-read every card", async () => {
+  it("folds the slider overage above the base into one activation checkout with a live price", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
 
     renderBilling();
 
-    // At rest (no add-ons configured) the price regions must not be live: when
-    // the checkout dialog closes, its inert lifts off the page and a live region
-    // inside a freshly revealed subtree gets re-announced by screen readers.
-    const tier2Price = (await screen.findByText("$10.00", { exact: false })).closest(
-      "[aria-live]",
-    ) as HTMLElement;
-    const tier3Price = (await screen.findByText("$20.00", { exact: false })).closest(
-      "[aria-live]",
-    ) as HTMLElement;
-    expect(tier2Price).toHaveAttribute("aria-live", "off");
-    expect(tier3Price).toHaveAttribute("aria-live", "off");
+    // Base price before moving the slider.
+    expect(await screen.findByText("$10.00", { exact: false })).toBeInTheDocument();
 
-    // Once the owner is actively configuring add-ons, the price summary becomes
-    // live so the settled figure is announced as it changes.
-    const stepper = await screen.findByRole("spinbutton", { name: /additional feeds/i });
-    await userEvent.clear(stepper);
-    await userEvent.type(stepper, "5");
+    // Slide one detent up: 70 -> 100 feeds, i.e. 30 add-on feeds above the base.
+    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
+    slider.focus();
+    await userEvent.keyboard("{ArrowRight}");
 
-    const tier3PriceAfter = (await screen.findByText("145 feeds (140 + 5)")).closest(
-      "[aria-live]",
-    ) as HTMLElement;
-    await waitFor(() => expect(tier3PriceAfter).toHaveAttribute("aria-live", "polite"));
+    // The headline reflects the authoritative combined recurring total, and the
+    // preview was asked for the real basket (base Tier 2 + 30 add-on feeds).
+    const total = await screen.findByText("$35.00", { exact: false });
+    await waitFor(() =>
+      expect(h.getChargePreview).toHaveBeenCalledWith([
+        { priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 },
+        { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 30 },
+      ]),
+    );
+
+    // The price summary is a polite live region that settles once resolved.
+    const liveRegion = total.closest('[aria-live="polite"]');
+    expect(liveRegion).not.toBeNull();
+    await waitFor(() => expect(liveRegion).toHaveAttribute("aria-busy", "false"));
+
+    // Subscribing buys exactly that capacity in one basket.
+    fireEvent.click(screen.getByRole("button", { name: /subscribe to team, 100 feeds total/i }));
+    await waitFor(() =>
+      expect(h.openCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          prices: [
+            { priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 },
+            { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 30 },
+          ],
+          customData: { workspaceId: "workspace-1" },
+        }),
+      ),
+    );
   });
 
   it("places the payment-terms consent above the Subscribe buttons so it is read before committing", async () => {
@@ -386,7 +419,9 @@ describe("WorkspaceBilling", () => {
     // screen reader on open (no separate live-region narration needed). The
     // accessible name carries the action, and the secure-payment reassurance is
     // visible to everyone in the body.
-    const dialog = await screen.findByRole("dialog", { name: /subscribe to tier 2/i });
+    const dialog = await screen.findByRole("dialog", {
+      name: /subscribe to team \(70 feeds\)/i,
+    });
     expect(within(dialog).getByText(/payment is handled securely by paddle/i)).toBeInTheDocument();
   });
 
@@ -475,89 +510,44 @@ describe("WorkspaceBilling", () => {
     // subscription. Stage two announces provisioning is complete.
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     rerender(
-      <MemoryRouter>
-        <ChakraProvider value={system}>
-          <WorkspaceBilling />
-        </ChakraProvider>
-      </MemoryRouter>,
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter>
+          <ChakraProvider value={system}>
+            <WorkspaceBilling />
+          </ChakraProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
 
-    await waitFor(() => expect(status).toHaveTextContent(/your tier 2 is now active/i));
+    await waitFor(() => expect(status).toHaveTextContent(/your workspace is now active/i));
   });
 
-  it("lets the owner add extra feeds to Tier 3 at activation and folds them into one checkout", async () => {
+  it("seeds the activation slider from the pricing dialog's ?feeds hand-off", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
 
-    renderBilling();
-
-    // The add-on control is Tier 3 only: one spinbutton on the whole grid.
-    const stepper = await screen.findByRole("spinbutton", { name: /additional feeds/i });
-    // The per-feed price comes from the async price preview, so wait for it.
-    expect(await screen.findByText(/\$0\.50 per feed \/ month/)).toBeInTheDocument();
-
-    await userEvent.clear(stepper);
-    await userEvent.type(stepper, "30");
-
-    // The Tier 3 card reflects what is actually being bought: 140 base + 30.
-    expect(await screen.findByText("170 feeds (140 + 30)")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: /subscribe to tier 3, 170 feeds total/i }));
-
-    await waitFor(() =>
-      expect(h.openCheckout).toHaveBeenCalledWith(
-        expect.objectContaining({
-          prices: [
-            { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
-            { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 30 },
-          ],
-          customData: { workspaceId: "workspace-1" },
-        }),
-      ),
-    );
-  });
-
-  it("updates the Tier 3 headline price from Paddle as extra feeds are chosen", async () => {
-    mockPaddle();
-    mockWorkspace({ role: "owner", subscription: null });
-
-    renderBilling();
-
-    const stepper = await screen.findByRole("spinbutton", { name: /additional feeds/i });
-    // Base price before any add-ons.
-    expect(await screen.findByText("$20.00", { exact: false })).toBeInTheDocument();
-
-    await userEvent.clear(stepper);
-    await userEvent.type(stepper, "30");
-
-    // The headline reflects the authoritative combined recurring total, and the
-    // preview was asked for the real basket (base tier + 30 add-on feeds).
-    const total = await screen.findByText("$35.00", { exact: false });
-    await waitFor(() =>
-      expect(h.getChargePreview).toHaveBeenCalledWith([
-        { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
-        { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 30 },
-      ]),
+    // The buy-time pricing dialog hands the chosen capacity over as ?feeds=N. The
+    // activation slider seats it on the next detent at or above the request (250
+    // -> 300), never silently downgrading.
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter initialEntries={["/?feeds=250"]}>
+          <ChakraProvider value={system}>
+            <WorkspaceBilling />
+          </ChakraProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
 
-    // The updating price is silent to screen readers unless announced: it must
-    // live in a polite live region that settles (aria-busy false) once resolved.
-    const liveRegion = total.closest('[aria-live="polite"]');
-    expect(liveRegion).not.toBeNull();
-    await waitFor(() => expect(liveRegion).toHaveAttribute("aria-busy", "false"));
-    // The feed count is announced together with the price (same live region).
-    expect(within(liveRegion as HTMLElement).getByText("170 feeds (140 + 30)")).toBeInTheDocument();
-  });
-
-  it("offers no additional-feeds control on the non-expandable Tier 2 card", async () => {
-    mockPaddle();
-    mockWorkspace({ role: "owner", subscription: null });
-
-    renderBilling();
-
-    await screen.findByText("Track 70 news feeds");
-    // Tier 2 is not expandable, so there is exactly one stepper (Tier 3's).
-    expect(screen.getAllByRole("spinbutton", { name: /additional feeds/i })).toHaveLength(1);
+    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
+    expect(slider).toHaveAttribute("aria-valuetext", "300 feeds");
+    expect(
+      screen.getByRole("button", { name: /subscribe to team, 300 feeds total/i }),
+    ).toBeInTheDocument();
   });
 
   it("keeps showing the subscription-confirmation state across a remount while the webhook is pending", async () => {
@@ -594,7 +584,7 @@ describe("WorkspaceBilling", () => {
 
     renderBilling();
 
-    expect(await screen.findByText(/tier 2/i)).toBeInTheDocument();
+    expect(await screen.findByText(/^Team$/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /subscribe/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /cancel subscription/i })).not.toBeInTheDocument();
     expect(
@@ -616,6 +606,29 @@ describe("WorkspaceBilling", () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => expect(h.cancel).toHaveBeenCalled());
+  });
+
+  it("shows the billing email on the current plan when present", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({ billingEmail: "owner-billing@example.com" }),
+    });
+
+    renderBilling();
+
+    expect(await screen.findByText(/billed to/i)).toBeInTheDocument();
+    expect(screen.getByText("owner-billing@example.com")).toBeInTheDocument();
+  });
+
+  it("omits the billing-to line when no billing email is present", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+
+    renderBilling();
+
+    await screen.findByRole("heading", { name: /current plan/i });
+    expect(screen.queryByText(/billed to/i)).not.toBeInTheDocument();
   });
 
   it("shows the scheduled cancellation and lets the owner resume", async () => {
@@ -741,7 +754,7 @@ describe("WorkspaceBilling", () => {
     renderBilling();
 
     // The activation pitch renders, but there is no card to update yet.
-    await screen.findByRole("button", { name: /subscribe to tier 2/i });
+    await screen.findByRole("button", { name: /subscribe to team, 70 feeds total/i });
     expect(
       screen.queryByRole("button", { name: /update payment method/i }),
     ).not.toBeInTheDocument();
@@ -1106,7 +1119,7 @@ describe("WorkspaceBilling", () => {
     renderBilling();
 
     // The activation pitch still renders, but nothing about conversion.
-    await screen.findByRole("button", { name: /subscribe to tier 2/i });
+    await screen.findByRole("button", { name: /subscribe to team, 70 feeds total/i });
     expect(
       screen.queryByRole("button", { name: /move my plan to this workspace/i }),
     ).not.toBeInTheDocument();
@@ -1141,66 +1154,97 @@ describe("WorkspaceBilling", () => {
     } as never);
   };
 
+  // Open the change-capacity dialog from the subscribed current-plan view.
   const openChangeDialog = async () => {
-    // Wait for tier prices to load so the switch carries the recurring amount
-    // (the card shows a spinner until then, as it does in the app).
-    await screen.findByRole("button", { name: /switch to tier 3/i });
-    await waitFor(() =>
-      expect(screen.getAllByText("$20.00", { exact: false }).length).toBeGreaterThan(0),
-    );
-    // Current plan is Tier 2, so the Tier 3 card carries the switch action.
-    fireEvent.click(screen.getByRole("button", { name: /switch to tier 3/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /change capacity/i }));
+    // The dialog hosts the capacity slider.
+    await screen.findByRole("slider", { name: /how many feeds/i });
   };
 
-  it("discloses the recurring charge and renewal date in the change-plan dialog", async () => {
+  // Drag the change-dialog slider to a target detent by pressing arrow keys from
+  // the current position. The slider is index-driven, so each press is one detent.
+  const setSliderToFeeds = async (targetFeeds: number) => {
+    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
+    const detents = [70, 100, 140, 200, 300, 500];
+    const targetIndex = detents.findIndex((d) => d >= targetFeeds);
+    const currentText = slider.getAttribute("aria-valuetext") ?? "";
+    const currentFeeds = parseInt(currentText, 10);
+    const currentIndex = detents.findIndex((d) => d >= currentFeeds);
+    const delta = targetIndex - currentIndex;
+    slider.focus();
+
+    for (let i = 0; i < Math.abs(delta); i += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      await userEvent.keyboard(delta > 0 ? "{ArrowRight}" : "{ArrowLeft}");
+    }
+  };
+
+  it("shows a read-only current plan with a Change capacity button, not tier-switch cards", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+
+    // The subscribed owner manages capacity via one deliberate "Change capacity"
+    // button, not a grid of "Switch to Tier N" cards.
+    expect(await screen.findByRole("button", { name: /change capacity/i })).toHaveAttribute(
+      "aria-haspopup",
+      "dialog",
+    );
+    expect(screen.queryByRole("button", { name: /switch to/i })).not.toBeInTheDocument();
+  });
+
+  it("seeds the change-capacity slider at the workspace's current capacity", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      // 70-feed base + 30 add-on feeds = 100 feeds of current capacity.
+      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 30 }] }),
+    });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    // The manage slider opens at the current capacity (100), not at the base (70)
+    // the way the buy-time slider does.
+    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
+    expect(slider).toHaveAttribute("aria-valuetext", "100 feeds");
+  });
+
+  it("discloses the recurring charge and renewal date in the change-capacity dialog", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
 
     renderBilling();
     await openChangeDialog();
+    // Raise capacity so there is a pending change to preview.
+    await setSliderToFeeds(140);
 
     // The compliance-critical disclosure: not just what's due today, but the
-    // recurring amount, cadence, and when it starts. The amount/interval/date
-    // are separate JSX expressions, so match on the collapsed line text. The
-    // date is formatted in local time, so assert the stable parts (amount,
-    // interval, "starting", year) rather than a timezone-dependent day.
+    // recurring amount, cadence, and when it starts. The date is local-time, so
+    // assert the stable parts (amount, interval, "starting", year).
     expect(await screen.findByText(/Then/)).toBeInTheDocument();
     expect(
       screen.getByText(
         (_, el) =>
           el?.tagName === "P" &&
-          /\$20\.00 \/ month, starting \d{1,2} \w+ 2027\./.test(el?.textContent ?? ""),
+          /\/ month, starting \d{1,2} \w+ 2027\./.test(el?.textContent ?? ""),
       ),
     ).toBeInTheDocument();
     expect(screen.getByText(/Renews automatically\. Cancel anytime\./)).toBeInTheDocument();
   });
 
-  it("anchors the change-plan dialog with the target tier's recurring price", async () => {
+  it("itemizes the prorated amount due today in the change-capacity dialog", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
 
     renderBilling();
     await openChangeDialog();
-
-    // On a downgrade the "Due today" rows are all credits/zero, so the plan
-    // price must headline the dialog or the user sees only negative numbers.
-    const dialog = await screen.findByRole("dialog");
-    expect(
-      within(dialog).getByText(
-        (_, el) => el?.tagName === "P" && /^\$20\.00\s*\/ month$/.test(el?.textContent ?? ""),
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("itemizes the prorated amount due today in the change-plan dialog", async () => {
-    mockPaddle();
-    mockWorkspace({ role: "owner", subscription: activeSubscription() });
-    mockChangePreview();
-
-    renderBilling();
-    await openChangeDialog();
+    await setSliderToFeeds(140);
 
     expect(await screen.findByText(/Total due today/)).toBeInTheDocument();
     expect(screen.getByText("Subtotal")).toBeInTheDocument();
@@ -1208,8 +1252,7 @@ describe("WorkspaceBilling", () => {
     expect(screen.getByText("Tax")).toBeInTheDocument();
     // The negative tax renders with the sign outside the symbol, not "$-.82".
     expect(screen.getByText("-$0.82")).toBeInTheDocument();
-    // Credit reduces the bill, so it must read as a deduction, not a charge:
-    // the value carries a leading minus even though Paddle sends it positive.
+    // Credit reduces the bill, so it must read as a deduction, not a charge.
     expect(screen.getByText("-$5.00")).toBeInTheDocument();
   });
 
@@ -1233,110 +1276,85 @@ describe("WorkspaceBilling", () => {
 
     renderBilling();
     await openChangeDialog();
+    await setSliderToFeeds(140);
 
     await screen.findByText(/Total due today/);
     expect(screen.queryByText("Account credit")).not.toBeInTheDocument();
   });
 
-  it("warns when a downgrade would disable feeds over the new limit", async () => {
+  it("warns when a capacity decrease would disable feeds over the new limit", async () => {
     mockPaddle();
-    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    // Currently at 140 feeds so the slider can move DOWN to 70.
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 70 }] }),
+    });
     mockChangePreview({
       feedImpact: { newFeedLimit: 70, currentFeedCount: 73, willBeDisabledCount: 3 },
     });
 
     renderBilling();
     await openChangeDialog();
+    await setSliderToFeeds(70);
 
     expect(
       await screen.findByText(/3 feeds over the new 70-feed limit will be disabled/i),
     ).toBeInTheDocument();
   });
 
-  it("shows no disable warning for a within-limit change", async () => {
+  it("shows no disable warning for a capacity increase", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
 
     renderBilling();
     await openChangeDialog();
+    await setSliderToFeeds(140);
 
     await screen.findByText(/Total due today/);
     expect(screen.queryByText(/will be disabled/i)).not.toBeInTheDocument();
   });
 
-  it("folds chosen extra feeds into a Tier 2 to Tier 3 switch as one change", async () => {
+  it("applies a capacity increase as a base-tier-plus-add-on change in one transaction", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
 
     renderBilling();
-
-    // The switch target (Tier 3) carries the add-on stepper, defaulting to 0.
-    const stepper = await screen.findByRole("spinbutton", { name: /additional feeds/i });
-    await userEvent.clear(stepper);
-    await userEvent.type(stepper, "10");
-
-    fireEvent.click(
-      await screen.findByRole("button", { name: /switch to tier 3, 150 feeds total/i }),
-    );
+    await openChangeDialog();
+    // 70 -> 200 feeds: base Tier 2 plus 130 add-on feeds.
+    await setSliderToFeeds(200);
 
     const dialog = await screen.findByRole("dialog");
-    // The before -> after framing reflects the extra feeds, not the bare tier.
-    expect(within(dialog).getByText(/Tier 2 \(70 feeds\)/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/Tier 3 \(150 feeds\)/)).toBeInTheDocument();
-
     fireEvent.click(within(dialog).getByRole("button", { name: /confirm change/i }));
 
     await waitFor(() =>
       expect(h.update).toHaveBeenCalledWith({
         workspaceSlug: "my-team",
         prices: [
-          { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
-          { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 10 },
+          { priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 },
+          { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 130 },
         ],
       }),
     );
   });
 
-  it("lets a Tier 3 owner edit additional feeds from the current-plan card", async () => {
+  it("returns focus to the Change capacity button when the dialog is cancelled", async () => {
     mockPaddle();
-    mockWorkspace({
-      role: "owner",
-      subscription: activeSubscription({
-        productKey: "tier3",
-        addons: [{ key: ProductKey.Tier3Feed, quantity: 5 }],
-      }),
-    });
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
 
     renderBilling();
+    const trigger = await screen.findByRole("button", { name: /change capacity/i });
+    trigger.focus();
+    fireEvent.click(trigger);
 
-    // The current Tier 3 card seeds the stepper with the live add-on count.
-    const stepper = await screen.findByRole("spinbutton", { name: /additional feeds/i });
-    expect(stepper).toHaveValue("5");
+    await screen.findByRole("slider", { name: /how many feeds/i });
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
 
-    // No change yet: the update action stays disabled until the count differs.
-    const updateButton = screen.getByRole("button", { name: /update additional feeds/i });
-    expect(updateButton).toBeDisabled();
-
-    await userEvent.clear(stepper);
-    await userEvent.type(stepper, "12");
-    expect(updateButton).toBeEnabled();
-    fireEvent.click(updateButton);
-
-    const dialog = await screen.findByRole("dialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: /confirm change/i }));
-
-    await waitFor(() =>
-      expect(h.update).toHaveBeenCalledWith({
-        workspaceSlug: "my-team",
-        prices: [
-          { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
-          { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 12 },
-        ],
-      }),
-    );
+    // Cancelling changes nothing, so focus returns to the opener rather than
+    // being stranded on the document body when the dialog closes.
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   // Guard against client/backend drift: these MUST match the backend's

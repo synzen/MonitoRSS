@@ -32,10 +32,14 @@ import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { useLogin } from "../hooks";
 import { useCreateSubscriptionResume } from "../features/subscriptionProducts/hooks/useCreateSubscriptionResume";
-import { ProductKey } from "../constants";
+import { getPlanDisplayName, ProductKey } from "../constants";
 
 import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
-import { PricingDialogContext, usePaddleContext } from "@/features/subscriptionProducts";
+import {
+  ConvertToWorkspacePrompt,
+  PricingDialogContext,
+  usePaddleContext,
+} from "@/features/subscriptionProducts";
 import { DatePreferencesForm, RedditConnectionSetting } from "@/features/feed";
 import {
   VerifiedEmailSettingsRow,
@@ -274,15 +278,19 @@ const UserSettingsInner = () => {
   const additionalFeedsCount =
     subscription?.addons?.find((addon) => addon.key === ProductKey.Tier3Feed)?.quantity || 0;
 
-  // Helper function to format tier name with additional feeds
-  const formatTierName = (tierName: string) => {
+  // Render the user-facing plan name (Free / Personal / Team) from the product
+  // key, plus any additional-feed add-ons. The display map retires the "Tier N"
+  // naming; the Paddle keys are unchanged.
+  const formatPlanName = (productKey?: ProductKey) => {
+    const planName = productKey ? getPlanDisplayName(productKey) : "";
+
     if (additionalFeedsCount > 0) {
-      return `${tierName} + ${additionalFeedsCount} additional feed${
+      return `${planName} + ${additionalFeedsCount} additional feed${
         additionalFeedsCount > 1 ? "s" : ""
       }`;
     }
 
-    return tierName;
+    return planName;
   };
 
   let subscriptionText: React.ReactNode;
@@ -292,7 +300,8 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {formatTierName(subscription?.product.name)} (billed every {subscription.billingInterval})
+          {formatPlanName(subscription?.product.key as ProductKey)} (billed every{" "}
+          {subscription.billingInterval})
         </chakra.span>
         , scheduled to be cancelled on{" "}
         {new Date(subscription.cancellationDate).toLocaleDateString(undefined, {
@@ -308,7 +317,8 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {formatTierName(subscription?.product.name)} (billed every {subscription.billingInterval})
+          {formatPlanName(subscription?.product.key as ProductKey)} (billed every{" "}
+          {subscription.billingInterval})
         </chakra.span>
         , scheduled to renew on{" "}
         {new Date(subscription.nextBillDate).toLocaleDateString(undefined, {
@@ -324,7 +334,7 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {formatTierName(subscription.product.name)}
+          {formatPlanName(subscription.product.key as ProductKey)}
           {subscription.billingInterval && ` (billed every ${subscription.billingInterval})`}
         </chakra.span>
         .
@@ -550,7 +560,7 @@ const UserSettingsInner = () => {
                     )}
                     <Stack>
                       <Text as="h3" fontWeight={600} color="fg.muted">
-                        Current Tier
+                        Current Plan
                       </Text>
                       <Stack gap={3}>
                         {subscriptionText}
@@ -596,7 +606,7 @@ const UserSettingsInner = () => {
                             </Box>
                           )}
                           {!subscriptionPendingCancellation && (
-                            <Button size="sm" onClick={onOpenPricingDialog}>
+                            <Button size="sm" onClick={() => onOpenPricingDialog()}>
                               <span>Manage Subscription</span>
                             </Button>
                           )}
@@ -607,6 +617,7 @@ const UserSettingsInner = () => {
                         </HStack>
                       </Stack>
                     </Stack>
+                    <ConvertToWorkspacePrompt variant="card" />
                   </Stack>
                 )}
               </Stack>

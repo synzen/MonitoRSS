@@ -69,6 +69,8 @@ describe("Workspace invite controls API", () => {
         smtpTransport: fakeTransport,
         emailVerificationRepository: ctx.container.emailVerificationRepository,
         userRepository: ctx.container.userRepository,
+        workspaceRepository: ctx.container.workspaceRepository,
+        paddleService: ctx.container.paddleService,
       }),
       redditApiService: ctx.container.redditApiService,
     });

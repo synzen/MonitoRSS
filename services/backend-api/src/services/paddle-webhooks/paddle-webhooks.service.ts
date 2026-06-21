@@ -257,17 +257,46 @@ export class PaddleWebhooksService {
         );
       }
 
+      // The workspace may have been deleted while the event was in flight
+      // (deletion schedules the Paddle cancellation for period end, so events
+      // keep arriving until then). Resolving its billing email or upserting can
+      // never succeed, and a workspace-routed event must never fall through to
+      // the personal supporter path, so acknowledge it. Checked before the
+      // owner-email lookup so a deleted workspace acks rather than erroring.
+      const existingWorkspace =
+        await this.deps.workspaceRepository.findById(workspaceId);
+
+      if (!existingWorkspace) {
+        logger.warn(
+          `Ignoring subscription event for missing workspace ${workspaceId} (customer ${event.data.customer_id})`,
+        );
+
+        return;
+      }
+
+      // A workspace is billed to its owner's verified email, never the
+      // Discord-derived email Paddle echoes back (which a member could also
+      // have edited in the checkout overlay). The verified address is the
+      // workspace's billing identity. A workspace cannot be created without a
+      // verified owner email, so its absence on a live workspace means the
+      // address was cleared after the fact; fail loudly (Paddle retries, the
+      // error is logged) rather than persist a stale or wrong billing email.
+      const ownerVerifiedEmail =
+        await this.deps.workspaceRepository.getOwnerVerifiedEmail(workspaceId);
+
+      if (!ownerVerifiedEmail) {
+        throw new Error(
+          `Could not resolve owner verified email when billing workspace ${workspaceId} (customer ${event.data.customer_id})`,
+        );
+      }
+
       const workspace = await this.deps.workspaceRepository.upsertPaddleCustomer(
         workspaceId,
-        paddleCustomer,
+        { ...paddleCustomer, email: ownerVerifiedEmail },
       );
 
       if (!workspace) {
-        // The workspace may have been deleted while the event was in flight
-        // (deletion schedules the Paddle cancellation for period end, so
-        // events keep arriving until then). Retrying can never succeed, and a
-        // workspace-routed event must never fall through to the personal
-        // supporter path, so acknowledge it.
+        // Deleted between the existence check above and this write; ack as well.
         logger.warn(
           `Ignoring subscription event for missing workspace ${workspaceId} (customer ${event.data.customer_id})`,
         );

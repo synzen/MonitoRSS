@@ -47,12 +47,25 @@ export default defineConfig({
   retries: 1,
   workers: resolveWorkers(),
   outputDir: `./test-results${SUFFIX}`,
+  // Default per-test ceiling. The genuinely-slow flows (Paddle webhook activation,
+  // which can take ~90s) raise this locally with test.setTimeout(); the default
+  // stays tight so a broken UI fails in a reasonable window, not minutes.
+  timeout: 60_000,
+  // Default assertion timeout: a missing/unrendered element fails an expect() in
+  // 10s, not at the per-test ceiling. Webhook-gated assertions pass an explicit
+  // longer timeout where the wait is legitimately slow.
+  expect: { timeout: 10_000 },
   reporter: [
     ["html", { outputFolder: `./playwright-report${SUFFIX}`, open: "never" }],
   ],
   use: {
     baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
     trace: "on-first-retry",
+    // A single action (click/fill/press) that can't find its target fails in 15s
+    // instead of hanging until the per-test timeout. This is the fix for failing
+    // tests burning minutes waiting on an element that will never appear.
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
     headless: !!process.env.CI,
     // Backend-issued OAuth redirects (mock Discord login, mock Reddit authorize)
     // point the BROWSER at host.docker.internal so the same base URL also works

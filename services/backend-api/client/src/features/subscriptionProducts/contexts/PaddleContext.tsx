@@ -15,11 +15,12 @@ import { captureException } from "@sentry/react";
 import { Box, Spinner, Stack, Text } from "@chakra-ui/react";
 import { useDiscordUserMe, useUserMe } from "@/features/discordUser";
 import { notifyError } from "@/utils/notifyError";
-import { pages, PRODUCT_NAMES, ProductKey } from "@/constants";
+import { pages, getPlanDisplayName, ProductKey } from "@/constants";
 import { CheckoutSummaryData } from "@/types/CheckoutSummaryData";
 import { PricePreview } from "@/types/PricePreview";
 import { retryPromise } from "@/utils/retryPromise";
 import formatCurrency from "@/utils/formatCurrency";
+import { resolveCheckoutCustomerEmail } from "../utils/resolveCheckoutCustomerEmail";
 
 const pwAuth = import.meta.env.VITE_PADDLE_PW_AUTH;
 const clientToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
@@ -369,7 +370,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
 
           if (!prices) {
             pricesByProduct[useProductId] = {
-              name: PRODUCT_NAMES[useProductId],
+              name: getPlanDisplayName(useProductId),
               prices: [formattedPrice],
             };
           } else {
@@ -483,7 +484,23 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       checkoutCompletedCallbackRef.current = onCompleted;
       lastCheckoutWasOverlayRef.current = displayMode === "overlay";
 
-      if (!user?.result.email) {
+      // A workspace checkout is billed to the owner's verified email, a personal
+      // checkout to the Discord email; either is blocked when its address is
+      // missing, so route the user to set it before opening Paddle.
+      const customer = resolveCheckoutCustomerEmail({
+        customData,
+        discordEmail: user?.result.email,
+        verifiedEmail: user?.result.verifiedEmail,
+      });
+
+      if ("blocked" in customer) {
+        if (customer.blocked === "verifiedEmailRequired") {
+          notifyError(
+            "Verify an email to subscribe",
+            "Workspace billing uses your verified email. Add one in settings to continue.",
+          );
+        }
+
         navigate(pages.userSettings());
 
         return;
@@ -507,7 +524,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
           quantity,
         })),
         customer: {
-          email: user.result.email,
+          email: customer.email,
         },
         settings: useOverlay
           ? {
@@ -531,11 +548,11 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
                 "width: 100%; height: 100%; min-width: 312px; min-height:634px; padding-left: 8px; padding-right: 8px;",
             },
         customData: customData ?? {
-          userId: user.result.id,
+          userId: user?.result.id ?? "",
         },
       });
     },
-    [user?.result.email, user?.result.id, !!paddle],
+    [user?.result.email, user?.result.verifiedEmail, user?.result.id, !!paddle],
   );
 
   const resetCheckoutData = useCallback(() => {

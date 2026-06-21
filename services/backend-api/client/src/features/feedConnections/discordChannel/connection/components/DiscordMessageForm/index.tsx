@@ -699,7 +699,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                           >
                             <span>Save without branding</span>
                           </SafeLoadingButton>
-                          <PrimaryActionButton onClick={onOpenPricingDialog}>
+                          <PrimaryActionButton onClick={() => onOpenPricingDialog()}>
                             <span>Upgrade to save with branding</span>
                           </PrimaryActionButton>
                         </>

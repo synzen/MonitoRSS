@@ -5,8 +5,12 @@ import { pages } from "@/constants";
 import { FeedScopeProvider } from "@/features/feed";
 import RouteParams from "@/types/RouteParams";
 import { usePaddleContext } from "@/features/subscriptionProducts";
-import { CurrentWorkspaceProvider } from "../../contexts";
-import { useIsWorkspacesEnabled, useWorkspace } from "../../hooks";
+import { CurrentWorkspaceProvider, JustConvertedWorkspaceProvider } from "../../contexts";
+import {
+  useIsWorkspacesEnabled,
+  useRefetchFeedsOnWorkspaceActivation,
+  useWorkspace,
+} from "../../hooks";
 
 /**
  * The `/workspaces/:workspaceSlug` layout route. Gates on the workspaces feature flag,
@@ -30,6 +34,11 @@ export const WorkspaceScopeLayout = () => {
     error,
     refetch,
   } = useWorkspace({ workspaceSlug: enabled ? workspaceSlug : undefined });
+
+  // Hosted here (not in the dormant activation empty state) because that empty
+  // state unmounts in the same transition the subscription lands, racing its
+  // own refetch. This layout stays mounted across dormant -> active.
+  useRefetchFeedsOnWorkspaceActivation({ subscription: workspace?.subscription });
 
   if (flagStatus === "loading") {
     return <LoadingFallback />;
@@ -70,9 +79,11 @@ export const WorkspaceScopeLayout = () => {
           refreshRedditConnection: refetch,
         }}
       >
-        <Suspense fallback={<LoadingFallback />}>
-          <Outlet />
-        </Suspense>
+        <JustConvertedWorkspaceProvider>
+          <Suspense fallback={<LoadingFallback />}>
+            <Outlet />
+          </Suspense>
+        </JustConvertedWorkspaceProvider>
       </FeedScopeProvider>
     </CurrentWorkspaceProvider>
   );

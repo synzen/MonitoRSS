@@ -653,7 +653,7 @@ export const UserFeedDetail: React.FC = () => {
                             variant="ghost"
                             size="xs"
                             transform="rotate(90deg)"
-                            onClick={onOpenPricingDialog}
+                            onClick={() => onOpenPricingDialog()}
                           >
                             <FaArrowLeft />
                           </IconButton>

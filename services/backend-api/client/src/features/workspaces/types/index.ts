@@ -42,6 +42,9 @@ export const WorkspaceSchema = object({
     billingInterval: string().oneOf(["month", "year"]).required(),
     billingPeriodEnd: string().required(),
     currencyCode: string().required(),
+    // The owner's verified billing email. Present only for the owner (the
+    // detail endpoint omits it for other roles).
+    billingEmail: string().optional(),
     addons: array(
       object({
         key: string().required(),

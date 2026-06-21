@@ -20,6 +20,7 @@ import {
 } from "../../src/repositories/shared/enums";
 import type { IUser } from "../../src/repositories/interfaces/user.types";
 import type { ISupporter } from "../../src/repositories/interfaces/supporter.types";
+import type { IWorkspace } from "../../src/repositories/mongoose/workspace.mongoose.repository";
 import {
   createServiceTestContext,
   type ServiceTestContext,
@@ -78,6 +79,11 @@ export interface PaddleWebhooksContext {
   generateId(): string;
   createUser(overrides?: Partial<IUser>): Promise<IUser>;
   createSupporter(overrides?: Partial<ISupporter>): Promise<ISupporter>;
+  createWorkspaceWithOwner(input: {
+    ownerUserId: string;
+    name?: string;
+    slug?: string;
+  }): Promise<IWorkspace>;
   createWebhookSignature(requestBody: string, timestamp?: string): string;
   createSubscriptionUpdatedEvent(
     overrides?: Partial<PaddleEventSubscriptionUpdated["data"]>,
@@ -194,7 +200,18 @@ export function createPaddleWebhooksHarness(): PaddleWebhooksHarness {
         async createUser(overrides: Partial<IUser> = {}) {
           const discordUserId = overrides.discordUserId ?? generateTestId();
           const email = overrides.email ?? `${generateTestId()}@test.com`;
-          return userRepository.create({ discordUserId, email });
+          const user = await userRepository.create({ discordUserId, email });
+
+          if (overrides.verifiedEmail) {
+            await userRepository.setVerifiedEmail(
+              user.id,
+              overrides.verifiedEmail,
+            );
+
+            return { ...user, verifiedEmail: overrides.verifiedEmail };
+          }
+
+          return user;
         },
 
         async createSupporter(overrides = {}) {
@@ -205,6 +222,15 @@ export function createPaddleWebhooksHarness(): PaddleWebhooksHarness {
             ...overrides,
           };
           return supporterRepository.create(supporter);
+        },
+
+        async createWorkspaceWithOwner(input) {
+          const suffix = generateTestId();
+          return workspaceRepository.createWorkspaceWithOwner({
+            name: input.name ?? `Workspace ${suffix}`,
+            slug: input.slug ?? `workspace-${suffix}`,
+            ownerUserId: input.ownerUserId,
+          });
         },
 
         createWebhookSignature(requestBody: string, timestamp?: string) {

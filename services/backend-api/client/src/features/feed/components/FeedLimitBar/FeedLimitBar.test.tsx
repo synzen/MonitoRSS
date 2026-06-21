@@ -145,7 +145,7 @@ describe("FeedLimitBar", () => {
       expect(mockOnOpen).toHaveBeenCalledTimes(1);
     });
 
-    it("Increase Limits click at limit calls onOpen from PricingDialogContext", () => {
+    it("Increase Limits click at limit opens the pricing dialog targeted at the workspace panel", () => {
       vi.mocked(useUserFeeds).mockReturnValue({
         data: { results: [], total: 25 },
       } as never);
@@ -155,8 +155,11 @@ describe("FeedLimitBar", () => {
 
       renderBar();
 
+      // At the personal limit the upsell points at workspaces (more capacity),
+      // so the dialog opens pre-targeted to the workspace region.
       fireEvent.click(screen.getByRole("button", { name: /increase limits/i }));
       expect(mockOnOpen).toHaveBeenCalledTimes(1);
+      expect(mockOnOpen).toHaveBeenCalledWith("workspace");
     });
   });
 
@@ -262,7 +265,9 @@ describe("FeedLimitBar", () => {
       render(
         <ChakraProvider value={system}>
           <PricingDialogContext.Provider value={{ onOpen: mockOnOpen }}>
-            <FeedScopeProvider value={{ workspaceId: "t1", workspaceSlug: "my-workspace", maxFeeds: 140 }}>
+            <FeedScopeProvider
+              value={{ workspaceId: "t1", workspaceSlug: "my-workspace", maxFeeds: 140 }}
+            >
               <FeedLimitBar />
             </FeedScopeProvider>
           </PricingDialogContext.Provider>

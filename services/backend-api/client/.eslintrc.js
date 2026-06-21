@@ -71,8 +71,9 @@ module.exports = {
     "react/jsx-props-no-spreading": "off",
   },
   overrides: [
-    /** ADR-006 rule #1: shared base may not import from features.
-     * Enforces ADR-002 folder model. */
+    /** ADR-006 rule #1: shared base (and the ADR-009 shared/ layer) may not import
+     * from features. Enforces ADR-002 folder model and ADR-009's acyclic invariant:
+     * a shared module must sit beneath its feature consumers, never reach back up. */
     {
       files: [
         "src/components/**/*.{ts,tsx}",
@@ -81,6 +82,7 @@ module.exports = {
         "src/constants/**/*.{ts,tsx}",
         "src/types/**/*.{ts,tsx}",
         "src/utils/**/*.{ts,tsx}",
+        "src/shared/**/*.{ts,tsx}",
       ],
       rules: {
         "no-restricted-imports": [
@@ -90,8 +92,9 @@ module.exports = {
               {
                 group: ["**/features/*", "@/features/*"],
                 message:
-                  "Shared base modules (components/contexts/hooks/utils/constants/types) may not import from features/. " +
-                  "Either move this code into the feature that depends on it, or invert the dependency. See client/docs/adr/002-folder-model.md.",
+                  "Shared modules (components/contexts/hooks/utils/constants/types and the shared/ layer) " +
+                  "may not import from features/. Either move this code into the feature that depends on it, " +
+                  "or invert the dependency. See client/docs/adr/002-folder-model.md and 009-shared-layer-first-case.md.",
               },
             ],
           },

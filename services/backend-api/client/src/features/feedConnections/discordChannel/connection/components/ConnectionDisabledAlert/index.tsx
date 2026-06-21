@@ -140,7 +140,7 @@ export const ConnectionDisabledAlert = () => {
             Articles are still being delivered, but without your custom name and avatar. Resubscribe
             to restore your branded delivery and make your content stand out.
             <Box marginTop="1rem">
-              <PrimaryActionButton onClick={onOpenPricingDialog}>
+              <PrimaryActionButton onClick={() => onOpenPricingDialog()}>
                 <Icon as={FaArrowUp} transform="rotate(90deg)" />
                 Restore branded delivery
               </PrimaryActionButton>

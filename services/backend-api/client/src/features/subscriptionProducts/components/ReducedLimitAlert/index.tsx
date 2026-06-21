@@ -65,7 +65,7 @@ export const ReducedLimitAlert = () => {
               support.
             </Alert.Description>
             <Box mt={4}>
-              <Button onClick={onOpenPricingDialog}>
+              <Button onClick={() => onOpenPricingDialog()}>
                 <FaArrowLeft style={{ transform: "rotate(90deg)" }} />
                 Become a supporter
               </Button>

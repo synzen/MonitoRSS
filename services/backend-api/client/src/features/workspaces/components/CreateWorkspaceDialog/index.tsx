@@ -42,6 +42,11 @@ type FormData = InferType<typeof formSchema>;
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  // Override where the user lands after the workspace is created. Defaults to
+  // the new workspace's feeds page. The pricing dialog supplies one that routes
+  // to billing carrying the capacity the user picked on the slider, so the count
+  // shown on the CTA is not silently dropped.
+  onCreated?: (workspaceSlug: string) => void;
 }
 
 const FORM_ID = "create-workspace-form";
@@ -63,7 +68,7 @@ const WORKSPACE_BILLING_EXPLAINER =
 const VERIFY_EMAIL_INTRO =
   "Workspaces let you invite people by email, so first let's confirm yours.";
 
-export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
+export const CreateWorkspaceDialog = ({ isOpen, onClose, onCreated }: Props) => {
   const navigate = useNavigate();
   const { data: userMe } = useUserMe();
   const verifiedEmail = userMe?.result.verifiedEmail;
@@ -118,7 +123,12 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose }: Props) => {
     try {
       const { result } = await mutateAsync({ details: { name, slug } });
       onClose();
-      navigate(pages.userFeeds({ workspaceSlug: result.slug }));
+
+      if (onCreated) {
+        onCreated(result.slug);
+      } else {
+        navigate(pages.userFeeds({ workspaceSlug: result.slug }));
+      }
     } catch (err: unknown) {
       const apiError = err as ApiAdapterError;
 

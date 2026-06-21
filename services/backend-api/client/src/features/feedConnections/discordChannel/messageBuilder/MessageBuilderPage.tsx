@@ -630,7 +630,7 @@ const MessageBuilderContent: React.FC = () => {
                           >
                             {updateStatus === "loading" ? "Saving..." : "Save without branding"}
                           </Button>
-                          <PrimaryActionButton size="sm" onClick={onOpenPricingDialog}>
+                          <PrimaryActionButton size="sm" onClick={() => onOpenPricingDialog()}>
                             Upgrade to save with branding
                           </PrimaryActionButton>
                         </>

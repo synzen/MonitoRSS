@@ -74,7 +74,7 @@ describe("Workspace deletion", { concurrency: true }, () => {
     return { user, workspaceId: created.result.id, slug };
   }
 
-  it("cancels the active Paddle subscription as part of deletion", async () => {
+  it("refuses to delete a workspace with a live subscription", async () => {
     const discordUserId = randomUUID();
     await seedWorkspaceUser(ctx, discordUserId);
     const { user, workspaceId, slug } =
@@ -86,28 +86,42 @@ describe("Workspace deletion", { concurrency: true }, () => {
       buildPaddleCustomer({ subscriptionId }),
     );
 
-    paddleApi.server.registerRoute(
-      "POST",
+    const res = await user.fetch(`/api/v1/workspaces/${slug}`, {
+      method: "DELETE",
+    });
+    assert.strictEqual(res.status, 409);
+    const body = (await res.json()) as { code: string };
+    assert.strictEqual(body.code, "WORKSPACE_HAS_ACTIVE_SUBSCRIPTION");
+
+    // No cancellation is attempted; the owner must cancel billing themselves.
+    const cancelRequests = paddleApi.server.getRequestsForPath(
       `/subscriptions/${subscriptionId}/cancel`,
-      {
-        status: 200,
-        body: { data: { id: subscriptionId, status: "active" } },
-      },
+    );
+    assert.strictEqual(cancelRequests.length, 0);
+
+    // The workspace is untouched.
+    const readRes = await user.fetch(`/api/v1/workspaces/${slug}`);
+    assert.strictEqual(readRes.status, 200);
+  });
+
+  it("deletes a workspace whose subscription is already scheduled to cancel", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(ctx, discordUserId);
+    const { user, workspaceId, slug } =
+      await createWorkspaceAsUser(discordUserId);
+
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      workspaceId,
+      buildPaddleCustomer({
+        subscriptionId: generateTestId(),
+        cancellationDate: new Date(),
+      }),
     );
 
     const res = await user.fetch(`/api/v1/workspaces/${slug}`, {
       method: "DELETE",
     });
     assert.strictEqual(res.status, 204);
-
-    const cancelRequests = paddleApi.server.getRequestsForPath(
-      `/subscriptions/${subscriptionId}/cancel`,
-    );
-    assert.strictEqual(
-      cancelRequests.length,
-      1,
-      "deletion must issue the Paddle cancellation",
-    );
 
     const readRes = await user.fetch(`/api/v1/workspaces/${slug}`);
     assert.strictEqual(readRes.status, 404);

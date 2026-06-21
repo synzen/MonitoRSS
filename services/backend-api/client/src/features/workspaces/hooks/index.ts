@@ -21,3 +21,5 @@ export * from "./useLeaveWorkspace";
 export * from "./useDeleteWorkspace";
 export * from "./useDisconnectWorkspaceReddit";
 export * from "./useWorkspaceBilling";
+export * from "./useWorkspaceActivationPolling";
+export * from "./useRefetchFeedsOnWorkspaceActivation";

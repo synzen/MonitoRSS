@@ -53,6 +53,8 @@ describe("OAuth verified-email security invariant", () => {
       smtpTransport: fakeTransport,
       emailVerificationRepository: ctx.container.emailVerificationRepository,
       userRepository: ctx.container.userRepository,
+      workspaceRepository: ctx.container.workspaceRepository,
+      paddleService: ctx.container.paddleService,
     });
   });
 

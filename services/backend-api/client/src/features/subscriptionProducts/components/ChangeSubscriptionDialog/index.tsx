@@ -1,18 +1,4 @@
-import {
-  Box,
-  Button,
-  Flex,
-  Link,
-  Skeleton,
-  Spinner,
-  Stack,
-  TableBody,
-  TableCell,
-  TableRoot,
-  TableRow,
-  TableScrollArea,
-  Text,
-} from "@chakra-ui/react";
+import { Box, Button, Flex, Link, Skeleton, Spinner, Stack, Text } from "@chakra-ui/react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -179,136 +165,125 @@ export const ChangeSubscriptionDialog = ({
             {!isLoading && !isChangingToFree && (
               <Stack>
                 <Stack gap={8}>
-                  <Stack>
-                    <Box>
+                  <Stack gap={1}>
+                    <Flex alignItems="baseline" gap={3} flexWrap="wrap">
+                      <Text>{topLevelPriceToUseForUpdate?.productName}</Text>
+                      {additionalFeedsPriceToUseForUpdate && (
+                        <Text fontSize="sm" color="fg.muted">
+                          + {additionalFeedsPriceToUseForUpdate.quantity} additional feed
+                          {additionalFeedsPriceToUseForUpdate.quantity > 1 ? "s" : ""}
+                        </Text>
+                      )}
+                    </Flex>
+                    {!data && <Skeleton width={64} height={12} />}
+                    {data && topLevelPriceToUseForUpdate && (
                       <Flex alignItems="baseline" gap={3} flexWrap="wrap">
-                        <Text>{topLevelPriceToUseForUpdate?.productName}</Text>
+                        <Text fontSize="xx-large" fontWeight={700} lineHeight="shorter">
+                          {topLevelPriceToUseForUpdate?.formattedPrice}/
+                          {topLevelPriceToUseForUpdate?.interval}
+                        </Text>
                         {additionalFeedsPriceToUseForUpdate && (
-                          <Text fontSize="sm" color="fg.muted">
-                            + {additionalFeedsPriceToUseForUpdate.quantity} additional feed
-                            {additionalFeedsPriceToUseForUpdate.quantity > 1 ? "s" : ""}
+                          <Text fontSize="lg" fontWeight={500} color="fg">
+                            + {additionalFeedsPriceToUseForUpdate.formattedPrice}/
+                            {additionalFeedsPriceToUseForUpdate.interval}
                           </Text>
                         )}
                       </Flex>
-                      {!data && <Skeleton width={64} height={12} mt={2} />}
-                      {data && topLevelPriceToUseForUpdate && (
-                        <Flex alignItems="baseline" gap={3} flexWrap="wrap">
-                          <Text fontSize="xx-large" fontWeight={700}>
-                            {topLevelPriceToUseForUpdate?.formattedPrice}/
-                            {topLevelPriceToUseForUpdate?.interval}
+                    )}
+                    {!data && <Skeleton width={64} height={6} />}
+                    {data && (
+                      <Text color="fg.muted">
+                        {new Date(
+                          data.data.immediateTransaction.billingPeriod.startsAt,
+                        ).toLocaleDateString(undefined, {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                        {" - "}
+                        {new Date(
+                          data.data.immediateTransaction.billingPeriod.endsAt,
+                        ).toLocaleDateString(undefined, {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </Text>
+                    )}
+                  </Stack>
+                  <Stack gap={4}>
+                    <Flex
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      gap={4}
+                      pb={4}
+                      borderBottomWidth="1px"
+                    >
+                      <Box>
+                        <Text>Subtotal</Text>
+                        <Text color="fg.muted" fontSize={14}>
+                          for remaining time on new plan
+                        </Text>
+                      </Box>
+                      {!data && <Skeleton width={16} height={6} />}
+                      {data && <Text>{data.data.immediateTransaction.subtotalFormatted}</Text>}
+                    </Flex>
+                    <Flex
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      gap={4}
+                      pb={4}
+                      borderBottomWidth="1px"
+                    >
+                      <Box>
+                        <Text>Tax</Text>
+                        <Text color="fg.muted" fontSize={14}>
+                          Included in plan price
+                        </Text>
+                      </Box>
+                      {!data && <Skeleton width={16} height={6} />}
+                      {data && <Text>{data.data.immediateTransaction.taxFormatted}</Text>}
+                    </Flex>
+                    <Flex
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      gap={4}
+                      pb={4}
+                      borderBottomWidth="1px"
+                    >
+                      <Text>Total</Text>
+                      {!data && <Skeleton width={16} height={6} />}
+                      {data && <Text>{data.data.immediateTransaction.totalFormatted}</Text>}
+                    </Flex>
+                    {data && data.data.immediateTransaction.credit !== "0" && (
+                      <Flex
+                        justifyContent="space-between"
+                        alignItems="flex-start"
+                        gap={4}
+                        pb={4}
+                        borderBottomWidth="1px"
+                      >
+                        <Box>
+                          <Text>Credit</Text>
+                          <Text color="fg.muted" fontSize={14}>
+                            Includes refund for time remaining on current plan
                           </Text>
-                          {additionalFeedsPriceToUseForUpdate && (
-                            <Text fontSize="lg" fontWeight={500} color="fg">
-                              + {additionalFeedsPriceToUseForUpdate.formattedPrice}/
-                              {additionalFeedsPriceToUseForUpdate.interval}
-                            </Text>
-                          )}
-                        </Flex>
-                      )}
-                      {!data && <Skeleton width={64} height={6} mt={2} />}
+                        </Box>
+                        <Text color="text.success">
+                          -{data.data.immediateTransaction.creditFormatted}
+                        </Text>
+                      </Flex>
+                    )}
+                    <Flex justifyContent="space-between" alignItems="flex-start" gap={4}>
+                      <Text fontWeight="bold">Due Today</Text>
+                      {!data && <Skeleton width={16} height={6} />}
                       {data && (
-                        <Text color="fg.muted">
-                          {new Date(
-                            data.data.immediateTransaction.billingPeriod.startsAt,
-                          ).toLocaleDateString(undefined, {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                          {" - "}
-                          {new Date(
-                            data.data.immediateTransaction.billingPeriod.endsAt,
-                          ).toLocaleDateString(undefined, {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                        <Text fontWeight="bold">
+                          {data.data.immediateTransaction.grandTotalFormatted}
                         </Text>
                       )}
-                    </Box>
+                    </Flex>
                   </Stack>
-                  <TableScrollArea pt={4} tabIndex={-1}>
-                    <TableRoot variant="line">
-                      <TableBody>
-                        <TableRow>
-                          <TableCell padding={0}>
-                            <Text>Subtotal</Text>
-                            <Text color="fg.muted" fontSize={14}>
-                              for remaining time on new plan
-                            </Text>
-                          </TableCell>
-                          <TableCell textAlign="right" p={0}>
-                            <Flex justifyContent="flex-end">
-                              {!data && <Skeleton width={16} height={6} />}
-                              {data && (
-                                <Text>{data.data.immediateTransaction.subtotalFormatted}</Text>
-                              )}
-                            </Flex>
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell pt={4} pl={0} pr={0} pb={0}>
-                            <Text>Tax</Text>
-                            <Text color="fg.muted" fontSize={14}>
-                              Included in plan price
-                            </Text>
-                          </TableCell>
-                          <TableCell textAlign="right" p={0}>
-                            <Flex justifyContent="flex-end">
-                              {!data && <Skeleton width={16} height={6} />}
-                              {data && <Text>{data.data.immediateTransaction.taxFormatted}</Text>}
-                            </Flex>
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell pt={4} pl={0} pr={0} pb={0}>
-                            <Text>Total</Text>
-                          </TableCell>
-                          <TableCell textAlign="right" p={0}>
-                            <Flex justifyContent="flex-end">
-                              {!data && <Skeleton width={16} height={6} />}
-                              {data && <Text>{data.data.immediateTransaction.totalFormatted}</Text>}
-                            </Flex>
-                          </TableCell>
-                        </TableRow>
-                        {data && data.data.immediateTransaction.credit !== "0" && (
-                          <TableRow>
-                            <TableCell pt={4} pl={0} pr={0} pb={0}>
-                              <Text>Credit</Text>
-                              <Text color="fg.muted" fontSize={14}>
-                                Includes refund for time remaining on current plan
-                              </Text>
-                            </TableCell>
-                            <TableCell p={0} textAlign="right">
-                              <Flex justifyContent="flex-end">
-                                {!data && <Skeleton width={16} height={6} />}
-                                {data && (
-                                  <Text color="text.success">
-                                    -{data.data.immediateTransaction.creditFormatted}
-                                  </Text>
-                                )}
-                              </Flex>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                        <TableRow>
-                          <TableCell pt={8} pl={0} pr={0} pb={0}>
-                            <Text fontWeight="bold">Due Today</Text>
-                          </TableCell>
-                          <TableCell textAlign="right" pt={8} pl={0} pr={0} pb={0}>
-                            <Flex justifyContent="flex-end">
-                              {!data && <Skeleton width={16} height={6} />}
-                              {data && (
-                                <Text fontWeight="bold">
-                                  {data.data.immediateTransaction.grandTotalFormatted}
-                                </Text>
-                              )}
-                            </Flex>
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </TableRoot>
-                  </TableScrollArea>
                 </Stack>
                 <Text color="fg.muted" pt={4}>
                   By proceeding, you are agreeing to our{" "}

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button, HStack, Input } from "@chakra-ui/react";
 import { Field } from "@/components/ui/field";
 import { useUserMe } from "@/features/discordUser";
-import { useIsWorkspacesEnabled } from "../../hooks";
+import { useIsWorkspacesEnabled, useWorkspaces } from "../../hooks";
 import { ChangeVerifiedEmailDialog } from "../ChangeVerifiedEmailDialog";
 
 interface Props {
@@ -15,6 +15,7 @@ interface Props {
 export const VerifiedEmailSettingsRow = ({ onChanged }: Props) => {
   const { enabled } = useIsWorkspacesEnabled();
   const { data } = useUserMe();
+  const { workspaces } = useWorkspaces();
   const [isOpen, setIsOpen] = useState(false);
 
   if (!enabled) {
@@ -22,13 +23,14 @@ export const VerifiedEmailSettingsRow = ({ onChanged }: Props) => {
   }
 
   const verifiedEmail = data?.result.verifiedEmail;
+  const ownsWorkspace = !!workspaces?.some((w) => w.role === "owner");
+  const helperText = ownsWorkspace
+    ? "Used for workspace invitations, member notices, and billing for the workspaces you own. Change it to verify a different address you own."
+    : "Used for workspace invitations and member notices. Change it to verify a different address you own.";
 
   return (
     <>
-      <Field
-        label="Verified workspace email"
-        helperText="Used for workspace invitations and member notices. Change it to verify a different address you own."
-      >
+      <Field label="Verified workspace email" helperText={helperText}>
         <HStack gap={2} alignSelf="stretch" alignItems="center">
           <Input flex="1" readOnly value={verifiedEmail || "(no verified email)"} />
           <Button variant="plain" color="text.link" onClick={() => setIsOpen(true)}>

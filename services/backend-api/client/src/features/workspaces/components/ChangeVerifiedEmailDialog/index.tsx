@@ -1,3 +1,4 @@
+import { Alert } from "@chakra-ui/react";
 import {
   DialogRoot,
   DialogContent,
@@ -7,6 +8,7 @@ import {
   DialogCloseTrigger,
 } from "@/components/ui/dialog";
 import { VerifyEmailStep } from "../VerifyEmailStep";
+import { useWorkspaces } from "../../hooks";
 
 interface Props {
   isOpen: boolean;
@@ -16,6 +18,12 @@ interface Props {
 }
 
 export const ChangeVerifiedEmailDialog = ({ isOpen, onClose, currentEmail, onChanged }: Props) => {
+  const { workspaces } = useWorkspaces();
+  // A workspace the user owns is billed to their verified email, so changing it
+  // moves where Paddle sends that workspace's receipts. Surfaced only to owners;
+  // admins and non-members have no billing tied to their address.
+  const ownsWorkspace = !!workspaces?.some((w) => w.role === "owner");
+
   return (
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
       <DialogContent>
@@ -24,6 +32,17 @@ export const ChangeVerifiedEmailDialog = ({ isOpen, onClose, currentEmail, onCha
         </DialogHeader>
         <DialogCloseTrigger />
         <DialogBody>
+          {ownsWorkspace && (
+            <Alert.Root status="info" mb={4}>
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Description>
+                  This is also the billing email for the workspaces you own. Verifying a new address
+                  moves where Paddle sends their receipts.
+                </Alert.Description>
+              </Alert.Content>
+            </Alert.Root>
+          )}
           {/* Empty field by default, current address shown as context in the
               intro so the user is not forced to clear a value they're moving
               away from. The underlying step refetches user-me on confirm.

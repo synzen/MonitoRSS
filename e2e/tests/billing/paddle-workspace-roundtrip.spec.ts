@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "../../fixtures/test-fixtures";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
 import { enableWorkspacesFeatureInDb, setVerifiedEmailInDb } from "../../helpers/workspaces-db";
+import { cancelAndDeleteWorkspace } from "../../helpers/paddle-cleanup";
 import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
 
 // Workspace subscription roundtrip against the REAL Paddle sandbox (e2e-paddle
@@ -17,13 +18,16 @@ async function waitForAuthenticatedApp(page: Page): Promise<void> {
 // Enable the workspaces feature + verified email for the signed-in user, then
 // create a fresh team through the UI and land on its dormant Billing page.
 // Returns the new workspace slug.
-async function createTeamAndOpenBilling(page: Page): Promise<string> {
+async function createTeamAndOpenBilling(
+  page: Page,
+): Promise<{ workspaceSlug: string; verifiedEmail: string }> {
   await page.goto("/feeds");
   await waitForAuthenticatedApp(page);
 
   const discordUserId = await getDiscordUserIdFromPage(page);
   await enableWorkspacesFeatureInDb(discordUserId);
-  await setVerifiedEmailInDb(discordUserId, `verified-${discordUserId}@example.com`);
+  const verifiedEmail = `verified-${discordUserId}@example.com`;
+  await setVerifiedEmailInDb(discordUserId, verifiedEmail);
   await page.reload();
   await waitForAuthenticatedApp(page);
 
@@ -50,7 +54,7 @@ async function createTeamAndOpenBilling(page: Page): Promise<string> {
   // subscribe click can actually open the overlay.
   await expect(page.getByText(/\/ (month|year)/).first()).toBeVisible({ timeout: 30000 });
 
-  return workspaceSlug as string;
+  return { workspaceSlug: workspaceSlug as string, verifiedEmail };
 }
 
 // Fill and submit the Paddle checkout the subscribe button opens, then wait for
@@ -106,7 +110,7 @@ test.describe("Paddle workspace roundtrip", () => {
   }) => {
     test.setTimeout(240_000);
 
-    const workspaceSlug = await createTeamAndOpenBilling(page);
+    const { workspaceSlug, verifiedEmail } = await createTeamAndOpenBilling(page);
 
     // Subscribing is the act of consent, so the payment terms must sit above the
     // Subscribe buttons (read before committing), not below where the overlay
@@ -131,7 +135,7 @@ test.describe("Paddle workspace roundtrip", () => {
       .elementHandle();
 
     // Subscribe to Tier 2 (monthly default): opens the inline checkout dialog.
-    await page.getByRole("button", { name: /subscribe to tier 2/i }).click();
+    await page.getByRole("button", { name: /subscribe to team, 70 feeds total/i }).click();
 
     // The checkout is hosted in a modal dialog that must trap focus: a keyboard
     // user must not be able to reach the page behind it. The dialog inerts its
@@ -161,7 +165,7 @@ test.describe("Paddle workspace roundtrip", () => {
       return document.activeElement === el;
     });
     expect(reReachable).toBe(true);
-    await page.getByRole("button", { name: /subscribe to tier 2/i }).click();
+    await page.getByRole("button", { name: /subscribe to team, 70 feeds total/i }).click();
     await expect(checkoutDialog).toBeVisible({ timeout: 15000 });
 
     await completeInlineCheckout(page);
@@ -176,19 +180,27 @@ test.describe("Paddle workspace roundtrip", () => {
     });
     expect(restored).toBe(true);
 
-    // The current-plan view renders the tier name both as a card heading and in
-    // the "Current plan" badge region, so scope to the heading to stay unique.
-    await expect(page.getByRole("heading", { name: "Tier 2" })).toBeVisible();
+    // The plan is named "Team" on every card now (capacity distinguishes
+    // them), so confirm the subscription landed via the unique "Current plan"
+    // badge that marks the active 70-feed card.
+    await expect(page.getByText("Current plan").first()).toBeVisible();
+    await expect(page.getByText("70 feeds").first()).toBeVisible();
 
-    // Change-plan confirmation discloses the prorated amount AND the recurring
-    // charge before committing. Open the Tier 3 switch and assert the dialog
-    // renders the price anchor, the itemized "Due today" breakdown, and the
-    // recurring "Then" line, all driven by the real Paddle proration preview.
+    // The activated plan is billed to the owner's verified email, surfaced as a
+    // "Billed to" line on the current-plan view. This confirms the webhook
+    // persisted the verified email (not the Discord email Paddle echoes back).
+    await expect(page.getByText(verifiedEmail)).toBeVisible({ timeout: 30000 });
+
+    // Change-capacity confirmation discloses the prorated amount AND the recurring
+    // charge before committing. Open the capacity dialog, raise the slider to a
+    // higher detent, and assert the dialog renders the itemized "Due today"
+    // breakdown and the recurring "Then" line, driven by the real Paddle proration
+    // preview.
     const changeDialog = page.getByRole("dialog");
-    // The activation transaction may still be processing when we open the
-    // switch; Paddle then rejects the proration preview with
+    // The activation transaction may still be processing when we open the dialog;
+    // Paddle then rejects the proration preview with
     // "subscription_credit_creation_against_processing_transaction" (a 400 the
-    // UI surfaces as "Failed to load change preview"). Re-open the dialog until
+    // UI surfaces as "Failed to load change preview"). Re-open and re-drag until
     // the transaction settles and the preview resolves.
     await expect(async () => {
       if ((await changeDialog.count()) > 0) {
@@ -196,23 +208,32 @@ test.describe("Paddle workspace roundtrip", () => {
         await expect(changeDialog).toHaveCount(0);
       }
 
-      await page.getByRole("button", { name: /switch to tier 3/i }).click();
-      await expect(changeDialog.getByText("Confirm plan change")).toBeVisible();
+      await page.getByRole("button", { name: /change capacity/i }).click();
+      // Dialog + slider are instant client renders; short timeouts so a UI break
+      // fails this attempt fast instead of stalling the retry budget.
+      const slider = changeDialog.getByRole("slider", { name: /how many feeds/i });
+      await expect(slider).toBeVisible({ timeout: 10000 });
+      // Seeded at the current 70 feeds; step up two detents (70 -> 100 -> 140).
+      await slider.focus();
+      await page.keyboard.press("ArrowRight");
+      await page.keyboard.press("ArrowRight");
+      await expect(slider).toHaveAttribute("aria-valuetext", "140 feeds", { timeout: 5000 });
+      // Only the prorated preview is webhook-gated; it is the one slow wait here.
       await expect(changeDialog.getByText("Total due today")).toBeVisible({ timeout: 15000 });
     }).toPass({ timeout: 120_000, intervals: [5000] });
 
-    // Before -> after framing names both tiers.
-    await expect(changeDialog.getByText(/Tier 2 \(70 feeds\)/)).toBeVisible();
-    await expect(changeDialog.getByText(/Tier 3 \(140 feeds\)/)).toBeVisible();
-    // Itemized due-today block, from the live Paddle proration preview.
-    await expect(changeDialog.getByText("Subtotal")).toBeVisible();
-    await expect(changeDialog.getByText("Tax")).toBeVisible();
+    // Itemized due-today block, from the live Paddle proration preview. The
+    // preview already resolved inside the toPass above, so these are instant.
+    await expect(changeDialog.getByText("Subtotal")).toBeVisible({ timeout: 5000 });
+    await expect(changeDialog.getByText("Tax")).toBeVisible({ timeout: 5000 });
     // The compliance-critical recurring disclosure.
-    await expect(changeDialog.getByText("Then")).toBeVisible();
-    await expect(changeDialog.getByText(/\/ month, starting/)).toBeVisible();
-    await expect(changeDialog.getByText(/Renews automatically\. Cancel anytime\./)).toBeVisible();
-    // Dismiss without switching: this run only verifies the disclosure, and the
-    // teardown cancels the Tier 2 subscription it already created.
+    await expect(changeDialog.getByText("Then")).toBeVisible({ timeout: 5000 });
+    await expect(changeDialog.getByText(/\/ month, starting/)).toBeVisible({ timeout: 5000 });
+    await expect(changeDialog.getByText(/Renews automatically\. Cancel anytime\./)).toBeVisible({
+      timeout: 5000,
+    });
+    // Dismiss without changing: this run only verifies the disclosure, and the
+    // teardown cancels the subscription it already created.
     await changeDialog.getByRole("button", { name: "Cancel" }).click();
     await expect(changeDialog).toHaveCount(0);
 
@@ -238,54 +259,46 @@ test.describe("Paddle workspace roundtrip", () => {
     await page.getByRole("button", { name: /View your feeds/ }).click();
     await expect(page.getByRole("link", { name: /^Configure/ })).toBeVisible();
 
-    // Teardown: deleting the workspace cancels the sandbox subscription so the
-    // Paddle sandbox does not accumulate live subscriptions across runs.
-    const deleteRes = await page.request.delete(`/api/v1/workspaces/${workspaceSlug}`);
-    expect(deleteRes.status()).toBe(204);
+    // Teardown: cancel the workspace's sandbox subscription, then delete it
+    // (deletion is gated on cancellation first), so the Paddle sandbox does not
+    // accumulate live subscriptions across runs.
+    await cancelAndDeleteWorkspace(page, workspaceSlug);
   });
 
-  test("adds extra feeds to a Tier 3 team and the new limit is reflected in the UI", async ({
+  test("raises a team's capacity via the slider and the new limit is reflected in the UI", async ({
     page,
   }) => {
     test.setTimeout(300_000);
 
-    const workspaceSlug = await createTeamAndOpenBilling(page);
+    const { workspaceSlug } = await createTeamAndOpenBilling(page);
 
-    // Activate on Tier 3 ANNUAL: adding feeds immediately afterwards prorates
-    // the addon over the remaining period, which on a monthly plan can fall
-    // under Paddle's $0.70 minimum and be rejected. A year comfortably clears
-    // it, so the addon change preview is deterministic.
+    // Activate at 140 feeds ANNUAL: raising capacity immediately afterwards
+    // prorates the add-on over the remaining period, which on a monthly plan can
+    // fall under Paddle's $0.70 minimum and be rejected. A year comfortably clears
+    // it, so the change preview is deterministic.
     await page.getByRole("button", { name: "Yearly" }).click();
-    await page.getByRole("button", { name: /subscribe to tier 3/i }).click();
+    // The activation slider starts at the base 70 feeds; drag it up two detents
+    // (70 -> 100 -> 140) so the single Subscribe button targets 140-feed capacity.
+    const activationSlider = page.getByRole("slider", { name: /how many feeds/i });
+    await activationSlider.focus();
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("ArrowRight");
+    await expect(activationSlider).toHaveAttribute("aria-valuetext", "140 feeds", {
+      timeout: 5000,
+    });
+    await page.getByRole("button", { name: /subscribe to team, 140 feeds total/i }).click();
+    // completeInlineCheckout already waits out the activation webhook, so the page
+    // is on the active current-plan view by the time it returns; these are instant
+    // client renders. Short timeouts so a UI regression fails in seconds, not at
+    // the test-level ceiling. Every capacity is base tier + per-feed add-ons, so
+    // 140 feeds is 70 base + 70 additional (buy and manage baskets are identical).
     await completeInlineCheckout(page);
-    await expect(page.getByRole("heading", { name: "Tier 3" })).toBeVisible();
+    await expect(page.getByText("Current plan").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("140 feeds (70 + 70 additional)")).toBeVisible({ timeout: 10000 });
 
-    // The Tier 3 card in the change-plan section carries the additional-feeds
-    // control. Scope to that card so the stepper/price assertions stay unique.
-    const tier3Card = page
-      .getByRole("listitem")
-      .filter({ has: page.getByRole("heading", { name: "Tier 3" }) });
-    const stepper = tier3Card.getByRole("spinbutton", { name: /additional feeds/i });
-    await expect(stepper).toBeVisible({ timeout: 30000 });
-    // A subscriber with no addons sees the bare limit, not a phantom +1.
-    await expect(tier3Card.getByText("140 feeds", { exact: false })).toBeVisible();
-
-    // Choosing 2 extra feeds updates the displayed total live, and the headline
-    // price recomputes from Paddle (different from the bare-tier price). The
-    // headline is the price paragraph carrying both the amount and "/ year"
-    // (the feed-count line has no currency), so match on that combined text.
-    const priceHeadline = tier3Card.getByText(/\$.*\/ year/).first();
-    const barePrice = (await priceHeadline.textContent())?.trim();
-    await stepper.fill("2");
-    await expect(tier3Card.getByText("142 feeds (140 + 2)")).toBeVisible({ timeout: 30000 });
-    await expect(async () => {
-      const updatedPrice = (await priceHeadline.textContent())?.trim();
-      expect(updatedPrice).not.toEqual(barePrice);
-    }).toPass({ timeout: 30000, intervals: [2000] });
-
-    // Confirm the change. The activation transaction may still be processing,
-    // so re-open the dialog until Paddle's proration preview resolves (same
-    // in-flight-transaction race as the tier switch above).
+    // The capacity slider is detents-only: from 140 the next reachable capacity is
+    // 200 feeds (base 70 + 130 add-on feeds), not an arbitrary +N. Open the
+    // change-capacity dialog and step up one detent.
     const changeDialog = page.getByRole("dialog");
     await expect(async () => {
       if ((await changeDialog.count()) > 0) {
@@ -293,25 +306,34 @@ test.describe("Paddle workspace roundtrip", () => {
         await expect(changeDialog).toHaveCount(0);
       }
 
-      await tier3Card.getByRole("button", { name: /update additional feeds/i }).click();
-      await expect(changeDialog.getByText("Confirm plan change")).toBeVisible();
+      await page.getByRole("button", { name: /change capacity/i }).click();
+      // The dialog + slider are instant client renders; short timeouts so a UI
+      // break fails this attempt fast instead of stalling the retry budget.
+      const slider = changeDialog.getByRole("slider", { name: /how many feeds/i });
+      await expect(slider).toBeVisible({ timeout: 10000 });
+      // Seeded at the current 140 feeds (detent index 2); one step up is 200.
+      await expect(slider).toHaveAttribute("aria-valuetext", "140 feeds", { timeout: 5000 });
+      await slider.focus();
+      await page.keyboard.press("ArrowRight");
+      await expect(slider).toHaveAttribute("aria-valuetext", "200 feeds", { timeout: 5000 });
+      // Only the prorated preview is webhook-gated; it is the one slow wait here.
       await expect(changeDialog.getByText("Total due today")).toBeVisible({ timeout: 15000 });
     }).toPass({ timeout: 120_000, intervals: [5000] });
 
     await changeDialog.getByRole("button", { name: /confirm change/i }).click();
     await expect(changeDialog).toHaveCount(0, { timeout: 60000 });
 
-    // The addon change lands via webhook, so the rendered current-plan text lags
-    // the confirmed change; reload until it reflects the 2 extra feeds.
+    // The change lands via webhook, so the rendered current-plan text lags the
+    // confirmed change; reload until it reflects the new 200-feed capacity (base
+    // 70 + 130 additional).
     await expect(async () => {
       await page.reload();
-      await expect(page.getByText("142 feeds (140 + 2 additional)")).toBeVisible({
+      await expect(page.getByText("200 feeds (70 + 130 additional)")).toBeVisible({
         timeout: 5000,
       });
     }).toPass({ timeout: 120_000, intervals: [3000] });
 
-    // Teardown: deleting the workspace cancels the sandbox subscription.
-    const deleteRes = await page.request.delete(`/api/v1/workspaces/${workspaceSlug}`);
-    expect(deleteRes.status()).toBe(204);
+    // Teardown: cancel the workspace's sandbox subscription, then delete it.
+    await cancelAndDeleteWorkspace(page, workspaceSlug);
   });
 });

@@ -1,5 +1,8 @@
 import type { Config } from "../../config";
-import { SubscriptionProductKey } from "../../repositories/shared/enums";
+import {
+  SubscriptionProductKey,
+  SubscriptionStatus,
+} from "../../repositories/shared/enums";
 import type {
   IWorkspace,
   WorkspaceMongooseRepository,
@@ -400,32 +403,23 @@ export class WorkspaceBillingService {
     }
   }
 
-  // Workspace deletion must never leave a live Paddle subscription behind.
-  // No-op when billing is not configured or the workspace has no
-  // subscription; an already-cancelled subscription is fine; any other Paddle
-  // failure propagates so the deletion is aborted.
-  async cancelSubscriptionOnDeletion(workspace: IWorkspace): Promise<void> {
+  // A subscription whose billing relationship is still live blocks deletion:
+  // the owner must cancel it first. A subscription already scheduled to cancel
+  // (cancellationDate set) no longer blocks, since the owner has committed to
+  // ending it; a fully cancelled subscription is nullified off the workspace by
+  // the webhook, so it never reaches here. Status other than Cancelled (active,
+  // past due, paused) all represent live billing and block.
+  hasBlockingSubscription(workspace: IWorkspace): boolean {
     const subscription = workspace.paddleCustomer?.subscription;
 
     if (!isBillingEnabled(this.deps.config) || !subscription) {
-      return;
+      return false;
     }
 
-    try {
-      await this.deps.paddleService.executeApiCall(
-        `/subscriptions/${subscription.id}/cancel`,
-        {
-          method: "POST",
-          body: JSON.stringify({ effective_from: "next_billing_period" }),
-        },
-      );
-    } catch (err) {
-      if (err instanceof SubscriptionAlreadyCancelledException) {
-        return;
-      }
-
-      throw err;
-    }
+    return (
+      subscription.status !== SubscriptionStatus.Cancelled &&
+      !subscription.cancellationDate
+    );
   }
 
   private getSubscriptionOrThrow(

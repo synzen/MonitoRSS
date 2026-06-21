@@ -243,6 +243,104 @@ describe("PaddleWebhooksService", { concurrency: true }, () => {
       );
     });
 
+    it("bills a personal subscription to the Paddle billing email even when the user has a verified email", async () => {
+      const ctx = harness.createContext({
+        paddleService: {
+          getCustomer: async () => ({ email: "personal-billing@test.com" }),
+        },
+      });
+      const user = await ctx.createUser({
+        verifiedEmail: "personal-verified@example.com",
+      });
+      const now = new Date();
+
+      const event = ctx.createSubscriptionUpdatedEvent({
+        custom_data: { userId: user.id },
+        current_billing_period: {
+          starts_at: now.toISOString(),
+          ends_at: now.toISOString(),
+        },
+      });
+
+      await ctx.service.handleSubscriptionUpdatedEvent(event);
+
+      const supporter = await ctx.supporterRepository.findById(
+        user.discordUserId,
+      );
+      assert.strictEqual(
+        supporter?.paddleCustomer?.email,
+        "personal-billing@test.com",
+      );
+    });
+
+    it("bills a workspace subscription to the owner's verified email, not the Paddle billing email", async () => {
+      const ctx = harness.createContext({
+        paddleService: {
+          getProduct: async () => ({
+            paddleProductId: "prod-tier2",
+            id: SubscriptionProductKey.Tier2,
+          }),
+          getCustomer: async () => ({ email: "discord-or-typed@paddle.com" }),
+        },
+      });
+      const owner = await ctx.createUser({
+        verifiedEmail: "owner-verified@example.com",
+      });
+      const workspace = await ctx.createWorkspaceWithOwner({
+        ownerUserId: owner.id,
+      });
+      const now = new Date();
+
+      const event = ctx.createSubscriptionUpdatedEvent({
+        custom_data: { workspaceId: workspace.id },
+        current_billing_period: {
+          starts_at: now.toISOString(),
+          ends_at: now.toISOString(),
+        },
+      });
+
+      await ctx.service.handleSubscriptionUpdatedEvent(event);
+
+      const updated = await ctx.workspaceRepository.findById(workspace.id);
+      assert.ok(updated?.paddleCustomer);
+      assert.strictEqual(
+        updated.paddleCustomer.email,
+        "owner-verified@example.com",
+      );
+    });
+
+    it("throws when a workspace's owner has no verified email", async () => {
+      const ctx = harness.createContext({
+        paddleService: {
+          getProduct: async () => ({
+            paddleProductId: "prod-tier2",
+            id: SubscriptionProductKey.Tier2,
+          }),
+        },
+      });
+      const owner = await ctx.createUser();
+      const workspace = await ctx.createWorkspaceWithOwner({
+        ownerUserId: owner.id,
+      });
+      const now = new Date();
+
+      const event = ctx.createSubscriptionUpdatedEvent({
+        custom_data: { workspaceId: workspace.id },
+        current_billing_period: {
+          starts_at: now.toISOString(),
+          ends_at: now.toISOString(),
+        },
+      });
+
+      await assert.rejects(
+        () => ctx.service.handleSubscriptionUpdatedEvent(event),
+        /verified email/i,
+      );
+
+      const updated = await ctx.workspaceRepository.findById(workspace.id);
+      assert.strictEqual(updated?.paddleCustomer, null);
+    });
+
     it("correctly calculates benefits including extra feeds addon", async () => {
       const ctx = harness.createContext({
         paddleService: {

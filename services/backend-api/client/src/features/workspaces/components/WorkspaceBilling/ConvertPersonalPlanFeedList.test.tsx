@@ -330,9 +330,7 @@ describe("ConvertPersonalPlanFeedList", () => {
       expect(screen.getByRole("checkbox", { name: /^Feed 104$/ })).toBeInTheDocument(),
     );
     expect(screen.getByLabelText(/search your feeds/i)).toHaveValue("");
-    const checked = screen
-      .getAllByRole("checkbox")
-      .filter((c) => (c as HTMLInputElement).checked);
+    const checked = screen.getAllByRole("checkbox").filter((c) => (c as HTMLInputElement).checked);
     expect(checked.length).toBeGreaterThan(1);
   });
 

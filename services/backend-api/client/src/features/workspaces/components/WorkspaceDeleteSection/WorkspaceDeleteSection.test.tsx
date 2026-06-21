@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
 import { WorkspaceDeleteSection } from "./index";
@@ -11,7 +12,6 @@ const h = vi.hoisted(() => ({
   deleteReset: vi.fn(),
   deleteError: { current: null as null | { message: string; errorCode?: string } },
   navigate: vi.fn(),
-  paddleConfigured: { current: false },
 }));
 
 vi.mock("../../contexts", () => ({
@@ -27,28 +27,30 @@ vi.mock("../../hooks", () => ({
   }),
 }));
 
-vi.mock("@/features/subscriptionProducts", () => ({
-  usePaddleContext: () => ({ isConfigured: h.paddleConfigured.current }),
-}));
-
 vi.mock("react-router-dom", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router-dom")>();
 
   return { ...actual, useNavigate: () => h.navigate };
 });
 
-const asRole = (myRole: "owner" | "admin") =>
+const asRole = (
+  myRole: "owner" | "admin",
+  subscription?: { status: string; cancellationDate?: string | null } | null,
+) =>
   vi.mocked(useCurrentWorkspace).mockReturnValue({
     id: "workspace-1",
     name: "Acme Marketing",
     slug: "acme-marketing",
     myRole,
+    subscription,
   } as never);
 
 const renderSection = () =>
   render(
     <ChakraProvider value={system}>
-      <WorkspaceDeleteSection />
+      <MemoryRouter>
+        <WorkspaceDeleteSection />
+      </MemoryRouter>
     </ChakraProvider>,
   );
 
@@ -62,7 +64,6 @@ describe("WorkspaceDeleteSection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     h.deleteError.current = null;
-    h.paddleConfigured.current = false;
   });
 
   it("shows the delete section to owners", () => {
@@ -124,27 +125,35 @@ describe("WorkspaceDeleteSection", () => {
     );
   });
 
-  it("only mentions subscription cancellation when billing is configured", async () => {
-    asRole("owner");
-    h.paddleConfigured.current = true;
+  it("blocks deletion and points to billing when a live subscription exists", () => {
+    asRole("owner", { status: "ACTIVE", cancellationDate: null });
 
     renderSection();
 
-    const dialog = await openDeleteDialog();
-    expect(
-      within(dialog).getByText(/any active subscription will be cancelled/i),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete workspace" })).toBeDisabled();
+    expect(screen.getByText(/cancel this workspace's subscription/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "billing page" })).toHaveAttribute(
+      "href",
+      "/workspaces/acme-marketing/settings/billing",
+    );
   });
 
-  it("omits the subscription sentence on self-host (no billing configured)", async () => {
-    asRole("owner");
+  it("allows deletion once the subscription is scheduled to cancel", () => {
+    asRole("owner", { status: "ACTIVE", cancellationDate: "2027-03-01T00:00:00.000Z" });
 
     renderSection();
 
-    const dialog = await openDeleteDialog();
-    expect(
-      within(dialog).queryByText(/any active subscription will be cancelled/i),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Delete workspace" })).not.toBeDisabled();
+    expect(screen.queryByText(/cancel this workspace's subscription/i)).not.toBeInTheDocument();
+  });
+
+  it("allows deletion when there is no subscription", () => {
+    asRole("owner", null);
+
+    renderSection();
+
+    expect(screen.getByRole("button", { name: "Delete workspace" })).not.toBeDisabled();
+    expect(screen.queryByText(/cancel this workspace's subscription/i)).not.toBeInTheDocument();
   });
 
   it("keeps the dialog open and shows the error when deletion fails", async () => {

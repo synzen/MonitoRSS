@@ -12,7 +12,13 @@ async function readJson<T>(res: Response): Promise<T> {
 }
 
 interface WorkspaceResult {
-  result: { id: string; name: string; slug: string; role?: string };
+  result: {
+    id: string;
+    name: string;
+    slug: string;
+    role?: string;
+    subscription?: { status: string; billingEmail?: string } | null;
+  };
 }
 interface WorkspaceListResult {
   result: Array<{ id: string; name: string; slug: string; role: string }>;
@@ -308,6 +314,64 @@ describe("Workspaces API", { concurrency: true }, () => {
       (await readJson<WorkspaceResult>(adminRename)).result.name,
       "T3",
     );
+  });
+
+  it("exposes the workspace billing email to the owner but not to an admin member", async () => {
+    const ownerId = randomUUID();
+    await seedWorkspaceUser(ctx, ownerId);
+    const owner = await ctx.asUser(ownerId);
+
+    const created = await readJson<WorkspaceResult>(
+      await owner.fetch("/api/v1/workspaces", {
+        method: "POST",
+        body: JSON.stringify({ name: "Billed", slug: `billed-${ownerId.slice(0, 8)}` }),
+      }),
+    );
+
+    await ctx.connection.collection("workspaces").updateOne(
+      { _id: new Types.ObjectId(created.result.id) },
+      {
+        $set: {
+          paddleCustomer: {
+            customerId: "ctm_billed",
+            email: "owner-billing@example.com",
+            subscription: {
+              productKey: "tier2",
+              status: "ACTIVE",
+              billingInterval: "month",
+              billingPeriodEnd: new Date(),
+              currencyCode: "USD",
+              addons: [],
+            },
+          },
+        },
+      },
+    );
+
+    const ownerView = await readJson<WorkspaceResult>(
+      await owner.fetch(`/api/v1/workspaces/${created.result.slug}`),
+    );
+    assert.strictEqual(
+      ownerView.result.subscription?.billingEmail,
+      "owner-billing@example.com",
+    );
+
+    const adminId = randomUUID();
+    const adminInternalId = await seedWorkspaceUser(ctx, adminId);
+    await ctx.connection.collection("workspacememberships").insertOne({
+      workspaceId: new Types.ObjectId(created.result.id),
+      userId: new Types.ObjectId(adminInternalId),
+      role: "admin",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const admin = await ctx.asUser(adminId);
+
+    const adminView = await readJson<WorkspaceResult>(
+      await admin.fetch(`/api/v1/workspaces/${created.result.slug}`),
+    );
+    assert.strictEqual(adminView.result.subscription?.status, "ACTIVE");
+    assert.strictEqual(adminView.result.subscription?.billingEmail, undefined);
   });
 
   it("returns 404 for an unknown slug", async () => {

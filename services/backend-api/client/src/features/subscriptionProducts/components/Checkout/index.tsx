@@ -24,7 +24,13 @@ import { FaChevronLeft, FaCircleCheck } from "react-icons/fa6";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { Switch } from "@/components/ui/switch";
 import { BoxConstrained, DashboardContentV2, Panel } from "@/components";
-import { pages, ProductKey, PRICE_IDS, findProductKeyByPriceId } from "@/constants";
+import {
+  pages,
+  ProductKey,
+  PRICE_IDS,
+  findProductKeyByPriceId,
+  getPlanDisplayName,
+} from "@/constants";
 import { useUserMe } from "@/features/discordUser";
 import { usePaddleContext } from "../../contexts/PaddleContext";
 
@@ -52,6 +58,12 @@ export const Checkout = ({ cancelUrl }: Props) => {
   const { status: userStatus, error: userError } = useUserMe();
   const topLevelProductCheckoutData = checkoutData?.items.find((item) => item.priceId === priceId);
   const feedsCheckoutData = checkoutData?.items.find((item) => item.priceId === feedsPriceId);
+  // Show the user-facing plan name (Free / Personal / Team) instead of the
+  // Paddle product name ("Tier N") that the checkout event carries.
+  const topLevelProductKey = priceId ? findProductKeyByPriceId(priceId) : null;
+  const topLevelProductDisplayName = topLevelProductKey
+    ? getPlanDisplayName(topLevelProductKey)
+    : topLevelProductCheckoutData?.productName;
 
   useEffect(() => {
     if (isSubscriptionCreated && headingRef.current) {
@@ -201,12 +213,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
                     alignItems="center"
                     h="100%"
                   >
-                    <Icon
-                      as={FaCircleCheck}
-                      color="text.success"
-                      boxSize={14}
-                      aria-hidden="true"
-                    />
+                    <Icon as={FaCircleCheck} color="text.success" boxSize={14} aria-hidden="true" />
                     <Heading ref={headingRef} fontWeight={600} fontSize="lg" as="h1" tabIndex={-1}>
                       Your benefits have been provisioned.
                     </Heading>
@@ -241,7 +248,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
                       <HStack alignItems="center">
                         <Skeleton loading={!isLoaded}>
                           <Text fontSize="xl" fontWeight="semibold">
-                            {topLevelProductCheckoutData?.productName} (
+                            {topLevelProductDisplayName} (
                             {topLevelProductCheckoutData?.interval === "year"
                               ? "Annual"
                               : "Monthly"}
@@ -254,7 +261,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
                         <HStack justifyContent="space-between" alignItems="flex-start">
                           <Stack gap={1}>
                             <Text fontSize="md" fontWeight="medium">
-                              {topLevelProductCheckoutData?.productName}
+                              {topLevelProductDisplayName}
                             </Text>
                           </Stack>
                           <Skeleton loading={!isLoaded}>

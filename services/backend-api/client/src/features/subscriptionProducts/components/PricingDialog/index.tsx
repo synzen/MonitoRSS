@@ -1,4 +1,4 @@
-import { FaCheck, FaXmark, FaPlus, FaMinus } from "react-icons/fa6";
+import { FaUser, FaUsers } from "react-icons/fa6";
 import {
   Box,
   Button,
@@ -6,18 +6,14 @@ import {
   Flex,
   HStack,
   Heading,
-  SimpleGrid,
+  Icon,
   Stack,
   Text,
   Spinner,
   Link,
   Badge,
-  IconButton,
-  Separator,
-  Skeleton,
-  Icon,
 } from "@chakra-ui/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { captureException } from "@sentry/react";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
@@ -25,14 +21,14 @@ import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { FAQ } from "@/components/FAQ";
 import { ChangeSubscriptionDialog } from "../ChangeSubscriptionDialog";
-import { pages, ProductKey, TIER_CONFIGS } from "@/constants";
+import { ConvertToWorkspacePrompt } from "../ConvertToWorkspacePrompt";
+import { getPlanDisplayName, pages, ProductKey } from "@/constants";
 import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "@/constants/externalPropertiesMaxArticles";
 import { usePaddleContext } from "../../contexts/PaddleContext";
 import { useUserMe } from "@/features/discordUser";
-import { notifyInfo } from "@/utils/notifyInfo";
 import { notifySuccess } from "@/utils/notifySuccess";
 import { usePricingData } from "@/features/subscriptionProducts";
-import { useIsWorkspacesEnabled } from "@/features/workspaces";
+import { CreateWorkspaceDialog, useIsWorkspacesEnabled } from "@/features/workspaces";
 import { Switch } from "@/components/ui/switch";
 import {
   DialogRoot,
@@ -41,20 +37,48 @@ import {
   DialogFooter,
   DialogCloseTrigger,
 } from "@/components/ui/dialog";
-import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
+import { WorkspacePanel, FeatureRow } from "./WorkspacePanel";
+import type { PricingDialogTarget } from "../../contexts/PricingDialogContext";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onOpen: () => void;
+  // When opened from the personal feed-limit wall the dialog targets the
+  // workspace region (scrolls it into view + focuses it) instead of the top.
+  target?: PricingDialogTarget;
 }
 
-const getIdealPriceTextSize = (length: number) => {
-  if (length < 10) return "6xl";
-  if (length < 11) return "5xl";
+// Copy lives in named constants per client conventions (no magic strings) and so
+// the naming sweep can verify no "Tier N" leaks into user-facing strings.
+const REGION_FOR_YOU_LABEL = "For you";
+const REGION_FOR_TEAM_LABEL = "For your team, or a bigger you";
+const PERSONAL_FEED_COUNT = 35;
 
-  return "4xl";
-};
+const PERSONAL_FEATURES: Array<{ label: string; included: boolean }> = [
+  { label: `Track ${PERSONAL_FEED_COUNT} feeds`, included: true },
+  { label: "Branded message delivery", included: true },
+  { label: "Custom placeholders", included: true },
+  { label: "2 minute refresh rate", included: true },
+  { label: "External properties", included: false },
+];
+
+const SectionLabel = ({
+  icon,
+  color,
+  children,
+}: {
+  icon: React.ReactNode;
+  color: string;
+  children: React.ReactNode;
+}) => (
+  <HStack color={color}>
+    <Icon>{icon}</Icon>
+    <Heading size="sm" textTransform="uppercase" letterSpacing="wide">
+      {children}
+    </Heading>
+  </HStack>
+);
 
 interface ChangeSubscriptionDetails {
   prices: Array<{ priceId: string; quantity: number }>;
@@ -62,34 +86,46 @@ interface ChangeSubscriptionDetails {
   isDowngrade?: boolean;
 }
 
-export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
-  const { resetCheckoutData, initCancellationFlow } = usePaddleContext();
+export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
+  const { resetCheckoutData, initCancellationFlow, getChargePreview } = usePaddleContext();
   const { data: userData } = useUserMe();
   const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
   const navigate = useNavigate();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
-  const focusTargetIdRef = useRef<string | null>(null);
+  const [isCreateWorkspaceOpen, setIsCreateWorkspaceOpen] = useState(false);
+  // The capacity the user picked on the slider when they hit "Create workspace",
+  // carried into the post-create redirect so the count on the CTA is honored.
+  const [chosenFeedCount, setChosenFeedCount] = useState<number | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const workspaceRegionRef = useRef<HTMLDivElement>(null);
+
+  // When opened from the feed-limit wall (target="workspace"), bring the
+  // workspace region into view and move focus there so a keyboard/screen-reader
+  // user lands on the high-capacity option, not the top of the dialog.
+  useEffect(() => {
+    if (!isOpen || target !== "workspace") {
+      return;
+    }
+
+    const region = workspaceRegionRef.current;
+
+    if (region) {
+      region.scrollIntoView({ block: "center" });
+      region.focus();
+    }
+  }, [isOpen, target]);
 
   const {
     products,
     interval,
     changeInterval,
     isLoading,
-    isLoadingAdditionalFeedsChange,
     hasError,
     userSubscription,
     billingPeriodEndsAt,
-    additionalFeedsInput,
-    changeAdditionalFeedsInput,
     additionalFeedPricePreview,
-    userSubscriptionAdditionalFeeds,
-    chargePreview,
-    baseAdditionalFeedsPrice,
-    priceIdOfAdditionalFeeds,
     getProductPrice,
-    getProduct,
   } = usePricingData({ isOpen });
 
   const onClosePricingModal = () => {
@@ -102,25 +138,17 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
   };
 
   const subscriptionId = userData?.result.subscription.subscriptionId;
+  const currentProductKey = userSubscription?.product.key;
+  const isOnFreePlan = currentProductKey === ProductKey.Free;
+  const isOnPersonalPlan = currentProductKey === ProductKey.Tier1;
 
   const onClickPrice = async (priceId?: string, productId?: ProductKey, isDowngrade?: boolean) => {
     if (!priceId || !productId || !userSubscription) {
       return;
     }
 
-    focusTargetIdRef.current = `pricing-action-${productId}`;
-
-    const tierSupportsAdditionalFeeds = TIER_CONFIGS.find(
-      (t) => t.productId === productId,
-    )?.supportsAdditionalFeeds;
-
-    const additionalFeedsItem =
-      tierSupportsAdditionalFeeds && additionalFeedsInput > 0 && priceIdOfAdditionalFeeds
-        ? { priceId: priceIdOfAdditionalFeeds, quantity: additionalFeedsInput }
-        : undefined;
-
     if (userSubscription.product.key === ProductKey.Free) {
-      navigate(pages.checkout(priceId, additionalFeedsItem));
+      navigate(pages.checkout(priceId));
       onClose();
 
       return;
@@ -156,7 +184,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     }
 
     setChangeSubscriptionDetails({
-      prices: [{ priceId, quantity: 1 }, ...(additionalFeedsItem ? [additionalFeedsItem] : [])],
+      prices: [{ priceId, quantity: 1 }],
       productId,
       isDowngrade,
     });
@@ -166,19 +194,16 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
     }
   };
 
-  const biggestPriceLength = products
-    ? Math.max(
-        ...products.flatMap((pr) =>
-          pr.prices.filter((p) => p.interval === interval).map((p) => p.formattedPrice.length),
-        ),
-        0,
-      )
-    : 4;
+  const personalPrice = getProductPrice(ProductKey.Tier1);
+  const personalBasePrice = personalPrice?.formattedPrice || "$0";
+  const personalDisplayPrice = personalBasePrice.endsWith(".00")
+    ? personalBasePrice.slice(0, -3)
+    : personalBasePrice;
 
-  const priceTextSize = getIdealPriceTextSize(biggestPriceLength);
-  const userTierIndex = TIER_CONFIGS.findIndex(
-    (t) => t.productId === userSubscription?.product.key,
-  );
+  const onChooseWorkspace = (feedCount: number) => {
+    setChosenFeedCount(feedCount);
+    setIsCreateWorkspaceOpen(true);
+  };
 
   const changeSubscriptionDetailsWithProduct = changeSubscriptionDetails?.prices
     .map((price) => {
@@ -195,8 +220,6 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
       const product = products?.find((prod) =>
         prod.prices.some((thisPrice) => thisPrice.id === price.priceId),
       );
-      // The additional-feeds price in `products` was fetched with the quantity at dialog open;
-      // the live preview reflects the currently selected quantity
       const productPrice =
         (product?.id === ProductKey.Tier3Feed
           ? additionalFeedPricePreview?.prices.find((p) => p.id === price.priceId)
@@ -207,7 +230,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
       return {
         ...price,
         productKey: product.id,
-        productName: product.name,
+        // Map to the display name (Personal/Team) at the boundary rather
+        // than trusting product.name, so the change-subscription dialog can never
+        // surface a raw Paddle "Tier N" even if the upstream name path regresses.
+        productName: getPlanDisplayName(product.id) ?? product.name,
         formattedPrice: productPrice.formattedPrice,
         interval: productPrice.interval,
       };
@@ -229,6 +255,18 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
           if (reopenPricing) onOpen();
         }}
       />
+      <CreateWorkspaceDialog
+        isOpen={isCreateWorkspaceOpen}
+        onClose={() => setIsCreateWorkspaceOpen(false)}
+        onCreated={(slug) => {
+          onClose();
+          // Carry the picked capacity into billing so the new workspace's plan
+          // selection starts at the count the user chose on the slider, instead
+          // of dropping it on the floor.
+          const billingPath = pages.workspaceBilling(slug);
+          navigate(chosenFeedCount ? `${billingPath}?feeds=${chosenFeedCount}` : billingPath);
+        }}
+      />
       <DialogRoot
         onOpenChange={(e) => {
           if (!e.open) onClosePricingModal();
@@ -237,415 +275,217 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
         size="xl"
         motionPreset="slide-in-bottom"
         scrollBehavior="inside"
-        initialFocusEl={() => {
-          const targetId = focusTargetIdRef.current;
-          focusTargetIdRef.current = null;
-
-          return (targetId ? document.getElementById(targetId) : null) ?? headingRef.current;
-        }}
+        initialFocusEl={() => headingRef.current}
       >
         <DialogContent
           bg="none"
           shadow="none"
           maxHeight="100vh"
-          width="fit-content"
-          maxWidth={{ base: "100vw", xl: "1100px" }}
+          width={{ base: "100%", xl: "fit-content" }}
+          maxWidth={{ base: "100vw", xl: "1200px" }}
         >
           <DialogCloseTrigger />
           <DialogBody bg="transparent" shadow="none" tabIndex={-1}>
-            <Box mt={12}>
-              <Stack>
-                <Flex alignItems="center" justifyContent="center">
-                  <Stack width="100%" alignItems="center" gap={12} justifyContent="center">
-                    <Stack justifyContent="center" textAlign="center">
-                      <Heading as="h1" tabIndex={-1} ref={headingRef}>
-                        Pricing
-                      </Heading>
-                      <Text color="fg" fontSize="lg" fontWeight="light">
-                        MonitoRSS is able to stay open-source and free thanks to its supporters.
-                        <br />
-                        Add in your support in exchange for some upgrades!
-                      </Text>
+            <Box mt={12} px={{ base: 2, md: 0 }}>
+              <Stack gap={12} alignItems="center">
+                <Stack justifyContent="center" textAlign="center" gap={2}>
+                  <Heading as="h1" tabIndex={-1} ref={headingRef}>
+                    Pricing
+                  </Heading>
+                  <Text color="fg" fontSize="lg" fontWeight="light">
+                    Track a few feeds on your own, or open a shared workspace that scales as far as
+                    you need.
+                  </Text>
+                </Stack>
+                {isLoading && <Spinner mb={8} />}
+                {hasError && (
+                  <Stack mb={4}>
+                    <InlineErrorAlert
+                      title="Something went wrong while loading prices."
+                      description="This issue has been automatically sent for diagnostics. Please try again later, refreshing the page, or contacting us at support@monitorss.xyz"
+                    />
+                  </Stack>
+                )}
+                {!hasError && products && userSubscription && (
+                  <>
+                    <Stack alignItems="center" gap={4}>
+                      <HStack alignItems="center" gap={4}>
+                        <Text fontSize="lg" fontWeight="semibold">
+                          Monthly
+                        </Text>
+                        <Switch
+                          size="lg"
+                          colorPalette="green"
+                          onCheckedChange={onChangeInterval}
+                          checked={interval === "year"}
+                          aria-label="Switch to yearly pricing"
+                        />
+                        <Text fontSize="lg" fontWeight="semibold">
+                          Yearly
+                        </Text>
+                      </HStack>
+                      <Badge fontSize="1rem" colorPalette="green" borderRadius="l3" px={4}>
+                        Save 15% with a yearly plan!
+                      </Badge>
                     </Stack>
-                    <Heading as="h2" size="md" hidden>
-                      Tiers
-                    </Heading>
-                    {isLoading && <Spinner mb={8} />}
-                    {hasError && (
-                      <Stack mb={4}>
-                        <InlineErrorAlert
-                          title="Something went wrong while loading prices."
-                          description="This issue has been automatically sent for diagnostics. Please try again later, refreshing the page, or contacting us at support@monitorss.xyz"
+                    {/* Slim convert offer above the regions, shown only to an
+                        eligible existing workspace-tier personal subscriber.
+                        Renders nothing (no surrounding gap) when ineligible. */}
+                    <ConvertToWorkspacePrompt variant="banner" />
+                    <Flex
+                      gap={6}
+                      direction={{ base: "column", lg: "row" }}
+                      align="stretch"
+                      width="100%"
+                      maxW="1100px"
+                    >
+                      {/* "For you": Free + Personal, stacked, narrower. */}
+                      <Stack
+                        as="section"
+                        aria-label={REGION_FOR_YOU_LABEL}
+                        flex="1"
+                        gap={3}
+                        minW={0}
+                      >
+                        <SectionLabel icon={<FaUser />} color="fg.muted">
+                          {REGION_FOR_YOU_LABEL}
+                        </SectionLabel>
+                        <Card.Root size="lg" flex="1">
+                          <Card.Header pb={0}>
+                            <Heading size="md">Free</Heading>
+                          </Card.Header>
+                          <Card.Body>
+                            <Stack gap={6}>
+                              <Text fontSize="4xl" fontWeight="bold" lineHeight="1">
+                                $0
+                              </Text>
+                              <Stack as="ul" listStyleType="none" gap={2}>
+                                <FeatureRow included>A handful of feeds</FeatureRow>
+                                <FeatureRow included={false}>
+                                  Branded delivery and placeholders
+                                </FeatureRow>
+                              </Stack>
+                              {isOnFreePlan && (
+                                <Button width="100%" variant="outline" aria-disabled>
+                                  Current plan
+                                </Button>
+                              )}
+                            </Stack>
+                          </Card.Body>
+                        </Card.Root>
+                        <Card.Root size="lg" flex="1">
+                          <Card.Header pb={0}>
+                            <Heading size="md">Personal</Heading>
+                          </Card.Header>
+                          <Card.Body>
+                            <Stack gap={6}>
+                              <Stack gap={1}>
+                                <Text fontSize="4xl" fontWeight="bold" lineHeight="1">
+                                  {isLoading ? (
+                                    <Spinner colorPalette="brand" color="text.link" size="lg" />
+                                  ) : (
+                                    personalDisplayPrice
+                                  )}
+                                </Text>
+                                <Text color="fg.muted">
+                                  {interval === "month" ? "per month" : "per year"}
+                                </Text>
+                              </Stack>
+                              <Stack as="ul" listStyleType="none" gap={2}>
+                                {PERSONAL_FEATURES.map((f) => (
+                                  <FeatureRow key={f.label} included={f.included}>
+                                    {f.label}
+                                  </FeatureRow>
+                                ))}
+                              </Stack>
+                              {isOnPersonalPlan ? (
+                                <Button width="100%" variant="outline" aria-disabled>
+                                  Current plan
+                                </Button>
+                              ) : (
+                                <PrimaryActionButton
+                                  width="100%"
+                                  onClick={() =>
+                                    onClickPrice(personalPrice?.id, ProductKey.Tier1, false)
+                                  }
+                                >
+                                  Choose Personal
+                                </PrimaryActionButton>
+                              )}
+                            </Stack>
+                          </Card.Body>
+                        </Card.Root>
+                      </Stack>
+                      {/* "For your team, or a bigger you": Workspace, dominant. */}
+                      <Stack
+                        as="section"
+                        ref={workspaceRegionRef}
+                        tabIndex={-1}
+                        outline="none"
+                        aria-label={REGION_FOR_TEAM_LABEL}
+                        flex="1.4"
+                        gap={3}
+                        minW={0}
+                      >
+                        <SectionLabel icon={<FaUsers />} color="text.link">
+                          {REGION_FOR_TEAM_LABEL}
+                        </SectionLabel>
+                        <WorkspacePanel
+                          interval={interval}
+                          baseWorkspacePrice={getProductPrice(ProductKey.Tier2)?.formattedPrice}
+                          getChargePreview={getChargePreview}
+                          workspacesEnabled={workspacesEnabled}
+                          onCreateWorkspace={onChooseWorkspace}
                         />
                       </Stack>
-                    )}
-                    {!hasError && products && userSubscription && (
-                      <>
-                        <Stack alignItems="center" gap={4}>
-                          <HStack alignItems="center" gap={4}>
-                            <Text fontSize="lg" fontWeight="semibold">
-                              Monthly
-                            </Text>
-                            <Switch
-                              size="lg"
-                              colorPalette="green"
-                              onCheckedChange={onChangeInterval}
-                              checked={interval === "year"}
-                              aria-label="Switch to yearly pricing"
-                            />
-                            <Text fontSize="lg" fontWeight="semibold">
-                              Yearly
-                            </Text>
-                          </HStack>
-                          <Badge fontSize="1rem" colorPalette="green" borderRadius="l3" px={4}>
-                            Save 15% with a yearly plan!
-                          </Badge>
-                        </Stack>
-                        <Flex overflow="auto" width="100%" margin="auto">
-                          <SimpleGrid
-                            margin="auto"
-                            gridTemplateColumns={[
-                              "325px",
-                              "450px",
-                              "325px 325px",
-                              "325px 325px",
-                              "325px 325px 325px",
-                              "325px 325px 325px",
-                            ]}
-                            gap={4}
-                            role="list"
-                          >
-                            {TIER_CONFIGS.map(
-                              (
-                                { productId, features, supportsAdditionalFeeds },
-                                currentTierIndex,
-                              ) => {
-                                const product = getProduct(productId);
-                                const price = getProductPrice(productId);
-                                const basePrice = price?.formattedPrice || "$0";
-
-                                const displayPrice = basePrice.endsWith(".00")
-                                  ? basePrice.slice(0, -3)
-                                  : basePrice;
-
-                                const isOnThisTier =
-                                  userSubscription.product.key === productId &&
-                                  (userSubscription.billingInterval === interval ||
-                                    !userSubscription.billingInterval);
-                                const isAboveUserTier =
-                                  userTierIndex < currentTierIndex ||
-                                  (userSubscription.product.key === productId &&
-                                    userSubscription.billingInterval !== interval &&
-                                    userSubscription.billingInterval === "month");
-                                const isBelowUserTier =
-                                  userTierIndex > currentTierIndex ||
-                                  (userSubscription.product.key === productId &&
-                                    userSubscription.billingInterval !== interval &&
-                                    userSubscription.billingInterval === "year");
-                                const isUpdate =
-                                  isOnThisTier &&
-                                  !!supportsAdditionalFeeds &&
-                                  (userSubscriptionAdditionalFeeds ?? 0) !== additionalFeedsInput;
-
-                                return (
-                                  <Card.Root
-                                    size="lg"
-                                    shadow="lg"
-                                    key={product?.name}
-                                    role="listitem"
-                                  >
-                                    <Card.Header pb={0}>
-                                      <Stack>
-                                        <HStack justifyContent="flex-start">
-                                          <Heading size="md" fontWeight="semibold">
-                                            {product?.name || ""}
-                                          </Heading>
-                                        </HStack>
-                                      </Stack>
-                                    </Card.Header>
-                                    <Card.Body pt={1}>
-                                      <Stack gap="12">
-                                        <Stack gap={1}>
-                                          <Text
-                                            fontSize={priceTextSize}
-                                            fontWeight="bold"
-                                            lineHeight="1"
-                                          >
-                                            {isLoading ? (
-                                              <Spinner
-                                                colorPalette="brand"
-                                                color="text.link"
-                                                size="lg"
-                                              />
-                                            ) : (
-                                              displayPrice || "N/A"
-                                            )}
-                                          </Text>
-                                          <Text fontSize="lg" color="fg.muted">
-                                            {interval === "month" ? "per month" : "per year"}
-                                          </Text>
-                                        </Stack>
-                                        <Stack as="ul" listStyleType="none">
-                                          {features.map((f) => (
-                                            <HStack key={f.name} as="li">
-                                              {f.enabled ? (
-                                                <Flex
-                                                  bg="brandSolid"
-                                                  rounded="full"
-                                                  p={1}
-                                                  aria-disabled
-                                                >
-                                                  <Icon fontSize="md" width={3} height={3}>
-                                                    <FaCheck />
-                                                  </Icon>
-                                                </Flex>
-                                              ) : (
-                                                <Flex bg="bg.subtle" rounded="full" p={1.5}>
-                                                  <Icon width={2} height={2} fontSize="sm">
-                                                    <FaXmark />
-                                                  </Icon>
-                                                </Flex>
-                                              )}
-                                              <Text fontSize="lg">{f.description}</Text>
-                                            </HStack>
-                                          ))}
-                                        </Stack>
-                                        {supportsAdditionalFeeds && (
-                                          <Box>
-                                            <Separator my={4} />
-                                            <Stack gap={3}>
-                                              <Text fontSize="md" fontWeight="semibold">
-                                                Additional Feeds
-                                              </Text>
-                                              {!baseAdditionalFeedsPrice ? (
-                                                <Skeleton height="18px" width="30px" />
-                                              ) : (
-                                                <Text fontSize="sm" color="fg.muted">
-                                                  Add more feeds for {baseAdditionalFeedsPrice} each
-                                                  per month.
-                                                </Text>
-                                              )}
-                                              <HStack gap={2} alignItems="center">
-                                                <IconButton
-                                                  aria-label="Decrease additional feeds"
-                                                  size="sm"
-                                                  variant="outline"
-                                                  onClick={() => {
-                                                    if (additionalFeedsInput > 0) {
-                                                      changeAdditionalFeedsInput(
-                                                        additionalFeedsInput - 1,
-                                                      );
-                                                    }
-                                                  }}
-                                                  disabled={additionalFeedsInput === 0}
-                                                >
-                                                  <FaMinus />
-                                                </IconButton>
-                                                <NumberInputRoot
-                                                  value={String(additionalFeedsInput)}
-                                                  onValueChange={(details) => {
-                                                    changeAdditionalFeedsInput(
-                                                      parseInt(details.value, 10),
-                                                    );
-                                                  }}
-                                                  min={0}
-                                                  max={1000}
-                                                  width="80px"
-                                                  size="sm"
-                                                >
-                                                  <NumberInputField textAlign="center" />
-                                                </NumberInputRoot>
-                                                <IconButton
-                                                  aria-label="Increase additional feeds"
-                                                  size="sm"
-                                                  variant="outline"
-                                                  onClick={() => {
-                                                    changeAdditionalFeedsInput(
-                                                      additionalFeedsInput + 1,
-                                                    );
-                                                  }}
-                                                >
-                                                  <FaPlus />
-                                                </IconButton>
-                                              </HStack>
-                                              <Text
-                                                fontSize="sm"
-                                                color="text.link"
-                                                aria-live="polite"
-                                                aria-busy={
-                                                  isLoadingAdditionalFeedsChange ||
-                                                  !additionalFeedPricePreview
-                                                }
-                                                hidden={additionalFeedsInput === 0}
-                                              >
-                                                {isLoadingAdditionalFeedsChange ||
-                                                !additionalFeedPricePreview ? (
-                                                  <Skeleton height="22px" width="180px" />
-                                                ) : (
-                                                  <Text as="span">
-                                                    {additionalFeedPricePreview.prices[0].quantity}{" "}
-                                                    additional feeds: +
-                                                    {
-                                                      additionalFeedPricePreview.prices.find(
-                                                        (p) => p.interval === interval,
-                                                      )?.formattedPrice
-                                                    }
-                                                    {interval === "month"
-                                                      ? " per month"
-                                                      : " per year"}
-                                                  </Text>
-                                                )}
-                                              </Text>
-                                            </Stack>
-                                          </Box>
-                                        )}
-                                        {supportsAdditionalFeeds && additionalFeedsInput > 0 && (
-                                          <Box
-                                            aria-live="polite"
-                                            aria-busy={isLoadingAdditionalFeedsChange}
-                                          >
-                                            <Separator my={4} />
-                                            <Stack gap={2}>
-                                              <Text fontSize="md" fontWeight="semibold">
-                                                Total
-                                              </Text>
-                                              {isLoadingAdditionalFeedsChange ? (
-                                                <Skeleton height="28px" width="120px" />
-                                              ) : (
-                                                <Text
-                                                  fontSize="lg"
-                                                  fontWeight="bold"
-                                                  color="text.link"
-                                                >
-                                                  {chargePreview}
-                                                  {interval === "month"
-                                                    ? " per month"
-                                                    : " per year"}
-                                                </Text>
-                                              )}
-                                            </Stack>
-                                          </Box>
-                                        )}
-                                      </Stack>
-                                    </Card.Body>
-                                    <Card.Footer justifyContent="center">
-                                      <Stack width="100%" gap={0}>
-                                        {isOnThisTier && !isUpdate && (
-                                          <Button
-                                            aria-disabled
-                                            width="100%"
-                                            variant="outline"
-                                            onClick={() =>
-                                              notifyInfo("You are already on this plan")
-                                            }
-                                          >
-                                            Current Plan
-                                          </Button>
-                                        )}
-                                        {isOnThisTier && isUpdate && (
-                                          <PrimaryActionButton
-                                            id={`pricing-action-${productId}`}
-                                            width="100%"
-                                            onClick={() =>
-                                              onClickPrice(price?.id, productId, isBelowUserTier)
-                                            }
-                                          >
-                                            Update Plan
-                                          </PrimaryActionButton>
-                                        )}
-                                        {isAboveUserTier && (
-                                          <PrimaryActionButton
-                                            id={`pricing-action-${productId}`}
-                                            width="100%"
-                                            onClick={() =>
-                                              onClickPrice(price?.id, productId, isBelowUserTier)
-                                            }
-                                          >
-                                            Upgrade to {product?.name}
-                                          </PrimaryActionButton>
-                                        )}
-                                        {isBelowUserTier && (
-                                          <DestructiveActionButton
-                                            id={`pricing-action-${productId}`}
-                                            width="100%"
-                                            onClick={() =>
-                                              onClickPrice(price?.id, productId, isBelowUserTier)
-                                            }
-                                          >
-                                            Downgrade to {product?.name}
-                                          </DestructiveActionButton>
-                                        )}
-                                      </Stack>
-                                    </Card.Footer>
-                                  </Card.Root>
-                                );
-                              },
-                            )}
-                          </SimpleGrid>
-                        </Flex>
-                      </>
-                    )}
-                  </Stack>
-                </Flex>
-                {!hasError && (
-                  <>
-                    <Box textAlign="center" pb={3} fontSize="lg">
-                      <Text fontSize="sm">
-                        If you are having issues after clicking &quot;Upgrade&quot;, try using
-                        incognito mode or a different browser. If you are still having issues,
-                        please contact us at{" "}
-                        <Link color="text.link" href="mailto:support@monitorss.xyz">
-                          support@monitorss.xyz
-                        </Link>
-                        .
-                      </Text>
-                    </Box>
-                    <Box textAlign="center" pb={3} fontSize="lg">
-                      <Text>
-                        Need a higher tier?{" "}
-                        <Link
-                          color="text.link"
-                          href="mailto:support@monitorss.xyz?subject=Custom%20Plan%20Inquiry"
-                        >
-                          Let&apos;s chat!
-                        </Link>
-                      </Text>
-                    </Box>
-                    <Text textAlign="center" color="fg.muted">
-                      * External properties are currently limited to feeds with fewer than{" "}
-                      {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles <br /> <br />
-                      By proceeding to payment, you are agreeing to our{" "}
-                      <Link target="_blank" href="https://monitorss.xyz/terms" color="text.link">
-                        terms and conditions
-                      </Link>{" "}
-                      as well as our{" "}
-                      <Link
-                        target="_blank"
-                        color="text.link"
-                        href="https://monitorss.xyz/privacy-policy"
-                      >
-                        privacy policy
-                      </Link>
-                      .<br />
-                      The checkout process is handled by our reseller and Merchant of Record,
-                      Paddle.com, who also handles subscription-related inquiries. Prices will be
-                      localized your location.
-                    </Text>
+                    </Flex>
                   </>
                 )}
                 {userSubscription?.product.key !== ProductKey.Free && (
-                  <Stack margin="auto" justifyContent="center" mt={8} textAlign="center" gap={4}>
-                    <Flex justifyContent="center">
-                      <DestructiveActionButton
-                        id={`pricing-action-${ProductKey.Free}`}
-                        onClick={() => onClickPrice("free-monthly", ProductKey.Free, true)}
-                      >
-                        <span>Cancel Subscription</span>
-                      </DestructiveActionButton>
-                    </Flex>
-                  </Stack>
+                  <Flex justifyContent="center">
+                    <DestructiveActionButton
+                      onClick={() => onClickPrice("free-monthly", ProductKey.Free, true)}
+                    >
+                      <span>Cancel Subscription</span>
+                    </DestructiveActionButton>
+                  </Flex>
                 )}
               </Stack>
+              {!hasError && (
+                <Box mt={12}>
+                  <Box textAlign="center" pb={3} fontSize="lg">
+                    <Text fontSize="sm">
+                      If you are having issues after clicking &quot;Choose&quot;, try using
+                      incognito mode or a different browser. If you are still having issues, please
+                      contact us at{" "}
+                      <Link color="text.link" href="mailto:support@monitorss.xyz">
+                        support@monitorss.xyz
+                      </Link>
+                      .
+                    </Text>
+                  </Box>
+                  <Text textAlign="center" color="fg.muted">
+                    * External properties are currently limited to feeds with fewer than{" "}
+                    {EXTERNAL_PROPERTIES_MAX_ARTICLES} articles <br /> <br />
+                    By proceeding to payment, you are agreeing to our{" "}
+                    <Link target="_blank" href="https://monitorss.xyz/terms" color="text.link">
+                      terms and conditions
+                    </Link>{" "}
+                    as well as our{" "}
+                    <Link
+                      target="_blank"
+                      color="text.link"
+                      href="https://monitorss.xyz/privacy-policy"
+                    >
+                      privacy policy
+                    </Link>
+                    .<br />
+                    The checkout process is handled by our reseller and Merchant of Record,
+                    Paddle.com, who also handles subscription-related inquiries. Prices will be
+                    localized your location.
+                  </Text>
+                </Box>
+              )}
               <Stack justifyContent="center" width="100%" alignItems="center">
                 <Stack mt={16} gap={8} maxW={1400} width="100%">
                   <Heading size="md" as="h2" alignSelf="center">
@@ -653,6 +493,16 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                   </Heading>
                   <FAQ
                     items={[
+                      {
+                        q: "Is a workspace overkill if it's just me?",
+                        a: (
+                          <Text>
+                            No. A workspace with one member is exactly the high-capacity personal
+                            plan, plus the option to invite people later. You get the same feeds at
+                            the same price, and you can add members whenever you want.
+                          </Text>
+                        ),
+                      },
                       {
                         q: "Can I switch between plans?",
                         a: (
@@ -722,35 +572,6 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
                         ),
                       },
                       {
-                        q: "Can I apply my benefits to someone else?",
-                        a: (
-                          <Text>
-                            While you can&apos;t transfer or apply your benefits to someone
-                            else&apos;s feeds, you can share your feeds for them to co-manage it
-                            with you. They will have full access to manage the feeds that you share
-                            with them. Note that each shared feed counts toward the feed limit of
-                            the person who accepts it.
-                            {workspacesEnabled &&
-                              " If you want a fully shared space instead, you can create a workspace with its own plan. Feeds in a workspace count against the workspace's limit, not any member's personal limit."}
-                          </Text>
-                        ),
-                      },
-                      ...(workspacesEnabled
-                        ? [
-                            {
-                              q: "Can my team share one subscription?",
-                              a: (
-                                <Text>
-                                  Not a personal one. Personal plans only cover feeds that you own.
-                                  To manage feeds together, create a workspace: the workspace
-                                  subscribes to a plan of its own, and every member manages the
-                                  workspace&apos;s feeds.
-                                </Text>
-                              ),
-                            },
-                          ]
-                        : []),
-                      {
                         q: "Do my benefits applied to feeds that I co-manage but do not own?",
                         a: (
                           <Text>
@@ -792,7 +613,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen }: Props) => {
             </Box>
           </DialogBody>
           <DialogFooter justifyContent="center" mt={6}>
-            <Button onClick={onClose} width="lg" variant="outline">
+            <Button onClick={onClose} width={{ base: "full", md: "lg" }} variant="outline">
               Close
             </Button>
           </DialogFooter>

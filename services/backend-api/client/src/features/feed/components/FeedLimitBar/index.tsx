@@ -37,7 +37,7 @@ export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarPr
   }
 
   const increaseLimitsButton = isWorkspaceScope ? null : (
-    <Button variant="outline" size="sm" onClick={onOpen}>
+    <Button variant="outline" size="sm" onClick={() => onOpen()}>
       Increase Limits
     </Button>
   );
@@ -52,7 +52,7 @@ export const FeedLimitBar = ({ showOnlyWhenConstrained = false }: FeedLimitBarPr
           </Text>
         </HStack>
         {!isWorkspaceScope && (
-          <Button size="sm" onClick={onOpen}>
+          <Button size="sm" onClick={() => onOpen("workspace")}>
             Increase Limits
           </Button>
         )}

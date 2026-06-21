@@ -8,10 +8,12 @@ import { VerifiedEmailSettingsRow } from "./index";
 const h = vi.hoisted(() => ({
   enabled: true,
   verifiedEmail: "verified@example.com" as string | undefined,
+  workspaces: [] as Array<{ role: string }>,
 }));
 
 vi.mock("../../hooks", () => ({
   useIsWorkspacesEnabled: () => ({ enabled: h.enabled }),
+  useWorkspaces: () => ({ workspaces: h.workspaces }),
 }));
 
 vi.mock("@/features/discordUser", () => ({
@@ -35,6 +37,21 @@ describe("VerifiedEmailSettingsRow", () => {
   beforeEach(() => {
     h.enabled = true;
     h.verifiedEmail = "verified@example.com";
+    h.workspaces = [];
+  });
+
+  it("mentions billing in the helper text when the user owns a workspace", () => {
+    h.workspaces = [{ role: "owner" }];
+    renderRow();
+
+    expect(screen.getByText(/billing/i)).toBeInTheDocument();
+  });
+
+  it("does not mention billing in the helper text when the user owns no workspace", () => {
+    h.workspaces = [{ role: "admin" }];
+    renderRow();
+
+    expect(screen.queryByText(/billing/i)).not.toBeInTheDocument();
   });
 
   it("renders the verified email and a change action for workspace-enabled users", () => {

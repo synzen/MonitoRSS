@@ -137,3 +137,33 @@ export async function ensureFreeSubscriptionState(page: Page): Promise<void> {
     }
   });
 }
+
+// Tears down a workspace that holds a live sandbox subscription. Deletion is now
+// gated on the subscription being cancelled first (a workspace with a blocking
+// subscription returns 409), so cancel billing before deleting. The cancel
+// schedules at the next billing period and sets a cancellationDate, which clears
+// the delete guard; the cancel handler polls until that lands before returning.
+export async function cancelAndDeleteWorkspace(
+  page: Page,
+  workspaceSlug: string,
+): Promise<void> {
+  const cancelRes = await page.request.post(
+    `/api/v1/workspaces/${workspaceSlug}/billing/cancel`,
+  );
+
+  // 204 = cancelled; 409/404 = nothing to cancel (never subscribed). Either way
+  // the subscription is no longer blocking, so proceed to delete.
+  if (![204, 404, 409].includes(cancelRes.status())) {
+    throw new Error(
+      `Unexpected status cancelling workspace billing: ${cancelRes.status()}`,
+    );
+  }
+
+  const deleteRes = await page.request.delete(`/api/v1/workspaces/${workspaceSlug}`);
+
+  if (deleteRes.status() !== 204) {
+    throw new Error(
+      `Failed to delete workspace ${workspaceSlug}: ${deleteRes.status()}`,
+    );
+  }
+}

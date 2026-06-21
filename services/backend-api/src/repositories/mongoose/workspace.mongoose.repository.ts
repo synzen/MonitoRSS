@@ -701,6 +701,82 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     });
   }
 
+  // The verified email of any one owner, the billing identity a workspace's
+  // Paddle customer is keyed on. Returns null when no owner has a verified email
+  // (a workspace cannot be created without a verified owner email, so this is a
+  // guard against a since-cleared address, not a normal state).
+  async getOwnerVerifiedEmail(workspaceId: string): Promise<string | null> {
+    if (!Types.ObjectId.isValid(workspaceId)) {
+      return null;
+    }
+
+    const results = await this.membershipModel.aggregate<{
+      user: { verifiedEmail?: string };
+    }>([
+      {
+        $match: {
+          workspaceId: this.stringToObjectId(workspaceId),
+          role: "owner",
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      { $match: { "user.verifiedEmail": { $type: "string" } } },
+      { $limit: 1 },
+      { $project: { user: { verifiedEmail: 1 } } },
+    ]);
+
+    return results[0]?.user.verifiedEmail ?? null;
+  }
+
+  // Paddle customer ids of the workspaces this user owns that carry an active
+  // subscription. The billing identity of those workspaces is the owner's
+  // verified email, so a verified-email change must propagate to each.
+  async listOwnedActivePaddleCustomerIds(userId: string): Promise<string[]> {
+    const results = await this.membershipModel.aggregate<{
+      workspace: { paddleCustomer?: { customerId?: string } };
+    }>([
+      {
+        $match: {
+          userId: this.stringToObjectId(userId),
+          role: "owner",
+        },
+      },
+      {
+        $lookup: {
+          from: this.workspaceModel.collection.name,
+          localField: "workspaceId",
+          foreignField: "_id",
+          as: "workspace",
+        },
+      },
+      { $unwind: "$workspace" },
+      {
+        $match: {
+          "workspace.paddleCustomer.customerId": { $type: "string" },
+          "workspace.paddleCustomer.subscription.status":
+            SubscriptionStatus.Active,
+        },
+      },
+      {
+        $project: {
+          workspace: { paddleCustomer: { customerId: 1 } },
+        },
+      },
+    ]);
+
+    return results
+      .map((r) => r.workspace.paddleCustomer?.customerId)
+      .filter((id): id is string => typeof id === "string");
+  }
+
   // The members of a workspace with their roles, joined with the minimal user
   // identifier (discordUserId) the member-management view needs. The verified
   // email is deliberately not exposed here. Served by the { workspaceId, role }

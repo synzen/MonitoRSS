@@ -46,6 +46,7 @@ import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage";
 import ApiAdapterError from "../utils/ApiAdapterError";
 import { pages } from "../constants";
 import { BoxConstrained, ConfirmModal, Panel } from "../components";
+import { DismissableAlert } from "../components/DismissableAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { UserFeedStatusFilterContext, useMultiSelectUserFeedContext } from "@/features/feed";
 
@@ -58,7 +59,11 @@ import { CopyUserFeedSettingsDialog } from "../features/feed/components/CopyUser
 import { SetupChecklist } from "../features/feed/components/SetupChecklist";
 import { useUnconfiguredFeeds } from "../features/feed/hooks/useUnconfiguredFeeds";
 import { ReducedLimitAlert } from "@/features/subscriptionProducts";
-import { useCurrentWorkspace, WorkspaceActivationEmptyState } from "@/features/workspaces";
+import {
+  useCurrentWorkspace,
+  useJustConvertedWorkspace,
+  WorkspaceActivationEmptyState,
+} from "@/features/workspaces";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 
 export const UserFeeds = () => {
@@ -234,6 +239,11 @@ const UserFeedsInner: React.FC = () => {
   // positive count gave way to 0 and no add-session is in progress. It is NOT cleared
   // when a transient/lagging refetch re-delivers total === 0 mid add-session, which would
   // otherwise wipe the "N feeds added" badges for feeds whose own refetch hasn't landed.
+  //
+  // A dormant workspace is excluded: its empty feed list shows the activation pitch, not
+  // discovery, so there is no add-first-feeds session to keep open. Starting one here would
+  // outlive the dormant->active transition and suppress the table once a personal-plan
+  // conversion re-homes feeds into the workspace (the feeds would not appear until reload).
   useEffect(() => {
     if (userFeedsResultsAreStale || userFeedsResults?.total === undefined) {
       return;
@@ -243,14 +253,46 @@ const UserFeedsInner: React.FC = () => {
     const wentPositiveToEmpty = total === 0 && (prevTotalRef.current ?? 0) > 0;
     prevTotalRef.current = total;
 
-    if (total === 0) {
+    if (total === 0 && !workspaceDormant) {
       setAddingSessionScope(scopeKey);
     }
 
     if (wentPositiveToEmpty && !isAddingSession) {
       resetSessionState();
     }
-  }, [userFeedsResults, userFeedsResultsAreStale, isAddingSession, resetSessionState, scopeKey]);
+  }, [
+    userFeedsResults,
+    userFeedsResultsAreStale,
+    isAddingSession,
+    resetSessionState,
+    scopeKey,
+    workspaceDormant,
+  ]);
+
+  // When a workspace activates (its subscription first appears, e.g. a personal-plan
+  // conversion), end any add-first-feeds session for this scope. The feeds that arrive
+  // came from the conversion, not from the user adding them in discovery, so discovery
+  // must give way to the table. This also defends against the brief settling window
+  // where dormancy has cleared but the empty feed count has not yet refetched: a session
+  // started in that window would otherwise latch discovery open over the re-homed feeds.
+  const wasWorkspaceSubscribedRef = useRef(!!currentWorkspace?.subscription);
+  useEffect(() => {
+    const isSubscribed = !!currentWorkspace?.subscription;
+
+    if (isSubscribed && !wasWorkspaceSubscribedRef.current) {
+      setAddingSessionScope((current) => (current === scopeKey ? null : current));
+    }
+
+    wasWorkspaceSubscribedRef.current = isSubscribed;
+  }, [currentWorkspace?.subscription, scopeKey]);
+
+  // One-time confirmation that a personal-plan conversion just landed: without it
+  // the activation pitch silently gives way to the feed table, leaving the owner
+  // unsure the move worked or which scope they are now viewing. Set when the owner
+  // confirms the move; read here once the workspace has activated and the table
+  // (this active return) renders.
+  const { justConverted: showConvertedBanner, clearConverted: dismissConvertedBanner } =
+    useJustConvertedWorkspace();
 
   const isAtLimit = !!(
     userFeedsResults &&
@@ -567,6 +609,14 @@ const UserFeedsInner: React.FC = () => {
     <>
       <Stack gap={4}>
         {workspaceHeader}
+        {showConvertedBanner && (
+          <DismissableAlert
+            status="success"
+            title="Your plan moved to this workspace."
+            description="Your feeds are now here and shared with the workspace's members."
+            onClosed={dismissConvertedBanner}
+          />
+        )}
         <Stack gap={2}>
           <PageAlertContextOutlet
             containerProps={{

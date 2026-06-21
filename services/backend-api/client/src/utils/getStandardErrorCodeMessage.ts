@@ -79,6 +79,7 @@ export enum ApiErrorCode {
   SUBSCRIPTION_ALREADY_CANCELLED = "SUBSCRIPTION_ALREADY_CANCELLED",
   WORKSPACE_BILLING_NOT_CONFIGURED = "WORKSPACE_BILLING_NOT_CONFIGURED",
   WORKSPACE_INVALID_TIER = "WORKSPACE_INVALID_TIER",
+  WORKSPACE_HAS_ACTIVE_SUBSCRIPTION = "WORKSPACE_HAS_ACTIVE_SUBSCRIPTION",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -187,6 +188,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
     "Billing is not available on this instance, so workspace subscriptions cannot be managed here.",
   WORKSPACE_INVALID_TIER:
     "This plan is not available for workspaces. Choose one of the workspace plans and try again.",
+  WORKSPACE_HAS_ACTIVE_SUBSCRIPTION:
+    "Cancel this workspace's subscription on the billing page before deleting it.",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

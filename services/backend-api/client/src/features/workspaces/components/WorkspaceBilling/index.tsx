@@ -12,9 +12,7 @@ import {
   Flex,
   Heading,
   HStack,
-  Icon,
   Link,
-  SimpleGrid,
   Spinner,
   Stack,
   StackSeparator,
@@ -23,16 +21,14 @@ import {
 } from "@chakra-ui/react";
 import dayjs from "dayjs";
 import { captureException } from "@sentry/react";
-import { FaCheck, FaChevronRight } from "react-icons/fa6";
-import { Link as RouterLink } from "react-router-dom";
+import { FaChevronRight } from "react-icons/fa6";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { DestructiveActionButton } from "@/components/DestructiveActionButton";
-import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { SettingsSection } from "@/components/SettingsSection";
-import { Field } from "@/components/ui/field";
 import {
   DialogRoot,
   DialogContent,
@@ -43,8 +39,20 @@ import {
   DialogFooter,
   DialogCloseTrigger,
 } from "@/components/ui/dialog";
-import { pages, PRICE_IDS, PRODUCT_NAMES, ProductKey, TIER_CONFIGS } from "@/constants";
+import { pages, PRICE_IDS, getPlanDisplayName, ProductKey } from "@/constants";
 import { usePaddleContext } from "@/features/subscriptionProducts";
+import {
+  useWorkspaceSliderPrice,
+  feedCountToAddonQuantity,
+  WORKSPACE_BASE_FEEDS,
+} from "@/shared/workspaceCapacity";
+import {
+  CapacitySlider,
+  CapacitySummary,
+  CapacityCompareColumn,
+  detentIndexForFeeds,
+  feedsForDetentIndex,
+} from "./CapacitySlider";
 import type { PricePreview } from "@/types/PricePreview";
 import { useCurrentWorkspace } from "../../contexts/CurrentWorkspaceContext";
 import type { Workspace } from "../../types";
@@ -55,212 +63,21 @@ import {
   useUpdateWorkspaceBilling,
   useWorkspaceBillingChangePreview,
   useWorkspaceUpdatePaymentMethodTransaction,
+  useWorkspaceActivationPolling,
 } from "../../hooks";
-import { useExpandableTierTotal } from "./useExpandableTierTotal";
 import { ConvertPersonalPlanDialog } from "./ConvertPersonalPlanDialog";
+import { TIER_FEED_LIMITS, capacityPlanLabel, type WorkspaceTier } from "./plans";
 
 type BillingInterval = "month" | "year";
 
-const WORKSPACE_TIERS = [ProductKey.Tier2, ProductKey.Tier3] as const;
-type WorkspaceTier = (typeof WORKSPACE_TIERS)[number];
+// Plan metadata (tiers, feed limits, labels, features) lives in ./plans so this
+// file stays within the max-lines budget. Re-export the feed limits so the
+// client/backend drift guard test can keep importing them from the component.
+export { TIER_FEED_LIMITS };
 
-// Whether a tier can be extended with the per-feed add-on, read from the shared
-// tier config rather than hardcoding Tier 3 so the rule stays in one place.
-const tierSupportsAddons = (tier: WorkspaceTier) =>
-  TIER_CONFIGS.find((c) => c.productId === tier)?.supportsAdditionalFeeds ?? false;
-
-// Must match the backend's WORKSPACE_TIER_FEED_LIMITS (shared/utils/billing.ts),
-// which the activation webhook and change-preview both read. The client can't
-// import across the package boundary, so a guard test (WorkspaceBilling.test)
-// locks these values to keep the displayed limit and the granted limit in step.
-export const TIER_FEED_LIMITS: Record<WorkspaceTier, number> = {
-  [ProductKey.Tier2]: 70,
-  [ProductKey.Tier3]: 140,
-};
-
-// Mirrors the benefits the activation webhook grants per tier
-// (BENEFITS_BY_TIER in the backend paddle-webhooks service). Custom
-// placeholders and external properties are personal-plan perks, not workspace
-// ones, so they are deliberately absent.
-const TIER_FEATURES: Record<WorkspaceTier, string[]> = {
-  [ProductKey.Tier2]: [
-    `Track ${TIER_FEED_LIMITS[ProductKey.Tier2]} news feeds`,
-    "1000 articles daily per feed",
-    "Branded message delivery",
-    "2 minute refresh rate",
-  ],
-  [ProductKey.Tier3]: [
-    `Track ${TIER_FEED_LIMITS[ProductKey.Tier3]} news feeds`,
-    "Expandable with additional feeds",
-    "1000 articles daily per feed",
-    "Branded message delivery",
-    "2 minute refresh rate",
-  ],
-};
-
-// A single tier card, shared by the activation grid and the change-plan
-// section so a subscribed owner deciding whether to switch sees the same
-// price/limit/feature scent they had when first choosing a plan. The footer
-// slot carries the context-specific action (subscribe, switch, or the
-// non-interactive "current plan" state). The addonSlot, rendered just above the
-// footer, lets an expandable tier surface its extra-feed control at the
-// decision point; addonFeeds folds those extras into both the displayed feed
-// total and the headline price, so the card reflects what the owner is actually
-// buying. The price recomputes from Paddle's authoritative preview as the count
-// changes.
-const TierCard = ({
-  tier,
-  price,
-  interval,
-  recommended,
-  current,
-  addonFeeds = 0,
-  addonSlot,
-  footer,
-  getChargePreview,
-}: {
-  tier: WorkspaceTier;
-  price: string | undefined;
-  interval: BillingInterval;
-  recommended?: boolean;
-  current?: boolean;
-  addonFeeds?: number;
-  addonSlot?: React.ReactNode;
-  footer: React.ReactNode;
-  getChargePreview: (
-    items: Array<{ priceId: string; quantity: number }>,
-  ) => Promise<{ totalFormatted: string }>;
-}) => {
-  const { price: effectivePrice, isUpdating } = useExpandableTierTotal({
-    tier,
-    addonFeeds,
-    interval,
-    basePrice: price,
-    getChargePreview,
-  });
-
-  return (
-    <Stack
-      role="listitem"
-      borderWidth="1px"
-      borderColor={recommended || current ? "brandSolid" : "border.emphasized"}
-      borderRadius="md"
-      padding={4}
-      gap={3}
-    >
-      <HStack justifyContent="space-between">
-        <Heading as="h3" size="sm">
-          {PRODUCT_NAMES[tier]}
-        </Heading>
-        {current && <Badge colorPalette="brand">Current plan</Badge>}
-        {!current && recommended && <Badge colorPalette="brand">Recommended</Badge>}
-      </HStack>
-      {/*
-        Price and feed count change together as the owner steps the add-on
-        count, but the stepper announces neither on its own. Make the pair a
-        polite live region so the settled summary ("$35.00 / month, 170 feeds")
-        is read once. aria-busy holds the announcement until the debounced price
-        resolves, so the instant feed-count change does not announce ahead of
-        the price or spam intermediate amounts. The spinner is decorative.
-
-        The region is only live once the owner is actually configuring add-ons
-        (addonFeeds > 0). At rest it is aria-live="off" so that revealing the
-        card (e.g. when the checkout dialog closes and its inert lifts off the
-        page) does not make the screen reader re-read every card's price.
-      */}
-      <Box aria-live={addonFeeds > 0 ? "polite" : "off"} aria-busy={isUpdating}>
-        <HStack gap={2}>
-          <Text
-            fontSize="2xl"
-            fontWeight="bold"
-            // Dim only while updating so a stale figure does not read as final.
-            // Kept above 0.6 so the bold text stays within contrast even mid-update.
-            opacity={isUpdating ? 0.65 : 1}
-          >
-            {effectivePrice ?? <Spinner size="sm" />}
-            <Text as="span" fontSize="sm" fontWeight="normal" color="fg.muted">
-              {" "}
-              / {interval}
-            </Text>
-          </Text>
-          {isUpdating && <Spinner size="sm" aria-hidden />}
-        </HStack>
-        <Text fontSize="sm" color="fg.muted">
-          {addonFeeds > 0
-            ? `${TIER_FEED_LIMITS[tier] + addonFeeds} feeds (${TIER_FEED_LIMITS[tier]} + ${addonFeeds})`
-            : `${TIER_FEED_LIMITS[tier]} feeds`}
-        </Text>
-      </Box>
-      <Stack as="ul" listStyleType="none" gap={2} flexGrow={1}>
-        {TIER_FEATURES[tier].map((feature) => (
-          <HStack key={feature} as="li" alignItems="flex-start">
-            <Flex bg="brandSolid" rounded="full" p={1} mt={1} aria-hidden>
-              <Icon width={3} height={3} color="brand.contrast">
-                <FaCheck />
-              </Icon>
-            </Flex>
-            <Text fontSize="sm">{feature}</Text>
-          </HStack>
-        ))}
-      </Stack>
-      {addonSlot}
-      {footer}
-    </Stack>
-  );
-};
-
-// The extra-feed control for an expandable tier, rendered inside its TierCard so
-// "Tier 3 + N feeds" is one decision and one transaction instead of a follow-up
-// trip. Uses the native spinbutton primitive for keyboard/arrow support and
-// min-clamping; announces the per-feed price as helper text.
-const AdditionalFeedsControl = ({
-  value,
-  onChange,
-  perFeedPrice,
-  interval,
-}: {
-  value: number;
-  onChange: (value: number) => void;
-  perFeedPrice: string | undefined;
-  interval: BillingInterval;
-}) => (
-  <Box borderTopWidth="1px" borderColor="border.emphasized" pt={3}>
-    <Field label="Additional feeds">
-      <NumberInputRoot
-        min={0}
-        value={String(value)}
-        onValueChange={(e) => onChange(Math.max(0, Math.floor(e.valueAsNumber) || 0))}
-        width="full"
-      >
-        <NumberInputField />
-      </NumberInputRoot>
-    </Field>
-    {perFeedPrice && (
-      <Text fontSize="xs" color="fg.muted" mt={1}>
-        {perFeedPrice} per feed / {interval}
-      </Text>
-    )}
-  </Box>
-);
-
-interface PendingChange {
-  prices: Array<{ priceId: string; quantity: number }>;
-  description: string;
-  // The recurring charge the owner is authorizing, surfaced alongside the
-  // prorated amount due today so the screen never implies the change is free.
-  recurringPriceFormatted?: string;
-  // Before -> after framing for a tier switch. Absent for an add-on-quantity
-  // change, which keeps its plain description instead.
-  tierChange?: { fromLabel: string; toLabel: string };
-}
-
-// Confirmation dialog for plan/quantity changes on an existing workspace
-// subscription: fetches the prorated preview, then applies the change. The
-// dialog hosts no Paddle checkout, so the modal/overlay inert interaction does
-// not apply here.
-// One labelled row in the "Due today" breakdown. Rendered as a description
-// term/detail pair so the amounts read as a real itemized list to assistive
-// tech, not visually-aligned prose.
+// One labelled row in the change-capacity dialog's "Due today" breakdown.
+// Rendered as a description term/detail pair so the amounts read as a real
+// itemized list to assistive tech, not visually-aligned prose.
 const AmountRow = ({
   label,
   value,
@@ -281,161 +98,6 @@ const AmountRow = ({
     </Text>
   </HStack>
 );
-
-const ChangeWorkspacePlanDialog = ({
-  workspaceSlug,
-  pendingChange,
-  interval,
-  nextBillDate,
-  onClose,
-}: {
-  workspaceSlug: string;
-  pendingChange: PendingChange | null;
-  interval: BillingInterval;
-  nextBillDate: string | null;
-  onClose: () => void;
-}) => {
-  const { preview, status, error } = useWorkspaceBillingChangePreview({
-    workspaceSlug,
-    prices: pendingChange?.prices,
-    enabled: !!pendingChange,
-  });
-  const updateMutation = useUpdateWorkspaceBilling();
-
-  const onConfirm = async () => {
-    if (!pendingChange) {
-      return;
-    }
-
-    await updateMutation.mutateAsync({
-      workspaceSlug,
-      prices: pendingChange.prices,
-    });
-    onClose();
-  };
-
-  const immediate = preview?.immediateTransaction;
-  const willBeDisabledCount = preview?.feedImpact?.willBeDisabledCount ?? 0;
-  const newFeedLimit = preview?.feedImpact?.newFeedLimit;
-
-  return (
-    <DialogRoot open={!!pendingChange} onOpenChange={(e) => !e.open && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Confirm plan change</DialogTitle>
-        </DialogHeader>
-        <DialogCloseTrigger />
-        <DialogBody>
-          <Stack gap={5}>
-            {pendingChange?.tierChange ? (
-              <Text fontWeight="medium">
-                {pendingChange.tierChange.fromLabel}{" "}
-                <Text as="span" color="fg.muted" aria-label="changes to">
-                  &rarr;
-                </Text>{" "}
-                {pendingChange.tierChange.toLabel}
-              </Text>
-            ) : (
-              <Text fontWeight="medium">{pendingChange?.description}</Text>
-            )}
-            {pendingChange?.recurringPriceFormatted && (
-              <Text fontSize="lg" fontWeight="bold">
-                {pendingChange.recurringPriceFormatted}{" "}
-                <Text as="span" fontSize="sm" fontWeight="normal" color="fg.muted">
-                  / {interval}
-                </Text>
-              </Text>
-            )}
-            {status === "loading" && <Spinner />}
-            {error && (
-              <InlineErrorAlert title="Failed to load change preview" description={error.message} />
-            )}
-            {willBeDisabledCount > 0 && (
-              <Text color="text.warning" fontSize="sm">
-                {willBeDisabledCount} feed{willBeDisabledCount === 1 ? "" : "s"} over the new{" "}
-                {newFeedLimit}-feed limit will be disabled (not deleted). Re-subscribe to a higher
-                tier to re-enable them.
-              </Text>
-            )}
-            {immediate && (
-              <Stack gap={3}>
-                <Stack gap={1}>
-                  <Text fontWeight="medium" fontSize="sm">
-                    Due today
-                  </Text>
-                  <Stack as="dl" gap={1}>
-                    <AmountRow label="Subtotal" value={immediate.subtotalFormatted} />
-                    <AmountRow label="Tax" value={immediate.taxFormatted} />
-                    {/* Credit reduces the amount due, so it must read as a
-                        deduction (signed, success-colored) rather than another
-                        charge. Hidden when zero to avoid a noisy "-$0" row. */}
-                    {immediate.credit !== "0" && (
-                      <AmountRow
-                        label="Account credit"
-                        value={`-${immediate.creditFormatted}`}
-                        valueColor="text.success"
-                      />
-                    )}
-                    <Box borderTopWidth="1px" borderColor="border.emphasized" pt={1}>
-                      <AmountRow
-                        label="Total due today"
-                        value={immediate.grandTotalFormatted}
-                        emphasized
-                      />
-                    </Box>
-                  </Stack>
-                  <Text color="fg.muted" fontSize="xs">
-                    Prorated for the current billing period.
-                  </Text>
-                </Stack>
-                {pendingChange?.recurringPriceFormatted && (
-                  <Stack gap={1}>
-                    <Text fontWeight="medium" fontSize="sm">
-                      Then
-                    </Text>
-                    <Text fontSize="sm">
-                      {pendingChange.recurringPriceFormatted} / {interval}
-                      {nextBillDate
-                        ? `, starting ${dayjs(nextBillDate).format("D MMMM YYYY")}`
-                        : ""}
-                      .
-                    </Text>
-                    <Text color="fg.muted" fontSize="xs">
-                      Renews automatically. Cancel anytime.
-                    </Text>
-                  </Stack>
-                )}
-              </Stack>
-            )}
-            {updateMutation.error && (
-              <InlineErrorAlert
-                title="Failed to change plan"
-                description={updateMutation.error.message}
-              />
-            )}
-          </Stack>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <PrimaryActionButton
-            onClick={onConfirm}
-            loading={updateMutation.status === "loading"}
-            disabled={!preview}
-          >
-            Confirm change
-          </PrimaryActionButton>
-        </DialogFooter>
-      </DialogContent>
-    </DialogRoot>
-  );
-};
-
-// Pending activation must survive a navigate-away-and-back while the webhook
-// is in flight: payment already succeeded, so the page must not fall back to
-// the "activate this workspace" pitch. Session-scoped, keyed per workspace.
-const pendingActivationKey = (workspaceId: string) => `workspacePendingActivation:${workspaceId}`;
 
 // Entry point for moving the owner's personal subscription into this workspace. Only
 // rendered for an unsubscribed workspace; the parent gates it further on the
@@ -648,6 +310,216 @@ const WorkspacePaymentMethodSection = ({
   );
 };
 
+// The change-capacity dialog for a subscribed owner: one slider seeded at the
+// workspace's current capacity drives a live prorated preview and the confirm.
+// An increase shows the plain new price; a DECREASE shows a "Now -> After" diff
+// and the "feeds will be disabled" consequence, because that is the direction
+// that disables feeds. The basket is the same base-tier-plus-add-on shape the
+// activation slider builds, so buy and manage are billed identically.
+const ChangeCapacityDialog = ({
+  open,
+  onClose,
+  workspaceSlug,
+  currentFeeds,
+  interval,
+  nextBillDate,
+  baseWorkspacePrice,
+  getChargePreview,
+  buildBasket,
+}: {
+  open: boolean;
+  onClose: () => void;
+  workspaceSlug: string;
+  currentFeeds: number;
+  interval: BillingInterval;
+  nextBillDate: string | null;
+  baseWorkspacePrice: string | undefined;
+  getChargePreview: (
+    items: Array<{ priceId: string; quantity: number }>,
+  ) => Promise<{ totalFormatted: string }>;
+  buildBasket: (feeds: number) => Array<{ priceId: string; quantity: number }>;
+}) => {
+  // Seed at the current capacity (next detent at or above it) so the owner edits
+  // from where they are, unlike the buy-time slider which starts at the base.
+  const [index, setIndex] = useState(() => detentIndexForFeeds(currentFeeds));
+  // Re-seat whenever the dialog (re)opens or the current capacity changes.
+  useEffect(() => {
+    if (open) {
+      setIndex(detentIndexForFeeds(currentFeeds));
+    }
+  }, [open, currentFeeds]);
+
+  const nextFeeds = feedsForDetentIndex(index);
+  const dirty = nextFeeds !== currentFeeds;
+  const decreasing = nextFeeds < currentFeeds;
+  const prices = buildBasket(nextFeeds);
+
+  const { price: recurringPrice, isUpdating } = useWorkspaceSliderPrice({
+    feeds: nextFeeds,
+    interval,
+    baseWorkspacePrice,
+    getChargePreview,
+  });
+
+  const { preview, status, error } = useWorkspaceBillingChangePreview({
+    workspaceSlug,
+    prices,
+    enabled: open && dirty,
+  });
+  const updateMutation = useUpdateWorkspaceBilling();
+
+  const immediate = preview?.immediateTransaction;
+  const willBeDisabledCount = preview?.feedImpact?.willBeDisabledCount ?? 0;
+  const newFeedLimit = preview?.feedImpact?.newFeedLimit;
+
+  const onConfirm = async () => {
+    await updateMutation.mutateAsync({ workspaceSlug, prices });
+    onClose();
+  };
+
+  return (
+    <DialogRoot open={open} onOpenChange={(e) => !e.open && onClose()} size="lg">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle as="h2">Change capacity</DialogTitle>
+          <DialogDescription>
+            You&apos;re currently on {currentFeeds} feeds. Pick a new capacity.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogCloseTrigger />
+        <DialogBody>
+          <Stack gap={5}>
+            <CapacitySlider index={index} onChange={setIndex} />
+            {/* One always-mounted polite live region carries the variable summary
+                so both the increase price line and the decrease diff announce
+                through the same node. The slider sits above it so its own value
+                announcements are not re-read and it never remounts across the
+                swap (thumb focus is preserved). */}
+            <Box aria-live="polite" aria-busy={isUpdating}>
+              {decreasing ? (
+                <>
+                  <VisuallyHidden>
+                    Reducing capacity from {currentFeeds} feeds to {nextFeeds} feeds,{" "}
+                    {recurringPrice ?? "updating price"} per {interval}.
+                  </VisuallyHidden>
+                  <HStack gap={4} alignItems="stretch" aria-hidden>
+                    <CapacityCompareColumn heading="Now" feeds={currentFeeds} />
+                    <CapacityCompareColumn
+                      heading="After"
+                      feeds={nextFeeds}
+                      price={recurringPrice}
+                      interval={interval}
+                      emphasized
+                    />
+                  </HStack>
+                </>
+              ) : (
+                <>
+                  <Text
+                    fontSize="xl"
+                    fontWeight="bold"
+                    color="text.link"
+                    opacity={isUpdating ? 0.65 : 1}
+                  >
+                    {recurringPrice ?? <Spinner size="sm" />}{" "}
+                    <Text as="span" fontSize="sm" fontWeight="normal" color="fg.muted">
+                      / {interval}
+                    </Text>
+                  </Text>
+                  <Text fontSize="sm" color="fg.muted">
+                    {nextFeeds} feeds
+                  </Text>
+                </>
+              )}
+            </Box>
+            {/* The consequence is the most important message in the flow, so it
+                gets its own polite live region: announced when it appears as the
+                owner crosses below the current capacity. */}
+            {willBeDisabledCount > 0 && (
+              <Box aria-live="polite">
+                <Text color="text.warning" fontSize="sm">
+                  {willBeDisabledCount} feed{willBeDisabledCount === 1 ? "" : "s"} over the new{" "}
+                  {newFeedLimit}-feed limit will be disabled (not deleted). They re-enable if you
+                  raise capacity again.
+                </Text>
+              </Box>
+            )}
+            {status === "loading" && <Spinner />}
+            {error && (
+              <InlineErrorAlert title="Failed to load change preview" description={error.message} />
+            )}
+            {immediate && (
+              <Stack gap={3}>
+                <Stack gap={1}>
+                  <Text fontWeight="medium" fontSize="sm">
+                    Due today
+                  </Text>
+                  <Stack as="dl" gap={1}>
+                    <AmountRow label="Subtotal" value={immediate.subtotalFormatted} />
+                    <AmountRow label="Tax" value={immediate.taxFormatted} />
+                    {immediate.credit !== "0" && (
+                      <AmountRow
+                        label="Account credit"
+                        value={`-${immediate.creditFormatted}`}
+                        valueColor="text.success"
+                      />
+                    )}
+                    <Box borderTopWidth="1px" borderColor="border.emphasized" pt={1}>
+                      <AmountRow
+                        label="Total due today"
+                        value={immediate.grandTotalFormatted}
+                        emphasized
+                      />
+                    </Box>
+                  </Stack>
+                  <Text color="fg.muted" fontSize="xs">
+                    Prorated for the current billing period.
+                  </Text>
+                </Stack>
+                {recurringPrice && (
+                  <Stack gap={1}>
+                    <Text fontWeight="medium" fontSize="sm">
+                      Then
+                    </Text>
+                    <Text fontSize="sm">
+                      {recurringPrice} / {interval}
+                      {nextBillDate
+                        ? `, starting ${dayjs(nextBillDate).format("D MMMM YYYY")}`
+                        : ""}
+                      .
+                    </Text>
+                    <Text color="fg.muted" fontSize="xs">
+                      Renews automatically. Cancel anytime.
+                    </Text>
+                  </Stack>
+                )}
+              </Stack>
+            )}
+            {updateMutation.error && (
+              <InlineErrorAlert
+                title="Failed to change capacity"
+                description={updateMutation.error.message}
+              />
+            )}
+          </Stack>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <PrimaryActionButton
+            onClick={onConfirm}
+            loading={updateMutation.status === "loading"}
+            disabled={!dirty || !preview}
+          >
+            Confirm change
+          </PrimaryActionButton>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
+  );
+};
+
 export const WorkspaceBilling = () => {
   const { isConfigured, isLoaded, getPricePreview, getChargePreview } = usePaddleContext();
   const currentWorkspace = useCurrentWorkspace();
@@ -661,18 +533,22 @@ export const WorkspaceBilling = () => {
   const [products, setProducts] = useState<PricePreview[]>();
   const [pricesError, setPricesError] = useState(false);
   const [interval, setInterval] = useState<BillingInterval>("month");
-  const [pendingChange, setPendingChange] = useState<PendingChange | null>(null);
-  const [awaitingActivation, setAwaitingActivation] = useState(
-    () =>
-      !!currentWorkspace &&
-      window.sessionStorage.getItem(pendingActivationKey(currentWorkspace.id)) !== null,
+  // The capacity the owner picks before activating, expressed as a detent index
+  // (see CapacitySlider). Seeded from the pricing dialog's "?feeds=N" hand-off so
+  // the capacity chosen on the buy-time slider carries into activation, seated on
+  // the next detent at or above the requested count.
+  const [searchParams] = useSearchParams();
+  const requestedFeeds = Number(searchParams.get("feeds"));
+  const [activationIndex, setActivationIndex] = useState(() =>
+    Number.isFinite(requestedFeeds) && requestedFeeds > WORKSPACE_BASE_FEEDS
+      ? detentIndexForFeeds(requestedFeeds)
+      : 0,
   );
-  const [additionalFeedsInput, setAdditionalFeedsInput] = useState<number | null>(null);
-  // Add-on count chosen on the Tier 3 card during first-time activation, before
-  // any subscription exists. Folded into the checkout so "Tier 3 + N feeds" is a
-  // single purchase.
-  const [activationAddonFeeds, setActivationAddonFeeds] = useState(0);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
+  // The change-capacity dialog (subscribed owners). Focus returns to its trigger
+  // on close, mirroring the checkout-dialog focus discipline.
+  const [isChangeCapacityOpen, setIsChangeCapacityOpen] = useState(false);
+  const changeCapacityTriggerRef = useRef<HTMLButtonElement>(null);
   // The checkout dialog is page-level so its focus trap is unaffected by where
   // the triggering button lives. We still own the two return trips:
   //  - Cancel (onClose): nothing changed, so return focus to the button that
@@ -683,13 +559,6 @@ export const WorkspaceBilling = () => {
   //    which is always present and survives the confirming -> active swap.
   const [checkoutIntent, setCheckoutIntent] = useState<WorkspaceCheckoutIntent | null>(null);
   const checkoutOpenerRef = useRef<HTMLElement | null>(null);
-  // A single persistent polite live region. The visible UI change on success is
-  // silent to screen readers, so we announce the outcome explicitly in two
-  // stages: payment captured (dialog closes), then provisioning complete (the
-  // webhook activates the workspace). Driving one stable region by its text
-  // makes each announcement deterministic, rather than relying on blocks
-  // mounting/unmounting (which announced unpredictably and over-spoke).
-  const [billingAnnouncement, setBillingAnnouncement] = useState("");
   // The page heading is always rendered, so it is a stable focus target across
   // the confirming -> active transition. The transient "Confirming" status
   // region unmounts when the subscription lands, so focus must not live there.
@@ -700,19 +569,45 @@ export const WorkspaceBilling = () => {
   const conversion = workspace?.conversion ?? null;
   const workspaceSlug = currentWorkspace?.slug ?? "";
 
-  // Tier prices power both the activation cards and the change-plan section.
+  // After checkout (or a personal-plan conversion) completes, the webhook
+  // activates the workspace asynchronously; this polls the workspace read until
+  // the subscription lands and drives the two-stage activation announcement.
+  const { awaitingActivation, beginActivation, billingAnnouncement } =
+    useWorkspaceActivationPolling({
+      workspaceId: currentWorkspace?.id,
+      subscription,
+      refetch,
+    });
+
+  // The base workspace-tier price the slider always carries; the slider price
+  // hook adds the live add-on total above it. Read from the loaded previews
+  // (undefined until they arrive, which the slider summary handles with a spinner).
+  const baseWorkspacePrice = products
+    ?.find((p) => p.id === ProductKey.Tier2)
+    ?.prices.find((p) => p.interval === interval)?.formattedPrice;
+
+  // Live recurring price for the activation slider's chosen capacity. Hooks must
+  // run before the early return below, so this lives here even though it only
+  // feeds the unsubscribed activation view.
+  const activationFeeds = feedsForDetentIndex(activationIndex);
+  const { price: activationPrice, isUpdating: activationPriceUpdating } = useWorkspaceSliderPrice({
+    feeds: activationFeeds,
+    interval,
+    baseWorkspacePrice,
+    getChargePreview,
+  });
+
+  // The capacity slider only needs the base workspace-tier price (the floor it
+  // builds on) and the per-feed add-on price; the live recurring total for any
+  // capacity comes from getChargePreview on the actual basket.
   useEffect(() => {
     if (!isConfigured || !isLoaded || !isOwner) {
       return;
     }
 
     getPricePreview([
-      ...WORKSPACE_TIERS.flatMap((tier) => [
-        { priceId: PRICE_IDS[tier].month, quantity: 1 },
-        { priceId: PRICE_IDS[tier].year, quantity: 1 },
-      ]),
-      // The per-feed add-on price, surfaced on the Tier 3 card's extra-feed
-      // control.
+      { priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 },
+      { priceId: PRICE_IDS[ProductKey.Tier2].year, quantity: 1 },
       { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 1 },
       { priceId: PRICE_IDS[ProductKey.Tier3Feed].year, quantity: 1 },
     ])
@@ -720,66 +615,35 @@ export const WorkspaceBilling = () => {
       .catch(() => setPricesError(true));
   }, [isConfigured, isLoaded, isOwner]);
 
-  // After checkout completes, the webhook activates the workspace; poll the
-  // workspace read until the subscription shows up.
-  const refetchRef = useRef(refetch);
-  refetchRef.current = refetch;
-  useEffect(() => {
-    if (!awaitingActivation || subscription) {
-      // Stage two of the announcement: the subscription landing while we were
-      // awaiting activation is the genuine provisioning-complete transition.
-      if (awaitingActivation && subscription) {
-        setBillingAnnouncement(
-          `Your ${PRODUCT_NAMES[subscription.productKey as ProductKey] ?? "subscription"} is now active.`,
-        );
-      }
-
-      if (subscription) {
-        setAwaitingActivation(false);
-
-        if (currentWorkspace) {
-          window.sessionStorage.removeItem(pendingActivationKey(currentWorkspace.id));
-        }
-      }
-
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(() => {
-      refetchRef.current();
-    }, 1500);
-
-    return () => window.clearInterval(intervalId);
-  }, [awaitingActivation, !!subscription]);
-
   if (!isConfigured || !currentWorkspace) {
     return null;
   }
 
-  const getTierPrice = (tier: WorkspaceTier, useInterval: BillingInterval) =>
-    products?.find((p) => p.id === tier)?.prices.find((p) => p.interval === useInterval)
-      ?.formattedPrice;
+  // Every capacity maps to one real purchasable basket: the base workspace tier
+  // plus a per-feed add-on for the overage above the base. The buy moment (here)
+  // and the manage moment (change-capacity) build the same basket, so a workspace
+  // is billed identically however the capacity was chosen.
+  const capacityBasket = (feeds: number, useInterval: BillingInterval) => {
+    const addonFeeds = feedCountToAddonQuantity(feeds);
 
-  const getAddonPerFeedPrice = (useInterval: BillingInterval) =>
-    products
-      ?.find((p) => p.id === ProductKey.Tier3Feed)
-      ?.prices.find((p) => p.interval === useInterval)?.formattedPrice;
+    return [
+      { priceId: PRICE_IDS[ProductKey.Tier2][useInterval], quantity: 1 },
+      ...(addonFeeds > 0
+        ? [{ priceId: PRICE_IDS[ProductKey.Tier3Feed][useInterval], quantity: addonFeeds }]
+        : []),
+    ];
+  };
 
-  const subscribe = (tier: WorkspaceTier, addonFeeds = 0) => {
+  const subscribeToCapacity = (feeds: number) => {
     // Remember the button that opened the dialog so focus can return to it on
     // cancel.
     checkoutOpenerRef.current = document.activeElement as HTMLElement | null;
 
     setCheckoutIntent({
       kind: "subscribe",
-      prices: [
-        { priceId: PRICE_IDS[tier][interval], quantity: 1 },
-        ...(tier === ProductKey.Tier3 && addonFeeds > 0
-          ? [{ priceId: PRICE_IDS[ProductKey.Tier3Feed][interval], quantity: addonFeeds }]
-          : []),
-      ],
+      prices: capacityBasket(feeds, interval),
       workspaceId: currentWorkspace.id,
-      title: `Subscribe to ${PRODUCT_NAMES[tier]}`,
+      title: `Subscribe to ${capacityPlanLabel(feeds)}`,
     });
   };
 
@@ -800,9 +664,7 @@ export const WorkspaceBilling = () => {
   // status region still announces "Confirming"; it is no longer the focus
   // target, so its later unmount cannot strand focus.
   const onCheckoutCompleted = () => {
-    window.sessionStorage.setItem(pendingActivationKey(currentWorkspace.id), "1");
-    setAwaitingActivation(true);
-    setBillingAnnouncement("Payment successful. Confirming your subscription…");
+    beginActivation();
     setCheckoutIntent(null);
     window.setTimeout(() => headingRef.current?.focus?.(), 0);
   };
@@ -811,6 +673,16 @@ export const WorkspaceBilling = () => {
   const currentTier = subscription?.productKey as WorkspaceTier | undefined;
   const currentAddonQuantity =
     subscription?.addons?.find((a) => a.key === ProductKey.Tier3Feed)?.quantity ?? 0;
+  // The workspace's current total capacity = its base tier's feed limit plus any
+  // per-feed add-ons. Seeds the change-capacity slider.
+  const currentCapacityFeeds = currentTier
+    ? TIER_FEED_LIMITS[currentTier] + currentAddonQuantity
+    : WORKSPACE_BASE_FEEDS;
+  // The base workspace-tier price for the subscribed interval, the floor the
+  // change-capacity slider's live price builds on.
+  const baseWorkspacePriceForSubscription = products
+    ?.find((p) => p.id === ProductKey.Tier2)
+    ?.prices.find((p) => p.interval === subscriptionInterval)?.formattedPrice;
 
   const intervalToggle = (
     <HStack role="group" aria-label="Billing interval">
@@ -886,7 +758,8 @@ export const WorkspaceBilling = () => {
             <Stack gap={1}>
               <HStack gap={3}>
                 <Text fontWeight="bold">
-                  {PRODUCT_NAMES[subscription.productKey as ProductKey] ?? subscription.productKey}
+                  {getPlanDisplayName(subscription.productKey as ProductKey) ??
+                    subscription.productKey}
                 </Text>
                 <Badge colorPalette={subscription.cancellationDate ? "orange" : "green"}>
                   {subscription.cancellationDate ? "Cancels soon" : subscription.status}
@@ -913,6 +786,14 @@ export const WorkspaceBilling = () => {
                     Renews on {dayjs(subscription.nextBillDate).format("D MMMM YYYY")}.
                   </Text>
                 )
+              )}
+              {subscription.billingEmail && (
+                <Text color="fg.muted">
+                  Billed to{" "}
+                  <Text as="span" color="fg">
+                    {subscription.billingEmail}
+                  </Text>
+                </Text>
               )}
             </Stack>
             {!isOwner && <Text>Only the workspace owner can manage billing.</Text>}
@@ -942,98 +823,18 @@ export const WorkspaceBilling = () => {
           )}
           {isOwner && !subscription.cancellationDate && (
             <SettingsSection
-              title="Change plan"
-              description="Compare tiers and switch this workspace to a different one. Tier 3 can be extended with additional feeds. You will see the prorated cost before confirming."
+              title="Change capacity"
+              description="Adjust how many feeds this workspace can run. You will see the prorated cost before confirming."
             >
-              <SimpleGrid columns={{ base: 1, md: 2 }} gap={4} maxW="40rem" role="list">
-                {WORKSPACE_TIERS.map((tier) => {
-                  const isCurrent = tier === currentTier;
-                  const supportsAddons = tierSupportsAddons(tier);
-                  // The stepper lives on whichever card is Tier 3. When it is the
-                  // current plan, it defaults to the live add-on count so the
-                  // owner edits from where they are; when it is the switch
-                  // target, it starts at 0. Only one Tier 3 card exists, so a
-                  // single piece of state serves both.
-                  const stepperValue =
-                    additionalFeedsInput ?? (isCurrent ? currentAddonQuantity : 0);
-                  const addonFeeds = supportsAddons ? stepperValue : 0;
-                  const totalFeeds = TIER_FEED_LIMITS[tier] + addonFeeds;
-                  const addonChanged = isCurrent && addonFeeds !== currentAddonQuantity;
-
-                  const applyChange = () =>
-                    setPendingChange({
-                      prices: [
-                        { priceId: PRICE_IDS[tier][subscriptionInterval], quantity: 1 },
-                        ...(addonFeeds > 0
-                          ? [
-                              {
-                                priceId: PRICE_IDS[ProductKey.Tier3Feed][subscriptionInterval],
-                                quantity: addonFeeds,
-                              },
-                            ]
-                          : []),
-                      ],
-                      description: `Switch this workspace to ${PRODUCT_NAMES[tier]} (${totalFeeds} feeds).`,
-                      recurringPriceFormatted: getTierPrice(tier, subscriptionInterval),
-                      tierChange: currentTier
-                        ? {
-                            fromLabel: `${PRODUCT_NAMES[currentTier]} (${
-                              TIER_FEED_LIMITS[currentTier] + currentAddonQuantity
-                            } feeds)`,
-                            toLabel: `${PRODUCT_NAMES[tier]} (${totalFeeds} feeds)`,
-                          }
-                        : undefined,
-                    });
-
-                  return (
-                    <TierCard
-                      key={tier}
-                      tier={tier}
-                      price={getTierPrice(tier, subscriptionInterval)}
-                      interval={subscriptionInterval}
-                      current={isCurrent}
-                      addonFeeds={addonFeeds}
-                      getChargePreview={getChargePreview}
-                      addonSlot={
-                        supportsAddons ? (
-                          <AdditionalFeedsControl
-                            value={stepperValue}
-                            onChange={setAdditionalFeedsInput}
-                            perFeedPrice={getAddonPerFeedPrice(subscriptionInterval)}
-                            interval={subscriptionInterval}
-                          />
-                        ) : undefined
-                      }
-                      footer={
-                        // eslint-disable-next-line no-nested-ternary
-                        isCurrent ? (
-                          supportsAddons ? (
-                            <Button
-                              variant="outline"
-                              disabled={!addonChanged}
-                              onClick={applyChange}
-                            >
-                              Update additional feeds
-                            </Button>
-                          ) : (
-                            <Text fontSize="sm" color="fg.muted">
-                              This is your workspace&apos;s current plan.
-                            </Text>
-                          )
-                        ) : (
-                          <Button
-                            variant="outline"
-                            onClick={applyChange}
-                            aria-label={`Switch to ${PRODUCT_NAMES[tier]}, ${totalFeeds} feeds total`}
-                          >
-                            Switch to {PRODUCT_NAMES[tier]}
-                          </Button>
-                        )
-                      }
-                    />
-                  );
-                })}
-              </SimpleGrid>
+              <Box>
+                <PrimaryActionButton
+                  ref={changeCapacityTriggerRef}
+                  aria-haspopup="dialog"
+                  onClick={() => setIsChangeCapacityOpen(true)}
+                >
+                  Change capacity
+                </PrimaryActionButton>
+              </Box>
             </SettingsSection>
           )}
           {isOwner && !subscription.cancellationDate && (
@@ -1106,44 +907,37 @@ export const WorkspaceBilling = () => {
                   description="Please try refreshing the page."
                 />
               )}
-              <SimpleGrid columns={{ base: 1, md: 2 }} gap={4} maxW="40rem" role="list">
-                {WORKSPACE_TIERS.map((tier) => {
-                  const supportsAddons = tierSupportsAddons(tier);
-                  const addonFeeds = supportsAddons ? activationAddonFeeds : 0;
-                  const totalFeeds = TIER_FEED_LIMITS[tier] + addonFeeds;
-
-                  return (
-                    <TierCard
-                      key={tier}
-                      tier={tier}
-                      price={getTierPrice(tier, interval)}
-                      interval={interval}
-                      recommended={tier === ProductKey.Tier2}
-                      addonFeeds={addonFeeds}
-                      getChargePreview={getChargePreview}
-                      addonSlot={
-                        supportsAddons ? (
-                          <AdditionalFeedsControl
-                            value={activationAddonFeeds}
-                            onChange={setActivationAddonFeeds}
-                            perFeedPrice={getAddonPerFeedPrice(interval)}
-                            interval={interval}
-                          />
-                        ) : undefined
-                      }
-                      footer={
-                        <PrimaryActionButton
-                          onClick={() => subscribe(tier, addonFeeds)}
-                          aria-haspopup="dialog"
-                          aria-label={`Subscribe to ${PRODUCT_NAMES[tier]}, ${totalFeeds} feeds total`}
-                        >
-                          Subscribe to {PRODUCT_NAMES[tier]}
-                        </PrimaryActionButton>
-                      }
-                    />
-                  );
-                })}
-              </SimpleGrid>
+              {/* One Team plan with a capacity slider, not a grid of tier cards.
+                  The slider drives a live price (base tier + per-feed add-ons),
+                  and a single Subscribe action buys exactly that capacity. */}
+              <Stack gap={5} maxW="40rem">
+                <Stack gap={1}>
+                  <Heading as="h3" size="md">
+                    {getPlanDisplayName(ProductKey.Tier2)}
+                  </Heading>
+                  <Text color="fg.muted" fontSize="sm">
+                    Create a shared workspace to co-manage feeds with others.
+                  </Text>
+                </Stack>
+                <CapacitySummary
+                  feeds={activationFeeds}
+                  price={activationPrice}
+                  interval={interval}
+                  isUpdating={activationPriceUpdating}
+                />
+                <CapacitySlider index={activationIndex} onChange={setActivationIndex} />
+                <Box>
+                  <PrimaryActionButton
+                    onClick={() => subscribeToCapacity(activationFeeds)}
+                    aria-haspopup="dialog"
+                    aria-label={`Subscribe to ${getPlanDisplayName(
+                      ProductKey.Tier2,
+                    )}, ${activationFeeds} feeds total`}
+                  >
+                    Subscribe for {activationFeeds} feeds
+                  </PrimaryActionButton>
+                </Box>
+              </Stack>
               {/* Reassurance and Paddle disclosure: fine print, not a consent
                   gate, so it sits below the cards. */}
               <Stack gap={1} maxW="40rem">
@@ -1165,17 +959,21 @@ export const WorkspaceBilling = () => {
         onCancel={onCheckoutCancel}
         onCompleted={onCheckoutCompleted}
       />
-      <ChangeWorkspacePlanDialog
+      <ChangeCapacityDialog
+        open={isChangeCapacityOpen}
+        onClose={() => {
+          setIsChangeCapacityOpen(false);
+          // Return focus to the trigger, deferred past the dialog's own close so
+          // it is not overwritten by any internal focus handling.
+          window.setTimeout(() => changeCapacityTriggerRef.current?.focus?.(), 0);
+        }}
         workspaceSlug={workspaceSlug}
-        pendingChange={pendingChange}
+        currentFeeds={currentCapacityFeeds}
         interval={subscriptionInterval}
         nextBillDate={subscription?.nextBillDate ?? null}
-        onClose={() => {
-          setPendingChange(null);
-          // Drop the local stepper edit so the current-plan card re-reads the
-          // freshly refetched add-on count instead of a stale typed value.
-          setAdditionalFeedsInput(null);
-        }}
+        baseWorkspacePrice={baseWorkspacePriceForSubscription}
+        getChargePreview={getChargePreview}
+        buildBasket={(feeds) => capacityBasket(feeds, subscriptionInterval)}
       />
       {conversion?.eligible && (
         <ConvertPersonalPlanDialog
@@ -1184,10 +982,9 @@ export const WorkspaceBilling = () => {
           onConverted={() => {
             // The subscription re-homes onto the workspace by webhook (the
             // endpoint polls for it), so show the same "confirming" state as a
-            // fresh activation while the workspace read catches up.
-            window.sessionStorage.setItem(pendingActivationKey(currentWorkspace.id), "1");
-            setBillingAnnouncement("Confirming your subscription…");
-            setAwaitingActivation(true);
+            // fresh activation while the workspace read catches up. No payment
+            // step here, so the announcement omits the "Payment successful" lead.
+            beginActivation("Confirming your subscription…");
           }}
           workspaceSlug={workspaceSlug}
           feedLimit={conversion.feedLimit ?? 0}

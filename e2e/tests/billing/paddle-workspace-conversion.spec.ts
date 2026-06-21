@@ -1,7 +1,10 @@
 import { test, expect, type Page } from "../../fixtures/test-fixtures";
 import type { FrameLocator } from "@playwright/test";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
-import { ensureFreeSubscriptionState } from "../../helpers/paddle-cleanup";
+import {
+  cancelAndDeleteWorkspace,
+  ensureFreeSubscriptionState,
+} from "../../helpers/paddle-cleanup";
 import {
   enableWorkspacesFeatureInDb,
   setVerifiedEmailInDb,
@@ -98,6 +101,17 @@ test.describe("Paddle workspace conversion", () => {
       ],
     });
 
+    // 2b. (FR5/A4) An eligible Tier-2 subscriber with no workspace yet sees the
+    //     convert prompt on their personal settings billing page, steering them
+    //     into the conversion flow. It disappears once they own a workspace.
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { name: "Account Settings" })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText(/your personal plan can become a workspace/i),
+    ).toBeVisible({ timeout: 15000 });
+
     // 3. Create a team (never-activated; allowed while nothing else is funded).
     await page.goto("/feeds");
     await waitForAuthenticatedApp(page);
@@ -111,11 +125,27 @@ test.describe("Paddle workspace conversion", () => {
     const workspaceSlug = page.url().match(/\/workspaces\/([^/]+)\/feeds/)?.[1] as string;
     expect(workspaceSlug).toBeTruthy();
 
-    // 4. Convert from the team's Billing page.
-    await page.goto(`/workspaces/${workspaceSlug}/settings/billing`);
-    await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
+    // 3b. (FR5) Now that they own a workspace, the convert prompt no longer
+    //     pushes them to create another: it is suppressed on personal settings.
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { name: "Account Settings" })).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByText(/your personal plan can become a workspace/i),
+    ).toHaveCount(0);
 
-    await page.getByRole("button", { name: /move my plan to this workspace/i }).click();
+    // 4. Convert from the team's feeds empty state. An eligible owner landing on
+    //    the dormant workspace's feeds page is offered the move-my-plan action
+    //    inline (the cheaper path, surfaced at the moment of intent), instead of
+    //    only an "Activate workspace" link that routes to Billing. The dialog
+    //    opens in place without leaving the feeds page.
+    await page.goto(`/workspaces/${workspaceSlug}/feeds`);
+    await expect(
+      page.getByRole("heading", { name: /activate your workspace to start adding feeds/i }),
+    ).toBeVisible({ timeout: 15000 });
+
+    await page.getByRole("button", { name: /move my personal plan here/i }).click();
 
     const convertDialog = page.getByRole("alertdialog");
     await expect(convertDialog).toBeVisible({ timeout: 15000 });
@@ -148,29 +178,38 @@ test.describe("Paddle workspace conversion", () => {
       .fill(workspaceSlug);
     await convertDialog.getByRole("button", { name: /^move plan$/i }).click();
 
-    // 5. The webhook re-homes the subscription onto the team; the Billing page
-    //    flips to the current-plan view without further action.
-    await expect(page.getByRole("heading", { name: "Current plan" })).toBeVisible({
-      timeout: 120_000,
-    });
-    // The current-plan view renders the tier name both as a card heading and in
-    // the "Current plan" badge region, so scope to the heading to stay unique.
-    await expect(page.getByRole("heading", { name: "Tier 2" })).toBeVisible();
+    // 5. The webhook re-homes the subscription onto the team. The dialog closed
+    //    on the feeds page, which polls the workspace read in place and, once the
+    //    subscription lands, drops the activation pitch WITHOUT any navigation.
+    //    Asserting the pitch disappears proves the inline polling path drove the
+    //    dormant -> active transition right here on the feeds page.
+    await expect(
+      page.getByRole("heading", { name: /activate your workspace to start adding feeds/i }),
+    ).toBeHidden({ timeout: 120_000 });
 
-    // 6a. The moved feed is active in the team scope. Navigate IN-APP (the
-    //     scope-relative logo routes to the team feeds) rather than page.goto,
-    //     so the SPA's React Query cache stays alive: a full reload would refetch
-    //     from scratch and mask a missing post-conversion cache invalidation.
-    //     The moved feed must appear without a hard refresh.
-    await page.getByRole("link", { name: "MonitoRSS Home" }).click();
-    await expect(page).toHaveURL(new RegExp(`/workspaces/${workspaceSlug}/feeds$`), {
-      timeout: 15000,
-    });
-    await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
+    // 6a. REGRESSION: the moved feed must appear in the team feed table IN PLACE,
+    //     with NO navigation and NO page refresh. The feeds are re-homed
+    //     server-side before the subscription record lands, but while the page
+    //     was dormant the feed TABLE query had no active observer, so a default
+    //     ("active"-only) invalidation marked it stale without refetching it and
+    //     the table rendered the stale empty cache — the moved feeds showed up
+    //     only after a manual refresh. The activation hook now force-refetches
+    //     (refetchType "all"), so the table populates here without any reload.
+    //     Do NOT navigate or reload before this assertion: that would remount the
+    //     table, refetch on mount, and mask the very bug under test.
+    await expect(page.getByRole("table")).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(new RegExp(`/workspaces/${workspaceSlug}/feeds$`));
     const keptRow = page.getByRole("row").filter({
       has: page.getByRole("link", { name: "Keep Feed", exact: true }),
     });
-    await expect(keptRow.getByLabel("Ok")).toBeVisible({ timeout: 15000 });
+    await expect(keptRow.getByLabel("Ok")).toBeVisible({ timeout: 30_000 });
+
+    // 6a-ii. The move is confirmed in place with a success banner naming the new
+    //        scope, so the owner is not left guessing whether it worked or which
+    //        feed list they are now viewing. It is dismissible and shown once.
+    await expect(page.getByText(/your plan moved to this workspace/i)).toBeVisible({
+      timeout: 30_000,
+    });
 
     // 6b. The left-behind feed is disabled on the personal side (the personal
     //     plan is gone, so it is over the free limit). Switch scope IN-APP rather
@@ -189,10 +228,10 @@ test.describe("Paddle workspace conversion", () => {
       timeout: 15000,
     });
 
-    // Teardown: deleting the team cancels the sandbox subscription so the
-    // sandbox does not accumulate live subscriptions across runs.
-    const deleteRes = await page.request.delete(`/api/v1/workspaces/${workspaceSlug}`);
-    expect(deleteRes.status()).toBe(204);
+    // Teardown: cancel the workspace's sandbox subscription, then delete the team
+    // (deletion is gated on the subscription being cancelled first), so the sandbox
+    // does not accumulate live subscriptions across runs.
+    await cancelAndDeleteWorkspace(page, workspaceSlug);
   });
 
   test("auto-picks the newest feeds to fit the plan when the owner has more feeds than the cap", async ({
@@ -325,8 +364,7 @@ test.describe("Paddle workspace conversion", () => {
       timeout: 15000,
     });
 
-    // Teardown: deleting the team cancels the sandbox subscription.
-    const deleteRes = await page.request.delete(`/api/v1/workspaces/${workspaceSlug}`);
-    expect(deleteRes.status()).toBe(204);
+    // Teardown: cancel the workspace's sandbox subscription, then delete the team.
+    await cancelAndDeleteWorkspace(page, workspaceSlug);
   });
 });

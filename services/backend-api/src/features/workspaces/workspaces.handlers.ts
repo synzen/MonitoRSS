@@ -1,5 +1,9 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { ApiErrorCode, ForbiddenError } from "../../infra/error-handler";
+import {
+  ApiErrorCode,
+  ConflictError,
+  ForbiddenError,
+} from "../../infra/error-handler";
 import type { IWorkspaceInvite } from "../../repositories/mongoose/workspace.mongoose.repository";
 import type {
   CreateWorkspaceBody,
@@ -111,6 +115,12 @@ export async function getWorkspaceHandler(
           key: a.key,
           quantity: a.quantity,
         })),
+        // The billing email is the owner's personal verified address, so only
+        // the owner sees it; an admin manages the workspace but is not the
+        // billing party.
+        ...(role === "owner" && workspace.paddleCustomer?.email
+          ? { billingEmail: workspace.paddleCustomer.email }
+          : {}),
       }
     : null;
 
@@ -164,9 +174,12 @@ export async function deleteWorkspaceHandler(
     throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
   }
 
-  // Cancel before deleting: if Paddle is unreachable the deletion aborts, so
-  // a paid subscription can never outlive its workspace unnoticed.
-  await workspaceBillingService.cancelSubscriptionOnDeletion(workspace);
+  // A workspace with a live subscription cannot be deleted; the owner must
+  // cancel billing first. Deleting it here would silently destroy the only
+  // place that surfaces the subscription, leaving them paying for nothing.
+  if (workspaceBillingService.hasBlockingSubscription(workspace)) {
+    throw new ConflictError(ApiErrorCode.WORKSPACE_HAS_ACTIVE_SUBSCRIPTION);
+  }
 
   // Feeds go through the service so connection cleanup and queue events run.
   const feedIds = await userFeedRepository.findIdsByWorkspace(workspace.id);

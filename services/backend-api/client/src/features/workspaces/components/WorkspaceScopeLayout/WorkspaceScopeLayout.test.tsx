@@ -7,14 +7,23 @@ import { system } from "@/utils/theme";
 import { WorkspaceScopeLayout } from "./index";
 import { useIsWorkspacesEnabled, useWorkspace } from "../../hooks";
 
+// The two gate hooks are driven per-test. useRefetchFeedsOnWorkspaceActivation is
+// a fire-and-forget effect hook (it calls useQueryClient internally, which needs a
+// provider this test does not mount), so it is stubbed to a no-op rather than kept
+// real — the layout calls it unconditionally and these tests assert routing, not
+// the refetch side effect.
 vi.mock("../../hooks", () => ({
   useIsWorkspacesEnabled: vi.fn(),
   useWorkspace: vi.fn(),
+  useRefetchFeedsOnWorkspaceActivation: vi.fn(),
 }));
 
-// Provide the current workspace without a real query; pass children through.
+// Provide the workspace context providers the layout mounts as pass-throughs,
+// without a real query. Both providers the component wraps with must be present
+// or it throws on an undefined component.
 vi.mock("../../contexts", () => ({
   CurrentWorkspaceProvider: ({ children }: { children: React.ReactNode }) => children,
+  JustConvertedWorkspaceProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 const renderLayout = () =>
