@@ -195,7 +195,9 @@ test.describe("Workspace member management (owner/admin view)", () => {
 
     // The success is surfaced in the rendered UI as a page alert, and the invite
     // stays in the pending list (a resend does not consume it).
-    await expect(page.getByText(/invitation resent/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("alert").getByText(/invitation resent/i)).toBeVisible({
+      timeout: 15000,
+    });
     await expect(pending.getByRole("listitem").filter({ hasText: invitedEmail })).toBeVisible();
 
     // The side-effect: the backend really dispatched a fresh invitation email to the

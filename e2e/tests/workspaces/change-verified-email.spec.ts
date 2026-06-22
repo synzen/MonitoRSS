@@ -62,7 +62,9 @@ test.describe("Change verified email", () => {
 
     // Success is confirmed through the rendered settings page: the dialog closes
     // and the verified-email row now displays the new address.
-    await expect(page.getByText(/your verified email has been updated/i)).toBeVisible({
+    await expect(
+      page.getByRole("alert").getByText(/your verified email has been updated/i),
+    ).toBeVisible({
       timeout: 15000,
     });
     await expect(page.getByRole("textbox", { name: "Verified workspace email" })).toHaveValue(newEmail);

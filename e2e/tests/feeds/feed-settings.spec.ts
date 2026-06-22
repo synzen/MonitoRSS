@@ -108,7 +108,7 @@ test.describe("Feed Settings", () => {
 
     await page.getByRole("button", { name: "Save" }).click();
 
-    await expect(page.getByText("You're all set")).toBeVisible({
+    await expect(page.getByRole("alert").getByText("You're all set")).toBeVisible({
       timeout: 10000,
     });
   });
@@ -171,7 +171,7 @@ test.describe("Feed Settings", () => {
 
     await page.getByRole("button", { name: "Save" }).click();
 
-    await expect(page.getByText("You're all set")).toBeVisible({
+    await expect(page.getByRole("alert").getByText("You're all set")).toBeVisible({
       timeout: 10000,
     });
   });
@@ -238,7 +238,7 @@ test.describe("Feed Settings", () => {
 
     await page.getByRole("button", { name: "Save" }).click();
 
-    await expect(page.getByText("You're all set")).toBeVisible({
+    await expect(page.getByRole("alert").getByText("You're all set")).toBeVisible({
       timeout: 10000,
     });
   });
@@ -445,7 +445,7 @@ test.describe("Feed Settings", () => {
         .click();
 
       await expect(
-        page.getByText("Successfully sent feed management invite"),
+        page.getByRole("alert").getByText("Successfully sent feed management invite"),
       ).toBeVisible({ timeout: 10000 });
 
       await expect(page.getByText("Pending")).toBeVisible({ timeout: 10000 });
@@ -519,7 +519,7 @@ test.describe("Feed Settings", () => {
           .click();
 
         await expect(
-          page.getByText(/Successfully copied feed settings/i),
+          page.getByRole("alert").getByText(/Successfully copied feed settings/i),
         ).toBeVisible({ timeout: 10000 });
 
         // Verify target feed 1 has copied settings via UI
@@ -597,7 +597,7 @@ test.describe("Feed Settings", () => {
           .click();
 
         await expect(
-          page.getByText(/Successfully copied feed settings/i),
+          page.getByRole("alert").getByText(/Successfully copied feed settings/i),
         ).toBeVisible({ timeout: 10000 });
 
         // Verify non-excluded target feeds have copied settings via UI
@@ -678,7 +678,7 @@ test.describe("Feed Settings", () => {
           .click();
 
         await expect(
-          page.getByText(/Successfully copied feed settings/i),
+          page.getByRole("alert").getByText(/Successfully copied feed settings/i),
         ).toBeVisible({ timeout: 10000 });
 
         // Verify settings via UI
@@ -780,7 +780,7 @@ test.describe("Feed Settings", () => {
           .click();
 
         await expect(
-          page.getByText(/Successfully copied feed settings/i),
+          page.getByRole("alert").getByText(/Successfully copied feed settings/i),
         ).toBeVisible({ timeout: 10000 });
 
         // Verify beta feed has copied settings via UI

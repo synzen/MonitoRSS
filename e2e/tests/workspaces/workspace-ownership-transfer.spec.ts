@@ -77,7 +77,9 @@ test.describe("Workspace ownership transfer (owner view)", () => {
     await dialog.getByRole("button", { name: /transfer ownership/i }).click();
 
     // Success is surfaced as a page alert.
-    await expect(page.getByText(/ownership transferred/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("alert").getByText(/ownership transferred/i)).toBeVisible({
+      timeout: 15000,
+    });
 
     // The roles have swapped in the rendered list: the successor is now the owner,
     // and the test user (the "(you)" row) is now an admin.

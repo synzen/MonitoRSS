@@ -254,7 +254,7 @@ test.describe("Paddle Branding Checkout", () => {
     // Phase 9: Save with branding
     await modal.getByRole("button", { name: "Save" }).click();
 
-    await expect(page.getByText("You're all set")).toBeVisible({
+    await expect(page.getByRole("alert").getByText("You're all set")).toBeVisible({
       timeout: 10000,
     });
   });
