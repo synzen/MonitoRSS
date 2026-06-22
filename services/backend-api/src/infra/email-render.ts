@@ -145,7 +145,7 @@ ${EMAIL_STYLES}
 const EMAIL_FOOTER_PARTIAL = `
 {{#if hasFooterDisclosures}}
 <hr class="email-rule" style="border:none;border-top:1px solid ${L.rule};margin:0 0 14px;" />
-{{#if footerAddress}}<p class="email-subtle" style="color:${L.fgSubtle};font-size:12px;margin:4px 0;">{{footerAddress}}</p>{{/if}}
+{{#if footerAddress}}<p class="email-subtle" style="color:${L.fgSubtle};font-size:12px;margin:4px 0;">{{emailLinkify footerAddress}}</p>{{/if}}
 {{#if footerPrivacyPolicyUrl}}<p style="font-size:12px;margin:4px 0;"><a class="email-link" href="{{footerPrivacyPolicyUrl}}" style="color:${L.link};text-decoration:underline;">Privacy Policy</a></p>{{/if}}
 {{/if}}
 `;
@@ -195,6 +195,22 @@ function emailDetailRow(
   );
 }
 
+// `{{emailLinkify text}}` — renders a free-form footer line, turning any email
+// address it contains into a `mailto:` link so a data-subject request is one tap
+// away. The whole string is HTML-escaped first (the address is operator-supplied
+// config, but we never trust it into raw HTML), then the escaped email tokens are
+// wrapped in an <a>. Non-email text passes through untouched.
+const EMAIL_TOKEN = /[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+/g;
+function emailLinkify(text: unknown): Handlebars.SafeString {
+  const escaped = Handlebars.escapeExpression(String(text ?? ""));
+  const linked = escaped.replace(
+    EMAIL_TOKEN,
+    (addr) =>
+      `<a class="email-link" href="mailto:${addr}" style="color:${L.link};text-decoration:underline;">${addr}</a>`,
+  );
+  return new Handlebars.SafeString(linked);
+}
+
 let registered = false;
 function registerEmailAssets(): void {
   if (registered) {
@@ -205,6 +221,7 @@ function registerEmailAssets(): void {
   Handlebars.registerHelper("emailButton", emailButton);
   Handlebars.registerHelper("emailWarnChip", emailWarnChip);
   Handlebars.registerHelper("emailDetailRow", emailDetailRow);
+  Handlebars.registerHelper("emailLinkify", emailLinkify);
   registered = true;
 }
 

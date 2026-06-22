@@ -37,6 +37,23 @@ describe("createEmailRenderer", () => {
     assert.match(html, /Privacy Policy/);
   });
 
+  it("turns an email address in the footer line into a mailto link", () => {
+    const renderEmail = createEmailRenderer(
+      makeConfig({
+        BACKEND_API_EMAIL_FOOTER_ADDRESS: "MonitoRSS · support@monitorss.xyz",
+      }),
+    );
+
+    const html = renderEmail(template, { name: "Ada" });
+
+    assert.match(
+      html,
+      /<a [^>]*href="mailto:support@monitorss\.xyz"[^>]*>support@monitorss\.xyz<\/a>/,
+    );
+    // Non-email text around it is preserved as plain text.
+    assert.match(html, /MonitoRSS ·/);
+  });
+
   it("renders only the address when the privacy url is unset", () => {
     const renderEmail = createEmailRenderer(
       makeConfig({ BACKEND_API_EMAIL_FOOTER_ADDRESS: "Acme Inc, 1 Main St" }),

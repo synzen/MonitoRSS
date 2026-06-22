@@ -17,8 +17,8 @@ import WORKSPACE_FEEDS_DISABLED_DIGEST_TEMPLATE from "../src/services/notificati
 
 // Configure the footer so the preview shows the compliant (hosted) variant.
 const config = {
-  BACKEND_API_EMAIL_PRIVACY_POLICY_URL: "https://monitorss.xyz/privacy",
-  BACKEND_API_EMAIL_FOOTER_ADDRESS: "MonitoRSS, 123 Example Street, Anytown, Country",
+  BACKEND_API_EMAIL_PRIVACY_POLICY_URL: "https://monitorss.xyz/privacy-policy",
+  BACKEND_API_EMAIL_FOOTER_ADDRESS: "MonitoRSS · support@monitorss.xyz",
 } as Config;
 
 const renderEmail = createEmailRenderer(config);
