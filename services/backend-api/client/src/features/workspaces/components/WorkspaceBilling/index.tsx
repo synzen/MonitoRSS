@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import {
   Badge,
   Box,
@@ -23,12 +23,14 @@ import dayjs from "dayjs";
 import { captureException } from "@sentry/react";
 import { FaChevronRight } from "react-icons/fa6";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { SettingsSection } from "@/components/SettingsSection";
+import { usePageAlertContext } from "@/contexts/PageAlertContext";
 import {
   DialogRoot,
   DialogContent,
@@ -344,6 +346,8 @@ const ChangeCapacityDialog = ({
   nextBillDate,
   pricing,
   buildBasket,
+  triggerRef,
+  successFocusRef,
 }: {
   open: boolean;
   onClose: () => void;
@@ -355,24 +359,45 @@ const ChangeCapacityDialog = ({
   // single preview. Undefined while it loads. Drives the slider's derived totals.
   pricing: WorkspaceFeedPricing | undefined;
   buildBasket: (feeds: number) => Array<{ priceId: string; quantity: number }>;
+  // Cancel restores focus to the trigger (the button that opened the dialog).
+  triggerRef: RefObject<HTMLButtonElement | null>;
+  // A successful change sends focus to the page heading instead: returning to the
+  // trigger would announce that button and its "Change capacity" group over the
+  // success alert, while the heading is a stable, brief target that does not.
+  successFocusRef: RefObject<HTMLElement | null>;
 }) => {
-  // Seed at the current capacity (next detent at or above it) so the owner edits
-  // from where they are, unlike the buy-time slider which starts at the base.
-  const [index, setIndex] = useState(() => detentIndexForFeeds(currentFeeds));
+  // The trigger stays mounted, so Ark's default would restore focus to it on
+  // every close. A success close needs the heading instead; this ref, set just
+  // before the success-driven close, tells finalFocusEl which target to pick.
+  // Reset on (re)open so a later cancel restores to the trigger normally.
+  const closingForSuccessRef = useRef(false);
+  // Seed at the current capacity. detentIndexForFeeds rounds a non-detent
+  // capacity UP to the next detent, which would open the dialog already "dirty"
+  // (preview fires, Confirm enabled) with no user action and let a no-move
+  // confirm silently raise capacity. So clamp the seeded count back to the
+  // current capacity for the dirty check: an untouched dialog is never dirty.
+  const seededIndex = detentIndexForFeeds(currentFeeds);
+  const [index, setIndex] = useState(seededIndex);
   // Re-seat whenever the dialog (re)opens or the current capacity changes.
   useEffect(() => {
     if (open) {
+      closingForSuccessRef.current = false;
       setIndex(detentIndexForFeeds(currentFeeds));
     }
   }, [open, currentFeeds]);
 
-  const nextFeeds = feedsForDetentIndex(index);
+  // The detent the slider sits on; nextFeeds is that detent's feed count, except
+  // while the slider is still on its seeded position, where the real current
+  // capacity (which may sit between detents) is the effective target so the
+  // dialog opens clean.
+  const onSeededDetent = index === seededIndex;
+  const nextFeeds = onSeededDetent ? currentFeeds : feedsForDetentIndex(index);
   const dirty = nextFeeds !== currentFeeds;
-  const decreasing = nextFeeds < currentFeeds;
   const prices = buildBasket(nextFeeds);
 
   const { price: recurringPrice } = useWorkspaceSliderPrice({ feeds: nextFeeds, pricing });
 
+  const { createSuccessAlert } = usePageAlertContext();
   const { preview, status, error } = useWorkspaceBillingChangePreview({
     workspaceSlug,
     prices,
@@ -385,59 +410,73 @@ const ChangeCapacityDialog = ({
   const newFeedLimit = preview?.feedImpact?.newFeedLimit;
 
   const onConfirm = async () => {
+    const confirmedFeeds = nextFeeds;
+    const decreasing = confirmedFeeds < currentFeeds;
     await updateMutation.mutateAsync({ workspaceSlug, prices });
+    // Mark this as a success close so finalFocusEl sends focus to the heading
+    // (not the trigger, whose name/group would be announced over the alert).
+    closingForSuccessRef.current = true;
     onClose();
+    // "can now run up to" reads as an upgrade; for a decrease (which just
+    // disabled feeds) state the new capacity plainly instead.
+    const description = decreasing
+      ? `This workspace's capacity is now ${confirmedFeeds} feeds.`
+      : `This workspace can now run up to ${confirmedFeeds} feeds.`;
+    // The visible alert (role="alert", via the always-mounted page outlet) is
+    // both the durable on-screen confirmation and the announcement. Defer it past
+    // the close: while the modal is open it inerts the rest of the page including
+    // the alert outlet, and an alert mounted into an inert subtree is not
+    // announced. After the close the node mounts into a live page and its
+    // insertion is what the screen reader speaks.
+    window.setTimeout(() => {
+      createSuccessAlert({ title: "Capacity updated", description });
+    }, 0);
   };
 
   return (
-    <DialogRoot open={open} onOpenChange={(e) => !e.open && onClose()} size="lg">
+    <DialogRoot
+      open={open}
+      onOpenChange={(e) => !e.open && onClose()}
+      size="lg"
+      // Cancel restores focus to the trigger; a successful change sends focus to
+      // the page heading instead, so the trigger is not announced over the alert.
+      finalFocusEl={() =>
+        closingForSuccessRef.current ? successFocusRef.current : triggerRef.current
+      }
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle as="h2">Change capacity</DialogTitle>
-          <DialogDescription>
-            You&apos;re currently on {currentFeeds} feeds. Pick a new capacity.
-          </DialogDescription>
         </DialogHeader>
         <DialogCloseTrigger />
         <DialogBody>
           <Stack gap={5}>
+            <DialogDescription>
+              You&apos;re currently on {currentFeeds} feeds. Pick a new capacity.
+            </DialogDescription>
             <CapacitySlider index={index} onChange={setIndex} />
-            {/* One always-mounted polite live region carries the variable summary
-                so both the increase price line and the decrease diff announce
-                through the same node. The slider sits above it so its own value
-                announcements are not re-read and it never remounts across the
-                swap (thumb focus is preserved). */}
+            {/* One always-mounted polite live region carries the before/after
+                summary so increases and decreases announce through the same node.
+                The slider sits above it so its own value announcements are not
+                re-read and it never remounts across slider moves (thumb focus is
+                preserved). The "Now -> After" comparison renders the same way in
+                both directions; only the disabled-feed warning below is
+                decrease-specific. */}
             <Box aria-live="polite" aria-busy={!recurringPrice}>
-              {decreasing ? (
-                <>
-                  <VisuallyHidden>
-                    Reducing capacity from {currentFeeds} feeds to {nextFeeds} feeds,{" "}
-                    {recurringPrice ?? "updating price"} per {interval}.
-                  </VisuallyHidden>
-                  <HStack gap={4} alignItems="stretch" aria-hidden>
-                    <CapacityCompareColumn heading="Now" feeds={currentFeeds} />
-                    <CapacityCompareColumn
-                      heading="After"
-                      feeds={nextFeeds}
-                      price={recurringPrice}
-                      interval={interval}
-                      emphasized
-                    />
-                  </HStack>
-                </>
-              ) : (
-                <>
-                  <Text fontSize="xl" fontWeight="bold" color="text.link">
-                    {recurringPrice ?? <Spinner size="sm" aria-label="Loading price" />}{" "}
-                    <Text as="span" fontSize="sm" fontWeight="normal" color="fg.muted">
-                      / {interval}
-                    </Text>
-                  </Text>
-                  <Text fontSize="sm" color="fg.muted">
-                    {nextFeeds} feeds
-                  </Text>
-                </>
-              )}
+              <VisuallyHidden>
+                Changing capacity from {currentFeeds} feeds to {nextFeeds} feeds,{" "}
+                {recurringPrice ?? "updating price"} per {interval}.
+              </VisuallyHidden>
+              <HStack gap={4} alignItems="stretch" aria-hidden>
+                <CapacityCompareColumn heading="Now" feeds={currentFeeds} />
+                <CapacityCompareColumn
+                  heading="After"
+                  feeds={nextFeeds}
+                  price={recurringPrice}
+                  interval={interval}
+                  emphasized
+                />
+              </HStack>
             </Box>
             {/* The consequence is the most important message in the flow, so it
                 gets its own polite live region: announced when it appears as the
@@ -451,56 +490,78 @@ const ChangeCapacityDialog = ({
                 </Text>
               </Box>
             )}
-            {status === "loading" && <Spinner />}
-            {error && (
-              <InlineErrorAlert title="Failed to load change preview" description={error.message} />
-            )}
-            {immediate && (
-              <Stack gap={3}>
-                <Stack gap={1}>
-                  <Text fontWeight="medium" fontSize="sm">
-                    Due today
-                  </Text>
-                  <Stack as="dl" gap={1}>
-                    <AmountRow label="Subtotal" value={immediate.subtotalFormatted} />
-                    <AmountRow label="Tax" value={immediate.taxFormatted} />
-                    {immediate.credit !== "0" && (
-                      <AmountRow
-                        label="Account credit"
-                        value={`-${immediate.creditFormatted}`}
-                        valueColor="text.success"
-                      />
-                    )}
-                    <Box borderTopWidth="1px" borderColor="border.emphasized" pt={1}>
-                      <AmountRow
-                        label="Total due today"
-                        value={immediate.grandTotalFormatted}
-                        emphasized
-                      />
-                    </Box>
-                  </Stack>
-                  <Text color="fg.muted" fontSize="xs">
-                    Prorated for the current billing period.
-                  </Text>
-                </Stack>
-                {recurringPrice && (
-                  <Stack gap={1}>
-                    <Text fontWeight="medium" fontSize="sm">
-                      Then
-                    </Text>
-                    <Text fontSize="sm">
-                      {recurringPrice} / {interval}
-                      {nextBillDate
-                        ? `, starting ${dayjs(nextBillDate).format("D MMMM YYYY")}`
-                        : ""}
-                      .
-                    </Text>
-                    <Text color="fg.muted" fontSize="xs">
-                      Renews automatically. Cancel anytime.
-                    </Text>
+            {/* One always-mounted polite region spans the loading -> loaded
+                transition for the prorated breakdown so the screen reader observes
+                the swap within a stable region. While loading it holds the place of
+                the "Due today" breakdown with skeleton rows the shape of AmountRow
+                so the dialog does not jump when figures arrive (skeletons
+                decorative). aria-busy holds the announcement until the preview
+                settles; the sr-only line then states the total once, so a
+                screen-reader user hears the cost without navigating the breakdown. */}
+            {(immediate || (dirty && status === "loading")) && (
+              <Box aria-live="polite" aria-busy={status === "loading"}>
+                {dirty && status === "loading" && (
+                  <Stack gap={1} aria-label="Loading change preview">
+                    <Skeleton height="4" width="24" />
+                    <Skeleton height="4" width="full" />
+                    <Skeleton height="4" width="full" />
+                    <Skeleton height="5" width="full" />
                   </Stack>
                 )}
-              </Stack>
+                {immediate && (
+                  <Stack gap={3}>
+                    <VisuallyHidden>
+                      Preview ready. You&apos;ll pay {immediate.grandTotalFormatted} now.
+                    </VisuallyHidden>
+                    <Stack gap={1}>
+                      <Text fontWeight="medium" fontSize="sm">
+                        Due today
+                      </Text>
+                      <Stack as="dl" gap={1}>
+                        <AmountRow label="Subtotal" value={immediate.subtotalFormatted} />
+                        <AmountRow label="Tax" value={immediate.taxFormatted} />
+                        {immediate.credit !== "0" && (
+                          <AmountRow
+                            label="Account credit"
+                            value={`-${immediate.creditFormatted}`}
+                            valueColor="text.success"
+                          />
+                        )}
+                        <Box borderTopWidth="1px" borderColor="border.emphasized" pt={1}>
+                          <AmountRow
+                            label="Total due today"
+                            value={immediate.grandTotalFormatted}
+                            emphasized
+                          />
+                        </Box>
+                      </Stack>
+                      <Text color="fg.muted" fontSize="xs">
+                        Prorated for the current billing period.
+                      </Text>
+                    </Stack>
+                    {recurringPrice && (
+                      <Stack gap={1}>
+                        <Text fontWeight="medium" fontSize="sm">
+                          Then
+                        </Text>
+                        <Text fontSize="sm">
+                          {recurringPrice} / {interval}
+                          {nextBillDate
+                            ? `, starting ${dayjs(nextBillDate).format("D MMMM YYYY")}`
+                            : ""}
+                          .
+                        </Text>
+                        <Text color="fg.muted" fontSize="xs">
+                          Renews automatically. Cancel anytime.
+                        </Text>
+                      </Stack>
+                    )}
+                  </Stack>
+                )}
+              </Box>
+            )}
+            {error && (
+              <InlineErrorAlert title="Failed to load change preview" description={error.message} />
             )}
             {updateMutation.error && (
               <InlineErrorAlert
@@ -732,10 +793,12 @@ export const WorkspaceBilling = () => {
           Manage the subscription that powers {currentWorkspace.name}&apos;s feeds.
         </Text>
       </Stack>
-      {/* Outcome announcements (payment captured, then activation complete) go
-          through one persistent polite live region so each is announced once
-          and the text is fully under our control. The visible spinner below is
-          decorative; it no longer carries its own live role. */}
+      {/* Activation outcomes (payment captured, then activation complete) go
+          through one persistent polite live region so each is announced once and
+          the text is fully under our control. A capacity change announces through
+          the shared page alert instead (createSuccessAlert), so it is not routed
+          here. The visible spinner below is decorative; it no longer carries its
+          own live role. */}
       <VisuallyHidden role="status">{billingAnnouncement}</VisuallyHidden>
       {awaitingActivation && !subscription && (
         <Box>
@@ -960,12 +1023,9 @@ export const WorkspaceBilling = () => {
       />
       <ChangeCapacityDialog
         open={isChangeCapacityOpen}
-        onClose={() => {
-          setIsChangeCapacityOpen(false);
-          // Return focus to the trigger, deferred past the dialog's own close so
-          // it is not overwritten by any internal focus handling.
-          window.setTimeout(() => changeCapacityTriggerRef.current?.focus?.(), 0);
-        }}
+        onClose={() => setIsChangeCapacityOpen(false)}
+        triggerRef={changeCapacityTriggerRef}
+        successFocusRef={headingRef}
         workspaceSlug={workspaceSlug}
         currentFeeds={currentCapacityFeeds}
         interval={subscriptionInterval}

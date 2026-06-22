@@ -21,6 +21,7 @@ import {
 } from "../../hooks";
 import { useUserFeedsInfinite } from "../../../feed/hooks/useUserFeedsInfinite";
 import { getUserFeeds } from "../../../feed/api";
+import { usePageAlertContext } from "@/contexts/PageAlertContext";
 
 const h = vi.hoisted(() => ({
   openCheckout: vi.fn(),
@@ -34,6 +35,7 @@ const h = vi.hoisted(() => ({
   updatePaymentMethod: vi.fn(),
   resetCheckoutData: vi.fn(),
   refetchPaymentMethodTransaction: vi.fn(),
+  createSuccessAlert: vi.fn(),
 }));
 
 vi.mock("@/features/subscriptionProducts", async (importOriginal) => ({
@@ -65,6 +67,11 @@ vi.mock("../../hooks", async (importOriginal) => ({
 
 vi.mock("../../../feed/hooks/useUserFeedsInfinite", () => ({
   useUserFeedsInfinite: vi.fn(),
+}));
+
+vi.mock("@/contexts/PageAlertContext", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/contexts/PageAlertContext")>()),
+  usePageAlertContext: vi.fn(),
 }));
 
 // The convert dialog's auto-pick ("Select them for me") fetches the cap's worth
@@ -281,6 +288,9 @@ describe("WorkspaceBilling", () => {
       refetch: h.refetchPaymentMethodTransaction,
       error: null,
       fetchStatus: "idle",
+    } as never);
+    vi.mocked(usePageAlertContext).mockReturnValue({
+      createSuccessAlert: h.createSuccessAlert,
     } as never);
   });
 
@@ -1420,6 +1430,52 @@ describe("WorkspaceBilling", () => {
     expect(slider).toHaveAttribute("aria-valuetext", "100 feeds");
   });
 
+  it("does not show a perpetual preview spinner when the dialog opens at the current capacity", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    // On open the slider seeds at the current capacity, so there is no pending
+    // change to preview and the change-preview query stays disabled. A disabled
+    // React Query reports status "loading", so gating the spinner on status alone
+    // left it spinning forever until the slider moved. The preview spinner must
+    // not appear while nothing is being previewed.
+    const confirmButton = await screen.findByRole("button", { name: /confirm change/i });
+    expect(confirmButton).toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByText(/^Loading\.\.\.$/)).not.toBeInTheDocument();
+  });
+
+  it("opens clean (not dirty) when the current capacity falls between detents", async () => {
+    mockPaddle();
+    // A Tier 3 base (140) plus 10 add-on feeds = 150 feeds, which is not a
+    // detent (detents are 70/100/140/200/300/500). Seeding rounds the slider up
+    // to the 200 detent, but the dialog must still open as a no-op: confirming
+    // without moving the slider must not silently raise capacity to 200.
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({
+        productKey: "tier3",
+        addons: [{ key: ProductKey.Tier3Feed, quantity: 10 }],
+      }),
+    });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    const confirmButton = await screen.findByRole("button", { name: /confirm change/i });
+    expect(confirmButton).toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByText(/^Loading\.\.\.$/)).not.toBeInTheDocument();
+
+    // Confirming an untouched dialog must do nothing (no capacity change fired).
+    fireEvent.click(confirmButton);
+    expect(h.update).not.toHaveBeenCalled();
+    expect(h.createSuccessAlert).not.toHaveBeenCalled();
+  });
+
   it("discloses the recurring charge and renewal date in the change-capacity dialog", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
@@ -1461,6 +1517,37 @@ describe("WorkspaceBilling", () => {
     expect(screen.getByText("-$0.82")).toBeInTheDocument();
     // Credit reduces the bill, so it must read as a deduction, not a charge.
     expect(screen.getByText("-$5.00")).toBeInTheDocument();
+  });
+
+  it("announces the settled total once the change preview loads", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview({
+      immediateTransaction: {
+        billingPeriod: {
+          startsAt: "2027-02-01T00:00:00.000Z",
+          endsAt: "2027-02-28T00:00:00.000Z",
+        },
+        subtotalFormatted: "$20.00",
+        taxFormatted: "$2.00",
+        credit: "0",
+        creditFormatted: "$0",
+        grandTotalFormatted: "$22.00",
+      },
+    });
+
+    renderBilling();
+    await openChangeDialog();
+    await setSliderToFeeds(140);
+
+    // The sr-only line states the settled total so a screen-reader user hears
+    // the cost without navigating the breakdown. JSDOM does not fire live-region
+    // speech, so assert the markup: the announcement text exists and sits in a
+    // polite, no-longer-busy region.
+    const announcement = await screen.findByText(/Preview ready\. You'll pay \$22\.00 now\./i);
+    const liveRegion = announcement.closest('[aria-live="polite"]');
+    expect(liveRegion).not.toBeNull();
+    expect(liveRegion).toHaveAttribute("aria-busy", "false");
   });
 
   it("hides the account-credit row when there is no credit", async () => {
@@ -1544,6 +1631,72 @@ describe("WorkspaceBilling", () => {
         ],
       }),
     );
+
+    // A successful change must confirm itself through the shared page alert
+    // (a role="alert" live region that is both the durable on-screen
+    // confirmation and the announcement). Otherwise the dialog just closes and
+    // the owner can't tell whether the change took.
+    await waitFor(() =>
+      expect(h.createSuccessAlert).toHaveBeenCalledWith({
+        title: "Capacity updated",
+        description: "This workspace can now run up to 200 feeds.",
+      }),
+    );
+  });
+
+  it("confirms a capacity decrease with plain copy, not 'can now run up to'", async () => {
+    mockPaddle();
+    // Currently at 140 feeds so the slider can move DOWN to 100.
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 70 }] }),
+    });
+    mockChangePreview({
+      feedImpact: { newFeedLimit: 100, currentFeedCount: 10, willBeDisabledCount: 0 },
+    });
+
+    renderBilling();
+    await openChangeDialog();
+    await setSliderToFeeds(100);
+
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /confirm change/i }));
+
+    // "can now run up to" reads as an upgrade; a decrease (which can disable
+    // feeds) states the new capacity plainly instead.
+    await waitFor(() =>
+      expect(h.createSuccessAlert).toHaveBeenCalledWith({
+        title: "Capacity updated",
+        description: "This workspace's capacity is now 100 feeds.",
+      }),
+    );
+  });
+
+  it("does not pull focus back to the trigger on a successful change, so the alert is announced", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    const trigger = await screen.findByRole("button", { name: /change capacity/i });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    await setSliderToFeeds(200);
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /confirm change/i }));
+
+    // On success the alert carries the announcement; returning focus to the
+    // trigger would announce that button and its "Change capacity" group over
+    // the alert. So unlike the cancel path, focus moves to the page heading
+    // (brief, stable) rather than back to the trigger.
+    await waitFor(() => expect(h.createSuccessAlert).toHaveBeenCalled());
+    // Wait for the dialog to finish closing (while open it inerts the page, so
+    // the heading is not yet in the a11y tree).
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    const heading = screen.getByRole("heading", { level: 1, name: /billing/i });
+    await waitFor(() => expect(heading).toHaveFocus());
+    expect(trigger).not.toHaveFocus();
   });
 
   it("returns focus to the Change capacity button when the dialog is cancelled", async () => {

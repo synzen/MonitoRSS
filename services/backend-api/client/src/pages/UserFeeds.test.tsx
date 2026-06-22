@@ -502,7 +502,12 @@ describe("UserFeeds - Feed adding & inline banner", () => {
     const addButtons = screen.getAllByRole("button", { name: /^Add .+ feed$/ });
     await user.click(addButtons[0]);
 
-    const liveRegion = screen.getByRole("status");
+    // The page mounts an always-present (empty) PageAlert live region too, so
+    // select the status region that actually carries the banner copy.
+    const liveRegion = screen
+      .getAllByRole("status")
+      .find((r) => /1 feed added!/.test(r.textContent ?? ""));
+    expect(liveRegion).toBeDefined();
     expect(liveRegion).toHaveAttribute("aria-live", "polite");
     expect(liveRegion).toHaveTextContent("1 feed added!");
   });
