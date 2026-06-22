@@ -21,6 +21,7 @@ import { PricePreview } from "@/types/PricePreview";
 import { retryPromise } from "@/utils/retryPromise";
 import formatCurrency from "@/utils/formatCurrency";
 import { resolveCheckoutCustomerEmail } from "../utils/resolveCheckoutCustomerEmail";
+import { CHECKOUT_FRAME_MIN_HEIGHT_PX } from "../constants";
 
 const pwAuth = import.meta.env.VITE_PADDLE_PW_AUTH;
 const clientToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
@@ -208,6 +209,12 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
           }
 
           checkoutClosedCallbackRef.current = undefined;
+          // Drop the summary for the now-closed checkout. checkoutLoadedData is
+          // shared across every checkout surface; a stale truthy value would make
+          // the next surface that opens think its checkout is already loaded
+          // (painting an opaque frame over Paddle's spinner and skipping the
+          // stall fallback). checkout.completed already clears it; closing must too.
+          setCheckoutLoadedData(undefined);
         } else if (event.name === "checkout.error") {
           fetch("/api/v1/error-reports", {
             method: "POST",
@@ -546,12 +553,11 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
           : {
               displayMode: "inline",
               frameTarget: frameTarget || "checkout-modal",
-              frameInitialHeight: 634,
+              frameInitialHeight: CHECKOUT_FRAME_MIN_HEIGHT_PX,
               allowLogout: false,
               variant: "one-page",
               showAddDiscounts: false,
-              frameStyle:
-                "width: 100%; height: 100%; min-width: 312px; min-height:634px; padding-left: 8px; padding-right: 8px;",
+              frameStyle: `width: 100%; height: 100%; min-width: 312px; min-height:${CHECKOUT_FRAME_MIN_HEIGHT_PX}px; padding-left: 8px; padding-right: 8px;`,
             },
         customData: customData ?? {
           userId: user?.result.id ?? "",

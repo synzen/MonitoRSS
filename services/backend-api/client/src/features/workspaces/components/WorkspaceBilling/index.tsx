@@ -40,7 +40,12 @@ import {
   DialogCloseTrigger,
 } from "@/components/ui/dialog";
 import { pages, PRICE_IDS, getPlanDisplayName, ProductKey } from "@/constants";
-import { usePaddleContext } from "@/features/subscriptionProducts";
+import {
+  usePaddleContext,
+  CheckoutLoadingFrame,
+  CHECKOUT_ANNOUNCEMENTS,
+  PAYMENT_UPDATE_ANNOUNCEMENTS,
+} from "@/features/subscriptionProducts";
 import {
   useWorkspaceSliderPrice,
   feedCountToAddonQuantity,
@@ -171,8 +176,9 @@ const CHECKOUT_FRAME_CLASS = "workspace-checkout-frame";
 // Chakra dialog inerts its siblings, giving a correct focus trap; because the
 // inline frame renders INSIDE the dialog, the dialog's inert excludes it (an
 // OVERLAY-mode frame, a body sibling, would instead be inerted and unclickable).
-// The dialog is titled so it announces itself to screen readers on open, which
-// is why no separate live-region announcement is needed.
+// The dialog is titled so it announces itself to screen readers on open. The
+// frame itself carries a polite, busy live region (see the body) so the wait
+// for Paddle to paint, and a stall fallback, are announced too.
 const WorkspaceCheckoutDialog = ({
   intent,
   onCancel,
@@ -182,8 +188,16 @@ const WorkspaceCheckoutDialog = ({
   onCancel: () => void;
   onCompleted: () => void;
 }) => {
-  const { openCheckout, updatePaymentMethod, resetCheckoutData } = usePaddleContext();
+  const { openCheckout, updatePaymentMethod, resetCheckoutData, checkoutLoadedData } =
+    usePaddleContext();
   const [frameEl, setFrameEl] = useState<HTMLDivElement | null>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const isCheckoutLoaded = !!checkoutLoadedData;
+  // Update-payment hosts the same Paddle frame as a purchase, but announcing
+  // "checkout" there would make a user think they are buying again; use the
+  // payment-update vocabulary for that intent.
+  const announcements =
+    intent?.kind === "updatePaymentMethod" ? PAYMENT_UPDATE_ANNOUNCEMENTS : CHECKOUT_ANNOUNCEMENTS;
 
   // Open Paddle only once both the intent and the frame container exist: Paddle
   // resolves the frameTarget class synchronously, so the container must be in
@@ -228,24 +242,27 @@ const WorkspaceCheckoutDialog = ({
       // A stray backdrop click must not discard a half-entered card; the user
       // dismisses deliberately via Escape or the close button.
       closeOnInteractOutside={false}
+      // Land focus on the title, not the close button (the default first
+      // focusable), so the dialog announces what it is on open instead of "Close
+      // button" with no context.
+      initialFocusEl={() => titleRef.current}
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{intent?.title}</DialogTitle>
+          <DialogTitle ref={titleRef} tabIndex={-1}>
+            {intent?.title}
+          </DialogTitle>
         </DialogHeader>
         <DialogCloseTrigger />
         <DialogBody>
           <Stack gap={3}>
             <DialogDescription>Payment is handled securely by Paddle.</DialogDescription>
-            {/* Paddle paints its checkout onto this container; the white surface
-                matches the third-party checkout surface used by the personal
-                checkout flow. */}
-            <Box
-              className={CHECKOUT_FRAME_CLASS}
-              ref={setFrameEl}
-              bg="white"
-              minH="634px"
-              w="100%"
+            <CheckoutLoadingFrame
+              frameClassName={CHECKOUT_FRAME_CLASS}
+              frameRef={setFrameEl}
+              isLoaded={isCheckoutLoaded}
+              isOpen={!!intent}
+              announcements={announcements}
             />
           </Stack>
         </DialogBody>
@@ -712,8 +729,7 @@ export const WorkspaceBilling = () => {
           Billing
         </Heading>
         <Text color="fg.muted">
-          {currentWorkspace.name}&apos;s subscription pays for its feeds; it is separate from any
-          member&apos;s personal plan.
+          Manage the subscription that powers {currentWorkspace.name}&apos;s feeds.
         </Text>
       </Stack>
       {/* Outcome announcements (payment captured, then activation complete) go

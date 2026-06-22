@@ -439,6 +439,25 @@ const config = defineConfig({
         base: { root: { colorPalette: "brand" } },
         variants: { variant: { solid: { itemControl: { borderColor: "controlBorder" } } } },
       },
+      // Switch is a CONTROL with the same off-state problem: the stock recipe paints the unchecked
+      // track `bg.emphasized` (the chip token), so a switch sitting on any emphasized surface has its
+      // off-track collapse into the background (1.2:1, measured invisible). Same Tier-1 move as the
+      // checkbox/radio overrides above — give the unchecked track a `controlBorder` outline (≥3:1, WCAG
+      // 1.4.11) so the pill is self-defining; drop it on `_checked` since the accent fill carries the edge.
+      switch: {
+        slots: ["root", "label", "control", "indicator", "thumb"],
+        variants: {
+          variant: {
+            solid: {
+              control: {
+                borderWidth: "1px",
+                borderColor: "controlBorder",
+                _checked: { borderColor: "transparent" },
+              },
+            },
+          },
+        },
+      },
       // Two alert overrides + a scheme-conditional info re-point:
       //  1. Bump title to "semibold" (the v3 default "medium" is indistinguishable from the body).
       //  2. The default `subtle` variant paints only a fill with NO border; on warm dark pages those

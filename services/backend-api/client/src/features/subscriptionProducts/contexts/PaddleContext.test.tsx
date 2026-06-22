@@ -84,6 +84,25 @@ const emitCheckoutCompleted = (customData: Record<string, string>) =>
     });
   });
 
+const emitEvent = (name: string, data?: unknown) =>
+  act(() => {
+    h.eventCallback?.({ name, data });
+  });
+
+// A minimal checkout.loaded payload: the provider maps over data.items and reads
+// data.totals/currency_code, so those must be present for it to set the summary.
+const loadedEventData = {
+  currency_code: "USD",
+  items: [],
+  totals: { balance: 0, credit: 0, subtotal: 0, tax: 0, total: 0 },
+};
+
+const CheckoutLoadedProbe = () => {
+  const { checkoutLoadedData } = useContext(PaddleContext);
+
+  return <span data-testid="has-loaded-data">{String(!!checkoutLoadedData)}</span>;
+};
+
 describe("PaddleContextProvider isConfigured", () => {
   beforeEach(() => {
     h.eventCallback = undefined;
@@ -96,18 +115,14 @@ describe("PaddleContextProvider isConfigured", () => {
     mockUserMe({ enableBilling: false });
     renderProvider(<IsConfiguredProbe />);
 
-    await waitFor(() =>
-      expect(screen.getByTestId("is-configured")).toHaveTextContent("false"),
-    );
+    await waitFor(() => expect(screen.getByTestId("is-configured")).toHaveTextContent("false"));
   });
 
   it("is true when billing is enabled and a client token is present", async () => {
     mockUserMe({ enableBilling: true });
     renderProvider(<IsConfiguredProbe />);
 
-    await waitFor(() =>
-      expect(screen.getByTestId("is-configured")).toHaveTextContent("true"),
-    );
+    await waitFor(() => expect(screen.getByTestId("is-configured")).toHaveTextContent("true"));
   });
 });
 
@@ -136,5 +151,27 @@ describe("PaddleContextProvider checkout.completed routing", () => {
     emitCheckoutCompleted({ userId: "user-1" });
 
     expect(await screen.findByText(/provisioning benefits/i)).toBeInTheDocument();
+  });
+});
+
+describe("PaddleContextProvider checkoutLoadedData lifecycle", () => {
+  beforeEach(() => {
+    h.eventCallback = undefined;
+    vi.clearAllMocks();
+  });
+
+  it("clears the loaded summary when the checkout is closed without completing", async () => {
+    // checkoutLoadedData is shared across every checkout surface. If closing a
+    // checkout left it truthy, the next surface to open would think its own
+    // checkout was already loaded (painting an opaque frame over Paddle's spinner
+    // and skipping the stall fallback). So checkout.closed must clear it.
+    renderProvider(<CheckoutLoadedProbe />);
+    await waitFor(() => expect(h.eventCallback).toBeDefined());
+
+    emitEvent("checkout.loaded", loadedEventData);
+    await waitFor(() => expect(screen.getByTestId("has-loaded-data")).toHaveTextContent("true"));
+
+    emitEvent("checkout.closed");
+    await waitFor(() => expect(screen.getByTestId("has-loaded-data")).toHaveTextContent("false"));
   });
 });

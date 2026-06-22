@@ -463,6 +463,162 @@ describe("WorkspaceBilling", () => {
     expect(dialog.contains(frame)).toBe(true);
   });
 
+  it("moves initial focus to the dialog title on open, not the close button", async () => {
+    // Without a directed initial focus, the dialog lands focus on the first
+    // focusable control (the close button), so a screen reader reads only "Close
+    // button" and the title/description are never announced. Focus must instead
+    // start on the title so the dialog announces what it is on open.
+    mockPaddle({ checkoutLoadedData: undefined });
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    fireEvent.click((await screen.findAllByRole("button", { name: /subscribe to/i }))[0]);
+
+    const dialog = await screen.findByRole("dialog");
+    const title = within(dialog).getByText(/subscribe to team \(70 feeds\)/i);
+    await waitFor(() => expect(title).toHaveFocus());
+    expect(within(dialog).getByRole("button", { name: /close/i })).not.toHaveFocus();
+  });
+
+  it("lets Paddle's own loader show during load instead of stacking a second spinner", async () => {
+    // Paddle always paints its own loading spinner before checkout.loaded fires.
+    // We must not render a competing visible spinner on top of it (which stacked
+    // two rings). The frame stays transparent so Paddle's loader shows through,
+    // and the region is marked busy for assistive tech.
+    mockPaddle({ checkoutLoadedData: undefined });
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    fireEvent.click((await screen.findAllByRole("button", { name: /subscribe to/i }))[0]);
+
+    const dialog = await screen.findByRole("dialog");
+    // No visible spinner of ours: any "loading" wording lives only in the hidden
+    // live region, not as on-screen text competing with Paddle's loader.
+    const frameRegion = within(dialog).getByTestId("workspace-checkout-frame-region");
+    expect(within(frameRegion).queryByText(/loading secure checkout/i)).not.toBeInTheDocument();
+    // aria-busy belongs on the frame region (the loading area), not on the live
+    // region: a busy live region would suppress its own announcements.
+    expect(frameRegion).toHaveAttribute("aria-busy", "true");
+    expect(within(dialog).getByTestId("workspace-checkout-live-message")).not.toHaveAttribute(
+      "aria-busy",
+    );
+  });
+
+  it("announces loading through a live region that mounts empty so the update is spoken", async () => {
+    // A polite live region only announces content that changes AFTER it exists in
+    // the DOM. If it mounts already holding the loading text, screen readers treat
+    // that as static content and stay silent. So the region must be present and
+    // empty on open, then receive the message a tick later as a real update.
+    vi.useFakeTimers();
+
+    try {
+      mockPaddle({ checkoutLoadedData: undefined });
+      mockWorkspace({ role: "owner", subscription: null });
+
+      renderBilling();
+
+      const subscribeButtons = await screen.findAllByRole("button", { name: /subscribe to/i });
+      await act(async () => {
+        fireEvent.click(subscribeButtons[0]);
+      });
+
+      const dialog = await screen.findByRole("dialog");
+      const liveRegion = within(dialog).getByTestId("workspace-checkout-live-message");
+
+      // Present but empty at the moment of open: the announcement is the later fill.
+      expect(liveRegion).toHaveAttribute("aria-live", "polite");
+      expect(liveRegion).toHaveTextContent("");
+
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+
+      expect(liveRegion).toHaveTextContent(/loading secure checkout/i);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("clears the loading placeholder once Paddle reports the checkout loaded", async () => {
+    // checkout.loaded sets checkoutLoadedData; the placeholder must yield and the
+    // frame region drop its busy flag so assistive tech knows the wait is over.
+    mockPaddle({ checkoutLoadedData: { items: [] } });
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    fireEvent.click((await screen.findAllByRole("button", { name: /subscribe to/i }))[0]);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByText(/loading secure checkout/i)).not.toBeInTheDocument();
+    expect(within(dialog).getByTestId("workspace-checkout-frame-region")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+  });
+
+  it("announces that the checkout is ready once it finishes loading", async () => {
+    // Clearing the live region on load says nothing (an empty live region is
+    // silent). The user who heard "Loading..." needs a completion cue, so the
+    // region announces the form is ready and what to do next.
+    mockPaddle({ checkoutLoadedData: { items: [] } });
+    mockWorkspace({ role: "owner", subscription: null });
+
+    renderBilling();
+
+    fireEvent.click((await screen.findAllByRole("button", { name: /subscribe to/i }))[0]);
+
+    const dialog = await screen.findByRole("dialog");
+    const liveRegion = within(dialog).getByTestId("workspace-checkout-live-message");
+    await waitFor(() => expect(liveRegion).toHaveTextContent(/checkout ready/i));
+    // The live region itself never carries aria-busy (that would suppress it);
+    // the frame region is the one that reports no-longer-busy on load.
+    expect(liveRegion).not.toHaveAttribute("aria-busy");
+    expect(within(dialog).getByTestId("workspace-checkout-frame-region")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+  });
+
+  it("offers refresh guidance if the checkout never finishes loading", async () => {
+    // While loading, Paddle owns the visual (we render no spinner of our own). But
+    // if Paddle never loads, an endless wait strands the user, so after a grace
+    // period we surface the same recovery guidance the full-page checkout shows.
+    vi.useFakeTimers();
+
+    try {
+      mockPaddle({ checkoutLoadedData: undefined });
+      mockWorkspace({ role: "owner", subscription: null });
+
+      renderBilling();
+
+      const subscribeButtons = await screen.findAllByRole("button", { name: /subscribe to/i });
+      await act(async () => {
+        fireEvent.click(subscribeButtons[0]);
+      });
+
+      const dialog = await screen.findByRole("dialog");
+      const visibleRegion = within(dialog).getByTestId("workspace-checkout-frame-region");
+      // Nothing of ours is shown during the normal wait; Paddle's loader fills it.
+      expect(
+        within(visibleRegion).queryByText(/refreshing the page or using a different browser/i),
+      ).not.toBeInTheDocument();
+
+      await act(async () => {
+        vi.advanceTimersByTime(10_100);
+      });
+
+      // Once Paddle has demonstrably failed, the recovery guidance appears.
+      expect(
+        within(visibleRegion).getByText(/refreshing the page or using a different browser/i),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("returns focus to the Subscribe button when checkout is cancelled", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
@@ -718,6 +874,40 @@ describe("WorkspaceBilling", () => {
     // self-announces on open; the secure-payment reassurance is in the body.
     const dialog = await screen.findByRole("dialog", { name: /update payment method/i });
     expect(within(dialog).getByText(/payment is handled securely by paddle/i)).toBeInTheDocument();
+  });
+
+  it("announces the update-payment flow as a payment form, not a checkout", async () => {
+    // The update-payment dialog hosts the same Paddle frame as a purchase, but a
+    // screen-reader user who only hears "Loading secure checkout" / "Checkout
+    // ready" would think they are buying again. The announcement must use the
+    // payment-form vocabulary instead.
+    vi.useFakeTimers();
+
+    try {
+      mockPaddle({ checkoutLoadedData: undefined });
+      mockWorkspace({ role: "owner", subscription: activeSubscription() });
+
+      renderBilling();
+
+      const updateButton = await screen.findByRole("button", {
+        name: /update payment method/i,
+      });
+      await act(async () => {
+        fireEvent.click(updateButton);
+      });
+
+      const dialog = await screen.findByRole("dialog", { name: /update payment method/i });
+      const liveRegion = within(dialog).getByTestId("workspace-checkout-live-message");
+
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+
+      expect(liveRegion).toHaveTextContent(/loading secure payment form/i);
+      expect(liveRegion).not.toHaveTextContent(/checkout/i);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("returns focus to the update-payment button when its checkout is cancelled", async () => {
