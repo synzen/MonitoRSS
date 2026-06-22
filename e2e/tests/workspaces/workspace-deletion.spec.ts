@@ -58,11 +58,17 @@ test.describe("Workspace deletion", () => {
     await expect(confirmButton).not.toHaveAttribute("aria-disabled", "true");
     await confirmButton.click();
 
-    // Lands back on the personal dashboard with a persistent alert.
+    // Lands back on the personal dashboard with a persistent alert. Match the
+    // visible alert title/description exactly: the page alert also renders an
+    // srOnly role="status" live region whose announcement concatenates both
+    // ("Workspace deleted. <name> and all of its feeds have been deleted."), so a
+    // loose substring match resolves to two elements and trips strict mode.
     await expect(page).toHaveURL(/\/feeds$/, { timeout: 15000 });
-    await expect(page.getByText("Workspace deleted")).toBeVisible();
+    await expect(page.getByText("Workspace deleted", { exact: true })).toBeVisible();
     await expect(
-      page.getByText(`${workspaceName} and all of its feeds have been deleted.`),
+      page.getByText(`${workspaceName} and all of its feeds have been deleted.`, {
+        exact: true,
+      }),
     ).toBeVisible();
 
     // Back to zero workspaces: the switcher stays in the header (it's the create
