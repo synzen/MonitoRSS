@@ -125,7 +125,7 @@ describe("shared email shell", () => {
       reason: "Too many fetch errors.",
       actionRequired: "Check the URL and re-enable.",
       controlPanelUrl: "https://example.com/feeds/1",
-      manageNotificationsUrl: "https://example.com/alerting",
+      manageNotificationsUrl: "https://example.com/settings",
     });
 
     assert.match(html, /height:3px;background:#d97706/); // amber rail

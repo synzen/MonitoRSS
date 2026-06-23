@@ -67,7 +67,7 @@ const emails: Array<{ name: string; html: string }> = [
       reason: "The feed returned too many errors when we tried to fetch it.",
       actionRequired: "Check that the feed URL is reachable, then re-enable the feed.",
       controlPanelUrl: "https://my.monitorss.xyz",
-      manageNotificationsUrl: "https://my.monitorss.xyz/alerting",
+      manageNotificationsUrl: "https://my.monitorss.xyz/settings",
     }),
   },
   {
@@ -95,7 +95,7 @@ const emails: Array<{ name: string; html: string }> = [
       feedCount: 3,
       multipleFeeds: true,
       controlPanelUrl: "https://my.monitorss.xyz",
-      manageNotificationsUrl: "https://my.monitorss.xyz/alerting",
+      manageNotificationsUrl: "https://my.monitorss.xyz/settings",
       feeds: [
         { name: "TechCrunch", urlDisplay: "techcrunch.com/feed", urlLink: "https://techcrunch.com/feed/" },
         { name: "The Verge", urlDisplay: "theverge.com/rss", urlLink: "https://www.theverge.com/rss/index.xml" },

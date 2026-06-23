@@ -119,7 +119,7 @@ export class NotificationsService {
       controlPanelUrl: `${this.loginRedirectUrl}/feeds/${feed.id}`,
       reason: reason?.reason || disabledCode,
       actionRequired: reason?.action,
-      manageNotificationsUrl: `${this.loginRedirectUrl}/alerting`,
+      manageNotificationsUrl: `${this.loginRedirectUrl}/settings`,
     };
 
     try {
@@ -271,7 +271,7 @@ export class NotificationsService {
         urlLink: feed.url,
       })),
       controlPanelUrl: `${this.loginRedirectUrl}/workspaces/${workspace.slug}/feeds`,
-      manageNotificationsUrl: `${this.loginRedirectUrl}/alerting`,
+      manageNotificationsUrl: `${this.loginRedirectUrl}/settings`,
     };
 
     try {
