@@ -190,7 +190,14 @@ export async function seedWorkspaceFeedsInDb(input: {
 export async function seedPersonalFeedsInDb(input: {
   userId: ObjectId;
   discordUserId: string;
-  feeds: Array<{ title: string; url: string }>;
+  // Pass `acceptedManagerDiscordUserId` to give a feed an accepted co-manager,
+  // so the conversion dialog's "sharing does not move into a workspace" warning
+  // can be exercised through the UI.
+  feeds: Array<{
+    title: string;
+    url: string;
+    acceptedManagerDiscordUserId?: string;
+  }>;
 }): Promise<void> {
   await withDb(async (db) => {
     const base = Date.now() - input.feeds.length * 60_000;
@@ -202,6 +209,25 @@ export async function seedPersonalFeedsInDb(input: {
         healthStatus: "OK",
         connections: { discordChannels: [] },
         user: { id: input.userId, discordUserId: input.discordUserId },
+        ...(feed.acceptedManagerDiscordUserId
+          ? {
+              shareManageOptions: {
+                invites: [
+                  {
+                    // The invite subdoc keys its id on `id` (schema has
+                    // `_id: false`); the read path calls `invite.id.toString()`,
+                    // so seeding `_id` instead would crash on conversion.
+                    id: new ObjectId(),
+                    type: "CO_MANAGE",
+                    discordUserId: feed.acceptedManagerDiscordUserId,
+                    status: "ACCEPTED",
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                  },
+                ],
+              },
+            }
+          : {}),
         createdAt: new Date(base + index * 60_000),
         updatedAt: new Date(base + index * 60_000),
       })),

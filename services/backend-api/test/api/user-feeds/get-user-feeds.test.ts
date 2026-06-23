@@ -34,6 +34,7 @@ interface GetUserFeedsResult {
   isLegacyFeed: boolean;
   ownedByUser: boolean;
   refreshRateSeconds?: number;
+  sharedManagers?: Array<{ discordUserId: string; connectionScoped: boolean }>;
 }
 
 interface GetUserFeedsResponse {
@@ -136,6 +137,148 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
     const found = body.results.find((r) => r.id === feed.id);
     assert.ok(found);
     assert.strictEqual(found.ownedByUser, false);
+  });
+
+  it("exposes accepted co-managers as sharedManagers to the owner", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const sharedManagerDiscordUserId = generateSnowflake();
+    const owner = await ctx.asUser(ownerDiscordUserId);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Owner Shared Feed",
+      url: `https://example.com/get-user-feeds-owner-shared-${generateSnowflake()}.xml`,
+      user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      shareManageOptions: {
+        invites: [
+          {
+            discordUserId: sharedManagerDiscordUserId,
+            status: UserFeedManagerStatus.Accepted,
+          },
+        ],
+      },
+    });
+
+    const response = await owner.fetch("/api/v1/user-feeds?limit=100&offset=0", {
+      method: "GET",
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    const found = body.results.find((r) => r.id === feed.id);
+    assert.ok(found);
+    assert.deepStrictEqual(found.sharedManagers, [
+      { discordUserId: sharedManagerDiscordUserId, connectionScoped: false },
+    ]);
+  });
+
+  it("does not include pending invites in sharedManagers", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const pendingDiscordUserId = generateSnowflake();
+    const owner = await ctx.asUser(ownerDiscordUserId);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Owner Pending Shared Feed",
+      url: `https://example.com/get-user-feeds-owner-pending-${generateSnowflake()}.xml`,
+      user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      shareManageOptions: {
+        invites: [
+          {
+            discordUserId: pendingDiscordUserId,
+            status: UserFeedManagerStatus.Pending,
+          },
+        ],
+      },
+    });
+
+    const response = await owner.fetch("/api/v1/user-feeds?limit=100&offset=0", {
+      method: "GET",
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    const found = body.results.find((r) => r.id === feed.id);
+    assert.ok(found);
+    assert.deepStrictEqual(found.sharedManagers, []);
+  });
+
+  it("flags connectionScoped only for invites limited to a strict subset of connections", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const scopedManagerDiscordUserId = generateSnowflake();
+    const fullManagerDiscordUserId = generateSnowflake();
+    const owner = await ctx.asUser(ownerDiscordUserId);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Owner Connection Scoped Feed",
+      url: `https://example.com/get-user-feeds-owner-scoped-${generateSnowflake()}.xml`,
+      user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      connections: {
+        discordChannels: [
+          {
+            id: generateTestId(),
+            name: "Connection 1",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            details: { embeds: [], formatter: {} },
+          } as never,
+          {
+            id: generateTestId(),
+            name: "Connection 2",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            details: { embeds: [], formatter: {} },
+          } as never,
+        ],
+      },
+    });
+
+    const createdFeed = await ctx.container.userFeedRepository.findById(feed.id);
+    const [firstConnection, secondConnection] =
+      createdFeed!.connections.discordChannels;
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: feed.id },
+      {
+        $set: {
+          shareManageOptions: {
+            invites: [
+              {
+                discordUserId: scopedManagerDiscordUserId,
+                status: UserFeedManagerStatus.Accepted,
+                // One of two connections: a strict subset, genuinely scoped.
+                connections: [{ connectionId: firstConnection!.id }],
+              },
+              {
+                discordUserId: fullManagerDiscordUserId,
+                status: UserFeedManagerStatus.Accepted,
+                // Both connections: covers the whole feed, not scoped.
+                connections: [
+                  { connectionId: firstConnection!.id },
+                  { connectionId: secondConnection!.id },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    );
+
+    const response = await owner.fetch("/api/v1/user-feeds?limit=100&offset=0", {
+      method: "GET",
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    const found = body.results.find((r) => r.id === feed.id);
+    assert.ok(found);
+
+    const scoped = found.sharedManagers?.find(
+      (m) => m.discordUserId === scopedManagerDiscordUserId,
+    );
+    const full = found.sharedManagers?.find(
+      (m) => m.discordUserId === fullManagerDiscordUserId,
+    );
+    assert.strictEqual(scoped?.connectionScoped, true);
+    assert.strictEqual(full?.connectionScoped, false);
   });
 
   it("does not return feeds where user has pending invite", async () => {

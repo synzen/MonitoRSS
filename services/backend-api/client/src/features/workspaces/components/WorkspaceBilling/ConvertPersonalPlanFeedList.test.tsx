@@ -72,7 +72,17 @@ const installPaginatedFeeds = (allFeeds: Array<{ id: string; title: string }>) =
   });
 };
 
-const Harness = ({ feedLimit }: { feedLimit: number }) => {
+const Harness = ({
+  feedLimit,
+  onSharingChange,
+}: {
+  feedLimit: number;
+  onSharingChange?: (info: {
+    sharedSelectedCount: number;
+    affectedUserIds: string[];
+    anyConnectionScoped: boolean;
+  }) => void;
+}) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   return (
@@ -82,6 +92,7 @@ const Harness = ({ feedLimit }: { feedLimit: number }) => {
         onSelectedIdsChange={setSelected}
         feedLimit={feedLimit}
         onLoaded={vi.fn()}
+        onSharingChange={onSharingChange}
       />
     </ChakraProvider>
   );
@@ -424,5 +435,108 @@ describe("ConvertPersonalPlanFeedList", () => {
     expect(screen.queryByRole("checkbox", { name: /^Feed 1$/ })).not.toBeInTheDocument();
     // The "shown first below" pick framing is gone once searching.
     expect(screen.queryByText(/shown first below/i)).not.toBeInTheDocument();
+  });
+
+  it("warns on a selected shared feed and reports its co-manager up to the dialog", async () => {
+    // Two feeds under the limit (both selected by default). One is shared, so its
+    // row carries a warning chip and the rolled-up sharing info names the manager.
+    installPaginatedFeeds([
+      {
+        id: "feed-1",
+        title: "Shared Feed",
+        sharedManagers: [{ discordUserId: "mgr-1", connectionScoped: false }],
+      },
+      { id: "feed-2", title: "Solo Feed" },
+    ] as never);
+    const onSharingChange = vi.fn();
+
+    render(<Harness feedLimit={70} onSharingChange={onSharingChange} />);
+
+    // Both feeds selected by default; the shared one shows the loses-access chip.
+    await screen.findByRole("checkbox", { name: /^Shared Feed$/ });
+    // The visible chip (the screen-reader equivalent is a separate, hidden
+    // description tied to the checkbox via aria-describedby).
+    await waitFor(() => expect(screen.getByText("Shared. Co-managers lose access")).toBeVisible());
+    // The per-feed consequence is tied to the checkbox for assistive tech.
+    expect(screen.getByRole("checkbox", { name: /^Shared Feed$/ })).toHaveAccessibleDescription(
+      /co-managers lose access/i,
+    );
+
+    // A "Manage sharing" link lets the owner review that feed's co-managers in a
+    // new tab, without losing the dialog. Only shared feeds get one.
+    const manageLink = screen.getByRole("link", {
+      name: /manage sharing for Shared Feed/i,
+    });
+    expect(manageLink).toHaveAttribute("target", "_blank");
+    expect(manageLink).toHaveAttribute("href", "/feeds/feed-1?view=settings");
+    // The unshared feed has nothing to review, so no link.
+    expect(
+      screen.queryByRole("link", { name: /manage sharing for Solo Feed/i }),
+    ).not.toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(onSharingChange).toHaveBeenLastCalledWith({
+        sharedSelectedCount: 1,
+        affectedUserIds: ["mgr-1"],
+        anyConnectionScoped: false,
+      }),
+    );
+  });
+
+  it("flags connection-scoped sharing distinctly", async () => {
+    installPaginatedFeeds([
+      {
+        id: "feed-1",
+        title: "Scoped Feed",
+        sharedManagers: [{ discordUserId: "mgr-1", connectionScoped: true }],
+      },
+    ] as never);
+    const onSharingChange = vi.fn();
+
+    render(<Harness feedLimit={70} onSharingChange={onSharingChange} />);
+
+    await screen.findByRole("checkbox", { name: /^Scoped Feed$/ });
+    await waitFor(() =>
+      expect(screen.getByText("Shared. Per-connection access dropped")).toBeVisible(),
+    );
+    expect(screen.getByRole("checkbox", { name: /^Scoped Feed$/ })).toHaveAccessibleDescription(
+      /access to only some connections/i,
+    );
+    await waitFor(() =>
+      expect(onSharingChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ anyConnectionScoped: true }),
+      ),
+    );
+  });
+
+  it("drops the feed from the warning when it is unselected, and reassures it stays shared", async () => {
+    installPaginatedFeeds([
+      {
+        id: "feed-1",
+        title: "Shared Feed",
+        sharedManagers: [{ discordUserId: "mgr-1", connectionScoped: false }],
+      },
+    ] as never);
+    const onSharingChange = vi.fn();
+
+    render(<Harness feedLimit={70} onSharingChange={onSharingChange} />);
+
+    // Selected by default -> warned.
+    const checkbox = await screen.findByRole("checkbox", { name: /^Shared Feed$/ });
+    await waitFor(() =>
+      expect(onSharingChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sharedSelectedCount: 1 }),
+      ),
+    );
+
+    // Unselect it: nothing is being moved, so the warning clears and the row
+    // reassures that staying personal keeps the sharing.
+    await userEvent.click(checkbox);
+    await waitFor(() =>
+      expect(onSharingChange).toHaveBeenLastCalledWith(
+        expect.objectContaining({ sharedSelectedCount: 0 }),
+      ),
+    );
+    expect(screen.getByText("Shared. Staying personal, sharing kept")).toBeVisible();
   });
 });

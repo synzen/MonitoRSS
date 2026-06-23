@@ -92,12 +92,19 @@ test.describe("Paddle workspace conversion", () => {
       "Leave Feed",
       ...Array.from({ length: 5 }, (_, i) => `Filler Feed ${i + 1}`),
     ];
+    // "Keep Feed" carries an accepted co-manager so the conversion dialog warns
+    // that feed sharing does not move into a workspace once it is selected.
+    const coManagerDiscordUserId = "100000000000000001";
     await seedPersonalFeedsInDb({
       userId: selfUserId,
       discordUserId,
       feeds: [
         ...leftBehindTitles.map((title) => ({ title, url: MOCK_RSS_FEED_URL })),
-        { title: "Keep Feed", url: MOCK_RSS_FEED_URL },
+        {
+          title: "Keep Feed",
+          url: MOCK_RSS_FEED_URL,
+          acceptedManagerDiscordUserId: coManagerDiscordUserId,
+        },
       ],
     });
 
@@ -147,14 +154,53 @@ test.describe("Paddle workspace conversion", () => {
 
     await page.getByRole("button", { name: /move my personal plan here/i }).click();
 
-    const convertDialog = page.getByRole("alertdialog");
+    const convertDialog = page.getByRole("dialog");
     await expect(convertDialog).toBeVisible({ timeout: 15000 });
     // All 7 feeds selected by default (the safe move). 7 < 70, so the per-feed
     // list is tucked behind a disclosure; expand it to pick which feeds to move.
     await expect(convertDialog.getByText(/7 of 70 feeds selected/)).toBeVisible({
       timeout: 15000,
     });
-    await convertDialog.getByText(/choose which feeds to bring/i).click();
+    // "Keep Feed" is shared and selected by default, so the sharing warning is
+    // shown up front. It names the affected co-manager and explains sharing does
+    // not carry into a workspace. Because a shared feed is selected, the feed
+    // list auto-opens (no need to expand the disclosure manually) so the
+    // per-feed remedy is visible.
+    // The warning is announced via a single live region (role="status"); the
+    // visible alert duplicating the prose is aria-hidden, so this status node is
+    // the one unambiguous anchor and is present only while a shared feed is
+    // selected.
+    const sharingWarning = convertDialog
+      .getByRole("status")
+      .filter({ hasText: /you are moving .* shared with other people/i });
+    await expect(sharingWarning).toBeAttached({ timeout: 15000 });
+
+    // The shared feed offers a "Manage sharing" link to review its co-managers
+    // (opens in a new tab so the conversion dialog is not lost).
+    const manageSharingLink = convertDialog.getByRole("link", {
+      name: /manage sharing for Keep Feed/i,
+    });
+    // The row can sit below the scrollable list's fold, so wait for it to attach
+    // then bring it into view before asserting.
+    await expect(manageSharingLink).toBeAttached({ timeout: 15000 });
+    await manageSharingLink.scrollIntoViewIfNeeded();
+    await expect(manageSharingLink).toBeVisible();
+    await expect(manageSharingLink).toHaveAttribute("target", "_blank");
+
+    // Deselecting the only shared feed removes the warning; re-selecting it
+    // brings it back. This proves the warning tracks the actual selection.
+    const keepFeedCheckbox = convertDialog.getByRole("checkbox", {
+      name: /^Keep Feed$/i,
+    });
+    const keepFeedLabel = convertDialog.getByText("Keep Feed", { exact: true });
+    await keepFeedLabel.scrollIntoViewIfNeeded();
+    await keepFeedLabel.click();
+    await expect(keepFeedCheckbox).not.toBeChecked();
+    // The live region is removed from the DOM when nothing shared is selected.
+    await expect(sharingWarning).not.toBeAttached();
+    await keepFeedLabel.click();
+    await expect(keepFeedCheckbox).toBeChecked();
+    await expect(sharingWarning).toBeAttached();
 
     // Move only "Keep Feed": deselect every feed that should stay personal.
     // The Chakra v3 checkbox INPUT is visually hidden (offscreen), so clicking
@@ -300,7 +346,7 @@ test.describe("Paddle workspace conversion", () => {
     await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
     await page.getByRole("button", { name: /move my plan to this workspace/i }).click();
 
-    const convertDialog = page.getByRole("alertdialog");
+    const convertDialog = page.getByRole("dialog");
     await expect(convertDialog).toBeVisible({ timeout: 15000 });
     // Over-limit: the meter opens empty and the triage framing is shown up front
     // (no disclosure to expand).

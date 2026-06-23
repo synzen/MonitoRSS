@@ -801,6 +801,7 @@ export async function getUserFeedsHandler(
       ownedByUser: feed.ownedByUser,
       refreshRateSeconds: feed.refreshRateSeconds,
       connectionCount: feed.connectionCount,
+      sharedManagers: feed.sharedManagers,
     })),
     total: count,
     feedsWithoutConnections: feedsWithoutConnectionsCount,

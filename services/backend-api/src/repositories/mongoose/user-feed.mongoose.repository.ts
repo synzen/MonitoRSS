@@ -800,6 +800,45 @@ export class UserFeedMongooseRepository
           refreshRateSeconds: {
             $ifNull: ["$userRefreshRateSeconds", "$refreshRateSeconds"],
           },
+          // Accepted co-managers only: pending invites grant no access, so they
+          // are not "lost" on a conversion and must not trigger a warning. Read
+          // after buildListingPipeline so connectionCount (added there) exists.
+          sharedManagers: {
+            $map: {
+              input: {
+                $filter: {
+                  input: { $ifNull: ["$shareManageOptions.invites", []] },
+                  as: "inv",
+                  cond: {
+                    $eq: ["$$inv.status", UserFeedManagerStatus.Accepted],
+                  },
+                },
+              },
+              as: "inv",
+              in: {
+                discordUserId: "$$inv.discordUserId",
+                // Channel-scoped only when the invite covers a STRICT subset of
+                // the feed's connections. An invite listing all of them is
+                // functionally feed-scoped, so it is not flagged.
+                connectionScoped: {
+                  $and: [
+                    {
+                      $gt: [
+                        { $size: { $ifNull: ["$$inv.connections", []] } },
+                        0,
+                      ],
+                    },
+                    {
+                      $lt: [
+                        { $size: { $ifNull: ["$$inv.connections", []] } },
+                        "$connectionCount",
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
         },
       },
       // _id is a stable tiebreaker: without it, feeds sharing a sort-key value
@@ -822,6 +861,7 @@ export class UserFeedMongooseRepository
           ownedByUser: 1,
           refreshRateSeconds: 1,
           connectionCount: 1,
+          sharedManagers: 1,
         },
       },
     );
@@ -839,6 +879,10 @@ export class UserFeedMongooseRepository
       ownedByUser: boolean;
       refreshRateSeconds?: number;
       connectionCount: number;
+      sharedManagers?: Array<{
+        discordUserId: string;
+        connectionScoped: boolean;
+      }>;
     }>(pipeline);
 
     return results.map((r) => ({
@@ -854,6 +898,7 @@ export class UserFeedMongooseRepository
       ownedByUser: r.ownedByUser,
       refreshRateSeconds: r.refreshRateSeconds,
       connectionCount: r.connectionCount,
+      sharedManagers: r.sharedManagers,
     }));
   }
 

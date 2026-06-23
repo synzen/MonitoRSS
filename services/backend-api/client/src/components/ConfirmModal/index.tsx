@@ -67,6 +67,22 @@ interface Props {
    * (the default) for irreversible ones, where every exit should be aimed.
    */
   allowEscape?: boolean;
+  /**
+   * The dialog's ARIA role. Defaults to "alertdialog" — correct for a brief
+   * yes/no confirmation. Pass "dialog" when the body is a rich task surface (a
+   * form, a list to triage) rather than a short alert message: "alertdialog"
+   * promises a brief message and biases AT toward reading the alert, which is
+   * wrong once the dialog is something the user works through.
+   */
+  role?: "alertdialog" | "dialog";
+  /**
+   * Element to receive focus when the dialog opens. Defaults to the Cancel button
+   * (the safe, least-destructive target for a confirmation). Override for a
+   * content-rich dialog so focus lands at the TOP of the content and the user
+   * reads forward in order, instead of being dropped on Cancel at the end of the
+   * DOM with the task surface behind them.
+   */
+  initialFocusEl?: () => HTMLElement | null;
 }
 
 export const ConfirmModal = ({
@@ -88,6 +104,8 @@ export const ConfirmModal = ({
   showCloseButton,
   closeOnConfirm,
   allowEscape,
+  role = "alertdialog",
+  initialFocusEl,
 }: Props) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [phraseInput, setPhraseInput] = useState("");
@@ -147,7 +165,7 @@ export const ConfirmModal = ({
 
   return (
     <DialogRoot
-      role="alertdialog"
+      role={role}
       open={open}
       onOpenChange={(e) => {
         setOpen(e.open);
@@ -163,7 +181,7 @@ export const ConfirmModal = ({
       // (Cancel, or the optional X).
       closeOnInteractOutside={false}
       closeOnEscape={!!allowEscape}
-      initialFocusEl={() => cancelRef.current}
+      initialFocusEl={initialFocusEl ?? (() => cancelRef.current)}
     >
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent>

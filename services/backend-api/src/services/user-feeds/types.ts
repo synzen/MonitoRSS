@@ -5,6 +5,7 @@ import type {
   IUserFeedFormatOptions,
   IUserFeedDateCheckOptions,
   IExternalFeedProperty,
+  UserFeedListItemSharedManager,
 } from "../../repositories/interfaces/user-feed.types";
 import type {
   GetArticlesResponseRequestStatus,
@@ -152,6 +153,7 @@ export interface UserFeedListItem {
   ownedByUser: boolean;
   refreshRateSeconds?: number;
   connectionCount: number;
+  sharedManagers?: UserFeedListItemSharedManager[];
 }
 
 export interface CreateUserFeedInput {

@@ -1,4 +1,5 @@
 import {
+  Badge,
   Box,
   Button,
   Center,
@@ -7,6 +8,7 @@ import {
   IconButton,
   Input,
   InputGroup,
+  Link,
   Progress,
   Spinner,
   Stack,
@@ -14,7 +16,7 @@ import {
   VisuallyHidden,
   chakra,
 } from "@chakra-ui/react";
-import { FaMagnifyingGlass, FaXmark } from "react-icons/fa6";
+import { FaMagnifyingGlass, FaUpRightFromSquare, FaXmark } from "react-icons/fa6";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { captureException } from "@sentry/react";
 import { useUserFeedsInfinite } from "../../../feed/hooks/useUserFeedsInfinite";
@@ -22,6 +24,8 @@ import { getUserFeeds } from "../../../feed/api";
 import { InlineErrorAlert } from "@/components";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
+import { pages } from "@/constants";
+import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
 
 const LIMIT = 25;
 
@@ -39,6 +43,14 @@ interface Props {
   // Lets the dialog react once the total is known (e.g. to frame the over-limit
   // case) without re-deriving it.
   onLoaded?: (info: { total: number; overLimit: boolean }) => void;
+  // Lets the dialog surface a warning when any SELECTED feed has co-managers
+  // (feed sharing does not carry into a workspace). Recomputed as the selection
+  // changes so the warning tracks what is actually being moved.
+  onSharingChange?: (info: {
+    sharedSelectedCount: number;
+    affectedUserIds: string[];
+    anyConnectionScoped: boolean;
+  }) => void;
 }
 
 export const ConvertPersonalPlanFeedList = ({
@@ -46,6 +58,7 @@ export const ConvertPersonalPlanFeedList = ({
   onSelectedIdsChange,
   feedLimit,
   onLoaded,
+  onSharingChange,
 }: Props) => {
   const [searchInput, setSearchInput] = useState("");
   const [keep, setKeep] = useState<KeepDirection>("newest");
@@ -82,6 +95,20 @@ export const ConvertPersonalPlanFeedList = ({
 
   const fullTotal = fullTotalRef.current;
   const overLimit = fullTotal !== undefined && fullTotal > feedLimit;
+
+  // Sharing data for the warning, keyed by feed id and accumulated across every
+  // feed we have seen (browse pages + auto-pick results). A feed can be selected
+  // while off-screen (auto-pick selects the newest, which sit at the tail), so a
+  // running map is more reliable than reading only the currently-rendered rows.
+  const sharingByFeedIdRef = useRef<
+    Map<string, Array<{ discordUserId: string; connectionScoped: boolean }>>
+  >(new Map());
+
+  browseFeeds.forEach((feed) => {
+    if (feed.sharedManagers) {
+      sharingByFeedIdRef.current.set(feed.id, feed.sharedManagers);
+    }
+  });
 
   // After an auto-pick, the chosen feeds (which may live off-screen — the newest
   // sit at the tail of the oldest-first browse list) are surfaced as their own
@@ -177,6 +204,40 @@ export const ConvertPersonalPlanFeedList = ({
     onSelectedIdsChange(new Set(browseFeeds.map((f) => f.id)));
   }, [status, totalCount, overLimit, hasNextPage, fetchedSoFarCount, search]);
 
+  // Roll up sharing across the SELECTED feeds for the dialog's warning. Keyed on
+  // the selection and the accumulated sharing map, so unselecting a shared feed
+  // immediately drops it from the warning.
+  useEffect(() => {
+    if (!onSharingChange) {
+      return;
+    }
+
+    const affected = new Set<string>();
+    let sharedSelectedCount = 0;
+    let anyConnectionScoped = false;
+
+    selectedIds.forEach((id) => {
+      const managers = sharingByFeedIdRef.current.get(id);
+
+      if (managers && managers.length > 0) {
+        sharedSelectedCount += 1;
+        managers.forEach((m) => {
+          affected.add(m.discordUserId);
+
+          if (m.connectionScoped) {
+            anyConnectionScoped = true;
+          }
+        });
+      }
+    });
+
+    onSharingChange({
+      sharedSelectedCount,
+      affectedUserIds: [...affected],
+      anyConnectionScoped,
+    });
+  }, [selectedIds, fetchedSoFarCount, onSharingChange]);
+
   // The single accelerator: select the cap's worth by age in ONE targeted
   // request (the listing endpoint honors an arbitrary limit + sort), rather than
   // paging the whole list in. Bounded regardless of how many feeds the owner
@@ -198,6 +259,11 @@ export const ConvertPersonalPlanFeedList = ({
       // pickedTop set just below survives.
       setSearchInput("");
       setSearch("");
+      results.forEach((f) => {
+        if (f.sharedManagers) {
+          sharingByFeedIdRef.current.set(f.id, f.sharedManagers);
+        }
+      });
       onSelectedIdsChange(new Set(results.map((f) => f.id)));
       setPickedTop(results.map((f) => ({ id: f.id, title: f.title })));
       // The selection now fills the cap, so the header swaps this button for
@@ -287,38 +353,102 @@ export const ConvertPersonalPlanFeedList = ({
 
   const renderRow = (feed: { id: string; title: string }) => {
     const isSelected = selectedIds.has(feed.id);
+    const managers = sharingByFeedIdRef.current.get(feed.id);
+    const isShared = !!managers && managers.length > 0;
+    const isConnectionScoped = !!managers?.some((m) => m.connectionScoped);
+
+    // The per-feed sharing detail, tied to THIS checkbox via aria-describedby so
+    // a screen-reader user hears it on the specific row (the visual chip is
+    // aria-hidden, so without this the per-feed scope would be sighted-only). It
+    // tracks selection: a selected shared feed warns about lost access; an
+    // unselected one reassures that sharing is kept.
+    const describedById = isShared ? `feed-share-${feed.id}` : undefined;
+    let sharedDescription = "";
+
+    if (isShared && isSelected) {
+      sharedDescription = isConnectionScoped
+        ? "Shared. A co-manager has access to only some connections; moving this feed gives them access to the whole feed in the workspace."
+        : "Shared. Its co-managers lose access when this feed moves to the workspace.";
+    } else if (isShared && !isSelected) {
+      sharedDescription = "Shared. Staying on your personal plan, so its sharing is kept.";
+    }
 
     return (
       <Box key={`feed-${feed.id}`} as="li">
         {/* The checkbox's label is the feed TITLE only, so assistive tech
-            announces "<title>, checkbox". The "Stays personal" cue is a sibling,
-            not a child of the label, so it stays out of the accessible name —
-            it's a purely visual hint, and the checked state already conveys
-            "bring vs leave". */}
+            announces "<title>, checkbox". The visual hint below is a sibling, not
+            a child of the label, so it stays out of the accessible NAME; the
+            sharing consequence is instead tied on as the checkbox's DESCRIPTION
+            (aria-describedby), so a shared feed reads as e.g. "<title>, checkbox,
+            checked, Shared. Its co-managers lose access…". */}
         <Checkbox
           width="100%"
           alignItems="flex-start"
           checked={isSelected}
           onCheckedChange={() => toggle(feed.id, feed.title)}
           required={false}
+          inputProps={describedById ? { "aria-describedby": describedById } : undefined}
         >
           <chakra.span ml={2} display="block" fontSize="sm" fontWeight={600}>
             {feed.title}
           </chakra.span>
         </Checkbox>
-        {/* Always rendered (reserving the line keeps row height stable on
-            toggle) and aria-hidden; sits under the title via the checkbox's
-            left padding. */}
+        {describedById ? (
+          <VisuallyHidden id={describedById}>{sharedDescription}</VisuallyHidden>
+        ) : null}
+        {/* Visual per-row hint line. Always rendered (reserving the line keeps
+            row height stable on toggle) and aria-hidden; the spoken equivalent is
+            the checkbox description above (shared feeds) or the checked state
+            ("Stays personal" is purely visual). */}
         <chakra.span
           display="block"
           pl="calc(var(--chakra-spacing-6) + var(--chakra-spacing-2))"
-          fontSize="xs"
-          color="text.warning"
-          visibility={isSelected ? "hidden" : "visible"}
+          mt={1}
           aria-hidden
         >
-          Stays personal
+          {/* eslint-disable-next-line no-nested-ternary */}
+          {isShared && isSelected ? (
+            <Badge colorPalette="orange" variant="subtle" size="sm">
+              {isConnectionScoped
+                ? "Shared. Per-connection access dropped"
+                : "Shared. Co-managers lose access"}
+            </Badge>
+          ) : isShared && !isSelected ? (
+            <Badge variant="subtle" size="sm">
+              Shared. Staying personal, sharing kept
+            </Badge>
+          ) : (
+            <chakra.span
+              fontSize="xs"
+              color="text.warning"
+              visibility={isSelected ? "hidden" : "visible"}
+            >
+              Stays personal
+            </chakra.span>
+          )}
         </chakra.span>
+        {/* Lets the owner review this feed's co-managers before deciding. Opens
+            in a NEW tab so the conversion dialog (and its in-progress selection +
+            slug confirmation) is not lost. Personal scope: the feeds being moved
+            are personal until conversion. */}
+        {isShared ? (
+          <Box pl="calc(var(--chakra-spacing-6) + var(--chakra-spacing-2))" mt={1}>
+            <Link
+              href={pages.userFeed(feed.id, { tab: UserFeedTabSearchParam.Settings })}
+              target="_blank"
+              rel="noopener noreferrer"
+              color="text.link"
+              fontSize="xs"
+              display="inline-flex"
+              alignItems="center"
+              gap={1}
+              aria-label={`Manage sharing for ${feed.title} (opens in a new tab)`}
+            >
+              Manage sharing
+              <FaUpRightFromSquare aria-hidden />
+            </Link>
+          </Box>
+        ) : null}
       </Box>
     );
   };

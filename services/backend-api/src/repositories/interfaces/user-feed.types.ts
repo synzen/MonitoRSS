@@ -213,6 +213,18 @@ export interface UserFeedListingInput {
   filters?: UserFeedListingFilters;
 }
 
+// A minimal descriptor of an accepted co-manager on a feed, surfaced in the
+// listing so the personal->workspace conversion dialog can warn that sharing
+// does not carry into a workspace. Only accepted invites are included (pending
+// ones grant no access yet), and the full invites array is never exposed.
+export interface UserFeedListItemSharedManager {
+  discordUserId: string;
+  // True only when the invite is scoped to a strict subset of the feed's
+  // connections (genuinely channel-limited access, which has no workspace
+  // equivalent). False when the invite covers the whole feed.
+  connectionScoped: boolean;
+}
+
 export interface UserFeedListItem {
   id: string;
   title: string;
@@ -226,6 +238,7 @@ export interface UserFeedListItem {
   ownedByUser: boolean;
   refreshRateSeconds?: number;
   connectionCount: number;
+  sharedManagers?: UserFeedListItemSharedManager[];
 }
 
 export interface UserFeedLimitEnforcementResult {

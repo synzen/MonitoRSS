@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { useRef, useState } from "react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider, Portal } from "@chakra-ui/react";
 import { describe, it, expect, vi } from "vitest";
@@ -261,5 +261,62 @@ describe("ConfirmModal", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Delete" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  // Default role is alertdialog (a brief confirmation); content-rich callers
+  // opt into a plain dialog.
+  it("defaults to the alertdialog role", async () => {
+    renderWithProvider(
+      <ConfirmModal open onOpenChange={vi.fn()} title="Confirm?" onConfirm={vi.fn()} />,
+    );
+
+    expect(await screen.findByRole("alertdialog")).toBeVisible();
+  });
+
+  it("renders as a plain dialog when role='dialog' is passed", async () => {
+    renderWithProvider(
+      <ConfirmModal
+        open
+        role="dialog"
+        onOpenChange={vi.fn()}
+        title="Move your plan"
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByRole("dialog")).toBeVisible();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  // By default focus lands on Cancel (the safe target for a yes/no). A
+  // content-rich dialog overrides this so focus starts at the top of the content
+  // and the user reads forward, instead of being dropped on Cancel at the end of
+  // the DOM with the task surface behind them.
+  it("focuses the initialFocusEl override on open instead of Cancel", async () => {
+    const Harness = () => {
+      const introRef = useRef<HTMLParagraphElement>(null);
+
+      return (
+        <ConfirmModal
+          open
+          role="dialog"
+          onOpenChange={vi.fn()}
+          title="Move your plan"
+          onConfirm={vi.fn()}
+          initialFocusEl={() => introRef.current}
+          descriptionNode={
+            <p ref={introRef} tabIndex={-1} data-testid="intro">
+              Read this first.
+            </p>
+          }
+        />
+      );
+    };
+
+    renderWithProvider(<Harness />);
+
+    const intro = await screen.findByTestId("intro");
+    await waitFor(() => expect(intro).toHaveFocus());
+    expect(screen.getByRole("button", { name: /cancel/i })).not.toHaveFocus();
   });
 });
