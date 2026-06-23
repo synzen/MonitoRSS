@@ -23,12 +23,10 @@ const mutateAsync = vi.fn().mockResolvedValue({});
 
 const mockState = ({
   authenticated = true,
-  workspacesFeature = true,
   workspaces = [{ id: "w1", name: "Acme", slug: "acme-marketing", role: "admin" }],
   lastActiveWorkspaceSlug = null,
 }: {
   authenticated?: boolean;
-  workspacesFeature?: boolean;
   workspaces?: Array<{ id: string; name: string; slug: string; role: string }>;
   lastActiveWorkspaceSlug?: string | null;
 }) => {
@@ -39,8 +37,6 @@ const mockState = ({
     data: authenticated
       ? {
           result: {
-            capabilities: { workspaces: workspacesFeature },
-            featureFlags: { workspaces: workspacesFeature },
             preferences: { lastActiveWorkspaceSlug },
           },
         }
@@ -90,13 +86,6 @@ describe("ScopeNavigationContainer", () => {
       expect(screen.getByTestId("scope-label")).toHaveTextContent("Feeds");
     });
 
-    it("falls back to Feeds when the feature is disabled", () => {
-      mockState({ workspacesFeature: false });
-
-      renderAt("/feeds");
-
-      expect(screen.getByTestId("scope-label")).toHaveTextContent("Feeds");
-    });
   });
 
   describe("last-active scope recording", () => {

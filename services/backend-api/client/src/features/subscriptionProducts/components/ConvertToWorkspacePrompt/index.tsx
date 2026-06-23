@@ -5,12 +5,7 @@ import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { CloseButton } from "@/components/ui/close-button";
 import { ProductKey } from "@/constants";
 import { useUserMe } from "@/features/discordUser";
-import {
-  CreateWorkspaceDialog,
-  findOwnedWorkspace,
-  useIsWorkspacesEnabled,
-  useWorkspaces,
-} from "@/features/workspaces";
+import { CreateWorkspaceDialog, findOwnedWorkspace, useWorkspaces } from "@/features/workspaces";
 
 // The personal plans whose subscription can fund a workspace. Mirrors the
 // backend's WORKSPACE_BASE_TIER_KEYS / resolvePersonalConvertibility (Tier 2/3);
@@ -33,8 +28,7 @@ const DISMISSED_STORAGE_KEY = "convertToWorkspacePromptDismissed";
 // while eligible.
 export const ConvertToWorkspacePrompt = ({ variant }: { variant: "banner" | "card" }) => {
   const { data: userMe } = useUserMe();
-  const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
-  const { workspaces } = useWorkspaces({ enabled: workspacesEnabled });
+  const { workspaces } = useWorkspaces();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [dismissed, setDismissed] = useState(
     () => localStorage.getItem(DISMISSED_STORAGE_KEY) === "true",
@@ -50,7 +44,7 @@ export const ConvertToWorkspacePrompt = ({ variant }: { variant: "banner" | "car
   const ownsAWorkspace = !!findOwnedWorkspace(workspaces);
   const eligible = hasConvertiblePlan && !ownsAWorkspace;
 
-  if (!workspacesEnabled || !eligible || (variant === "card" && dismissed)) {
+  if (!eligible || (variant === "card" && dismissed)) {
     return null;
   }
 

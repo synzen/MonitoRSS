@@ -90,14 +90,9 @@ describe("Email verification API", () => {
     return stub;
   }
 
-  // Email verification is gated by the per-user workspaces feature flag, so every
-  // test user is seeded with it.
   async function makeUser() {
     const discordUserId = randomUUID();
     await ctx.container.userRepository.create({ discordUserId });
-    await ctx.connection
-      .collection("users")
-      .updateOne({ discordUserId }, { $set: { "featureFlags.workspaces": true } });
     const user = await ctx.asUser(discordUserId);
     const internalId =
       await ctx.container.userRepository.findIdByDiscordId(discordUserId);

@@ -5,14 +5,13 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { system } from "@/utils/theme";
 import { ScopeAwareLanding } from "./ScopeAwareLanding";
 import { useUserMe } from "@/features/discordUser";
-import { useIsWorkspacesEnabled, useWorkspace } from "@/features/workspaces";
+import { useWorkspace } from "@/features/workspaces";
 
 vi.mock("@/features/discordUser", () => ({
   useUserMe: vi.fn(),
 }));
 
 vi.mock("@/features/workspaces", () => ({
-  useIsWorkspacesEnabled: vi.fn(),
   useWorkspace: vi.fn(),
 }));
 
@@ -26,24 +25,19 @@ vi.mock("react-router-dom", async (importOriginal) => {
 });
 
 const mockState = ({
-  enabled = true,
-  flagStatus = "success",
+  userStatus = "success",
   lastActiveWorkspaceSlug,
   workspace,
   workspaceStatus = "success",
 }: {
-  enabled?: boolean;
-  flagStatus?: string;
+  userStatus?: string;
   lastActiveWorkspaceSlug?: string | null;
   workspace?: { id: string; name: string; slug: string };
   workspaceStatus?: string;
 }) => {
-  vi.mocked(useIsWorkspacesEnabled).mockReturnValue({
-    enabled,
-    status: flagStatus,
-  } as never);
   vi.mocked(useUserMe).mockReturnValue({
     data: { result: { preferences: { lastActiveWorkspaceSlug } } },
+    status: userStatus,
   } as never);
   vi.mocked(useWorkspace).mockReturnValue({
     workspace,
@@ -94,15 +88,6 @@ describe("ScopeAwareLanding", () => {
     renderLanding();
 
     expect(navigateTarget()).toBe("/feeds");
-  });
-
-  it("ignores the recorded workspace when the workspaces feature is disabled", () => {
-    mockState({ enabled: false, lastActiveWorkspaceSlug: "acme-marketing" });
-
-    renderLanding();
-
-    expect(navigateTarget()).toBe("/feeds");
-    expect(vi.mocked(useWorkspace)).toHaveBeenCalledWith({ workspaceSlug: undefined });
   });
 
   it("does not navigate while the recorded workspace is being validated", () => {

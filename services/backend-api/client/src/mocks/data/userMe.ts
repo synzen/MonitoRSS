@@ -30,10 +30,6 @@ const mockUserMe: UserMe = {
   enableBilling: true,
   featureFlags: {
     externalProperties: true,
-    workspaces: true,
-  },
-  capabilities: {
-    workspaces: true,
   },
   supporterFeatures: {
     exrternalProperties: {

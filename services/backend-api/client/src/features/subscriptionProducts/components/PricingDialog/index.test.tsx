@@ -11,7 +11,7 @@ import { PricingDialog } from "./index";
 import { usePricingData } from "../../hooks";
 import { usePaddleContext } from "../../contexts/PaddleContext";
 import { useUserMe } from "../../../discordUser";
-import { useIsWorkspacesEnabled, useWorkspaces } from "../../../workspaces";
+import { useWorkspaces } from "../../../workspaces";
 
 vi.mock("../../hooks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../hooks")>()),
@@ -28,7 +28,6 @@ vi.mock("../../../discordUser", () => ({
 
 vi.mock("../../../workspaces", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../workspaces")>()),
-  useIsWorkspacesEnabled: vi.fn(),
   useWorkspaces: vi.fn(() => ({ workspaces: [] })),
   CreateWorkspaceDialog: () => null,
 }));
@@ -171,7 +170,6 @@ describe("PricingDialog two-region layout", () => {
         result: { subscription: { subscriptionId: undefined, product: { key: ProductKey.Free } } },
       },
     } as never);
-    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({ enabled: true } as never);
   });
 
   it("renders a 'For you' region with a Free card and a Personal card", async () => {
@@ -337,7 +335,6 @@ describe("PricingDialog FAQ", () => {
         result: { subscription: { subscriptionId: undefined, product: { key: ProductKey.Free } } },
       },
     } as never);
-    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({ enabled: true } as never);
   });
 
   it("drops the obsolete sharing/benefits FAQ entries the layout now answers", async () => {
@@ -368,7 +365,6 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
         result: { subscription: { subscriptionId: undefined, product: { key: ProductKey.Free } } },
       },
     } as never);
-    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({ enabled: true } as never);
   });
 
   it("renders an accessible, keyboard-operable capacity slider in the workspace panel", async () => {
@@ -467,7 +463,6 @@ describe("PricingDialog workspace CTA when the user already owns a workspace", (
         result: { subscription: { subscriptionId: undefined, product: { key: ProductKey.Free } } },
       },
     } as never);
-    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({ enabled: true } as never);
   });
 
   it("reroutes to an owned workspace that NEEDS BILLING, carrying the chosen feed count", async () => {

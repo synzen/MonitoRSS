@@ -37,9 +37,6 @@ export async function getMeHandler(
       isOnPatreon,
       enableBilling: user.enableBilling,
       featureFlags: user.featureFlags || {},
-      capabilities: {
-        workspaces: !!user.featureFlags?.workspaces,
-      },
       supporterFeatures,
       externalAccounts,
     },
@@ -83,9 +80,6 @@ export async function updateMeHandler(
       isOnPatreon,
       enableBilling: user.enableBilling,
       featureFlags: user.featureFlags || {},
-      capabilities: {
-        workspaces: !!user.featureFlags?.workspaces,
-      },
       supporterFeatures,
       externalAccounts,
     },

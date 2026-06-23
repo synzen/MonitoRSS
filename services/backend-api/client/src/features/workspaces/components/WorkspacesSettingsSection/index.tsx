@@ -16,7 +16,7 @@ import { pages } from "@/constants";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { SettingsSection } from "@/components/SettingsSection";
-import { useIsWorkspacesEnabled, useWorkspaces } from "../../hooks";
+import { useWorkspaces } from "../../hooks";
 import { CreateWorkspaceDialog } from "../CreateWorkspaceDialog";
 import { PendingInvitationsList } from "../PendingInvitationsList";
 
@@ -26,20 +26,15 @@ const LIVE_STATUS_TEXT: Record<string, string> = {
 };
 
 /**
- * "Your workspaces" section for the Account Settings page. Renders only when the
- * workspaces feature is enabled. It is an overview + entry point, not a management
- * surface — per-workspace management lives on `/workspaces/:workspaceSlug/settings`. No "leave"
- * action is shown: no leave endpoint exists yet, and dead/disabled UI that
- * implies an action works is avoided.
+ * "Your workspaces" section for the Account Settings page. It is an overview +
+ * entry point, not a management surface — per-workspace management lives on
+ * `/workspaces/:workspaceSlug/settings`. No "leave" action is shown: no leave
+ * endpoint exists yet, and dead/disabled UI that implies an action works is
+ * avoided.
  */
 export const WorkspacesSettingsSection = () => {
-  const { enabled } = useIsWorkspacesEnabled();
-  const { workspaces, status, error, refetch } = useWorkspaces({ enabled });
+  const { workspaces, status, error, refetch } = useWorkspaces();
   const createDisclosure = useDisclosure();
-
-  if (!enabled) {
-    return null;
-  }
 
   return (
     <>
@@ -117,7 +112,7 @@ export const WorkspacesSettingsSection = () => {
             ))}
           </Stack>
         )}
-        <PendingInvitationsList enabled={enabled} />
+        <PendingInvitationsList />
       </SettingsSection>
       <CreateWorkspaceDialog isOpen={createDisclosure.open} onClose={createDisclosure.onClose} />
     </>

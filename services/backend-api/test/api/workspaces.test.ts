@@ -117,13 +117,13 @@ describe("Workspaces API", { concurrency: true }, () => {
     );
   });
 
-  it("returns 404 when the user lacks the workspaces feature flag", async () => {
+  it("is available to every user without a feature flag", async () => {
     const discordId = randomUUID();
     await seedWorkspaceUser(ctx, discordId, { withFlag: false });
     const user = await ctx.asUser(discordId);
 
     const res = await user.fetch("/api/v1/workspaces");
-    assert.strictEqual(res.status, 404);
+    assert.strictEqual(res.status, 200);
   });
 
   it("returns 400 for an invalid slug format", async () => {
@@ -494,31 +494,6 @@ describe("Workspaces API", { concurrency: true }, () => {
     assert.strictEqual(res.status, 400);
   });
 
-  it("404s workspace + email-verification routes when the user lacks the feature flag", async () => {
-    const discordId = randomUUID();
-    await seedWorkspaceUser(ctx, discordId, { withFlag: false });
-    const user = await ctx.asUser(discordId);
-
-    assert.strictEqual((await user.fetch("/api/v1/workspaces")).status, 404);
-    assert.strictEqual(
-      (
-        await user.fetch("/api/v1/workspaces", {
-          method: "POST",
-          body: JSON.stringify({ name: "X", slug: "valid-slug" }),
-        })
-      ).status,
-      404,
-    );
-    assert.strictEqual(
-      (
-        await user.fetch("/api/v1/users/@me/email-verification", {
-          method: "POST",
-          body: JSON.stringify({ email: "a@b.com" }),
-        })
-      ).status,
-      404,
-    );
-  });
 });
 
 describe("Workspaces API list needsBilling (billing enabled)", { concurrency: true }, () => {

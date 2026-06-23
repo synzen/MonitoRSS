@@ -8,7 +8,6 @@ import { useDiscordBot, useDiscordUserMe } from "@/features/discordUser";
 import { SearchFeedsModal } from "@/features/feed";
 import {
   CreateWorkspaceDialog,
-  useIsWorkspacesEnabled,
   WorkspaceDormantBanner,
   WorkspaceSwitcher,
 } from "@/features/workspaces";
@@ -24,10 +23,10 @@ interface Props {
  * App-shell header container. Lives in the page layer (the composition root,
  * which may import features) so the shared-base NewHeader can stay feature-free.
  *
- * Workspaces: the workspace switcher renders whenever the feature is enabled, including at
- * 0 workspaces (where it shows the "Personal" scope and surfaces "Create a workspace" inside
- * its menu). Discovery and switching share one place rather than splitting create-workspace
- * into a separate account-menu entry.
+ * Workspaces: the workspace switcher always renders, including at 0 workspaces
+ * (where it shows the "Personal" scope and surfaces "Create a workspace" inside its
+ * menu). Discovery and switching share one place rather than splitting
+ * create-workspace into a separate account-menu entry.
  */
 export const AppHeader = ({ invertBackground }: Props) => {
   const { data: discordBotData, status, error } = useDiscordBot();
@@ -36,7 +35,6 @@ export const AppHeader = ({ invertBackground }: Props) => {
   // The logo is scope-relative: "home" inside a workspace is that workspace's feeds.
   const { workspaceSlug } = useParams<RouteParams>();
 
-  const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
   const createWorkspaceDisclosure = useDisclosure();
 
   return (
@@ -48,11 +46,7 @@ export const AppHeader = ({ invertBackground }: Props) => {
         botError={error}
         user={discordUserMe}
         logoHref={pages.userFeeds(workspaceSlug ? { workspaceSlug } : undefined)}
-        workspaceSlot={
-          workspacesEnabled ? (
-            <WorkspaceSwitcher onCreateWorkspace={createWorkspaceDisclosure.onOpen} />
-          ) : undefined
-        }
+        workspaceSlot={<WorkspaceSwitcher onCreateWorkspace={createWorkspaceDisclosure.onOpen} />}
         searchSlot={<SearchFeedsModal />}
         logoutSlot={
           <LogoutButton
@@ -69,12 +63,10 @@ export const AppHeader = ({ invertBackground }: Props) => {
           content — it self-gates via useCurrentWorkspace(), which is null outside a
           workspace scope, so personal routes render nothing here. */}
       <WorkspaceDormantBanner />
-      {workspacesEnabled && (
-        <CreateWorkspaceDialog
-          isOpen={createWorkspaceDisclosure.open}
-          onClose={createWorkspaceDisclosure.onClose}
-        />
-      )}
+      <CreateWorkspaceDialog
+        isOpen={createWorkspaceDisclosure.open}
+        onClose={createWorkspaceDisclosure.onClose}
+      />
     </>
   );
 };

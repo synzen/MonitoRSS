@@ -16,18 +16,13 @@ import { NotFoundError, ApiErrorCode } from "../../infra/error-handler";
 /**
  * The set of workspace ids the requester belongs to, used to authorize
  * workspace-feed access via `findByIdAndOwnership`/`filterFeedIdsByOwnership`.
- * Returns `[]` when the requester lacks the workspaces feature flag so no
- * workspace query runs and the feature is fully inert for them.
+ * Returns `[]` for a requester who belongs to no workspace.
  */
 export async function getRequesterWorkspaceIds(
   request: FastifyRequest,
   user: IUser,
 ): Promise<string[]> {
   const { workspacesService } = request.container;
-
-  if (!user.featureFlags?.workspaces) {
-    return [];
-  }
 
   return workspacesService.listWorkspaceIds(user.id);
 }

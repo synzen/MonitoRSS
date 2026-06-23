@@ -6,7 +6,7 @@ import { system } from "@/utils/theme";
 import { ProductKey } from "@/constants";
 import { ConvertToWorkspacePrompt } from "./index";
 import { useUserMe } from "../../../discordUser";
-import { useIsWorkspacesEnabled, useWorkspaces } from "../../../workspaces";
+import { useWorkspaces } from "../../../workspaces";
 
 vi.mock("../../../discordUser", () => ({
   useUserMe: vi.fn(),
@@ -14,7 +14,6 @@ vi.mock("../../../discordUser", () => ({
 
 vi.mock("../../../workspaces", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../workspaces")>()),
-  useIsWorkspacesEnabled: vi.fn(),
   useWorkspaces: vi.fn(),
   CreateWorkspaceDialog: ({ isOpen }: { isOpen: boolean }) =>
     isOpen ? <div role="dialog" aria-label="Create a workspace" /> : null,
@@ -41,7 +40,6 @@ describe("ConvertToWorkspacePrompt", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({ enabled: true } as never);
     mockWorkspaces([]);
   });
 
@@ -66,15 +64,6 @@ describe("ConvertToWorkspacePrompt", () => {
       expect(container).toBeEmptyDOMElement();
     },
   );
-
-  it("shows nothing when workspaces are disabled, even for a convertible subscriber", () => {
-    mockUser(ProductKey.Tier2);
-    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({ enabled: false } as never);
-
-    const { container } = renderPrompt("banner");
-
-    expect(container).toBeEmptyDOMElement();
-  });
 
   it("shows nothing when the convertible subscriber already owns a workspace", () => {
     // They should convert from that workspace's billing page, not be pushed to

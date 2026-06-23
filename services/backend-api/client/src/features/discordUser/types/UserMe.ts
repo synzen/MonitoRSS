@@ -64,11 +64,7 @@ export const UserMeSchema = object({
   enableBilling: bool(),
   featureFlags: object({
     externalProperties: bool(),
-    workspaces: bool(),
   }),
-  capabilities: object({
-    workspaces: bool(),
-  }).optional(),
   supporterFeatures: object({
     exrternalProperties: object({
       enabled: bool(),

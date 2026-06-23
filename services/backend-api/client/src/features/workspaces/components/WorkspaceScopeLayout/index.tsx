@@ -6,18 +6,14 @@ import { FeedScopeProvider } from "@/features/feed";
 import RouteParams from "@/types/RouteParams";
 import { usePaddleContext } from "@/features/subscriptionProducts";
 import { CurrentWorkspaceProvider, JustConvertedWorkspaceProvider } from "../../contexts";
-import {
-  useIsWorkspacesEnabled,
-  useRefetchFeedsOnWorkspaceActivation,
-  useWorkspace,
-} from "../../hooks";
+import { useRefetchFeedsOnWorkspaceActivation, useWorkspace } from "../../hooks";
 
 /**
- * The `/workspaces/:workspaceSlug` layout route. Gates on the workspaces feature flag,
- * validates `:workspaceSlug` via the authoritative per-workspace endpoint
- * (`GET /workspaces/:workspaceSlug` returns 404 for a non-member or unknown slug),
- * provides `CurrentWorkspaceContext`, and renders the scoped page via `<Outlet/>`.
- * Feature-disabled, error, or missing workspace all resolve to the not-found page.
+ * The `/workspaces/:workspaceSlug` layout route. Validates `:workspaceSlug` via the
+ * authoritative per-workspace endpoint (`GET /workspaces/:workspaceSlug` returns 404
+ * for a non-member or unknown slug), provides `CurrentWorkspaceContext`, and renders
+ * the scoped page via `<Outlet/>`. Error or missing workspace resolves to the
+ * not-found page.
  *
  * Validation uses the per-workspace query rather than the `useWorkspaces()` list because
  * the list is cached with `keepPreviousData` and would briefly hold a stale
@@ -26,27 +22,13 @@ import {
  */
 export const WorkspaceScopeLayout = () => {
   const { workspaceSlug } = useParams<RouteParams>();
-  const { enabled, status: flagStatus } = useIsWorkspacesEnabled();
   const { isConfigured: isPaddleConfigured } = usePaddleContext();
-  const {
-    workspace,
-    status: workspaceStatus,
-    error,
-    refetch,
-  } = useWorkspace({ workspaceSlug: enabled ? workspaceSlug : undefined });
+  const { workspace, status: workspaceStatus, error, refetch } = useWorkspace({ workspaceSlug });
 
   // Hosted here (not in the dormant activation empty state) because that empty
   // state unmounts in the same transition the subscription lands, racing its
   // own refetch. This layout stays mounted across dormant -> active.
   useRefetchFeedsOnWorkspaceActivation({ subscription: workspace?.subscription });
-
-  if (flagStatus === "loading") {
-    return <LoadingFallback />;
-  }
-
-  if (!enabled) {
-    return <Navigate to={pages.notFound()} replace />;
-  }
 
   if (workspaceStatus === "loading") {
     return <LoadingFallback />;

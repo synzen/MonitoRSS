@@ -1,10 +1,9 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import { sendError, ApiErrorCode } from "../../infra/error-handler";
 
-// Per-user gate for the workspaces feature; runs after requireAuthHook. Resolves
-// the internal user id onto request.userId (the provider-agnostic identity seam)
-// and returns 404 when the user lacks the workspaces rollout flag, hiding the
-// feature.
+// Runs after requireAuthHook to resolve the internal user id onto request.userId
+// (the provider-agnostic identity seam) for workspace routes. Workspaces are
+// available to everyone, so this only 404s when the user record is missing.
 export async function requireWorkspacesFeatureHook(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -12,7 +11,7 @@ export async function requireWorkspacesFeatureHook(
   const { userRepository } = request.container;
   const user = await userRepository.findByDiscordId(request.discordUserId);
 
-  if (!user || !user.featureFlags?.workspaces) {
+  if (!user) {
     sendError(reply, 404, ApiErrorCode.ROUTE_NOT_FOUND, "Not Found");
     return;
   }

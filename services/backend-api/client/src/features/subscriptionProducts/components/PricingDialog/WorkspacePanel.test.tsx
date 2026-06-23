@@ -16,7 +16,6 @@ const renderPanel = (props: Partial<React.ComponentProps<typeof WorkspacePanel>>
       <WorkspacePanel
         interval="month"
         pricing={PRICING}
-        workspacesEnabled
         ownsWorkspaceNeedingBilling={false}
         defaultSizerOpen
         onCreateWorkspace={vi.fn()}
@@ -78,7 +77,6 @@ describe("WorkspacePanel price announcer", () => {
         <WorkspacePanel
           interval="year"
           pricing={PRICING}
-          workspacesEnabled
           ownsWorkspaceNeedingBilling={false}
           defaultSizerOpen
           onCreateWorkspace={vi.fn()}

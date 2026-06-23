@@ -119,8 +119,8 @@ const InviteRow = ({ invite }: { invite: WorkspaceInvite }) => {
  * and can accept or decline each independently. Renders nothing when there are no
  * pending invitations, so it can sit unobtrusively on the Account Settings page.
  */
-export const PendingInvitationsList = ({ enabled }: { enabled?: boolean }) => {
-  const { invites, status, error, refetch } = useMyWorkspaceInvites({ enabled });
+export const PendingInvitationsList = () => {
+  const { invites, status, error, refetch } = useMyWorkspaceInvites();
 
   if (status === "loading") {
     return (

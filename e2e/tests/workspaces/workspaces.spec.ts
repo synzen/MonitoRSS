@@ -85,20 +85,20 @@ test.describe("Workspaces", () => {
     await expect(dialog.getByRole("button", { name: "Create workspace" })).toHaveCount(0);
   });
 
-  test("exposes no workspaces UI without the feature flag", async ({ page }) => {
+  test("exposes the workspaces UI to every user without a feature flag", async ({ page }) => {
     await page.goto("/feeds");
     await waitForAuthenticatedApp(page);
-    // No workspaces flag seeded for this user.
+    // No workspaces flag seeded for this user: workspaces are on for everyone.
 
-    // No switcher in the header, and no "Your workspaces" section on the account
-    // settings page (the section self-gates on the feature flag).
-    await expect(page.getByRole("button", { name: /switch workspace/i })).toHaveCount(0);
+    // The switcher is in the header, and the "Your workspaces" section is on the
+    // account settings page.
+    await expect(page.getByRole("button", { name: /switch workspace/i })).toBeVisible();
     await page.getByRole("button", { name: "Account settings" }).click();
     await page.getByRole("menuitem", { name: /account settings/i }).click();
     await expect(page.getByRole("heading", { name: "Account Settings" })).toBeVisible({
       timeout: 15000,
     });
-    await expect(page.getByRole("heading", { name: "Your workspaces" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Your workspaces" })).toBeVisible();
   });
 
   test("leaves the personal feeds dashboard unchanged", async ({ page }) => {

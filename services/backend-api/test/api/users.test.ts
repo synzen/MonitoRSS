@@ -103,7 +103,6 @@ describe("GET /api/v1/users/@me", { concurrency: true }, () => {
           creditBalance: { availableFormatted: string };
           enableBilling: boolean;
           featureFlags: Record<string, unknown>;
-          capabilities: { workspaces: boolean };
           supporterFeatures: {
             exrternalProperties: { enabled: boolean };
           };
@@ -124,7 +123,6 @@ describe("GET /api/v1/users/@me", { concurrency: true }, () => {
       assert.strictEqual(body.result.creditBalance.availableFormatted, "0");
       assert.strictEqual(body.result.enableBilling, true);
       assert.deepStrictEqual(body.result.featureFlags, {});
-      assert.deepStrictEqual(body.result.capabilities, { workspaces: false });
       assert.ok(body.result.supporterFeatures);
       assert.strictEqual(
         body.result.supporterFeatures.exrternalProperties.enabled,
@@ -879,74 +877,3 @@ describe("PATCH /api/v1/users/@me", { concurrency: true }, () => {
     });
   });
 });
-
-describe(
-  "capabilities.workspaces reflects the per-user feature flag",
-  { concurrency: true },
-  () => {
-    let ctx: AppTestContext;
-
-    before(async () => {
-      ctx = await createAppTestContext();
-    });
-
-    after(async () => {
-      await ctx.teardown();
-    });
-
-    async function enableWorkspacesFlag(discordUserId: string): Promise<void> {
-      await ctx.connection
-        .collection("users")
-        .updateOne(
-          { discordUserId },
-          { $set: { "featureFlags.workspaces": true } },
-        );
-    }
-
-    it("GET /users/@me returns capabilities.workspaces=true when the user has the flag", async () => {
-      const discordUserId = generateSnowflake();
-      const user = await ctx.asUser(discordUserId);
-      await enableWorkspacesFlag(discordUserId);
-
-      const response = await user.fetch("/api/v1/users/@me");
-
-      assert.strictEqual(response.status, 200);
-      const body = (await response.json()) as {
-        result: { capabilities: { workspaces: boolean } };
-      };
-      assert.deepStrictEqual(body.result.capabilities, { workspaces: true });
-    });
-
-    it("GET /users/@me returns capabilities.workspaces=false without the flag", async () => {
-      const user = await ctx.asUser(generateSnowflake());
-
-      const response = await user.fetch("/api/v1/users/@me");
-
-      assert.strictEqual(response.status, 200);
-      const body = (await response.json()) as {
-        result: { capabilities: { workspaces: boolean } };
-      };
-      assert.deepStrictEqual(body.result.capabilities, { workspaces: false });
-    });
-
-    it("PATCH /users/@me also returns capabilities.workspaces=true when the user has the flag", async () => {
-      const discordUserId = generateSnowflake();
-      const user = await ctx.asUser(discordUserId);
-      await enableWorkspacesFlag(discordUserId);
-
-      const response = await user.fetch("/api/v1/users/@me", {
-        method: "PATCH",
-        body: JSON.stringify({
-          preferences: { alertOnDisabledFeeds: true },
-        }),
-        headers: { "Content-Type": "application/json" },
-      });
-
-      assert.strictEqual(response.status, 200);
-      const body = (await response.json()) as {
-        result: { capabilities: { workspaces: boolean } };
-      };
-      assert.deepStrictEqual(body.result.capabilities, { workspaces: true });
-    });
-  },
-);

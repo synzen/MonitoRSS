@@ -62,7 +62,7 @@ const invite = (id: string, workspaceName: string) => ({
 const renderList = () =>
   render(
     <ChakraProvider value={system}>
-      <PendingInvitationsList enabled />
+      <PendingInvitationsList />
     </ChakraProvider>,
   );
 

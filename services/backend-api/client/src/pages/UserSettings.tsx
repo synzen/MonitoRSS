@@ -41,11 +41,7 @@ import {
   usePaddleContext,
 } from "@/features/subscriptionProducts";
 import { DatePreferencesForm, RedditConnectionSetting } from "@/features/feed";
-import {
-  VerifiedEmailSettingsRow,
-  WorkspacesSettingsSection,
-  useIsWorkspacesEnabled,
-} from "@/features/workspaces";
+import { VerifiedEmailSettingsRow, WorkspacesSettingsSection } from "@/features/workspaces";
 import {
   PageAlertContextOutlet,
   PageAlertProvider,
@@ -215,7 +211,6 @@ const UserSettingsInner = () => {
   } = formMethods;
   const formFocusRef = useRef<HTMLFormElement>(null);
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
-  const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
   const hasLoaded = status !== "loading";
 
   useEffect(() => {
@@ -351,20 +346,12 @@ const UserSettingsInner = () => {
       </Stack>
       <SettingsSection
         title="Email"
-        description={
-          workspacesEnabled
-            ? "Your Discord email is used for billing receipts and notifications. Your verified email is used for workspace invitations, and for member notices when it is set. Member notices fall back to your Discord email if you have not verified one."
-            : "The email tied to your Discord account, used for notifications and billing receipts."
-        }
+        description="Your Discord email is used for billing receipts and notifications. Your verified email is used for workspace invitations, and for member notices when it is set. Member notices fall back to your Discord email if you have not verified one."
       >
         <Stack gap={6}>
           <Field
-            label={workspacesEnabled ? "Discord email" : undefined}
-            helperText={
-              workspacesEnabled
-                ? "Sourced from your Discord account. Refresh it if it has changed there."
-                : undefined
-            }
+            label="Discord email"
+            helperText="Sourced from your Discord account. Refresh it if it has changed there."
           >
             <HStack gap={2} alignSelf="stretch" alignItems="center">
               <Input

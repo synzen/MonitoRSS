@@ -5,15 +5,14 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
 import { WorkspaceScopeLayout } from "./index";
-import { useIsWorkspacesEnabled, useWorkspace } from "../../hooks";
+import { useWorkspace } from "../../hooks";
 
-// The two gate hooks are driven per-test. useRefetchFeedsOnWorkspaceActivation is
-// a fire-and-forget effect hook (it calls useQueryClient internally, which needs a
+// useWorkspace is driven per-test. useRefetchFeedsOnWorkspaceActivation is a
+// fire-and-forget effect hook (it calls useQueryClient internally, which needs a
 // provider this test does not mount), so it is stubbed to a no-op rather than kept
 // real — the layout calls it unconditionally and these tests assert routing, not
 // the refetch side effect.
 vi.mock("../../hooks", () => ({
-  useIsWorkspacesEnabled: vi.fn(),
   useWorkspace: vi.fn(),
   useRefetchFeedsOnWorkspaceActivation: vi.fn(),
 }));
@@ -45,11 +44,7 @@ describe("WorkspaceScopeLayout", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the scoped page for a member of an enabled workspace", async () => {
-    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({
-      enabled: true,
-      status: "success",
-    } as never);
+  it("renders the scoped page for a member of the workspace", async () => {
     vi.mocked(useWorkspace).mockReturnValue({
       status: "success",
       workspace: {
@@ -67,10 +62,6 @@ describe("WorkspaceScopeLayout", () => {
   });
 
   it("redirects to not-found when the workspace is inaccessible (404)", () => {
-    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({
-      enabled: true,
-      status: "success",
-    } as never);
     vi.mocked(useWorkspace).mockReturnValue({
       status: "error",
       workspace: undefined,
@@ -83,27 +74,7 @@ describe("WorkspaceScopeLayout", () => {
     expect(screen.queryByText("SCOPED CONTENT")).not.toBeInTheDocument();
   });
 
-  it("redirects to not-found when the workspaces feature is disabled", () => {
-    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({
-      enabled: false,
-      status: "success",
-    } as never);
-    vi.mocked(useWorkspace).mockReturnValue({
-      status: "loading",
-      workspace: undefined,
-      error: null,
-    } as never);
-
-    renderLayout();
-
-    expect(screen.getByText("NOT FOUND PAGE")).toBeInTheDocument();
-  });
-
-  it("shows neither content nor not-found while the gate is resolving", () => {
-    vi.mocked(useIsWorkspacesEnabled).mockReturnValue({
-      enabled: false,
-      status: "loading",
-    } as never);
+  it("shows neither content nor not-found while the workspace is loading", () => {
     vi.mocked(useWorkspace).mockReturnValue({
       status: "loading",
       workspace: undefined,

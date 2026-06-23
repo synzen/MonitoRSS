@@ -3,7 +3,6 @@ import {
   Box,
   Card,
   Heading,
-  Link,
   Separator,
   Stack,
   Text,
@@ -74,7 +73,6 @@ const WORKSPACE_SLIDER_MARKS = WORKSPACE_DETENTS.map((value, index) => ({
 export const WorkspacePanel = ({
   interval,
   pricing,
-  workspacesEnabled,
   ownsWorkspaceNeedingBilling,
   defaultSizerOpen = false,
   onCreateWorkspace,
@@ -85,7 +83,6 @@ export const WorkspacePanel = ({
   // interval. Undefined while that preview is still loading. The slider derives
   // every detent from these with no Paddle call of its own.
   pricing: WorkspaceFeedPricing | undefined;
-  workspacesEnabled: boolean;
   // Whether the capacity sizer starts expanded. Defaults to collapsed (capacity
   // is demoted under the collaboration pitch); the parent opens it when the
   // dialog is opened from the feed-limit wall, where capacity is the user's
@@ -225,35 +222,22 @@ export const WorkspacePanel = ({
               <WorkspaceFeatureRow key={feature.label} feature={feature} />
             ))}
           </Stack>
-          {workspacesEnabled ? (
-            <Stack gap={2}>
-              <PrimaryActionButton
-                width="100%"
-                size="lg"
-                onClick={() =>
-                  ownsWorkspaceNeedingBilling ? onGoToWorkspace(feeds) : onCreateWorkspace(feeds)
-                }
-              >
-                {ownsWorkspaceNeedingBilling
-                  ? OWNER_CTA_LABEL
-                  : `Create workspace for ${feeds} feeds`}
-              </PrimaryActionButton>
-              <Text fontSize="xs" color="fg.muted" textAlign="center">
-                {ownsWorkspaceNeedingBilling ? OWNER_REASSURANCE : WORKSPACE_REASSURANCE}
-              </Text>
-            </Stack>
-          ) : (
-            // Workspaces are not yet enabled for this account, so the priced
-            // slider has no action to offer. Say so plainly instead of leaving a
-            // dead-end control, and give a way forward.
-            <Text fontSize="sm" color="fg.muted" textAlign="center">
-              Workspaces aren&apos;t available on your account yet. Contact us at{" "}
-              <Link color="text.link" href="mailto:support@monitorss.xyz">
-                support@monitorss.xyz
-              </Link>{" "}
-              to get early access.
+          <Stack gap={2}>
+            <PrimaryActionButton
+              width="100%"
+              size="lg"
+              onClick={() =>
+                ownsWorkspaceNeedingBilling ? onGoToWorkspace(feeds) : onCreateWorkspace(feeds)
+              }
+            >
+              {ownsWorkspaceNeedingBilling
+                ? OWNER_CTA_LABEL
+                : `Create workspace for ${feeds} feeds`}
+            </PrimaryActionButton>
+            <Text fontSize="xs" color="fg.muted" textAlign="center">
+              {ownsWorkspaceNeedingBilling ? OWNER_REASSURANCE : WORKSPACE_REASSURANCE}
             </Text>
-          )}
+          </Stack>
         </Stack>
       </Card.Body>
     </Card.Root>

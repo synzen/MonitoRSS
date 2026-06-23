@@ -5,10 +5,9 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
 import { WorkspacesSettingsSection } from "./index";
-import { useIsWorkspacesEnabled, useWorkspaces } from "../../hooks";
+import { useWorkspaces } from "../../hooks";
 
 vi.mock("../../hooks", () => ({
-  useIsWorkspacesEnabled: vi.fn(),
   useWorkspaces: vi.fn(),
 }));
 
@@ -23,9 +22,6 @@ vi.mock("../CreateWorkspaceDialog", () => ({
 vi.mock("../PendingInvitationsList", () => ({
   PendingInvitationsList: () => null,
 }));
-
-const mockEnabled = (enabled: boolean) =>
-  vi.mocked(useIsWorkspacesEnabled).mockReturnValue({ enabled } as never);
 
 const mockWorkspaces = (overrides: Record<string, unknown>) =>
   vi.mocked(useWorkspaces).mockReturnValue({
@@ -49,18 +45,7 @@ describe("WorkspacesSettingsSection", () => {
     vi.clearAllMocks();
   });
 
-  it("renders nothing when the workspaces feature is disabled", () => {
-    mockEnabled(false);
-    mockWorkspaces({});
-
-    renderSection();
-
-    expect(screen.queryByRole("heading", { name: "Your workspaces" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /create workspace/i })).not.toBeInTheDocument();
-  });
-
   it("shows an empty state when the user is in no workspaces", () => {
-    mockEnabled(true);
     mockWorkspaces({ workspaces: [] });
 
     renderSection();
@@ -70,7 +55,6 @@ describe("WorkspacesSettingsSection", () => {
   });
 
   it("lists each workspace with Open and Settings links using slug, and shows the role", () => {
-    mockEnabled(true);
     mockWorkspaces({
       workspaces: [
         { id: "t1", name: "Acme", slug: "acme-marketing", role: "admin" },
@@ -101,7 +85,6 @@ describe("WorkspacesSettingsSection", () => {
   });
 
   it("opens the create-workspace dialog from the section action", () => {
-    mockEnabled(true);
     mockWorkspaces({ workspaces: [] });
 
     renderSection();
@@ -111,7 +94,6 @@ describe("WorkspacesSettingsSection", () => {
   });
 
   it("surfaces a retryable error when the workspaces query fails", () => {
-    mockEnabled(true);
     const refetch = vi.fn();
     mockWorkspaces({
       status: "error",

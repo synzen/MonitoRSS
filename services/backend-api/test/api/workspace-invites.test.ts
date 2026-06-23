@@ -473,20 +473,4 @@ describe("Workspace invites API", () => {
     assert.strictEqual(unknownBody, matchBody);
   });
 
-  it("requires the workspaces feature flag", async () => {
-    const invitedEmail = `invitee-${randomUUID()}@example.com`;
-    const { inviteId } = await seedInvite(invitedEmail);
-
-    // A user WITHOUT the workspaces feature flag.
-    const discordUserId = randomUUID();
-    await ctx.container.userRepository.create({ discordUserId });
-    const authed = await ctx.asUser(discordUserId);
-
-    const res = await authed.fetch(
-      `/api/v1/workspace-invites/${inviteId}/verification`,
-      { method: "POST", body: JSON.stringify({ email: invitedEmail }) },
-    );
-    assert.notStrictEqual(res.status, 200);
-    assert.strictEqual(sent.length, 0);
-  });
 });

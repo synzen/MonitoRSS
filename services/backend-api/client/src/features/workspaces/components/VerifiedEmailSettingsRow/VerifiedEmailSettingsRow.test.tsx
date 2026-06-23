@@ -6,13 +6,11 @@ import { system } from "@/utils/theme";
 import { VerifiedEmailSettingsRow } from "./index";
 
 const h = vi.hoisted(() => ({
-  enabled: true,
   verifiedEmail: "verified@example.com" as string | undefined,
   workspaces: [] as Array<{ role: string }>,
 }));
 
 vi.mock("../../hooks", () => ({
-  useIsWorkspacesEnabled: () => ({ enabled: h.enabled }),
   useWorkspaces: () => ({ workspaces: h.workspaces }),
   findOwnedWorkspace: (workspaces?: Array<{ role: string }>) =>
     workspaces?.find((w) => w.role === "owner"),
@@ -37,7 +35,6 @@ const renderRow = () =>
 
 describe("VerifiedEmailSettingsRow", () => {
   beforeEach(() => {
-    h.enabled = true;
     h.verifiedEmail = "verified@example.com";
     h.workspaces = [];
   });
@@ -56,19 +53,11 @@ describe("VerifiedEmailSettingsRow", () => {
     expect(screen.queryByText(/billing/i)).not.toBeInTheDocument();
   });
 
-  it("renders the verified email and a change action for workspace-enabled users", () => {
+  it("renders the verified email and a change action", () => {
     renderRow();
 
     const input = screen.getByLabelText(/verified workspace email/i) as HTMLInputElement;
     expect(input.value).toBe("verified@example.com");
     expect(screen.getByRole("button", { name: /change email/i })).toBeInTheDocument();
-  });
-
-  it("renders nothing for non-workspace users", () => {
-    h.enabled = false;
-    const { container } = renderRow();
-
-    expect(container).toBeEmptyDOMElement();
-    expect(screen.queryByLabelText(/verified email/i)).not.toBeInTheDocument();
   });
 });

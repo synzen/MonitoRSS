@@ -27,12 +27,10 @@ export const ScopeNavigationContainer = ({ children }: { children: React.ReactNo
   const { data: authStatusData } = useDiscordAuthStatus();
   const authenticated = !!authStatusData?.authenticated;
   const { data: userMe } = useUserMe({ enabled: authenticated });
-  // Mirrors useIsWorkspacesEnabled's two-layer gate, but gated on auth so this
+  // Workspaces are available to every signed-in user. Gated on auth so this
   // globally-mounted container never fires user queries for logged-out visitors.
-  const workspacesEnabled = !!(
-    userMe?.result.capabilities?.workspaces && userMe?.result.featureFlags?.workspaces
-  );
-  const { workspaces } = useWorkspaces({ enabled: workspacesEnabled });
+  const isSignedIn = !!userMe?.result;
+  const { workspaces } = useWorkspaces({ enabled: isSignedIn });
   const hasWorkspaces = (workspaces?.length ?? 0) > 0;
   const { mutateAsync: updateUserMe } = useUpdateUserMe();
 
@@ -42,7 +40,7 @@ export const ScopeNavigationContainer = ({ children }: { children: React.ReactNo
     : undefined;
 
   const scopeLabel = useMemo(() => {
-    if (!workspacesEnabled || !hasWorkspaces) {
+    if (!isSignedIn || !hasWorkspaces) {
       return undefined;
     }
 
@@ -51,7 +49,7 @@ export const ScopeNavigationContainer = ({ children }: { children: React.ReactNo
     }
 
     return "Personal";
-  }, [workspacesEnabled, hasWorkspaces, pathWorkspaceSlug, activeWorkspace?.name]);
+  }, [isSignedIn, hasWorkspaces, pathWorkspaceSlug, activeWorkspace?.name]);
 
   const storedSlug = userMe?.result.preferences?.lastActiveWorkspaceSlug ?? null;
   // null records personal scope; undefined means the route is scope-neutral
@@ -65,7 +63,7 @@ export const ScopeNavigationContainer = ({ children }: { children: React.ReactNo
   }
 
   useEffect(() => {
-    if (!workspacesEnabled || !hasWorkspaces || !userMe) {
+    if (!isSignedIn || !hasWorkspaces || !userMe) {
       return;
     }
 
@@ -76,7 +74,7 @@ export const ScopeNavigationContainer = ({ children }: { children: React.ReactNo
     updateUserMe({
       details: { preferences: { lastActiveWorkspaceSlug: scopeToRecord } },
     }).catch(() => {});
-  }, [workspacesEnabled, hasWorkspaces, !!userMe, scopeToRecord, storedSlug]);
+  }, [isSignedIn, hasWorkspaces, !!userMe, scopeToRecord, storedSlug]);
 
   return <ScopeLabelProvider value={scopeLabel}>{children}</ScopeLabelProvider>;
 };

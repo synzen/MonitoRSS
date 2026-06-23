@@ -2,25 +2,19 @@ import { useState } from "react";
 import { Button, HStack, Input } from "@chakra-ui/react";
 import { Field } from "@/components/ui/field";
 import { useUserMe } from "@/features/discordUser";
-import { findOwnedWorkspace, useIsWorkspacesEnabled, useWorkspaces } from "../../hooks";
+import { findOwnedWorkspace, useWorkspaces } from "../../hooks";
 import { ChangeVerifiedEmailDialog } from "../ChangeVerifiedEmailDialog";
 
 interface Props {
   onChanged: () => void;
 }
 
-// The verified-email row plus its change-email dialog, gated to workspace-enabled
-// users. Self-contained so the settings page does not need to know the gating
-// rule or own the dialog open state.
+// The verified-email row plus its change-email dialog. Self-contained so the
+// settings page does not need to own the dialog open state.
 export const VerifiedEmailSettingsRow = ({ onChanged }: Props) => {
-  const { enabled } = useIsWorkspacesEnabled();
   const { data } = useUserMe();
   const { workspaces } = useWorkspaces();
   const [isOpen, setIsOpen] = useState(false);
-
-  if (!enabled) {
-    return null;
-  }
 
   const verifiedEmail = data?.result.verifiedEmail;
   const ownsWorkspace = !!findOwnedWorkspace(workspaces);

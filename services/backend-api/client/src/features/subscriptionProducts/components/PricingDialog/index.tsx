@@ -30,12 +30,7 @@ import { useUserMe } from "@/features/discordUser";
 import { notifySuccess } from "@/utils/notifySuccess";
 import formatCurrency from "@/utils/formatCurrency";
 import { usePricingData } from "@/features/subscriptionProducts";
-import {
-  CreateWorkspaceDialog,
-  findOwnedWorkspace,
-  useIsWorkspacesEnabled,
-  useWorkspaces,
-} from "@/features/workspaces";
+import { CreateWorkspaceDialog, findOwnedWorkspace, useWorkspaces } from "@/features/workspaces";
 import { Switch } from "@/components/ui/switch";
 import {
   DialogRoot,
@@ -99,11 +94,10 @@ interface ChangeSubscriptionDetails {
 export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
   const { resetCheckoutData, initCancellationFlow } = usePaddleContext();
   const { data: userData } = useUserMe();
-  const { enabled: workspacesEnabled } = useIsWorkspacesEnabled();
   // Gate the list fetch on the dialog being open: this component is mounted
   // app-wide by the provider, so without the isOpen term the request would fire
-  // for every workspace-enabled user on every page. Mirrors usePricingData below.
-  const { workspaces } = useWorkspaces({ enabled: workspacesEnabled && isOpen });
+  // on every page. Mirrors usePricingData below.
+  const { workspaces } = useWorkspaces({ enabled: isOpen });
   const navigate = useNavigate();
   const [changeSubscriptionDetails, setChangeSubscriptionDetails] =
     useState<ChangeSubscriptionDetails>();
@@ -490,7 +484,6 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                         <WorkspacePanel
                           interval={interval}
                           pricing={getWorkspaceFeedPricing(interval)}
-                          workspacesEnabled={workspacesEnabled}
                           ownsWorkspaceNeedingBilling={!!workspaceNeedingBilling}
                           // Opened from the feed-limit wall: the user came for
                           // capacity, so start the sizer expanded.
