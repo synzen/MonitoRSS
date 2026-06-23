@@ -170,13 +170,21 @@ function emailButton(url: unknown, label: unknown): Handlebars.SafeString {
 // is a B/W glyph or tofu box in Outlook's Word engine and unreliable in
 // plain-text fallback). The amber fill + bold label carry the meaning portably,
 // and pairing it with the amber rail means state is never color-alone (WCAG
-// 1.4.1). The negative top margin pulls it up under the rail.
+// 1.4.1).
+//
+// Spacing is carried by a spacer ROW below the pill, not by `margin` on the
+// wrapper table: Gmail strips `margin` from <table> elements, which collapsed
+// the gap and jammed the chip against the title. The 18px spacer cell survives
+// every client. (The old -6px top margin to tuck under the rail is dropped for
+// the same reason — it never applied in Gmail anyway.)
 function emailWarnChip(): Handlebars.SafeString {
   return new Handlebars.SafeString(
-    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:-6px 0 18px;"><tr>` +
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>` +
       `<td class="email-chip" style="background:${L.warnChipBg};border:1px solid ${L.warnChipBorder};border-radius:999px;padding:5px 14px;font-size:12px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:${L.warnText};">` +
       `Action required` +
-      `</td></tr></table>`,
+      `</td></tr>` +
+      `<tr><td style="height:18px;font-size:0;line-height:0;">&nbsp;</td></tr>` +
+      `</table>`,
   );
 }
 
