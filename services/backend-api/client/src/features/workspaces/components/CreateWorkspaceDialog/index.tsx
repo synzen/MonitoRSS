@@ -23,7 +23,11 @@ import {
 } from "@/components/ui/dialog";
 import { Field } from "@/components/ui/field";
 import { useCreateWorkspace } from "../../hooks";
-import { VerifyEmailStep } from "../VerifyEmailStep";
+import {
+  VerifyEmailStep,
+  VerifyEmailFooterHost,
+  VerifyEmailFooterActions,
+} from "../VerifyEmailStep";
 
 const formSchema = object({
   name: string().required("Workspace name is required").max(100, "Workspace name is too long"),
@@ -158,103 +162,110 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose, onCreated }: Props) => 
   return (
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create a workspace</DialogTitle>
-        </DialogHeader>
-        <DialogCloseTrigger />
-        <DialogBody>
-          <Text color="fg.muted" mb={4}>
-            {resolveExplainer()}
-          </Text>
-          {!verifiedEmail ? (
-            <VerifyEmailStep
-              defaultEmail={discordEmail}
-              intro={VERIFY_EMAIL_INTRO}
-              onVerified={() =>
-                setAnnouncement(
-                  "Your email is verified. Enter a workspace name to create your workspace.",
-                )
-              }
-            />
-          ) : (
-            <form id={FORM_ID} onSubmit={handleSubmit(onSubmit)} noValidate>
-              <Stack gap={4}>
-                <Field
-                  label="Workspace name"
-                  invalid={!!errors.name}
-                  required
-                  errorText={errors.name?.message}
-                >
-                  <Controller
-                    name="name"
-                    control={control}
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        ref={(el) => {
-                          field.ref(el);
-                          nameInputRef.current = el;
-                        }}
-                      />
-                    )}
-                  />
-                </Field>
-                <Field
-                  label="Workspace URL"
-                  invalid={!!errors.slug}
-                  required
-                  errorText={errors.slug?.message}
-                  helperText="Lowercase letters, numbers, and hyphens. Cannot be changed easily later."
-                >
-                  <InputGroup startAddon="/workspaces/">
+        <VerifyEmailFooterHost>
+          <DialogHeader>
+            <DialogTitle>Create a workspace</DialogTitle>
+          </DialogHeader>
+          <DialogCloseTrigger />
+          <DialogBody>
+            <Text color="fg.muted" mb={4}>
+              {resolveExplainer()}
+            </Text>
+            {!verifiedEmail ? (
+              <VerifyEmailStep
+                defaultEmail={discordEmail}
+                intro={VERIFY_EMAIL_INTRO}
+                onVerified={() =>
+                  setAnnouncement(
+                    "Your email is verified. Enter a workspace name to create your workspace.",
+                  )
+                }
+              />
+            ) : (
+              <form id={FORM_ID} onSubmit={handleSubmit(onSubmit)} noValidate>
+                <Stack gap={4}>
+                  <Field
+                    label="Workspace name"
+                    invalid={!!errors.name}
+                    required
+                    errorText={errors.name?.message}
+                  >
                     <Controller
-                      name="slug"
+                      name="name"
                       control={control}
                       render={({ field }) => (
                         <Input
                           {...field}
-                          onFocus={() => setSlugTouched(true)}
-                          placeholder="my-workspace"
+                          ref={(el) => {
+                            field.ref(el);
+                            nameInputRef.current = el;
+                          }}
                         />
                       )}
                     />
-                  </InputGroup>
-                </Field>
-                {/* Slug-taken/reserved are already shown inline on the slug field,
-                    so the generic alert covers only the remaining failures, using
-                    the friendly mapped message rather than the raw server string. */}
-                {error &&
-                  error.errorCode !== ApiErrorCode.WORKSPACE_SLUG_TAKEN &&
-                  error.errorCode !== ApiErrorCode.WORKSPACE_SLUG_RESERVED && (
-                    <InlineErrorAlert
-                      title="Failed to create workspace"
-                      description={
-                        error.errorCode
-                          ? getStandardErrorCodeMessage(error.errorCode as ApiErrorCode)
-                          : error.message
-                      }
-                    />
-                  )}
-              </Stack>
-            </form>
-          )}
-          <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          {verifiedEmail && (
-            <PrimaryActionButton
-              type="submit"
-              form={FORM_ID}
-              loading={isSubmitting}
-              loadingText="Creating..."
-            >
-              Create workspace
-            </PrimaryActionButton>
-          )}
-        </DialogFooter>
+                  </Field>
+                  <Field
+                    label="Workspace URL"
+                    invalid={!!errors.slug}
+                    required
+                    errorText={errors.slug?.message}
+                    helperText="Lowercase letters, numbers, and hyphens. Cannot be changed easily later."
+                  >
+                    <InputGroup startAddon="/workspaces/">
+                      <Controller
+                        name="slug"
+                        control={control}
+                        render={({ field }) => (
+                          <Input
+                            {...field}
+                            onFocus={() => setSlugTouched(true)}
+                            placeholder="my-workspace"
+                          />
+                        )}
+                      />
+                    </InputGroup>
+                  </Field>
+                  {/* Slug-taken/reserved are already shown inline on the slug field,
+                      so the generic alert covers only the remaining failures, using
+                      the friendly mapped message rather than the raw server string. */}
+                  {error &&
+                    error.errorCode !== ApiErrorCode.WORKSPACE_SLUG_TAKEN &&
+                    error.errorCode !== ApiErrorCode.WORKSPACE_SLUG_RESERVED && (
+                      <InlineErrorAlert
+                        title="Failed to create workspace"
+                        description={
+                          error.errorCode
+                            ? getStandardErrorCodeMessage(error.errorCode as ApiErrorCode)
+                            : error.message
+                        }
+                      />
+                    )}
+                </Stack>
+              </form>
+            )}
+            <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            {/* Before verification the verify step publishes its Send code / Verify
+                button here; after it, the naming form's submit takes the slot. Both
+                sit next to Cancel in the one real dialog footer. */}
+            {verifiedEmail ? (
+              <PrimaryActionButton
+                type="submit"
+                form={FORM_ID}
+                loading={isSubmitting}
+                loadingText="Creating..."
+              >
+                Create workspace
+              </PrimaryActionButton>
+            ) : (
+              <VerifyEmailFooterActions />
+            )}
+          </DialogFooter>
+        </VerifyEmailFooterHost>
       </DialogContent>
     </DialogRoot>
   );

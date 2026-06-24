@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { system } from "@/utils/theme";
-import { VerifyEmailStep } from "./index";
+import { VerifyEmailStep, VerifyEmailFooterHost, VerifyEmailFooterActions } from "./index";
 
 const h = vi.hoisted(() => ({
   sendCode: vi.fn(),
@@ -50,6 +50,23 @@ const renderStep = (props: Partial<React.ComponentProps<typeof VerifyEmailStep>>
   render(
     <ChakraProvider value={system}>
       <VerifyEmailStep onVerified={vi.fn()} {...props} />
+    </ChakraProvider>,
+  );
+
+// Renders the step under a footer host (as the dialog consumers do), with the
+// footer-actions slot in a queryable container so we can assert the primary
+// action is published to the host's footer rather than the body.
+const renderStepWithFooter = (
+  props: Partial<React.ComponentProps<typeof VerifyEmailStep>> = {},
+) =>
+  render(
+    <ChakraProvider value={system}>
+      <VerifyEmailFooterHost>
+        <VerifyEmailStep onVerified={vi.fn()} {...props} />
+        <div data-testid="footer-slot">
+          <VerifyEmailFooterActions />
+        </div>
+      </VerifyEmailFooterHost>
     </ChakraProvider>,
   );
 
@@ -178,5 +195,75 @@ describe("VerifyEmailStep", () => {
 
     expect(await screen.findByText(/enter the 6-digit code/i)).toBeInTheDocument();
     expect(h.confirmCode).not.toHaveBeenCalled();
+  });
+
+  describe("footer host", () => {
+    // The dialog consumers wrap the step in VerifyEmailFooterHost and render
+    // VerifyEmailFooterActions inside their real DialogFooter. The step must
+    // publish its Send code / Verify button to that footer slot (not the body),
+    // with form/loading wiring intact so the footer button still submits the
+    // in-body form.
+    it("publishes the Send code button to the footer slot, not the body", () => {
+      renderStepWithFooter({ defaultEmail: "user@example.com" });
+
+      const slot = screen.getByTestId("footer-slot");
+      expect(slot).toContainElement(screen.getByRole("button", { name: /^send code$/i }));
+    });
+
+    it("submits the email form from the footer Send code button", async () => {
+      h.sendCode.mockResolvedValue(undefined);
+      renderStepWithFooter({ defaultEmail: "user@example.com" });
+
+      fireEvent.click(screen.getByRole("button", { name: /^send code$/i }));
+
+      await waitFor(() =>
+        expect(h.sendCode).toHaveBeenCalledWith({ details: { email: "user@example.com" } }),
+      );
+    });
+
+    it("swaps the footer button to Verify on the code-sent view, keeping resend/change in the body", async () => {
+      h.sendCode.mockResolvedValue(undefined);
+      renderStepWithFooter({ defaultEmail: "user@example.com" });
+      fireEvent.click(screen.getByRole("button", { name: /^send code$/i }));
+      await screen.findByRole("button", { name: "Resend code" });
+
+      const slot = screen.getByTestId("footer-slot");
+      expect(slot).toContainElement(screen.getByRole("button", { name: /^verify$/i }));
+      // Send code is gone; Resend / Change email are field-level helpers in the body.
+      expect(slot).not.toContainElement(screen.getByRole("button", { name: "Resend code" }));
+      expect(slot).not.toContainElement(screen.getByRole("button", { name: /change email/i }));
+    });
+
+    it("submits the confirm form from the footer Verify button", async () => {
+      // Real timers here: the assertion polls for the confirm mock, and waitFor's
+      // polling never advances under the suite's global fake timers.
+      vi.useRealTimers();
+      h.sendCode.mockResolvedValue(undefined);
+      h.confirmCode.mockResolvedValue(undefined);
+      renderStepWithFooter({ defaultEmail: "user@example.com" });
+      fireEvent.click(screen.getByRole("button", { name: /^send code$/i }));
+      await screen.findByRole("button", { name: "Resend code" });
+
+      fireEvent.change(screen.getByLabelText(/verification code/i), {
+        target: { value: "123456" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /^verify$/i }));
+
+      await waitFor(() =>
+        expect(h.confirmCode).toHaveBeenCalledWith({
+          details: { email: "user@example.com", code: "123456" },
+        }),
+      );
+    });
+  });
+
+  it("separates the resend and change-email actions without a middot glyph", async () => {
+    await reachCodeSentView();
+
+    // The middot was a non-standard separator between two buttons; it should be gone.
+    expect(screen.queryByText("·")).not.toBeInTheDocument();
+    // Both actions remain available as distinct buttons.
+    expect(screen.getByRole("button", { name: "Resend code" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /change email/i })).toBeInTheDocument();
   });
 });

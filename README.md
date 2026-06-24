@@ -66,8 +66,8 @@ While email notifications are available so that you may get notified when feeds 
 
 Plus exactly one of the following (config validation fails on boot if SMTP is configured without one of these):
 
-- `BACKEND_API_SMTP_FROM_DOMAIN` — your sending domain only (e.g. `mydomain.com`). MonitoRSS will send from distinct per-purpose addresses on this domain such as `alerts@mydomain.com` (feed/connection alerts) and `noreply@mydomain.com` (email verification). Recommended.
-- `BACKEND_API_SMTP_FROM` — a full RFC 5322 sender (e.g. `"MyService" <mail@mydomain.com>`). Used verbatim for every outbound email. Use this only if your SMTP provider restricts you to a single fixed sender address. Takes precedence over `BACKEND_API_SMTP_FROM_DOMAIN`.
+- `BACKEND_API_SMTP_FROM_DOMAIN`: your sending domain only (e.g. `mydomain.com`). MonitoRSS will send from distinct per-purpose addresses on this domain such as `alerts@mydomain.com` (feed/connection alerts) and `noreply@mydomain.com` (email verification). Recommended.
+- `BACKEND_API_SMTP_FROM`: a full RFC 5322 sender (e.g. `"MyService" <mail@mydomain.com>`). Used verbatim for every outbound email. Use this only if your SMTP provider restricts you to a single fixed sender address. Takes precedence over `BACKEND_API_SMTP_FROM_DOMAIN`.
 
 Make sure to opt into email notifications in the control panel's user settings page afterwards.
 

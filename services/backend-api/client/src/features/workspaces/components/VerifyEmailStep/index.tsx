@@ -1,11 +1,17 @@
-import { useEffect, useRef, useState } from "react";
-import { Box, Button, HStack, Input, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
+import { useEffect, useId, useRef, useState } from "react";
+import { Box, chakra, Input, Stack, Text, VisuallyHidden } from "@chakra-ui/react";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { Field } from "@/components/ui/field";
 import { getStandardErrorCodeMessage, ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 import type ApiAdapterError from "@/utils/ApiAdapterError";
 import { useSendEmailVerification, useConfirmEmailVerification } from "../../hooks";
+import { useVerifyEmailFooter } from "./VerifyEmailFooterContext";
+
+export {
+  VerifyEmailFooterHost,
+  VerifyEmailFooterActions,
+} from "./VerifyEmailFooterContext";
 
 interface Props {
   defaultEmail?: string;
@@ -42,6 +48,27 @@ const CODE_REGEX = /^[0-9]{6}$/;
 const RESEND_COOLDOWN_SECONDS = 60;
 const CODE_TTL_MINUTES = 10;
 
+// An inline text link that inherits the surrounding sentence's typography, so the
+// Resend / Change email actions read as part of the helper prose rather than as
+// buttons with their own type scale (which sit off the sentence's baseline).
+const InlineLink = chakra("button", {
+  base: {
+    display: "inline",
+    p: 0,
+    minW: 0,
+    h: "auto",
+    verticalAlign: "baseline",
+    fontSize: "inherit",
+    lineHeight: "inherit",
+    fontWeight: "inherit",
+    color: "text.link",
+    textDecoration: "underline",
+    textUnderlineOffset: "2px",
+    bg: "transparent",
+    cursor: "pointer",
+  },
+});
+
 // Prefer the standardized, friendly message for a known error code (e.g. the 429
 // resend cooldown, an invalid/expired code) over the raw server string, falling
 // back to the message when the error carries no code.
@@ -65,6 +92,11 @@ export const VerifyEmailStep = ({
   onSendCode,
   validateEmail,
 }: Props) => {
+  // When a dialog host wraps the step in VerifyEmailFooterHost, the primary
+  // action (Send code / Verify) is published up to the host's real DialogFooter
+  // instead of rendered in the body. A full-page host (the invite page) has no
+  // such context, so the button stays in the body.
+  const footer = useVerifyEmailFooter();
   const [email, setEmail] = useState(defaultEmail ?? "");
   const [code, setCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
@@ -91,6 +123,12 @@ export const VerifyEmailStep = ({
   // whichever path actually ran.
   const [sendError, setSendError] = useState<ApiAdapterError | undefined>(undefined);
   const sendCountRef = useRef(0);
+
+  // The send/confirm forms carry stable ids so the primary button can submit
+  // them from the dialog footer (a host-owned DOM subtree outside the form).
+  const formIdBase = useId();
+  const sendFormId = `${formIdBase}-send`;
+  const confirmFormId = `${formIdBase}-confirm`;
 
   const { mutateAsync: sendCode, reset: resetSend } = useSendEmailVerification();
   const {
@@ -193,9 +231,32 @@ export const VerifyEmailStep = ({
     resetSend();
   };
 
+  const sendButton = (
+    <PrimaryActionButton
+      type="submit"
+      form={sendFormId}
+      loading={isSending}
+      loadingText="Sending..."
+    >
+      Send code
+    </PrimaryActionButton>
+  );
+
+  const verifyButton = (
+    <PrimaryActionButton
+      type="submit"
+      form={confirmFormId}
+      loading={isConfirming}
+      loadingText="Verifying..."
+    >
+      Verify
+    </PrimaryActionButton>
+  );
+
   if (!codeSent) {
     return (
-      <form onSubmit={handleSendCode} noValidate>
+      <FooterPublisher footer={footer} button={sendButton} signature={`send:${isSending}`}>
+        <form id={sendFormId} onSubmit={handleSendCode} noValidate>
         <Stack gap={4}>
           <Text>
             {intro ?? (
@@ -240,18 +301,16 @@ export const VerifyEmailStep = ({
               description={resolveErrorMessage(sendError)}
             />
           )}
-          <Box>
-            <PrimaryActionButton type="submit" loading={isSending} loadingText="Sending...">
-              Send code
-            </PrimaryActionButton>
-          </Box>
-        </Stack>
-      </form>
+            {!footer?.hasHost && <Box>{sendButton}</Box>}
+          </Stack>
+        </form>
+      </FooterPublisher>
     );
   }
 
   return (
-    <form onSubmit={onConfirm} noValidate>
+    <FooterPublisher footer={footer} button={verifyButton} signature={`verify:${isConfirming}`}>
+      <form id={confirmFormId} onSubmit={onConfirm} noValidate>
       <Stack gap={4}>
         <Text>
           We sent a 6-digit code to <strong>{trimmedEmail}</strong>. Enter it below to verify.
@@ -290,45 +349,81 @@ export const VerifyEmailStep = ({
             description={resolveErrorMessage(sendError)}
           />
         )}
-        <HStack justifyContent="space-between">
-          <HStack gap={1}>
-            {/* aria-disabled (not disabled) keeps the control focusable and
-                announceable while it's inert during the cooldown/send. The
-                accessible name stays "Resend code" — the ticking "(Ns)" is
-                visual-only and deliberately not in a live region. */}
-            <Button
-              type="button"
-              variant="plain"
-              aria-label="Resend code"
-              aria-disabled={isSending || inCooldown}
-              loading={isSending}
-              loadingText="Sending..."
-              onClick={(e) => {
-                if (isSending || inCooldown) {
-                  e.preventDefault();
+        {/* Resend / Change email are field-level helpers about the code, so they
+            read as inline prose under the field rather than as a row of buttons.
+            aria-disabled (not disabled) keeps Resend focusable and announceable
+            while it's inert during the cooldown/send; the accessible name stays
+            "Resend code" — the ticking "(Ns)" is visual-only and not in a live
+            region. */}
+        <Text fontSize="sm" color="fg.muted">
+          Didn&apos;t get it?{" "}
+          <InlineLink
+            type="button"
+            aria-label="Resend code"
+            aria-disabled={isSending || inCooldown}
+            onClick={(e) => {
+              if (isSending || inCooldown) {
+                e.preventDefault();
 
-                  return;
-                }
+                return;
+              }
 
-                handleSendCode(e);
-              }}
-            >
-              {inCooldown ? `Resend code (${cooldownRemaining}s)` : "Resend code"}
-            </Button>
-            {!lockEmail && (
-              <>
-                <Text aria-hidden>·</Text>
-                <Button type="button" variant="plain" onClick={onChangeEmail}>
-                  Change email
-                </Button>
-              </>
-            )}
-          </HStack>
-          <PrimaryActionButton type="submit" loading={isConfirming} loadingText="Verifying...">
-            Verify
-          </PrimaryActionButton>
-        </HStack>
+              handleSendCode(e);
+            }}
+          >
+            {inCooldown ? `Resend code (${cooldownRemaining}s)` : "Resend code"}
+          </InlineLink>
+          {!lockEmail && (
+            <>
+              {" "}
+              or{" "}
+              <InlineLink type="button" onClick={onChangeEmail}>
+                change email
+              </InlineLink>
+            </>
+          )}
+          .
+        </Text>
+        {!footer?.hasHost && <Box>{verifyButton}</Box>}
       </Stack>
-    </form>
+      </form>
+    </FooterPublisher>
   );
+};
+
+// Publishes the step's current primary button into the host's DialogFooter (via
+// VerifyEmailFooterHost) for as long as this view is mounted, clearing it on
+// unmount/view-swap so a stale button never lingers in the footer. With no host
+// (full-page invite flow) it's a passthrough; the step renders the button inline.
+//
+// The effect keys on `signature` (a stable string of the inputs that change the
+// button), NOT on the button node itself — the node is a fresh element every
+// render, which would re-run the effect every render and loop.
+const FooterPublisher = ({
+  footer,
+  button,
+  signature,
+  children,
+}: {
+  footer: ReturnType<typeof useVerifyEmailFooter>;
+  button: React.ReactNode;
+  signature: string;
+  children: React.ReactNode;
+}) => {
+  const setPrimaryButton = footer?.setPrimaryButton;
+  const buttonRef = useRef(button);
+  buttonRef.current = button;
+
+  useEffect(() => {
+    if (!setPrimaryButton) {
+      return undefined;
+    }
+
+    setPrimaryButton(buttonRef.current);
+
+    return () => setPrimaryButton(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setPrimaryButton, signature]);
+
+  return <>{children}</>;
 };
