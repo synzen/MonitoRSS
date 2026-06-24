@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { FaCheck, FaXmark } from "react-icons/fa6";
 import { FiHelpCircle } from "react-icons/fi";
 import { Button, Flex, HStack, Icon, Text, VisuallyHidden } from "@chakra-ui/react";
@@ -50,28 +51,37 @@ export const WORKSPACE_FEATURES: WorkspaceFeature[] = [
 // A keyboard-focusable "more info" disclosure for a feature row. Built on the
 // shared Popover (not a hover tooltip) so the explanation is reachable by
 // keyboard and touch, dismissible with Escape, and returns focus to the trigger.
-const FeatureInfoPopover = ({ title, body }: { title: string; body: string }) => (
-  <PopoverRoot positioning={{ placement: "top" }}>
-    <PopoverTrigger asChild>
-      <Button
-        variant="plain"
-        color="text.link"
-        minW="6"
-        h="6"
-        px="1"
-        aria-label={`About ${title.toLowerCase()}`}
-      >
-        <Icon as={FiHelpCircle} boxSize="3.5" aria-hidden />
-      </Button>
-    </PopoverTrigger>
-    <PopoverContent maxWidth="xs" width="100%">
-      <PopoverArrow />
-      <PopoverCloseTrigger />
-      <PopoverHeader fontWeight="semibold">{title}</PopoverHeader>
-      <PopoverBody>{body}</PopoverBody>
-    </PopoverContent>
-  </PopoverRoot>
-);
+const FeatureInfoPopover = ({ title, body }: { title: string; body: string }) => {
+  // Pin focus restoration to the trigger explicitly. This popover lives inside a
+  // modal Dialog whose own focus trap competes during the Escape sequence; the
+  // popover's default restore-to-previously-focused can lose that race and drop
+  // focus to the dialog body. finalFocusEl makes the return deterministic.
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <PopoverRoot positioning={{ placement: "top" }} finalFocusEl={() => triggerRef.current}>
+      <PopoverTrigger asChild>
+        <Button
+          ref={triggerRef}
+          variant="plain"
+          color="text.link"
+          minW="6"
+          h="6"
+          px="1"
+          aria-label={`About ${title.toLowerCase()}`}
+        >
+          <Icon as={FiHelpCircle} boxSize="3.5" aria-hidden />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent maxWidth="xs" width="100%">
+        <PopoverArrow />
+        <PopoverCloseTrigger />
+        <PopoverHeader fontWeight="semibold">{title}</PopoverHeader>
+        <PopoverBody>{body}</PopoverBody>
+      </PopoverContent>
+    </PopoverRoot>
+  );
+};
 
 // A single feature row. An excluded feature must be conveyed to assistive tech,
 // not by the crossed icon/color alone, so it carries visually-hidden status text.

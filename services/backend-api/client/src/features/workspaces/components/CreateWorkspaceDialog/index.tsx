@@ -246,7 +246,7 @@ export const CreateWorkspaceDialog = ({ isOpen, onClose, onCreated }: Props) => 
             <VisuallyHidden aria-live="polite">{announcement}</VisuallyHidden>
           </DialogBody>
           <DialogFooter>
-            <Button variant="ghost" mr={3} onClick={onClose} disabled={isSubmitting}>
+            <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
             {/* Before verification the verify step publishes its Send code / Verify

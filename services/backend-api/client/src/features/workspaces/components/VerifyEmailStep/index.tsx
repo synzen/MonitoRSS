@@ -250,140 +250,145 @@ export const VerifyEmailStep = ({
     </PrimaryActionButton>
   );
 
-  if (!codeSent) {
-    return (
-      <FooterPublisher footer={footer} button={sendButton} signature={`send:${isSending}`}>
-        <form id={sendFormId} onSubmit={handleSendCode} noValidate>
-          <Stack gap={4}>
-            <Text>
-              {intro ?? (
-                <>
-                  To create a workspace, first verify an email address you own. We&apos;ll send a
-                  one-time code to confirm it.
-                </>
-              )}
-            </Text>
-            <Field
-              label="Email address"
-              invalid={(sendAttempted && !emailValid) || !!guardError}
-              required
-              errorText={
-                // eslint-disable-next-line no-nested-ternary
-                guardError ||
-                (sendAttempted && !emailValid ? "Enter a valid email address." : undefined)
-              }
-              helperText={
-                // eslint-disable-next-line no-nested-ternary
-                lockEmail || !defaultEmail
-                  ? undefined
-                  : (sendAttempted && !emailValid) || guardError
-                    ? undefined
-                    : "Pre-filled with your Discord email. Change it if you'd prefer a different address."
-              }
-            >
-              <Input
-                type="email"
-                autoComplete="email"
-                value={email}
-                readOnly={lockEmail}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (guardError) setGuardError(undefined);
-                }}
-              />
-            </Field>
-            {sendError && (
-              <InlineErrorAlert
-                title="Failed to send code"
-                description={resolveErrorMessage(sendError)}
-              />
-            )}
-            {!footer?.hasHost && <Box>{sendButton}</Box>}
-          </Stack>
-        </form>
-      </FooterPublisher>
-    );
-  }
+  // The primary action (and its loading signature) follows the current view. A
+  // single publisher owns the footer slot for the whole step, so swapping views
+  // can't leave a stale/cleared button behind (two per-branch publishers raced
+  // their mount-set against the other's unmount-clear).
+  const primaryButton = codeSent ? verifyButton : sendButton;
+  const primarySignature = codeSent ? `verify:${isConfirming}` : `send:${isSending}`;
 
-  return (
-    <FooterPublisher footer={footer} button={verifyButton} signature={`verify:${isConfirming}`}>
-      <form id={confirmFormId} onSubmit={onConfirm} noValidate>
-        <Stack gap={4}>
-          <Text>
-            We sent a 6-digit code to <strong>{trimmedEmail}</strong>. Enter it below to verify.
-          </Text>
-          <VisuallyHidden aria-live="polite">{sendAnnouncement}</VisuallyHidden>
-          <Field
-            label="Verification code"
-            invalid={confirmAttempted && !codeValid}
-            required
-            errorText={
-              confirmAttempted && !codeValid ? "Enter the 6-digit code from your email." : undefined
-            }
-            helperText={
-              confirmAttempted && !codeValid
+  const body = !codeSent ? (
+    <form id={sendFormId} onSubmit={handleSendCode} noValidate>
+      <Stack gap={4}>
+        <Text>
+          {intro ?? (
+            <>
+              To create a workspace, first verify an email address you own. We&apos;ll send a
+              one-time code to confirm it.
+            </>
+          )}
+        </Text>
+        <Field
+          label="Email address"
+          invalid={(sendAttempted && !emailValid) || !!guardError}
+          required
+          errorText={
+            // eslint-disable-next-line no-nested-ternary
+            guardError ||
+            (sendAttempted && !emailValid ? "Enter a valid email address." : undefined)
+          }
+          helperText={
+            // eslint-disable-next-line no-nested-ternary
+            lockEmail || !defaultEmail
+              ? undefined
+              : (sendAttempted && !emailValid) || guardError
                 ? undefined
-                : `The code expires in ${CODE_TTL_MINUTES} minutes.`
-            }
-          >
-            <Input
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-          </Field>
-          {confirmError && (
-            <InlineErrorAlert
-              title="Failed to verify"
-              description={resolveErrorMessage(confirmError)}
-            />
-          )}
-          {sendError && (
-            <InlineErrorAlert
-              title="Failed to resend code"
-              description={resolveErrorMessage(sendError)}
-            />
-          )}
-          {/* Resend / Change email are field-level helpers about the code, so they
+                : "Pre-filled with your Discord email. Change it if you'd prefer a different address."
+          }
+        >
+          <Input
+            type="email"
+            autoComplete="email"
+            value={email}
+            readOnly={lockEmail}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (guardError) setGuardError(undefined);
+            }}
+          />
+        </Field>
+        {sendError && (
+          <InlineErrorAlert
+            title="Failed to send code"
+            description={resolveErrorMessage(sendError)}
+          />
+        )}
+        {!footer?.hasHost && <Box>{sendButton}</Box>}
+      </Stack>
+    </form>
+  ) : (
+    <form id={confirmFormId} onSubmit={onConfirm} noValidate>
+      <Stack gap={4}>
+        <Text>
+          We sent a 6-digit code to <strong>{trimmedEmail}</strong>. Enter it below to verify.
+        </Text>
+        <VisuallyHidden aria-live="polite">{sendAnnouncement}</VisuallyHidden>
+        <Field
+          label="Verification code"
+          invalid={confirmAttempted && !codeValid}
+          required
+          errorText={
+            confirmAttempted && !codeValid ? "Enter the 6-digit code from your email." : undefined
+          }
+          helperText={
+            confirmAttempted && !codeValid
+              ? undefined
+              : `The code expires in ${CODE_TTL_MINUTES} minutes.`
+          }
+        >
+          <Input
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+          />
+        </Field>
+        {confirmError && (
+          <InlineErrorAlert
+            title="Failed to verify"
+            description={resolveErrorMessage(confirmError)}
+          />
+        )}
+        {sendError && (
+          <InlineErrorAlert
+            title="Failed to resend code"
+            description={resolveErrorMessage(sendError)}
+          />
+        )}
+        {/* Resend / Change email are field-level helpers about the code, so they
             read as inline prose under the field rather than as a row of buttons.
             aria-disabled (not disabled) keeps Resend focusable and announceable
             while it's inert during the cooldown/send; the accessible name stays
             "Resend code" — the ticking "(Ns)" is visual-only and not in a live
             region. */}
-          <Text fontSize="sm" color="fg.muted">
-            Didn&apos;t get it?{" "}
-            <InlineLink
-              type="button"
-              aria-label="Resend code"
-              aria-disabled={isSending || inCooldown}
-              onClick={(e) => {
-                if (isSending || inCooldown) {
-                  e.preventDefault();
+        <Text fontSize="sm" color="fg.muted">
+          Didn&apos;t get it?{" "}
+          <InlineLink
+            type="button"
+            aria-label="Resend code"
+            aria-disabled={isSending || inCooldown}
+            onClick={(e) => {
+              if (isSending || inCooldown) {
+                e.preventDefault();
 
-                  return;
-                }
+                return;
+              }
 
-                handleSendCode(e);
-              }}
-            >
-              {inCooldown ? `Resend code (${cooldownRemaining}s)` : "Resend code"}
-            </InlineLink>
-            {!lockEmail && (
-              <>
-                {" "}
-                or{" "}
-                <InlineLink type="button" onClick={onChangeEmail}>
-                  change email
-                </InlineLink>
-              </>
-            )}
-            .
-          </Text>
-          {!footer?.hasHost && <Box>{verifyButton}</Box>}
-        </Stack>
-      </form>
+              handleSendCode(e);
+            }}
+          >
+            {inCooldown ? `Resend code (${cooldownRemaining}s)` : "Resend code"}
+          </InlineLink>
+          {!lockEmail && (
+            <>
+              {" "}
+              or{" "}
+              <InlineLink type="button" onClick={onChangeEmail}>
+                change email
+              </InlineLink>
+            </>
+          )}
+          .
+        </Text>
+        {!footer?.hasHost && <Box>{verifyButton}</Box>}
+      </Stack>
+    </form>
+  );
+
+  return (
+    <FooterPublisher footer={footer} button={primaryButton} signature={primarySignature}>
+      {body}
     </FooterPublisher>
   );
 };

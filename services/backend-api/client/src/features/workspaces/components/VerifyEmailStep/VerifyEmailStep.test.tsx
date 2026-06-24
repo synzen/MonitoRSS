@@ -220,13 +220,18 @@ describe("VerifyEmailStep", () => {
     });
 
     it("swaps the footer button to Verify on the code-sent view, keeping resend/change in the body", async () => {
+      // Real timers: publishing the button to the footer host is a post-commit
+      // effect that triggers a host re-render, so the footer Verify button lands a
+      // tick after the body shows the code-sent view. findBy must be able to poll
+      // for it, which the suite's global fake timers would freeze.
+      vi.useRealTimers();
       h.sendCode.mockResolvedValue(undefined);
       renderStepWithFooter({ defaultEmail: "user@example.com" });
       fireEvent.click(screen.getByRole("button", { name: /^send code$/i }));
       await screen.findByRole("button", { name: "Resend code" });
 
       const slot = screen.getByTestId("footer-slot");
-      expect(slot).toContainElement(screen.getByRole("button", { name: /^verify$/i }));
+      expect(slot).toContainElement(await screen.findByRole("button", { name: /^verify$/i }));
       // Send code is gone; Resend / Change email are field-level helpers in the body.
       expect(slot).not.toContainElement(screen.getByRole("button", { name: "Resend code" }));
       expect(slot).not.toContainElement(screen.getByRole("button", { name: /change email/i }));
