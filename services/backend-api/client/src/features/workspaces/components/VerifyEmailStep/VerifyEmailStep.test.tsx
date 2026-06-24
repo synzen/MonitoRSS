@@ -56,9 +56,7 @@ const renderStep = (props: Partial<React.ComponentProps<typeof VerifyEmailStep>>
 // Renders the step under a footer host (as the dialog consumers do), with the
 // footer-actions slot in a queryable container so we can assert the primary
 // action is published to the host's footer rather than the body.
-const renderStepWithFooter = (
-  props: Partial<React.ComponentProps<typeof VerifyEmailStep>> = {},
-) =>
+const renderStepWithFooter = (props: Partial<React.ComponentProps<typeof VerifyEmailStep>> = {}) =>
   render(
     <ChakraProvider value={system}>
       <VerifyEmailFooterHost>

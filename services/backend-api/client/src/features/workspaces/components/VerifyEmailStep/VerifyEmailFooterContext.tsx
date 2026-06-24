@@ -32,7 +32,9 @@ export const VerifyEmailFooterHost = ({ children }: { children: React.ReactNode 
     [primaryButton],
   );
 
-  return <VerifyEmailFooterContext.Provider value={value}>{children}</VerifyEmailFooterContext.Provider>;
+  return (
+    <VerifyEmailFooterContext.Provider value={value}>{children}</VerifyEmailFooterContext.Provider>
+  );
 };
 
 /**
@@ -43,5 +45,5 @@ export const VerifyEmailFooterHost = ({ children }: { children: React.ReactNode 
 export const VerifyEmailFooterActions = () => {
   const ctx = useContext(VerifyEmailFooterContext);
 
-  return <>{ctx?.primaryButton ?? null}</>;
+  return ctx?.primaryButton ?? null;
 };

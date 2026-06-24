@@ -8,10 +8,7 @@ import type ApiAdapterError from "@/utils/ApiAdapterError";
 import { useSendEmailVerification, useConfirmEmailVerification } from "../../hooks";
 import { useVerifyEmailFooter } from "./VerifyEmailFooterContext";
 
-export {
-  VerifyEmailFooterHost,
-  VerifyEmailFooterActions,
-} from "./VerifyEmailFooterContext";
+export { VerifyEmailFooterHost, VerifyEmailFooterActions } from "./VerifyEmailFooterContext";
 
 interface Props {
   defaultEmail?: string;
@@ -257,50 +254,50 @@ export const VerifyEmailStep = ({
     return (
       <FooterPublisher footer={footer} button={sendButton} signature={`send:${isSending}`}>
         <form id={sendFormId} onSubmit={handleSendCode} noValidate>
-        <Stack gap={4}>
-          <Text>
-            {intro ?? (
-              <>
-                To create a workspace, first verify an email address you own. We&apos;ll send a
-                one-time code to confirm it.
-              </>
-            )}
-          </Text>
-          <Field
-            label="Email address"
-            invalid={(sendAttempted && !emailValid) || !!guardError}
-            required
-            errorText={
-              // eslint-disable-next-line no-nested-ternary
-              guardError ||
-              (sendAttempted && !emailValid ? "Enter a valid email address." : undefined)
-            }
-            helperText={
-              // eslint-disable-next-line no-nested-ternary
-              lockEmail || !defaultEmail
-                ? undefined
-                : (sendAttempted && !emailValid) || guardError
+          <Stack gap={4}>
+            <Text>
+              {intro ?? (
+                <>
+                  To create a workspace, first verify an email address you own. We&apos;ll send a
+                  one-time code to confirm it.
+                </>
+              )}
+            </Text>
+            <Field
+              label="Email address"
+              invalid={(sendAttempted && !emailValid) || !!guardError}
+              required
+              errorText={
+                // eslint-disable-next-line no-nested-ternary
+                guardError ||
+                (sendAttempted && !emailValid ? "Enter a valid email address." : undefined)
+              }
+              helperText={
+                // eslint-disable-next-line no-nested-ternary
+                lockEmail || !defaultEmail
                   ? undefined
-                  : "Pre-filled with your Discord email. Change it if you'd prefer a different address."
-            }
-          >
-            <Input
-              type="email"
-              autoComplete="email"
-              value={email}
-              readOnly={lockEmail}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (guardError) setGuardError(undefined);
-              }}
-            />
-          </Field>
-          {sendError && (
-            <InlineErrorAlert
-              title="Failed to send code"
-              description={resolveErrorMessage(sendError)}
-            />
-          )}
+                  : (sendAttempted && !emailValid) || guardError
+                    ? undefined
+                    : "Pre-filled with your Discord email. Change it if you'd prefer a different address."
+              }
+            >
+              <Input
+                type="email"
+                autoComplete="email"
+                value={email}
+                readOnly={lockEmail}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (guardError) setGuardError(undefined);
+                }}
+              />
+            </Field>
+            {sendError && (
+              <InlineErrorAlert
+                title="Failed to send code"
+                description={resolveErrorMessage(sendError)}
+              />
+            )}
             {!footer?.hasHost && <Box>{sendButton}</Box>}
           </Stack>
         </form>
@@ -311,81 +308,81 @@ export const VerifyEmailStep = ({
   return (
     <FooterPublisher footer={footer} button={verifyButton} signature={`verify:${isConfirming}`}>
       <form id={confirmFormId} onSubmit={onConfirm} noValidate>
-      <Stack gap={4}>
-        <Text>
-          We sent a 6-digit code to <strong>{trimmedEmail}</strong>. Enter it below to verify.
-        </Text>
-        <VisuallyHidden aria-live="polite">{sendAnnouncement}</VisuallyHidden>
-        <Field
-          label="Verification code"
-          invalid={confirmAttempted && !codeValid}
-          required
-          errorText={
-            confirmAttempted && !codeValid ? "Enter the 6-digit code from your email." : undefined
-          }
-          helperText={
-            confirmAttempted && !codeValid
-              ? undefined
-              : `The code expires in ${CODE_TTL_MINUTES} minutes.`
-          }
-        >
-          <Input
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-          />
-        </Field>
-        {confirmError && (
-          <InlineErrorAlert
-            title="Failed to verify"
-            description={resolveErrorMessage(confirmError)}
-          />
-        )}
-        {sendError && (
-          <InlineErrorAlert
-            title="Failed to resend code"
-            description={resolveErrorMessage(sendError)}
-          />
-        )}
-        {/* Resend / Change email are field-level helpers about the code, so they
+        <Stack gap={4}>
+          <Text>
+            We sent a 6-digit code to <strong>{trimmedEmail}</strong>. Enter it below to verify.
+          </Text>
+          <VisuallyHidden aria-live="polite">{sendAnnouncement}</VisuallyHidden>
+          <Field
+            label="Verification code"
+            invalid={confirmAttempted && !codeValid}
+            required
+            errorText={
+              confirmAttempted && !codeValid ? "Enter the 6-digit code from your email." : undefined
+            }
+            helperText={
+              confirmAttempted && !codeValid
+                ? undefined
+                : `The code expires in ${CODE_TTL_MINUTES} minutes.`
+            }
+          >
+            <Input
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
+          </Field>
+          {confirmError && (
+            <InlineErrorAlert
+              title="Failed to verify"
+              description={resolveErrorMessage(confirmError)}
+            />
+          )}
+          {sendError && (
+            <InlineErrorAlert
+              title="Failed to resend code"
+              description={resolveErrorMessage(sendError)}
+            />
+          )}
+          {/* Resend / Change email are field-level helpers about the code, so they
             read as inline prose under the field rather than as a row of buttons.
             aria-disabled (not disabled) keeps Resend focusable and announceable
             while it's inert during the cooldown/send; the accessible name stays
             "Resend code" — the ticking "(Ns)" is visual-only and not in a live
             region. */}
-        <Text fontSize="sm" color="fg.muted">
-          Didn&apos;t get it?{" "}
-          <InlineLink
-            type="button"
-            aria-label="Resend code"
-            aria-disabled={isSending || inCooldown}
-            onClick={(e) => {
-              if (isSending || inCooldown) {
-                e.preventDefault();
+          <Text fontSize="sm" color="fg.muted">
+            Didn&apos;t get it?{" "}
+            <InlineLink
+              type="button"
+              aria-label="Resend code"
+              aria-disabled={isSending || inCooldown}
+              onClick={(e) => {
+                if (isSending || inCooldown) {
+                  e.preventDefault();
 
-                return;
-              }
+                  return;
+                }
 
-              handleSendCode(e);
-            }}
-          >
-            {inCooldown ? `Resend code (${cooldownRemaining}s)` : "Resend code"}
-          </InlineLink>
-          {!lockEmail && (
-            <>
-              {" "}
-              or{" "}
-              <InlineLink type="button" onClick={onChangeEmail}>
-                change email
-              </InlineLink>
-            </>
-          )}
-          .
-        </Text>
-        {!footer?.hasHost && <Box>{verifyButton}</Box>}
-      </Stack>
+                handleSendCode(e);
+              }}
+            >
+              {inCooldown ? `Resend code (${cooldownRemaining}s)` : "Resend code"}
+            </InlineLink>
+            {!lockEmail && (
+              <>
+                {" "}
+                or{" "}
+                <InlineLink type="button" onClick={onChangeEmail}>
+                  change email
+                </InlineLink>
+              </>
+            )}
+            .
+          </Text>
+          {!footer?.hasHost && <Box>{verifyButton}</Box>}
+        </Stack>
       </form>
     </FooterPublisher>
   );
@@ -411,6 +408,8 @@ const FooterPublisher = ({
   children: React.ReactNode;
 }) => {
   const setPrimaryButton = footer?.setPrimaryButton;
+  // The latest button is read through a ref so the publish effect can key on the
+  // stable `signature` (a fresh button node every render would loop the effect).
   const buttonRef = useRef(button);
   buttonRef.current = button;
 
@@ -422,8 +421,7 @@ const FooterPublisher = ({
     setPrimaryButton(buttonRef.current);
 
     return () => setPrimaryButton(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setPrimaryButton, signature]);
 
-  return <>{children}</>;
+  return children as React.ReactElement;
 };
