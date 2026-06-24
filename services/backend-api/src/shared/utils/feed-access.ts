@@ -2,6 +2,7 @@ import type { FastifyRequest } from "fastify";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import type { IUser } from "../../repositories/interfaces/user.types";
 import { NotFoundError, ApiErrorCode } from "../../infra/error-handler";
+import { isAdminUser } from "./admin";
 
 /**
  * Workspace-feed access helpers.
@@ -72,7 +73,7 @@ export async function resolveFeedForRequester(
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+  const isAdmin = isAdminUser(config, user);
   const myWorkspaceIds = await getRequesterWorkspaceIds(request, user);
 
   const feed = isAdmin

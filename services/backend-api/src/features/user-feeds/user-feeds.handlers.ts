@@ -36,6 +36,7 @@ import {
   hasFullFeedAccess,
   resolveFeedForRequester,
 } from "../../shared/utils/feed-access";
+import { isAdminUser } from "../../shared/utils/admin";
 import type {
   GetUserFeedsInputFilters,
   GetUserFeedsInputSortKey,
@@ -242,7 +243,7 @@ export async function updateUserFeedsHandler(
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+  const isAdmin = isAdminUser(config, user);
   const myWorkspaceIds = await getRequesterWorkspaceIds(request, user);
 
   const authorizedFeedIds = isAdmin
@@ -750,16 +751,23 @@ export async function getUserFeedsHandler(
   request: FastifyRequest<{ Querystring: GetUserFeedsQuery }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, usersService, workspacesService } = request.container;
+  const { userFeedsService, usersService, workspacesService, config } =
+    request.container;
   const { discordUserId } = request;
   const { workspaceId } = request.query;
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
 
   if (workspaceId) {
-    // Verify membership before scoping to the workspace. Non-members (or unknown
-    // workspaces) get 404 WORKSPACE_NOT_FOUND — no existence leak.
-    await workspacesService.getWorkspaceForMember(workspaceId, user.id);
+    // Verify read access before scoping to the workspace: a member, or a site
+    // admin observing any workspace. Non-members (or unknown workspaces) get 404
+    // WORKSPACE_NOT_FOUND — no existence leak.
+    const isAdmin = isAdminUser(config, user);
+    await workspacesService.assertWorkspaceReadableByViewer(
+      workspaceId,
+      user.id,
+      { asAdmin: isAdmin },
+    );
   }
 
   const rawQuery = request.url.split("?")[1] || "";

@@ -36,8 +36,10 @@ type MockCookie = {
   sameSite: "Lax";
 };
 
-async function createMockSessionCookies(): Promise<MockCookie[]> {
-  const userId = generateUniqueUserId();
+async function createMockSessionCookies(
+  explicitUserId?: string,
+): Promise<MockCookie[]> {
+  const userId = explicitUserId ?? generateUniqueUserId();
   const token = createMockSessionToken();
   token.discord.id = userId;
   token.access_token = `mock-token-${userId}`;
@@ -121,6 +123,20 @@ type WorkerFixtures = {
 async function createAuthenticatedContext(browser: Browser) {
   const cookies = await createMockSessionCookies();
   const context = await browser.newContext();
+  await context.addCookies(cookies);
+  return context;
+}
+
+// A browser context logged in as a SPECIFIC Discord id, instead of the random
+// per-test id the default fixtures use. The admin-access spec needs a stable
+// identity that matches BACKEND_API_ADMIN_USER_IDS; pass E2E_ADMIN_DISCORD_ID.
+export async function createContextForDiscordUser(
+  browser: Browser,
+  testInfo: TestInfo,
+  discordUserId: string,
+): Promise<BrowserContext> {
+  const cookies = await createMockSessionCookies(discordUserId);
+  const context = await newInstrumentedContext(browser, testInfo);
   await context.addCookies(cookies);
   return context;
 }

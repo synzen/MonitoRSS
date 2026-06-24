@@ -12,6 +12,10 @@ interface SessionAccessToken {
 }
 
 export const MOCK_DISCORD_USER_ID = "900000000000000001";
+// Fixed Discord id for a site-admin actor. Must match BACKEND_API_ADMIN_USER_IDS
+// in docker-compose.e2e.yml; the admin check accepts Discord ids, so this stable
+// value identifies an admin even though internal ids are minted at runtime.
+export const E2E_ADMIN_DISCORD_ID = "900000000000000099";
 export const MOCK_DISCORD_BOT_ID = "800000000000000001";
 export const MOCK_DISCORD_GUILD_ID = "700000000000000001";
 export const MOCK_DISCORD_CHANNEL_ID = "600000000000000001";

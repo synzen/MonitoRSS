@@ -16,7 +16,7 @@ interface WorkspaceResult {
     id: string;
     name: string;
     slug: string;
-    role?: string;
+    role?: string | null;
     subscription?: { status: string; billingEmail?: string } | null;
   };
 }
@@ -480,6 +480,216 @@ describe("Workspaces API", { concurrency: true }, () => {
       (await readJson<ErrorResult>(res)).code,
       "WORKSPACE_NOT_FOUND",
     );
+  });
+
+  it("lets a site admin read a workspace they do not belong to, with role null", async () => {
+    const adminUserId = new Types.ObjectId().toHexString();
+    const adminDiscordId = randomUUID();
+
+    const adminCtx = await createAppTestContext({
+      configOverrides: { BACKEND_API_ADMIN_USER_IDS: [adminUserId] },
+    });
+
+    try {
+      await adminCtx.connection.collection("users").insertOne({
+        _id: new Types.ObjectId(adminUserId),
+        discordUserId: adminDiscordId,
+      });
+
+      const ownerId = randomUUID();
+      await seedWorkspaceUser(adminCtx, ownerId);
+      const owner = await adminCtx.asUser(ownerId);
+      const slug = `admin-read-${ownerId.slice(0, 8)}`;
+      await owner.fetch("/api/v1/workspaces", {
+        method: "POST",
+        body: JSON.stringify({ name: "Owned Elsewhere", slug }),
+      });
+
+      const admin = await adminCtx.asUser(adminDiscordId);
+      const res = await admin.fetch(`/api/v1/workspaces/${slug}`);
+      assert.strictEqual(res.status, 200);
+      const body = await readJson<WorkspaceResult>(res);
+      assert.strictEqual(body.result.slug, slug);
+      assert.strictEqual(body.result.role, null);
+    } finally {
+      await adminCtx.teardown();
+    }
+  });
+
+  it("exposes the workspace billing email to a site admin reading another's workspace", async () => {
+    const adminUserId = new Types.ObjectId().toHexString();
+    const adminDiscordId = randomUUID();
+
+    const adminCtx = await createAppTestContext({
+      configOverrides: { BACKEND_API_ADMIN_USER_IDS: [adminUserId] },
+    });
+
+    try {
+      await adminCtx.connection.collection("users").insertOne({
+        _id: new Types.ObjectId(adminUserId),
+        discordUserId: adminDiscordId,
+      });
+
+      const ownerId = randomUUID();
+      await seedWorkspaceUser(adminCtx, ownerId);
+      const owner = await adminCtx.asUser(ownerId);
+      const slug = `admin-billing-${ownerId.slice(0, 8)}`;
+      const created = await readJson<WorkspaceResult>(
+        await owner.fetch("/api/v1/workspaces", {
+          method: "POST",
+          body: JSON.stringify({ name: "Billed Elsewhere", slug }),
+        }),
+      );
+
+      await adminCtx.connection.collection("workspaces").updateOne(
+        { _id: new Types.ObjectId(created.result.id) },
+        {
+          $set: {
+            paddleCustomer: {
+              customerId: "ctm_admin_billed",
+              email: "owner-billing@example.com",
+              subscription: {
+                productKey: "tier2",
+                status: "ACTIVE",
+                billingInterval: "month",
+                billingPeriodEnd: new Date(),
+                currencyCode: "USD",
+                addons: [],
+              },
+            },
+          },
+        },
+      );
+
+      const admin = await adminCtx.asUser(adminDiscordId);
+      const view = await readJson<WorkspaceResult>(
+        await admin.fetch(`/api/v1/workspaces/${slug}`),
+      );
+      assert.strictEqual(view.result.subscription?.status, "ACTIVE");
+      assert.strictEqual(
+        view.result.subscription?.billingEmail,
+        "owner-billing@example.com",
+      );
+    } finally {
+      await adminCtx.teardown();
+    }
+  });
+
+  it("lets a site admin list members and invites of a workspace they do not belong to", async () => {
+    const adminUserId = new Types.ObjectId().toHexString();
+    const adminDiscordId = randomUUID();
+
+    const adminCtx = await createAppTestContext({
+      configOverrides: { BACKEND_API_ADMIN_USER_IDS: [adminUserId] },
+    });
+
+    try {
+      await adminCtx.connection.collection("users").insertOne({
+        _id: new Types.ObjectId(adminUserId),
+        discordUserId: adminDiscordId,
+      });
+
+      const ownerId = randomUUID();
+      const ownerInternalId = await seedWorkspaceUser(adminCtx, ownerId);
+      const owner = await adminCtx.asUser(ownerId);
+      const slug = `admin-roster-${ownerId.slice(0, 8)}`;
+      const created = await readJson<WorkspaceResult>(
+        await owner.fetch("/api/v1/workspaces", {
+          method: "POST",
+          body: JSON.stringify({ name: "Roster Elsewhere", slug }),
+        }),
+      );
+
+      // Insert the invite directly to avoid the SMTP dependency of the create
+      // endpoint; this test is about the admin read bypass, not invite creation.
+      await adminCtx.connection.collection("workspaceinvites").insertOne({
+        workspaceId: new Types.ObjectId(created.result.id),
+        email: "pending-invitee@example.com",
+        role: "admin",
+        invitedByUserId: new Types.ObjectId(ownerInternalId),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const admin = await adminCtx.asUser(adminDiscordId);
+
+      const membersRes = await admin.fetch(
+        `/api/v1/workspaces/${slug}/members`,
+      );
+      assert.strictEqual(membersRes.status, 200);
+      const members = await readJson<{ result: Array<{ userId: string }> }>(
+        membersRes,
+      );
+      assert.ok(members.result.some((m) => m.userId === ownerInternalId));
+
+      const invitesRes = await admin.fetch(
+        `/api/v1/workspaces/${slug}/invites`,
+      );
+      assert.strictEqual(invitesRes.status, 200);
+      const invites = await readJson<{ result: Array<{ email: string }> }>(
+        invitesRes,
+      );
+      assert.ok(
+        invites.result.some((i) => i.email === "pending-invitee@example.com"),
+      );
+    } finally {
+      await adminCtx.teardown();
+    }
+  });
+
+  it("denies a site admin every mutation on a workspace they do not belong to", async () => {
+    const adminUserId = new Types.ObjectId().toHexString();
+    const adminDiscordId = randomUUID();
+
+    const adminCtx = await createAppTestContext({
+      configOverrides: { BACKEND_API_ADMIN_USER_IDS: [adminUserId] },
+    });
+
+    try {
+      await adminCtx.connection.collection("users").insertOne({
+        _id: new Types.ObjectId(adminUserId),
+        discordUserId: adminDiscordId,
+      });
+
+      const ownerId = randomUUID();
+      const ownerInternalId = await seedWorkspaceUser(adminCtx, ownerId);
+      const owner = await adminCtx.asUser(ownerId);
+      const slug = `admin-nomutate-${ownerId.slice(0, 8)}`;
+      await owner.fetch("/api/v1/workspaces", {
+        method: "POST",
+        body: JSON.stringify({ name: "Hands Off", slug }),
+      });
+
+      const admin = await adminCtx.asUser(adminDiscordId);
+
+      // Rename: the admin read bypass must not open the mutation path.
+      const renameRes = await admin.fetch(`/api/v1/workspaces/${slug}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name: "Hijacked" }),
+      });
+      assert.strictEqual(renameRes.status, 404);
+
+      // Removing another member is owner-gated and equally closed to the admin.
+      const removeRes = await admin.fetch(
+        `/api/v1/workspaces/${slug}/members/${ownerInternalId}`,
+        { method: "DELETE" },
+      );
+      assert.strictEqual(removeRes.status, 404);
+
+      // Delete the whole workspace: also closed.
+      const deleteRes = await admin.fetch(`/api/v1/workspaces/${slug}`, {
+        method: "DELETE",
+      });
+      assert.strictEqual(deleteRes.status, 404);
+
+      // The workspace is untouched: still named "Hands Off", owner still a member.
+      const ownerView = await readJson<WorkspaceResult>(
+        await owner.fetch(`/api/v1/workspaces/${slug}`),
+      );
+      assert.strictEqual(ownerView.result.name, "Hands Off");
+    } finally {
+      await adminCtx.teardown();
+    }
   });
 
   it("rejects an oversized workspace name with 400", async () => {

@@ -254,6 +254,71 @@ export async function getUserMongoIdFromDiscordId(discordUserId: string): Promis
 }
 
 /**
+ * Seed a workspace owned by a freshly-minted user (NOT the authenticated test
+ * user) together with one workspace feed, for the site-admin read-access spec:
+ * the admin visits the workspace's feeds page without being a member. Returns the
+ * workspace slug (for direct-URL navigation) and the seeded feed's title (to
+ * assert it renders). The owner has no browser session — they exist only to own
+ * the data the admin observes.
+ */
+export async function seedForeignWorkspaceWithFeedInDb(input: {
+  workspaceName: string;
+  feedTitle: string;
+  feedUrl: string;
+}): Promise<{ slug: string; workspaceId: string; feedTitle: string }> {
+  return withDb(async (db) => {
+    const now = new Date();
+    const ownerUserId = new ObjectId();
+    const workspaceId = new ObjectId();
+    const slug = `seeded-${workspaceId.toHexString()}`;
+
+    await db.collection("users").insertOne({
+      _id: ownerUserId,
+      discordUserId: `owner-${ownerUserId.toHexString()}`,
+      verifiedEmail: `owner-${ownerUserId.toHexString()}@example.com`,
+      verifiedEmailVerifiedAt: now,
+    });
+
+    await db.collection("workspaces").insertOne({
+      _id: workspaceId,
+      name: input.workspaceName,
+      slug,
+      createdByUserId: ownerUserId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await db.collection("workspacememberships").insertOne({
+      workspaceId,
+      userId: ownerUserId,
+      role: "owner",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await db.collection("userfeeds").insertOne({
+      title: input.feedTitle,
+      url: input.feedUrl,
+      healthStatus: "OK",
+      connections: { discordChannels: [] },
+      user: {
+        id: ownerUserId,
+        discordUserId: `owner-${ownerUserId.toHexString()}`,
+      },
+      workspaceId,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return {
+      slug,
+      workspaceId: workspaceId.toHexString(),
+      feedTitle: input.feedTitle,
+    };
+  });
+}
+
+/**
  * Add a membership to an EXISTING workspace for an EXISTING real user — one with a live
  * browser session who must drive the UI themselves. (The co-members created by
  * `seedWorkspaceWithMembershipsInDb` get freshly minted user documents with no session,

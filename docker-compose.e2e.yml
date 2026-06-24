@@ -287,6 +287,11 @@ services:
       - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
       - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:${E2E_FRONTEND_PORT:-3100}
+      # Fixed admin Discord id for the admin-access E2E spec. BACKEND_API_ADMIN_USER_IDS
+      # accepts Discord ids (not just internal Mongo ids), so a stable value can be
+      # baked in even though each test user's internal id is minted at runtime. Must
+      # match E2E_ADMIN_DISCORD_ID in e2e/helpers/mock-discord-data.ts.
+      - BACKEND_API_ADMIN_USER_IDS=900000000000000099
       # Mock mailer (plain SMTP on the host, reached via host.docker.internal) so
       # the email-verification one-time-code flow can be driven through the UI.
       - BACKEND_API_SMTP_HOST=host.docker.internal

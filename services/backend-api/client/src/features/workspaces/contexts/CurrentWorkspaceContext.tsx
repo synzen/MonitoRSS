@@ -8,7 +8,10 @@ export interface CurrentWorkspace {
   id: string;
   name: string;
   slug: string;
-  myRole: WorkspaceRole;
+  // The caller's role, or null for a site admin observing a workspace they are
+  // not a member of (read-only). Consumers gate mutating UI on a specific role,
+  // so null naturally yields no management affordances.
+  myRole: WorkspaceRole | null;
   // The workspace's feed limit, used to render the feed-limit bar.
   maxFeeds?: number;
   // The workspace's own subscription state; null when unsubscribed (dormant

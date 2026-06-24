@@ -6,6 +6,7 @@ import {
 } from "../../repositories/shared/enums";
 import { HttpError } from "../../infra/error-handler";
 import { ApiErrorCode } from "../../shared/constants/api-errors";
+import { isAdminUser } from "../../shared/utils/admin";
 import type {
   CreateInviteBody,
   UpdateInviteBody,
@@ -54,7 +55,7 @@ export async function createInviteHandler(
   const user = await usersService.getOrCreateUserByDiscordId(
     request.discordUserId,
   );
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+  const isAdmin = isAdminUser(config, user);
 
   const feed = isAdmin
     ? await userFeedRepository.findById(feedId)

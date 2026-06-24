@@ -125,8 +125,14 @@ export class WorkspacesService {
     this.renderEmail = createEmailRenderer(deps.config);
   }
 
-  // Authorization seam: callers check can(...) rather than comparing roles.
-  can(action: WorkspaceAction, role: WorkspaceRole): boolean {
+  // Authorization seam: callers check can(...) rather than comparing roles. A
+  // null role (a site-admin observer, who is not a member) is denied every
+  // action, so the admin read bypass never opens a mutation.
+  can(action: WorkspaceAction, role: WorkspaceRole | null): boolean {
+    if (!role) {
+      return false;
+    }
+
     switch (action) {
       case "changeSettings":
       case "manageMembers":
@@ -183,7 +189,7 @@ export class WorkspacesService {
   // with a reason so the client can point them at buying a team plan directly.
   async getConversionEligibility(
     workspace: IWorkspace,
-    role: WorkspaceRole,
+    role: WorkspaceRole | null,
     discordUserId: string,
   ): Promise<ConversionEligibility | null> {
     if (
@@ -284,6 +290,39 @@ export class WorkspacesService {
     return this.deps.workspaceRepository.listWorkspaceIdsForUser(userId);
   }
 
+  // Read-access assertion for a workspace identified by id (the feed-listing
+  // scope check). Passes for a member; passes for a site admin (asAdmin, decided
+  // by the handler) reading any workspace; otherwise 404. The id counterpart of
+  // getWorkspaceForViewer — both centralize the admin read bypass so mutations,
+  // which keep calling getWorkspaceForMember*, stay member-only.
+  async assertWorkspaceReadableByViewer(
+    workspaceId: string,
+    userId: string,
+    options: { asAdmin: boolean },
+  ): Promise<void> {
+    const membership =
+      await this.deps.workspaceRepository.findMembershipWithWorkspace(
+        workspaceId,
+        userId,
+      );
+
+    if (membership) {
+      return;
+    }
+
+    if (options.asAdmin) {
+      const workspace = await this.deps.workspaceRepository.findById(
+        workspaceId,
+      );
+
+      if (workspace) {
+        return;
+      }
+    }
+
+    throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
+  }
+
   async getWorkspaceForMember(
     workspaceId: string,
     userId: string,
@@ -316,6 +355,38 @@ export class WorkspacesService {
     }
 
     return found;
+  }
+
+  // Read path for the workspace shell that honors a site admin (an id in
+  // BACKEND_API_ADMIN_USER_IDS, decided by the handler) as a read-only observer
+  // of any workspace, mirroring how admins reach other users' feeds. A member
+  // resolves to their real role; an admin non-member resolves with role null so
+  // can() denies every mutation — only this read bypasses membership. Mutations
+  // keep calling getWorkspaceForMember*, which still 404s a non-member admin.
+  async getWorkspaceForViewer(
+    slug: string,
+    userId: string,
+    options: { asAdmin: boolean },
+  ): Promise<{ workspace: IWorkspace; role: WorkspaceRole | null }> {
+    const membership =
+      await this.deps.workspaceRepository.findMembershipWithWorkspaceBySlug(
+        slug,
+        userId,
+      );
+
+    if (membership) {
+      return membership;
+    }
+
+    if (options.asAdmin) {
+      const workspace = await this.deps.workspaceRepository.findBySlug(slug);
+
+      if (workspace) {
+        return { workspace, role: null };
+      }
+    }
+
+    throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
   }
 
   async updateWorkspaceName(
@@ -497,6 +568,27 @@ export class WorkspacesService {
     );
 
     if (!this.can("manageMembers", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    return this.deps.workspaceRepository.listInvitesForWorkspace(workspace.id);
+  }
+
+  // Read counterpart of listInvites for the workspace shell that honors a site
+  // admin (asAdmin) as a read-only observer, returning the same pending-invite
+  // list a managing member sees. See getWorkspaceForViewer.
+  async listInvitesForViewer(
+    slug: string,
+    userId: string,
+    options: { asAdmin: boolean },
+  ): Promise<IWorkspaceInvite[]> {
+    const { workspace, role } = await this.getWorkspaceForViewer(
+      slug,
+      userId,
+      options,
+    );
+
+    if (role !== null && !this.can("manageMembers", role)) {
       throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
     }
 
@@ -727,6 +819,28 @@ export class WorkspacesService {
     );
 
     if (!this.can("manageMembers", role)) {
+      throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
+    }
+
+    return this.deps.workspaceRepository.listMembers(workspace.id);
+  }
+
+  // Read counterpart of listMembers for the workspace shell that honors a site
+  // admin (asAdmin, decided by the handler) as a read-only observer. A member
+  // still needs manageMembers; an admin non-member resolves with role null and
+  // reads the same roster. See getWorkspaceForViewer.
+  async listMembersForViewer(
+    slug: string,
+    userId: string,
+    options: { asAdmin: boolean },
+  ): Promise<IWorkspaceMember[]> {
+    const { workspace, role } = await this.getWorkspaceForViewer(
+      slug,
+      userId,
+      options,
+    );
+
+    if (role !== null && !this.can("manageMembers", role)) {
       throw new ForbiddenError(ApiErrorCode.WORKSPACE_INSUFFICIENT_ROLE);
     }
 

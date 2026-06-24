@@ -13,9 +13,13 @@ export const WorkspaceSchema = object({
   id: string().required(),
   name: string().required(),
   slug: string().required(),
+  // The caller's role in the workspace, or null for a site admin observing a
+  // workspace they are not a member of (read-only access; the detail endpoint
+  // only). The list endpoint always returns a real role.
   role: mixed<WorkspaceRole>()
     .oneOf([...WORKSPACE_ROLES])
-    .required(),
+    .nullable()
+    .defined(),
   // Whether the workspace has no usable subscription and so needs billing,
   // whether it never activated one or had it cancelled. Present on the list
   // endpoint so callers can route an owner to billing without a per-slug detail

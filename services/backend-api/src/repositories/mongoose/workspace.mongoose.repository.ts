@@ -679,6 +679,14 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     return !!(await this.workspaceModel.exists(filter));
   }
 
+  async findBySlug(slug: string): Promise<IWorkspace | null> {
+    const doc = await this.workspaceModel.findOne({ slug }).lean();
+
+    return doc
+      ? this.toEntity(doc as WorkspaceDoc & { _id: Types.ObjectId })
+      : null;
+  }
+
   async findMembershipWithWorkspaceBySlug(
     slug: string,
     userId: string,

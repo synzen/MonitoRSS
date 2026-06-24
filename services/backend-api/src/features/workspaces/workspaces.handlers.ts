@@ -5,6 +5,7 @@ import {
   ForbiddenError,
 } from "../../infra/error-handler";
 import type { IWorkspaceInvite } from "../../repositories/mongoose/workspace.mongoose.repository";
+import { isAdminUser } from "../../shared/utils/admin";
 import type {
   CreateWorkspaceBody,
   CreateWorkspaceInviteBody,
@@ -13,6 +14,17 @@ import type {
   WorkspaceMemberParams,
   WorkspaceSlugParams,
 } from "./workspaces.schemas";
+
+// Whether the request's user is a site admin (an id in
+// BACKEND_API_ADMIN_USER_IDS, matched against either the internal user id or the
+// Discord id; see isAdminUser). Site admins are read-only observers of any
+// workspace.
+function isSiteAdmin(request: FastifyRequest): boolean {
+  return isAdminUser(request.container.config, {
+    id: request.userId as string,
+    discordUserId: request.discordUserId,
+  });
+}
 
 function toInviteResponse(invite: IWorkspaceInvite) {
   return {
@@ -56,11 +68,13 @@ export async function getWorkspaceHandler(
 ): Promise<void> {
   const { workspacesService, supportersService, userRepository } =
     request.container;
-  const { workspace, role } =
-    await workspacesService.getWorkspaceForMemberBySlug(
-      request.params.workspaceSlug,
-      request.userId as string,
-    );
+
+  const isAdmin = isSiteAdmin(request);
+  const { workspace, role } = await workspacesService.getWorkspaceForViewer(
+    request.params.workspaceSlug,
+    request.userId as string,
+    { asAdmin: isAdmin },
+  );
 
   const viewer = await userRepository.findById(request.userId as string);
   const conversion = viewer?.discordUserId
@@ -116,9 +130,10 @@ export async function getWorkspaceHandler(
           quantity: a.quantity,
         })),
         // The billing email is the owner's personal verified address, so only
-        // the owner sees it; an admin manages the workspace but is not the
-        // billing party.
-        ...(role === "owner" && workspace.paddleCustomer?.email
+        // the owner sees it; a workspace admin manages the workspace but is not
+        // the billing party. A site admin (read-only observer) sees it too, so
+        // they can troubleshoot billing on any workspace.
+        ...((role === "owner" || isAdmin) && workspace.paddleCustomer?.email
           ? { billingEmail: workspace.paddleCustomer.email }
           : {}),
       }
@@ -266,9 +281,10 @@ export async function listWorkspaceInvitesHandler(
   reply: FastifyReply,
 ): Promise<void> {
   const { workspacesService } = request.container;
-  const invites = await workspacesService.listInvites(
+  const invites = await workspacesService.listInvitesForViewer(
     request.params.workspaceSlug,
     request.userId as string,
+    { asAdmin: isSiteAdmin(request) },
   );
 
   return reply.send({ result: invites.map(toInviteResponse) });
@@ -307,9 +323,10 @@ export async function listWorkspaceMembersHandler(
   reply: FastifyReply,
 ): Promise<void> {
   const { workspacesService } = request.container;
-  const members = await workspacesService.listMembers(
+  const members = await workspacesService.listMembersForViewer(
     request.params.workspaceSlug,
     request.userId as string,
+    { asAdmin: isSiteAdmin(request) },
   );
 
   return reply.send({ result: members });

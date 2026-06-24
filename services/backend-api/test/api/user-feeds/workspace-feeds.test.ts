@@ -142,6 +142,170 @@ describe("Workspace-associated user feeds", { concurrency: false }, () => {
     assert.strictEqual(res.status, 404);
   });
 
+  it("lets a site admin list a workspace's feeds without being a member", async () => {
+    const adminUserId = new Types.ObjectId().toHexString();
+    const adminDiscordId = randomUUID();
+
+    const adminFeedApiMock = createTestHttpServer();
+    const adminCtx = await createAppTestContext({
+      configOverrides: {
+        BACKEND_API_USER_FEEDS_API_HOST: adminFeedApiMock.host,
+        BACKEND_API_FEED_REQUESTS_API_HOST: adminFeedApiMock.host,
+        BACKEND_API_ADMIN_USER_IDS: [adminUserId],
+      },
+    });
+    adminFeedApiMock.registerRoute("POST", "/v1/user-feeds/get-articles", {
+      status: 200,
+      body: {
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [],
+          totalArticles: 0,
+          selectedProperties: [],
+          url: "https://example.com/admin-workspace-feed.xml",
+          feedTitle: "Workspace Feed",
+        },
+      },
+    });
+
+    try {
+      await adminCtx.connection.collection("users").insertOne({
+        _id: new Types.ObjectId(adminUserId),
+        discordUserId: adminDiscordId,
+      });
+
+      // The workspace and its feed belong to a different user; the admin never joins.
+      const ownerId = randomUUID();
+      await adminCtx.container.userRepository.create({
+        discordUserId: ownerId,
+        email: `${ownerId}@example.com`,
+      });
+      await adminCtx.connection.collection("users").updateOne(
+        { discordUserId: ownerId },
+        {
+          $set: {
+            "featureFlags.workspaces": true,
+            verifiedEmail: `verified-${ownerId}@example.com`,
+            verifiedEmailVerifiedAt: new Date(),
+          },
+        },
+      );
+      const owner = await adminCtx.asUser(ownerId);
+      const createWsRes = await owner.fetch("/api/v1/workspaces", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Workspace",
+          slug: `admin-feeds-${ownerId.slice(0, 8)}`,
+        }),
+      });
+      const workspaceId = (
+        (await createWsRes.json()) as { result: { id: string } }
+      ).result.id;
+
+      const createFeedRes = await owner.fetch("/api/v1/user-feeds", {
+        method: "POST",
+        body: JSON.stringify({
+          url: "https://example.com/admin-workspace-feed.xml",
+          workspaceId,
+        }),
+      });
+      assert.strictEqual(createFeedRes.status, 201);
+
+      const admin = await adminCtx.asUser(adminDiscordId);
+      const listRes = await admin.fetch(
+        `/api/v1/user-feeds?limit=10&offset=0&workspaceId=${workspaceId}`,
+      );
+      assert.strictEqual(listRes.status, 200);
+      const body = (await listRes.json()) as {
+        total: number;
+        results: Array<{ url: string }>;
+      };
+      assert.strictEqual(body.total, 1);
+      assert.strictEqual(
+        body.results[0]?.url,
+        "https://example.com/admin-workspace-feed.xml",
+      );
+    } finally {
+      await adminCtx.teardown();
+      await adminFeedApiMock.stop();
+    }
+  });
+
+  it("treats an admin configured by discord id (not internal id) as a site admin", async () => {
+    const adminDiscordId = randomUUID();
+
+    const adminFeedApiMock = createTestHttpServer();
+    const adminCtx = await createAppTestContext({
+      configOverrides: {
+        BACKEND_API_USER_FEEDS_API_HOST: adminFeedApiMock.host,
+        BACKEND_API_FEED_REQUESTS_API_HOST: adminFeedApiMock.host,
+        // Configured by DISCORD id, not the internal Mongo id.
+        BACKEND_API_ADMIN_USER_IDS: [adminDiscordId],
+      },
+    });
+    adminFeedApiMock.registerRoute("POST", "/v1/user-feeds/get-articles", {
+      status: 200,
+      body: {
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [],
+          totalArticles: 0,
+          selectedProperties: [],
+          url: "https://example.com/admin-by-discord-feed.xml",
+          feedTitle: "Workspace Feed",
+        },
+      },
+    });
+
+    try {
+      const ownerId = randomUUID();
+      await adminCtx.container.userRepository.create({
+        discordUserId: ownerId,
+        email: `${ownerId}@example.com`,
+      });
+      await adminCtx.connection.collection("users").updateOne(
+        { discordUserId: ownerId },
+        {
+          $set: {
+            "featureFlags.workspaces": true,
+            verifiedEmail: `verified-${ownerId}@example.com`,
+            verifiedEmailVerifiedAt: new Date(),
+          },
+        },
+      );
+      const owner = await adminCtx.asUser(ownerId);
+      const createWsRes = await owner.fetch("/api/v1/workspaces", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Workspace",
+          slug: `admin-bydiscord-${ownerId.slice(0, 8)}`,
+        }),
+      });
+      const workspaceId = (
+        (await createWsRes.json()) as { result: { id: string } }
+      ).result.id;
+
+      await owner.fetch("/api/v1/user-feeds", {
+        method: "POST",
+        body: JSON.stringify({
+          url: "https://example.com/admin-by-discord-feed.xml",
+          workspaceId,
+        }),
+      });
+
+      const admin = await adminCtx.asUser(adminDiscordId);
+      const listRes = await admin.fetch(
+        `/api/v1/user-feeds?limit=10&offset=0&workspaceId=${workspaceId}`,
+      );
+      assert.strictEqual(listRes.status, 200);
+      const body = (await listRes.json()) as { total: number };
+      assert.strictEqual(body.total, 1);
+    } finally {
+      await adminCtx.teardown();
+      await adminFeedApiMock.stop();
+    }
+  });
+
   it("lets any workspace member view and delete a workspace feed (role-agnostic)", async () => {
     const ownerId = randomUUID();
     const ownerUserId = await seedWorkspaceUser(ownerId);
