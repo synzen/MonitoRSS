@@ -129,13 +129,6 @@ export async function deleteNotificationSetting(id: string): Promise<void> {
   await paddleRequest(`/notification-settings/${id}`, { method: "DELETE" });
 }
 
-export async function listActiveSubscriptions(): Promise<PaddleSubscription[]> {
-  const result = await paddleRequest<PaddleListResponse<PaddleSubscription>>(
-    "/subscriptions?status=active",
-  );
-  return result.data;
-}
-
 // The Paddle sandbox is one shared account, so scope cleanup to the test's own
 // customer (looked up by its unique email) rather than every active subscription,
 // otherwise a parallel test cancels another's subscription mid-run.
@@ -250,20 +243,4 @@ export async function simulateSubscriptionCreation({
   );
 
   console.log(`Simulation run started for: ${simulationId}`);
-}
-
-export async function cancelAllActiveSubscriptions(): Promise<string[]> {
-  const subscriptions = await listActiveSubscriptions();
-  const cancelledIds: string[] = [];
-
-  for (const sub of subscriptions) {
-    try {
-      await cancelSubscription(sub.id);
-      cancelledIds.push(sub.id);
-    } catch (err) {
-      console.warn(`Failed to cancel subscription ${sub.id}:`, err);
-    }
-  }
-
-  return cancelledIds;
 }

@@ -373,4 +373,16 @@ describe("DiscordMessageDisplay", () => {
       expect(container).toMatchSnapshot();
     });
   });
+
+  // Placed last so it does not perturb the auto-generated ids the snapshot tests assert on.
+  describe("Regression: stray '0' leak", () => {
+    it("does not render a literal '0' for V1 messages (flags === 0)", () => {
+      // flags === 0 makes `flags & V2_FLAG` the number 0; used directly in an `&&`
+      // JSX guard it leaks the literal "0" below the message body.
+      const { container } = renderWithChakra(<DiscordMessageDisplay messages={[mockV1Message]} />);
+
+      expect(screen.queryByText("0")).not.toBeInTheDocument();
+      expect(container).not.toHaveTextContent(/^0$/);
+    });
+  });
 });

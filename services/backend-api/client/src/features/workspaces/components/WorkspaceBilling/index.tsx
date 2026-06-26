@@ -1046,6 +1046,7 @@ export const WorkspaceBilling = () => {
           }}
           workspaceSlug={workspaceSlug}
           feedLimit={conversion.feedLimit ?? 0}
+          workspaceHasActiveRedditGrant={workspace?.redditConnection?.status === "ACTIVE"}
         />
       )}
     </Stack>

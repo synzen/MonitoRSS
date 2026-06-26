@@ -147,6 +147,7 @@ const OwnerActivationActions = ({ workspaceSlug }: { workspaceSlug: string }) =>
           }}
           workspaceSlug={workspaceSlug}
           feedLimit={conversion.feedLimit ?? 0}
+          workspaceHasActiveRedditGrant={workspace?.redditConnection?.status === "ACTIVE"}
         />
       </>
     );

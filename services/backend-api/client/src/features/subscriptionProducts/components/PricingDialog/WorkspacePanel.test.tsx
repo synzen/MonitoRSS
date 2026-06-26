@@ -86,7 +86,7 @@ describe("WorkspacePanel price announcer", () => {
     );
 
     // Visible hero price reflects the yearly interval...
-    await screen.findByText(/per year\.$/);
+    await screen.findByText(/^per year$/);
     // ...but the announcer was not rewritten by the interval change.
     expect(getAnnouncer(container)).toHaveTextContent("$25 per month.");
   });
@@ -105,6 +105,33 @@ describe("WorkspacePanel price announcer", () => {
       expect(node.getAttribute("aria-live")).not.toBe("polite");
       node = node.parentElement;
     }
+  });
+
+  it("frames capacity as a floor to grow from, not a count to size down", () => {
+    // De-anchoring: the hero must not lead with a raw feed count (which invites
+    // the "I only need a few, so this is overpriced" reflex). It states the base
+    // as a starting floor with no-commitment growth instead.
+    renderPanel();
+
+    expect(screen.getByText(/starts at 70 feeds\. add more anytime\./i)).toBeInTheDocument();
+    // The old "{n} feeds per month." hero line must be gone.
+    expect(screen.queryByText(/70 feeds per month/i)).not.toBeInTheDocument();
+  });
+
+  it("the create CTA names the action, not a feed count", () => {
+    renderPanel();
+
+    const cta = screen.getByRole("button", { name: /create your workspace/i });
+    expect(cta).toBeInTheDocument();
+    // The decisive control must not re-anchor on a number.
+    expect(cta).not.toHaveTextContent(/\d+\s*feeds/i);
+  });
+
+  it("labels the sizer as an invitation to add capacity, not a gate", () => {
+    renderPanel();
+
+    expect(screen.getByRole("button", { name: /add more feeds/i })).toBeInTheDocument();
+    expect(screen.queryByText(/size your plan/i)).not.toBeInTheDocument();
   });
 
   it("keeps using aria-valuetext for the feed count so it is not duplicated in the announcer", async () => {

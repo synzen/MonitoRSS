@@ -310,7 +310,7 @@ test.describe("Paddle workspace roundtrip", () => {
     // The team region offers a reroute, never the create-a-second-workspace CTA.
     const forTeam = dialog.getByRole("region", { name: /for your team/i });
     await expect(
-      forTeam.getByRole("button", { name: /create workspace for \d+ feeds/i }),
+      forTeam.getByRole("button", { name: /^create your workspace$/i }),
     ).toHaveCount(0);
     await forTeam.getByRole("button", { name: /go to your workspace/i }).click();
 
@@ -360,7 +360,7 @@ test.describe("Paddle workspace roundtrip", () => {
     // The team region still offers creation, never the owner reroute.
     const forTeam = dialog.getByRole("region", { name: /for your team/i });
     await expect(
-      forTeam.getByRole("button", { name: /create workspace for \d+ feeds/i }),
+      forTeam.getByRole("button", { name: /^create your workspace$/i }),
     ).toBeVisible();
     await expect(forTeam.getByRole("button", { name: /go to your workspace/i })).toHaveCount(0);
   });

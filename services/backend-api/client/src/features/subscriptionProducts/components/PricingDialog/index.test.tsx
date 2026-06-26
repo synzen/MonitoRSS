@@ -146,13 +146,13 @@ const renderDialog = (props: { target?: "workspace" } = {}) => {
   );
 };
 
-// The capacity slider sits inside the collapsed "Size your plan" sizer, demoted
+// The capacity slider sits inside the collapsed "Add more feeds" sizer, demoted
 // under the collaboration pitch. Open it so the slider is mounted before the
 // keyboard/CTA assertions run.
 const openSizer = async (forTeam: HTMLElement) => {
   // Ark's accordion toggles on a full pointer sequence, not a bare click event,
   // so drive it with userEvent.
-  await userEvent.click(within(forTeam).getByRole("button", { name: /size your plan/i }));
+  await userEvent.click(within(forTeam).getByRole("button", { name: /add more feeds/i }));
 
   return within(forTeam).findByRole("slider", { name: /how many feeds/i });
 };
@@ -378,25 +378,27 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     expect(slider).toHaveAttribute("aria-valuetext", "70 feeds");
   });
 
-  it("names the chosen feed count in the CTA and updates it as the slider moves up", async () => {
+  it("keeps the CTA number-free while the slider moves up", async () => {
     renderDialog();
 
     const forTeam = await screen.findByRole("region", { name: /for your team/i });
-    expect(
-      within(forTeam).getByRole("button", { name: /create workspace for 70 feeds/i }),
-    ).toBeInTheDocument();
+    // The CTA names the action, not a count: the number must not appear on the
+    // most decisive control (it re-anchors the purchase on capacity).
+    const cta = within(forTeam).getByRole("button", { name: /^create your workspace$/i });
+    expect(cta).toBeInTheDocument();
+    expect(cta).not.toHaveTextContent(/\d+\s*feeds/i);
 
     const slider = await openSizer(forTeam);
     slider.focus();
-    // Each step is one detent, so ArrowRight from the 70 base lands on 100.
+    // Each step is one detent, so ArrowRight from the 70 base lands on 100. The
+    // slider's announced value is the signal the capacity changed (the CTA stays
+    // the same).
     fireEvent.keyDown(slider, { key: "ArrowRight" });
 
-    await waitFor(() =>
-      expect(
-        within(forTeam).getByRole("button", { name: /create workspace for 100 feeds/i }),
-      ).toBeInTheDocument(),
-    );
     await waitFor(() => expect(slider).toHaveAttribute("aria-valuetext", "100 feeds"));
+    expect(
+      within(forTeam).getByRole("button", { name: /^create your workspace$/i }),
+    ).not.toHaveTextContent(/\d+\s*feeds/i);
   });
 
   it("decreases via the keyboard: ArrowLeft moves down to the previous detent", async () => {
@@ -408,11 +410,7 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     // Climb one detent: index 0 (70) -> index 1 (100).
     slider.focus();
     fireEvent.keyDown(slider, { key: "ArrowRight" });
-    await waitFor(() =>
-      expect(
-        within(forTeam).getByRole("button", { name: /create workspace for 100 feeds/i }),
-      ).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(slider).toHaveAttribute("aria-valuetext", "100 feeds"));
 
     // ArrowLeft must move DOWN a detent, not stay put (the keyboard-trap
     // regression where round-up snapping made the slider one-way). 100 -> 70.
@@ -421,12 +419,7 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     // pricing-dialog E2E. The point under test here is the detent direction.
     slider.focus();
     fireEvent.keyDown(slider, { key: "ArrowLeft" });
-    await waitFor(() =>
-      expect(
-        within(forTeam).getByRole("button", { name: /create workspace for 70 feeds/i }),
-      ).toBeInTheDocument(),
-    );
-    expect(slider).toHaveAttribute("aria-valuetext", "70 feeds");
+    await waitFor(() => expect(slider).toHaveAttribute("aria-valuetext", "70 feeds"));
   });
 
   it("derives the hero price from the page preview when feeds are added above the base", async () => {
@@ -525,7 +518,7 @@ describe("PricingDialog workspace CTA when the user already owns a workspace", (
 
     const forTeam = await screen.findByRole("region", { name: /for your team/i });
     expect(
-      within(forTeam).getByRole("button", { name: /create workspace for 70 feeds/i }),
+      within(forTeam).getByRole("button", { name: /^create your workspace$/i }),
     ).toBeInTheDocument();
     expect(
       within(forTeam).queryByRole("button", { name: /go to your workspace/i }),
@@ -543,7 +536,7 @@ describe("PricingDialog workspace CTA when the user already owns a workspace", (
 
     const forTeam = await screen.findByRole("region", { name: /for your team/i });
     expect(
-      within(forTeam).getByRole("button", { name: /create workspace for 70 feeds/i }),
+      within(forTeam).getByRole("button", { name: /^create your workspace$/i }),
     ).toBeInTheDocument();
     expect(
       within(forTeam).queryByRole("button", { name: /go to your workspace/i }),

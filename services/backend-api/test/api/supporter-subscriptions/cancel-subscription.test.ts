@@ -96,7 +96,7 @@ describe(
         assert.strictEqual(body.code, "INVALID_REQUEST");
       });
 
-      it("returns 500 when user has no subscription", async () => {
+      it("returns 204 when user has no subscription (idempotent cancel)", async () => {
         const discordUserId = generateTestId();
 
         await ctx.container.userRepository.create({
@@ -106,6 +106,10 @@ describe(
 
         const user = await ctx.asUser(discordUserId);
 
+        // No subscription on record means there is nothing to cancel, so the
+        // request is a no-op success rather than a 500. This is what lets a stale
+        // client (or a record already nullified by a cancellation webhook) retry
+        // the cancel without an error.
         const response = await user.fetch(
           "/api/v1/subscription-products/cancel",
           {
@@ -113,7 +117,7 @@ describe(
           },
         );
 
-        assert.strictEqual(response.status, 500);
+        assert.strictEqual(response.status, 204);
       });
 
       it("returns 204 when subscription is cancelled successfully", async () => {

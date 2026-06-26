@@ -1,6 +1,7 @@
 import { Alert, Box, Stack, Text } from "@chakra-ui/react";
 import { RedditLoginButton, useUserMe } from "../../../discordUser";
 import { useFeedScope } from "../../contexts/FeedScopeContext";
+import { isRedditFeedUrl } from "../../utils/isRedditFeedUrl";
 
 type Variant = "rate-limited" | "required";
 
@@ -10,12 +11,10 @@ interface Props {
   onCorrected?: () => void;
 }
 
-const REDDIT_URL_REGEX = /^http(s?):\/\/(www.)?(\w+\.)?reddit\.com\//i;
-
 export const FixFeedRequestsCTA = ({ url, variant = "rate-limited", onCorrected }: Props) => {
   const { data } = useUserMe();
   const { workspaceId, redditConnection, refreshRedditConnection } = useFeedScope();
-  const isReddit = REDDIT_URL_REGEX.test(url);
+  const isReddit = isRedditFeedUrl(url);
   const isWorkspaceScope = !!workspaceId;
 
   if (!isReddit) {

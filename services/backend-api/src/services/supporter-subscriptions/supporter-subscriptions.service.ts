@@ -347,8 +347,13 @@ export class SupporterSubscriptionsService {
 
     const existingSubscriptionId = subscription?.id;
 
+    // No subscription on record means there is nothing to cancel — the desired
+    // end state (no active subscription) already holds, so cancelling is a no-op
+    // rather than an error. This keeps cancel idempotent: a stale client that
+    // still shows a subscription (or a record already nullified out-of-band, e.g.
+    // by a cancellation webhook) can retry the cancel without hitting a 500.
     if (!existingSubscriptionId) {
-      throw new Error("No existing subscription for user found");
+      return;
     }
 
     const postBody = {

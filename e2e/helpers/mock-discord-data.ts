@@ -23,13 +23,19 @@ export const MOCK_DISCORD_CHANNEL_2_ID = "600000000000000002";
 export const MOCK_DISCORD_FORUM_CHANNEL_ID = "600000000000000003";
 export const MOCK_DISCORD_ROLE_ID = "500000000000000001";
 
+// The mock user's email. The whole billing suite authenticates as this user, so
+// its Paddle customer is keyed to this email. Cleanup is scoped to it so the
+// suite only ever cancels its OWN sandbox subscriptions, never a dev stack's (or
+// another developer's) that happens to share the single sandbox account.
+export const MOCK_USER_EMAIL = "e2e-test@example.com";
+
 export const MOCK_DISCORD_USER = {
   id: MOCK_DISCORD_USER_ID,
   username: "e2e-test-user",
   discriminator: "0",
   avatar: null,
   global_name: "E2E Test User",
-  email: "e2e-test@example.com",
+  email: MOCK_USER_EMAIL,
 };
 
 export const MOCK_DISCORD_BOT_USER = {

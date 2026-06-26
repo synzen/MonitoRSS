@@ -75,6 +75,7 @@ const installPaginatedFeeds = (allFeeds: Array<{ id: string; title: string }>) =
 const Harness = ({
   feedLimit,
   onSharingChange,
+  onRedditChange,
 }: {
   feedLimit: number;
   onSharingChange?: (info: {
@@ -82,6 +83,7 @@ const Harness = ({
     affectedUserIds: string[];
     anyConnectionScoped: boolean;
   }) => void;
+  onRedditChange?: (info: { redditSelectedCount: number }) => void;
 }) => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -93,10 +95,14 @@ const Harness = ({
         feedLimit={feedLimit}
         onLoaded={vi.fn()}
         onSharingChange={onSharingChange}
+        onRedditChange={onRedditChange}
       />
     </ChakraProvider>
   );
 };
+
+const REDDIT_URL = "https://www.reddit.com/r/rss/.rss";
+const NON_REDDIT_URL = "https://example.com/feed.xml";
 
 describe("ConvertPersonalPlanFeedList", () => {
   beforeEach(() => {
@@ -507,6 +513,62 @@ describe("ConvertPersonalPlanFeedList", () => {
         expect.objectContaining({ anyConnectionScoped: true }),
       ),
     );
+  });
+
+  it("reports the count of selected Reddit feeds up to the dialog", async () => {
+    // Two reddit feeds + one non-reddit, all selected by default under the
+    // limit. Reddit feeds are detected from their url. The roll-up reports how
+    // many reddit feeds are being moved; the dialog decides whether to warn
+    // (based on whether the workspace already has a grant).
+    installPaginatedFeeds([
+      { id: "feed-1", title: "Reddit One", url: REDDIT_URL },
+      { id: "feed-2", title: "Reddit Two", url: REDDIT_URL },
+      { id: "feed-3", title: "Plain Feed", url: NON_REDDIT_URL },
+    ] as never);
+    const onRedditChange = vi.fn();
+
+    render(<Harness feedLimit={70} onRedditChange={onRedditChange} />);
+
+    await screen.findByRole("checkbox", { name: /^Reddit One$/ });
+    await waitFor(() =>
+      expect(onRedditChange).toHaveBeenLastCalledWith({ redditSelectedCount: 2 }),
+    );
+  });
+
+  it("drops a Reddit feed from the count when it is unselected", async () => {
+    installPaginatedFeeds([{ id: "feed-1", title: "Reddit One", url: REDDIT_URL }] as never);
+    const onRedditChange = vi.fn();
+
+    render(<Harness feedLimit={70} onRedditChange={onRedditChange} />);
+
+    const checkbox = await screen.findByRole("checkbox", { name: /^Reddit One$/ });
+    await waitFor(() =>
+      expect(onRedditChange).toHaveBeenLastCalledWith({ redditSelectedCount: 1 }),
+    );
+
+    await userEvent.click(checkbox);
+    await waitFor(() =>
+      expect(onRedditChange).toHaveBeenLastCalledWith({ redditSelectedCount: 0 }),
+    );
+  });
+
+  it("marks a selected Reddit feed row as pausing until connected", async () => {
+    installPaginatedFeeds([{ id: "feed-1", title: "Reddit One", url: REDDIT_URL }] as never);
+
+    render(<Harness feedLimit={70} />);
+
+    await screen.findByRole("checkbox", { name: /^Reddit One$/ });
+    expect(screen.getByText(/Reddit. Will pause until connected/i)).toBeVisible();
+  });
+
+  it("reassures an unselected Reddit feed keeps its personal connection", async () => {
+    installPaginatedFeeds([{ id: "feed-1", title: "Reddit One", url: REDDIT_URL }] as never);
+
+    render(<Harness feedLimit={70} />);
+
+    const checkbox = await screen.findByRole("checkbox", { name: /^Reddit One$/ });
+    await userEvent.click(checkbox);
+    expect(screen.getByText(/Reddit. Staying personal, connection kept/i)).toBeVisible();
   });
 
   it("drops the feed from the warning when it is unselected, and reassures it stays shared", async () => {

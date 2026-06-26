@@ -61,17 +61,22 @@ test.describe("Pricing dialog focus management", () => {
     // Benefit-led wording, never the in-product "external properties" jargon.
     await expect(forTeam.getByText(/rich content from article pages/i)).toBeVisible();
     await expect(forTeam.getByText(/external properties/i)).toHaveCount(0);
+    // The CTA names the action, not a feed count: leading the most decisive
+    // control with a number re-anchors the purchase on capacity. The chosen
+    // capacity still travels into the create flow, it just isn't in the label.
     await expect(
-      forTeam.getByRole("button", { name: /create workspace for \d+ feeds/i }),
+      forTeam.getByRole("button", { name: /^create your workspace$/i }),
     ).toBeVisible();
+    // Capacity is framed as a floor you grow from, not a count to size down.
+    await expect(forTeam.getByText(/starts at \d+ feeds\. add more anytime\./i)).toBeVisible();
     await expect(
       forTeam.getByText(/a workspace of one gives you all of this/i),
     ).toBeVisible();
 
     // The capacity sizer is collapsed by default (capacity is demoted under the
     // collaboration pitch). Opening it from Account Settings shows the trigger,
-    // not the slider; expanding "Size your plan" reveals the slider.
-    const sizerTrigger = forTeam.getByRole("button", { name: /size your plan/i });
+    // not the slider; expanding "Add more feeds" reveals the slider.
+    const sizerTrigger = forTeam.getByRole("button", { name: /add more feeds/i });
     await expect(sizerTrigger).toBeVisible();
     await expect(forTeam.getByRole("slider", { name: /how many feeds/i })).toBeHidden();
     await sizerTrigger.click();
@@ -97,17 +102,15 @@ test.describe("Pricing dialog focus management", () => {
 
     // The slider must be operable in BOTH directions with the keyboard (a
     // round-up-only snap would trap it at the 70-feed base). Climb a detent, then
-    // step back down, asserting the CTA's feed count moves each way.
+    // step back down, asserting the slider's announced feed count moves each way.
+    // (The CTA no longer carries the count, so the slider's aria-valuetext is the
+    // signal the capacity actually changed.)
     const slider = forTeam.getByRole("slider", { name: /how many feeds/i });
     await slider.focus();
     await slider.press("ArrowRight");
-    await expect(
-      forTeam.getByRole("button", { name: /create workspace for 100 feeds/i }),
-    ).toBeVisible();
+    await expect(slider).toHaveAttribute("aria-valuetext", "100 feeds");
     await slider.press("ArrowLeft");
-    await expect(
-      forTeam.getByRole("button", { name: /create workspace for 70 feeds/i }),
-    ).toBeVisible();
+    await expect(slider).toHaveAttribute("aria-valuetext", "70 feeds");
   });
 
   test("is mobile responsive: regions stack and content fits the viewport", async ({ page }) => {
@@ -136,11 +139,11 @@ test.describe("Pricing dialog focus management", () => {
     const forTeam = dialog.getByRole("region", { name: /for your team/i });
     await expect(forYou.getByRole("heading", { name: /^Personal$/ })).toBeVisible();
     await expect(
-      forTeam.getByRole("button", { name: /create workspace for \d+ feeds/i }),
+      forTeam.getByRole("button", { name: /^create your workspace$/i }),
     ).toBeVisible();
 
     // Expand the collapsed-by-default sizer to reveal the slider.
-    await forTeam.getByRole("button", { name: /size your plan/i }).click();
+    await forTeam.getByRole("button", { name: /add more feeds/i }).click();
     await expect(forTeam.getByRole("slider", { name: /how many feeds/i })).toBeVisible();
 
     // The narrow-left region stacks ABOVE the dominant-right region (column

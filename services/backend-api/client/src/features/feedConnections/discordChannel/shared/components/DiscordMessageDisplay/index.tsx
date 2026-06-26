@@ -677,8 +677,9 @@ export const DiscordMessageDisplay: React.FC<DiscordMessageDisplayProps> = ({
   }
 
   const firstMessage = messages[0];
-  // eslint-disable-next-line no-bitwise
-  const isV2Components = firstMessage && (firstMessage.flags ?? 0) & DISCORD_COMPONENTS_V2_FLAG;
+  const isV2Components =
+    // eslint-disable-next-line no-bitwise
+    !!firstMessage && ((firstMessage.flags ?? 0) & DISCORD_COMPONENTS_V2_FLAG) !== 0;
   const v2Components = isV2Components ? firstMessage.components : null;
 
   const legacyMessages = isV2Components
