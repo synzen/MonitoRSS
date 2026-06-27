@@ -14,16 +14,29 @@ import {
   createConnection,
   getTestChannelId,
 } from "../helpers/api";
+import { randomInt } from "crypto";
 import type { Feed, FeedWithConnection } from "../helpers/types";
 import { createMockSessionToken } from "../helpers/mock-discord-data";
 
 const BACKEND_URL = process.env.E2E_BACKEND_URL || "http://localhost:8000";
 
+// Playwright runs each worker in its own process, so module state (userCounter)
+// resets per worker. A previous time-based scheme (counter + Date.now() % 1e6)
+// could hand two parallel workers the SAME id, which then share the per-user
+// email-verification rate-limit budget in the backend and trip spurious 429s.
+// Draw a high-entropy seed ONCE per worker process and reserve the low 6 digits
+// for the in-process counter, so ids are unique within a worker (monotonic) and
+// across workers (the seed differs). Layout keeps the id an 18-digit snowflake
+// (the backend validates Discord ids as numeric, so a UUID can't be used here):
+// seed (<1e10) * 1e6 + counter (<1e6) stays under the 1e17 headroom above the
+// 9e17 base, so the max id is ~9.1e17 (still 18 digits).
+const PROCESS_SEED = randomInt(0, 10_000_000_000);
 let userCounter = 0;
 
 function generateUniqueUserId(): string {
   const base = 900000000000000000n;
-  return String(base + BigInt(++userCounter) + BigInt(Date.now() % 1000000));
+  const unique = BigInt(PROCESS_SEED) * 1_000_000n + BigInt(++userCounter);
+  return String(base + unique);
 }
 
 type MockCookie = {
