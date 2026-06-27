@@ -1,6 +1,7 @@
 export enum ApiErrorCode {
   INTERNAL_ERROR = "INTERNAL_ERROR",
   UNAUTHORIZED = "UNAUTHORIZED",
+  SESSION_REVOKED = "SESSION_REVOKED",
   TOKEN_REFRESH_FAILED = "TOKEN_REFRESH_FAILED",
   VALIDATION_FAILED = "VALIDATION_FAILED",
   FEED_INVALID = "FEED_INVALID",
@@ -71,6 +72,7 @@ export enum ApiErrorCode {
   EMAIL_VERIFICATION_RESEND_TOO_SOON = "EMAIL_VERIFICATION_RESEND_TOO_SOON",
   EMAIL_VERIFICATION_TOO_MANY_TARGETS = "EMAIL_VERIFICATION_TOO_MANY_TARGETS",
   EMAIL_VERIFICATION_UNAVAILABLE = "EMAIL_VERIFICATION_UNAVAILABLE",
+  EMAIL_VERIFICATION_REVERT_SUPERSEDED = "EMAIL_VERIFICATION_REVERT_SUPERSEDED",
   EMAIL_ALREADY_IN_USE = "EMAIL_ALREADY_IN_USE",
   EMAIL_NOT_VERIFIED = "EMAIL_NOT_VERIFIED",
   WORKSPACE_NOT_FOUND = "WORKSPACE_NOT_FOUND",
@@ -104,6 +106,7 @@ export enum ApiErrorCode {
 export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   INTERNAL_ERROR: "Internal error",
   UNAUTHORIZED: "Unauthorized",
+  SESSION_REVOKED: "Session has been revoked",
   TOKEN_REFRESH_FAILED: "Token refresh failed",
   VALIDATION_FAILED: "Validation failed",
   FEED_INVALID: "Invalid feed",
@@ -196,6 +199,8 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   EMAIL_VERIFICATION_TOO_MANY_TARGETS:
     "Too many different email addresses have been used recently. Please wait before trying another address.",
   EMAIL_VERIFICATION_UNAVAILABLE: "Email verification is currently unavailable",
+  EMAIL_VERIFICATION_REVERT_SUPERSEDED:
+    "This revert link no longer applies because the verified email has since been changed again. Sign in to review your account, and contact support if you did not make that change.",
   EMAIL_ALREADY_IN_USE: "This email is already in use by another account",
   EMAIL_NOT_VERIFIED: "A verified email is required to perform this action",
   WORKSPACE_NOT_FOUND: "Workspace not found",

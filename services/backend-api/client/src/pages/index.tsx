@@ -11,6 +11,7 @@ import { Loading, LoadingFallback } from "../components";
 import { UserFeedStatusFilterProvider, MultiSelectUserFeedProvider } from "@/features/feed";
 import { WorkspaceScopeLayout, InvitePage } from "@/features/workspaces";
 import { NotFound } from "./NotFound";
+import { RevertVerifiedEmail } from "./RevertVerifiedEmail";
 import { ScopeAwareLanding } from "./ScopeAwareLanding";
 import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
 
@@ -279,6 +280,9 @@ const Pages: React.FC = () => (
         </RequireAuth>
       }
     />
+    {/* Public: the revert link is clicked from an email by someone who may not
+        be signed in, and is authorized solely by the signed token it carries. */}
+    <Route path={pages.revertVerifiedEmail()} element={<RevertVerifiedEmail />} />
     <Route path="*" element={<Navigate to="/not-found" />} />
   </SentryRoutes>
 );

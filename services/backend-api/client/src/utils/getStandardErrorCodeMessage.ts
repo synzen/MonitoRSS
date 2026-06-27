@@ -56,6 +56,7 @@ export enum ApiErrorCode {
   EMAIL_VERIFICATION_RESEND_TOO_SOON = "EMAIL_VERIFICATION_RESEND_TOO_SOON",
   EMAIL_VERIFICATION_TOO_MANY_TARGETS = "EMAIL_VERIFICATION_TOO_MANY_TARGETS",
   EMAIL_VERIFICATION_UNAVAILABLE = "EMAIL_VERIFICATION_UNAVAILABLE",
+  EMAIL_VERIFICATION_REVERT_SUPERSEDED = "EMAIL_VERIFICATION_REVERT_SUPERSEDED",
   TOO_MANY_REQUESTS = "TOO_MANY_REQUESTS",
   EMAIL_ALREADY_IN_USE = "EMAIL_ALREADY_IN_USE",
   EMAIL_NOT_VERIFIED = "EMAIL_NOT_VERIFIED",
@@ -155,6 +156,8 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
     "Too many different email addresses have been tried recently. Please wait before trying another address.",
   EMAIL_VERIFICATION_UNAVAILABLE:
     "Email verification is currently unavailable. Please try again later.",
+  EMAIL_VERIFICATION_REVERT_SUPERSEDED:
+    "This revert link no longer applies because the verified email has since been changed again. Sign in to review your account, and contact support if you did not make that change.",
   TOO_MANY_REQUESTS: "Too many requests. Please wait a moment and try again.",
   EMAIL_ALREADY_IN_USE: "This email is already in use by another account.",
   EMAIL_NOT_VERIFIED: "A verified email is required to perform this action.",

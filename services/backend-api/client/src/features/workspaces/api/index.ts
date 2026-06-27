@@ -5,6 +5,7 @@ export * from "./updateWorkspace";
 export * from "./sendEmailVerification";
 export * from "./sendInviteVerification";
 export * from "./confirmEmailVerification";
+export * from "./revertEmailVerification";
 export * from "./getWorkspaceInvite";
 export * from "./getMyWorkspaceInvites";
 export * from "./acceptWorkspaceInvite";

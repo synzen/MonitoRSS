@@ -9,6 +9,7 @@ import type { Config } from "../src/config";
 
 import EMAIL_VERIFICATION_TEMPLATE from "../src/features/users/email-verification.template";
 import VERIFIED_EMAIL_CHANGED_TEMPLATE from "../src/features/users/verified-email-changed.template";
+import VERIFIED_EMAIL_REVERTED_TEMPLATE from "../src/features/users/verified-email-reverted.template";
 import WORKSPACE_INVITE_TEMPLATE from "../src/features/workspaces/workspace-invite.template";
 import WORKSPACE_OWNERSHIP_TRANSFERRED_TEMPLATE from "../src/features/workspaces/workspace-ownership-transferred.template";
 import WORKSPACE_REDDIT_CONNECTION_LOST_TEMPLATE from "../src/features/workspaces/workspace-reddit-connection-lost.template";
@@ -34,6 +35,14 @@ const emails: Array<{ name: string; html: string }> = [
     html: renderEmail(compile(VERIFIED_EMAIL_CHANGED_TEMPLATE), {
       oldEmail: "old@example.com",
       newEmail: "new@example.com",
+      revertUrl:
+        "https://my.monitorss.xyz/email-verification/revert?token=eyJ1IjoiYWJjIn0.deadbeef",
+    }),
+  },
+  {
+    name: "02b-verified-email-reverted",
+    html: renderEmail(compile(VERIFIED_EMAIL_REVERTED_TEMPLATE), {
+      restoredEmail: "old@example.com",
     }),
   },
   {

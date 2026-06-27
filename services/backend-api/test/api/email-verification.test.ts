@@ -547,6 +547,43 @@ describe("Email verification API", () => {
     );
   });
 
+  it("includes a working revert link in the change notice sent to the old address", async () => {
+    const { user, internalId } = await makeUser();
+    const headers = dedicatedIp();
+    const oldEmail = `old-${randomUUID()}@example.com`;
+    const newEmail = `new-${randomUUID()}@example.com`;
+
+    await verifyEmailThroughFlow(user, oldEmail, headers);
+    await verifyEmailThroughFlow(user, newEmail, headers);
+
+    const notice = mail.find(
+      (m) =>
+        m.to === oldEmail.toLowerCase() && !m.html.includes('class="email-code"'),
+    );
+    assert.ok(notice, "a change notice should be sent to the old address");
+
+    // Extract the revert token from the link in the notice and drive it through
+    // the real revert route; the verified email must return to the old address.
+    // The href is HTML-entity-escaped (`=` → `&#x3D;`), as a browser would decode
+    // it; the token itself is base64url so it survives escaping intact.
+    const match = /revert\?token(?:=|&#x3D;)([A-Za-z0-9_.-]+)/.exec(notice.html);
+    assert.ok(match, "the change notice should contain a revert link with a token");
+    const token = match[1]!;
+
+    const res = await ctx.fetch(
+      "/api/v1/users/@me/email-verification/revert",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      },
+    );
+    assert.strictEqual(res.status, 200);
+
+    const updated = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(updated?.verifiedEmail, oldEmail.toLowerCase());
+  });
+
   it("sends no change notice on first-time verification (no previous address)", async () => {
     const { user } = await makeUser();
     const headers = dedicatedIp();
@@ -598,6 +635,264 @@ describe("Email verification API", () => {
       secondEmail,
     );
     assert.strictEqual(second.previousVerifiedEmail, firstEmail);
+  });
+
+  it("restores the prior verified email when a valid revert token is consumed", async () => {
+    const { internalId } = await makeUser();
+    const oldEmail = `old-${randomUUID()}@example.com`.toLowerCase();
+    const newEmail = `new-${randomUUID()}@example.com`.toLowerCase();
+
+    // Establish the change: old was verified, then attacker swapped to new.
+    await ctx.container.userRepository.setVerifiedEmail(internalId, oldEmail);
+    const { previousVerifiedEmail } =
+      await ctx.container.userRepository.setVerifiedEmail(internalId, newEmail);
+    assert.strictEqual(previousVerifiedEmail, oldEmail);
+
+    const token = await ctx.container.emailVerificationService.createRevertToken(
+      internalId,
+      oldEmail,
+      newEmail,
+    );
+
+    await ctx.container.emailVerificationService.revertVerifiedEmail(token);
+
+    const updated = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(updated?.verifiedEmail, oldEmail);
+  });
+
+  it("invalidates existing sessions after a revert (stale-epoch cookie is rejected)", async () => {
+    const { discordUserId, user, internalId } = await makeUser();
+    const oldEmail = `old-${randomUUID()}@example.com`.toLowerCase();
+    const newEmail = `new-${randomUUID()}@example.com`.toLowerCase();
+
+    await ctx.container.userRepository.setVerifiedEmail(internalId, oldEmail);
+    await ctx.container.userRepository.setVerifiedEmail(internalId, newEmail);
+
+    // This session cookie was minted before the revert, so it carries the
+    // pre-revert epoch.
+    const before = await user.fetch("/api/v1/users/@me");
+    assert.strictEqual(before.status, 200);
+
+    const token = await ctx.container.emailVerificationService.createRevertToken(
+      internalId,
+      oldEmail,
+      newEmail,
+    );
+    await ctx.container.emailVerificationService.revertVerifiedEmail(token);
+
+    const after = await user.fetch("/api/v1/users/@me");
+    assert.strictEqual(after.status, 401);
+    assert.strictEqual(
+      (await readJson<ErrorResult>(after)).code,
+      "SESSION_REVOKED",
+    );
+
+    // A freshly minted session (post-revert epoch) is accepted again.
+    const fresh = await ctx.asUser(discordUserId);
+    const freshRes = await fresh.fetch("/api/v1/users/@me");
+    assert.strictEqual(freshRes.status, 200);
+  });
+
+  it("does not clobber a newer verified email when a stale revert token is consumed", async () => {
+    const { internalId } = await makeUser();
+    const oldEmail = `old-${randomUUID()}@example.com`.toLowerCase();
+    const attackerEmail = `att-${randomUUID()}@example.com`.toLowerCase();
+    const legitNewEmail = `legit-${randomUUID()}@example.com`.toLowerCase();
+
+    await ctx.container.userRepository.setVerifiedEmail(internalId, oldEmail);
+    await ctx.container.userRepository.setVerifiedEmail(internalId, attackerEmail);
+
+    const token = await ctx.container.emailVerificationService.createRevertToken(
+      internalId,
+      oldEmail,
+      attackerEmail,
+    );
+
+    // The user (or a later legitimate flow) has since moved the verified email
+    // again. The stale revert token must NOT restore oldEmail over this, and the
+    // superseded link must surface as an error rather than a silent no-op.
+    await ctx.container.userRepository.setVerifiedEmail(
+      internalId,
+      legitNewEmail,
+    );
+
+    await assert.rejects(
+      ctx.container.emailVerificationService.revertVerifiedEmail(token),
+    );
+
+    const updated = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(updated?.verifiedEmail, legitNewEmail);
+  });
+
+  it("makes a revert token single-use (a second consume does not change anything)", async () => {
+    const { internalId } = await makeUser();
+    const oldEmail = `old-${randomUUID()}@example.com`.toLowerCase();
+    const newEmail = `new-${randomUUID()}@example.com`.toLowerCase();
+
+    await ctx.container.userRepository.setVerifiedEmail(internalId, oldEmail);
+    await ctx.container.userRepository.setVerifiedEmail(internalId, newEmail);
+
+    const token = await ctx.container.emailVerificationService.createRevertToken(
+      internalId,
+      oldEmail,
+      newEmail,
+    );
+
+    await ctx.container.emailVerificationService.revertVerifiedEmail(token);
+    const afterFirst = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(afterFirst?.verifiedEmail, oldEmail);
+    const epochAfterFirst = afterFirst?.sessionEpoch ?? 0;
+
+    // Second consume must be inert: it rejects (the link no longer applies) and
+    // leaves the email unchanged with the epoch not bumped again.
+    await assert.rejects(
+      ctx.container.emailVerificationService.revertVerifiedEmail(token),
+    );
+    const afterSecond = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(afterSecond?.verifiedEmail, oldEmail);
+    assert.strictEqual(afterSecond?.sessionEpoch ?? 0, epochAfterFirst);
+  });
+
+  it("rejects an expired revert token and leaves the verified email unchanged", async () => {
+    const { internalId } = await makeUser();
+    const oldEmail = `old-${randomUUID()}@example.com`.toLowerCase();
+    const newEmail = `new-${randomUUID()}@example.com`.toLowerCase();
+
+    await ctx.container.userRepository.setVerifiedEmail(internalId, oldEmail);
+    await ctx.container.userRepository.setVerifiedEmail(internalId, newEmail);
+
+    // Mint a token that is already past its lifetime.
+    const expired = await ctx.container.emailVerificationService.createRevertToken(
+      internalId,
+      oldEmail,
+      newEmail,
+      { ttlMs: -1000 },
+    );
+
+    await assert.rejects(
+      ctx.container.emailVerificationService.revertVerifiedEmail(expired),
+    );
+
+    const updated = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(updated?.verifiedEmail, newEmail);
+  });
+
+  it("rejects a tampered revert token and leaves the verified email unchanged", async () => {
+    const { internalId } = await makeUser();
+    const oldEmail = `old-${randomUUID()}@example.com`.toLowerCase();
+    const newEmail = `new-${randomUUID()}@example.com`.toLowerCase();
+    const attackerTarget = `evil-${randomUUID()}@example.com`.toLowerCase();
+
+    await ctx.container.userRepository.setVerifiedEmail(internalId, oldEmail);
+    await ctx.container.userRepository.setVerifiedEmail(internalId, newEmail);
+
+    const token = await ctx.container.emailVerificationService.createRevertToken(
+      internalId,
+      oldEmail,
+      newEmail,
+    );
+
+    // Re-sign nothing: forge a body that restores an attacker-chosen address but
+    // keep the original signature. The signature must no longer validate.
+    const [, sig] = token.split(".");
+    const forgedBody = Buffer.from(
+      JSON.stringify({
+        u: internalId,
+        o: attackerTarget,
+        n: newEmail,
+        exp: Date.now() + 60_000,
+      }),
+    ).toString("base64url");
+    const forged = `${forgedBody}.${sig}`;
+
+    await assert.rejects(
+      ctx.container.emailVerificationService.revertVerifiedEmail(forged),
+    );
+
+    const updated = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(updated?.verifiedEmail, newEmail);
+  });
+
+  it("reverts via the unauthenticated revert route and notifies the restored address", async () => {
+    const { internalId } = await makeUser();
+    const oldEmail = `old-${randomUUID()}@example.com`.toLowerCase();
+    const newEmail = `new-${randomUUID()}@example.com`.toLowerCase();
+
+    await ctx.container.userRepository.setVerifiedEmail(internalId, oldEmail);
+    await ctx.container.userRepository.setVerifiedEmail(internalId, newEmail);
+
+    const token = await ctx.container.emailVerificationService.createRevertToken(
+      internalId,
+      oldEmail,
+      newEmail,
+    );
+
+    mail.length = 0;
+
+    // No session cookie: the revert route is authorized solely by the token.
+    const res = await ctx.fetch(
+      "/api/v1/users/@me/email-verification/revert",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      },
+    );
+    assert.strictEqual(res.status, 200);
+
+    const updated = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(updated?.verifiedEmail, oldEmail);
+
+    // The restored address (the person who clicked revert) is notified; the
+    // displaced address is deliberately NOT emailed (it may be the attacker's).
+    const notice = mail.find((m) => m.to === oldEmail);
+    assert.ok(notice, "the restored address should be notified of the revert");
+    assert.ok(
+      !mail.some((m) => m.to === newEmail),
+      "the displaced address must not be notified",
+    );
+  });
+
+  it("re-syncs the owned workspace's Paddle billing email back on revert", async () => {
+    const { internalId } = await makeUser();
+    const oldEmail = `old-${randomUUID()}@example.com`.toLowerCase();
+    const newEmail = `new-${randomUUID()}@example.com`.toLowerCase();
+
+    const workspace = await ctx.container.workspaceRepository.createWorkspaceWithOwner(
+      {
+        name: `WS ${randomUUID()}`,
+        slug: `ws-${randomUUID()}`,
+        ownerUserId: internalId,
+      },
+    );
+    await ctx.connection.collection("workspaces").updateOne(
+      { _id: new Types.ObjectId(workspace.id) },
+      {
+        $set: {
+          paddleCustomer: {
+            customerId: "ctm_revert_target",
+            email: newEmail,
+            subscription: { status: "ACTIVE" },
+          },
+        },
+      },
+    );
+
+    await ctx.container.userRepository.setVerifiedEmail(internalId, oldEmail);
+    await ctx.container.userRepository.setVerifiedEmail(internalId, newEmail);
+
+    const token = await ctx.container.emailVerificationService.createRevertToken(
+      internalId,
+      oldEmail,
+      newEmail,
+    );
+
+    paddleCustomerUpdates.length = 0;
+    await ctx.container.emailVerificationService.revertVerifiedEmail(token);
+
+    assert.deepStrictEqual(paddleCustomerUpdates, [
+      { id: "ctm_revert_target", email: oldEmail },
+    ]);
   });
 
   it("rejects confirming an email already verified by another user (409)", async () => {

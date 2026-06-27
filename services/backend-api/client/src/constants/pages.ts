@@ -38,6 +38,9 @@ export const pages = {
     return opts?.feeds ? `${path}?feeds=${opts.feeds}` : path;
   },
   workspaceInvite: (inviteId: string) => `/invites/${inviteId}`,
+  // Landing for the "this wasn't me, revert" link in the verified-email-changed
+  // email. The signed revert token is carried in the `token` query parameter.
+  revertVerifiedEmail: () => "/email-verification/revert",
   userFeeds: (scope?: RouteScope) => `${scopePrefix(scope)}/feeds`,
   notFound: () => "/not-found",
   testPaddle: () => "/test-paddle",

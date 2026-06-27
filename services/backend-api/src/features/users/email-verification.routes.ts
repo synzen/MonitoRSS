@@ -5,10 +5,12 @@ import { requireWorkspacesFeatureHook } from "../workspaces/workspaces.hooks";
 import {
   sendEmailVerificationHandler,
   confirmEmailVerificationHandler,
+  revertEmailVerificationHandler,
 } from "./email-verification.handlers";
 import {
   SendEmailVerificationBodySchema,
   ConfirmEmailVerificationBodySchema,
+  RevertEmailVerificationBodySchema,
 } from "./email-verification.schemas";
 
 export async function emailVerificationRoutes(
@@ -38,5 +40,18 @@ export async function emailVerificationRoutes(
       },
     },
     handler: confirmEmailVerificationHandler,
+  });
+
+  // Unauthenticated: clicked from the change-notice email, authorized solely by
+  // the signed token in the body. Rate-limited per IP to bound token guessing.
+  app.post("/@me/email-verification/revert", {
+    schema: { body: RevertEmailVerificationBodySchema },
+    config: {
+      rateLimit: {
+        max: 20,
+        timeWindow: "1 hour",
+      },
+    },
+    handler: revertEmailVerificationHandler,
   });
 }

@@ -3,6 +3,7 @@ import { NotFoundError, ApiErrorCode } from "../../infra/error-handler";
 import type {
   SendEmailVerificationBody,
   ConfirmEmailVerificationBody,
+  RevertEmailVerificationBody,
 } from "./email-verification.schemas";
 
 export async function sendEmailVerificationHandler(
@@ -37,6 +38,19 @@ export async function confirmEmailVerificationHandler(
     request.body.email,
     request.body.code,
   );
+
+  return reply.send({ result: { ok: true } });
+}
+
+export async function revertEmailVerificationHandler(
+  request: FastifyRequest<{ Body: RevertEmailVerificationBody }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { emailVerificationService } = request.container;
+
+  // Authorized solely by the signed token carried in the body (clicked from an
+  // email, so unauthenticated). The token identifies the user and the change.
+  await emailVerificationService.revertVerifiedEmail(request.body.token);
 
   return reply.send({ result: { ok: true } });
 }

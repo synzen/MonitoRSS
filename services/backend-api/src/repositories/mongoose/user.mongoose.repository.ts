@@ -13,6 +13,7 @@ import type {
   UpdateUserPreferencesInput,
   SetExternalCredentialInput,
   SetVerifiedEmailResult,
+  RevertVerifiedEmailResult,
   IUserExternalCredential,
 } from "../interfaces/user.types";
 import {
@@ -114,6 +115,7 @@ const UserSchema = new Schema(
     email: { type: String },
     verifiedEmail: { type: String },
     verifiedEmailVerifiedAt: { type: Date },
+    sessionEpoch: { type: Number },
     preferences: { type: UserPreferencesSchema, default: {} },
     featureFlags: { type: UserFeatureFlagsSchema, default: {} },
     enableBilling: { type: Boolean },
@@ -156,6 +158,7 @@ export class UserMongooseRepository
       email: doc.email,
       verifiedEmail: doc.verifiedEmail,
       verifiedEmailVerifiedAt: doc.verifiedEmailVerifiedAt,
+      sessionEpoch: doc.sessionEpoch ?? undefined,
       preferences: doc.preferences,
       featureFlags: doc.featureFlags,
       enableBilling: doc.enableBilling,
@@ -243,6 +246,29 @@ export class UserMongooseRepository
       .lean();
 
     return { previousVerifiedEmail: previous?.verifiedEmail ?? null };
+  }
+
+  async revertVerifiedEmail(
+    userId: string,
+    expectedCurrent: string,
+    restoreTo: string,
+  ): Promise<RevertVerifiedEmailResult> {
+    // Conditional on verifiedEmail still being expectedCurrent: a newer
+    // legitimate change must not be clobbered by a stale revert link. The
+    // session epoch is bumped in the same atomic write so every cookie minted
+    // before the revert is rejected by requireAuthHook on its next request.
+    const result = await this.model.updateOne(
+      { _id: this.stringToObjectId(userId), verifiedEmail: expectedCurrent },
+      {
+        $set: {
+          verifiedEmail: restoreTo,
+          verifiedEmailVerifiedAt: new Date(),
+        },
+        $inc: { sessionEpoch: 1 },
+      },
+    );
+
+    return { reverted: result.modifiedCount === 1 };
   }
 
   async updatePreferencesByDiscordId(

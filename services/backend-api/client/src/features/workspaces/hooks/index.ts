@@ -6,6 +6,7 @@ export * from "./useUpdateWorkspace";
 export * from "./useSendEmailVerification";
 export * from "./useSendInviteVerification";
 export * from "./useConfirmEmailVerification";
+export * from "./useRevertEmailVerification";
 export * from "./useWorkspaceInvite";
 export * from "./useMyWorkspaceInvites";
 export * from "./useAcceptWorkspaceInvite";

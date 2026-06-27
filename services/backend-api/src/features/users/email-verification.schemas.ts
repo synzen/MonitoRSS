@@ -27,3 +27,14 @@ export const ConfirmEmailVerificationBodySchema = Type.Object(
 export type ConfirmEmailVerificationBody = Static<
   typeof ConfirmEmailVerificationBodySchema
 >;
+
+export const RevertEmailVerificationBodySchema = Type.Object(
+  {
+    token: Type.String({ minLength: 1, maxLength: 1024 }),
+  },
+  { additionalProperties: false },
+);
+
+export type RevertEmailVerificationBody = Static<
+  typeof RevertEmailVerificationBodySchema
+>;

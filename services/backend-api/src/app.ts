@@ -7,7 +7,7 @@ import fastifyStatic from "@fastify/static";
 import { join } from "path";
 import type { Container } from "./container";
 import { Environment } from "./config";
-import type { SessionAccessToken } from "./infra/auth";
+import { stampSessionEpoch, type SessionAccessToken } from "./infra/auth";
 import {
   errorHandler,
   notFoundHandler,
@@ -265,10 +265,11 @@ export async function createApp(
       const { accessToken } = request.body as {
         accessToken: SessionAccessToken;
       };
-      request.session.set("accessToken", accessToken);
-      await container.usersService.initDiscordUser(accessToken.discord.id, {
-        email: accessToken.discord.email,
-      });
+      const user = await container.usersService.initDiscordUser(
+        accessToken.discord.id,
+        { email: accessToken.discord.email },
+      );
+      request.session.set("accessToken", stampSessionEpoch(accessToken, user));
       return reply.send({ ok: true });
     });
   }

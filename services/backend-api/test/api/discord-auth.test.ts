@@ -197,7 +197,12 @@ describe("Discord Auth Logout with session", { concurrency: false }, () => {
     const response = await user.fetch("/api/v1/discord/logout");
 
     assert.strictEqual(response.status, 204);
-    assert.deepStrictEqual(revokedToken, user.accessToken);
+    // The session token has the user's sessionEpoch stamped onto it at session
+    // creation, so the revoked token is the mock token plus that field.
+    assert.deepStrictEqual(revokedToken, {
+      ...user.accessToken,
+      sessionEpoch: 0,
+    });
   });
 
   it("clears session after logout", async () => {

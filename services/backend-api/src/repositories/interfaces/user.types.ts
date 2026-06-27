@@ -56,6 +56,7 @@ export interface IUser {
   email?: string;
   verifiedEmail?: string;
   verifiedEmailVerifiedAt?: Date;
+  sessionEpoch?: number;
   preferences?: IUserPreferences;
   featureFlags?: IUserFeatureFlags;
   enableBilling?: boolean;
@@ -87,6 +88,13 @@ export interface SetVerifiedEmailResult {
   previousVerifiedEmail: string | null;
 }
 
+export interface RevertVerifiedEmailResult {
+  // True when the verified email still matched expectedCurrent and was restored.
+  // False when a newer change had already moved it off expectedCurrent, in which
+  // case the revert is a no-op (a stale revert must never clobber a legit change).
+  reverted: boolean;
+}
+
 export interface SetExternalCredentialInput {
   type: UserExternalCredentialType;
   data: Record<string, string>;
@@ -104,6 +112,11 @@ export interface IUserRepository {
     email: string,
   ): Promise<IUser | null>;
   setVerifiedEmail(userId: string, email: string): Promise<SetVerifiedEmailResult>;
+  revertVerifiedEmail(
+    userId: string,
+    expectedCurrent: string,
+    restoreTo: string,
+  ): Promise<RevertVerifiedEmailResult>;
   updatePreferencesByDiscordId(
     discordUserId: string,
     preferences: UpdateUserPreferencesInput,
