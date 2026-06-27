@@ -36,9 +36,45 @@ async function getExecutedMigrations(pool: Pool): Promise<Set<string>> {
 
 async function recordMigration(pool: Pool, migration: Migration): Promise<void> {
   await pool.query(
-    `INSERT INTO schema_migrations (version, name) VALUES ($1, $2)`,
+    `INSERT INTO schema_migrations (version, name) VALUES ($1, $2)
+     ON CONFLICT (version) DO NOTHING`,
     [migration.version, migration.name]
   );
+}
+
+/**
+ * Self-heal an untracked-but-provisioned database.
+ *
+ * If schema_migrations is empty yet the initial schema already exists (a DB
+ * provisioned before the migration tracker was populated), the runner would
+ * otherwise re-attempt the initial migration. The DDL is idempotent, but
+ * recording the baseline versions as applied avoids needless re-execution and
+ * lets the runner proceed straight to genuinely new migrations. Self-hosters
+ * never have to touch the tracker by hand.
+ */
+async function backfillBaselineIfUntracked(pool: Pool): Promise<void> {
+  const executed = await getExecutedMigrations(pool);
+  if (executed.size > 0) {
+    return;
+  }
+
+  // The initial migration created delivery_record_partitioned. If it already
+  // exists with an empty tracker, the schema predates the tracker.
+  if (!(await tableExists(pool, "delivery_record_partitioned"))) {
+    return;
+  }
+
+  const initialMigration = migrations.find(
+    (m) => m.name === "initial_schema"
+  );
+  if (!initialMigration) {
+    return;
+  }
+
+  logger.info(
+    "Detected provisioned schema with empty migration tracker, backfilling baseline"
+  );
+  await recordMigration(pool, initialMigration);
 }
 
 // ============================================================================
@@ -76,18 +112,26 @@ const migrations: Migration[] = [
     version: "20251206_001",
     name: "initial_schema",
     up: async (pool) => {
-      // Create ENUMs
+      // Create ENUMs. CREATE TYPE has no IF NOT EXISTS, so guard against the
+      // type already existing (e.g. a DB provisioned before the migration
+      // tracker was populated) to keep this migration idempotent and re-runnable.
       await pool.query(`
-        CREATE TYPE delivery_record_partitioned_status AS ENUM (
-          'pending-delivery', 'sent', 'failed', 'rejected',
-          'filtered-out', 'rate-limited', 'medium-rate-limited-by-user'
-        )
+        DO $$ BEGIN
+          CREATE TYPE delivery_record_partitioned_status AS ENUM (
+            'pending-delivery', 'sent', 'failed', 'rejected',
+            'filtered-out', 'rate-limited', 'medium-rate-limited-by-user'
+          );
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$;
       `);
 
       await pool.query(`
-        CREATE TYPE delivery_record_partitioned_content_type AS ENUM (
-          'discord-article-message', 'discord-thread-creation'
-        )
+        DO $$ BEGIN
+          CREATE TYPE delivery_record_partitioned_content_type AS ENUM (
+            'discord-article-message', 'discord-thread-creation'
+          );
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$;
       `);
 
       // Create feed_article_field_partitioned table
@@ -244,6 +288,8 @@ const migrations: Migration[] = [
  */
 export async function runMigrations(pool: Pool): Promise<void> {
   await ensureMigrationsTableExists(pool);
+
+  await backfillBaselineIfUntracked(pool);
 
   const executed = await getExecutedMigrations(pool);
   let ranCount = 0;
