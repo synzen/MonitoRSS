@@ -66,7 +66,7 @@ async function deleteDefaultRegexStep(page: import("@playwright/test").Page) {
 async function saveChanges(page: import("@playwright/test").Page) {
   await page.getByRole("button", { name: "Save all changes" }).click();
   await expect(
-    page.getByText("Successfully updated custom placeholders."),
+    page.getByRole("alert").getByText("Successfully updated custom placeholders."),
   ).toBeVisible({ timeout: 15000 });
 }
 

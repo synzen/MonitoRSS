@@ -1,5 +1,11 @@
 import { test, expect } from "../../fixtures/test-fixtures";
-import { createFeed, deleteFeed } from "../../helpers/api";
+import { createFeed, deleteFeed, deleteAllUserFeeds } from "../../helpers/api";
+import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
+import {
+  getUserMongoIdFromDiscordId,
+  seedPersonalFeedsInDb,
+} from "../../helpers/workspaces-db";
+import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
 import type { Feed } from "../../helpers/types";
 import type { Page } from "@playwright/test";
 
@@ -12,6 +18,31 @@ async function clickFeedCheckbox(page: Page, feedTitle: string) {
   });
   await checkbox.scrollIntoViewIfNeeded();
   await checkbox.click({ force: true });
+}
+
+// Selecting all currently-loaded feeds. Right after a table refetch (e.g. the
+// post-bulk-delete reload) the row set is still settling, so a single force
+// click can land on a row that re-renders out from under it. Re-click until the
+// selection registers, observed through the Feed Actions trigger enabling.
+async function clickSelectAllLoadedCheckbox(page: Page) {
+  const checkbox = page.getByRole("checkbox", {
+    name: "Check all currently loaded feeds for bulk actions",
+  });
+  const trigger = page.getByRole("button", { name: "Feed Actions" });
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await checkbox.scrollIntoViewIfNeeded();
+    await checkbox.click({ force: true });
+    try {
+      await expect(trigger).not.toHaveAttribute("aria-disabled", "true", {
+        timeout: 2000,
+      });
+      return;
+    } catch {
+      // The row set re-rendered under the click; try again.
+    }
+  }
+  await expect(trigger).not.toHaveAttribute("aria-disabled", "true");
 }
 
 test.describe("Bulk Delete Feeds", () => {
@@ -77,6 +108,110 @@ test.describe("Bulk Delete Feeds", () => {
       for (const feed of feeds) {
         await deleteFeed(page, feed.id).catch(() => {});
       }
+    }
+  });
+
+  test("Feed Actions is usable again immediately after a bulk delete (no lingering modal backdrop)", async ({
+    page,
+  }) => {
+    // Regression: the bulk-delete confirmation modal used to stay open for the
+    // whole duration of the delete + feed-list refetch (the confirm awaited the
+    // mutation, which awaited its query invalidation). Its interactive backdrop
+    // sat over the page that entire time, so the Feed Actions control beneath it
+    // showed a blocked cursor and "clicking around" landed on the still-present
+    // (but visually gone) dialog's buttons. The dialog must close immediately on
+    // confirm; the outcome is reported via a page alert.
+    //
+    // 25 feeds (page size is 20) so a second page auto-loads after the first is
+    // deleted, exercising the heavy post-delete refetch that made the lag
+    // visible. The personal API limit is 5, so feeds are seeded directly in the
+    // DB (limits only gate creation, not display or deletion).
+    await page.goto("/feeds");
+    await expect(
+      page.getByRole("button", { name: "Account settings" }),
+    ).toBeVisible({ timeout: 15000 });
+
+    const discordUserId = await getDiscordUserIdFromPage(page);
+    const selfUserId = await getUserMongoIdFromDiscordId(discordUserId);
+
+    const stamp = Date.now();
+    const titles = Array.from(
+      { length: 25 },
+      (_, i) => `Bulk Page ${stamp} ${String(i).padStart(2, "0")}`,
+    );
+
+    try {
+      await seedPersonalFeedsInDb({
+        userId: selfUserId,
+        discordUserId,
+        feeds: titles.map((title) => ({ title, url: MOCK_RSS_FEED_URL })),
+      });
+
+      await page.goto("/feeds");
+      await expect(page.getByRole("table")).toBeVisible({ timeout: 10000 });
+
+      // Select the whole loaded page and delete it through the menu + dialog.
+      await clickSelectAllLoadedCheckbox(page);
+      // Hold the bulk-delete response open for a few seconds. This makes the bug
+      // deterministic: if the dialog only closes once the mutation resolves, it
+      // (and its backdrop) stay over the page for the whole delay. With the fix
+      // the dialog closes on click, independent of the in-flight request.
+      const DELETE_DELAY_MS = 4000;
+      await page.route("**/api/v1/user-feeds", async (route) => {
+        if (route.request().method() === "PATCH") {
+          await new Promise((resolve) => {
+            setTimeout(resolve, DELETE_DELAY_MS);
+          });
+        }
+        await route.continue();
+      });
+
+      await page.getByRole("button", { name: "Feed Actions" }).click();
+      await page.getByRole("menuitem").filter({ hasText: "Delete" }).click();
+
+      const dialog = page.getByRole("alertdialog");
+      await expect(dialog).toBeVisible({ timeout: 10000 });
+      await dialog.getByRole("button", { name: "Delete", exact: true }).click();
+
+      // The dialog and its backdrop must disappear immediately on confirm — well
+      // before the delayed request resolves — so they never sit over the page
+      // blocking the controls beneath.
+      await expect(dialog).toBeHidden({ timeout: 1500 });
+      await expect(page.locator(".chakra-dialog__backdrop")).toHaveCount(0, {
+        timeout: 1500,
+      });
+
+      await page.unroute("**/api/v1/user-feeds");
+
+      await expect(
+        page
+          .getByRole("alert")
+          .filter({ hasText: "Successfully deleted feeds" }),
+      ).toBeVisible({ timeout: 30000 });
+
+      // The remaining 5 feeds auto-load into offset 0.
+      const survivorRows = page.getByRole("link", {
+        name: new RegExp(`^Bulk Page ${stamp} \\d\\d$`),
+      });
+      await expect(survivorRows).toHaveCount(5, { timeout: 10000 });
+
+      // The Feed Actions trigger is reachable, not buried under a backdrop:
+      // selecting a feed and opening the menu with NON-force clicks succeeds
+      // (a lingering backdrop would intercept the pointer and fail these).
+      const firstSurvivor = await survivorRows.first().textContent();
+      const survivorCheckbox = page.getByRole("checkbox", {
+        name: `Check feed ${firstSurvivor} for bulk actions`,
+      });
+      await expect(async () => {
+        await survivorCheckbox.click({ force: true });
+        await expect(survivorCheckbox).toBeChecked({ timeout: 1000 });
+      }).toPass({ timeout: 10000 });
+
+      const trigger = page.getByRole("button", { name: "Feed Actions" });
+      await trigger.click(); // non-force: fails if a backdrop covers the trigger
+      await expect(page.getByRole("menu")).toBeVisible({ timeout: 10000 });
+    } finally {
+      await deleteAllUserFeeds(page).catch(() => {});
     }
   });
 

@@ -25,6 +25,7 @@ import type { DiscordApiService } from "../discord-api/discord-api.service";
 import type { DiscordAuthService } from "../discord-auth/discord-auth.service";
 import type { UserFeedConnectionEventsService } from "../user-feed-connection-events/user-feed-connection-events.service";
 import type { UsersService } from "../users/users.service";
+import type { FeedCredentialsService } from "../feed-credentials/feed-credentials.service";
 
 export enum CopyableSetting {
   Embeds = "embeds",
@@ -160,6 +161,7 @@ export interface FeedConnectionsDiscordChannelsServiceDeps {
   discordAuthService: DiscordAuthService;
   connectionEventsService: UserFeedConnectionEventsService;
   usersService: UsersService;
+  feedCredentialsService: FeedCredentialsService;
 }
 
 export interface DiscordPreviewEmbed {

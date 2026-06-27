@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import { Schema, ValidationError } from "yup";
 import ApiAdapterError from "./ApiAdapterError";
-import { getStandardErrorCodeMessage } from "./getStandardErrorCodeMessage copy";
+import { getStandardErrorCodeMessage } from "./getStandardErrorCodeMessage";
 import getStatusCodeErrorMessage from "./getStatusCodeErrorMessage";
 
 interface StandardApiError {
@@ -109,7 +109,14 @@ const fetchRest = async <T>(url: string, fetchOptions?: FetchOptions<T>): Promis
 const determineHeaders = (requestOptions?: RequestInit) => {
   const headers: RequestInit["headers"] = {};
 
-  if (["POST", "PUT", "PATCH", "GET"].includes(requestOptions?.method?.toUpperCase() || "")) {
+  const isJsonMethod = ["POST", "PUT", "PATCH", "GET"].includes(
+    requestOptions?.method?.toUpperCase() || "",
+  );
+
+  // Only advertise a JSON content type when a body is actually present. Fastify's
+  // JSON parser rejects an empty body when Content-Type is application/json, which
+  // breaks bodiless POSTs (e.g. billing cancel/resume).
+  if (isJsonMethod && requestOptions?.body != null) {
     headers["Content-Type"] = "application/json";
   }
 

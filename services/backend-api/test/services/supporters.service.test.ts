@@ -63,6 +63,33 @@ describe("SupportersService", { concurrency: true }, () => {
     });
   });
 
+  describe("getWorkspaceBenefits (self-host, Paddle not configured)", () => {
+    it("grants unlimited feeds, webhooks, and no dormancy when no cap is set", async () => {
+      const ctx = harness.createContext();
+
+      const benefits = await ctx.service.getWorkspaceBenefits(
+        ctx.generateId(),
+      );
+
+      assert.strictEqual(benefits.maxFeeds, Number.MAX_SAFE_INTEGER);
+      assert.strictEqual(benefits.allowWebhooks, true);
+      assert.strictEqual(benefits.dormant, false);
+    });
+
+    it("honors an explicit feed cap when the operator sets one", async () => {
+      const ctx = harness.createContext({
+        config: { BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS: 5 },
+      });
+
+      const benefits = await ctx.service.getWorkspaceBenefits(
+        ctx.generateId(),
+      );
+
+      assert.strictEqual(benefits.maxFeeds, 5);
+      assert.strictEqual(benefits.dormant, false);
+    });
+  });
+
   describe("getBenefitsOfServers", () => {
     it("always returns results for every input server id", async () => {
       const ctx = harness.createContext();

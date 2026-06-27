@@ -1,4 +1,4 @@
-import { InferType, bool, number, object, string } from "yup";
+import { InferType, array, bool, number, object, string } from "yup";
 import { UserFeedDisabledCode } from "./UserFeedDisabledCode";
 import { UserFeedHealthStatus } from "./UserFeedHealthStatus";
 import { UserFeedComputedStatus } from "./UserFeedComputedStatus";
@@ -17,6 +17,14 @@ export const UserFeedSummarySchema = object({
   ownedByUser: bool().required(),
   refreshRateSeconds: number().optional(),
   connectionCount: number().required(),
+  // Accepted co-managers on the feed. Surfaced so the personal->workspace
+  // conversion flow can warn that feed sharing does not carry into a workspace.
+  sharedManagers: array(
+    object({
+      discordUserId: string().required(),
+      connectionScoped: bool().required(),
+    }).required(),
+  ).optional(),
 });
 
 export type UserFeedSummary = InferType<typeof UserFeedSummarySchema>;

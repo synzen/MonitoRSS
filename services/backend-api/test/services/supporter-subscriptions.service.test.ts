@@ -450,7 +450,8 @@ describe("SupporterSubscriptionsService", { concurrency: true }, () => {
       assert.ok(callCount >= 2);
     });
 
-    it("throws when no subscription exists", async () => {
+    it("is a no-op when no subscription exists (idempotent cancel)", async () => {
+      let paddleCalled = false;
       const ctx = harness.createContext({
         supportersService: {
           getSupporterSubscription: async () => ({
@@ -459,14 +460,22 @@ describe("SupporterSubscriptionsService", { concurrency: true }, () => {
             subscription: null,
           }),
         },
+        paddleService: {
+          executeApiCall: async <T>(): Promise<T> => {
+            paddleCalled = true;
+
+            return {} as T;
+          },
+        },
       });
 
-      await assert.rejects(
-        () => ctx.service.cancelSubscription({ discordUserId: "user-1" }),
-        {
-          message: "No existing subscription for user found",
-        },
-      );
+      // Nothing to cancel means the desired end state already holds, so cancel
+      // resolves without error and without calling Paddle. This lets a stale
+      // client (or a record already nullified by a cancellation webhook) retry
+      // the cancel without a 500.
+      await ctx.service.cancelSubscription({ discordUserId: "user-1" });
+
+      assert.strictEqual(paddleCalled, false);
     });
 
     it("clears local subscription state when already cancelled at Paddle", async () => {

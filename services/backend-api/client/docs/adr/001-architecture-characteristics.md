@@ -17,7 +17,7 @@ The three driving characteristics for the React app, in priority order:
 
 1. **Accessibility / usability.** Keyboard navigation, screen reader support, WCAG-equivalent semantics. This is already a first-class concern in `client/CLAUDE.md` (live regions, `aria-busy`, indeterminate progress bars, "announce start and finish" patterns, the `DiscordMessageDisplay isLoading` indicator). Any architectural change MUST preserve these guarantees and SHOULD make them easier to apply consistently.
 2. **Maintainability / evolvability.** The app has a solo maintainer. Structural rules exist so the maintainer (and future contributors, including LLM coding agents) can answer "where does this new thing go" without needing to recall historical context. The repo prefers a small number of clear rules over a large number of subtle ones.
-3. **Extensibility.** Two future capabilities — destinations beyond Discord, and a team/org container for shared feed management — are committed in principle but not yet driving timelines. The structure should leave honest seams for both without paying meaningful abstraction cost up front.
+3. **Extensibility.** Two future capabilities — destinations beyond Discord, and a workspace container for shared feed management — are committed in principle but not yet driving timelines. The structure should leave honest seams for both without paying meaningful abstraction cost up front.
 
 The remaining characteristics (raw performance, cross-app reusability, deployment flexibility, internationalization beyond what's already wired) are explicitly **not** in the top 3. They aren't ignored, but they don't override the three above when they conflict.
 
@@ -28,7 +28,7 @@ The remaining characteristics (raw performance, cross-app reusability, deploymen
 - Every other ADR in this folder cites a characteristic from this list as justification. The decisions chain.
 - Code review has a concrete frame: "this change improves perf but hurts maintainability" is a sentence with a known winner.
 - Trade-offs that look obvious aren't. *Premature memoization across feature boundaries* would help perf, hurt maintainability — we will say no by default.
-- Adding a planned capability (destinations, teams) doesn't require re-arguing why "extensibility" matters.
+- Adding a planned capability (destinations, workspaces) doesn't require re-arguing why "extensibility" matters.
 
 **What becomes harder:**
 
@@ -44,11 +44,11 @@ The remaining characteristics (raw performance, cross-app reusability, deploymen
 - ADR-002 (folder model) is justified by *maintainability* — make the home for new code obvious.
 - ADR-003 (state ownership) is justified by *maintainability* + *a11y* (URL state survives reloads, supports deep linking and sharing).
 - ADR-004 (destination extensibility) is justified by *extensibility* with an explicit "don't pay cost now" trade-off.
-- ADR-005 (team scoping) is justified by *extensibility* with the same trade-off.
+- ADR-005 (workspace scoping) is justified by *extensibility* with the same trade-off.
 - ADR-006 (fitness functions) is justified by *maintainability* — automated enforcement of decisions that would otherwise rot under a solo maintainer.
 
 ## Alternatives considered
 
-- **Top-3 as: performance, maintainability, a11y.** Rejected because the user's roadmap (destinations + teams) makes extensibility a near-term consideration, while performance is "good enough" via the existing Vite + React Query setup.
+- **Top-3 as: performance, maintainability, a11y.** Rejected because the user's roadmap (destinations + workspaces) makes extensibility a near-term consideration, while performance is "good enough" via the existing Vite + React Query setup.
 - **Top-3 as: testability, maintainability, a11y.** Testability was strong (MSW + dev-mockapi flags, vitest, react-testing-library) but is well-served as a *consequence* of maintainability, not a peer. The consistent form/mutation/invalidation pattern makes testing structurally easy.
 - **More than 3 characteristics.** Explicitly rejected by Richards/Ford and by the maintainer. Picking more is picking none.

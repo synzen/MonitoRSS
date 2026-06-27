@@ -401,6 +401,25 @@ export async function copyConnectionSettings(
   }
 }
 
+export async function createWorkspace(
+  page: Page,
+  workspace: { name: string; slug: string },
+): Promise<{ id: string; name: string; slug: string }> {
+  const response = await page.request.post("/api/v1/workspaces", { data: workspace });
+
+  if (!response.ok()) {
+    const text = await response.text();
+    throw new Error(`Failed to create workspace: ${response.status()} - ${text}`);
+  }
+
+  const data = await response.json();
+  return {
+    id: data.result.id,
+    name: data.result.name,
+    slug: data.result.slug,
+  };
+}
+
 export async function getAllUserFeeds(page: Page): Promise<Feed[]> {
   const response = await page.request.get(
     "/api/v1/user-feeds?limit=100&offset=0",

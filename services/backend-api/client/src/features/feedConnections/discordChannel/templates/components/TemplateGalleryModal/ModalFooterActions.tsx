@@ -48,7 +48,6 @@ export const ModalFooterActions = (props: ModalFooterActionsProps) => {
         <HStack w="100%" justifyContent="space-between">
           <Button
             variant="plain"
-            colorPalette="gray"
             onClick={onTertiaryAction}
             color="fg.muted"
             _hover={{ color: "fg" }}
@@ -96,7 +95,6 @@ export const ModalFooterActions = (props: ModalFooterActionsProps) => {
           {tertiaryActionLabel && (
             <Button
               variant="plain"
-              colorPalette="gray"
               mr="auto"
               onClick={onTertiaryAction}
               color="fg.muted"

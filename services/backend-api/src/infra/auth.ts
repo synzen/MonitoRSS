@@ -26,6 +26,11 @@ export interface DiscordAuthToken {
 
 export interface SessionAccessToken extends DiscordAuthToken {
   expiresAt: number;
+  // Stamped from the user's sessionEpoch when the session is created. A revert
+  // bumps the user's epoch, so any cookie carrying a stale epoch is rejected by
+  // requireAuthHook. Optional for backward compatibility with pre-existing
+  // cookies (treated as epoch 0).
+  sessionEpoch?: number;
   discord: {
     id: string;
     email?: string;
@@ -293,6 +298,21 @@ export function getAccessTokenFromRequest(
 }
 
 /**
+ * Stamps the given user's current sessionEpoch onto a freshly-minted access
+ * token so the resulting session cookie can be invalidated by a later epoch
+ * bump. Must be called at every session-creation point (login, test
+ * set-session). Takes the already-loaded user record (login sites get it from
+ * initDiscordUser) so it adds no DB read and cannot be called without one in
+ * hand; an absent epoch is treated as 0.
+ */
+export function stampSessionEpoch(
+  token: SessionAccessToken,
+  user: { sessionEpoch?: number } | null,
+): SessionAccessToken {
+  return { ...token, sessionEpoch: user?.sessionEpoch ?? 0 };
+}
+
+/**
  * PreHandler hook that requires authentication.
  * Refreshes the token if expired and stores the refreshed token in session.
  */
@@ -309,14 +329,32 @@ export async function requireAuthHook(
   }
 
   if (authService.isTokenExpired(token)) {
+    // The cookie's epoch must survive a Discord-token refresh: refreshToken
+    // rebuilds the token from the Discord response and does not carry it, so
+    // re-stamp it here. Dropping it would reset every refreshed cookie to epoch
+    // 0 and force-log-out any user whose epoch was bumped by a prior revert.
+    const sessionEpoch = token.sessionEpoch;
     try {
-      token = await authService.refreshToken(token);
+      token = { ...(await authService.refreshToken(token)), sessionEpoch };
       request.session.set("accessToken", token);
     } catch (err) {
       logger.error("Failed to refresh token", { error: (err as Error).stack });
       sendError(reply, 401, ApiErrorCode.TOKEN_REFRESH_FAILED);
       return;
     }
+  }
+
+  // Stateless-session invalidation: the cookie carries the epoch it was minted
+  // with; a verified-email revert bumps the user's epoch, so a cookie minted
+  // before the revert no longer matches and is rejected here. Absent epochs are
+  // treated as 0 on both sides for backward compatibility with old cookies.
+  const user = await request.container.userRepository.findByDiscordId(
+    token.discord.id,
+  );
+
+  if (user && (user.sessionEpoch ?? 0) !== (token.sessionEpoch ?? 0)) {
+    sendError(reply, 401, ApiErrorCode.SESSION_REVOKED);
+    return;
   }
 
   request.accessToken = token;

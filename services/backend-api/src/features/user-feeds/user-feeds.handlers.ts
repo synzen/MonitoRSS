@@ -31,6 +31,12 @@ import type {
 } from "./user-feeds.schemas";
 import { UpdateUserFeedsOp } from "./user-feeds.schemas";
 import { UserFeedTargetFeedSelectionType } from "../../services/feed-connections-discord-channels/types";
+import {
+  getRequesterWorkspaceIds,
+  hasFullFeedAccess,
+  resolveFeedForRequester,
+} from "../../shared/utils/feed-access";
+import { isAdminUser } from "../../shared/utils/admin";
 import type {
   GetUserFeedsInputFilters,
   GetUserFeedsInputSortKey,
@@ -58,7 +64,7 @@ export async function createUserFeedHandler(
   const { userFeedsService, supportersService, curatedFeedRepository } =
     request.container;
   const { discordUserId, accessToken } = request;
-  const { url, curatedFeedId, title, sourceFeedId } = request.body;
+  const { url, curatedFeedId, title, sourceFeedId, workspaceId } = request.body;
 
   if (!!url === !!curatedFeedId) {
     throw new BadRequestError(
@@ -90,6 +96,7 @@ export async function createUserFeedHandler(
       url: resolvedUrl!,
       title: resolvedTitle,
       sourceFeedId,
+      workspaceId,
     },
   );
 
@@ -153,6 +160,7 @@ export async function formatUserFeedResponse(
 
   return {
     id: feed.id,
+    isWorkspaceFeed: !!feed.workspaceId,
     sharedAccessDetails: userInviteId ? { inviteId: userInviteId } : undefined,
     title: feed.title,
     url: feed.url,
@@ -175,7 +183,10 @@ export async function formatUserFeedResponse(
         )
       ).refreshRateSeconds,
     userRefreshRateSeconds: feed.userRefreshRateSeconds,
-    shareManageOptions: isOwner ? feed.shareManageOptions : undefined,
+    // Workspace feeds use workspace membership for access, not per-user share invites,
+    // so the sharing UI is never surfaced for them.
+    shareManageOptions:
+      isOwner && !feed.workspaceId ? feed.shareManageOptions : undefined,
     refreshRateOptions,
   };
 }
@@ -189,7 +200,7 @@ export async function validateFeedUrlHandler(
 
   const result = await userFeedsService.validateFeedUrl(
     { discordUserId },
-    { url: request.body.url },
+    { url: request.body.url, workspaceId: request.body.workspaceId },
   );
 
   return reply.status(200).send({ result });
@@ -205,7 +216,7 @@ export async function previewFeedByUrlHandler(
 
   const result = await userFeedsService.previewFeedByUrl(
     { discordUserId },
-    { url: request.body.url },
+    { url: request.body.url, workspaceId: request.body.workspaceId },
   );
 
   return reply.status(200).send({ result });
@@ -232,13 +243,15 @@ export async function updateUserFeedsHandler(
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
+  const isAdmin = isAdminUser(config, user);
+  const myWorkspaceIds = await getRequesterWorkspaceIds(request, user);
 
   const authorizedFeedIds = isAdmin
     ? requestedFeedIds
     : await userFeedRepository.filterFeedIdsByOwnership(
         requestedFeedIds,
         discordUserId,
+        myWorkspaceIds,
       );
 
   if (op === UpdateUserFeedsOp.BulkDelete) {
@@ -263,25 +276,11 @@ export async function getUserFeedHandler(
   request: FastifyRequest<{ Params: GetUserFeedParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, usersService, supportersService, config } =
-    request.container;
+  const { supportersService } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed } = await resolveFeedForRequester(request, feedId);
 
   const acceptedInvite = feed.shareManageOptions?.invites?.find(
     (inv) =>
@@ -315,29 +314,14 @@ export async function updateUserFeedHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedRepository,
-    userFeedsService,
-    usersService,
-    supportersService,
-    config,
-  } = request.container;
+  const { userFeedsService, supportersService } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, user } = await resolveFeedForRequester(request, feedId);
 
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
+  if (request.body.shareManageOptions && feed.workspaceId) {
+    throw new ForbiddenError(ApiErrorCode.WORKSPACE_FEED_SHARING_DISABLED);
   }
 
   if (request.body.externalProperties) {
@@ -386,37 +370,17 @@ export async function deleteUserFeedHandler(
   request: FastifyRequest<{ Params: GetUserFeedParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, userFeedsService, usersService, config } =
-    request.container;
+  const { userFeedsService } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, isAdmin } = await resolveFeedForRequester(request, feedId);
 
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndCreator(feedId, discordUserId);
-
-  if (!feed) {
-    if (!isAdmin) {
-      const feedByOwnership = await userFeedRepository.findByIdAndOwnership(
-        feedId,
-        discordUserId,
-      );
-
-      if (feedByOwnership) {
-        throw new ForbiddenError(
-          ApiErrorCode.MISSING_SHARED_MANAGER_PERMISSIONS,
-        );
-      }
-    }
-
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
+  // Any workspace member may delete a workspace feed. For a personal feed,
+  // only the creator may delete it — a personal share-invite co-manager
+  // resolves the feed via ownership but cannot delete it.
+  if (!hasFullFeedAccess(feed, discordUserId, isAdmin)) {
+    throw new ForbiddenError(ApiErrorCode.MISSING_SHARED_MANAGER_PERMISSIONS);
   }
 
   await userFeedsService.deleteFeedById(feedId);
@@ -431,25 +395,11 @@ export async function cloneUserFeedHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, userFeedsService, usersService, config } =
-    request.container;
+  const { userFeedsService } = request.container;
   const { discordUserId, accessToken } = request;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { user } = await resolveFeedForRequester(request, feedId);
 
   const { id } = await userFeedsService.clone(
     feedId,
@@ -468,30 +418,12 @@ export async function sendTestArticleHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    feedsService,
-    feedConnectionsDiscordChannelsService,
-    userFeedRepository,
-    usersService,
-    config,
-  } = request.container;
+  const { feedsService, feedConnectionsDiscordChannelsService } =
+    request.container;
   const { discordUserId, accessToken } = request;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed } = await resolveFeedForRequester(request, feedId);
 
   await feedsService.canUseChannel({
     channelId: request.body.channelId,
@@ -522,25 +454,10 @@ export async function getFeedRequestsHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, userFeedsService, usersService, config } =
-    request.container;
-  const { discordUserId } = request;
+  const { userFeedsService } = request.container;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, user } = await resolveFeedForRequester(request, feedId);
 
   const result = await userFeedsService.getFeedRequests({
     feed,
@@ -559,25 +476,10 @@ export async function getDeliveryLogsHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, userFeedsService, usersService, config } =
-    request.container;
-  const { discordUserId } = request;
+  const { userFeedsService } = request.container;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed } = await resolveFeedForRequester(request, feedId);
 
   const result = await userFeedsService.getDeliveryLogs(feed.id, {
     limit: request.query.limit ?? 25,
@@ -614,25 +516,10 @@ export async function getArticlePropertiesHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, userFeedsService, usersService, config } =
-    request.container;
-  const { discordUserId } = request;
+  const { userFeedsService } = request.container;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, user } = await resolveFeedForRequester(request, feedId);
 
   const { properties, requestStatus } =
     await userFeedsService.getFeedArticleProperties({
@@ -659,25 +546,10 @@ export async function getArticlesHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, userFeedsService, usersService, config } =
-    request.container;
-  const { discordUserId } = request;
+  const { userFeedsService } = request.container;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, user } = await resolveFeedForRequester(request, feedId);
 
   const {
     limit,
@@ -744,25 +616,11 @@ export async function deliveryPreviewHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, userFeedsService, usersService, config } =
-    request.container;
+  const { userFeedsService } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed, user } = await resolveFeedForRequester(request, feedId);
 
   const acceptedInvite = feed.shareManageOptions?.invites?.find(
     (inv) =>
@@ -794,25 +652,10 @@ export async function getDailyLimitHandler(
   request: FastifyRequest<{ Params: GetUserFeedParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, userFeedsService, usersService, config } =
-    request.container;
-  const { discordUserId } = request;
+  const { userFeedsService } = request.container;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed } = await resolveFeedForRequester(request, feedId);
 
   const { progress, max } = await userFeedsService.getFeedDailyLimit(feed);
 
@@ -823,25 +666,10 @@ export async function manualRequestHandler(
   request: FastifyRequest<{ Params: GetUserFeedParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, userFeedsService, usersService, config } =
-    request.container;
-  const { discordUserId } = request;
+  const { userFeedsService } = request.container;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed } = await resolveFeedForRequester(request, feedId);
 
   try {
     const {
@@ -923,10 +751,24 @@ export async function getUserFeedsHandler(
   request: FastifyRequest<{ Querystring: GetUserFeedsQuery }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, usersService } = request.container;
+  const { userFeedsService, usersService, workspacesService, config } =
+    request.container;
   const { discordUserId } = request;
+  const { workspaceId } = request.query;
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
+
+  if (workspaceId) {
+    // Verify read access before scoping to the workspace: a member, or a site
+    // admin observing any workspace. Non-members (or unknown workspaces) get 404
+    // WORKSPACE_NOT_FOUND — no existence leak.
+    const isAdmin = isAdminUser(config, user);
+    await workspacesService.assertWorkspaceReadableByViewer(
+      workspaceId,
+      user.id,
+      { asAdmin: isAdmin },
+    );
+  }
 
   const rawQuery = request.url.split("?")[1] || "";
   const parsed = qs.parse(rawQuery);
@@ -940,12 +782,17 @@ export async function getUserFeedsHandler(
       | GetUserFeedsInputSortKey
       | undefined,
     filters,
+    workspaceId,
   };
 
   const [feeds, count, feedsWithoutConnectionsCount] = await Promise.all([
     userFeedsService.getFeedsByUser(user.id, discordUserId, input),
     userFeedsService.getFeedCountByUser(user.id, discordUserId, input),
-    userFeedsService.getFeedsWithoutConnectionsCount(user.id, discordUserId),
+    userFeedsService.getFeedsWithoutConnectionsCount(
+      user.id,
+      discordUserId,
+      workspaceId,
+    ),
   ]);
 
   return reply.status(200).send({
@@ -962,6 +809,7 @@ export async function getUserFeedsHandler(
       ownedByUser: feed.ownedByUser,
       refreshRateSeconds: feed.refreshRateSeconds,
       connectionCount: feed.connectionCount,
+      sharedManagers: feed.sharedManagers,
     })),
     total: count,
     feedsWithoutConnections: feedsWithoutConnectionsCount,
@@ -975,25 +823,11 @@ export async function copySettingsHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, userFeedsService, usersService, config } =
-    request.container;
+  const { userFeedsService } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
-  if (!userFeedRepository.areAllValidIds([feedId])) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
-
-  const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
-  const isAdmin = config.BACKEND_API_ADMIN_USER_IDS.includes(user.id);
-
-  const feed = isAdmin
-    ? await userFeedRepository.findById(feedId)
-    : await userFeedRepository.findByIdAndOwnership(feedId, discordUserId);
-
-  if (!feed) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
-  }
+  const { feed } = await resolveFeedForRequester(request, feedId);
 
   const { targetFeedSelectionType, targetFeedIds } = request.body;
 

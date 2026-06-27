@@ -27,6 +27,7 @@ import { InlineErrorAlert } from "../../../../../components";
 import { pages } from "../../../../../constants";
 import { FeedConnectionType } from "../../../../../types";
 import { useUserFeedContext } from "../../../contexts/UserFeedContext";
+import { useFeedScope } from "../../../contexts/FeedScopeContext";
 import {
   DialogRoot,
   DialogContent,
@@ -97,6 +98,7 @@ const createStatusLabel = ({ status }: { status: UserFeedDeliveryLogStatus }) =>
 export const DeliveryHistory = () => {
   const [detailsData, setDetailsData] = useState("");
   const { articleFormatOptions, userFeed } = useUserFeedContext();
+  const { workspaceSlug } = useFeedScope();
   const { data, status, error, skip, nextPage, prevPage, fetchStatus, limit } =
     useUserFeedDeliveryLogsWithPagination({
       feedId: userFeed.id,
@@ -245,6 +247,7 @@ export const DeliveryHistory = () => {
                                       feedId: userFeed.id,
                                       connectionType: connection?.key as FeedConnectionType,
                                       connectionId: item.mediumId,
+                                      scope: workspaceSlug ? { workspaceSlug } : undefined,
                                     })}
                                   >
                                     {connection?.name || item.mediumId}

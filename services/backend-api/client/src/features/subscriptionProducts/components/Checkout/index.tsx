@@ -6,6 +6,7 @@ import {
   Flex,
   Heading,
   HStack,
+  Icon,
   Skeleton,
   Stack,
   TableRoot,
@@ -14,6 +15,7 @@ import {
   TableRow,
   TableCell,
   Text,
+  VisuallyHidden,
 } from "@chakra-ui/react";
 import { useLocation, Link as RouterLink } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
@@ -23,9 +25,17 @@ import { FaChevronLeft, FaCircleCheck } from "react-icons/fa6";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { Switch } from "@/components/ui/switch";
 import { BoxConstrained, DashboardContentV2, Panel } from "@/components";
-import { pages, ProductKey, PRICE_IDS, findProductKeyByPriceId } from "@/constants";
+import {
+  pages,
+  ProductKey,
+  PRICE_IDS,
+  findProductKeyByPriceId,
+  getPlanDisplayName,
+} from "@/constants";
 import { useUserMe } from "@/features/discordUser";
 import { usePaddleContext } from "../../contexts/PaddleContext";
+import { useCheckoutLoadAnnouncement } from "../../hooks/useCheckoutLoadAnnouncement";
+import { CHECKOUT_LOAD_FAILED_MESSAGE } from "../../constants";
 
 interface Props {
   cancelUrl: string;
@@ -51,6 +61,12 @@ export const Checkout = ({ cancelUrl }: Props) => {
   const { status: userStatus, error: userError } = useUserMe();
   const topLevelProductCheckoutData = checkoutData?.items.find((item) => item.priceId === priceId);
   const feedsCheckoutData = checkoutData?.items.find((item) => item.priceId === feedsPriceId);
+  // Show the user-facing plan name (Free / Personal / Team) instead of the
+  // Paddle product name ("Tier N") that the checkout event carries.
+  const topLevelProductKey = priceId ? findProductKeyByPriceId(priceId) : null;
+  const topLevelProductDisplayName = topLevelProductKey
+    ? getPlanDisplayName(topLevelProductKey)
+    : topLevelProductCheckoutData?.productName;
 
   useEffect(() => {
     if (isSubscriptionCreated && headingRef.current) {
@@ -153,6 +169,15 @@ export const Checkout = ({ cancelUrl }: Props) => {
   const isLoaded = !waitingForUpdate && !!checkoutData && userStatus === "success";
   const error = userError;
 
+  // Announce loading/ready/stall to screen readers and surface recovery guidance
+  // if Paddle never paints, matching the workspace checkout dialog. "Loaded" is
+  // Paddle reporting the frame (checkoutData); "open" is the checkout being shown.
+  const { liveMessage: checkoutLiveMessage, loadTimedOut: checkoutLoadTimedOut } =
+    useCheckoutLoadAnnouncement({
+      isOpen: !isSubscriptionCreated,
+      isLoaded: !!checkoutData,
+    });
+
   const todayFormatted = dayjs().format("D MMM YYYY");
   const expirationFormatted = topLevelProductCheckoutData
     ? dayjs().add(1, topLevelProductCheckoutData.interval).format("D MMM YYYY")
@@ -200,7 +225,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
                     alignItems="center"
                     h="100%"
                   >
-                    <FaCircleCheck color="var(--app-text-success)" fontSize={52} />
+                    <Icon as={FaCircleCheck} color="text.success" boxSize={14} aria-hidden="true" />
                     <Heading ref={headingRef} fontWeight={600} fontSize="lg" as="h1" tabIndex={-1}>
                       Your benefits have been provisioned.
                     </Heading>
@@ -235,7 +260,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
                       <HStack alignItems="center">
                         <Skeleton loading={!isLoaded}>
                           <Text fontSize="xl" fontWeight="semibold">
-                            {topLevelProductCheckoutData?.productName} (
+                            {topLevelProductDisplayName} (
                             {topLevelProductCheckoutData?.interval === "year"
                               ? "Annual"
                               : "Monthly"}
@@ -248,7 +273,7 @@ export const Checkout = ({ cancelUrl }: Props) => {
                         <HStack justifyContent="space-between" alignItems="flex-start">
                           <Stack gap={1}>
                             <Text fontSize="md" fontWeight="medium">
-                              {topLevelProductCheckoutData?.productName}
+                              {topLevelProductDisplayName}
                             </Text>
                           </Stack>
                           <Skeleton loading={!isLoaded}>
@@ -285,7 +310,15 @@ export const Checkout = ({ cancelUrl }: Props) => {
                       {feedsQuantity === 0 && (
                         <>
                           <Separator />
-                          <HStack py={2} bg="bg.emphasized" rounded="l3" px={3}>
+                          <HStack
+                            py={2}
+                            bg="bg.emphasized"
+                            borderWidth="1px"
+                            borderColor="border.emphasized"
+                            rounded="l3"
+                            px={3}
+                            alignItems="center"
+                          >
                             <Switch
                               checked={topLevelProductCheckoutData?.interval === "year"}
                               colorPalette="green"
@@ -300,7 +333,11 @@ export const Checkout = ({ cancelUrl }: Props) => {
                                 setWaitingForUpdate(true);
                               }}
                             />
-                            <Skeleton loading={!isLoaded}>
+                            {/* minW=0 lets the label shrink below its content width so
+                                it wraps instead of forcing horizontal overflow on narrow
+                                viewports; the surrounding rounded box has no overflow clip,
+                                so a wrapped second line grows the row rather than truncating. */}
+                            <Skeleton loading={!isLoaded} minW={0} borderRadius="l2">
                               <Badge colorPalette="green">
                                 <Text>Save 15%</Text>
                               </Badge>
@@ -380,20 +417,46 @@ export const Checkout = ({ cancelUrl }: Props) => {
                     </TableScrollArea>
                   </Stack>
                 )}
-                <Flex
-                  flex={1}
-                  className="checkout-page"
-                  bg="white"
-                  borderTopRightRadius="md"
-                  borderBottomRightRadius="md"
-                  ref={checkoutRef}
-                />
+                <Box flex={1} position="relative" minW={0}>
+                  {/* Paddle paints its own loading spinner here before checkout.loaded
+                      fires, so we render NO competing visible spinner of our own during
+                      the normal wait. Once it has demonstrably failed to load, the
+                      recovery guidance below takes over the same area. */}
+                  {checkoutLoadTimedOut && !checkoutData && (
+                    <Stack
+                      position="absolute"
+                      inset={0}
+                      align="center"
+                      justify="center"
+                      gap={3}
+                      zIndex={1}
+                      px={6}
+                      textAlign="center"
+                      bg="bg.panel"
+                      borderTopRightRadius="md"
+                      borderBottomRightRadius="md"
+                      aria-hidden="true"
+                    >
+                      <Text fontSize="sm" color="fg.muted">
+                        {CHECKOUT_LOAD_FAILED_MESSAGE}
+                      </Text>
+                    </Stack>
+                  )}
+                  <Flex
+                    h="100%"
+                    className="checkout-page"
+                    bg="white"
+                    borderTopRightRadius="md"
+                    borderBottomRightRadius="md"
+                    ref={checkoutRef}
+                  />
+                </Box>
               </HStack>
             </Stack>
-            <Text fontSize="sm" color="fg.muted" textAlign="center">
-              If the checkout form does not fully load, please try refreshing the page or using a
-              different browser.
-            </Text>
+            {/* Announcement channel for screen readers. Mounted empty so each later
+                fill is spoken as a live update; carries NO aria-busy (a busy live
+                region would suppress its own announcements). */}
+            <VisuallyHidden aria-live="polite">{checkoutLiveMessage}</VisuallyHidden>
           </Stack>
         </BoxConstrained.Container>
       </BoxConstrained.Wrapper>

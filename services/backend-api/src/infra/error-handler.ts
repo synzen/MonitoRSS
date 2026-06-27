@@ -30,8 +30,8 @@ export class UnauthorizedError extends HttpError {
 }
 
 export class ForbiddenError extends HttpError {
-  constructor(code: ApiErrorCode, message?: string) {
-    super(403, code, message);
+  constructor(code: ApiErrorCode, message?: string, details?: unknown) {
+    super(403, code, message, details);
     this.name = "ForbiddenError";
   }
 }
@@ -184,6 +184,16 @@ export function errorHandler(
       .send(
         createErrorResponse(ApiErrorCode.VALIDATION_FAILED, undefined, errors),
       );
+  }
+
+  // @fastify/rate-limit throws a plain FastifyError (statusCode 429), not an
+  // HttpError — without this it would fall through to the 500 branch below and a
+  // throttle would surface as an Internal Error. Normalize it to a standardized
+  // 429 (the plugin has already set Retry-After / RateLimit-* headers).
+  if (error.statusCode === 429) {
+    return reply
+      .status(429)
+      .send(createErrorResponse(ApiErrorCode.TOO_MANY_REQUESTS));
   }
 
   logger.error(`Unhandled error - ${error.message}`, {

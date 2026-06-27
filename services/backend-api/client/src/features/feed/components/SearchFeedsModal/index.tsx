@@ -164,9 +164,8 @@ export const SearchFeedsModal = () => {
           variant="ghost"
           aria-label="Search your feeds and go to one"
           color="fg.muted"
-          // _hover={{ color: "whiteAlpha.900", bg: "whiteAlpha.200" }}
-          // _focus={{ color: "whiteAlpha.900", bg: "whiteAlpha.200" }}
-          size={{ base: "sm", lg: "md" }}
+          _hover={{ color: "fg" }}
+          size="sm"
           onClick={() => setIsOpen(true)}
         >
           <Icon as={FaMagnifyingGlass} />

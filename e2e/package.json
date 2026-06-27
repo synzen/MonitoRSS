@@ -2,6 +2,7 @@
   "name": "@monitorss/e2e",
   "private": true,
   "scripts": {
+    "dev": "tsx scripts/dev.ts",
     "e2e": "bash e2e-mock.sh",
     "e2e:ui": "npx playwright test --ui",
     "e2e:report": "npx playwright show-report",

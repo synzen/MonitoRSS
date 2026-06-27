@@ -1,4 +1,5 @@
-import type { Connection } from "mongoose";
+import { Types, type Connection } from "mongoose";
+import type { Config } from "../../src/config";
 import type {
   IUserFeed,
   WebhookEnforcementTarget,
@@ -6,12 +7,18 @@ import type {
 import type { IDiscordChannelConnection } from "../../src/repositories/interfaces/feed-connection.types";
 import { UserFeedMongooseRepository } from "../../src/repositories/mongoose/user-feed.mongoose.repository";
 import { UserMongooseRepository } from "../../src/repositories/mongoose/user.mongoose.repository";
+import { SupporterMongooseRepository } from "../../src/repositories/mongoose/supporter.mongoose.repository";
+import { WorkspaceMongooseRepository } from "../../src/repositories/mongoose/workspace.mongoose.repository";
+import { WorkspacesService } from "../../src/features/workspaces/workspaces.service";
+import { RedditApiService } from "../../src/services/reddit-api/reddit-api.service";
+import type { EmailVerificationService } from "../../src/features/users/email-verification.service";
 import {
   UserFeedDisabledCode,
   UserFeedManagerStatus,
 } from "../../src/repositories/shared/enums";
 import type { UserFeedsServiceDeps } from "../../src/services/user-feeds/types";
 import { UserFeedsService } from "../../src/services/user-feeds/user-feeds.service";
+import { FeedCredentialsService } from "../../src/services/feed-credentials/feed-credentials.service";
 import {
   createServiceTestContext,
   type ServiceTestContext,
@@ -45,6 +52,10 @@ export interface TestContextOptions {
   defaultMaxUserFeeds?: number;
   defaultRefreshRateSeconds?: number;
   defaultSupporterRefreshRateSeconds?: number;
+  workspaceMaxFeeds?: number;
+  workspaceMaxDailyArticles?: number;
+  workspaceRefreshRateSeconds?: number;
+  workspaceAllowWebhooks?: boolean;
   feedHandler?: MockFeedHandlerOptions;
   feedFetcherService?: MockFeedFetcherServiceOptions;
   feedFetcherApiService?: MockFeedFetcherApiServiceOptions;
@@ -68,11 +79,22 @@ export interface CreateFeedWithConnectionsInput {
   };
 }
 
+export interface CapturedWorkspaceDigest {
+  workspaceId: string;
+  disabledFeeds: Array<{ id: string; title: string; url: string }>;
+}
+
 export interface TestContext {
   discordUserId: string;
   userId: string;
   service: UserFeedsService;
   feedConnectionsDiscordChannelsService: MockFeedConnectionsDiscordChannelsService;
+  workspaceDigests: CapturedWorkspaceDigest[];
+  createWorkspace(): Promise<{ id: string; slug: string }>;
+  createWorkspaceFeed(
+    workspaceId: string,
+    overrides?: { title?: string; url?: string },
+  ): Promise<IUserFeed>;
   createFeed(overrides?: { title?: string; url?: string }): Promise<IUserFeed>;
   createFeedForUser(
     discordUserId: string,
@@ -91,6 +113,7 @@ export interface TestContext {
     ownerDiscordUserId: string,
     status?: UserFeedManagerStatus,
   ): Promise<IUserFeed>;
+  setConversionInProgress(workspaceId: string, at?: Date): Promise<void>;
   setDisabledCode(id: string, code: UserFeedDisabledCode | null): Promise<void>;
   setFields(id: string, fields: Record<string, unknown>): Promise<void>;
   setCreatedAt(id: string, date: Date): Promise<void>;
@@ -109,6 +132,8 @@ export function createUserFeedsHarness(): UserFeedsHarness {
   let testContext: ServiceTestContext;
   let userFeedRepository: UserFeedMongooseRepository;
   let userRepository: UserMongooseRepository;
+  let workspaceRepository: WorkspaceMongooseRepository;
+  let workspacesService: WorkspacesService;
 
   return {
     async setup() {
@@ -117,6 +142,23 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         testContext.connection,
       );
       userRepository = new UserMongooseRepository(testContext.connection);
+      workspaceRepository = new WorkspaceMongooseRepository(
+        testContext.connection,
+      );
+      workspacesService = new WorkspacesService({
+        // Invitations are not exercised by this feed-authorization harness, so a
+        // minimal config and no transport suffice.
+        config: {} as Config,
+        smtpTransport: null,
+        workspaceRepository,
+        userRepository,
+        userFeedRepository,
+        supporterRepository: new SupporterMongooseRepository(
+          testContext.connection,
+        ),
+        emailVerificationService: {} as EmailVerificationService,
+        redditApiService: new RedditApiService({} as Config),
+      });
     },
 
     async teardown() {
@@ -132,11 +174,21 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           options.feedConnectionsDiscordChannelsService,
         );
 
+      const config = {
+        BACKEND_API_ENCRYPTION_KEY_HEX: DEFAULT_ENCRYPTION_KEY,
+        BACKEND_API_REDDIT_CLIENT_ID: options.redditClientId,
+      } as UserFeedsServiceDeps["config"];
+
+      const usersService = createMockUsersService(
+        userId,
+        discordUserId,
+        options.externalCredentials,
+      );
+
+      const workspaceDigests: CapturedWorkspaceDigest[] = [];
+
       const serviceDeps: UserFeedsServiceDeps = {
-        config: {
-          BACKEND_API_ENCRYPTION_KEY_HEX: DEFAULT_ENCRYPTION_KEY,
-          BACKEND_API_REDDIT_CLIENT_ID: options.redditClientId,
-        } as UserFeedsServiceDeps["config"],
+        config,
         userFeedRepository,
         userRepository,
         feedsService: createMockFeedsService(options.bannedFeedDetails ?? null),
@@ -153,6 +205,10 @@ export function createUserFeedsHarness(): UserFeedsHarness {
             options.defaultRefreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
           defaultSupporterRefreshRateSeconds:
             options.defaultSupporterRefreshRateSeconds ?? 120,
+          workspaceMaxFeeds: options.workspaceMaxFeeds,
+          workspaceMaxDailyArticles: options.workspaceMaxDailyArticles,
+          workspaceRefreshRateSeconds: options.workspaceRefreshRateSeconds,
+          workspaceAllowWebhooks: options.workspaceAllowWebhooks,
         }),
         feedFetcherApiService: createMockFeedFetcherApiService(
           options.feedFetcherApiService,
@@ -161,11 +217,18 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           options.feedFetcherService,
         ),
         feedHandlerService: createMockFeedHandlerService(options.feedHandler),
-        usersService: createMockUsersService(
-          userId,
-          discordUserId,
-          options.externalCredentials,
-        ),
+        usersService,
+        workspacesService,
+        feedCredentialsService: new FeedCredentialsService({
+          config,
+          usersService,
+          workspacesService,
+        }),
+        notificationsService: {
+          async sendWorkspaceFeedsDisabledDigest(input) {
+            workspaceDigests.push(input);
+          },
+        },
         publishMessage: options.publishMessage ?? (async () => {}),
         feedConnectionsDiscordChannelsService,
       };
@@ -177,8 +240,27 @@ export function createUserFeedsHarness(): UserFeedsHarness {
         userId,
         service,
         feedConnectionsDiscordChannelsService,
+        workspaceDigests,
 
         generateId: generateTestId,
+
+        async createWorkspace() {
+          const workspace = await workspaceRepository.createWorkspaceWithOwner({
+            name: "Test Workspace",
+            slug: `test-workspace-${generateTestId()}`,
+            ownerUserId: userId,
+          });
+          return { id: workspace.id, slug: workspace.slug };
+        },
+
+        async createWorkspaceFeed(workspaceId, overrides = {}) {
+          return userFeedRepository.create({
+            title: overrides.title ?? "Workspace Feed",
+            url: overrides.url ?? `https://example.com/${generateTestId()}.xml`,
+            user: { id: userId, discordUserId },
+            workspaceId,
+          });
+        },
 
         async createFeed(overrides = {}) {
           return userFeedRepository.create({
@@ -261,6 +343,18 @@ export function createUserFeedsHarness(): UserFeedsHarness {
               invites: [{ discordUserId, status }],
             },
           });
+        },
+
+        async setConversionInProgress(workspaceId, at) {
+          // Seed the guard directly so tests can stamp an arbitrary (e.g.
+          // expired) timestamp; the production setter is an atomic
+          // compare-and-set that only stamps "now".
+          await testContext.connection
+            .collection("workspaces")
+            .updateOne(
+              { _id: new Types.ObjectId(workspaceId) },
+              { $set: { conversionInProgressAt: at ?? new Date() } },
+            );
         },
 
         async setDisabledCode(id, code) {

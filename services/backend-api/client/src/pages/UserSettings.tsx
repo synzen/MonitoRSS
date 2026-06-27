@@ -26,16 +26,22 @@ import {
   ConfirmModal,
   DashboardContentV2,
   SavedUnsavedChangesPopupBar,
+  SettingsSection,
 } from "../components";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { useLogin } from "../hooks";
 import { useCreateSubscriptionResume } from "../features/subscriptionProducts/hooks/useCreateSubscriptionResume";
-import { ProductKey } from "../constants";
+import { getPlanDisplayName, ProductKey } from "../constants";
 
 import { useGetUpdatePaymentMethodTransaction } from "../features/subscriptionProducts";
-import { PricingDialogContext, usePaddleContext } from "@/features/subscriptionProducts";
+import {
+  ConvertToWorkspacePrompt,
+  PricingDialogContext,
+  usePaddleContext,
+} from "@/features/subscriptionProducts";
 import { DatePreferencesForm, RedditConnectionSetting } from "@/features/feed";
+import { VerifiedEmailSettingsRow, WorkspacesSettingsSection } from "@/features/workspaces";
 import {
   PageAlertContextOutlet,
   PageAlertProvider,
@@ -267,15 +273,19 @@ const UserSettingsInner = () => {
   const additionalFeedsCount =
     subscription?.addons?.find((addon) => addon.key === ProductKey.Tier3Feed)?.quantity || 0;
 
-  // Helper function to format tier name with additional feeds
-  const formatTierName = (tierName: string) => {
+  // Render the user-facing plan name (Free / Personal / Team) from the product
+  // key, plus any additional-feed add-ons. The display map retires the "Tier N"
+  // naming; the Paddle keys are unchanged.
+  const formatPlanName = (productKey?: ProductKey) => {
+    const planName = productKey ? getPlanDisplayName(productKey) : "";
+
     if (additionalFeedsCount > 0) {
-      return `${tierName} + ${additionalFeedsCount} additional feed${
+      return `${planName} + ${additionalFeedsCount} additional feed${
         additionalFeedsCount > 1 ? "s" : ""
       }`;
     }
 
-    return tierName;
+    return planName;
   };
 
   let subscriptionText: React.ReactNode;
@@ -285,7 +295,8 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {formatTierName(subscription?.product.name)} (billed every {subscription.billingInterval})
+          {formatPlanName(subscription?.product.key as ProductKey)} (billed every{" "}
+          {subscription.billingInterval})
         </chakra.span>
         , scheduled to be cancelled on{" "}
         {new Date(subscription.cancellationDate).toLocaleDateString(undefined, {
@@ -301,7 +312,8 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {formatTierName(subscription?.product.name)} (billed every {subscription.billingInterval})
+          {formatPlanName(subscription?.product.key as ProductKey)} (billed every{" "}
+          {subscription.billingInterval})
         </chakra.span>
         , scheduled to renew on{" "}
         {new Date(subscription.nextBillDate).toLocaleDateString(undefined, {
@@ -317,7 +329,7 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {formatTierName(subscription.product.name)}
+          {formatPlanName(subscription.product.key as ProductKey)}
           {subscription.billingInterval && ` (billed every ${subscription.billingInterval})`}
         </chakra.span>
         .
@@ -328,39 +340,44 @@ const UserSettingsInner = () => {
   const isPastDue = subscription?.status === "PAST_DUE";
 
   return (
-    <Stack gap={8}>
+    <Stack gap={10}>
       <Stack justifyContent="flex-start" width="100%">
         <Heading as="h1">Account Settings</Heading>
       </Stack>
-      <Stack gap={8}>
-        <Field
-          readOnly
-          label={
-            <chakra.span fontWeight={600} color="fg.muted">
-              Email
-            </chakra.span>
-          }
-        >
-          <Flex justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={4}>
-            <Box>
-              <Input readOnly value={data?.result.email || "(no email available)"} />
-            </Box>
-            <Button variant="plain" color="text.link" onClick={onClickGrantEmailAccess}>
-              <FaArrowsRotate />
-              <span>Refresh Email</span>
-            </Button>
-          </Flex>
-        </Field>
-      </Stack>
+      <SettingsSection
+        title="Email"
+        description="Your Discord email is used for billing receipts and notifications. Your verified email is used for workspace invitations, and for member notices when it is set. Member notices fall back to your Discord email if you have not verified one."
+      >
+        <Stack gap={6}>
+          <Field
+            label="Discord email"
+            helperText="Sourced from your Discord account. Refresh it if it has changed there."
+          >
+            <HStack gap={2} alignSelf="stretch" alignItems="center">
+              <Input
+                aria-label="Email"
+                flex="1"
+                readOnly
+                value={data?.result.email || "(no email available)"}
+              />
+              <Button variant="plain" color="text.link" onClick={onClickGrantEmailAccess}>
+                <FaArrowsRotate />
+                <span>Refresh Email</span>
+              </Button>
+            </HStack>
+          </Field>
+          <VerifiedEmailSettingsRow
+            onChanged={() => createSuccessAlert({ title: "Your verified email has been updated." })}
+          />
+        </Stack>
+      </SettingsSection>
       {data?.result.enableBilling && (
         <>
           <Separator />
-          <Stack gap={8}>
-            <Stack>
-              <Heading as="h2" size="md">
-                Billing
-              </Heading>
-            </Stack>
+          <SettingsSection
+            title="Billing"
+            description="Your personal subscription plan, credit balance, and payment method."
+          >
             {!hasEmailAvailable && (
               <Alert
                 status="warning"
@@ -530,7 +547,7 @@ const UserSettingsInner = () => {
                     )}
                     <Stack>
                       <Text as="h3" fontWeight={600} color="fg.muted">
-                        Current Tier
+                        Current Plan
                       </Text>
                       <Stack gap={3}>
                         {subscriptionText}
@@ -576,7 +593,7 @@ const UserSettingsInner = () => {
                             </Box>
                           )}
                           {!subscriptionPendingCancellation && (
-                            <Button size="sm" onClick={onOpenPricingDialog}>
+                            <Button size="sm" onClick={() => onOpenPricingDialog()}>
                               <span>Manage Subscription</span>
                             </Button>
                           )}
@@ -587,18 +604,19 @@ const UserSettingsInner = () => {
                         </HStack>
                       </Stack>
                     </Stack>
+                    <ConvertToWorkspacePrompt variant="card" />
                   </Stack>
                 )}
               </Stack>
             )}
-          </Stack>
+          </SettingsSection>
         </>
       )}
       <Separator />
-      <Stack gap={6}>
-        <Heading as="h2" size="md">
-          Integrations
-        </Heading>
+      <SettingsSection
+        title="Integrations"
+        description="Third-party connections that your personal feeds fetch with."
+      >
         <RedditConnectionSetting
           onRemoveSuccess={() =>
             createSuccessAlert({
@@ -612,98 +630,91 @@ const UserSettingsInner = () => {
             })
           }
         />
-      </Stack>
+      </SettingsSection>
+      <WorkspacesSettingsSection />
       <Separator />
       <FormProvider {...formMethods}>
         <form onSubmit={handleSubmit(onSubmit)} ref={formFocusRef} aria-label="Account settings">
-          <Stack gap={6}>
-            <Heading as="h2" size="md" id="preferences-title">
-              Preferences
-            </Heading>
-            <Stack gap={12}>
-              <Stack gap={4}>
-                <Heading as="h3" size="sm" id="notifications">
-                  Notifications
-                </Heading>
-                {!hasEmailAvailable && (
-                  <Alert
-                    status="warning"
-                    role={undefined}
-                    title="To enable notifications, your email is required"
-                  >
-                    <PrimaryActionButton variant="solid" onClick={onClickGrantEmailAccess}>
-                      <span>Grant email access</span>
-                    </PrimaryActionButton>
-                  </Alert>
+          <Stack gap={10}>
+            <SettingsSection
+              title="Notifications"
+              headingId="notifications"
+              description="Emails about events that affect your feeds."
+            >
+              {!hasEmailAvailable && (
+                <Alert
+                  status="warning"
+                  role={undefined}
+                  title="To enable notifications, your email is required"
+                >
+                  <PrimaryActionButton variant="solid" onClick={onClickGrantEmailAccess}>
+                    <span>Grant email access</span>
+                  </PrimaryActionButton>
+                </Alert>
+              )}
+              <Box role="list" aria-labelledby="notifications">
+                {hasEmailAvailable && (
+                  <Stack gap={4} role="listitem">
+                    <Flex as="div" justifyContent="space-between" flexWrap="wrap" gap={4}>
+                      <Box>
+                        <Field
+                          label="Disabled feed or feed connections"
+                          helperText="Whenever feed or feed connections automatically get disabled due to issues while processing."
+                        />
+                      </Box>
+                      <Controller
+                        name="alertOnDisabledFeeds"
+                        control={control}
+                        render={({ field }) => {
+                          return (
+                            <Switch
+                              size="lg"
+                              disabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
+                              checked={!!field.value}
+                              onCheckedChange={(e) => field.onChange(e.checked)}
+                            />
+                          );
+                        }}
+                      />
+                    </Flex>
+                  </Stack>
                 )}
-                <Box role="list" aria-labelledby="notifications preferences-title">
-                  {hasEmailAvailable && (
-                    <Stack gap={4} role="listitem">
-                      <Flex as="div" justifyContent="space-between" flexWrap="wrap" gap={4}>
-                        <Box>
-                          <Field
-                            label="Disabled feed or feed connections"
-                            helperText="Whenever feed or feed connections automatically get disabled due to issues while processing."
-                          />
-                        </Box>
-                        <Controller
-                          name="alertOnDisabledFeeds"
-                          control={control}
-                          render={({ field }) => {
-                            return (
-                              <Switch
-                                size="lg"
-                                disabled={!hasLoaded || !hasEmailAvailable || isSubmitting}
-                                checked={!!field.value}
-                                onCheckedChange={(e) => field.onChange(e.checked)}
-                              />
-                            );
-                          }}
-                        />
-                      </Flex>
-                    </Stack>
-                  )}
-                </Box>
-              </Stack>
-              <Stack gap={4}>
-                <Stack mb={2}>
-                  <Heading as="h3" size="sm" id="date-preferences">
-                    Date Placeholders
-                  </Heading>
-                  <Text>
-                    Customize the format, locale, and timezone used for date placeholders across all
-                    feeds.
-                  </Text>
-                </Stack>
-                <fieldset aria-labelledby="date-preferences preferences-title">
-                  <Controller
-                    name="dates"
-                    control={control}
-                    render={({ field }) => {
-                      return (
-                        <DatePreferencesForm
-                          errors={{
-                            timezone: errors.dates?.timezone?.message,
-                          }}
-                          onChange={(values) => {
-                            field.onChange({
-                              format: values.format,
-                              locale: values.locale,
-                              timezone: values.timezone,
-                            });
-                          }}
-                          values={{
-                            format: field.value?.format,
-                            locale: field.value?.locale,
-                            timezone: field.value?.timezone,
-                          }}
-                        />
-                      );
-                    }}
-                  />
-                </fieldset>
-              </Stack>
-            </Stack>
+              </Box>
+            </SettingsSection>
+            <Separator />
+            <SettingsSection
+              title="Date Placeholders"
+              headingId="date-preferences"
+              description="Customize the format, locale, and timezone used for date placeholders across all feeds."
+            >
+              <fieldset aria-labelledby="date-preferences">
+                <Controller
+                  name="dates"
+                  control={control}
+                  render={({ field }) => {
+                    return (
+                      <DatePreferencesForm
+                        errors={{
+                          timezone: errors.dates?.timezone?.message,
+                        }}
+                        onChange={(values) => {
+                          field.onChange({
+                            format: values.format,
+                            locale: values.locale,
+                            timezone: values.timezone,
+                          });
+                        }}
+                        values={{
+                          format: field.value?.format,
+                          locale: field.value?.locale,
+                          timezone: field.value?.timezone,
+                        }}
+                      />
+                    );
+                  }}
+                />
+              </fieldset>
+            </SettingsSection>
           </Stack>
           <SavedUnsavedChangesPopupBar restoreFocusRef={formFocusRef} />
         </form>

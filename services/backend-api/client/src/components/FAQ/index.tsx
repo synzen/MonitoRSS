@@ -9,11 +9,9 @@ import {
 const FAQItem = ({ q, a }: { q: string; a: string | React.ReactNode }) => (
   <AccordionItem value={q} role="listitem">
     <AccordionItemTrigger py={8}>
-      {/* <Box as="span" flex="1" textAlign="left"> */}
       <Text fontWeight={600} textStyle="lg" textAlign="left" flex="1">
         {q}
       </Text>
-      {/* </Box> */}
     </AccordionItemTrigger>
     <AccordionItemContent pb={8}>{a}</AccordionItemContent>
   </AccordionItem>

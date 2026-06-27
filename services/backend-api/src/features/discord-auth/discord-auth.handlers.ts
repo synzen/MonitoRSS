@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { SessionAccessToken } from "../../services/discord-auth/types";
 import { sendError, ApiErrorCode } from "../../infra/error-handler";
+import { stampSessionEpoch } from "../../infra/auth";
 
 interface CallbackQuery {
   code?: string;
@@ -25,9 +26,9 @@ export async function callbackHandler(
 
   const { token } = await discordAuthService.createAccessToken(code);
 
-  request.session.set("accessToken", token);
+  const user = await usersService.initDiscordUser(token.discord.id);
 
-  await usersService.initDiscordUser(token.discord.id);
+  request.session.set("accessToken", stampSessionEpoch(token, user));
 
   return reply.redirect(config.BACKEND_API_LOGIN_REDIRECT_URI, 301);
 }
@@ -117,11 +118,14 @@ export async function callbackV2Handler(
 
   const { token, user } = await discordAuthService.createAccessToken(code);
 
-  request.session.set("accessToken", token);
-
-  await usersService.initDiscordUser(token.discord.id, {
+  const initializedUser = await usersService.initDiscordUser(token.discord.id, {
     email: user.email,
   });
+
+  request.session.set(
+    "accessToken",
+    stampSessionEpoch(token, initializedUser),
+  );
 
   reply.header("Cache-Control", "no-store");
   return reply.redirect(

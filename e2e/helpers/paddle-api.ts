@@ -73,6 +73,36 @@ const E2E_SUBSCRIBED_EVENTS = [
   "subscription.canceled",
 ];
 
+const EPHEMERAL_DESCRIPTION_PREFIX = "MonitoRSS E2E (ephemeral)";
+
+// A hard-killed CI runner never runs the teardown trap, so ephemeral settings leak
+// until Paddle's cap on active notification settings blocks every future run. CI
+// jobs time out at 30 minutes, so any ephemeral setting older than 2 hours (or one
+// without a created= timestamp, predating it) belongs to a dead run.
+export async function deleteStaleEphemeralNotificationSettings(): Promise<void> {
+  const result = await paddleRequest<
+    PaddleListResponse<{ id: string; description?: string }>
+  >("/notification-settings");
+
+  const now = Date.now();
+  for (const setting of result.data) {
+    const description = setting.description ?? "";
+    if (!description.startsWith(EPHEMERAL_DESCRIPTION_PREFIX)) continue;
+
+    const createdAt = description.match(/created=(\d+)/);
+    const ageMs = createdAt ? now - Number(createdAt[1]) : Infinity;
+    if (ageMs < 2 * 60 * 60 * 1000) continue;
+
+    try {
+      await deleteNotificationSetting(setting.id);
+      // stderr: the create script's stdout is parsed (id/secret lines) by e2e-mock.sh.
+      console.error(`Deleted stale ephemeral notification setting: ${setting.id}`);
+    } catch (err) {
+      console.error(`Failed to delete stale notification setting ${setting.id}:`, err);
+    }
+  }
+}
+
 export async function createNotificationSetting(): Promise<{
   id: string;
   secret: string;
@@ -82,7 +112,7 @@ export async function createNotificationSetting(): Promise<{
   }>("/notification-settings", {
     method: "POST",
     body: JSON.stringify({
-      description: "MonitoRSS E2E (ephemeral)",
+      description: `${EPHEMERAL_DESCRIPTION_PREFIX} created=${Date.now()}`,
       type: "url",
       destination: "https://placeholder.invalid/paddle-webhook",
       subscribed_events: E2E_SUBSCRIBED_EVENTS,
@@ -97,13 +127,6 @@ export async function createNotificationSetting(): Promise<{
 
 export async function deleteNotificationSetting(id: string): Promise<void> {
   await paddleRequest(`/notification-settings/${id}`, { method: "DELETE" });
-}
-
-export async function listActiveSubscriptions(): Promise<PaddleSubscription[]> {
-  const result = await paddleRequest<PaddleListResponse<PaddleSubscription>>(
-    "/subscriptions?status=active",
-  );
-  return result.data;
 }
 
 // The Paddle sandbox is one shared account, so scope cleanup to the test's own
@@ -220,20 +243,4 @@ export async function simulateSubscriptionCreation({
   );
 
   console.log(`Simulation run started for: ${simulationId}`);
-}
-
-export async function cancelAllActiveSubscriptions(): Promise<string[]> {
-  const subscriptions = await listActiveSubscriptions();
-  const cancelledIds: string[] = [];
-
-  for (const sub of subscriptions) {
-    try {
-      await cancelSubscription(sub.id);
-      cancelledIds.push(sub.id);
-    } catch (err) {
-      console.warn(`Failed to cancel subscription ${sub.id}:`, err);
-    }
-  }
-
-  return cancelledIds;
 }

@@ -14,7 +14,13 @@ import {
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { Switch } from "@/components/ui/switch";
 import { Panel } from "@/components/Panel";
-import { PRICE_IDS, ProductKey, PRODUCT_NAMES, ProductFeature, TIER_CONFIGS } from "@/constants";
+import {
+  PRICE_IDS,
+  ProductKey,
+  getPlanDisplayName,
+  ProductFeature,
+  TIER_CONFIGS,
+} from "@/constants";
 
 export interface UpgradePromptProps {
   upgradeHeadingRef: React.RefObject<HTMLParagraphElement>;
@@ -127,7 +133,7 @@ export const UpgradePrompt = ({
           onCheckout(priceId);
         }}
       >
-        Get {PRODUCT_NAMES[ProductKey.Tier1]}
+        Get {getPlanDisplayName(ProductKey.Tier1)}
       </PrimaryActionButton>
       <Button variant="outline" size="sm" mb={2} onClick={onSaveWithoutBranding}>
         Save without branding

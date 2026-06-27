@@ -80,7 +80,9 @@ describe("Reddit Auth API", { concurrency: true }, () => {
     });
   });
 
-  describe("GET /api/v1/reddit/callback", { concurrency: true }, () => {
+  // Sequential: the token-exchange tests mock a method on the shared container, and
+  // concurrent mock/restore on the same object races.
+  describe("GET /api/v1/reddit/callback", { concurrency: false }, () => {
     it("returns 401 without auth", async () => {
       const response = await ctx.fetch("/api/v1/reddit/callback?code=abc123");
       assert.strictEqual(response.status, 401);
@@ -118,6 +120,29 @@ describe("Reddit Auth API", { concurrency: true }, () => {
       assert.strictEqual(response.headers.get("cache-control"), "no-store");
     });
 
+    // The callback only honors a code whose `state` matches the nonce stashed in the
+    // session by /login (CSRF protection), so the handshake must start there. /login
+    // also rewrites the session cookie, so the callback uses the UPDATED cookie.
+    async function startLogin(
+      user: Awaited<ReturnType<AppTestContext["asUser"]>>,
+    ): Promise<{ state: string; cookie: string }> {
+      const res = await user.fetch("/api/v1/reddit/login", {
+        redirect: "manual",
+      });
+      assert.strictEqual(res.status, 303);
+
+      const location = res.headers.get("location");
+      assert.ok(location);
+      const state = new URL(location).searchParams.get("state");
+      assert.ok(state);
+
+      const setCookies = res.headers.getSetCookie();
+      assert.ok(setCookies.length, "login must rewrite the session cookie");
+      const cookie = setCookies.map((c) => c.split(";")[0]).join("; ");
+
+      return { state, cookie };
+    }
+
     it("exchanges code for tokens and returns HTML with postMessage on success", async () => {
       const user = await ctx.asUser("user-callback-success");
 
@@ -133,8 +158,10 @@ describe("Reddit Auth API", { concurrency: true }, () => {
         }),
       );
 
-      const response = await user.fetch(
-        "/api/v1/reddit/callback?code=valid-auth-code",
+      const { state, cookie } = await startLogin(user);
+      const response = await ctx.fetch(
+        `/api/v1/reddit/callback?code=valid-auth-code&state=${state}`,
+        { headers: { cookie } },
       );
 
       assert.strictEqual(response.status, 200);
@@ -155,6 +182,39 @@ describe("Reddit Auth API", { concurrency: true }, () => {
       const firstCall = mockGetAccessToken.mock.calls[0];
       assert.ok(firstCall, "Should have a call");
       assert.strictEqual(firstCall.arguments[0], "valid-auth-code");
+
+      mockGetAccessToken.mock.restore();
+    });
+
+    it("discards the code when state does not match the session nonce", async () => {
+      const user = await ctx.asUser("user-callback-state-mismatch");
+
+      const mockGetAccessToken = mock.method(
+        ctx.container.redditApiService,
+        "getAccessToken",
+        async () => ({
+          access_token: "mock-access-token",
+          refresh_token: "mock-refresh-token",
+          expires_in: 3600,
+          token_type: "bearer" as const,
+          scope: "read",
+        }),
+      );
+
+      const { cookie } = await startLogin(user);
+      const response = await ctx.fetch(
+        "/api/v1/reddit/callback?code=valid-auth-code&state=tampered",
+        { headers: { cookie } },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = await response.text();
+      assert.ok(!body.includes("postMessage"), "must not signal success");
+      assert.strictEqual(
+        mockGetAccessToken.mock.calls.length,
+        0,
+        "must not exchange the code",
+      );
 
       mockGetAccessToken.mock.restore();
     });

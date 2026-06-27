@@ -3,6 +3,16 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { URL } from "url";
 import { MOCK_RSS_SERVER_PORT } from "./helpers/constants";
+import { teeConsoleToFile } from "./helpers/log-to-file";
+
+teeConsoleToFile("mock-rss");
+
+// Feeds that must START healthy and LATER fail: a feed cannot be created against a
+// failing URL (creation validates it), so specs that need an established-then-broken
+// feed create it against /flaky/<key>.xml and then POST /flaky/<key>/fail to flip
+// that key to 500 for the rest of the run. Keys are per-spec-generated, so parallel
+// workers never interfere with each other's feeds.
+const failedFlakyKeys = new Set<string>();
 
 const server = createServer((req, res) => {
   const parsedUrl = new URL(
@@ -16,6 +26,26 @@ const server = createServer((req, res) => {
     );
     res.writeHead(200, { "Content-Type": "application/rss+xml" });
     res.end(rss);
+  } else if (/^\/flaky\/[^/]+\.xml$/.test(parsedUrl.pathname)) {
+    const key = parsedUrl.pathname.slice("/flaky/".length, -".xml".length);
+    if (failedFlakyKeys.has(key)) {
+      res.writeHead(500);
+      res.end("Internal Server Error");
+    } else {
+      const rss = readFileSync(
+        join(__dirname, "fixtures", "test-feed.xml"),
+        "utf-8",
+      );
+      res.writeHead(200, { "Content-Type": "application/rss+xml" });
+      res.end(rss);
+    }
+  } else if (
+    req.method === "POST" &&
+    /^\/flaky\/[^/]+\/fail$/.test(parsedUrl.pathname)
+  ) {
+    failedFlakyKeys.add(parsedUrl.pathname.split("/")[2]);
+    res.writeHead(200);
+    res.end("OK");
   } else if (parsedUrl.pathname === "/feed-500") {
     res.writeHead(500);
     res.end("Internal Server Error");

@@ -3,6 +3,7 @@ import { createHmac } from "crypto";
 import type { Config } from "../../src/config";
 import { SupporterMongooseRepository } from "../../src/repositories/mongoose/supporter.mongoose.repository";
 import { UserMongooseRepository } from "../../src/repositories/mongoose/user.mongoose.repository";
+import { WorkspaceMongooseRepository } from "../../src/repositories/mongoose/workspace.mongoose.repository";
 import { PaddleWebhooksService } from "../../src/services/paddle-webhooks/paddle-webhooks.service";
 import type { PaddleService } from "../../src/services/paddle/paddle.service";
 import type { SupportersService } from "../../src/services/supporters/supporters.service";
@@ -19,6 +20,7 @@ import {
 } from "../../src/repositories/shared/enums";
 import type { IUser } from "../../src/repositories/interfaces/user.types";
 import type { ISupporter } from "../../src/repositories/interfaces/supporter.types";
+import type { IWorkspace } from "../../src/repositories/mongoose/workspace.mongoose.repository";
 import {
   createServiceTestContext,
   type ServiceTestContext,
@@ -70,12 +72,18 @@ export interface PaddleWebhooksContext {
   service: PaddleWebhooksService;
   supporterRepository: SupporterMongooseRepository;
   userRepository: UserMongooseRepository;
+  workspaceRepository: WorkspaceMongooseRepository;
   paddleService: MockPaddleService;
   supportersService: MockSupportersService;
   userFeedsService: MockUserFeedsService;
   generateId(): string;
   createUser(overrides?: Partial<IUser>): Promise<IUser>;
   createSupporter(overrides?: Partial<ISupporter>): Promise<ISupporter>;
+  createWorkspaceWithOwner(input: {
+    ownerUserId: string;
+    name?: string;
+    slug?: string;
+  }): Promise<IWorkspace>;
   createWebhookSignature(requestBody: string, timestamp?: string): string;
   createSubscriptionUpdatedEvent(
     overrides?: Partial<PaddleEventSubscriptionUpdated["data"]>,
@@ -138,6 +146,7 @@ export function createPaddleWebhooksHarness(): PaddleWebhooksHarness {
   let testContext: ServiceTestContext;
   let supporterRepository: SupporterMongooseRepository;
   let userRepository: UserMongooseRepository;
+  let workspaceRepository: WorkspaceMongooseRepository;
 
   return {
     async setup() {
@@ -146,6 +155,9 @@ export function createPaddleWebhooksHarness(): PaddleWebhooksHarness {
         testContext.connection,
       );
       userRepository = new UserMongooseRepository(testContext.connection);
+      workspaceRepository = new WorkspaceMongooseRepository(
+        testContext.connection,
+      );
     },
 
     async teardown() {
@@ -172,12 +184,14 @@ export function createPaddleWebhooksHarness(): PaddleWebhooksHarness {
         userFeedsService: userFeedsService as unknown as UserFeedsService,
         supporterRepository,
         userRepository,
+        workspaceRepository,
       });
 
       return {
         service,
         supporterRepository,
         userRepository,
+        workspaceRepository,
         paddleService,
         supportersService,
         userFeedsService,
@@ -186,7 +200,18 @@ export function createPaddleWebhooksHarness(): PaddleWebhooksHarness {
         async createUser(overrides: Partial<IUser> = {}) {
           const discordUserId = overrides.discordUserId ?? generateTestId();
           const email = overrides.email ?? `${generateTestId()}@test.com`;
-          return userRepository.create({ discordUserId, email });
+          const user = await userRepository.create({ discordUserId, email });
+
+          if (overrides.verifiedEmail) {
+            await userRepository.setVerifiedEmail(
+              user.id,
+              overrides.verifiedEmail,
+            );
+
+            return { ...user, verifiedEmail: overrides.verifiedEmail };
+          }
+
+          return user;
         },
 
         async createSupporter(overrides = {}) {
@@ -197,6 +222,15 @@ export function createPaddleWebhooksHarness(): PaddleWebhooksHarness {
             ...overrides,
           };
           return supporterRepository.create(supporter);
+        },
+
+        async createWorkspaceWithOwner(input) {
+          const suffix = generateTestId();
+          return workspaceRepository.createWorkspaceWithOwner({
+            name: input.name ?? `Workspace ${suffix}`,
+            slug: input.slug ?? `workspace-${suffix}`,
+            ownerUserId: input.ownerUserId,
+          });
         },
 
         createWebhookSignature(requestBody: string, timestamp?: string) {

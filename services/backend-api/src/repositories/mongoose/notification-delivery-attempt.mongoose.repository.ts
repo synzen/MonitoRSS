@@ -32,9 +32,17 @@ const NotificationDeliveryAttemptSchema = new Schema(
     },
     feedId: { type: String },
     connectionId: { type: String },
+    workspaceId: { type: String },
     failReasonInternal: { type: String },
   },
   { collection: "notification_delivery_attempts", timestamps: true },
+);
+
+// Storage-limitation TTL: this is a delivery audit log keyed to recipient email,
+// so reap records 90 days after the attempt rather than retaining them forever.
+NotificationDeliveryAttemptSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 90 * 24 * 60 * 60 },
 );
 
 type NotificationDeliveryAttemptDoc = InferSchemaType<
@@ -68,6 +76,7 @@ export class NotificationDeliveryAttemptMongooseRepository
       type: doc.type,
       feedId: doc.feedId,
       connectionId: doc.connectionId,
+      workspaceId: doc.workspaceId,
       failReasonInternal: doc.failReasonInternal,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,

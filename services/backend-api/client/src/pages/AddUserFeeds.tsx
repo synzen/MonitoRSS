@@ -39,7 +39,8 @@ import { Panel } from "@/components/Panel";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { AutoResizeTextarea } from "../components/AutoResizeTextarea";
 import { pages, ProductKey } from "../constants";
-import { ensureUrlScheme, useCreateUserFeed, useUserFeeds } from "../features/feed";
+import { ensureUrlScheme, useCreateUserFeed, useUserFeeds, useFeedScope } from "../features/feed";
+import { useScopeCrumbLabel } from "../contexts/ScopeLabelContext";
 import { useCreateUserFeedUrlValidation } from "../features/feed/hooks/useCreateUserFeedUrlValidation";
 import { useDiscordUserMe, useUserMe } from "../features/discordUser";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
@@ -224,6 +225,8 @@ const UploadProgressView = ({
   const { mutateAsync: createUserFeed } = useCreateUserFeed();
   const { mutateAsync: createUrlValidation } = useCreateUserFeedUrlValidation();
   const navigate = useNavigate();
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
 
   const total = allResults.length;
   const percentSucceeded = ((totalSucceeded / total) * 100).toFixed(2);
@@ -275,7 +278,7 @@ const UploadProgressView = ({
 
           rowData.title = title;
           rowData.status = "success";
-          rowData.controlPaneLink = pages.userFeed(id);
+          rowData.controlPaneLink = pages.userFeed(id, { scope });
         }
       } catch (err) {
         rowData.status = "failed";
@@ -292,7 +295,7 @@ const UploadProgressView = ({
         }),
       );
     },
-    [createUrlValidation, createUserFeed, sourceFeed?.id],
+    [createUrlValidation, createUserFeed, sourceFeed?.id, scope],
   );
 
   useEffect(() => {
@@ -456,7 +459,7 @@ const UploadProgressView = ({
                 return;
               }
 
-              navigate(pages.userFeeds());
+              navigate(pages.userFeeds(scope));
             }}
           >
             Close
@@ -484,6 +487,9 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
     status: deduplicateStatus,
   } = useCreateUserFeedDeduplicatedUrls();
   const navigate = useNavigate();
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
+  const scopeCrumbLabel = useScopeCrumbLabel();
 
   const remainingFeedsAllowed =
     discordUserMe && userFeedsResults
@@ -539,7 +545,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <RouterLink to={pages.userFeeds()}>Feeds</RouterLink>
+              <RouterLink to={pages.userFeeds(scope)}>{scopeCrumbLabel}</RouterLink>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator>
@@ -581,7 +587,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                 <Heading as="h2" size="md" id="limits">
                   Limits
                 </Heading>
-                <Button variant="outline" onClick={onOpenPricingDialog}>
+                <Button variant="outline" onClick={() => onOpenPricingDialog()}>
                   <FaArrowUp />
                   Increase Limits
                 </Button>
@@ -777,7 +783,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
                     You can increase your limits by choosing to support MonitoRSS&apos;s open-source
                     development and upgrading your plan.
                   </Text>
-                  <Button mt={2} onClick={onOpenPricingDialog}>
+                  <Button mt={2} onClick={() => onOpenPricingDialog()}>
                     <FaArrowUp />
                     Upgrade Plan
                   </Button>
@@ -795,7 +801,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
             </Alert.Root>
           )}
           <HStack justifyContent="flex-end">
-            <Button variant="ghost" onClick={() => navigate(pages.userFeeds())}>
+            <Button variant="ghost" onClick={() => navigate(pages.userFeeds(scope))}>
               Cancel
             </Button>
             <PrimaryActionButton

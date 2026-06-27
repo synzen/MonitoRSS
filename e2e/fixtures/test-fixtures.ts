@@ -6,6 +6,7 @@ import {
   type Response,
   type BrowserContext,
   type Browser,
+  type TestInfo,
 } from "@playwright/test";
 import {
   createFeed,
@@ -13,16 +14,29 @@ import {
   createConnection,
   getTestChannelId,
 } from "../helpers/api";
+import { randomInt } from "crypto";
 import type { Feed, FeedWithConnection } from "../helpers/types";
 import { createMockSessionToken } from "../helpers/mock-discord-data";
 
 const BACKEND_URL = process.env.E2E_BACKEND_URL || "http://localhost:8000";
 
+// Playwright runs each worker in its own process, so module state (userCounter)
+// resets per worker. A previous time-based scheme (counter + Date.now() % 1e6)
+// could hand two parallel workers the SAME id, which then share the per-user
+// email-verification rate-limit budget in the backend and trip spurious 429s.
+// Draw a high-entropy seed ONCE per worker process and reserve the low 6 digits
+// for the in-process counter, so ids are unique within a worker (monotonic) and
+// across workers (the seed differs). Layout keeps the id an 18-digit snowflake
+// (the backend validates Discord ids as numeric, so a UUID can't be used here):
+// seed (<1e10) * 1e6 + counter (<1e6) stays under the 1e17 headroom above the
+// 9e17 base, so the max id is ~9.1e17 (still 18 digits).
+const PROCESS_SEED = randomInt(0, 10_000_000_000);
 let userCounter = 0;
 
 function generateUniqueUserId(): string {
   const base = 900000000000000000n;
-  return String(base + BigInt(++userCounter) + BigInt(Date.now() % 1000000));
+  const unique = BigInt(PROCESS_SEED) * 1_000_000n + BigInt(++userCounter);
+  return String(base + unique);
 }
 
 type MockCookie = {
@@ -35,8 +49,10 @@ type MockCookie = {
   sameSite: "Lax";
 };
 
-async function createMockSessionCookies(): Promise<MockCookie[]> {
-  const userId = generateUniqueUserId();
+async function createMockSessionCookies(
+  explicitUserId?: string,
+): Promise<MockCookie[]> {
+  const userId = explicitUserId ?? generateUniqueUserId();
   const token = createMockSessionToken();
   token.discord.id = userId;
   token.access_token = `mock-token-${userId}`;
@@ -68,6 +84,45 @@ async function createMockSessionCookies(): Promise<MockCookie[]> {
   ];
 }
 
+// A timed-out `toBeVisible` on an authenticated page is usually a symptom: the
+// real cause (an auth/session failure, an unhandled fetch error) only ever
+// reached the browser console, which Playwright does not echo into the report.
+// This promotes those signals to test annotations so the next failure is legible
+// from the report alone, without downloading and parsing a trace. Attaching at the
+// context level covers every page the context opens — including ones created after
+// this call — so callers never wire individual pages.
+function surfaceBrowserErrors(context: BrowserContext, testInfo: TestInfo): void {
+  const note = (kind: string, detail: string) => {
+    testInfo.annotations.push({ type: kind, description: detail });
+  };
+
+  context.on("console", (msg) => {
+    if (msg.type() === "error" && /unauthorized|401|ApiAdapterError/i.test(msg.text())) {
+      note("browser-auth-error", msg.text().slice(0, 300));
+    }
+  });
+  context.on("weberror", (err) => note("browser-page-error", err.error().message.slice(0, 300)));
+  context.on("response", (res) => {
+    const url = res.url();
+    if (res.status() === 401 && url.includes("/api/v1/")) {
+      note("http-401", `401 on ${url.replace(/^https?:\/\/[^/]+/, "")}`);
+    }
+  });
+}
+
+// Creates a fresh browser context with browser-error surfacing already attached.
+// Both the default `page` fixture and any spec that needs its own context (e.g. a
+// second logged-out actor) go through this, so error visibility is uniform and no
+// call site touches the listener wiring directly.
+export async function newInstrumentedContext(
+  browser: Browser,
+  testInfo: TestInfo,
+): Promise<BrowserContext> {
+  const context = await browser.newContext();
+  surfaceBrowserErrors(context, testInfo);
+  return context;
+}
+
 type TestFixtures = {
   testFeed: Feed;
   testFeedWithConnection: FeedWithConnection;
@@ -81,6 +136,20 @@ type WorkerFixtures = {
 async function createAuthenticatedContext(browser: Browser) {
   const cookies = await createMockSessionCookies();
   const context = await browser.newContext();
+  await context.addCookies(cookies);
+  return context;
+}
+
+// A browser context logged in as a SPECIFIC Discord id, instead of the random
+// per-test id the default fixtures use. The admin-access spec needs a stable
+// identity that matches BACKEND_API_ADMIN_USER_IDS; pass E2E_ADMIN_DISCORD_ID.
+export async function createContextForDiscordUser(
+  browser: Browser,
+  testInfo: TestInfo,
+  discordUserId: string,
+): Promise<BrowserContext> {
+  const cookies = await createMockSessionCookies(discordUserId);
+  const context = await newInstrumentedContext(browser, testInfo);
   await context.addCookies(cookies);
   return context;
 }
@@ -104,9 +173,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: "worker" },
   ],
 
-  page: async ({ browser }, use) => {
+  page: async ({ browser }, use, testInfo) => {
     const cookies = await createMockSessionCookies();
-    const context = await browser.newContext();
+    const context = await newInstrumentedContext(browser, testInfo);
     await context.addCookies(cookies);
     const page = await context.newPage();
     await use(page);

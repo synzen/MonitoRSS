@@ -2,15 +2,10 @@ import { randomUUID } from "crypto";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import type { IUser } from "../../repositories/interfaces/user.types";
 import {
-  UserExternalCredentialStatus,
-  UserExternalCredentialType,
   UserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../../repositories/shared/enums";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
-import { getFeedRequestLookupDetails } from "../../shared/utils/get-feed-request-lookup-details";
-import { isRedditFeedUrl } from "../../shared/utils/is-reddit-feed-url";
-import { RedditConnectionRequiredException } from "../../shared/exceptions/reddit.exceptions";
 import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
 import {
   GetArticlesResponseRequestStatus,
@@ -18,6 +13,7 @@ import {
   GetArticlesInput,
 } from "../feed-handler/types";
 import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective-refresh-rate";
+import { DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS } from "../../shared/utils/billing";
 import {
   BannedFeedException,
   FeedFetchTimeoutException,
@@ -26,9 +22,9 @@ import {
   FeedRequestException,
   FeedInvalidSslCertException,
   FeedLimitReachedException,
+  WorkspaceNotSubscribedException,
   RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
-  FeedNotFailedException,
   ManualRequestTooSoonException,
 } from "../../shared/exceptions/user-feeds.exceptions";
 import logger from "../../infra/logger";
@@ -52,7 +48,12 @@ import { UserFeedCopyableSetting } from "./types";
 import type {
   CopySettingsTarget,
   CopyableSettings,
+  CloneUserFeedInput,
+  FeedLimitScope,
+  CreateUserFeedInput as CreateUserFeedRepoInput,
+  WorkspaceFeedLimitEnforcementQuery,
 } from "../../repositories/interfaces/user-feed.types";
+import { FeedLimitExceededError } from "../../repositories/interfaces/user-feed.types";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -67,10 +68,20 @@ type NextRetryReason = "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF";
 
 const MESSAGE_BROKER_QUEUE_FEED_DELETED = "feed-deleted";
 
-const DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS = [
-  UserFeedDisabledCode.ExceededFeedLimit,
-  UserFeedDisabledCode.Manual,
+// The only disable states a successful manual request proves recovery from.
+// Other codes (Manual, ExceededFeedLimit, ExcessivelyActive, FeedTooLarge)
+// are deliberate or limit-driven and have their own re-enable paths.
+const MANUALLY_RETRYABLE_DISABLED_CODES = [
+  UserFeedDisabledCode.FailedRequests,
+  UserFeedDisabledCode.InvalidFeed,
+  UserFeedDisabledCode.BadFormat,
 ];
+
+interface WorkspaceLimitEnforcementOutcome {
+  workspaceId: string;
+  feedIdsToDisable: string[];
+  feedIdsToEnable: string[];
+}
 
 export class UserFeedsService {
   constructor(private readonly deps: UserFeedsServiceDeps) {}
@@ -109,6 +120,7 @@ export class UserFeedsService {
   ): Promise<UserFeedListItem[]> {
     return this.deps.userFeedRepository.getUserFeedsListing({
       discordUserId,
+      workspaceId: input.workspaceId,
       limit: input.limit,
       offset: input.offset,
       search: input.search,
@@ -124,6 +136,7 @@ export class UserFeedsService {
   ): Promise<number> {
     return this.deps.userFeedRepository.getUserFeedsCount({
       discordUserId,
+      workspaceId: input.workspaceId,
       search: input.search,
       filters: input.filters,
     });
@@ -132,11 +145,64 @@ export class UserFeedsService {
   async getFeedsWithoutConnectionsCount(
     _userId: string,
     discordUserId: string,
+    workspaceId?: string,
   ): Promise<number> {
     return this.deps.userFeedRepository.getUserFeedsCount({
       discordUserId,
+      workspaceId,
       filters: { hasConnections: false },
     });
+  }
+
+  private feedLimitScope({
+    workspaceId,
+    ownerDiscordUserId,
+    maxFeeds,
+  }: {
+    workspaceId: string | null;
+    ownerDiscordUserId: string;
+    maxFeeds: number;
+  }): FeedLimitScope {
+    return workspaceId
+      ? { scope: "workspace", workspaceId, maxFeeds }
+      : { scope: "personal", discordUserId: ownerDiscordUserId, maxFeeds };
+  }
+
+  // Translates the repository's limit sentinel into the exception callers handle.
+  private async createWithFeedLimit(
+    input: CreateUserFeedRepoInput,
+    scope: FeedLimitScope,
+  ): Promise<IUserFeed> {
+    try {
+      return await this.deps.userFeedRepository.createWithLimitEnforcement(
+        input,
+        scope,
+      );
+    } catch (err) {
+      if (err instanceof FeedLimitExceededError) {
+        throw new FeedLimitReachedException("Max feeds reached");
+      }
+
+      throw err;
+    }
+  }
+
+  private async cloneWithFeedLimit(
+    input: CloneUserFeedInput,
+    scope: FeedLimitScope,
+  ): Promise<IUserFeed> {
+    try {
+      return await this.deps.userFeedRepository.cloneWithLimitEnforcement(
+        input,
+        scope,
+      );
+    } catch (err) {
+      if (err instanceof FeedLimitExceededError) {
+        throw new FeedLimitReachedException("Max feeds reached");
+      }
+
+      throw err;
+    }
   }
 
   async addFeed(
@@ -144,22 +210,56 @@ export class UserFeedsService {
       discordUserId,
       userAccessToken,
     }: { discordUserId: string; userAccessToken: string },
-    { title, url, sourceFeedId }: CreateUserFeedInput,
+    { title, url, sourceFeedId, workspaceId }: CreateUserFeedInput,
   ): Promise<IUserFeed> {
-    const [
-      { maxUserFeeds, maxDailyArticles, refreshRateSeconds },
-      user,
-      sourceFeedToCopyFrom,
-    ] = await Promise.all([
-      this.deps.supportersService.getBenefitsOfDiscordUser(discordUserId),
-      this.deps.usersService.getOrCreateUserByDiscordId(discordUserId),
-      sourceFeedId
-        ? this.deps.userFeedRepository.findByIdAndOwnership(
-            sourceFeedId,
-            discordUserId,
-          )
-        : null,
-    ]);
+    const user =
+      await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
+    const userId = user.id;
+
+    // Workspace feeds draw their limits from workspace benefits (hardcoded today, a
+    // future workspace Paddle subscription later) — never the creator's personal
+    // supporter perks. Membership is verified before creation.
+    if (workspaceId) {
+      await this.deps.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    }
+
+    const myWorkspaceIds = workspaceId ? [workspaceId] : [];
+
+    const [{ maxFeeds, maxDailyArticles, refreshRateSeconds, dormant }, sourceFeedToCopyFrom] =
+      await Promise.all([
+        workspaceId
+          ? this.deps.supportersService
+              .getWorkspaceBenefits(workspaceId)
+              .then((b) => ({
+                maxFeeds: b.maxFeeds,
+                maxDailyArticles: b.maxDailyArticles,
+                refreshRateSeconds: b.refreshRateSeconds,
+                dormant: b.dormant,
+              }))
+          : this.deps.supportersService
+              .getBenefitsOfDiscordUser(discordUserId)
+              .then((b) => ({
+                maxFeeds: b.maxUserFeeds,
+                maxDailyArticles: b.maxDailyArticles,
+                refreshRateSeconds: b.refreshRateSeconds,
+                dormant: false,
+              })),
+        sourceFeedId
+          ? this.deps.userFeedRepository.findByIdAndOwnership(
+              sourceFeedId,
+              discordUserId,
+              myWorkspaceIds,
+            )
+          : null,
+      ]);
+
+    // The dormant gate fires before any URL validation so the rejection is
+    // unmistakable (activation prompt) rather than a generic fetch failure.
+    if (workspaceId && dormant) {
+      throw new WorkspaceNotSubscribedException(
+        `Workspace ${workspaceId} has no active subscription`,
+      );
+    }
 
     if (sourceFeedId && !sourceFeedToCopyFrom) {
       throw new SourceFeedNotFoundException(
@@ -167,51 +267,77 @@ export class UserFeedsService {
       );
     }
 
-    const userId = user.id;
+    const credentialSource =
+      await this.deps.feedCredentialsService.resolveCredentialSource(
+        { workspaceId },
+        user,
+      );
 
-    this.assertRedditConnectionIfRequired(url, user);
+    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+      url,
+      credentialSource,
+    );
 
-    const tempLookupDetails = getFeedRequestLookupDetails({
-      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-      feed: {
-        url,
-        feedRequestLookupKey: randomUUID(),
-      },
-      user,
-    });
+    const tempLookupDetails =
+      this.deps.feedCredentialsService.getLookupDetailsFromSource({
+        feed: { url, feedRequestLookupKey: randomUUID() },
+        credentials: credentialSource,
+      });
 
     const { finalUrl, enableDateChecks, feedTitle } =
       await this.checkUrlIsValid(url, tempLookupDetails);
 
-    this.assertRedditConnectionIfRequired(finalUrl, user);
+    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+      finalUrl,
+      credentialSource,
+    );
 
-    const { connections, ...propertiesToCopy } = sourceFeedToCopyFrom || {};
+    const {
+      connections,
+      workspaceId: _sourceWorkspaceId,
+      ...propertiesToCopy
+    } = sourceFeedToCopyFrom || {};
 
-    const created = await this.deps.userFeedRepository.create({
-      ...propertiesToCopy,
-      title: title || feedTitle || "Untitled Feed",
-      url: finalUrl,
-      inputUrl: url,
-      user: {
-        id: userId,
-        discordUserId,
+    const created = await this.createWithFeedLimit(
+      {
+        ...propertiesToCopy,
+        title: title || feedTitle || "Untitled Feed",
+        url: finalUrl,
+        inputUrl: url,
+        user: {
+          id: userId,
+          discordUserId,
+        },
+        workspaceId,
+        refreshRateSeconds,
+        slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
+        maxDailyArticles,
+        feedRequestLookupKey: tempLookupDetails?.key,
+        dateCheckOptions: enableDateChecks
+          ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
+          : undefined,
       },
-      refreshRateSeconds,
-      slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
-      maxDailyArticles,
-      feedRequestLookupKey: tempLookupDetails?.key,
-      dateCheckOptions: enableDateChecks
-        ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
-        : undefined,
-    });
+      this.feedLimitScope({
+        workspaceId: workspaceId ?? null,
+        ownerDiscordUserId: discordUserId,
+        maxFeeds,
+      }),
+    );
 
-    const feedCount =
-      await this.deps.userFeedRepository.countByOwnership(discordUserId);
+    if (workspaceId) {
+      // The workspace can be deleted while URL validation above is in flight;
+      // an insert landing after deletion's feed sweep would survive as an
+      // orphan no scope can reach. Re-verify and undo the insert if so.
+      try {
+        await this.deps.workspacesService.getWorkspaceForMember(
+          workspaceId,
+          userId,
+        );
+      } catch (err) {
+        await this.bulkDelete([created.id]);
 
-    if (feedCount > maxUserFeeds) {
-      await this.deps.userFeedRepository.deleteById(created.id);
-
-      throw new FeedLimitReachedException("Max feeds reached");
+        throw err;
+      }
     }
 
     if (connections) {
@@ -247,10 +373,16 @@ export class UserFeedsService {
       throw new Error(`Feed ${feedId} not found while cloning`);
     }
 
-    const { maxUserFeeds } =
-      await this.deps.supportersService.getBenefitsOfDiscordUser(
-        sourceFeed.user.discordUserId,
-      );
+    // Clone lands in the source's scope (the repo carries `workspaceId` over), so
+    // the limit is the workspace's for a workspace feed, else the creator's.
+    const maxFeeds = sourceFeed.workspaceId
+      ? (await this.deps.supportersService.getWorkspaceBenefits(sourceFeed.workspaceId))
+          .maxFeeds
+      : (
+          await this.deps.supportersService.getBenefitsOfDiscordUser(
+            sourceFeed.user.discordUserId,
+          )
+        ).maxUserFeeds;
 
     let inputUrl = sourceFeed.inputUrl;
     let finalUrl = sourceFeed.url;
@@ -262,43 +394,53 @@ export class UserFeedsService {
           sourceFeed.user.discordUserId,
         ));
 
-      this.assertRedditConnectionIfRequired(data.url, user);
+      const credentialSource =
+        await this.deps.feedCredentialsService.resolveCredentialSource(
+          sourceFeed,
+          user,
+        );
+
+      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+        data.url,
+        credentialSource,
+      );
 
       finalUrl = (
         await this.checkUrlIsValid(
           data.url,
-          getFeedRequestLookupDetails({
+          this.deps.feedCredentialsService.getLookupDetailsFromSource({
             feed: sourceFeed,
-            user,
-            decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+            credentials: credentialSource,
           }),
         )
       ).finalUrl;
 
-      this.assertRedditConnectionIfRequired(finalUrl, user);
+      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+        finalUrl,
+        credentialSource,
+      );
       inputUrl = data.url;
     }
 
-    const created = await this.deps.userFeedRepository.clone({
-      sourceFeed,
-      overrides: {
-        title: data?.title,
-        url: finalUrl,
-        inputUrl,
+    const created = await this.cloneWithFeedLimit(
+      {
+        sourceFeed,
+        overrides: {
+          title: data?.title,
+          url: finalUrl,
+          inputUrl,
+        },
       },
-    });
-
-    const feedCount = await this.deps.userFeedRepository.countByOwnership(
-      sourceFeed.user.discordUserId,
+      this.feedLimitScope({
+        workspaceId: sourceFeed.workspaceId ?? null,
+        ownerDiscordUserId: sourceFeed.user.discordUserId,
+        maxFeeds,
+      }),
     );
 
-    if (feedCount > maxUserFeeds) {
-      await this.deps.userFeedRepository.deleteById(created.id);
-
-      throw new FeedLimitReachedException("Max feeds reached");
-    }
-
-    await this.deps.usersService.syncLookupKeys({ feedIds: [created.id] });
+    await this.deps.feedCredentialsService.syncLookupKeys({
+      feedIds: [created.id],
+    });
 
     for (const c of sourceFeed.connections.discordChannels) {
       await this.deps.feedConnectionsDiscordChannelsService.cloneConnection(
@@ -428,11 +570,9 @@ export class UserFeedsService {
         feed.user.discordUserId,
       ));
 
-    const lookupDetails = getFeedRequestLookupDetails({
-      feed,
-      user,
-      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-    });
+    const lookupDetails = await this.deps.feedCredentialsService.getLookupDetails(
+      { feed, user },
+    );
 
     const response = (await this.deps.feedFetcherApiService.getRequests({
       query,
@@ -569,14 +709,34 @@ export class UserFeedsService {
     }
 
     if (updates.url) {
-      const { finalUrl } = await this.checkUrlIsValid(
-        updates.url,
-        getFeedRequestLookupDetails({
+      // Resolve credentials and lookup details from the NEW url, not the feed's
+      // existing one: changing to a Reddit url must apply the authenticated lookup
+      // (and gate on a connection), otherwise the validation fetch hits the raw
+      // Reddit url and is rate-limited. Mirrors the create/clone paths.
+      const credentialSource =
+        await this.deps.feedCredentialsService.resolveCredentialSource(
           feed,
           user,
-          decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+        );
+
+      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+        updates.url,
+        credentialSource,
+      );
+
+      const { finalUrl } = await this.checkUrlIsValid(
+        updates.url,
+        this.deps.feedCredentialsService.getLookupDetailsFromSource({
+          feed: { url: updates.url, feedRequestLookupKey: randomUUID() },
+          credentials: credentialSource,
         }),
       );
+
+      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+        finalUrl,
+        credentialSource,
+      );
+
       useUpdateObject.$set!.url = finalUrl;
       useUpdateObject.$set!.inputUrl = updates.url;
 
@@ -604,16 +764,32 @@ export class UserFeedsService {
         disabledCode &&
         DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS.includes(disabledCode)
       ) {
-        const currentFeedCount =
-          await this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
-            user.discordUserId,
-            DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-          );
+        if (feed.workspaceId) {
+          const [{ maxFeeds }, currentFeedCount] = await Promise.all([
+            this.deps.supportersService.getWorkspaceBenefits(feed.workspaceId),
+            this.deps.userFeedRepository.countByWorkspaceExcludingDisabled(
+              feed.workspaceId,
+              DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+            ),
+          ]);
 
-        if (userBenefits.maxUserFeeds <= currentFeedCount) {
-          throw new FeedLimitReachedException(
-            `Cannot enable feed ${id} because user ${user.discordUserId} has reached the feed limit`,
-          );
+          if (maxFeeds <= currentFeedCount) {
+            throw new FeedLimitReachedException(
+              `Cannot enable feed ${id} because workspace ${feed.workspaceId} has reached the feed limit`,
+            );
+          }
+        } else {
+          const currentFeedCount =
+            await this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
+              user.discordUserId,
+              DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+            );
+
+          if (userBenefits.maxUserFeeds <= currentFeedCount) {
+            throw new FeedLimitReachedException(
+              `Cannot enable feed ${id} because user ${user.discordUserId} has reached the feed limit`,
+            );
+          }
         }
       }
 
@@ -703,6 +879,10 @@ export class UserFeedsService {
     );
 
     if (updates.url) {
+      // A url change can flip the feed's credential requirement (e.g. to/from a
+      // Reddit url), so resync the lookup key or delivery fetches with a stale key.
+      await this.deps.feedCredentialsService.syncLookupKeys({ feedIds: [id] });
+
       await this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
         data: { feed: { id } },
       });
@@ -716,7 +896,11 @@ export class UserFeedsService {
             updates.disabledCode,
           )))
     ) {
-      await this.enforceUserFeedLimit(u.user.discordUserId);
+      if (u.workspaceId) {
+        await this.enforceWorkspaceFeedLimit(u.workspaceId);
+      } else {
+        await this.enforceUserFeedLimit(u.user.discordUserId);
+      }
     }
 
     return u;
@@ -747,65 +931,21 @@ export class UserFeedsService {
     });
 
     try {
-      await this.enforceUserFeedLimit(feed.user.discordUserId);
+      if (feed.workspaceId) {
+        await this.enforceWorkspaceFeedLimit(feed.workspaceId);
+      } else {
+        await this.enforceUserFeedLimit(feed.user.discordUserId);
+      }
     } catch (err) {
-      logger.error("Failed to enforce user feed limit after deleting feed", {
+      logger.error("Failed to enforce feed limit after deleting feed", {
         feedId: id,
         discordUserId: feed.user.discordUserId,
+        workspaceId: feed.workspaceId,
         error: (err as Error).stack,
       });
     }
 
     return feed;
-  }
-
-  async retryFailedFeed(feedId: string) {
-    await this.deps.usersService.syncLookupKeys({
-      feedIds: [feedId],
-    });
-    const feed = await this.deps.userFeedRepository.findById(feedId);
-
-    if (!feed) {
-      throw new Error(
-        `Feed ${feedId} not found while attempting to retry failed feed`,
-      );
-    }
-
-    if (
-      feed.healthStatus !== UserFeedHealthStatus.Failed &&
-      feed.disabledCode !== UserFeedDisabledCode.InvalidFeed
-    ) {
-      throw new FeedNotFailedException(
-        `Feed ${feedId} is not in a failed state, cannot retry it`,
-      );
-    }
-
-    const user = await this.deps.usersService.getOrCreateUserByDiscordId(
-      feed.user.discordUserId,
-    );
-
-    const lookupDetails = getFeedRequestLookupDetails({
-      feed,
-      user,
-      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-    });
-
-    await this.deps.feedFetcherService.fetchFeed(
-      lookupDetails?.url || feed.url,
-      lookupDetails,
-      {
-        fetchOptions: {
-          useServiceApi: true,
-          useServiceApiCache: false,
-          debug: feed.debug,
-        },
-      },
-    );
-
-    return this.deps.userFeedRepository.updateById(feedId, {
-      $set: { healthStatus: UserFeedHealthStatus.Ok },
-      $unset: { disabledCode: "" },
-    });
   }
 
   async manuallyRequest(feed: IUserFeed) {
@@ -826,19 +966,68 @@ export class UserFeedsService {
       );
     }
 
+    // A successful request would re-enable the feed, so the scope must be
+    // within its feed limit first. Checked before fetching so a doomed retry
+    // does not consume the rate-limited manual attempt.
+    if (
+      feed.disabledCode &&
+      MANUALLY_RETRYABLE_DISABLED_CODES.includes(feed.disabledCode)
+    ) {
+      if (feed.workspaceId) {
+        const { maxFeeds, dormant } =
+          await this.deps.supportersService.getWorkspaceBenefits(
+            feed.workspaceId,
+          );
+
+        if (dormant) {
+          throw new WorkspaceNotSubscribedException(
+            `Workspace ${feed.workspaceId} has no active subscription`,
+          );
+        }
+
+        const currentFeedCount =
+          await this.deps.userFeedRepository.countByWorkspaceExcludingDisabled(
+            feed.workspaceId,
+            DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+          );
+
+        // The count includes this feed (failure codes still hold a limit
+        // slot), so only a scope strictly over its limit is blocked.
+        if (currentFeedCount > maxFeeds) {
+          throw new FeedLimitReachedException(
+            `Cannot re-enable feed ${feed.id} because workspace ${feed.workspaceId} has reached the feed limit`,
+          );
+        }
+      } else {
+        const [{ maxUserFeeds }, currentFeedCount] = await Promise.all([
+          this.deps.supportersService.getBenefitsOfDiscordUser(
+            feed.user.discordUserId,
+          ),
+          this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
+            feed.user.discordUserId,
+            DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+          ),
+        ]);
+
+        if (currentFeedCount > maxUserFeeds) {
+          throw new FeedLimitReachedException(
+            `Cannot re-enable feed ${feed.id} because user ${feed.user.discordUserId} has reached the feed limit`,
+          );
+        }
+      }
+    }
+
     const requestDate = new Date();
     const user = await this.deps.usersService.getOrCreateUserByDiscordId(
       feed.user.discordUserId,
     );
 
-    await this.deps.usersService.syncLookupKeys({
+    await this.deps.feedCredentialsService.syncLookupKeys({
       feedIds: [feed.id],
     });
-    const lookupDetails = getFeedRequestLookupDetails({
-      feed,
-      user,
-      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-    });
+    const lookupDetails = await this.deps.feedCredentialsService.getLookupDetails(
+      { feed, user },
+    );
 
     const res = await this.deps.feedFetcherApiService.fetchAndSave(
       lookupDetails?.url || feed.url,
@@ -850,7 +1039,10 @@ export class UserFeedsService {
 
     const isRequestSuccessful =
       res.requestStatus === FeedFetcherFetchStatus.Success;
-    let canBeEnabled = isRequestSuccessful;
+    let canBeEnabled =
+      isRequestSuccessful &&
+      (!feed.disabledCode ||
+        MANUALLY_RETRYABLE_DISABLED_CODES.includes(feed.disabledCode));
 
     let getArticlesRequestStatus: GetArticlesResponseRequestStatus | null =
       null;
@@ -937,11 +1129,7 @@ export class UserFeedsService {
     const { articles, requestStatus } =
       await this.deps.feedHandlerService.getArticles(
         input,
-        getFeedRequestLookupDetails({
-          feed,
-          user,
-          decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-        }),
+        await this.deps.feedCredentialsService.getLookupDetails({ feed, user }),
       );
 
     const properties = Array.from(
@@ -1023,11 +1211,7 @@ export class UserFeedsService {
           },
         },
       },
-      getFeedRequestLookupDetails({
-        feed,
-        user,
-        decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-      }),
+      await this.deps.feedCredentialsService.getLookupDetails({ feed, user }),
     );
   }
 
@@ -1064,15 +1248,30 @@ export class UserFeedsService {
       await this.deps.userFeedRepository.deleteByIds(feeds.map((f) => f.id));
     }
 
-    const userIds = [...new Set(feeds.map((f) => f.user.discordUserId))];
+    const userIds = [
+      ...new Set(
+        feeds.filter((f) => !f.workspaceId).map((f) => f.user.discordUserId),
+      ),
+    ];
+    const workspaceIds = [
+      ...new Set(
+        feeds
+          .map((f) => f.workspaceId)
+          .filter((id): id is string => !!id),
+      ),
+    ];
 
     try {
-      await Promise.all(
-        userIds.map((userId) => this.enforceUserFeedLimit(userId)),
-      );
+      await Promise.all([
+        ...userIds.map((userId) => this.enforceUserFeedLimit(userId)),
+        ...workspaceIds.map((workspaceId) =>
+          this.enforceWorkspaceFeedLimit(workspaceId),
+        ),
+      ]);
     } catch (err) {
-      logger.error("Failed to enforce user feed limits after bulk delete", {
+      logger.error("Failed to enforce feed limits after bulk delete", {
         userIds,
+        workspaceIds,
         error: (err as Error).stack,
       });
     }
@@ -1092,12 +1291,13 @@ export class UserFeedsService {
   async bulkDisable(
     feedIds: string[],
   ): Promise<Array<{ id: string; disabled: boolean }>> {
-    const [eligibleFeeds, userIds] = await Promise.all([
+    const [eligibleFeeds, userIds, workspaceIds] = await Promise.all([
       this.deps.userFeedRepository.findEligibleFeedsForDisable(
         feedIds,
         DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
       ),
       this.deps.userFeedRepository.findDiscordUserIdsByFeedIds(feedIds),
+      this.deps.userFeedRepository.findWorkspaceIdsByFeedIds(feedIds),
     ]);
     const eligibleIds = new Set(eligibleFeeds.map((f) => f.id));
 
@@ -1109,12 +1309,16 @@ export class UserFeedsService {
     }
 
     try {
-      await Promise.all(
-        userIds.map((userId) => this.enforceUserFeedLimit(userId)),
-      );
+      await Promise.all([
+        ...userIds.map((userId) => this.enforceUserFeedLimit(userId)),
+        ...workspaceIds.map((workspaceId) =>
+          this.enforceWorkspaceFeedLimit(workspaceId),
+        ),
+      ]);
     } catch (err) {
-      logger.error("Failed to enforce user feed limits after bulk disable", {
+      logger.error("Failed to enforce feed limits after bulk disable", {
         userIds,
+        workspaceIds,
         error: (err as Error).stack,
       });
     }
@@ -1128,9 +1332,10 @@ export class UserFeedsService {
   async bulkEnable(
     feedIds: string[],
   ): Promise<Array<{ id: string; enabled: boolean }>> {
-    const [eligibleFeeds, userIds] = await Promise.all([
+    const [eligibleFeeds, userIds, workspaceIds] = await Promise.all([
       this.deps.userFeedRepository.findEligibleFeedsForEnable(feedIds),
       this.deps.userFeedRepository.findDiscordUserIdsByFeedIds(feedIds),
+      this.deps.userFeedRepository.findWorkspaceIdsByFeedIds(feedIds),
     ]);
     const eligibleIds = new Set(eligibleFeeds.map((f) => f.id));
 
@@ -1142,12 +1347,16 @@ export class UserFeedsService {
     }
 
     try {
-      await Promise.all(
-        userIds.map((userId) => this.enforceUserFeedLimit(userId)),
-      );
+      await Promise.all([
+        ...userIds.map((userId) => this.enforceUserFeedLimit(userId)),
+        ...workspaceIds.map((workspaceId) =>
+          this.enforceWorkspaceFeedLimit(workspaceId),
+        ),
+      ]);
     } catch (err) {
-      logger.error("Failed to enforce user feed limits after bulk enable", {
+      logger.error("Failed to enforce feed limits after bulk enable", {
         userIds,
+        workspaceIds,
         error: (err as Error).stack,
       });
     }
@@ -1160,33 +1369,47 @@ export class UserFeedsService {
 
   async validateFeedUrl(
     opts: { discordUserId: string },
-    input: { url: string },
+    input: { url: string; workspaceId?: string },
   ): Promise<ValidateFeedUrlOutput> {
     const { discordUserId } = opts;
-    const { url } = input;
+    const { url, workspaceId } = input;
 
     const user =
       await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
 
-    this.assertRedditConnectionIfRequired(url, user);
+    if (workspaceId) {
+      await this.deps.workspacesService.getWorkspaceForMember(
+        workspaceId,
+        user.id,
+      );
+    }
 
-    const lookupDetails = getFeedRequestLookupDetails({
-      feed: { url, feedRequestLookupKey: randomUUID() },
-      user: {
-        externalCredentials: user.externalCredentials?.map((c) => ({
-          type: c.type,
-          data: c.data,
-        })),
-      },
-      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-    });
+    const credentialSource =
+      await this.deps.feedCredentialsService.resolveCredentialSource(
+        { workspaceId },
+        user,
+      );
+
+    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+      url,
+      credentialSource,
+    );
+
+    const lookupDetails =
+      this.deps.feedCredentialsService.getLookupDetailsFromSource({
+        feed: { url, feedRequestLookupKey: randomUUID() },
+        credentials: credentialSource,
+      });
 
     const { finalUrl, feedTitle } = await this.checkUrlIsValid(
       url,
       lookupDetails,
     );
 
-    this.assertRedditConnectionIfRequired(finalUrl, user);
+    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+      finalUrl,
+      credentialSource,
+    );
 
     if (finalUrl !== url) {
       return {
@@ -1200,24 +1423,27 @@ export class UserFeedsService {
 
   async previewFeedByUrl(
     opts: { discordUserId: string },
-    input: { url: string },
+    input: { url: string; workspaceId?: string },
   ): Promise<PreviewFeedByUrlOutput> {
     const { discordUserId } = opts;
-    const { url } = input;
+    const { url, workspaceId } = input;
 
     const user =
       await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
 
-    const lookupDetails = getFeedRequestLookupDetails({
-      feed: { url, feedRequestLookupKey: randomUUID() },
-      user: {
-        externalCredentials: user.externalCredentials?.map((c) => ({
-          type: c.type,
-          data: c.data,
-        })),
+    if (workspaceId) {
+      await this.deps.workspacesService.getWorkspaceForMember(
+        workspaceId,
+        user.id,
+      );
+    }
+
+    const lookupDetails = await this.deps.feedCredentialsService.getLookupDetails(
+      {
+        feed: { url, feedRequestLookupKey: randomUUID(), workspaceId },
+        user,
       },
-      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-    });
+    );
 
     const getArticlesResponse = await this.deps.feedHandlerService.getArticles(
       {
@@ -1415,6 +1641,198 @@ export class UserFeedsService {
     await this.deps.userFeedRepository.enableFeedsByIds(feedIdsToEnable);
   }
 
+  async enforceWorkspaceFeedLimit(workspaceId: string): Promise<void> {
+    const { maxFeeds, refreshRateSeconds, allowWebhooks } =
+      await this.deps.supportersService.getWorkspaceBenefits(workspaceId);
+
+    await this.deps.userFeedRepository.enforceWorkspaceWebhookConnections({
+      type: "single-workspace",
+      workspaceId,
+      allowWebhooks,
+    });
+
+    await this.deps.userFeedRepository.enforceWorkspaceRefreshRates(
+      {
+        type: "single-workspace",
+        workspaceId,
+        refreshRateSeconds,
+      },
+      this.deps.supportersService.defaultSupporterRefreshRateSeconds,
+    );
+
+    const results = await this.collectFeedIdsForWorkspaceLimits(
+      { type: "include", workspaceIds: [workspaceId] },
+      () => maxFeeds,
+    );
+
+    // While a conversion is in flight, the just-moved feeds outnumber the
+    // not-yet-recorded subscription's limit; suppress disabling so they aren't
+    // flicked off in the window before the subscription record lands. Enabling
+    // and refresh/webhook normalization still run.
+    const guarded =
+      await this.deps.workspacesService.isConversionInProgress(workspaceId);
+
+    await this.applyWorkspaceLimitResults(
+      guarded ? this.withoutDisables(results) : results,
+    );
+  }
+
+  private withoutDisables(
+    results: WorkspaceLimitEnforcementOutcome[],
+  ): WorkspaceLimitEnforcementOutcome[] {
+    return results.map((r) => ({ ...r, feedIdsToDisable: [] }));
+  }
+
+  async enforceAllWorkspaceFeedLimits(): Promise<void> {
+    const workspaceIds =
+      await this.deps.userFeedRepository.getDistinctWorkspaceIdsWithFeeds();
+
+    if (workspaceIds.length === 0) {
+      return;
+    }
+
+    const benefitsByWorkspaceId = new Map<
+      string,
+      Awaited<
+        ReturnType<typeof this.deps.supportersService.getWorkspaceBenefits>
+      >
+    >();
+    await Promise.all(
+      workspaceIds.map(async (id) => {
+        benefitsByWorkspaceId.set(
+          id,
+          await this.deps.supportersService.getWorkspaceBenefits(id),
+        );
+      }),
+    );
+
+    const supporterRefreshRateSeconds =
+      this.deps.supportersService.defaultSupporterRefreshRateSeconds;
+
+    await this.deps.userFeedRepository.enforceWorkspaceWebhookConnections({
+      type: "all-workspaces",
+      webhookAllowedWorkspaceIds: workspaceIds.filter(
+        (id) => benefitsByWorkspaceId.get(id)?.allowWebhooks,
+      ),
+    });
+
+    await this.deps.userFeedRepository.enforceWorkspaceRefreshRates(
+      {
+        type: "all-workspaces",
+        fastRateWorkspaceIds: workspaceIds.filter(
+          (id) =>
+            benefitsByWorkspaceId.get(id)?.refreshRateSeconds ===
+            supporterRefreshRateSeconds,
+        ),
+      },
+      supporterRefreshRateSeconds,
+    );
+
+    const results = await this.collectFeedIdsForWorkspaceLimits(
+      { type: "include", workspaceIds },
+      (workspaceId) => benefitsByWorkspaceId.get(workspaceId)?.maxFeeds,
+    );
+
+    // A fresh conversion guard suppresses disabling on the sweep too; an
+    // expired guard is reconciled normally (the sweep is the guard's backstop).
+    // Resolved in one query rather than a per-workspace read.
+    const guarded = await this.deps.workspacesService.conversionInProgressWorkspaceIds(
+      results.map((r) => r.workspaceId),
+    );
+
+    await this.applyWorkspaceLimitResults(
+      results.map((r) =>
+        guarded.has(r.workspaceId) ? this.withoutDisables([r])[0]! : r,
+      ),
+    );
+  }
+
+  private async collectFeedIdsForWorkspaceLimits(
+    query: WorkspaceFeedLimitEnforcementQuery,
+    getMaxFeeds: (workspaceId: string) => number | undefined,
+  ): Promise<WorkspaceLimitEnforcementOutcome[]> {
+    const results: WorkspaceLimitEnforcementOutcome[] = [];
+
+    const grouped =
+      this.deps.userFeedRepository.getFeedsGroupedByWorkspaceForLimitEnforcement(
+        query,
+      );
+
+    for await (const res of grouped) {
+      const { workspaceId, enabledFeedIds, disabledFeedIds } = res;
+      const limit = getMaxFeeds(workspaceId);
+
+      // 0 is a meaningful limit (dormant workspace: disable everything), so
+      // only an absent limit is an error.
+      if (limit === undefined) {
+        throw new Error(
+          `No feed limit found for workspace ${workspaceId} while enforcing limits`,
+        );
+      }
+
+      const enabledFeedCount = enabledFeedIds.length;
+      let feedIdsToDisable: string[] = [];
+      let feedIdsToEnable: string[] = [];
+
+      if (enabledFeedCount > limit) {
+        feedIdsToDisable = enabledFeedIds.slice(0, enabledFeedCount - limit);
+      } else if (enabledFeedCount < limit && disabledFeedIds.length > 0) {
+        const numberOfFeedsToEnable = limit - enabledFeedCount;
+        feedIdsToEnable = disabledFeedIds.slice(
+          Math.max(0, disabledFeedIds.length - numberOfFeedsToEnable),
+        );
+      }
+
+      if (feedIdsToDisable.length > 0 || feedIdsToEnable.length > 0) {
+        results.push({ workspaceId, feedIdsToDisable, feedIdsToEnable });
+      }
+    }
+
+    return results;
+  }
+
+  private async applyWorkspaceLimitResults(
+    results: WorkspaceLimitEnforcementOutcome[],
+  ): Promise<void> {
+    await this.deps.userFeedRepository.disableFeedsByIds(
+      results.flatMap((r) => r.feedIdsToDisable),
+      UserFeedDisabledCode.ExceededFeedLimit,
+    );
+    await this.deps.userFeedRepository.enableFeedsByIds(
+      results.flatMap((r) => r.feedIdsToEnable),
+    );
+
+    for (const { workspaceId, feedIdsToDisable } of results) {
+      if (feedIdsToDisable.length === 0) {
+        continue;
+      }
+
+      try {
+        const feeds =
+          await this.deps.userFeedRepository.findByIdsForNotification(
+            feedIdsToDisable,
+          );
+
+        await this.deps.notificationsService.sendWorkspaceFeedsDisabledDigest({
+          workspaceId,
+          disabledFeeds: feeds.map((feed) => ({
+            id: feed.id,
+            title: feed.title,
+            url: feed.url,
+          })),
+        });
+      } catch (err) {
+        logger.error(
+          "Failed to send disabled feeds digest after workspace limit enforcement",
+          {
+            workspaceId,
+            error: (err as Error).stack,
+          },
+        );
+      }
+    }
+  }
+
   async getDeliveryPreview({
     feed,
     skip,
@@ -1436,11 +1854,9 @@ export class UserFeedsService {
       ),
     ]);
 
-    const lookupDetails = getFeedRequestLookupDetails({
-      feed,
-      user,
-      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-    });
+    const lookupDetails = await this.deps.feedCredentialsService.getLookupDetails(
+      { feed, user },
+    );
 
     const mediums = this.mapConnectionsToMediums(feed);
 
@@ -1477,28 +1893,6 @@ export class UserFeedsService {
 
   private generateFeedRequestLookupKey(): string {
     return randomUUID();
-  }
-
-  private assertRedditConnectionIfRequired(url: string, user: IUser): void {
-    if (!isRedditFeedUrl(url)) {
-      return;
-    }
-
-    if (!this.deps.config.BACKEND_API_REDDIT_CLIENT_ID) {
-      return;
-    }
-
-    const hasActiveRedditConnection = user.externalCredentials?.some(
-      (cred) =>
-        cred.type === UserExternalCredentialType.Reddit &&
-        cred.status === UserExternalCredentialStatus.Active,
-    );
-
-    if (!hasActiveRedditConnection) {
-      throw new RedditConnectionRequiredException(
-        "Reddit requires a connected account to add Reddit feeds",
-      );
-    }
   }
 
   private async checkUrlIsValid(

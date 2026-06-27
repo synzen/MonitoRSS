@@ -69,6 +69,7 @@ export interface IUserFeed {
   healthStatus: UserFeedHealthStatus;
   connections: IFeedConnections;
   user: IUserFeedUser;
+  workspaceId?: string;
   formatOptions?: IUserFeedFormatOptions;
   dateCheckOptions?: IUserFeedDateCheckOptions;
   shareManageOptions?: IUserFeedShareManageOptions;
@@ -95,6 +96,7 @@ export interface UserFeedForNotification {
   title: string;
   url: string;
   user: IUserFeedUser;
+  workspaceId?: string;
   shareManageOptions?: IUserFeedShareManageOptions;
 }
 
@@ -138,6 +140,7 @@ export interface CreateUserFeedInput {
   title: string;
   url: string;
   user: { id: string; discordUserId: string };
+  workspaceId?: string;
   inputUrl?: string;
   connections?: IFeedConnections;
   feedRequestLookupKey?: string;
@@ -183,6 +186,7 @@ export enum UserFeedComputedStatus {
   Ok = "OK",
   RequiresAttention = "REQUIRES_ATTENTION",
   ManuallyDisabled = "MANUALLY_DISABLED",
+  FeedLimitExceeded = "FEED_LIMIT_EXCEEDED",
   Retrying = "RETRYING",
 }
 
@@ -196,11 +200,29 @@ export interface UserFeedListingFilters {
 
 export interface UserFeedListingInput {
   discordUserId: string;
+  /**
+   * Workspace scope. When set, the listing returns only feeds associated with
+   * this workspace (membership is verified by the caller). When absent, the
+   * listing returns the user's personal feeds (those with no workspaceId).
+   */
+  workspaceId?: string;
   limit?: number;
   offset?: number;
   search?: string;
   sort?: string;
   filters?: UserFeedListingFilters;
+}
+
+// A minimal descriptor of an accepted co-manager on a feed, surfaced in the
+// listing so the personal->workspace conversion dialog can warn that sharing
+// does not carry into a workspace. Only accepted invites are included (pending
+// ones grant no access yet), and the full invites array is never exposed.
+export interface UserFeedListItemSharedManager {
+  discordUserId: string;
+  // True only when the invite is scoped to a strict subset of the feed's
+  // connections (genuinely channel-limited access, which has no workspace
+  // equivalent). False when the invite covers the whole feed.
+  connectionScoped: boolean;
 }
 
 export interface UserFeedListItem {
@@ -216,6 +238,7 @@ export interface UserFeedListItem {
   ownedByUser: boolean;
   refreshRateSeconds?: number;
   connectionCount: number;
+  sharedManagers?: UserFeedListItemSharedManager[];
 }
 
 export interface UserFeedLimitEnforcementResult {
@@ -227,6 +250,42 @@ export interface UserFeedLimitEnforcementResult {
 export type UserFeedLimitEnforcementQuery =
   | { type: "include"; discordUserIds: string[] }
   | { type: "exclude"; discordUserIds: string[] };
+
+export interface WorkspaceFeedLimitEnforcementResult {
+  workspaceId: string;
+  disabledFeedIds: string[];
+  enabledFeedIds: string[];
+}
+
+export type WorkspaceFeedLimitEnforcementQuery =
+  | { type: "include"; workspaceIds: string[] }
+  | { type: "all" };
+
+export type WorkspaceWebhookEnforcementTarget =
+  | { type: "all-workspaces"; webhookAllowedWorkspaceIds: string[] }
+  | { type: "single-workspace"; workspaceId: string; allowWebhooks: boolean };
+
+export type WorkspaceRefreshRateEnforcementTarget =
+  | { type: "all-workspaces"; fastRateWorkspaceIds: string[] }
+  | {
+      type: "single-workspace";
+      workspaceId: string;
+      refreshRateSeconds: number;
+    };
+
+export interface WorkspaceRefreshRateSyncInput {
+  workspaceLimits: Array<{
+    workspaceIds: string[];
+    refreshRateSeconds: number;
+  }>;
+}
+
+export interface WorkspaceMaxDailyArticlesSyncInput {
+  workspaceLimits: Array<{
+    workspaceIds: string[];
+    maxDailyArticles: number;
+  }>;
+}
 
 export interface CloneConnectionToFeedsInput {
   targetFeedIds?: string[];
@@ -314,7 +373,14 @@ export interface ScheduledFeedUrl {
 export interface ScheduledFeedWithLookupKey {
   url: string;
   feedRequestLookupKey?: string;
+  workspaceId?: string;
   users: Array<{
+    externalCredentials?: Array<{
+      type: UserExternalCredentialType;
+      data: Record<string, string>;
+    }>;
+  }>;
+  workspaces: Array<{
     externalCredentials?: Array<{
       type: UserExternalCredentialType;
       data: Record<string, string>;
@@ -357,6 +423,13 @@ export interface UserForDelivery {
   };
 }
 
+export interface WorkspaceForDelivery {
+  externalCredentials?: Array<{
+    type: string;
+    data: Record<string, string>;
+  }>;
+}
+
 export interface UserFeedForDelivery {
   id: string;
   url: string;
@@ -369,14 +442,37 @@ export interface UserFeedForDelivery {
   externalProperties?: IExternalFeedProperty[];
   dateCheckOptions?: IUserFeedDateCheckOptions;
   feedRequestLookupKey?: string;
+  workspaceId?: string;
   user: {
     discordUserId: string;
   };
   users: Array<UserForDelivery>;
+  workspaces: Array<WorkspaceForDelivery>;
 }
+
+// Thrown inside the create transaction to abort it (rolling back the insert)
+// when over limit; the service rethrows it as FeedLimitReachedException.
+export class FeedLimitExceededError extends Error {
+  constructor() {
+    super("Feed limit exceeded");
+    this.name = "FeedLimitExceededError";
+  }
+}
+
+export type FeedLimitScope =
+  | { scope: "workspace"; workspaceId: string; maxFeeds: number }
+  | { scope: "personal"; discordUserId: string; maxFeeds: number };
 
 export interface IUserFeedRepository {
   create(input: CreateUserFeedInput): Promise<IUserFeed>;
+  createWithLimitEnforcement(
+    input: CreateUserFeedInput,
+    limit: FeedLimitScope,
+  ): Promise<IUserFeed>;
+  cloneWithLimitEnforcement(
+    input: CloneUserFeedInput,
+    limit: FeedLimitScope,
+  ): Promise<IUserFeed>;
   findById(id: string): Promise<IUserFeed | null>;
   deleteAll(): Promise<void>;
   bulkUpdateLookupKeys(operations: LookupKeyOperation[]): Promise<void>;
@@ -390,6 +486,7 @@ export interface IUserFeedRepository {
   filterFeedIdsByOwnership(
     feedIds: string[],
     discordUserId: string,
+    myWorkspaceIds?: string[],
   ): Promise<string[]>;
 
   findOneAndUpdate(
@@ -416,14 +513,21 @@ export interface IUserFeedRepository {
 
   // CRUD methods for UserFeedsService
   countByOwnership(discordUserId: string): Promise<number>;
+  countByWorkspace(workspaceId: string): Promise<number>;
+  findIdsByWorkspace(workspaceId: string): Promise<string[]>;
   countByOwnershipExcludingDisabled(
     discordUserId: string,
+    excludeDisabledCodes: UserFeedDisabledCode[],
+  ): Promise<number>;
+  countByWorkspaceExcludingDisabled(
+    workspaceId: string,
     excludeDisabledCodes: UserFeedDisabledCode[],
   ): Promise<number>;
   findByUrls(discordUserId: string, urls: string[]): Promise<{ url: string }[]>;
   findByIdAndOwnership(
     id: string,
     discordUserId: string,
+    myWorkspaceIds?: string[],
   ): Promise<IUserFeed | null>;
   findByIdAndCreator(
     id: string,
@@ -442,6 +546,15 @@ export interface IUserFeedRepository {
   areAllValidIds(ids: string[]): boolean;
   countByIds(ids: string[]): Promise<number>;
   findByIds(ids: string[]): Promise<IUserFeed[]>;
+  // Re-parents the given feeds to a workspace (personal → workspace
+  // conversion). Returns the number of feeds moved.
+  reparentFeedsToWorkspace(
+    feedIds: string[],
+    workspaceId: string,
+  ): Promise<number>;
+  // Re-parents the given feeds back to a discord user as personal feeds
+  // (conversion rollback). Returns the number of feeds moved.
+  reparentFeedsToPersonal(feedIds: string[]): Promise<number>;
   findEligibleFeedsForDisable(
     feedIds: string[],
     eligibleDisabledCodes: UserFeedDisabledCode[],
@@ -450,9 +563,21 @@ export interface IUserFeedRepository {
     feedIds: string[],
   ): Promise<UserFeedForBulkOperation[]>;
   findDiscordUserIdsByFeedIds(feedIds: string[]): Promise<string[]>;
+  findWorkspaceIdsByFeedIds(feedIds: string[]): Promise<string[]>;
   getFeedsGroupedByUserForLimitEnforcement(
     query: UserFeedLimitEnforcementQuery,
   ): AsyncIterable<UserFeedLimitEnforcementResult>;
+  getFeedsGroupedByWorkspaceForLimitEnforcement(
+    query: WorkspaceFeedLimitEnforcementQuery,
+  ): AsyncIterable<WorkspaceFeedLimitEnforcementResult>;
+  getDistinctWorkspaceIdsWithFeeds(): Promise<string[]>;
+  enforceWorkspaceWebhookConnections(
+    target: WorkspaceWebhookEnforcementTarget,
+  ): Promise<void>;
+  enforceWorkspaceRefreshRates(
+    target: WorkspaceRefreshRateEnforcementTarget,
+    supporterRefreshRateSeconds: number,
+  ): Promise<void>;
 
   disableFeedsByIds(
     feedIds: string[],
@@ -526,8 +651,17 @@ export interface IUserFeedRepository {
   findDebugFeedUrls(): Promise<Set<string>>;
   syncRefreshRates(input: RefreshRateSyncInput): Promise<void>;
   syncMaxDailyArticles(input: MaxDailyArticlesSyncInput): Promise<void>;
+  syncWorkspaceRefreshRates(input: WorkspaceRefreshRateSyncInput): Promise<void>;
+  syncWorkspaceMaxDailyArticles(
+    input: WorkspaceMaxDailyArticlesSyncInput,
+  ): Promise<void>;
   iterateFeedsForRefreshRateSync(
     input: RefreshRateSyncInput,
+  ): AsyncIterable<
+    FeedForSlotOffsetRecalculation & { newRefreshRateSeconds: number }
+  >;
+  iterateWorkspaceFeedsForRefreshRateSync(
+    input: WorkspaceRefreshRateSyncInput,
   ): AsyncIterable<
     FeedForSlotOffsetRecalculation & { newRefreshRateSeconds: number }
   >;

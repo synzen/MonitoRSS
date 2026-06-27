@@ -37,7 +37,11 @@ export interface TestContext {
   discordUserId: string;
   service: UserFeedManagementInvitesService;
   repository: UserFeedMongooseRepository;
-  createFeed(overrides?: { title?: string; url?: string }): Promise<IUserFeed>;
+  createFeed(overrides?: {
+    title?: string;
+    url?: string;
+    workspaceId?: string;
+  }): Promise<IUserFeed>;
   createFeedForUser(
     discordUserId: string,
     overrides?: { title?: string; url?: string },
@@ -115,6 +119,7 @@ export function createUserFeedManagementInvitesHarness(): UserFeedManagementInvi
             title: overrides.title ?? "Test Feed",
             url: overrides.url ?? `https://example.com/${generateTestId()}.xml`,
             user: { id: generateTestId(), discordUserId },
+            workspaceId: overrides.workspaceId,
           });
         },
 

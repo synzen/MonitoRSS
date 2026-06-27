@@ -22,7 +22,7 @@ The first four are used correctly. **The fifth has lost discipline** — Context
 - *State that only exists to avoid prop-drilling two levels:* `SourceFeedContext` (3 consumers — `AddUserFeeds` page + `SourceFeedSelector` component) is a one-page concern that uses Context to avoid passing a value through a single intermediate component. Local state + a prop would be clearer.
 - *State that should be URL-deep-linkable but isn't:* feed list filters, selected tab on a detail page, current page in a paginated list. Currently lives in Context (or component state); doesn't survive reload, doesn't share via link.
 
-The lack of a rule for what goes where is also the lack of a story for the planned team plan, where "send me a link to your filtered feed view" is a natural ask that the current shape doesn't support.
+The lack of a rule for what goes where is also the lack of a story for the planned workspace plan, where "send me a link to your filtered feed view" is a natural ask that the current shape doesn't support.
 
 ## Decision
 
@@ -126,7 +126,7 @@ No deviations without a documented reason.
 
 - A new piece of state has a one-decision-tree home, not a "well, there are five places…" conversation.
 - Bug class eliminated: "Context value changed → 50 components re-rendered" doesn't happen because Context isn't being used for non-cross-cutting state.
-- Deep links and shareable filtered views become trivial once filters move to URL. Particularly important for the planned team plan ("my teammate sent me this link").
+- Deep links and shareable filtered views become trivial once filters move to URL. Particularly important for the planned workspace plan ("my teammate sent me this link").
 - React Query becomes the *single* source of truth for server state — no shadow caches in Context.
 
 **Harder:**
@@ -139,7 +139,7 @@ No deviations without a documented reason.
 
 - The "wrap something in a Context for testability" pattern. Use React Query's QueryClientProvider for server state, and component props for local. The genuinely-cross-cutting contexts that remain can use Context-based test wrappers.
 
-**Specifically for `UserFeedStatusFilterContext`:** it has been relocated to `features/feed/contexts/`, but it still stores filter state in user preferences rather than the URL. The remaining (optional) improvement is to convert it to `useSearchParams()` for `?statuses=active,disabled,...` — reading from and writing to the URL, while the existing `useUserMe` / `useUpdateUserMe` calls continue to seed-from / persist-to user prefs in the background — and then delete the context. This is a small change with outsized value for the team-plan roadmap.
+**Specifically for `UserFeedStatusFilterContext`:** it has been relocated to `features/feed/contexts/`, but it still stores filter state in user preferences rather than the URL. The remaining (optional) improvement is to convert it to `useSearchParams()` for `?statuses=active,disabled,...` — reading from and writing to the URL, while the existing `useUserMe` / `useUpdateUserMe` calls continue to seed-from / persist-to user prefs in the background — and then delete the context. This is a small change with outsized value for the workspace-plan roadmap.
 
 ## Alternatives considered
 

@@ -11,6 +11,11 @@ services:
       - /data/db
       - /data/configdb
     ports:
+      # Default host 27019 (not 27018) so the e2e stack can run alongside the dev
+      # stack (docker-compose.dev.yml publishes mongo on 27018). Parameterized so
+      # concurrent e2e runs can each bind a distinct host port. The backend reaches
+      # mongo over the internal network (mongo:27017), unaffected by this mapping;
+      # only host-side e2e helpers use it (see e2e/helpers/constants.ts MONGO_URI).
       - "${E2E_MONGO_PORT:-27019}:27017"
     command: ["--replSet", "dbrs", "--bind_ip_all", "--port", "27017"]
     # The replica set is initiated via the healthcheck rather than a
@@ -242,6 +247,14 @@ services:
       context: services/backend-api
       dockerfile: Dockerfile.dev
     restart: "no"
+    # Source is bind-mounted (narrowly: src only, node_modules stays in the
+    # image) so a fresh `up` always runs current backend code — image rebuilds
+    # are only needed for dependency changes, and the stale-COPY-layer trap (a
+    # cached build silently running old source) is structurally impossible.
+    # Cheap here because Node reads modules once at boot; web-client stays
+    # in-image (see its comment).
+    volumes:
+      - ./services/backend-api/src:/usr/src/app/src
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -274,11 +287,37 @@ services:
       - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
       - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:${E2E_FRONTEND_PORT:-3100}
+      # Fixed admin Discord id for the admin-access E2E spec. BACKEND_API_ADMIN_USER_IDS
+      # accepts Discord ids (not just internal Mongo ids), so a stable value can be
+      # baked in even though each test user's internal id is minted at runtime. Must
+      # match E2E_ADMIN_DISCORD_ID in e2e/helpers/mock-discord-data.ts.
+      - BACKEND_API_ADMIN_USER_IDS=900000000000000099
+      # Mock mailer (plain SMTP on the host, reached via host.docker.internal) so
+      # the email-verification one-time-code flow can be driven through the UI.
+      - BACKEND_API_SMTP_HOST=host.docker.internal
+      - BACKEND_API_SMTP_PORT=${E2E_MOCK_SMTP_PORT:-3004}
+      - BACKEND_API_SMTP_SECURE=false
+      - BACKEND_API_SMTP_USERNAME=mock
+      - BACKEND_API_SMTP_PASSWORD=mock
+      - BACKEND_API_SMTP_FROM_DOMAIN=example.com
       - BACKEND_API_PADDLE_KEY=${BACKEND_API_PADDLE_KEY:-}
       - BACKEND_API_PADDLE_URL=${BACKEND_API_PADDLE_URL:-}
       - BACKEND_API_PADDLE_WEBHOOK_SECRET=${BACKEND_API_PADDLE_WEBHOOK_SECRET:-}
+      # Reddit OAuth + authenticated feed fetches are served by the host-side mock
+      # reddit server (e2e/mock-reddit-server.ts), reached via host.docker.internal
+      # by both the backend (token exchange) and the browser popup (authorize).
       - BACKEND_API_REDDIT_CLIENT_ID=${BACKEND_API_REDDIT_CLIENT_ID:-}
+      - BACKEND_API_REDDIT_CLIENT_SECRET=fake-reddit-client-secret
+      - BACKEND_API_REDDIT_REDIRECT_URI=http://localhost:${E2E_BACKEND_PORT:-8100}/api/v1/reddit/callback
+      - BACKEND_API_REDDIT_API_BASE_URL=http://host.docker.internal:${E2E_MOCK_REDDIT_PORT:-3006}/api/v1
+      - BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL=http://host.docker.internal:${E2E_MOCK_REDDIT_PORT:-3006}
+      # Reddit tokens are encrypted at rest; any fixed 64-char hex key works for e2e.
+      - BACKEND_API_ENCRYPTION_KEY_HEX=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       - BACKEND_API_ENABLE_SUPPORTERS=true
+      # Small workspace feed limit so the over-limit enforcement spec can exercise
+      # disable/re-enable with a handful of seeded feeds. Other specs create at
+      # most a couple of feeds per workspace.
+      - BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS=5
       - LOG_LEVEL=debug
       - NODE_ENV=local
     command: npm run dev
@@ -291,6 +330,12 @@ services:
       dockerfile: Dockerfile.dev
     working_dir: /usr/src/app/client
     restart: "no"
+    # Deliberately NOT bind-mounted (unlike web-api): vite transforms modules per
+    # request, and on a Windows host that I/O through the Docker file bridge made
+    # parallel-worker app loads exceed their timeouts (measured: 6/29 workspace
+    # specs failed on load). Client source changes therefore still require an
+    # image rebuild — use `build --no-cache web-client` (a cached `up --build`
+    # can silently reuse a stale COPY layer).
     depends_on:
       web-api:
         condition: service_healthy

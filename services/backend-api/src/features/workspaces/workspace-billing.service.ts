@@ -1,0 +1,505 @@
+import type { Config } from "../../config";
+import {
+  SubscriptionProductKey,
+  SubscriptionStatus,
+} from "../../repositories/shared/enums";
+import type {
+  IWorkspace,
+  WorkspaceMongooseRepository,
+} from "../../repositories/mongoose/workspace.mongoose.repository";
+import type { IPaddleCustomerSubscription } from "../../repositories/interfaces/supporter.types";
+import type { PaddleService } from "../../services/paddle/paddle.service";
+import type { PaddleSubscriptionPreviewResponse } from "../../services/supporter-subscriptions/types";
+import type { ISupporterRepository } from "../../repositories/interfaces/supporter.types";
+import type { IUserFeedRepository } from "../../repositories/interfaces/user-feed.types";
+import type { FeedCredentialsService } from "../../services/feed-credentials/feed-credentials.service";
+import { SubscriptionAlreadyCancelledException } from "../../shared/exceptions/paddle.exceptions";
+import { WorkspaceNotSubscribedException } from "../../shared/exceptions/user-feeds.exceptions";
+import {
+  ConversionAlreadyInProgressException,
+  InvalidConversionFeedSelectionException,
+  InvalidWorkspaceTierException,
+  PersonalSubscriptionNotConvertibleException,
+  WorkspaceAlreadySubscribedException,
+  WorkspaceBillingNotConfiguredException,
+} from "../../shared/exceptions/workspace-billing.exceptions";
+import {
+  CONVERSION_GUARD_TTL_MS,
+  DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+  isBillingEnabled,
+  resolvePersonalConvertibility,
+  resolveWorkspaceFeedLimit,
+  WORKSPACE_BASE_TIER_KEYS,
+  WORKSPACE_PRODUCT_KEYS,
+} from "../../shared/utils/billing";
+import { pollUntil } from "../../shared/utils/poll-until";
+import { formatCurrency } from "../../utils/format-currency";
+
+export interface WorkspaceBillingServiceDeps {
+  config: Config;
+  workspaceRepository: WorkspaceMongooseRepository;
+  paddleService: PaddleService;
+  supporterRepository: ISupporterRepository;
+  userFeedRepository: IUserFeedRepository;
+  feedCredentialsService: FeedCredentialsService;
+  // Test seam: shrinks the local poll interval/tries so timeout paths can be
+  // exercised without the production ~51s wait. Defaults to production timing.
+  pollOptions?: { intervalMs?: number; maxTries?: number };
+}
+
+export interface SubscriptionChangePreview {
+  immediateTransaction: {
+    billingPeriod: {
+      startsAt: string;
+      endsAt: string;
+    };
+    subtotal: string;
+    subtotalFormatted: string;
+    tax: string;
+    taxFormatted: string;
+    credit: string;
+    creditFormatted: string;
+    total: string;
+    totalFormatted: string;
+    grandTotal: string;
+    grandTotalFormatted: string;
+  };
+  // Projected effect of the change on the workspace's feeds. A downgrade that
+  // drops below the workspace's current active feed count disables the overflow
+  // (feeds are disabled, never deleted), so the confirmation screen can warn
+  // before the owner commits.
+  feedImpact: {
+    newFeedLimit: number;
+    currentFeedCount: number;
+    willBeDisabledCount: number;
+  };
+}
+
+// Workspace counterpart of the personal supporter-subscriptions service:
+// mutations go to the Paddle API keyed by the workspace's own subscription,
+// then poll the local workspace record until the webhook reflects the change
+// (the webhook handler is the single writer of subscription state).
+export class WorkspaceBillingService {
+  constructor(private readonly deps: WorkspaceBillingServiceDeps) {}
+
+  async previewChange(
+    workspace: IWorkspace,
+    items: Array<{ priceId: string; quantity: number }>,
+  ): Promise<SubscriptionChangePreview> {
+    const subscription = this.getSubscriptionOrThrow(workspace);
+    const productKeyByPriceId = await this.assertWorkspacePrices(items);
+
+    // The Paddle proration preview and the feed-impact count are independent
+    // (feed impact needs only the resolved product keys, not the Paddle
+    // response), so run them concurrently rather than stacking their latency on
+    // this interactive path.
+    const [response, feedImpact] = await Promise.all([
+      this.deps.paddleService.updateSubscriptionItems<PaddleSubscriptionPreviewResponse>(
+        subscription.id,
+        { items, currencyCode: subscription.currencyCode, preview: true },
+      ),
+      this.computeFeedImpact(
+        workspace.id,
+        items.map((item) => ({
+          productKey: productKeyByPriceId.get(item.priceId) ?? "",
+          quantity: item.quantity,
+        })),
+      ),
+    ]);
+
+    const immediateTransaction = response.data.immediate_transaction;
+
+    if (!immediateTransaction) {
+      throw new Error(
+        "Failed to get immediate transaction from workspace subscription preview response",
+      );
+    }
+
+    const currencyCode = subscription.currencyCode;
+
+    return {
+      immediateTransaction: {
+        billingPeriod: {
+          startsAt: immediateTransaction.billing_period.starts_at,
+          endsAt: immediateTransaction.billing_period.ends_at,
+        },
+        subtotal: immediateTransaction.details.totals.subtotal,
+        subtotalFormatted: formatCurrency(
+          immediateTransaction.details.totals.subtotal,
+          currencyCode,
+        ),
+        tax: immediateTransaction.details.totals.tax,
+        taxFormatted: formatCurrency(
+          immediateTransaction.details.totals.tax,
+          currencyCode,
+        ),
+        credit: immediateTransaction.details.totals.credit,
+        creditFormatted: formatCurrency(
+          immediateTransaction.details.totals.credit,
+          currencyCode,
+        ),
+        total: immediateTransaction.details.totals.total,
+        totalFormatted: formatCurrency(
+          immediateTransaction.details.totals.total,
+          currencyCode,
+        ),
+        grandTotal: immediateTransaction.details.totals.grand_total,
+        grandTotalFormatted: formatCurrency(
+          immediateTransaction.details.totals.grand_total,
+          currencyCode,
+        ),
+      },
+      feedImpact,
+    };
+  }
+
+  // How many of the workspace's active feeds the previewed item set would push
+  // over the new limit. The count uses the same slot-occupying exclusion set as
+  // limit enforcement so an already over-limit workspace isn't double-counted,
+  // and the projected limit comes from the shared resolver the webhook also
+  // uses, so the preview and the eventual activation agree.
+  private async computeFeedImpact(
+    workspaceId: string,
+    items: Array<{ productKey: string; quantity: number }>,
+  ): Promise<SubscriptionChangePreview["feedImpact"]> {
+    const newFeedLimit = resolveWorkspaceFeedLimit(items);
+
+    // null here means the validated base tier has no entry in the feed-limit
+    // table (the two constants drifted). Fail loudly rather than reporting a
+    // bogus "all feeds will be disabled" warning from a 0/NaN limit.
+    if (newFeedLimit == null) {
+      throw new Error(
+        "Could not resolve a workspace feed limit for the previewed items; " +
+          "WORKSPACE_BASE_TIER_KEYS and WORKSPACE_TIER_FEED_LIMITS may have drifted",
+      );
+    }
+
+    const currentFeedCount =
+      await this.deps.userFeedRepository.countByWorkspaceExcludingDisabled(
+        workspaceId,
+        DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+      );
+
+    return {
+      newFeedLimit,
+      currentFeedCount,
+      willBeDisabledCount: Math.max(0, currentFeedCount - newFeedLimit),
+    };
+  }
+
+  async changeSubscription(
+    workspace: IWorkspace,
+    items: Array<{ priceId: string; quantity: number }>,
+  ): Promise<void> {
+    const subscription = this.getSubscriptionOrThrow(workspace);
+    await this.assertWorkspacePrices(items);
+
+    await this.deps.paddleService.updateSubscriptionItems(subscription.id, {
+      items,
+      currencyCode: subscription.currencyCode,
+    });
+
+    const currentUpdatedAt = subscription.updatedAt.getTime();
+
+    await this.pollForSubscriptionChange(workspace.id, (sub) => {
+      const latestUpdatedAt = sub?.updatedAt;
+
+      return !!latestUpdatedAt && latestUpdatedAt.getTime() > currentUpdatedAt;
+    });
+  }
+
+  // Returns a Paddle update-payment-method transaction for the workspace's own
+  // subscription. Reuses getSubscriptionOrThrow, so a dormant workspace maps to
+  // a structured 4xx (not a 500). Updating the card flips no subscription
+  // field, so there is nothing to poll for.
+  async getUpdatePaymentMethodTransaction(
+    workspace: IWorkspace,
+  ): Promise<{ id: string }> {
+    const subscription = this.getSubscriptionOrThrow(workspace);
+
+    return this.deps.paddleService.getUpdatePaymentMethodTransaction(
+      subscription.id,
+    );
+  }
+
+  async cancelSubscription(workspace: IWorkspace): Promise<void> {
+    const subscription = this.getSubscriptionOrThrow(workspace);
+
+    try {
+      await this.deps.paddleService.executeApiCall(
+        `/subscriptions/${subscription.id}/cancel`,
+        {
+          method: "POST",
+          body: JSON.stringify({ effective_from: "next_billing_period" }),
+        },
+      );
+    } catch (err) {
+      if (err instanceof SubscriptionAlreadyCancelledException) {
+        await this.deps.workspaceRepository.nullifySubscriptionBySubscriptionId(
+          subscription.id,
+        );
+
+        return;
+      }
+
+      throw err;
+    }
+
+    await this.pollForSubscriptionChange(
+      workspace.id,
+      (sub) => !!sub?.cancellationDate,
+    );
+  }
+
+  async resumeSubscription(workspace: IWorkspace): Promise<void> {
+    const subscription = this.getSubscriptionOrThrow(workspace);
+
+    await this.deps.paddleService.executeApiCall(
+      `/subscriptions/${subscription.id}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ scheduled_change: null }),
+      },
+    );
+
+    await this.pollForSubscriptionChange(
+      workspace.id,
+      (sub) => !sub?.cancellationDate,
+    );
+  }
+
+  // Converts the caller's personal subscription into this workspace, bringing
+  // the selected personal feeds along. The webhook stays the single writer of
+  // subscription state: this re-points the Paddle subscription's custom_data to
+  // the workspace and polls until the re-emitted webhook records it.
+  async convertPersonalSubscriptionToWorkspace(
+    workspace: IWorkspace,
+    discordUserId: string,
+    feedIds: string[],
+  ): Promise<void> {
+    if (!isBillingEnabled(this.deps.config)) {
+      throw new WorkspaceBillingNotConfiguredException(
+        "Workspace billing requires Paddle to be configured",
+      );
+    }
+
+    if (workspace.paddleCustomer?.subscription) {
+      throw new WorkspaceAlreadySubscribedException(
+        `Workspace ${workspace.id} already has a subscription`,
+      );
+    }
+
+    const supporter = await this.deps.supporterRepository.findById(discordUserId);
+    const personalSubscription = supporter?.paddleCustomer?.subscription;
+    const convertible = resolvePersonalConvertibility(personalSubscription);
+
+    if (!personalSubscription || !convertible) {
+      throw new PersonalSubscriptionNotConvertibleException(
+        "A Tier 2 or Tier 3 personal subscription is required to convert",
+      );
+    }
+
+    await this.assertConvertibleFeedSelection(
+      discordUserId,
+      feedIds,
+      convertible.feedLimit,
+    );
+
+    // Guard first, atomically: while it is set, workspace feed-limit
+    // enforcement skips its disable step, so the feeds can't be flicked off in
+    // the window between the re-parent and the subscription record appearing.
+    // The compare-and-set also serializes conversions — a second concurrent
+    // attempt can't acquire a live guard and is rejected before touching any
+    // feeds or Paddle (so it can't run a duplicate move or clear the in-flight
+    // conversion's guard in the catch below).
+    const acquired = await this.deps.workspaceRepository.setConversionInProgress(
+      workspace.id,
+      CONVERSION_GUARD_TTL_MS,
+    );
+
+    if (!acquired) {
+      throw new ConversionAlreadyInProgressException(
+        `A conversion is already in progress for workspace ${workspace.id}`,
+      );
+    }
+
+    try {
+      await this.deps.userFeedRepository.reparentFeedsToWorkspace(
+        feedIds,
+        workspace.id,
+      );
+
+      // The scope flip changes which credential backs each feed, so the lookup
+      // key (which routes a feed to the credentialed vs plain-URL delivery
+      // loop) must be reconciled against the new scope. Without this a moved
+      // Reddit feed keeps its personal-scope key, is excluded from the
+      // plain-URL loop, resolves no workspace credential in the credentialed
+      // loop, and is silently fetched by neither.
+      await this.deps.feedCredentialsService.syncLookupKeys({ feedIds });
+
+      await this.deps.paddleService.updateSubscriptionCustomData(
+        personalSubscription.id,
+        { workspaceId: workspace.id },
+      );
+    } catch (err) {
+      // Anything up to and including the Paddle patch failing means no
+      // workspace subscription record was ever written (the webhook never
+      // fires) and the user is financially whole. Unwind every local write —
+      // return the feeds to personal, reconcile their lookup keys back, and
+      // clear the guard — then surface the failure.
+      await this.deps.userFeedRepository.reparentFeedsToPersonal(feedIds);
+      await this.deps.feedCredentialsService.syncLookupKeys({ feedIds });
+      await this.deps.workspaceRepository.clearConversionInProgress(
+        workspace.id,
+      );
+
+      throw err;
+    }
+
+    // The patch succeeded; the re-emitted webhook records the subscription and
+    // clears the guard. If it is delayed past the poll timeout the feeds stay
+    // parented (the guard's TTL bounds the exposure) and the caller surfaces a
+    // "still confirming" state rather than rolling back — so a slow webhook
+    // must not error out a conversion that has, in fact, succeeded.
+    try {
+      await this.pollForSubscriptionChange(workspace.id, (sub) => !!sub);
+    } catch {
+      // Timed out waiting for the webhook; the conversion is committed and
+      // will reconcile when it lands. The client polls the workspace detail
+      // for the recorded subscription and shows a confirming state meanwhile.
+    }
+  }
+
+  private async assertConvertibleFeedSelection(
+    discordUserId: string,
+    feedIds: string[],
+    maxFeeds: number,
+  ): Promise<void> {
+    if (!this.deps.userFeedRepository.areAllValidIds(feedIds)) {
+      throw new InvalidConversionFeedSelectionException(
+        "One or more selected feeds are not valid feeds",
+      );
+    }
+
+    if (feedIds.length > maxFeeds) {
+      throw new InvalidConversionFeedSelectionException(
+        `Cannot move ${feedIds.length} feeds; the plan allows ${maxFeeds}`,
+      );
+    }
+
+    const feeds = await this.deps.userFeedRepository.findByIds(feedIds);
+
+    const allOwnedAndPersonal =
+      feeds.length === feedIds.length &&
+      feeds.every(
+        (feed) =>
+          feed.user.discordUserId === discordUserId && !feed.workspaceId,
+      );
+
+    if (!allOwnedAndPersonal) {
+      throw new InvalidConversionFeedSelectionException(
+        "Selected feeds must all be your own personal feeds",
+      );
+    }
+  }
+
+  // A subscription whose billing relationship is still live blocks deletion:
+  // the owner must cancel it first. A subscription already scheduled to cancel
+  // (cancellationDate set) no longer blocks, since the owner has committed to
+  // ending it; a fully cancelled subscription is nullified off the workspace by
+  // the webhook, so it never reaches here. Status other than Cancelled (active,
+  // past due, paused) all represent live billing and block.
+  hasBlockingSubscription(workspace: IWorkspace): boolean {
+    const subscription = workspace.paddleCustomer?.subscription;
+
+    if (!isBillingEnabled(this.deps.config) || !subscription) {
+      return false;
+    }
+
+    return (
+      subscription.status !== SubscriptionStatus.Cancelled &&
+      !subscription.cancellationDate
+    );
+  }
+
+  private getSubscriptionOrThrow(
+    workspace: IWorkspace,
+  ): IPaddleCustomerSubscription {
+    if (!isBillingEnabled(this.deps.config)) {
+      throw new WorkspaceBillingNotConfiguredException(
+        "Workspace billing requires Paddle to be configured",
+      );
+    }
+
+    const subscription = workspace.paddleCustomer?.subscription;
+
+    if (!subscription) {
+      // Reachable by any owner (e.g. a stale Billing page on a dormant
+      // workspace), so it must map to a structured 4xx, not a 500.
+      throw new WorkspaceNotSubscribedException(
+        `No existing subscription found for workspace ${workspace.id}`,
+      );
+    }
+
+    return subscription;
+  }
+
+  // Rejects prices that do not belong to workspace-capable products
+  // (Tier 1 / Free are personal-only).
+  private async assertWorkspacePrices(
+    items: Array<{ priceId: string; quantity: number }>,
+  ): Promise<Map<string, string>> {
+    const { products } = await this.deps.paddleService.getProducts();
+
+    const productKeyByPriceId = new Map<string, string>();
+
+    for (const product of products) {
+      for (const price of product.prices) {
+        productKeyByPriceId.set(price.id, product.id);
+      }
+    }
+
+    for (const item of items) {
+      const productKey = productKeyByPriceId.get(item.priceId);
+
+      if (!productKey || !WORKSPACE_PRODUCT_KEYS.has(productKey)) {
+        throw new InvalidWorkspaceTierException(
+          `Price ${item.priceId} does not belong to a workspace-capable product`,
+        );
+      }
+    }
+
+    // Paddle replaces the subscription's item set with whatever is sent, so
+    // an add-on-only array would silently drop the base plan.
+    const hasBaseTier = items.some((item) =>
+      WORKSPACE_BASE_TIER_KEYS.has(
+        productKeyByPriceId.get(item.priceId) ?? "",
+      ),
+    );
+
+    if (!hasBaseTier) {
+      throw new InvalidWorkspaceTierException(
+        "Workspace subscription changes must include a base workspace tier",
+      );
+    }
+
+    return productKeyByPriceId;
+  }
+
+  private async pollForSubscriptionChange(
+    workspaceId: string,
+    check: (subscription: IPaddleCustomerSubscription | null) => boolean,
+  ): Promise<void> {
+    await pollUntil(
+      async () => {
+        const workspace =
+          await this.deps.workspaceRepository.findById(workspaceId);
+
+        return workspace?.paddleCustomer?.subscription ?? null;
+      },
+      check,
+      `workspace ${workspaceId} subscription change`,
+      this.deps.pollOptions,
+    );
+  }
+}

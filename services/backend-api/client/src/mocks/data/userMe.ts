@@ -4,6 +4,8 @@ import { ProductKey } from "../../constants";
 const mockUserMe: UserMe = {
   id: "1",
   email: "email@email.com",
+  // Set to undefined to inspect the verify-email step in the create-workspace flow.
+  verifiedEmail: "email@email.com",
   preferences: {
     alertOnDisabledFeeds: true,
   },

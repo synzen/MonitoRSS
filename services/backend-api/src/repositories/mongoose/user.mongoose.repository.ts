@@ -12,6 +12,8 @@ import type {
   CreateUserInput,
   UpdateUserPreferencesInput,
   SetExternalCredentialInput,
+  SetVerifiedEmailResult,
+  RevertVerifiedEmailResult,
   IUserExternalCredential,
 } from "../interfaces/user.types";
 import {
@@ -19,8 +21,17 @@ import {
   UserExternalCredentialType,
 } from "../shared/enums";
 import { BaseMongooseRepository } from "./base.mongoose.repository";
-
-const REDDIT_URL_REGEX = /^http(s?):\/\/(www.)?(\w+\.)?reddit\.com\/r\//i;
+import {
+  REDDIT_URL_REGEX,
+  activeRedditCredentialElemMatch,
+  expiredOrRevokedRedditCredentialConditions,
+  expiringActiveRedditCredentialFilter,
+  extractRedditRefreshCredential,
+  normalizeExternalCredentialData,
+  removeExternalCredentialsByType,
+  revokeExternalCredentialById,
+  upsertExternalCredential,
+} from "./external-credentials.subdocument";
 
 const UserFeedListSortSchema = new Schema(
   {
@@ -66,6 +77,7 @@ const UserPreferencesSchema = new Schema(
     feedListColumnVisibility: { type: UserFeedListColumnVisibilitySchema },
     feedListColumnOrder: { type: UserFeedListColumnOrderSchema },
     feedListStatusFilters: { type: UserFeedListStatusFiltersSchema },
+    lastActiveWorkspaceSlug: { type: String },
   },
   { _id: false, timestamps: false },
 );
@@ -73,6 +85,7 @@ const UserPreferencesSchema = new Schema(
 const UserFeatureFlagsSchema = new Schema(
   {
     externalProperties: { type: Boolean },
+    workspaces: { type: Boolean },
   },
   { _id: false, timestamps: false },
 );
@@ -100,6 +113,9 @@ const UserSchema = new Schema(
   {
     discordUserId: { type: String, required: true, unique: true },
     email: { type: String },
+    verifiedEmail: { type: String },
+    verifiedEmailVerifiedAt: { type: Date },
+    sessionEpoch: { type: Number },
     preferences: { type: UserPreferencesSchema, default: {} },
     featureFlags: { type: UserFeatureFlagsSchema, default: {} },
     enableBilling: { type: Boolean },
@@ -117,6 +133,8 @@ UserSchema.index({
 UserSchema.index({
   "externalCredentials.0": 1,
 });
+
+UserSchema.index({ verifiedEmail: 1 }, { unique: true, sparse: true });
 
 type UserDoc = InferSchemaType<typeof UserSchema>;
 
@@ -138,6 +156,9 @@ export class UserMongooseRepository
       id: this.objectIdToString(doc._id),
       discordUserId: doc.discordUserId,
       email: doc.email,
+      verifiedEmail: doc.verifiedEmail,
+      verifiedEmailVerifiedAt: doc.verifiedEmailVerifiedAt,
+      sessionEpoch: doc.sessionEpoch ?? undefined,
       preferences: doc.preferences,
       featureFlags: doc.featureFlags,
       enableBilling: doc.enableBilling,
@@ -173,6 +194,11 @@ export class UserMongooseRepository
     return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
   }
 
+  async findByVerifiedEmail(email: string): Promise<IUser | null> {
+    const doc = await this.model.findOne({ verifiedEmail: email }).lean();
+    return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
+  }
+
   async findByDiscordId(discordUserId: string): Promise<IUser | null> {
     const doc = await this.model.findOne({ discordUserId }).lean();
     return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
@@ -202,6 +228,47 @@ export class UserMongooseRepository
       .findOneAndUpdate({ discordUserId }, { $set: { email } }, { new: true })
       .lean();
     return doc ? this.toEntity(doc as UserDoc & { _id: Types.ObjectId }) : null;
+  }
+
+  async setVerifiedEmail(
+    userId: string,
+    email: string,
+  ): Promise<SetVerifiedEmailResult> {
+    // Read-before semantics: findOneAndUpdate with new:false returns the
+    // pre-update document, so the previous verified email is captured in the
+    // same atomic write rather than a racy read-then-write.
+    const previous = await this.model
+      .findOneAndUpdate(
+        { _id: this.stringToObjectId(userId) },
+        { $set: { verifiedEmail: email, verifiedEmailVerifiedAt: new Date() } },
+        { new: false },
+      )
+      .lean();
+
+    return { previousVerifiedEmail: previous?.verifiedEmail ?? null };
+  }
+
+  async revertVerifiedEmail(
+    userId: string,
+    expectedCurrent: string,
+    restoreTo: string,
+  ): Promise<RevertVerifiedEmailResult> {
+    // Conditional on verifiedEmail still being expectedCurrent: a newer
+    // legitimate change must not be clobbered by a stale revert link. The
+    // session epoch is bumped in the same atomic write so every cookie minted
+    // before the revert is rejected by requireAuthHook on its next request.
+    const result = await this.model.updateOne(
+      { _id: this.stringToObjectId(userId), verifiedEmail: expectedCurrent },
+      {
+        $set: {
+          verifiedEmail: restoreTo,
+          verifiedEmailVerifiedAt: new Date(),
+        },
+        $inc: { sessionEpoch: 1 },
+      },
+    );
+
+    return { reverted: result.modifiedCount === 1 };
   }
 
   async updatePreferencesByDiscordId(
@@ -251,50 +318,11 @@ export class UserMongooseRepository
     userId: string,
     credential: SetExternalCredentialInput,
   ): Promise<void> {
-    const setQueries = Object.entries(credential.data).reduce(
-      (acc, [key, value]) => {
-        acc[`externalCredentials.$.data.${key}`] = value;
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
-
-    const finalSetQuery = {
-      ...setQueries,
-      ...(credential.expireAt && {
-        "externalCredentials.$.expireAt": credential.expireAt,
-      }),
-      // A re-auth produces fresh, valid tokens, so a previously revoked/expired credential is
-      // active again. Without this the record keeps its prior REVOKED status and the UI never
-      // leaves the disconnected state after reconnecting.
-      "externalCredentials.$.status": UserExternalCredentialStatus.Active,
-    };
-
-    const result = await this.model.updateOne(
-      {
-        _id: this.stringToObjectId(userId),
-        externalCredentials: {
-          $elemMatch: { type: credential.type },
-        },
-      },
-      { $set: finalSetQuery },
-    );
-
-    if (!result.modifiedCount) {
-      await this.model.updateOne(
-        { _id: this.stringToObjectId(userId) },
-        {
-          $push: {
-            externalCredentials: {
-              type: credential.type,
-              data: credential.data,
-              expireAt: credential.expireAt,
-              status: UserExternalCredentialStatus.Active,
-            },
-          },
-        },
-      );
-    }
+    await upsertExternalCredential({
+      model: this.model,
+      ownerFilter: { _id: this.stringToObjectId(userId) },
+      credential,
+    });
   }
 
   async getExternalCredentials(
@@ -317,20 +345,11 @@ export class UserMongooseRepository
       return null;
     }
 
-    let data: Record<string, string> = {};
-    if (credential.data) {
-      if (credential.data instanceof Map) {
-        data = Object.fromEntries(credential.data);
-      } else {
-        data = credential.data as Record<string, string>;
-      }
-    }
-
     return {
       id: this.objectIdToString(credential._id) as string,
       type: credential.type,
       status: credential.status,
-      data,
+      data: normalizeExternalCredentialData(credential.data),
       expireAt: credential.expireAt,
     };
   }
@@ -339,27 +358,22 @@ export class UserMongooseRepository
     userId: string,
     type: UserExternalCredentialType,
   ): Promise<void> {
-    await this.model.updateOne(
-      { _id: this.stringToObjectId(userId) },
-      { $pull: { externalCredentials: { type } } },
-    );
+    await removeExternalCredentialsByType({
+      model: this.model,
+      ownerFilter: { _id: this.stringToObjectId(userId) },
+      type,
+    });
   }
 
   async revokeExternalCredential(
     userId: string,
     credentialId: string,
   ): Promise<void> {
-    await this.model.updateOne(
-      {
-        _id: this.stringToObjectId(userId),
-        "externalCredentials._id": this.stringToObjectId(credentialId),
-      },
-      {
-        $set: {
-          "externalCredentials.$.status": UserExternalCredentialStatus.Revoked,
-        },
-      },
-    );
+    await revokeExternalCredentialById({
+      model: this.model,
+      ownerFilter: { _id: this.stringToObjectId(userId) },
+      credentialId: this.stringToObjectId(credentialId),
+    });
   }
 
   async *aggregateUsersWithActiveRedditCredentials(options?: {
@@ -379,13 +393,7 @@ export class UserMongooseRepository
                 $in: options.userIds.map((id) => this.stringToObjectId(id)),
               },
             }),
-            externalCredentials: {
-              $elemMatch: {
-                expireAt: { $gt: new Date() },
-                status: UserExternalCredentialStatus.Active,
-                type: UserExternalCredentialType.Reddit,
-              },
-            },
+            ...activeRedditCredentialElemMatch(),
           },
         },
         {
@@ -400,6 +408,9 @@ export class UserMongooseRepository
         {
           $match: {
             "feeds.url": REDDIT_URL_REGEX,
+            // Workspace feeds resolve credentials from their workspace, never
+            // their creator's personal connection.
+            "feeds.workspaceId": { $exists: false },
             ...(options?.feedIds?.length && {
               "feeds._id": {
                 $in: options.feedIds.map((id) => this.stringToObjectId(id)),
@@ -438,6 +449,9 @@ export class UserMongooseRepository
           $match: {
             feedRequestLookupKey: { $exists: true },
             url: REDDIT_URL_REGEX,
+            // Workspace feeds' lookup keys are synced against workspace
+            // credentials, not the creator's.
+            workspaceId: { $exists: false },
             ...(options?.feedIds?.length && {
               _id: {
                 $in: options.feedIds.map((id) => this.stringToObjectId(id)),
@@ -474,25 +488,7 @@ export class UserMongooseRepository
         {
           $match: {
             owner: { $ne: null },
-            $or: [
-              { "owner.externalCredentials.0": { $exists: false } },
-              {
-                "owner.externalCredentials": {
-                  $elemMatch: {
-                    type: UserExternalCredentialType.Reddit,
-                    expireAt: { $lte: new Date() },
-                  },
-                },
-              },
-              {
-                "owner.externalCredentials": {
-                  $elemMatch: {
-                    type: UserExternalCredentialType.Reddit,
-                    status: UserExternalCredentialStatus.Revoked,
-                  },
-                },
-              },
-            ],
+            $or: expiredOrRevokedRedditCredentialConditions("owner"),
           },
         },
         {
@@ -521,20 +517,7 @@ export class UserMongooseRepository
     const expirationThreshold = new Date(Date.now() + withinMs);
 
     const cursor = this.model
-      .find({
-        externalCredentials: {
-          $elemMatch: {
-            type: UserExternalCredentialType.Reddit,
-            status: UserExternalCredentialStatus.Active,
-            "data.accessToken": { $exists: true },
-            "data.refreshToken": { $exists: true },
-            expireAt: {
-              $exists: true,
-              $lte: expirationThreshold,
-            },
-          },
-        },
-      })
+      .find(expiringActiveRedditCredentialFilter(expirationThreshold))
       .select("_id discordUserId externalCredentials")
       .lean()
       .cursor();
@@ -550,27 +533,17 @@ export class UserMongooseRepository
         }>;
       };
 
-      const redditCredential = typedDoc.externalCredentials?.find(
-        (c) => c.type === UserExternalCredentialType.Reddit,
-      );
+      const credential = extractRedditRefreshCredential(typedDoc);
 
-      if (!redditCredential) {
-        continue;
-      }
-
-      const refreshToken = redditCredential.data?.refreshToken as
-        | string
-        | undefined;
-
-      if (!refreshToken) {
+      if (!credential) {
         continue;
       }
 
       yield {
         userId: this.objectIdToString(typedDoc._id),
         discordUserId: typedDoc.discordUserId,
-        credentialId: this.objectIdToString(redditCredential._id),
-        encryptedRefreshToken: refreshToken,
+        credentialId: this.objectIdToString(credential.credentialId),
+        encryptedRefreshToken: credential.encryptedRefreshToken,
       };
     }
   }

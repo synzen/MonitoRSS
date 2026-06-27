@@ -2,6 +2,7 @@ import type { Config } from "../../config";
 import type { ISupporterRepository } from "../../repositories/interfaces/supporter.types";
 import type { IUserRepository } from "../../repositories/interfaces/user.types";
 import { SubscriptionAlreadyCancelledException } from "../../shared/exceptions/paddle.exceptions";
+import { pollUntil } from "../../shared/utils/poll-until";
 import { formatCurrency } from "../../utils/format-currency";
 import type { MessageBrokerService } from "../message-broker/message-broker.service";
 import type { PaddleService } from "../paddle/paddle.service";
@@ -15,7 +16,6 @@ import {
 import type {
   PaddlePricingPreviewResponse,
   PaddleSubscriptionPreviewResponse,
-  PaddleSubscriptionUpdatePaymentMethodResponse,
 } from "./types";
 
 export interface SupporterSubscriptionsServiceDeps {
@@ -243,22 +243,10 @@ export class SupporterSubscriptionsService {
       throw new Error("No existing subscription for user found");
     }
 
-    const postBody = {
-      items: items.map((i) => ({
-        price_id: i.priceId,
-        quantity: i.quantity,
-      })),
-      currency_code: subscription.currencyCode,
-      proration_billing_mode: "prorated_immediately",
-    };
-
     const response =
-      await this.deps.paddleService.executeApiCall<PaddleSubscriptionPreviewResponse>(
-        `/subscriptions/${existingSubscriptionId}/preview`,
-        {
-          method: "PATCH",
-          body: JSON.stringify(postBody),
-        },
+      await this.deps.paddleService.updateSubscriptionItems<PaddleSubscriptionPreviewResponse>(
+        existingSubscriptionId,
+        { items, currencyCode: subscription.currencyCode, preview: true },
       );
 
     if (!response.data.immediate_transaction) {
@@ -322,21 +310,9 @@ export class SupporterSubscriptionsService {
       throw new Error("No existing subscription for user found");
     }
 
-    const postBody = {
-      items: items.map((i) => ({
-        price_id: i.priceId,
-        quantity: i.quantity,
-      })),
-      currency_code: subscription.currencyCode,
-      proration_billing_mode: "prorated_immediately",
-    };
-
-    await this.deps.paddleService.executeApiCall<PaddleSubscriptionPreviewResponse>(
-      `/subscriptions/${existingSubscriptionId}`,
-      {
-        method: "PATCH",
-        body: JSON.stringify(postBody),
-      },
+    await this.deps.paddleService.updateSubscriptionItems(
+      existingSubscriptionId,
+      { items, currencyCode: subscription.currencyCode },
     );
 
     const currentUpdatedAt = subscription.updatedAt.getTime();
@@ -371,8 +347,13 @@ export class SupporterSubscriptionsService {
 
     const existingSubscriptionId = subscription?.id;
 
+    // No subscription on record means there is nothing to cancel — the desired
+    // end state (no active subscription) already holds, so cancelling is a no-op
+    // rather than an error. This keeps cancel idempotent: a stale client that
+    // still shows a subscription (or a record already nullified out-of-band, e.g.
+    // by a cancellation webhook) can retry the cancel without hitting a 500.
     if (!existingSubscriptionId) {
-      throw new Error("No existing subscription for user found");
+      return;
     }
 
     const postBody = {
@@ -465,14 +446,9 @@ export class SupporterSubscriptionsService {
       );
     }
 
-    const response =
-      await this.deps.paddleService.executeApiCall<PaddleSubscriptionUpdatePaymentMethodResponse>(
-        `/subscriptions/${existingSubscriptionId}/update-payment-method-transaction`,
-      );
-
-    return {
-      id: response.data.id,
-    };
+    return this.deps.paddleService.getUpdatePaymentMethodTransaction(
+      existingSubscriptionId,
+    );
   }
 
   private async pollForSubscriptionChange({
@@ -484,27 +460,13 @@ export class SupporterSubscriptionsService {
       sub: Awaited<ReturnType<SupportersService["getSupporterSubscription"]>>,
     ) => boolean;
   }): Promise<void> {
-    let tries = 0;
-
-    await new Promise<void>((resolve) => setTimeout(resolve, 1000));
-
-    while (true) {
-      const subscription =
-        await this.deps.supportersService.getSupporterSubscription({
+    await pollUntil(
+      () =>
+        this.deps.supportersService.getSupporterSubscription({
           discordUserId,
-        });
-
-      if (check(subscription)) {
-        break;
-      }
-
-      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
-
-      tries++;
-
-      if (tries > 50) {
-        throw new Error("Failed to poll for subscription after 10 tries");
-      }
-    }
+        }),
+      check,
+      `supporter ${discordUserId} subscription change`,
+    );
   }
 }

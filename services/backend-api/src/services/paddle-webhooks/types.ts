@@ -1,6 +1,7 @@
 import type { Config } from "../../config";
 import type { ISupporterRepository } from "../../repositories/interfaces/supporter.types";
 import type { IUserRepository } from "../../repositories/interfaces/user.types";
+import type { WorkspaceMongooseRepository } from "../../repositories/mongoose/workspace.mongoose.repository";
 import type { PaddleService } from "../paddle/paddle.service";
 import type { SupportersService } from "../supporters/supporters.service";
 import type { UserFeedsService } from "../user-feeds/user-feeds.service";
@@ -12,6 +13,7 @@ export interface PaddleWebhooksServiceDeps {
   userFeedsService: UserFeedsService;
   supporterRepository: ISupporterRepository;
   userRepository: IUserRepository;
+  workspaceRepository: WorkspaceMongooseRepository;
 }
 
 export enum PaddleSubscriptionStatus {
@@ -30,9 +32,12 @@ export interface PaddleEventSubscriptionUpdated {
     status: PaddleSubscriptionStatus;
     customer_id: string;
     created_at: string;
+    // workspaceId routes the event to a workspace subscription record;
+    // events without it follow the personal supporter path.
     custom_data: {
-      userId: string;
-    };
+      userId?: string;
+      workspaceId?: string;
+    } | null;
     updated_at: string;
     items: Array<{
       quantity: number;
@@ -68,6 +73,7 @@ export interface PaddleEventSubscriptionActivated {
     created_at: string;
     custom_data: {
       userId?: string;
+      workspaceId?: string;
     } | null;
     updated_at: string;
     items: Array<{

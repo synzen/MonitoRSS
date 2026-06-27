@@ -7,6 +7,10 @@ export const FEED_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
     status: 400,
     code: ApiErrorCode.FEED_LIMIT_REACHED,
   },
+  WorkspaceNotSubscribedException: {
+    status: 400,
+    code: ApiErrorCode.WORKSPACE_NOT_SUBSCRIBED,
+  },
   SourceFeedNotFoundException: {
     status: 400,
     code: ApiErrorCode.ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND,
@@ -104,12 +108,7 @@ export const CLONE_USER_FEED_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
   );
 
 export const MANUAL_REQUEST_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
-  mergeExceptionErrorCodes(FEED_EXCEPTION_ERROR_CODES, {
-    FeedNotFailedException: {
-      status: 422,
-      code: ApiErrorCode.FEED_NOT_FAILED,
-    },
-  });
+  FEED_EXCEPTION_ERROR_CODES;
 
 export const GET_ARTICLE_PROPERTIES_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =
   {

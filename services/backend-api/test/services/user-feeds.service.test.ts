@@ -8,7 +8,6 @@ import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handle
 import {
   BannedFeedException,
   FeedLimitReachedException,
-  FeedNotFailedException,
   ManualRequestTooSoonException,
   RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
@@ -715,6 +714,42 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
     });
 
+    it("gates changing a feed's URL to a reddit url without an active connection", async () => {
+      const ctx = harness.createContext({
+        redditClientId: "test-reddit-client-id",
+        feedHandler: { url: "https://www.reddit.com/r/gaming/.rss" },
+      });
+      const feed = await ctx.createFeed({});
+
+      await assert.rejects(
+        ctx.service.updateFeedById(
+          { id: feed.id },
+          { url: "https://www.reddit.com/r/gaming/.rss" },
+        ),
+        RedditConnectionRequiredException,
+      );
+    });
+
+    it("allows changing a feed's URL to a reddit url with an active connection", async () => {
+      const ctx = harness.createContext({
+        redditClientId: "test-reddit-client-id",
+        externalCredentials: [{ type: "reddit", status: "ACTIVE", data: {} }],
+        feedHandler: {
+          url: "https://www.reddit.com/r/gaming/.rss",
+          feedTitle: "gaming",
+        },
+      });
+      const feed = await ctx.createFeed({});
+
+      const result = await ctx.service.updateFeedById(
+        { id: feed.id },
+        { url: "https://www.reddit.com/r/gaming/.rss" },
+      );
+
+      assert.ok(result);
+      assert.strictEqual(result.url, "https://www.reddit.com/r/gaming/.rss");
+    });
+
     it("throws BannedFeedException if URL resolves to a banned feed", async () => {
       const ctx = harness.createContext({
         bannedFeedDetails: { reason: "spam" },
@@ -1295,54 +1330,6 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const ctx = harness.createContext();
 
       await assert.rejects(() => ctx.service.getFeedById("not-a-valid-id"));
-    });
-  });
-
-  describe("retryFailedFeed", () => {
-    it("throws an error if the feed is not found", async () => {
-      const ctx = harness.createContext();
-      await assert.rejects(
-        () => ctx.service.retryFailedFeed(ctx.generateId()),
-        /not found/,
-      );
-    });
-
-    it("throws FeedNotFailedException if feed is not failed", async () => {
-      const ctx = harness.createContext();
-      const feed = await ctx.createFeed({});
-      await assert.rejects(
-        () => ctx.service.retryFailedFeed(feed.id),
-        FeedNotFailedException,
-      );
-    });
-
-    it("sets health status to ok if fetch succeeds", async () => {
-      const ctx = harness.createContext();
-      const feed = await ctx.createFeed({});
-      await ctx.setFields(feed.id, {
-        healthStatus: UserFeedHealthStatus.Failed,
-        disabledCode: RepoUserFeedDisabledCode.FailedRequests,
-      });
-
-      await ctx.service.retryFailedFeed(feed.id);
-
-      const updated = await ctx.findById(feed.id);
-      assert.strictEqual(updated?.healthStatus, UserFeedHealthStatus.Ok);
-      assert.strictEqual(updated?.disabledCode, undefined);
-    });
-
-    it("returns the updated feed", async () => {
-      const ctx = harness.createContext();
-      const feed = await ctx.createFeed({});
-      await ctx.setFields(feed.id, {
-        healthStatus: UserFeedHealthStatus.Failed,
-      });
-
-      const result = await ctx.service.retryFailedFeed(feed.id);
-
-      assert.ok(result);
-      assert.strictEqual(result.id, feed.id);
-      assert.strictEqual(result.healthStatus, UserFeedHealthStatus.Ok);
     });
   });
 

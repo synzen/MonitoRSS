@@ -103,6 +103,7 @@ function createTestConfig(overrides?: Partial<Config>): Config {
     BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: 10,
     BACKEND_API_DEFAULT_MAX_FEEDS: 5,
     BACKEND_API_DEFAULT_MAX_USER_FEEDS: 5,
+    BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS: 140,
     BACKEND_API_DEFAULT_DATE_FORMAT: "ddd, D MMMM YYYY, h:mm A z",
     BACKEND_API_DEFAULT_TIMEZONE: "UTC",
     BACKEND_API_DEFAULT_DATE_LANGUAGE: "en",
@@ -125,6 +126,9 @@ function createTestConfig(overrides?: Partial<Config>): Config {
     BACKEND_API_SMTP_USERNAME: undefined,
     BACKEND_API_SMTP_PASSWORD: undefined,
     BACKEND_API_SMTP_FROM: undefined,
+    BACKEND_API_SMTP_FROM_DOMAIN: undefined,
+    BACKEND_API_SMTP_PORT: undefined,
+    BACKEND_API_SMTP_SECURE: true,
 
     BACKEND_API_PADDLE_KEY: undefined,
     BACKEND_API_PADDLE_URL: undefined,
@@ -140,6 +144,8 @@ function createTestConfig(overrides?: Partial<Config>): Config {
     BACKEND_API_REDDIT_CLIENT_ID: undefined,
     BACKEND_API_REDDIT_CLIENT_SECRET: undefined,
     BACKEND_API_REDDIT_REDIRECT_URI: undefined,
+    BACKEND_API_REDDIT_API_BASE_URL: "https://www.reddit.com/api/v1",
+    BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL: "https://oauth.reddit.com",
 
     BACKEND_API_ADMIN_USER_IDS: [],
 
@@ -167,33 +173,55 @@ export async function createAppTestContext(
   const connection = await setupDatabase();
   const discordMockServer = createTestHttpServer({ pathPrefix: "/api/v10" });
 
-  const mockApiOverrides: Partial<Config> = {};
+  // If construction throws after this point (e.g. createContainer/createApp),
+  // the connection and mock server are already open with no teardown path —
+  // their live handles keep Node's event loop alive, so the runner hangs
+  // instead of surfacing the setup error. Close them before rethrowing so the
+  // failure is fast and loud.
   const mockApis = options.mockApis ?? {};
 
-  for (const api of Object.values(mockApis)) {
-    (mockApiOverrides as Record<string, unknown>)[api.configKey] =
-      api.server.host;
+  let app: FastifyInstance;
+  let container: Container;
+  try {
+    const mockApiOverrides: Partial<Config> = {};
+
+    for (const api of Object.values(mockApis)) {
+      (mockApiOverrides as Record<string, unknown>)[api.configKey] =
+        api.server.host;
+    }
+
+    const config = createTestConfig({
+      BACKEND_API_DISCORD_API_BASE_URL: discordMockServer.host,
+      ...mockApiOverrides,
+      ...options.configOverrides,
+    });
+
+    container = createContainer({
+      config,
+      mongoConnection: connection,
+      rabbitmq: createMockRabbitConnection(),
+    });
+
+    app = await createApp(container);
+
+    // Build all registered models' indexes before any test runs. Production
+    // connects with autoIndex:true, but autoIndex builds lazily and unawaited;
+    // tests that assert on unique-index enforcement (e.g. slug collisions) can
+    // otherwise race a not-yet-built index when many models register at once.
+    await Promise.all(
+      Object.values(connection.models).map((model) => model.syncIndexes()),
+    );
+
+    if (options.beforeListen) {
+      await options.beforeListen(app);
+    }
+
+    await app.listen({ port: 0 });
+  } catch (err) {
+    await discordMockServer.stop().catch(() => {});
+    await connection.close().catch(() => {});
+    throw err;
   }
-
-  const config = createTestConfig({
-    BACKEND_API_DISCORD_API_BASE_URL: discordMockServer.host,
-    ...mockApiOverrides,
-    ...options.configOverrides,
-  });
-
-  const container = createContainer({
-    config,
-    mongoConnection: connection,
-    rabbitmq: createMockRabbitConnection(),
-  });
-
-  const app = await createApp(container);
-
-  if (options.beforeListen) {
-    await options.beforeListen(app);
-  }
-
-  await app.listen({ port: 0 });
 
   const address = app.server.address();
   const port = typeof address === "object" ? address?.port : 0;

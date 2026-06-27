@@ -2,21 +2,30 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getUserFeeds, GetUserFeedsInput, GetUserFeedsOutput } from "../api";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
+import { useFeedScope } from "../contexts/FeedScopeContext";
 
 export const useUserFeedsInfinite = (
   input: Omit<GetUserFeedsInput, "search">,
   opts?: {
     disabled?: boolean;
+    // Forces the personal feed list regardless of the page's ambient feed
+    // scope. Without this, input.workspaceId === undefined falls through to the
+    // current scope, which is wrong for callers (e.g. the personal→workspace
+    // conversion dialog) that always need the personal list.
+    forcePersonal?: boolean;
   },
 ) => {
   const [search, setSearch] = useState("");
   const useLimit = input.limit || 10;
+  const { workspaceId } = useFeedScope();
+  const scopedWorkspaceId = opts?.forcePersonal ? undefined : (input.workspaceId ?? workspaceId);
 
   const queryKey = [
     "user-feeds",
     {
       input: {
         ...input,
+        workspaceId: scopedWorkspaceId,
         infinite: true,
         limit: useLimit,
         search,
@@ -39,6 +48,7 @@ export const useUserFeedsInfinite = (
     async ({ pageParam: newOffset }) => {
       const result = await getUserFeeds({
         ...input,
+        workspaceId: scopedWorkspaceId,
         offset: newOffset,
         search,
       });

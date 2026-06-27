@@ -12,9 +12,11 @@ async function getUserEmail(page: Page): Promise<string> {
 }
 
 const POLL_INTERVAL_MS = 2000;
-// Real Paddle webhook delivery over the cloudflared tunnel occasionally exceeds
-// 60s end to end, so give CI generous headroom; the per-test timeout (120s+) caps it.
-const POLL_TIMEOUT_MS = process.env.CI ? 90000 : 60000;
+// Sandbox subscription webhooks routinely take well over 30s — sometimes past
+// 90s — to land. The in-test current-plan waits already budget 120s for the
+// same webhook, so give fixture setup at least that much to stop it flaking out
+// before the test even starts. Callers set a beforeEach timeout above this.
+const POLL_TIMEOUT_MS = process.env.CI ? 150000 : 120000;
 
 async function waitForFreeState(page: Page): Promise<void> {
   const startTime = Date.now();
@@ -134,4 +136,34 @@ export async function ensureFreeSubscriptionState(page: Page): Promise<void> {
       // may not be available on about:blank in some browsers
     }
   });
+}
+
+// Tears down a workspace that holds a live sandbox subscription. Deletion is now
+// gated on the subscription being cancelled first (a workspace with a blocking
+// subscription returns 409), so cancel billing before deleting. The cancel
+// schedules at the next billing period and sets a cancellationDate, which clears
+// the delete guard; the cancel handler polls until that lands before returning.
+export async function cancelAndDeleteWorkspace(
+  page: Page,
+  workspaceSlug: string,
+): Promise<void> {
+  const cancelRes = await page.request.post(
+    `/api/v1/workspaces/${workspaceSlug}/billing/cancel`,
+  );
+
+  // 204 = cancelled; 409/404 = nothing to cancel (never subscribed). Either way
+  // the subscription is no longer blocking, so proceed to delete.
+  if (![204, 404, 409].includes(cancelRes.status())) {
+    throw new Error(
+      `Unexpected status cancelling workspace billing: ${cancelRes.status()}`,
+    );
+  }
+
+  const deleteRes = await page.request.delete(`/api/v1/workspaces/${workspaceSlug}`);
+
+  if (deleteRes.status() !== 204) {
+    throw new Error(
+      `Failed to delete workspace ${workspaceSlug}: ${deleteRes.status()}`,
+    );
+  }
 }

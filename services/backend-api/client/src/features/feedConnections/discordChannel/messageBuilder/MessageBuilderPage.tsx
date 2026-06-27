@@ -54,6 +54,7 @@ import {
   UserFeedConnectionProvider,
   useUserFeedConnectionContext,
   useUserFeedArticles,
+  useFeedScope,
 } from "@/features/feed";
 import { LogoutButton } from "@/features/auth";
 import { useDiscordBot, useDiscordUserMe } from "@/features/discordUser";
@@ -68,6 +69,7 @@ import {
   PageAlertProvider,
   usePageAlertContext,
 } from "@/contexts/PageAlertContext";
+import { useScopeCrumbLabel } from "@/contexts/ScopeLabelContext";
 import convertMessageBuilderStateToConnectionUpdate from "./utils/convertMessageBuilderStateToConnectionUpdate";
 import { pages } from "@/constants";
 import {
@@ -213,6 +215,9 @@ const MessageBuilderContent: React.FC = () => {
   const mobileTreeRef = useRef<HTMLDivElement>(null);
   const [scrollToComponentId, setScrollToComponentId] = useState<string | null>(null);
   const { feedId, connectionId } = useParams<RouteParams>();
+  const { workspaceSlug } = useFeedScope();
+  const scope = workspaceSlug ? { workspaceSlug } : undefined;
+  const scopeCrumbLabel = useScopeCrumbLabel();
   const { mutateAsync: updateConnection, status: updateStatus } =
     useUpdateDiscordChannelConnection();
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
@@ -523,15 +528,15 @@ const MessageBuilderContent: React.FC = () => {
                   <BreadcrumbList>
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild>
-                        <RouterLink to={pages.userFeeds()} color="text.link">
-                          Feeds
+                        <RouterLink to={pages.userFeeds(scope)} color="text.link">
+                          {scopeCrumbLabel}
                         </RouterLink>
                       </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbSeparator />
                     <BreadcrumbItem>
                       <BreadcrumbLink asChild>
-                        <RouterLink to={pages.userFeed(userFeed.id)} color="text.link">
+                        <RouterLink to={pages.userFeed(userFeed.id, { scope })} color="text.link">
                           {userFeed.title}
                         </RouterLink>
                       </BreadcrumbLink>
@@ -542,6 +547,7 @@ const MessageBuilderContent: React.FC = () => {
                         <RouterLink
                           to={pages.userFeed(userFeed.id, {
                             tab: UserFeedTabSearchParam.Connections,
+                            scope,
                           })}
                           color="text.link"
                         >
@@ -557,6 +563,7 @@ const MessageBuilderContent: React.FC = () => {
                             feedId: userFeed.id,
                             connectionType: FeedConnectionType.DiscordChannel,
                             connectionId: connection.id,
+                            scope,
                           })}
                           color="text.link"
                         >
@@ -583,7 +590,6 @@ const MessageBuilderContent: React.FC = () => {
                     <Button
                       display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "inline-flex" }}
                       variant="outline"
-                      colorPalette="gray"
                       size="sm"
                       onClick={resetTour}
                     >
@@ -595,7 +601,6 @@ const MessageBuilderContent: React.FC = () => {
                     <Button
                       ref={templatesButtonRef}
                       variant="outline"
-                      colorPalette="gray"
                       size="sm"
                       onClick={onOpenTemplates}
                       data-tour-target="templates-button"
@@ -625,7 +630,7 @@ const MessageBuilderContent: React.FC = () => {
                           >
                             {updateStatus === "loading" ? "Saving..." : "Save without branding"}
                           </Button>
-                          <PrimaryActionButton size="sm" onClick={onOpenPricingDialog}>
+                          <PrimaryActionButton size="sm" onClick={() => onOpenPricingDialog()}>
                             Upgrade to save with branding
                           </PrimaryActionButton>
                         </>

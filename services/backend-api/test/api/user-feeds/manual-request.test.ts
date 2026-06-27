@@ -14,6 +14,11 @@ import {
   UserFeedHealthStatus,
   UserFeedManagerStatus,
 } from "../../../src/repositories/shared/enums";
+import type { MockApi } from "../../helpers/mock-apis";
+import {
+  TEST_PADDLE_WEBHOOK_SECRET,
+  createMockPaddleApi,
+} from "../../helpers/paddle-fixtures";
 
 let ctx: AppTestContext;
 let feedApiMockServer: TestHttpServer;
@@ -479,6 +484,139 @@ describe(
       delete getArticlesOverrides[feedUrl];
     });
 
+    it("returns 400 with FEED_LIMIT_REACHED when re-enabling a failed feed while over the feed limit", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const maxFeeds = ctx.container.config.BACKEND_API_DEFAULT_MAX_USER_FEEDS;
+
+      // Repository-level creates bypass the creation gate to simulate an
+      // over-limit state (e.g. a limit decrease).
+      const feeds = [];
+
+      for (let i = 0; i <= maxFeeds; i++) {
+        feeds.push(
+          await ctx.container.userFeedRepository.create({
+            title: `Over Limit Feed ${i}`,
+            url: `https://example.com/over-limit-manual-request-${i}.xml`,
+            user: { id: generateTestId(), discordUserId },
+          }),
+        );
+      }
+
+      await ctx.container.userFeedRepository.updateById(feeds[0]!.id, {
+        $set: {
+          disabledCode: UserFeedDisabledCode.FailedRequests,
+          healthStatus: UserFeedHealthStatus.Failed,
+        },
+      });
+
+      const response = await user.fetch(
+        `/api/v1/user-feeds/${feeds[0]!.id}/manual-request`,
+        {
+          method: "POST",
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+      const body = (await response.json()) as { code: string };
+      assert.strictEqual(body.code, "FEED_LIMIT_REACHED");
+
+      const updatedFeed = await ctx.container.userFeedRepository.findById(
+        feeds[0]!.id,
+      );
+      assert.strictEqual(
+        updatedFeed?.disabledCode,
+        UserFeedDisabledCode.FailedRequests,
+      );
+    });
+
+    it("re-enables a failed feed when exactly at the feed limit", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const maxFeeds = ctx.container.config.BACKEND_API_DEFAULT_MAX_USER_FEEDS;
+
+      // A FailedRequests feed still holds its limit slot, so a user at their
+      // limit must be able to retry it.
+      const feeds = [];
+
+      for (let i = 0; i < maxFeeds; i++) {
+        feeds.push(
+          await ctx.container.userFeedRepository.create({
+            title: `At Limit Feed ${i}`,
+            url: `https://example.com/at-limit-manual-request-${i}.xml`,
+            user: { id: generateTestId(), discordUserId },
+          }),
+        );
+      }
+
+      await ctx.container.userFeedRepository.updateById(feeds[0]!.id, {
+        $set: {
+          disabledCode: UserFeedDisabledCode.FailedRequests,
+          healthStatus: UserFeedHealthStatus.Failed,
+        },
+      });
+
+      const response = await user.fetch(
+        `/api/v1/user-feeds/${feeds[0]!.id}/manual-request`,
+        {
+          method: "POST",
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as {
+        result: { hasEnabledFeed: boolean };
+      };
+      assert.strictEqual(body.result.hasEnabledFeed, true);
+
+      const updatedFeed = await ctx.container.userFeedRepository.findById(
+        feeds[0]!.id,
+      );
+      assert.strictEqual(updatedFeed?.disabledCode, undefined);
+    });
+
+    for (const disabledCode of [
+      UserFeedDisabledCode.ExceededFeedLimit,
+      UserFeedDisabledCode.Manual,
+    ]) {
+      it(`does not clear ${disabledCode} disabledCode on a successful fetch`, async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+
+        const feed = await ctx.container.userFeedRepository.create({
+          title: `${disabledCode} Manual Request Feed`,
+          url: `https://example.com/${disabledCode.toLowerCase()}-manual-request.xml`,
+          user: { id: generateTestId(), discordUserId },
+        });
+
+        await ctx.container.userFeedRepository.updateById(feed.id, {
+          $set: {
+            disabledCode,
+            healthStatus: UserFeedHealthStatus.Failed,
+          },
+        });
+
+        const response = await user.fetch(
+          `/api/v1/user-feeds/${feed.id}/manual-request`,
+          {
+            method: "POST",
+          },
+        );
+
+        assert.strictEqual(response.status, 200);
+        const body = (await response.json()) as {
+          result: { requestStatus: string; hasEnabledFeed: boolean };
+        };
+        assert.strictEqual(body.result.requestStatus, "SUCCESS");
+        assert.strictEqual(body.result.hasEnabledFeed, false);
+
+        const updatedFeed = await ctx.container.userFeedRepository.findById(
+          feed.id,
+        );
+        assert.strictEqual(updatedFeed?.disabledCode, disabledCode);
+      });
+    }
+
     it("does not re-enable when feed disabled with InvalidFeed and article check fails", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);
@@ -536,6 +674,114 @@ describe(
       );
 
       delete getArticlesOverrides[feedUrl];
+    });
+  },
+);
+
+// A dedicated context with Paddle configured so a never-subscribed workspace
+// resolves as dormant (feed limit 0).
+describe(
+  "POST /api/v1/user-feeds/:feedId/manual-request (dormant workspace)",
+  { concurrency: false },
+  () => {
+    let workspaceCtx: AppTestContext;
+    let paddleApi: MockApi & { server: TestHttpServer };
+    let workspaceFeedApiMockServer: TestHttpServer;
+
+    before(async () => {
+      paddleApi = createMockPaddleApi();
+      workspaceFeedApiMockServer = createTestHttpServer();
+      workspaceCtx = await createAppTestContext({
+        configOverrides: {
+          BACKEND_API_PADDLE_WEBHOOK_SECRET: TEST_PADDLE_WEBHOOK_SECRET,
+          BACKEND_API_ENABLE_SUPPORTERS: true,
+          BACKEND_API_PADDLE_URL: paddleApi.server.host,
+          BACKEND_API_PADDLE_KEY: "test-paddle-key",
+          BACKEND_API_USER_FEEDS_API_HOST: workspaceFeedApiMockServer.host,
+          BACKEND_API_FEED_REQUESTS_API_HOST: workspaceFeedApiMockServer.host,
+        },
+        mockApis: {
+          paddle: paddleApi,
+        },
+      });
+    });
+
+    after(async () => {
+      await workspaceCtx.teardown();
+      await paddleApi.stop();
+      await workspaceFeedApiMockServer.stop();
+    });
+
+    it("returns 400 with WORKSPACE_NOT_SUBSCRIBED and keeps the feed disabled", async () => {
+      const discordUserId = generateSnowflake();
+
+      await workspaceCtx.container.userRepository.create({
+        discordUserId,
+        email: `${discordUserId}@example.com`,
+      });
+      await workspaceCtx.connection.collection("users").updateOne(
+        { discordUserId },
+        {
+          $set: {
+            "featureFlags.workspaces": true,
+            verifiedEmail: `verified-${discordUserId}@example.com`,
+            verifiedEmailVerifiedAt: new Date(),
+          },
+        },
+      );
+
+      const user = await workspaceCtx.asUser(discordUserId);
+
+      const workspaceRes = await user.fetch("/api/v1/workspaces", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Dormant Workspace",
+          slug: `dormant-${discordUserId.slice(0, 8)}`,
+        }),
+      });
+      assert.strictEqual(workspaceRes.status, 201);
+      const workspaceBody = (await workspaceRes.json()) as {
+        result: { id: string };
+      };
+      const workspaceId = workspaceBody.result.id;
+
+      // Repository-level create bypasses the creation gate; mirrors a feed
+      // left behind in a workspace whose subscription lapsed.
+      const feed = await workspaceCtx.container.userFeedRepository.create({
+        title: "Dormant Workspace Feed",
+        url: "https://example.com/dormant-workspace-manual-request.xml",
+        user: { id: generateTestId(), discordUserId },
+        workspaceId,
+      });
+
+      await workspaceCtx.container.userFeedRepository.updateById(feed.id, {
+        $set: {
+          disabledCode: UserFeedDisabledCode.FailedRequests,
+          healthStatus: UserFeedHealthStatus.Failed,
+        },
+      });
+
+      const response = await user.fetch(
+        `/api/v1/user-feeds/${feed.id}/manual-request`,
+        {
+          method: "POST",
+        },
+      );
+
+      assert.strictEqual(response.status, 400);
+      const body = (await response.json()) as { code: string };
+      assert.strictEqual(body.code, "WORKSPACE_NOT_SUBSCRIBED");
+
+      const updatedFeed =
+        await workspaceCtx.container.userFeedRepository.findById(feed.id);
+      assert.strictEqual(
+        updatedFeed?.disabledCode,
+        UserFeedDisabledCode.FailedRequests,
+      );
+      assert.strictEqual(
+        updatedFeed?.healthStatus,
+        UserFeedHealthStatus.Failed,
+      );
     });
   },
 );

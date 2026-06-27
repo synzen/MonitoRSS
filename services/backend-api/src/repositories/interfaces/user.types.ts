@@ -34,10 +34,12 @@ export interface IUserPreferences {
   feedListColumnVisibility?: IUserFeedListColumnVisibility;
   feedListColumnOrder?: IUserFeedListColumnOrder;
   feedListStatusFilters?: IUserFeedListStatusFilters;
+  lastActiveWorkspaceSlug?: string;
 }
 
 export interface IUserFeatureFlags {
   externalProperties?: boolean;
+  workspaces?: boolean;
 }
 
 export interface IUserExternalCredential {
@@ -52,6 +54,9 @@ export interface IUser {
   id: string;
   discordUserId: string;
   email?: string;
+  verifiedEmail?: string;
+  verifiedEmailVerifiedAt?: Date;
+  sessionEpoch?: number;
   preferences?: IUserPreferences;
   featureFlags?: IUserFeatureFlags;
   enableBilling?: boolean;
@@ -74,6 +79,20 @@ export interface UpdateUserPreferencesInput {
   feedListColumnVisibility?: IUserFeedListColumnVisibility | null;
   feedListColumnOrder?: IUserFeedListColumnOrder | null;
   feedListStatusFilters?: IUserFeedListStatusFilters | null;
+  lastActiveWorkspaceSlug?: string | null;
+}
+
+export interface SetVerifiedEmailResult {
+  // The verified email that was set on the user before this write, captured
+  // atomically in the same update. Null when no email was previously verified.
+  previousVerifiedEmail: string | null;
+}
+
+export interface RevertVerifiedEmailResult {
+  // True when the verified email still matched expectedCurrent and was restored.
+  // False when a newer change had already moved it off expectedCurrent, in which
+  // case the revert is a no-op (a stale revert must never clobber a legit change).
+  reverted: boolean;
 }
 
 export interface SetExternalCredentialInput {
@@ -92,6 +111,12 @@ export interface IUserRepository {
     discordUserId: string,
     email: string,
   ): Promise<IUser | null>;
+  setVerifiedEmail(userId: string, email: string): Promise<SetVerifiedEmailResult>;
+  revertVerifiedEmail(
+    userId: string,
+    expectedCurrent: string,
+    restoreTo: string,
+  ): Promise<RevertVerifiedEmailResult>;
   updatePreferencesByDiscordId(
     discordUserId: string,
     preferences: UpdateUserPreferencesInput,

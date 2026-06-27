@@ -15,21 +15,8 @@ import {
 } from "@chakra-ui/react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  FaPlus,
-  FaCircleCheck,
-  FaChevronDown,
-  FaTrash,
-  FaCopy,
-} from "react-icons/fa6";
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { FaPlus, FaCircleCheck, FaChevronDown, FaGear, FaTrash, FaCopy } from "react-icons/fa6";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { IoDuplicate } from "react-icons/io5";
 import { useUserMe, useDiscordUserMe } from "../features/discordUser";
@@ -50,19 +37,18 @@ import {
   UserFeedsTable,
   useUserFeedManagementInvitesCount,
   useUserFeeds,
+  useFeedScope,
 } from "../features/feed";
 import type { FeedActionState } from "../features/feed";
 import type { CuratedFeed } from "../features/feed/types";
 import { useDeleteUserFeed } from "../features/feed/hooks/useDeleteUserFeed";
-import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "../utils/getStandardErrorCodeMessage";
 import ApiAdapterError from "../utils/ApiAdapterError";
 import { pages } from "../constants";
 import { BoxConstrained, ConfirmModal, Panel } from "../components";
+import { DismissableAlert } from "../components/DismissableAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
-import {
-  UserFeedStatusFilterContext,
-  useMultiSelectUserFeedContext,
-} from "@/features/feed";
+import { UserFeedStatusFilterContext, useMultiSelectUserFeedContext } from "@/features/feed";
 
 import {
   PageAlertContextOutlet,
@@ -74,20 +60,15 @@ import { SetupChecklist } from "../features/feed/components/SetupChecklist";
 import { useUnconfiguredFeeds } from "../features/feed/hooks/useUnconfiguredFeeds";
 import { ReducedLimitAlert } from "@/features/subscriptionProducts";
 import {
-  MenuRoot,
-  MenuTrigger,
-  MenuContent,
-  MenuItem,
-  MenuSeparator,
-} from "@/components/ui/menu";
+  useCurrentWorkspace,
+  useJustConvertedWorkspace,
+  WorkspaceActivationEmptyState,
+} from "@/features/workspaces";
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 
 export const UserFeeds = () => {
   return (
-    <BoxConstrained.Wrapper
-      justifyContent="flex-start"
-      height="100%"
-      overflow="visible"
-    >
+    <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
       <BoxConstrained.Container gap={6} height="100%">
         <PageAlertProvider>
           <UserFeedsInner />
@@ -99,10 +80,16 @@ export const UserFeeds = () => {
 
 type BulkAction = "enable" | "disable" | "delete";
 
+const DISCOVERY_BROWSE_HINT =
+  "Browse popular feeds to get started, or paste a URL to check any website.";
+
 const UserFeedsInner: React.FC = () => {
   const { t } = useTranslation();
   const { state } = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { workspaceSlug, workspaceDormant } = useFeedScope();
+  const scope = useMemo(() => (workspaceSlug ? { workspaceSlug } : undefined), [workspaceSlug]);
+  const currentWorkspace = useCurrentWorkspace();
   const { data: userMeData } = useUserMe();
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
     limit: 1,
@@ -112,20 +99,20 @@ const UserFeedsInner: React.FC = () => {
     },
   });
   const { data: managementInvitesCount } = useUserFeedManagementInvitesCount();
-  const { data: userFeedsResults, refetch: refetchUserFeedsSummary } =
-    useUserFeeds({
-      limit: 1,
-      offset: 0,
-    });
-  const { statusFilters, setStatusFilters } = useContext(
-    UserFeedStatusFilterContext,
-  );
+  const {
+    data: userFeedsResults,
+    refetch: refetchUserFeedsSummary,
+    isPreviousData: userFeedsResultsAreStale,
+  } = useUserFeeds({
+    limit: 1,
+    offset: 0,
+  });
+  const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
   const { selectedFeeds, clearSelection } = useMultiSelectUserFeedContext();
   const { mutateAsync: enableUserFeeds } = useEnableUserFeeds();
   const { mutateAsync: disableUserFeeds } = useDisableUserFeeds();
   const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
-  const { createSuccessAlert, createErrorAlert, createInfoAlert } =
-    usePageAlertContext();
+  const { createSuccessAlert, createErrorAlert, createInfoAlert } = usePageAlertContext();
   const { data: discordUserMe } = useDiscordUserMe();
   const { mutateAsync: createUserFeed } = useCreateUserFeed();
   const { mutateAsync: deleteUserFeed } = useDeleteUserFeed();
@@ -137,22 +124,28 @@ const UserFeedsInner: React.FC = () => {
     refetch: curatedRefetch,
   } = useCuratedFeeds();
 
-  const [isInDiscoveryMode, setIsInDiscoveryMode] = useState<boolean | null>(
-    null,
-  );
-  const [feedActionStates, setFeedActionStates] = useState<
-    Record<string, FeedActionState>
-  >({});
+  // Holds the scope (workspace slug, or "personal") of an open add-first-feeds session:
+  // the scope was seen empty, so discovery stays up (for the "feeds added" panel) even
+  // once feeds appear, until the user leaves via "View your feeds". A returning user with
+  // feeds never enters a session, so adding via the modal does not pull them into discovery.
+  //
+  // The session is stored against its scope, not as a bare boolean, so that on the single
+  // render after a scope switch — before the scope-change effect below resets it — a
+  // session opened in the previous (empty) scope cannot be read as active under the new
+  // scope and flash discovery over a populated feeds table.
+  const scopeKey = workspaceSlug ?? "personal";
+  const [addingSessionScope, setAddingSessionScope] = useState<string | null>(null);
+  const isAddingSession = addingSessionScope === scopeKey;
+  const [feedActionStates, setFeedActionStates] = useState<Record<string, FeedActionState>>({});
   const [isBrowseModalOpen, setIsBrowseModalOpen] = useState(false);
   const [browseModalInitialCategory, setBrowseModalInitialCategory] = useState<
     string | undefined
   >();
-  const [browseModalInitialSearchQuery, setBrowseModalInitialSearchQuery] =
-    useState<string | undefined>();
+  const [browseModalInitialSearchQuery, setBrowseModalInitialSearchQuery] = useState<
+    string | undefined
+  >();
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [pendingBulkAction, setPendingBulkAction] = useState<BulkAction | null>(
-    null,
-  );
+  const [pendingBulkAction, setPendingBulkAction] = useState<BulkAction | null>(null);
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
   const [copySettingsOpen, setCopySettingsOpen] = useState(false);
   const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
@@ -160,8 +153,7 @@ const UserFeedsInner: React.FC = () => {
   const addFeedParamConsumed = useRef(false);
 
   const totalFeedCount = userFeedsResults?.total;
-  const feedsWithoutConnections =
-    userFeedsResults?.feedsWithoutConnections ?? 0;
+  const feedsWithoutConnections = userFeedsResults?.feedsWithoutConnections ?? 0;
   const [setupDismissed, setSetupDismissed] = useState(false);
   const hadUnconfiguredFeeds = useRef(false);
 
@@ -169,12 +161,9 @@ const UserFeedsInner: React.FC = () => {
     hadUnconfiguredFeeds.current = true;
   }
 
-  const { data: unconfiguredFeedsData, refetch: refetchUnconfiguredFeeds } =
-    useUnconfiguredFeeds({
-      enabled:
-        feedsWithoutConnections > 0 ||
-        (hadUnconfiguredFeeds.current && !setupDismissed),
-    });
+  const { data: unconfiguredFeedsData, refetch: refetchUnconfiguredFeeds } = useUnconfiguredFeeds({
+    enabled: feedsWithoutConnections > 0 || (hadUnconfiguredFeeds.current && !setupDismissed),
+  });
 
   const hasCompletedSetup =
     !setupDismissed &&
@@ -183,17 +172,18 @@ const UserFeedsInner: React.FC = () => {
     unconfiguredFeedsData.results.length === 0;
   const unconfiguredFeedsLoaded = unconfiguredFeedsData !== undefined;
   const showSetupChecklist =
-    (feedsWithoutConnections > 0 && unconfiguredFeedsLoaded) ||
-    hasCompletedSetup;
+    (feedsWithoutConnections > 0 && unconfiguredFeedsLoaded) || hasCompletedSetup;
   const navigatedAlertTitle = state?.alertTitle;
+  const navigatedAlertDescription = state?.alertDescription;
 
   useEffect(() => {
     if (navigatedAlertTitle) {
       createSuccessAlert({
         title: navigatedAlertTitle,
+        description: navigatedAlertDescription,
       });
     }
-  }, [navigatedAlertTitle]);
+  }, [navigatedAlertTitle, navigatedAlertDescription]);
 
   useEffect(() => {
     const addFeedQuery = searchParams.get("addFeed");
@@ -217,20 +207,92 @@ const UserFeedsInner: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Per-scope session state. Switching to an already-visited workspace does NOT remount
+  // this component (its workspace query is cached, so the scope layout shows no loading
+  // gate), so the session must be cleared explicitly on scope change. Without it, an
+  // add-session opened on an empty scope would leak into a populated scope switched to
+  // afterward and wrongly keep discovery up there.
+  const prevWorkspaceSlugRef = useRef(workspaceSlug);
+  const prevTotalRef = useRef<number | undefined>(undefined);
+
+  const resetSessionState = useCallback(() => {
+    setFeedActionStates({});
+    setIsSearchActive(false);
+    limitAlertShownRef.current = false;
+  }, []);
+
   useEffect(() => {
-    if (isInDiscoveryMode === null && userFeedsResults) {
-      setIsInDiscoveryMode(userFeedsResults.total === 0);
-    } else if (
-      isInDiscoveryMode === false &&
-      userFeedsResults &&
-      userFeedsResults.total === 0
-    ) {
-      setIsInDiscoveryMode(true);
-      setFeedActionStates({});
-      setIsSearchActive(false);
-      limitAlertShownRef.current = false;
+    if (prevWorkspaceSlugRef.current !== workspaceSlug) {
+      prevWorkspaceSlugRef.current = workspaceSlug;
+      prevTotalRef.current = undefined;
+      setAddingSessionScope(null);
+      resetSessionState();
     }
-  }, [userFeedsResults, isInDiscoveryMode]);
+  }, [workspaceSlug, resetSessionState]);
+
+  // Seeing the current scope empty (re)starts an add-first-feeds session, keeping discovery
+  // up past the moment feeds appear so the "feeds added" panel survives the post-add
+  // refetch. The empty scope already renders discovery via the `total === 0` term below, so
+  // there is no frame where the wrong view shows.
+  //
+  // Session state is cleared on a genuine return-to-empty (all feeds deleted): a real
+  // positive count gave way to 0 and no add-session is in progress. It is NOT cleared
+  // when a transient/lagging refetch re-delivers total === 0 mid add-session, which would
+  // otherwise wipe the "N feeds added" badges for feeds whose own refetch hasn't landed.
+  //
+  // A dormant workspace is excluded: its empty feed list shows the activation pitch, not
+  // discovery, so there is no add-first-feeds session to keep open. Starting one here would
+  // outlive the dormant->active transition and suppress the table once a personal-plan
+  // conversion re-homes feeds into the workspace (the feeds would not appear until reload).
+  useEffect(() => {
+    if (userFeedsResultsAreStale || userFeedsResults?.total === undefined) {
+      return;
+    }
+
+    const { total } = userFeedsResults;
+    const wentPositiveToEmpty = total === 0 && (prevTotalRef.current ?? 0) > 0;
+    prevTotalRef.current = total;
+
+    if (total === 0 && !workspaceDormant) {
+      setAddingSessionScope(scopeKey);
+    }
+
+    if (wentPositiveToEmpty && !isAddingSession) {
+      resetSessionState();
+    }
+  }, [
+    userFeedsResults,
+    userFeedsResultsAreStale,
+    isAddingSession,
+    resetSessionState,
+    scopeKey,
+    workspaceDormant,
+  ]);
+
+  // When a workspace activates (its subscription first appears, e.g. a personal-plan
+  // conversion), end any add-first-feeds session for this scope. The feeds that arrive
+  // came from the conversion, not from the user adding them in discovery, so discovery
+  // must give way to the table. This also defends against the brief settling window
+  // where dormancy has cleared but the empty feed count has not yet refetched: a session
+  // started in that window would otherwise latch discovery open over the re-homed feeds.
+  const wasWorkspaceSubscribedRef = useRef(!!currentWorkspace?.subscription);
+  useEffect(() => {
+    const isSubscribed = !!currentWorkspace?.subscription;
+
+    if (isSubscribed && !wasWorkspaceSubscribedRef.current) {
+      setAddingSessionScope((current) => (current === scopeKey ? null : current));
+    }
+
+    wasWorkspaceSubscribedRef.current = isSubscribed;
+  }, [currentWorkspace?.subscription, scopeKey]);
+
+  // One-time confirmation that a personal-plan conversion just landed: without it
+  // the activation pitch silently gives way to the feed table, leaving the owner
+  // unsure the move worked or which scope they are now viewing. Set when the owner
+  // confirms the move; read here once the workspace has activated and the table
+  // (this active return) renders.
+  const { justConverted: showConvertedBanner, clearConverted: dismissConvertedBanner } =
+    useJustConvertedWorkspace();
 
   const isAtLimit = !!(
     userFeedsResults &&
@@ -245,6 +307,26 @@ const UserFeedsInner: React.FC = () => {
         .map(([key]) => key),
     [feedActionStates],
   );
+
+  // Derived, not stored. `null` means feed data for the current scope hasn't loaded yet
+  // (or is the previous scope's, kept by keepPreviousData during a switch) — render
+  // neither the table nor discovery rather than flashing the wrong one. Otherwise
+  // discovery shows when the scope is empty, or while an add-first-feeds session is still
+  // open (until "View your feeds"). A populated scope with no session shows the table.
+  const isInDiscoveryMode: boolean | null =
+    !userFeedsResults || userFeedsResultsAreStale
+      ? null
+      : userFeedsResults.total === 0 || isAddingSession;
+
+  const discoveryIntro = currentWorkspace
+    ? {
+        heading: "Add feeds for your workspace",
+        body: `Feeds added here belong to the workspace and are shared with its members. ${DISCOVERY_BROWSE_HINT}`,
+      }
+    : {
+        heading: "Get news delivered to your Discord",
+        body: DISCOVERY_BROWSE_HINT,
+      };
 
   const handleCuratedFeedAdd = useCallback(
     async (feed: CuratedFeed) => {
@@ -261,7 +343,7 @@ const UserFeedsInner: React.FC = () => {
           ...prev,
           [feed.id]: {
             status: "added",
-            settingsUrl: pages.userFeed(result.id),
+            settingsUrl: pages.userFeed(result.id, { scope }),
             feedId: result.id,
           },
         }));
@@ -296,7 +378,7 @@ const UserFeedsInner: React.FC = () => {
         }
       }
     },
-    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds],
+    [createUserFeed, createInfoAlert, discordUserMe?.maxUserFeeds, scope],
   );
 
   const handleCuratedFeedRemove = useCallback(
@@ -305,8 +387,7 @@ const UserFeedsInner: React.FC = () => {
 
       if (
         !currentState ||
-        (currentState.status !== "added" &&
-          currentState.status !== "remove-error")
+        (currentState.status !== "added" && currentState.status !== "remove-error")
       ) {
         return;
       }
@@ -342,17 +423,20 @@ const UserFeedsInner: React.FC = () => {
     [feedActionStates, deleteUserFeed],
   );
 
-  const handleUrlFeedAdded = useCallback((_feedId: string, feedUrl: string) => {
-    setFeedActionStates((prev) => ({
-      ...prev,
-      [feedUrl]: {
-        status: "added",
-        settingsUrl: pages.userFeed(_feedId),
-        feedId: _feedId,
-      },
-    }));
-    setModalSessionAddCount((prev) => prev + 1);
-  }, []);
+  const handleUrlFeedAdded = useCallback(
+    (_feedId: string, feedUrl: string) => {
+      setFeedActionStates((prev) => ({
+        ...prev,
+        [feedUrl]: {
+          status: "added",
+          settingsUrl: pages.userFeed(_feedId, { scope }),
+          feedId: _feedId,
+        },
+      }));
+      setModalSessionAddCount((prev) => prev + 1);
+    },
+    [scope],
+  );
 
   const handleUrlFeedRemoved = useCallback((feedUrl: string) => {
     setFeedActionStates((prev) => {
@@ -365,7 +449,7 @@ const UserFeedsInner: React.FC = () => {
   }, []);
 
   const handleExitDiscovery = useCallback(() => {
-    setIsInDiscoveryMode(false);
+    setAddingSessionScope(null);
   }, []);
 
   const handleSetupConnectionCreated = useCallback(() => {
@@ -483,13 +567,56 @@ const UserFeedsInner: React.FC = () => {
     }
   };
 
-  const totalFeedsRequiringAttention =
-    userFeedsRequireAttentionResults?.total || 0;
+  const totalFeedsRequiringAttention = userFeedsRequireAttentionResults?.total || 0;
   const totalManagementInvites = managementInvitesCount?.total || 0;
+
+  // In-scope settings affordance: once inside a workspace, its name, a one-line
+  // description, and its settings are shown on-page rather than buried in the header
+  // switcher menu. Shared between the dormant and active returns so the two stay in sync.
+  const workspaceHeader = currentWorkspace && (
+    <Flex alignItems="center" justifyContent="space-between" gap={4} flexWrap="wrap" mt={4}>
+      <Stack gap={0}>
+        <Heading as="h1" size="lg" tabIndex={-1}>
+          {currentWorkspace.name}
+        </Heading>
+        <Text color="fg.muted" fontSize="sm">
+          Workspace. Feeds here are shared with members.
+        </Text>
+      </Stack>
+      <Button asChild variant="outline" size="sm">
+        <Link to={pages.workspaceSettings(currentWorkspace.slug)}>
+          <FaGear aria-hidden="true" />
+          Workspace settings
+        </Link>
+      </Button>
+    </Flex>
+  );
+
+  // Pay-at-blocked-intent: a dormant workspace with no feeds shows the
+  // activation empty state instead of the add-feed experience (which the
+  // server would reject anyway). With existing (disabled) feeds, the list
+  // stays visible so nothing looks deleted; the banner carries the message.
+  if (workspaceDormant && userFeedsResults && userFeedsResults.total === 0) {
+    return (
+      <Stack gap={4}>
+        {workspaceHeader}
+        <WorkspaceActivationEmptyState />
+      </Stack>
+    );
+  }
 
   return (
     <>
       <Stack gap={4}>
+        {workspaceHeader}
+        {showConvertedBanner && (
+          <DismissableAlert
+            status="success"
+            title="Your plan moved to this workspace."
+            description="Your feeds are now here and shared with the workspace's members."
+            onClosed={dismissConvertedBanner}
+          />
+        )}
         <Stack gap={2}>
           <PageAlertContextOutlet
             containerProps={{
@@ -497,43 +624,39 @@ const UserFeedsInner: React.FC = () => {
             }}
           />
           <ReducedLimitAlert />
-          {totalFeedsRequiringAttention !== undefined &&
-            totalFeedsRequiringAttention > 0 && (
-              <Alert.Root status="warning" mt={2}>
-                <Alert.Indicator />
-                <Box>
-                  <Alert.Title>
-                    {totalFeedsRequiringAttention} feed
-                    {totalFeedsRequiringAttention > 1 ? "s" : ""} require
-                    {totalFeedsRequiringAttention > 1 ? "" : "s"} your
-                    attention!
-                  </Alert.Title>
-                  <Alert.Description>
-                    Article delivery may be fully or partially paused.{" "}
-                    <ChakraLink
-                      textAlign="left"
-                      as="button"
-                      color="text.link"
-                      onClick={onApplyRequiresAttentionFilters}
-                    >
-                      Click here to apply filters and see which ones they are.
-                    </ChakraLink>
-                    {hasFailedFeedAlertsDisabled && (
-                      <>
-                        {" "}
-                        You can also{" "}
-                        <ChakraLink asChild color="text.link">
-                          <Link to={pages.userSettings()}>
-                            get notified when failures occur
-                          </Link>
-                        </ChakraLink>
-                        .
-                      </>
-                    )}
-                  </Alert.Description>
-                </Box>
-              </Alert.Root>
-            )}
+          {totalFeedsRequiringAttention !== undefined && totalFeedsRequiringAttention > 0 && (
+            <Alert.Root status="warning" mt={2}>
+              <Alert.Indicator />
+              <Box>
+                <Alert.Title>
+                  {totalFeedsRequiringAttention} feed
+                  {totalFeedsRequiringAttention > 1 ? "s" : ""} require
+                  {totalFeedsRequiringAttention > 1 ? "" : "s"} your attention!
+                </Alert.Title>
+                <Alert.Description>
+                  Article delivery may be fully or partially paused.{" "}
+                  <ChakraLink
+                    textAlign="left"
+                    as="button"
+                    color="text.link"
+                    onClick={onApplyRequiresAttentionFilters}
+                  >
+                    Click here to apply filters and see which ones they are.
+                  </ChakraLink>
+                  {hasFailedFeedAlertsDisabled && (
+                    <>
+                      {" "}
+                      You can also{" "}
+                      <ChakraLink asChild color="text.link">
+                        <Link to={pages.userSettings()}>get notified when failures occur</Link>
+                      </ChakraLink>
+                      .
+                    </>
+                  )}
+                </Alert.Description>
+              </Box>
+            </Alert.Root>
+          )}
           <Alert.Root
             hidden={!totalManagementInvites}
             mt={2}
@@ -548,7 +671,7 @@ const UserFeedsInner: React.FC = () => {
             </Alert.Title>
             <FeedManagementInvitesDialog
               trigger={
-                <Button variant="outline" colorPalette="gray">
+                <Button variant="outline">
                   <span>View pending management invites</span>
                 </Button>
               }
@@ -569,14 +692,9 @@ const UserFeedsInner: React.FC = () => {
         </Stack>
         {isInDiscoveryMode === false && (
           <>
-            <Flex
-              alignItems="center"
-              justifyContent="space-between"
-              gap="4"
-              flexWrap="wrap"
-            >
+            <Flex alignItems="center" justifyContent="space-between" gap="4" flexWrap="wrap">
               <Flex alignItems="center" gap={4}>
-                <Heading as="h1" size="lg" tabIndex={-1}>
+                <Heading as={currentWorkspace ? "h2" : "h1"} size="lg" tabIndex={-1}>
                   {t("pages.userFeeds.title")}{" "}
                   <span>
                     {totalFeedCount !== undefined &&
@@ -584,9 +702,7 @@ const UserFeedsInner: React.FC = () => {
                       `(${selectedFeeds.length}/${totalFeedCount})`}
                   </span>
                   <span>
-                    {totalFeedCount !== undefined &&
-                      !selectedFeeds.length &&
-                      `(${totalFeedCount})`}
+                    {totalFeedCount !== undefined && !selectedFeeds.length && `(${totalFeedCount})`}
                   </span>
                 </Heading>
               </Flex>
@@ -596,9 +712,7 @@ const UserFeedsInner: React.FC = () => {
                     <Button
                       variant="outline"
                       aria-disabled={selectedFeeds.length === 0}
-                      data-disabled={
-                        selectedFeeds.length === 0 ? "" : undefined
-                      }
+                      data-disabled={selectedFeeds.length === 0 ? "" : undefined}
                     >
                       Feed Actions
                       <FaChevronDown />
@@ -608,9 +722,7 @@ const UserFeedsInner: React.FC = () => {
                     <MenuItem
                       disabled={
                         !selectedFeeds.length ||
-                        !selectedFeeds.some(
-                          (f) => f.disabledCode === UserFeedDisabledCode.Manual,
-                        )
+                        !selectedFeeds.some((f) => f.disabledCode === UserFeedDisabledCode.Manual)
                       }
                       value="enable"
                       onClick={() => setPendingBulkAction("enable")}
@@ -624,8 +736,7 @@ const UserFeedsInner: React.FC = () => {
                         selectedFeeds.every(
                           (r) =>
                             !!r.disabledCode &&
-                            r.disabledCode !==
-                              UserFeedDisabledCode.ExceededFeedLimit,
+                            r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
                         )
                       }
                       value="disable"
@@ -671,21 +782,22 @@ const UserFeedsInner: React.FC = () => {
                   }}
                 />
                 <CopyUserFeedSettingsDialog
-                  feedId={
-                    selectedFeeds.length === 1
-                      ? selectedFeeds[0]?.id
-                      : undefined
-                  }
+                  feedId={selectedFeeds.length === 1 ? selectedFeeds[0]?.id : undefined}
                   isOpen={copySettingsOpen}
                   onClose={() => setCopySettingsOpen(false)}
                   onSuccess={clearSelection}
                 />
+                {/* Gate modals: each reports its outcome via a page alert, so it
+                    closes on confirm rather than holding a backdrop over the page
+                    for the whole request + feed-list refetch. */}
                 <ConfirmModal
                   open={pendingBulkAction === "enable"}
                   onOpenChange={(open) => !open && setPendingBulkAction(null)}
                   title={`Are you sure you want to enable ${selectedFeeds.length} feed(s)?`}
                   description="Only feeds that were manually disabled will be enabled."
                   onConfirm={onEnableSelectedFeeds}
+                  closeOnConfirm
+                  allowEscape
                   colorScheme="blue"
                 />
                 <ConfirmModal
@@ -694,6 +806,8 @@ const UserFeedsInner: React.FC = () => {
                   title={`Are you sure you want to disable ${selectedFeeds.length} feed(s)?`}
                   description="Only feeds that are not currently disabled will be affected."
                   onConfirm={onDisableSelectedFeeds}
+                  closeOnConfirm
+                  allowEscape
                   colorScheme="blue"
                 />
                 <ConfirmModal
@@ -702,6 +816,7 @@ const UserFeedsInner: React.FC = () => {
                   title={`Are you sure you want to delete ${selectedFeeds.length} feed(s)?`}
                   description="This action cannot be undone."
                   onConfirm={onDeleteSelectedFeeds}
+                  closeOnConfirm
                   colorScheme="red"
                   okText={t("common.buttons.delete")}
                 />
@@ -726,7 +841,7 @@ const UserFeedsInner: React.FC = () => {
                     </MenuTrigger>
                     <MenuContent>
                       <MenuItem value="add-multiple" asChild>
-                        <Link to={pages.addFeeds()}>
+                        <Link to={pages.addFeeds(scope)}>
                           <FaPlus />
                           Add multiple feeds
                         </Link>
@@ -738,9 +853,8 @@ const UserFeedsInner: React.FC = () => {
             </Flex>
             <HStack gap={6}>
               <Text>
-                Every feed represents a news source that you can subscribe to.
-                After adding a feed, you may then specify where you want
-                articles for that feed to be sent to.
+                Every feed represents a news source that you can subscribe to. After adding a feed,
+                you may then specify where you want articles for that feed to be sent to.
               </Text>
             </HStack>
           </>
@@ -759,12 +873,7 @@ const UserFeedsInner: React.FC = () => {
                   p={6}
                   alignItems="center"
                 >
-                  <Icon
-                    as={FaCircleCheck}
-                    color="text.success"
-                    boxSize={8}
-                    aria-hidden="true"
-                  />
+                  <Icon as={FaCircleCheck} color="text.success" boxSize={8} aria-hidden="true" />
                   <Heading as="h2" size="lg">
                     {addedFeedKeys.length} feed
                     {addedFeedKeys.length !== 1 ? "s" : ""} added!
@@ -773,10 +882,7 @@ const UserFeedsInner: React.FC = () => {
                     Add more feeds below, or view your feeds to set up delivery.
                   </Text>
                   <Box>
-                    <PrimaryActionButton
-                      size="sm"
-                      onClick={handleExitDiscovery}
-                    >
+                    <PrimaryActionButton size="sm" onClick={handleExitDiscovery}>
                       View your feeds{" "}
                       <Box as="span" aria-hidden="true">
                         &rarr;
@@ -787,17 +893,19 @@ const UserFeedsInner: React.FC = () => {
               ) : (
                 <>
                   <Heading as="h2" size="lg">
-                    Get news delivered to your Discord
+                    {discoveryIntro.heading}
                   </Heading>
-                  <Text color="fg.muted">
-                    Browse popular feeds to get started, or paste a URL to check
-                    any website.
-                  </Text>
+                  <Text color="fg.muted">{discoveryIntro.body}</Text>
                 </>
               )}
             </Stack>
             <Stack gap={2}>
+              {/* Keyed by scope: a search submitted just before a scope switch commits is
+                  validated against the OLD scope's credentials. Remounting on scope change
+                  guarantees no cross-scope search state (query, result, Add button) is ever
+                  shown under the new scope. */}
               <FeedDiscoverySearch
+                key={workspaceSlug ?? "personal"}
                 feedActionStates={feedActionStates}
                 isAtLimit={isAtLimit}
                 onAdd={handleCuratedFeedAdd}
@@ -808,8 +916,8 @@ const UserFeedsInner: React.FC = () => {
               />
               {!isSearchActive && (
                 <Text color="fg.muted" fontSize="sm" textAlign="center">
-                  Many websites support feeds - try pasting a YouTube channel,
-                  subreddit, blog, or news site URL
+                  Many websites support feeds - try pasting a YouTube channel, subreddit, blog, or
+                  news site URL
                 </Text>
               )}
               <FeedLimitBar showOnlyWhenConstrained />
@@ -837,17 +945,14 @@ const UserFeedsInner: React.FC = () => {
                 </Alert.Description>
               </Alert.Root>
             )}
-            {!isSearchActive &&
-              curatedData &&
-              !curatedLoading &&
-              curatedData.feeds.length > 0 && (
-                <CategoryGrid
-                  categories={curatedData.categories}
-                  totalFeedCount={curatedData.feeds.length ?? 0}
-                  getCategoryPreviewText={getCategoryPreviewText}
-                  onSelectCategory={handleOpenBrowseModal}
-                />
-              )}
+            {!isSearchActive && curatedData && !curatedLoading && curatedData.feeds.length > 0 && (
+              <CategoryGrid
+                categories={curatedData.categories}
+                totalFeedCount={curatedData.feeds.length ?? 0}
+                getCategoryPreviewText={getCategoryPreviewText}
+                onSelectCategory={handleOpenBrowseModal}
+              />
+            )}
           </Stack>
         </Box>
       )}

@@ -10,10 +10,16 @@ The E2E Docker stack (defined in `docker-compose.e2e.yml`) provides all required
 
 `e2e-mock.sh` is the canonical wrapper: it brings up the full Docker stack (`up -d --build --wait`), runs Playwright, and tears the stack down on exit. **Any arguments after the script name are forwarded straight to `playwright test`**, so you can scope a run to a single file and/or project. Always go through this script (or the `npm run e2e*` aliases) rather than starting the stack and Playwright by hand — `--build` is required because the `web-api` source is baked into its image (no bind mount), so backend changes won't take effect otherwise.
 
-The script writes two logs to `e2e/logs/` (gitignored) that outlive the torn-down stack:
+The script writes logs to `e2e/logs/` (gitignored) that outlive the torn-down stack. **If a run fails, read `logs/combined.log` first** — it is the one file containing everything, top to bottom:
 
-- `logs/playwright.log` — the full Playwright run output.
-- `logs/docker-stack.log` — `docker compose logs` for all services, captured just before teardown. This is the only place to inspect container-side behaviour after a run, e.g. inbound Paddle webhooks in `web-api` ("Paddle webhook received" / "Invalid signature received for paddle webhook event").
+- `logs/combined.log` — **read this first after a run ends.** Playwright run output + every container's logs + all three mock servers, concatenated under `===== SECTION =====` headers. Assembled on teardown. The script prints this path when the run starts and again when it ends.
+- `logs/playwright.log` — the Playwright run output (written live via `tee`).
+- `logs/docker-stack.log` — `docker compose logs --timestamps --follow` for all services, streamed **live** for the whole run. The place to inspect container-side behaviour, e.g. inbound Paddle webhooks in `web-api` ("Paddle webhook received" / "Invalid signature received for paddle webhook event").
+- `logs/mock-rss.log`, `logs/mock-discord.log`, `logs/mock-smtp.log` — the host-side mock servers Playwright launches, written live. Look here for things like `[mock-discord] Unmatched: <method> <path>` when a request isn't being mocked.
+
+`combined.log` is assembled on teardown, so it only exists once the run ends. **While a run is still going (e.g. a hang), read the four source files above — they are all written live.**
+
+Concurrent runs (`E2E_INSTANCE > 0`) suffix every log file with `-<instance>` (e.g. `combined-1.log`).
 
 ```bash
 # Run all regular (non-paddle) tests via Docker stack (defaults to --project=e2e-web)
@@ -38,7 +44,23 @@ npm run e2e:ui
 npm run e2e:report
 ```
 
-> **Which project does my spec belong to?** Anything matching `tests/billing/paddle-*.spec.ts` or `branding-paddle-overlay.spec.ts` is in the `e2e-paddle` project (see `PADDLE_CHECKOUT_TESTS` in `playwright.config.ts`), which depends on `e2e-paddle-setup` (starts a cloudflared tunnel + configures the Paddle sandbox webhook). Everything else is `e2e-web`. Paddle specs require `cloudflared` on PATH and `BACKEND_API_PADDLE_KEY` / `_URL` / `_WEBHOOK_SECRET` in `e2e/.env` — even ones that mock the request under test, because their setup still provisions a real sandbox subscription.
+> **Which project does my spec belong to?** Anything listed in `PADDLE_CHECKOUT_TESTS` in `playwright.config.ts` (all under `tests/billing/`) is in the `e2e-paddle` project, which depends on `e2e-paddle-setup` (starts a cloudflared tunnel + configures the Paddle sandbox webhook). Everything else is `e2e-web`. Paddle specs require `cloudflared` on PATH and `BACKEND_API_PADDLE_KEY` / `_URL` / `_WEBHOOK_SECRET` in `e2e/.env` — even ones that mock the request under test, because their setup still provisions a real sandbox subscription.
+
+## Billing posture: e2e-web is always self-host (Paddle blanked)
+
+The mock suite runs in exactly one billing posture per stack boot, so `e2e-mock.sh` makes it
+deterministic: **any run that does not target the `e2e-paddle` project or a `tests/billing/` spec
+gets the four Paddle vars (`BACKEND_API_PADDLE_KEY` / `_URL` / `_WEBHOOK_SECRET`,
+`VITE_PADDLE_CLIENT_TOKEN`) force-blanked** before the stack boots. Values in `e2e/.env`, the
+repo-root `.env` (which Docker Compose auto-loads from its project directory regardless of cwd),
+or CI workflow env cannot leak in.
+
+This matches what the `e2e-web` specs assume: feeds work in workspaces without subscriptions
+(unlimited by default, capped only when the stack sets `BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS`),
+and `workspace-self-host-posture.spec.ts` asserts billing UI is absent entirely. A spec that needs a billing-enabled backend (e.g.
+`dormant-workspace-feed-retry.spec.ts` — dormant workspaces only exist when Paddle is configured)
+must live in `tests/billing/` and be listed in `PADDLE_CHECKOUT_TESTS` so it runs under
+`e2e-paddle` with the real env.
 
 ## Project Structure
 

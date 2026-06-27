@@ -52,6 +52,11 @@ const configSchema = z.object({
   BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: z.coerce.number().default(10),
   BACKEND_API_DEFAULT_MAX_FEEDS: z.coerce.number().default(5),
   BACKEND_API_DEFAULT_MAX_USER_FEEDS: z.coerce.number().default(5),
+  // Self-host workspace feed cap. Unset means unlimited: the per-tier cap is a
+  // billing construct, so a self-host instance (no Paddle) is uncapped unless
+  // the operator opts into a limit. Ignored when Paddle is configured, where the
+  // workspace subscription tier dictates the cap.
+  BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS: z.coerce.number().optional(),
   BACKEND_API_DEFAULT_DATE_FORMAT: z
     .string()
     .default("ddd, D MMMM YYYY, h:mm A z"),
@@ -86,6 +91,20 @@ const configSchema = z.object({
   BACKEND_API_SMTP_USERNAME: z.string().optional(),
   BACKEND_API_SMTP_PASSWORD: z.string().optional(),
   BACKEND_API_SMTP_FROM: z.string().optional(),
+  BACKEND_API_SMTP_FROM_DOMAIN: z.string().optional(),
+  // Defaults target production SMTPS (implicit TLS on 465). Overridable so a
+  // local/test mailer can run plain SMTP on another port.
+  BACKEND_API_SMTP_PORT: z.coerce.number().optional(),
+  BACKEND_API_SMTP_SECURE: z
+    .string()
+    .transform((val) => val !== "false")
+    .default("true"),
+  // Optional disclosures rendered in the shared email footer. Both are
+  // omitted from the footer when unset, so a self-host instance sends no
+  // legal boilerplate it has not configured. The hosted instance sets them
+  // to render a privacy link and the operator's identity/postal address.
+  BACKEND_API_EMAIL_PRIVACY_POLICY_URL: z.string().optional(),
+  BACKEND_API_EMAIL_FOOTER_ADDRESS: z.string().optional(),
 
   // Paddle
   BACKEND_API_PADDLE_KEY: z.string().optional(),
@@ -116,6 +135,13 @@ const configSchema = z.object({
   BACKEND_API_REDDIT_CLIENT_ID: z.string().optional(),
   BACKEND_API_REDDIT_CLIENT_SECRET: z.string().optional(),
   BACKEND_API_REDDIT_REDIRECT_URI: z.string().optional(),
+  // Overridable so tests can point Reddit traffic at a mock server.
+  BACKEND_API_REDDIT_API_BASE_URL: z
+    .string()
+    .default("https://www.reddit.com/api/v1"),
+  BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL: z
+    .string()
+    .default("https://oauth.reddit.com"),
 
   // Admin
   BACKEND_API_ADMIN_USER_IDS: z
@@ -129,7 +155,27 @@ const configSchema = z.object({
         : [],
     )
     .default(""),
-});
+})
+  .refine(
+    (cfg) => {
+      const smtpConfigured = Boolean(
+        cfg.BACKEND_API_SMTP_HOST &&
+          cfg.BACKEND_API_SMTP_USERNAME &&
+          cfg.BACKEND_API_SMTP_PASSWORD,
+      );
+      if (!smtpConfigured) {
+        return true;
+      }
+      return Boolean(
+        cfg.BACKEND_API_SMTP_FROM || cfg.BACKEND_API_SMTP_FROM_DOMAIN,
+      );
+    },
+    {
+      message:
+        "When SMTP is configured, either BACKEND_API_SMTP_FROM or BACKEND_API_SMTP_FROM_DOMAIN must be set",
+      path: ["BACKEND_API_SMTP_FROM_DOMAIN"],
+    },
+  );
 
 export type Config = z.infer<typeof configSchema>;
 

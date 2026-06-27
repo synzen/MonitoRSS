@@ -267,6 +267,95 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       );
     });
 
+    it("processes workspace feeds with lookup keys using the workspace's Reddit credentials", async () => {
+      const encryptionKey = generateEncryptionKey();
+      const uniqueRefreshRate = 7300;
+      const ctx = harness.createContext({ encryptionKey });
+      const lookupKey = `lookup-${ctx.generateId()}`;
+      const redditUrl = `https://reddit.com/r/test/${ctx.generateId()}.rss`;
+
+      const workspaceId = await ctx.createWorkspace();
+      await ctx.setWorkspaceRedditCredentials(
+        workspaceId,
+        "workspace-access-token",
+      );
+
+      await ctx.createFeedWithConnection({
+        workspaceId,
+        url: redditUrl,
+        refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
+        userRefreshRateSeconds: uniqueRefreshRate,
+        feedRequestLookupKey: lookupKey,
+      });
+
+      const collectedItems: Array<{ url: string; lookupKey?: string }> = [];
+
+      await ctx.service.handleRefreshRate(uniqueRefreshRate, {
+        urlsHandler: async (batch) => {
+          for (const item of batch) {
+            collectedItems.push(item);
+          }
+        },
+      });
+
+      const matchingItem = collectedItems.find(
+        (item) => item.lookupKey === lookupKey,
+      );
+      assert.ok(
+        matchingItem,
+        "Should find workspace feed with lookup key in results",
+      );
+      assert.ok(
+        matchingItem.url.includes("oauth.reddit.com"),
+        "URL should be transformed to OAuth Reddit URL using workspace credentials",
+      );
+    });
+
+    it("skips workspace feeds with lookup keys when the creator has Reddit credentials but the workspace does not", async () => {
+      // Fail-closed: a workspace feed resolves ONLY the workspace connection,
+      // never falling back to the creator's personal credentials.
+      const encryptionKey = generateEncryptionKey();
+      const uniqueRefreshRate = 7400;
+      const ctx = harness.createContext({ encryptionKey });
+      const lookupKey = `lookup-${ctx.generateId()}`;
+      const redditUrl = `https://reddit.com/r/test/${ctx.generateId()}.rss`;
+      const creatorDiscordUserId = ctx.generateId();
+
+      await ctx.createUserWithRedditCredentials(
+        creatorDiscordUserId,
+        "creator-access-token",
+      );
+
+      const workspaceId = await ctx.createWorkspace();
+
+      await ctx.createFeedWithConnection({
+        discordUserId: creatorDiscordUserId,
+        workspaceId,
+        url: redditUrl,
+        refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
+        userRefreshRateSeconds: uniqueRefreshRate,
+        feedRequestLookupKey: lookupKey,
+      });
+
+      const collectedItems: Array<{ url: string; lookupKey?: string }> = [];
+
+      await ctx.service.handleRefreshRate(uniqueRefreshRate, {
+        urlsHandler: async (batch) => {
+          for (const item of batch) {
+            collectedItems.push(item);
+          }
+        },
+      });
+
+      const matchingItem = collectedItems.find(
+        (item) => item.lookupKey === lookupKey,
+      );
+      assert.ok(
+        !matchingItem,
+        "Workspace feed must not fall back to the creator's personal credentials",
+      );
+    });
+
     it("filters lookup key feeds by refresh rate", async () => {
       const encryptionKey = generateEncryptionKey();
       const uniqueRefreshRate = 8400;
@@ -1072,6 +1161,168 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
           DEFAULT_REFRESH_RATE_SECONDS,
         );
         assert.notStrictEqual(updatedFeed?.slotOffsetMs, 99999);
+      });
+    });
+
+    describe("workspace feeds", () => {
+      it("updates workspace feed refresh rates from workspace benefits", async () => {
+        const localCtx = harness.createContext();
+        const workspaceId = await localCtx.createWorkspace();
+
+        const restampedCtx = harness.createContext({
+          supportersService: {
+            workspaceBenefits: {
+              [workspaceId]: {
+                maxFeeds: 140,
+                maxDailyArticles: SUPPORTER_MAX_DAILY_ARTICLES,
+                refreshRateSeconds: SUPPORTER_REFRESH_RATE,
+                allowWebhooks: true,
+              },
+            },
+          },
+        });
+
+        const feed = await restampedCtx.createFeedWithConnection({
+          workspaceId,
+          refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
+        });
+
+        await restampedCtx.service.runMaintenanceOperations();
+
+        const updatedFeed = await restampedCtx.findById(feed.id);
+        assert.strictEqual(
+          updatedFeed?.refreshRateSeconds,
+          SUPPORTER_REFRESH_RATE,
+        );
+      });
+
+      it("updates workspace feed maxDailyArticles from workspace benefits", async () => {
+        const localCtx = harness.createContext();
+        const workspaceId = await localCtx.createWorkspace();
+
+        const restampedCtx = harness.createContext({
+          supportersService: {
+            workspaceBenefits: {
+              [workspaceId]: {
+                maxFeeds: 140,
+                maxDailyArticles: SUPPORTER_MAX_DAILY_ARTICLES,
+                refreshRateSeconds: SUPPORTER_REFRESH_RATE,
+                allowWebhooks: true,
+              },
+            },
+          },
+        });
+
+        const feed = await restampedCtx.createFeedWithConnection({
+          workspaceId,
+          refreshRateSeconds: SUPPORTER_REFRESH_RATE,
+        });
+        await restampedCtx.setFields(feed.id, {
+          maxDailyArticles: DEFAULT_MAX_DAILY_ARTICLES,
+        });
+
+        await restampedCtx.service.runMaintenanceOperations();
+
+        const updatedFeed = await restampedCtx.findById(feed.id);
+        assert.strictEqual(
+          updatedFeed?.maxDailyArticles,
+          SUPPORTER_MAX_DAILY_ARTICLES,
+        );
+      });
+
+      it("resets a downgraded workspace's feeds to the default refresh rate", async () => {
+        // Workspace previously had a subscription (feed stamped at the faster
+        // supporter rate). With no override in workspaceBenefits, the mock
+        // returns default benefits, simulating a lapsed/cancelled subscription.
+        // Maintenance must re-stamp the stale fast rate back down to default.
+        const localCtx = harness.createContext();
+        const workspaceId = await localCtx.createWorkspace();
+
+        const downgradedCtx = harness.createContext();
+
+        const feed = await downgradedCtx.createFeedWithConnection({
+          workspaceId,
+          refreshRateSeconds: SUPPORTER_REFRESH_RATE,
+        });
+
+        await downgradedCtx.service.runMaintenanceOperations();
+
+        const updatedFeed = await downgradedCtx.findById(feed.id);
+        assert.strictEqual(
+          updatedFeed?.refreshRateSeconds,
+          DEFAULT_REFRESH_RATE_SECONDS,
+        );
+      });
+
+      it("recalculates slotOffsetMs when a workspace's refresh rate changes", async () => {
+        const localCtx = harness.createContext();
+        const workspaceId = await localCtx.createWorkspace();
+
+        const restampedCtx = harness.createContext({
+          supportersService: {
+            workspaceBenefits: {
+              [workspaceId]: {
+                maxFeeds: 140,
+                maxDailyArticles: SUPPORTER_MAX_DAILY_ARTICLES,
+                refreshRateSeconds: SUPPORTER_REFRESH_RATE,
+                allowWebhooks: true,
+              },
+            },
+          },
+        });
+
+        const feed = await restampedCtx.createFeedWithConnection({
+          workspaceId,
+          refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
+          slotOffsetMs: 99999,
+        });
+
+        await restampedCtx.service.runMaintenanceOperations();
+
+        const updatedFeed = await restampedCtx.findById(feed.id);
+        assert.strictEqual(
+          updatedFeed?.refreshRateSeconds,
+          SUPPORTER_REFRESH_RATE,
+        );
+        assert.notStrictEqual(updatedFeed?.slotOffsetMs, 99999);
+      });
+
+      it("does not let personal supporter sync touch workspace feeds", async () => {
+        // A workspace feed whose creator is a supporter must take the
+        // workspace's rate, not the creator's personal supporter rate.
+        const localCtx = harness.createContext();
+        const workspaceId = await localCtx.createWorkspace();
+        const supporterDiscordUserId = localCtx.generateId();
+
+        const mixedCtx = harness.createContext({
+          supportersService: {
+            allUserBenefits: [
+              {
+                discordUserId: supporterDiscordUserId,
+                maxUserFeeds: 10,
+                maxDailyArticles: SUPPORTER_MAX_DAILY_ARTICLES,
+                refreshRateSeconds: SUPPORTER_REFRESH_RATE,
+                isSupporter: true,
+              },
+            ],
+            // workspaceBenefits intentionally omitted -> workspace is free tier.
+          },
+        });
+
+        const feed = await mixedCtx.createFeedWithConnection({
+          discordUserId: supporterDiscordUserId,
+          workspaceId,
+          refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
+        });
+
+        await mixedCtx.service.runMaintenanceOperations();
+
+        const updatedFeed = await mixedCtx.findById(feed.id);
+        assert.strictEqual(
+          updatedFeed?.refreshRateSeconds,
+          DEFAULT_REFRESH_RATE_SECONDS,
+          "workspace feed must not inherit the creator's supporter rate",
+        );
       });
     });
   });

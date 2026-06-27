@@ -17,6 +17,9 @@ export const CreateUserFeedBodySchema = Type.Object({
   curatedFeedId: Type.Optional(Type.String({ minLength: 1 })),
   title: Type.Optional(Type.String()),
   sourceFeedId: Type.Optional(Type.String()),
+  // When set, the feed is created under this workspace. Membership is verified
+  // server-side; non-members get 404.
+  workspaceId: Type.Optional(Type.String({ minLength: 1 })),
 });
 export type CreateUserFeedBody = Static<typeof CreateUserFeedBodySchema>;
 
@@ -29,6 +32,9 @@ export type DeduplicateFeedUrlsBody = Static<
 
 export const ValidateUrlBodySchema = Type.Object({
   url: Type.String({ minLength: 1 }),
+  // Validate in workspace scope: reddit-connection checks resolve against the
+  // workspace's connection instead of the caller's personal one.
+  workspaceId: Type.Optional(Type.String({ minLength: 1 })),
 });
 export type ValidateUrlBody = Static<typeof ValidateUrlBodySchema>;
 
@@ -36,6 +42,7 @@ export type ValidateUrlBody = Static<typeof ValidateUrlBodySchema>;
 export const PreviewByUrlBodySchema = Type.Object(
   {
     url: Type.String({ minLength: 1 }),
+    workspaceId: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 );
@@ -585,5 +592,8 @@ export const GetUserFeedsQuerySchema = Type.Object({
       enum: ["", ...Object.values(GetUserFeedsInputSortKey)],
     }),
   ),
+  // When set, lists feeds for this workspace instead of the user's personal feeds.
+  // Membership is verified server-side; non-members get 404.
+  workspaceId: Type.Optional(Type.String({ minLength: 1 })),
 });
 export type GetUserFeedsQuery = Static<typeof GetUserFeedsQuerySchema>;

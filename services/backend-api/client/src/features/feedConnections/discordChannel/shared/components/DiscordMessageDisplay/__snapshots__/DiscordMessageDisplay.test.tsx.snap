@@ -242,7 +242,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 messag
                         class="chakra-stack css-1x0y7ph"
                       >
                         <a
-                          class="chakra-button css-jr843j"
+                          class="chakra-button css-1t9sjxw"
                           href="https://example.com"
                           rel="noopener noreferrer"
                           target="_blank"
@@ -264,7 +264,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 messag
                           </svg>
                         </a>
                         <button
-                          class="chakra-button css-r3twdk"
+                          class="chakra-button css-ifflgi"
                           type="button"
                         >
                           Subscribe

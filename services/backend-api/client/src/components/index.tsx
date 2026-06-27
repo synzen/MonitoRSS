@@ -1,5 +1,6 @@
 export * from "./CategoryText";
 export * from "./Loading";
+export * from "./LoadingFallback";
 export * from "./Menu";
 export * from "./Navbar";
 export * from "./SidebarHeading";
@@ -17,5 +18,6 @@ export * from "./FAQ";
 export * from "./ResizablePanel";
 export * from "./Panel";
 export * from "./PrimaryActionButton";
+export * from "./SettingsSection";
 export * from "./DestructiveActionButton";
 export * from "./UnsavedChangesBadge";

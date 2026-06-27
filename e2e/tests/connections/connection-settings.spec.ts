@@ -67,7 +67,7 @@ test.describe("Connection Settings", () => {
     ).not.toBeVisible({ timeout: 30000 });
 
     await expect(
-      page.getByText("Successfully updated connection."),
+      page.getByRole("alert").getByText("Successfully updated connection."),
     ).toBeVisible({
       timeout: 10000,
     });
@@ -148,7 +148,7 @@ test.describe("Connection Settings", () => {
       ).not.toBeVisible({ timeout: 30000 });
 
       await expect(
-        page.getByText("Successfully updated connection."),
+        page.getByRole("alert").getByText("Successfully updated connection."),
       ).toBeVisible({ timeout: 10000 });
 
       await page.reload();
@@ -260,7 +260,9 @@ test.describe("Connection Settings", () => {
         .click();
 
       await expect(
-        page.getByText(`Successfully created cloned connection: ${clonedName}`),
+        page
+          .getByRole("alert")
+          .getByText(`Successfully created cloned connection: ${clonedName}`),
       ).toBeVisible({ timeout: 30000 });
 
       await page.goto(`/feeds/${testFeed.id}?view=connections`);
@@ -386,7 +388,9 @@ test.describe("Connection Settings", () => {
       await dialog.getByRole("button", { name: "Clone" }).click();
 
       await expect(
-        page.getByText(`Successfully created cloned connection: ${clonedName}`),
+        page
+          .getByRole("alert")
+          .getByText(`Successfully created cloned connection: ${clonedName}`),
       ).toBeVisible({ timeout: 30000 });
 
       // Non-excluded feeds received the cloned connection; the excluded one did not.
@@ -616,7 +620,7 @@ test.describe("Copy Connection Settings", () => {
     await page.getByRole("button", { name: /Copy to 2 connections/i }).click();
 
     await expect(
-      page.getByText(/Successfully copied connection settings/),
+      page.getByRole("alert").getByText(/Successfully copied connection settings/),
     ).toBeVisible({ timeout: 30000 });
 
     // Navigate to feed via breadcrumb, then to connections view
@@ -721,7 +725,7 @@ test.describe("Copy Connection Settings", () => {
       .click();
 
     await expect(
-      page.getByText(/Successfully copied connection settings/),
+      page.getByRole("alert").getByText(/Successfully copied connection settings/),
     ).toBeVisible({ timeout: 30000 });
 
     // Navigate to connections list and verify all targets have the settings
@@ -792,7 +796,7 @@ test.describe("Copy Connection Settings", () => {
     await page.getByRole("button", { name: /Copy to 1 connection/i }).click();
 
     await expect(
-      page.getByText(/Successfully copied connection settings/),
+      page.getByRole("alert").getByText(/Successfully copied connection settings/),
     ).toBeVisible({ timeout: 30000 });
 
     // Navigate to target connection and verify filters were copied
@@ -889,7 +893,7 @@ test.describe("Copy Connection Settings", () => {
         .click();
 
       await expect(
-        page.getByText(/Successfully copied connection settings/),
+        page.getByRole("alert").getByText(/Successfully copied connection settings/),
       ).toBeVisible({ timeout: 30000 });
 
       // Navigate to webhook target and verify branding was copied
@@ -984,7 +988,7 @@ test.describe("Copy Connection Settings", () => {
     await page.getByRole("button", { name: /Copy to 1 connection/i }).click();
 
     await expect(
-      page.getByText(/Successfully copied connection settings/),
+      page.getByRole("alert").getByText(/Successfully copied connection settings/),
     ).toBeVisible({ timeout: 30000 });
 
     // Navigate to target and verify content/embeds were copied

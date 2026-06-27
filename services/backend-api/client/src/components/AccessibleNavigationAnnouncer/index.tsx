@@ -26,6 +26,19 @@ export const AccessibleNavigationAnnouncer = () => {
           return;
         }
 
+        /**
+         * If the user has already opened a popup (e.g. the header workspace switcher menu)
+         * by the time this delayed callback runs, stealing focus to the h1 would dismiss
+         * the popup out from under them.
+         */
+        if (
+          activeElement &&
+          (activeElement.closest('[role="menu"], [role="dialog"], [role="listbox"]') ||
+            activeElement.getAttribute("aria-expanded") === "true")
+        ) {
+          return;
+        }
+
         const checkoutRootPath = pages.checkout(":id").split("/")[1];
 
         if (locationPathname.includes(checkoutRootPath)) {
@@ -37,7 +50,7 @@ export const AccessibleNavigationAnnouncer = () => {
         const h1Element = document.querySelector("h1");
 
         if (h1Element) {
-          h1Element.focus();
+          h1Element.focus({ preventScroll: true });
         }
       }, 500);
     } else {

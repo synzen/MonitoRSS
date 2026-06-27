@@ -27,6 +27,7 @@ import {
   MediumDeliveryResult,
 } from "../../../types/DeliveryPreview";
 import { useUserFeedContext } from "../../../contexts/UserFeedContext";
+import { useFeedScope } from "../../../contexts/FeedScopeContext";
 import { pages } from "../../../../../constants";
 import { FeedConnectionType } from "../../../../../types";
 import { DeliveryChecksModal } from "./DeliveryChecksModal";
@@ -132,6 +133,7 @@ interface ConnectionResultRowProps {
 
 const ConnectionResultRow = ({ mediumResult }: ConnectionResultRowProps) => {
   const { userFeed } = useUserFeedContext();
+  const { workspaceSlug } = useFeedScope();
 
   const connection = userFeed.connections.find((c) => c.id === mediumResult.mediumId);
   const connectionName = connection?.name || mediumResult.mediumId;
@@ -151,6 +153,7 @@ const ConnectionResultRow = ({ mediumResult }: ConnectionResultRowProps) => {
                 feedId: userFeed.id,
                 connectionType: connection.key as FeedConnectionType,
                 connectionId: mediumResult.mediumId,
+                scope: workspaceSlug ? { workspaceSlug } : undefined,
               })}
               target="_blank"
               rel="noopener noreferrer"

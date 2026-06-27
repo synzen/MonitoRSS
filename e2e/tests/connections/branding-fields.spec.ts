@@ -177,7 +177,7 @@ test.describe("Branding Fields - Template Gallery Modal", () => {
       .click();
 
     // Connection should save successfully
-    await expect(page.getByText("You're all set")).toBeVisible({
+    await expect(page.getByRole("alert").getByText("You're all set")).toBeVisible({
       timeout: 10000,
     });
   });
@@ -207,7 +207,7 @@ test.describe("Branding Fields - Template Gallery Modal", () => {
     await modal.getByRole("button", { name: "Save without branding" }).click();
 
     // Connection should save successfully
-    await expect(page.getByText("You're all set")).toBeVisible({
+    await expect(page.getByRole("alert").getByText("You're all set")).toBeVisible({
       timeout: 10000,
     });
   });

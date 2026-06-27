@@ -7,13 +7,15 @@ import fastifyStatic from "@fastify/static";
 import { join } from "path";
 import type { Container } from "./container";
 import { Environment } from "./config";
-import type { SessionAccessToken } from "./infra/auth";
+import { stampSessionEpoch, type SessionAccessToken } from "./infra/auth";
 import {
   errorHandler,
   notFoundHandler,
   BadRequestError,
   ApiErrorCode,
 } from "./infra/error-handler";
+import addFormats from "ajv-formats";
+import type Ajv from "ajv";
 import {
   timezoneKeywordPlugin,
   dateLocaleKeywordPlugin,
@@ -28,6 +30,9 @@ import { userFeedsRoutes } from "./features/user-feeds/user-feeds.routes";
 import { supporterSubscriptionsRoutes } from "./features/supporter-subscriptions/supporter-subscriptions.routes";
 import { userFeedManagementInvitesRoutes } from "./features/user-feed-management-invites/user-feed-management-invites.routes";
 import { usersRoutes } from "./features/users/users.routes";
+import { emailVerificationRoutes } from "./features/users/email-verification.routes";
+import { workspacesRoutes } from "./features/workspaces/workspaces.routes";
+import { workspaceInvitesRoutes } from "./features/workspace-invites/workspace-invites.routes";
 import { redditAuthRoutes } from "./features/reddit-auth/reddit-auth.routes";
 import { errorReportsRoutes } from "./features/error-reports/error-reports.routes";
 import { curatedFeedsRoutes } from "./features/curated-feeds/curated-feeds.routes";
@@ -38,6 +43,7 @@ declare module "fastify" {
     container: Container;
     accessToken: SessionAccessToken;
     discordUserId: string;
+    userId?: string;
   }
 }
 
@@ -53,6 +59,10 @@ export async function createApp(
         removeAdditional: true,
       },
       plugins: [
+        // Passed by reference (its function name is "formatsPlugin") so
+        // @fastify/ajv-compiler detects it and skips its own duplicate
+        // ajv-formats registration. This enables `format: "email"` validation.
+        addFormats as unknown as (ajv: Ajv) => Ajv,
         timezoneKeywordPlugin,
         dateLocaleKeywordPlugin,
         hasAtLeastOneVisibleColumnPlugin,
@@ -224,6 +234,15 @@ export async function createApp(
       // Users routes
       await instance.register(usersRoutes, { prefix: "/users" });
 
+      // Workspaces. Access is gated per-user by the workspaces feature flag
+      // (requireWorkspacesFeatureHook), so the routes always register and a
+      // user without the flag gets a 404.
+      await instance.register(emailVerificationRoutes, { prefix: "/users" });
+      await instance.register(workspacesRoutes, { prefix: "/workspaces" });
+      await instance.register(workspaceInvitesRoutes, {
+        prefix: "/workspace-invites",
+      });
+
       // Reddit auth routes
       await instance.register(redditAuthRoutes, { prefix: "/reddit" });
 
@@ -246,10 +265,11 @@ export async function createApp(
       const { accessToken } = request.body as {
         accessToken: SessionAccessToken;
       };
-      request.session.set("accessToken", accessToken);
-      await container.usersService.initDiscordUser(accessToken.discord.id, {
-        email: accessToken.discord.email,
-      });
+      const user = await container.usersService.initDiscordUser(
+        accessToken.discord.id,
+        { email: accessToken.discord.email },
+      );
+      request.session.set("accessToken", stampSessionEpoch(accessToken, user));
       return reply.send({ ok: true });
     });
   }

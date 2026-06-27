@@ -4,10 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { useEffect } from "react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { system } from "@/utils/theme";
 import { CuratedFeed } from "../features/feed/types";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
+import { FeedScopeProvider } from "../features/feed";
+import { JustConvertedWorkspaceProvider, useJustConvertedWorkspace } from "@/features/workspaces";
 import { UserFeeds } from "./UserFeeds";
 
 const {
@@ -17,6 +20,7 @@ const {
   mockUseUserFeedsReturn,
   curatedFeedsMockImpl,
   mockUnconfiguredFeedsReturn,
+  mockCurrentWorkspace,
 } = vi.hoisted(() => {
   const categoriesFixture = [
     { id: "gaming", label: "Gaming", count: 25 },
@@ -60,6 +64,13 @@ const {
   const createUserFeedMock = vi.fn();
   const useUserFeedsReturnMock = vi.fn();
   const unconfiguredFeedsReturnMock = vi.fn();
+  // Personal scope (the default for most tests) has no current workspace; the
+  // dormant-activation tests set this to a workspace before rendering.
+  const currentWorkspaceMock: {
+    current:
+      | { id: string; slug: string; name: string; subscription?: { productKey: string } }
+      | undefined;
+  } = { current: undefined };
 
   const curatedFeedsImplFn = (options?: { search?: string; category?: string }) => {
     let feeds = feedsFixture;
@@ -100,6 +111,7 @@ const {
     mockUseUserFeedsReturn: useUserFeedsReturnMock,
     curatedFeedsMockImpl: curatedFeedsImplFn,
     mockUnconfiguredFeedsReturn: unconfiguredFeedsReturnMock,
+    mockCurrentWorkspace: currentWorkspaceMock,
   };
 });
 
@@ -264,6 +276,14 @@ vi.mock("../features/feed/components/CopyUserFeedSettingsDialog", () => ({
 vi.mock("@/features/subscriptionProducts", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   ReducedLimitAlert: () => null,
+}));
+
+vi.mock("@/features/workspaces", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  // Stand in for the dormant activation surface so the dormant feeds page can be
+  // rendered without the workspace/paddle hook graph the real component pulls in.
+  WorkspaceActivationEmptyState: () => <div data-testid="workspace-activation-empty-state" />,
+  useCurrentWorkspace: () => mockCurrentWorkspace.current,
 }));
 
 vi.mock("../features/feed/components/FeedLimitBar", () => ({
@@ -482,7 +502,12 @@ describe("UserFeeds - Feed adding & inline banner", () => {
     const addButtons = screen.getAllByRole("button", { name: /^Add .+ feed$/ });
     await user.click(addButtons[0]);
 
-    const liveRegion = screen.getByRole("status");
+    // The page mounts an always-present (empty) PageAlert live region too, so
+    // select the status region that actually carries the banner copy.
+    const liveRegion = screen
+      .getAllByRole("status")
+      .find((r) => /1 feed added!/.test(r.textContent ?? ""));
+    expect(liveRegion).toBeDefined();
     expect(liveRegion).toHaveAttribute("aria-live", "polite");
     expect(liveRegion).toHaveTextContent("1 feed added!");
   });
@@ -598,6 +623,53 @@ describe("UserFeeds - Non-discovery mode", () => {
 
     expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
     expect(screen.queryByTestId("user-feeds-table")).not.toBeInTheDocument();
+  });
+
+  it("shows a fresh intro, not a stale 'feeds added' panel, after deleting all feeds back to empty", async () => {
+    mockCreateUserFeed.mockResolvedValue({ result: { id: "feed-123" } });
+    let totalFeeds = 0;
+    mockUseUserFeedsReturn.mockImplementation(() => ({
+      data: { results: [], total: totalFeeds, feedsWithoutConnections: 0 },
+    }));
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const renderUserFeeds = () => (
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <UserFeeds />
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+    const user = userEvent.setup();
+    const { rerender } = render(renderUserFeeds());
+
+    // Add a feed in discovery, then exit to the table once it appears.
+    const searchInput = screen.getByLabelText("Search popular feeds or paste a URL");
+    await user.type(searchInput, "Gaming");
+    await user.click(screen.getByRole("button", { name: "Go" }));
+    const addButtons = screen.getAllByRole("button", { name: /^Add .+ feed$/ });
+    await user.click(addButtons[0]);
+    expect(screen.getByRole("button", { name: /View your feeds/ })).toBeInTheDocument();
+
+    totalFeeds = 1;
+    await user.click(screen.getByRole("button", { name: /View your feeds/ }));
+    expect(screen.getByTestId("user-feeds-table")).toBeInTheDocument();
+
+    // Delete every feed: the scope returns to empty and discovery re-enters.
+    totalFeeds = 0;
+    rerender(renderUserFeeds());
+
+    // The re-entered discovery must show the plain intro, not the prior session's
+    // "N feeds added!" success panel (the per-session add state is cleared on the
+    // transition back to empty).
+    expect(screen.getByText("Get news delivered to your Discord")).toBeInTheDocument();
+    expect(screen.queryByText(/feed.*added!/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /View your feeds/ })).not.toBeInTheDocument();
   });
 });
 
@@ -741,5 +813,153 @@ describe("UserFeeds - Inline setup checklist", () => {
 
     expect(screen.queryByTestId("setup-checklist")).not.toBeInTheDocument();
     expect(screen.getByTestId("user-feeds-table")).toBeInTheDocument();
+  });
+});
+
+describe("UserFeeds - Dormant workspace activation", () => {
+  const tier2 = { productKey: "tier2" } as const;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
+    mockCurrentWorkspace.current = { id: "ws-1", slug: "ws-1", name: "Workspace One" };
+  });
+
+  afterEach(() => {
+    mockCurrentWorkspace.current = undefined;
+  });
+
+  // Stands in for the convert dialog confirming a move: flips the just-converted
+  // context flag when `marked` is true so the feeds page shows the success banner.
+  const ConversionMarker = ({ marked }: { marked: boolean }) => {
+    const { markConverted } = useJustConvertedWorkspace();
+
+    useEffect(() => {
+      if (marked) {
+        markConverted();
+      }
+    }, [marked, markConverted]);
+
+    return null;
+  };
+
+  const renderDormant = (dormant: boolean, marked = false) => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    const tree = (isDormant: boolean, isMarked: boolean) => (
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <FeedScopeProvider
+                value={{ workspaceId: "ws-1", workspaceSlug: "ws-1", workspaceDormant: isDormant }}
+              >
+                <JustConvertedWorkspaceProvider>
+                  <ConversionMarker marked={isMarked} />
+                  <UserFeeds />
+                </JustConvertedWorkspaceProvider>
+              </FeedScopeProvider>
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>
+      </QueryClientProvider>
+    );
+
+    const result = render(tree(dormant, marked));
+
+    return {
+      ...result,
+      rerender: (isDormant: boolean, isMarked = marked) =>
+        result.rerender(tree(isDormant, isMarked)),
+    };
+  };
+
+  it("shows the table (not discovery) once feeds re-home as the workspace activates", () => {
+    // Dormant + empty: the activation pitch shows, NOT discovery. While dormant,
+    // an empty feed list must not start an add-first-feeds session, or it would
+    // outlive activation and suppress the table once converted feeds arrive.
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [], total: 0, feedsWithoutConnections: 0 },
+    });
+    const { rerender } = renderDormant(true);
+
+    expect(screen.getByTestId("workspace-activation-empty-state")).toBeInTheDocument();
+
+    // Activation lands and the conversion re-homes a feed into the workspace.
+    mockCurrentWorkspace.current = { ...mockCurrentWorkspace.current!, subscription: tier2 };
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [{ id: "1" }], total: 1, feedsWithoutConnections: 0 },
+    });
+    rerender(false);
+
+    expect(screen.getByTestId("user-feeds-table")).toBeInTheDocument();
+    expect(screen.queryByTestId("workspace-activation-empty-state")).not.toBeInTheDocument();
+  });
+
+  it("shows the table even when dormancy clears a frame before the empty feed count refetches", () => {
+    // Reproduces the activation race: the workspace subscription lands (dormancy
+    // clears) one render BEFORE the feed summary refetches off its stale total: 0.
+    // In that window total === 0 && !dormant, which would start an add-first-feeds
+    // session and latch discovery open over the re-homed feeds. Clearing the session
+    // on activation must win so the table appears once the real count arrives.
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [], total: 0, feedsWithoutConnections: 0 },
+    });
+    const { rerender } = renderDormant(true);
+
+    expect(screen.getByTestId("workspace-activation-empty-state")).toBeInTheDocument();
+
+    // Frame 1: subscription appears (dormant -> false) but the summary still reads 0.
+    mockCurrentWorkspace.current = { ...mockCurrentWorkspace.current!, subscription: tier2 };
+    rerender(false);
+
+    // Frame 2: the summary refetch lands with the re-homed feed.
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [{ id: "1" }], total: 1, feedsWithoutConnections: 0 },
+    });
+    rerender(false);
+
+    expect(screen.getByTestId("user-feeds-table")).toBeInTheDocument();
+    expect(screen.queryByTestId("workspace-activation-empty-state")).not.toBeInTheDocument();
+  });
+
+  it("confirms the move with a banner when a conversion just activated the workspace", () => {
+    // The convert dialog marks the workspace before activation; the feeds page then
+    // surfaces a one-time success banner so the owner knows the move worked and which
+    // scope they are viewing, instead of the pitch silently giving way to the table.
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [], total: 0, feedsWithoutConnections: 0 },
+    });
+    const { rerender } = renderDormant(true, true);
+
+    expect(screen.queryByText(/your plan moved to this workspace/i)).not.toBeInTheDocument();
+
+    mockCurrentWorkspace.current = { ...mockCurrentWorkspace.current!, subscription: tier2 };
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [{ id: "1" }], total: 1, feedsWithoutConnections: 0 },
+    });
+    rerender(false);
+
+    expect(screen.getByText(/your plan moved to this workspace/i)).toBeInTheDocument();
+  });
+
+  it("does not show the move banner on a plain reload of an active workspace", () => {
+    // No conversion marker set: an already-active workspace rendering its table must
+    // not show the move confirmation.
+    mockCurrentWorkspace.current = {
+      id: "ws-1",
+      slug: "ws-1",
+      name: "Workspace One",
+      subscription: tier2,
+    };
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [{ id: "1" }], total: 1, feedsWithoutConnections: 0 },
+    });
+    renderDormant(false);
+
+    expect(screen.getByTestId("user-feeds-table")).toBeInTheDocument();
+    expect(screen.queryByText(/your plan moved to this workspace/i)).not.toBeInTheDocument();
   });
 });

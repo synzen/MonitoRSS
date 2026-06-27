@@ -5,6 +5,7 @@ import type {
   IUserFeedFormatOptions,
   IUserFeedDateCheckOptions,
   IExternalFeedProperty,
+  UserFeedListItemSharedManager,
 } from "../../repositories/interfaces/user-feed.types";
 import type {
   GetArticlesResponseRequestStatus,
@@ -21,6 +22,8 @@ import type { FeedFetcherService } from "../feed-fetcher";
 import type { FeedHandlerService } from "../feed-handler/feed-handler.service";
 import type { SupportersService } from "../supporters/supporters.service";
 import type { UsersService } from "../users/users.service";
+import type { WorkspacesService } from "../../features/workspaces/workspaces.service";
+import type { FeedCredentialsService } from "../feed-credentials/feed-credentials.service";
 
 import type { IDiscordChannelConnection } from "../../repositories/interfaces/feed-connection.types";
 import type {
@@ -54,16 +57,28 @@ export interface IFeedConnectionsDiscordChannelsService {
   ): Promise<void>;
 }
 
+// The slice of NotificationsService that workspace feed-limit enforcement
+// dispatches to.
+export interface IWorkspaceFeedLimitNotifier {
+  sendWorkspaceFeedsDisabledDigest(input: {
+    workspaceId: string;
+    disabledFeeds: Array<{ id: string; title: string; url: string }>;
+  }): Promise<void>;
+}
+
 export interface UserFeedsServiceDeps {
   config: Config;
   userFeedRepository: IUserFeedRepository;
   userRepository: IUserRepository;
   feedsService: FeedsService;
   supportersService: SupportersService;
+  workspacesService: WorkspacesService;
+  feedCredentialsService: FeedCredentialsService;
   feedFetcherApiService: FeedFetcherApiService;
   feedFetcherService: FeedFetcherService;
   feedHandlerService: FeedHandlerService;
   usersService: UsersService;
+  notificationsService: IWorkspaceFeedLimitNotifier;
   publishMessage: (queue: string, message: unknown) => Promise<void>;
   feedConnectionsDiscordChannelsService: IFeedConnectionsDiscordChannelsService;
 }
@@ -102,6 +117,7 @@ export enum UserFeedComputedStatus {
   Ok = "OK",
   RequiresAttention = "REQUIRES_ATTENTION",
   ManuallyDisabled = "MANUALLY_DISABLED",
+  FeedLimitExceeded = "FEED_LIMIT_EXCEEDED",
   Retrying = "RETRYING",
 }
 
@@ -119,6 +135,9 @@ export interface GetUserFeedsInput {
   search?: string;
   sort?: GetUserFeedsInputSortKey;
   filters?: GetUserFeedsInputFilters;
+  // When set, lists this workspace's feeds instead of the user's personal feeds.
+  // Caller verifies membership before passing it.
+  workspaceId?: string;
 }
 
 export interface UserFeedListItem {
@@ -134,12 +153,16 @@ export interface UserFeedListItem {
   ownedByUser: boolean;
   refreshRateSeconds?: number;
   connectionCount: number;
+  sharedManagers?: UserFeedListItemSharedManager[];
 }
 
 export interface CreateUserFeedInput {
   title?: string;
   url: string;
   sourceFeedId?: string;
+  // When set, the feed is created under this workspace. Membership is verified in
+  // addFeed.
+  workspaceId?: string;
 }
 
 export interface ValidateFeedUrlOutput {

@@ -1,3 +1,4 @@
+export * from "./FeedScopeContext";
 export * from "./SourceFeedContext";
 export * from "./MultiSelectUserFeedContext";
 export * from "./UserFeedStatusFilterContext";

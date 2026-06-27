@@ -15,11 +15,13 @@ import { captureException } from "@sentry/react";
 import { Box, Spinner, Stack, Text } from "@chakra-ui/react";
 import { useDiscordUserMe, useUserMe } from "@/features/discordUser";
 import { notifyError } from "@/utils/notifyError";
-import { pages, PRODUCT_NAMES, ProductKey } from "@/constants";
+import { pages, getPlanDisplayName, ProductKey } from "@/constants";
 import { CheckoutSummaryData } from "@/types/CheckoutSummaryData";
 import { PricePreview } from "@/types/PricePreview";
 import { retryPromise } from "@/utils/retryPromise";
 import formatCurrency from "@/utils/formatCurrency";
+import { resolveCheckoutCustomerEmail } from "../utils/resolveCheckoutCustomerEmail";
+import { CHECKOUT_FRAME_MIN_HEIGHT_PX } from "../constants";
 
 const pwAuth = import.meta.env.VITE_PADDLE_PW_AUTH;
 const clientToken = import.meta.env.VITE_PADDLE_CLIENT_TOKEN;
@@ -69,7 +71,10 @@ export type PaddleCheckoutUpdatedEvent = PaddleCheckoutLoadedEvent;
 
 interface ContextProps {
   checkoutLoadedData?: CheckoutSummaryData;
-  updatePaymentMethod: (transactionId: string) => void;
+  updatePaymentMethod: (
+    transactionId: string,
+    options?: { onClose?: () => void; onCompleted?: () => void; frameTarget?: string },
+  ) => void;
   updateCheckout: (data: {
     prices: Array<{
       priceId: string;
@@ -78,12 +83,22 @@ interface ContextProps {
   }) => void;
   resetCheckoutData: () => void;
   isLoaded?: boolean;
+  /** Whether Paddle is configured for this instance (client token present). */
+  isConfigured: boolean;
   openCheckout: (p: {
     prices: Array<{ priceId: string; quantity: number }>;
     frameTarget?: string;
     displayMode?: "inline" | "overlay";
     /** Called when the checkout overlay is closed without completing payment. */
     onClose?: () => void;
+    /** Called when payment completes (checkout.completed). */
+    onCompleted?: () => void;
+    /**
+     * Overrides the default `{ userId }` checkout custom data. Workspace
+     * checkout passes `{ userId, workspaceId }` so the webhook routes the
+     * subscription to the workspace instead of the personal supporter record.
+     */
+    customData?: Record<string, string>;
   }) => void;
   getPricePreview: (
     pricesToGet: Array<{ priceId: string; quantity: number }>,
@@ -102,6 +117,7 @@ export const PaddleContext = createContext<ContextProps>({
   updatePaymentMethod: () => {},
   checkoutLoadedData: undefined,
   isLoaded: false,
+  isConfigured: false,
   openCheckout: () => {},
   getPricePreview: async () => [],
   resetCheckoutData: () => {},
@@ -121,7 +137,14 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   // Holds the current checkout's "closed without completing" callback. The Paddle event callback is
   // registered once at init and can't see per-open closures, so the latest one is kept in a ref.
   const checkoutClosedCallbackRef = useRef<(() => void) | undefined>(undefined);
+  // Same per-open closure problem for "payment completed" (used by workspace
+  // checkout, whose completion is not observable via the user's own record).
+  const checkoutCompletedCallbackRef = useRef<(() => void) | undefined>(undefined);
   const checkoutCompletedRef = useRef(false);
+  // The event callback is registered once at init, before the paddle state is
+  // set, so closing the checkout from inside it needs the instance via a ref.
+  const paddleInstanceRef = useRef<Paddle | undefined>(undefined);
+  const lastCheckoutWasOverlayRef = useRef(false);
   const { data: user } = useUserMe({ checkForSubscriptionCreated });
   const { refetch: refetchDiscordUserMe } = useDiscordUserMe();
   const navigate = useNavigate();
@@ -152,8 +175,32 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       eventCallback(event) {
         if (event.name === "checkout.completed") {
           checkoutCompletedRef.current = true;
-          setCheckForSubscriptionCreated(true);
+
+          // The event carries the checkout's own custom data. A workspace id
+          // marks a workspace purchase, whose completion is confirmed by the
+          // workspace's Billing page; the "Provisioning benefits..." overlay
+          // below waits for the user's PERSONAL record to flip to paid, which
+          // never happens for a workspace checkout.
+          const completedCustomData = (
+            event as unknown as {
+              data?: { custom_data?: { workspaceId?: string } };
+            }
+          ).data?.custom_data;
+
+          if (!completedCustomData?.workspaceId) {
+            setCheckForSubscriptionCreated(true);
+          }
+
           setCheckoutLoadedData(undefined);
+          checkoutCompletedCallbackRef.current?.();
+          checkoutCompletedCallbackRef.current = undefined;
+
+          // The overlay does not reliably dismiss itself after a successful
+          // payment and keeps intercepting pointer events over the whole page;
+          // the app shows its own confirmation state, so close it.
+          if (lastCheckoutWasOverlayRef.current) {
+            paddleInstanceRef.current?.Checkout.close();
+          }
         } else if (event.name === "checkout.closed") {
           // Fired when the overlay is dismissed. Only treat it as a cancel if payment didn't
           // complete (Paddle also closes the overlay after a successful checkout).
@@ -162,6 +209,12 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
           }
 
           checkoutClosedCallbackRef.current = undefined;
+          // Drop the summary for the now-closed checkout. checkoutLoadedData is
+          // shared across every checkout surface; a stale truthy value would make
+          // the next surface that opens think its checkout is already loaded
+          // (painting an opaque frame over Paddle's spinner and skipping the
+          // stall fallback). checkout.completed already clears it; closing must too.
+          setCheckoutLoadedData(undefined);
         } else if (event.name === "checkout.error") {
           fetch("/api/v1/error-reports", {
             method: "POST",
@@ -213,6 +266,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       },
     }).then((paddleInstance: Paddle | undefined) => {
       if (paddleInstance) {
+        paddleInstanceRef.current = paddleInstance;
         setPaddle(paddleInstance);
       }
     });
@@ -282,6 +336,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
               id: string;
               interval: "month" | "year" | "day" | "week";
               formattedPrice: string;
+              unitAmount: number;
               currencyCode: string;
               quantity: number;
             }>;
@@ -301,6 +356,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         for (let i = 0; i < details.lineItems.length; i += 1) {
           const {
             formattedTotals,
+            unitTotals,
             product,
             price: { billingCycle, id: priceId },
             quantity,
@@ -315,6 +371,9 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
             id: priceId,
             interval: billingCycle.interval,
             formattedPrice: formattedTotals.total,
+            // Paddle returns minor-unit integers as strings; keep numeric so
+            // callers can do exact per-unit arithmetic.
+            unitAmount: Number(unitTotals.total),
             currencyCode,
             quantity,
           };
@@ -323,7 +382,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
 
           if (!prices) {
             pricesByProduct[useProductId] = {
-              name: PRODUCT_NAMES[useProductId],
+              name: getPlanDisplayName(useProductId),
               prices: [formattedPrice],
             };
           } else {
@@ -338,6 +397,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
             id: d.id,
             interval: d.interval,
             formattedPrice: d.formattedPrice,
+            unitAmount: d.unitAmount,
             currencyCode: d.currencyCode,
             quantity: d.quantity,
           })),
@@ -365,16 +425,38 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   );
 
   const updatePaymentMethod = useCallback(
-    (transactionId: string) => {
+    (
+      transactionId: string,
+      options?: { onClose?: () => void; onCompleted?: () => void; frameTarget?: string },
+    ) => {
       setIsSubscriptionCreated(false);
+      // Wire the same lifecycle refs as openCheckout so the shared event handler
+      // fires the caller's callbacks. A frameTarget means the caller hosts the
+      // checkout inline (in their own container), so it is NOT an overlay: the
+      // completed handler must not call Checkout.close(), which would blank the
+      // inline frame. Without a frameTarget this stays an overlay, as before.
+      const inline = !!options?.frameTarget;
+      checkoutCompletedRef.current = false;
+      checkoutClosedCallbackRef.current = options?.onClose;
+      checkoutCompletedCallbackRef.current = options?.onCompleted;
+      lastCheckoutWasOverlayRef.current = !inline;
 
       paddle?.Checkout.open({
         transactionId,
-        settings: {
-          allowLogout: false,
-          theme: "dark",
-          displayMode: "overlay",
-        },
+        settings: inline
+          ? {
+              displayMode: "inline",
+              frameTarget: options?.frameTarget,
+              frameInitialHeight: 634,
+              allowLogout: false,
+              frameStyle:
+                "width: 100%; height: 100%; min-width: 312px; min-height:634px; padding-left: 8px; padding-right: 8px;",
+            }
+          : {
+              allowLogout: false,
+              theme: "dark",
+              displayMode: "overlay",
+            },
       });
     },
     [!!paddle],
@@ -399,17 +481,39 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       frameTarget,
       displayMode,
       onClose,
+      onCompleted,
+      customData,
     }: {
       prices: Array<{ priceId: string; quantity: number }>;
       frameTarget?: string;
       displayMode?: "inline" | "overlay";
       onClose?: () => void;
+      onCompleted?: () => void;
+      customData?: Record<string, string>;
     }) => {
       setIsSubscriptionCreated(false);
       checkoutCompletedRef.current = false;
       checkoutClosedCallbackRef.current = onClose;
+      checkoutCompletedCallbackRef.current = onCompleted;
+      lastCheckoutWasOverlayRef.current = displayMode === "overlay";
 
-      if (!user?.result.email) {
+      // A workspace checkout is billed to the owner's verified email, a personal
+      // checkout to the Discord email; either is blocked when its address is
+      // missing, so route the user to set it before opening Paddle.
+      const customer = resolveCheckoutCustomerEmail({
+        customData,
+        discordEmail: user?.result.email,
+        verifiedEmail: user?.result.verifiedEmail,
+      });
+
+      if ("blocked" in customer) {
+        if (customer.blocked === "verifiedEmailRequired") {
+          notifyError(
+            "Verify an email to subscribe",
+            "Workspace billing uses your verified email. Add one in settings to continue.",
+          );
+        }
+
         navigate(pages.userSettings());
 
         return;
@@ -433,30 +537,34 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
           quantity,
         })),
         customer: {
-          email: user.result.email,
+          email: customer.email,
         },
         settings: useOverlay
           ? {
               displayMode: "overlay",
               theme: "dark",
               allowLogout: false,
+              // Single-step checkout, matching the inline variant: payment
+              // fields are present immediately instead of behind an
+              // email/country first page.
+              variant: "one-page",
+              showAddDiscounts: false,
             }
           : {
               displayMode: "inline",
               frameTarget: frameTarget || "checkout-modal",
-              frameInitialHeight: 634,
+              frameInitialHeight: CHECKOUT_FRAME_MIN_HEIGHT_PX,
               allowLogout: false,
               variant: "one-page",
               showAddDiscounts: false,
-              frameStyle:
-                "width: 100%; height: 100%; min-width: 312px; min-height:634px; padding-left: 8px; padding-right: 8px;",
+              frameStyle: `width: 100%; height: 100%; min-width: 312px; min-height:${CHECKOUT_FRAME_MIN_HEIGHT_PX}px; padding-left: 8px; padding-right: 8px;`,
             },
-        customData: {
-          userId: user.result.id,
+        customData: customData ?? {
+          userId: user?.result.id ?? "",
         },
       });
     },
-    [user?.result.email, user?.result.id, !!paddle],
+    [user?.result.email, user?.result.verifiedEmail, user?.result.id, !!paddle],
   );
 
   const resetCheckoutData = useCallback(() => {
@@ -470,6 +578,11 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       updatePaymentMethod,
       updateCheckout,
       isLoaded: !!paddle,
+      // Billing is usable only when the instance has it enabled (the backend's
+      // master switch: supporters enabled and Paddle configured) AND a Paddle
+      // client token is present to render checkout. A leftover client token
+      // alone must not surface billing UI when billing is off (self-host).
+      isConfigured: !!clientToken && !!user?.result.enableBilling,
       openCheckout,
       getPricePreview,
       resetCheckoutData,
@@ -480,6 +593,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
     [
       JSON.stringify(checkoutLoadedData),
       !!paddle,
+      !!user?.result.enableBilling,
       updateCheckout,
       updatePaymentMethod,
       openCheckout,

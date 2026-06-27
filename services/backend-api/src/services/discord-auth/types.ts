@@ -10,6 +10,7 @@ export interface DiscordAuthToken {
 
 export interface SessionAccessToken extends DiscordAuthToken {
   expiresAt: number;
+  sessionEpoch?: number;
   discord: {
     id: string;
     email?: string;

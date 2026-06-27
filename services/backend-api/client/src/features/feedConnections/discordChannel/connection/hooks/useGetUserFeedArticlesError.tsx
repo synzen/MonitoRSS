@@ -6,7 +6,7 @@ import {
   getErrorMessageForArticleRequestStatus,
 } from "@/features/feed";
 import ApiAdapterError from "@/utils/ApiAdapterError";
-import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage copy";
+import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 
 interface Props {
   getUserFeedArticlesOutput?: GetUserFeedArticlesOutput;

@@ -10,11 +10,15 @@ export const UserFeedSchema = object({
   url: string().required(),
   inputUrl: string(),
   /**
-   * Optional team ownership. Null/undefined = personal feed.
-   * Forward-compatibility shell per ADR-005 (team scoping). Backend may ignore
-   * today; becomes the source of truth for team ownership when teams ship.
+   * Optional workspace ownership. Null/undefined = personal feed; set = the workspace
+   * that owns the feed.
    */
-  teamId: string().nullable().optional(),
+  workspaceId: string().nullable().optional(),
+  /**
+   * Authoritative flag for workspace-owned feeds. Per-user feed management invites
+   * are disabled for these; access is managed through workspace membership instead.
+   */
+  isWorkspaceFeed: bool(),
   sharedAccessDetails: object({
     inviteId: string().required(),
   }).optional(),

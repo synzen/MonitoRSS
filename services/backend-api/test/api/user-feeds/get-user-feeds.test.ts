@@ -8,6 +8,7 @@ import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   FeedConnectionDisabledCode,
   UserFeedDisabledCode,
+  UserFeedHealthStatus,
   UserFeedManagerStatus,
 } from "../../../src/repositories/shared/enums";
 
@@ -33,6 +34,7 @@ interface GetUserFeedsResult {
   isLegacyFeed: boolean;
   ownedByUser: boolean;
   refreshRateSeconds?: number;
+  sharedManagers?: Array<{ discordUserId: string; connectionScoped: boolean }>;
 }
 
 interface GetUserFeedsResponse {
@@ -135,6 +137,148 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
     const found = body.results.find((r) => r.id === feed.id);
     assert.ok(found);
     assert.strictEqual(found.ownedByUser, false);
+  });
+
+  it("exposes accepted co-managers as sharedManagers to the owner", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const sharedManagerDiscordUserId = generateSnowflake();
+    const owner = await ctx.asUser(ownerDiscordUserId);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Owner Shared Feed",
+      url: `https://example.com/get-user-feeds-owner-shared-${generateSnowflake()}.xml`,
+      user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      shareManageOptions: {
+        invites: [
+          {
+            discordUserId: sharedManagerDiscordUserId,
+            status: UserFeedManagerStatus.Accepted,
+          },
+        ],
+      },
+    });
+
+    const response = await owner.fetch("/api/v1/user-feeds?limit=100&offset=0", {
+      method: "GET",
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    const found = body.results.find((r) => r.id === feed.id);
+    assert.ok(found);
+    assert.deepStrictEqual(found.sharedManagers, [
+      { discordUserId: sharedManagerDiscordUserId, connectionScoped: false },
+    ]);
+  });
+
+  it("does not include pending invites in sharedManagers", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const pendingDiscordUserId = generateSnowflake();
+    const owner = await ctx.asUser(ownerDiscordUserId);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Owner Pending Shared Feed",
+      url: `https://example.com/get-user-feeds-owner-pending-${generateSnowflake()}.xml`,
+      user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      shareManageOptions: {
+        invites: [
+          {
+            discordUserId: pendingDiscordUserId,
+            status: UserFeedManagerStatus.Pending,
+          },
+        ],
+      },
+    });
+
+    const response = await owner.fetch("/api/v1/user-feeds?limit=100&offset=0", {
+      method: "GET",
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    const found = body.results.find((r) => r.id === feed.id);
+    assert.ok(found);
+    assert.deepStrictEqual(found.sharedManagers, []);
+  });
+
+  it("flags connectionScoped only for invites limited to a strict subset of connections", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const scopedManagerDiscordUserId = generateSnowflake();
+    const fullManagerDiscordUserId = generateSnowflake();
+    const owner = await ctx.asUser(ownerDiscordUserId);
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Owner Connection Scoped Feed",
+      url: `https://example.com/get-user-feeds-owner-scoped-${generateSnowflake()}.xml`,
+      user: { id: generateTestId(), discordUserId: ownerDiscordUserId },
+      connections: {
+        discordChannels: [
+          {
+            id: generateTestId(),
+            name: "Connection 1",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            details: { embeds: [], formatter: {} },
+          } as never,
+          {
+            id: generateTestId(),
+            name: "Connection 2",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            details: { embeds: [], formatter: {} },
+          } as never,
+        ],
+      },
+    });
+
+    const createdFeed = await ctx.container.userFeedRepository.findById(feed.id);
+    const [firstConnection, secondConnection] =
+      createdFeed!.connections.discordChannels;
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: feed.id },
+      {
+        $set: {
+          shareManageOptions: {
+            invites: [
+              {
+                discordUserId: scopedManagerDiscordUserId,
+                status: UserFeedManagerStatus.Accepted,
+                // One of two connections: a strict subset, genuinely scoped.
+                connections: [{ connectionId: firstConnection!.id }],
+              },
+              {
+                discordUserId: fullManagerDiscordUserId,
+                status: UserFeedManagerStatus.Accepted,
+                // Both connections: covers the whole feed, not scoped.
+                connections: [
+                  { connectionId: firstConnection!.id },
+                  { connectionId: secondConnection!.id },
+                ],
+              },
+            ],
+          },
+        },
+      },
+    );
+
+    const response = await owner.fetch("/api/v1/user-feeds?limit=100&offset=0", {
+      method: "GET",
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    const found = body.results.find((r) => r.id === feed.id);
+    assert.ok(found);
+
+    const scoped = found.sharedManagers?.find(
+      (m) => m.discordUserId === scopedManagerDiscordUserId,
+    );
+    const full = found.sharedManagers?.find(
+      (m) => m.discordUserId === fullManagerDiscordUserId,
+    );
+    assert.strictEqual(scoped?.connectionScoped, true);
+    assert.strictEqual(full?.connectionScoped, false);
   });
 
   it("does not return feeds where user has pending invite", async () => {
@@ -282,6 +426,120 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
     assert.ok(
       body.results.every((r) => r.computedStatus === "MANUALLY_DISABLED"),
     );
+  });
+
+  it("computes FEED_LIMIT_EXCEEDED and lets feed-level disabled states win over connection problems", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const userId = generateTestId();
+
+    const brokenConnection = () => ({
+      id: generateTestId(),
+      name: "broken-connection",
+      disabledCode: FeedConnectionDisabledCode.MissingPermissions,
+      details: {
+        embeds: [],
+        formatter: { formatTables: false, stripImages: false },
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const limitDisabledFeed = await ctx.container.userFeedRepository.create({
+      title: "Limit Disabled Feed",
+      url: `https://example.com/get-user-feeds-limit-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    // Also broken at the connection level: the limit-disabled state must still win.
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: limitDisabledFeed.id },
+      {
+        $set: { disabledCode: UserFeedDisabledCode.ExceededFeedLimit },
+        $push: { "connections.discordChannels": brokenConnection() },
+      },
+    );
+
+    const manualFeedWithBadConnection =
+      await ctx.container.userFeedRepository.create({
+        title: "Manual Feed With Bad Connection",
+        url: `https://example.com/get-user-feeds-manualbadconn-${generateSnowflake()}.xml`,
+        user: { id: userId, discordUserId },
+      });
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: manualFeedWithBadConnection.id },
+      {
+        $set: { disabledCode: UserFeedDisabledCode.Manual },
+        $push: { "connections.discordChannels": brokenConnection() },
+      },
+    );
+
+    const failedRequestsFeed = await ctx.container.userFeedRepository.create({
+      title: "Failed Requests Feed",
+      url: `https://example.com/get-user-feeds-failedreq-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: failedRequestsFeed.id },
+      { $set: { disabledCode: UserFeedDisabledCode.FailedRequests } },
+    );
+
+    const retryingFeed = await ctx.container.userFeedRepository.create({
+      title: "Retrying Feed",
+      url: `https://example.com/get-user-feeds-retrying-${generateSnowflake()}.xml`,
+      user: { id: userId, discordUserId },
+    });
+
+    await ctx.container.userFeedRepository.findOneAndUpdate(
+      { _id: retryingFeed.id },
+      { $set: { healthStatus: UserFeedHealthStatus.Failing } },
+    );
+
+    const response = await user.fetch(
+      "/api/v1/user-feeds?limit=100&offset=0",
+      { method: "GET" },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    const statusOf = (id: string) =>
+      body.results.find((r) => r.id === id)?.computedStatus;
+
+    assert.strictEqual(statusOf(limitDisabledFeed.id), "FEED_LIMIT_EXCEEDED");
+    assert.strictEqual(
+      statusOf(manualFeedWithBadConnection.id),
+      "MANUALLY_DISABLED",
+    );
+    // Health-driven disables and retries still surface as needing attention.
+    assert.strictEqual(statusOf(failedRequestsFeed.id), "REQUIRES_ATTENTION");
+    assert.strictEqual(statusOf(retryingFeed.id), "RETRYING");
+
+    // Filtering and the total count (what the requires-attention banner reads)
+    // follow the same pipeline.
+    const filterBy = async (computedStatus: string) => {
+      const res = await user.fetch(
+        `/api/v1/user-feeds?limit=100&offset=0&filters[computedStatuses]=${computedStatus}`,
+        { method: "GET" },
+      );
+      assert.strictEqual(res.status, 200);
+      return (await res.json()) as GetUserFeedsResponse;
+    };
+
+    const limitFiltered = await filterBy("FEED_LIMIT_EXCEEDED");
+    assert.deepStrictEqual(
+      limitFiltered.results.map((r) => r.id),
+      [limitDisabledFeed.id],
+    );
+    assert.strictEqual(limitFiltered.total, 1);
+
+    const attentionFiltered = await filterBy("REQUIRES_ATTENTION");
+    assert.deepStrictEqual(
+      attentionFiltered.results.map((r) => r.id),
+      [failedRequestsFeed.id],
+    );
+    assert.strictEqual(attentionFiltered.total, 1);
   });
 
   it("filters by disabledCodes", async () => {

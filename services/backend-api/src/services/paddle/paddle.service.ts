@@ -13,6 +13,7 @@ import type {
   PaddleProductResponse,
   PaddleSubscriptionResponse,
 } from "./types";
+import type { PaddleSubscriptionUpdatePaymentMethodResponse } from "../supporter-subscriptions/types";
 
 export class PaddleService {
   private readonly PADDLE_URL?: string;
@@ -98,6 +99,65 @@ export class PaddleService {
     return this.executeApiCall<PaddleSubscriptionResponse>(
       `/subscriptions/${subscriptionId}`,
     );
+  }
+
+  // Mints a Paddle transaction the client opens in the update-payment-method
+  // overlay. Shared by the personal and workspace billing services so the
+  // endpoint/response shape lives in one place.
+  async getUpdatePaymentMethodTransaction(
+    subscriptionId: string,
+  ): Promise<{ id: string }> {
+    const response =
+      await this.executeApiCall<PaddleSubscriptionUpdatePaymentMethodResponse>(
+        `/subscriptions/${subscriptionId}/update-payment-method-transaction`,
+      );
+
+    return { id: response.data.id };
+  }
+
+  // The one shape Paddle accepts for changing a subscription's item set
+  // (tier changes and add-on quantity changes alike), shared by the personal
+  // and workspace billing services. `preview` prices the change without
+  // applying it.
+  async updateSubscriptionItems<T>(
+    subscriptionId: string,
+    {
+      items,
+      currencyCode,
+      preview,
+    }: {
+      items: Array<{ priceId: string; quantity: number }>;
+      currencyCode: string;
+      preview?: boolean;
+    },
+  ): Promise<T> {
+    return this.executeApiCall<T>(
+      `/subscriptions/${subscriptionId}${preview ? "/preview" : ""}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          items: items.map((i) => ({
+            price_id: i.priceId,
+            quantity: i.quantity,
+          })),
+          currency_code: currencyCode,
+          proration_billing_mode: "prorated_immediately",
+        }),
+      },
+    );
+  }
+
+  // Re-points a live subscription's custom_data in place (no cancel/recreate,
+  // no proration). Paddle re-emits subscription.updated in response, which the
+  // webhook handler routes by the new custom_data.
+  async updateSubscriptionCustomData(
+    subscriptionId: string,
+    customData: Record<string, unknown>,
+  ): Promise<void> {
+    await this.executeApiCall(`/subscriptions/${subscriptionId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ custom_data: customData }),
+    });
   }
 
   async executeApiCall<T>(endpoint: string, data?: RequestInit): Promise<T> {

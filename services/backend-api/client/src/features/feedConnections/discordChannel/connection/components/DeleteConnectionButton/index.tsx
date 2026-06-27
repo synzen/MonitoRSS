@@ -8,6 +8,7 @@ import { FeedConnectionType } from "@/types";
 import { useConnection, useDeleteConnection } from "../../hooks";
 import { pages } from "@/constants";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
+import { useFeedScope } from "@/features/feed";
 
 interface Props {
   feedId: string;
@@ -20,6 +21,7 @@ export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: 
   const { t } = useTranslation();
   const { mutateAsync, status, error, reset } = useDeleteConnection(type);
   const navigate = useNavigate();
+  const { workspaceSlug } = useFeedScope();
   const { createSuccessAlert } = usePageAlertContext();
   const { connection } = useConnection({
     feedId,
@@ -31,7 +33,7 @@ export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: 
       feedId,
       connectionId,
     });
-    navigate(pages.userFeed(feedId));
+    navigate(pages.userFeed(feedId, { scope: workspaceSlug ? { workspaceSlug } : undefined }));
     createSuccessAlert({
       title: `Successfully deleted feed connection: ${connection?.name}`,
     });

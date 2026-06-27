@@ -26,6 +26,11 @@ export const STATUS_FILTERS = [
     description: "Manually disabled",
     value: UserFeedComputedStatus.ManuallyDisabled,
   },
+  {
+    label: "Feed Limit Exceeded",
+    description: "Disabled because the feed limit was exceeded",
+    value: UserFeedComputedStatus.FeedLimitExceeded,
+  },
 ] as const;
 
 export const TOGGLEABLE_COLUMNS = [
