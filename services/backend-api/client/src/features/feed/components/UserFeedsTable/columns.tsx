@@ -10,6 +10,7 @@ import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { DATE_FORMAT, pages } from "../../../../constants";
 import type { RouteScope } from "../../../../constants";
 import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
+import { SHARED_WITH_ME_COLUMN_ID } from "./constants";
 
 const columnHelper = createColumnHelper<RowData>();
 
@@ -148,7 +149,7 @@ const columnConfigs: ColumnConfig[] = [
     sortable: true,
   },
   {
-    id: "ownedByUser",
+    id: SHARED_WITH_ME_COLUMN_ID,
     header: "Shared with Me",
     accessor: "ownedByUser",
     cell: (info) => {
@@ -225,11 +226,19 @@ function createConfigureColumn(scope?: RouteScope): ColumnDef<RowData> {
   });
 }
 
-export function createTableColumns(search: string, scope?: RouteScope): ColumnDef<RowData>[] {
+export function createTableColumns(
+  search: string,
+  scope?: RouteScope,
+  options?: { excludeSharedWithMe?: boolean },
+): ColumnDef<RowData>[] {
   const selectColumn = createSelectColumn();
   const configureColumn = createConfigureColumn(scope);
 
-  const dataColumns = columnConfigs.map((config) => {
+  const visibleConfigs = options?.excludeSharedWithMe
+    ? columnConfigs.filter((config) => config.id !== SHARED_WITH_ME_COLUMN_ID)
+    : columnConfigs;
+
+  const dataColumns = visibleConfigs.map((config) => {
     if (typeof config.accessor === "function") {
       return columnHelper.accessor(config.accessor, {
         id: config.id,

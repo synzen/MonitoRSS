@@ -48,11 +48,20 @@ test.describe("Column Visibility", () => {
     await closeColumnsMenu(page);
   }
 
+  function columnsMenuTrigger(page: Page) {
+    return page.locator('button[aria-label^="Display table columns"]').first();
+  }
+
   async function openColumnsMenu(page: Page): Promise<void> {
-    const columnsButton = page
-      .locator('button[aria-label^="Display table columns"]')
-      .first();
+    const columnsButton = columnsMenuTrigger(page);
+    // Always start from a closed menu so the trigger click below reliably OPENS
+    // it (a click on an already-open menu toggles it shut) and so the keyboard
+    // navigation in toggleColumn begins from a freshly reset highlight. The
+    // prior Escape-based close was focus-dependent and could leave the menu open
+    // under parallel load, which is what made the next open flake.
+    await closeColumnsMenu(page);
     await columnsButton.click();
+    await expect(columnsButton).toHaveAttribute("aria-expanded", "true");
     const statusMenuItem = page.locator(
       '[role="menuitemcheckbox"]:has-text("Status")',
     );
@@ -60,8 +69,15 @@ test.describe("Column Visibility", () => {
   }
 
   async function closeColumnsMenu(page: Page): Promise<void> {
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(200);
+    const columnsButton = columnsMenuTrigger(page);
+    // Close by toggling the trigger rather than pressing Escape: after toggling
+    // items the keyboard focus may no longer be inside the menu, so a global
+    // Escape can land nowhere and leave the menu open. A trigger click always
+    // toggles it, and we anchor on aria-expanded instead of a fixed sleep.
+    if ((await columnsButton.getAttribute("aria-expanded")) === "true") {
+      await columnsButton.click();
+    }
+    await expect(columnsButton).toHaveAttribute("aria-expanded", "false");
   }
 
   async function toggleColumn(page: Page, columnLabel: string): Promise<void> {

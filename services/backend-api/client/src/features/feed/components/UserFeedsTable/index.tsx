@@ -45,6 +45,7 @@ export const UserFeedsTable: React.FC = () => {
   const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
   const { rowSelection, setRowSelection, setLoadedFeeds } = useMultiSelectUserFeedContext();
   const { workspaceSlug } = useFeedScope();
+  const isWorkspaceScope = !!workspaceSlug;
 
   // Preferences (sorting, column visibility, column order)
   const {
@@ -100,9 +101,14 @@ export const UserFeedsTable: React.FC = () => {
   );
 
   // Columns with search highlighting; links stay in the current (workspace) scope.
+  // The "Shared with Me" column is meaningless in a workspace (all feeds are
+  // shared with members), so it's omitted there.
   const columns = useMemo(
-    () => createTableColumns(search, workspaceSlug ? { workspaceSlug } : undefined),
-    [search, workspaceSlug],
+    () =>
+      createTableColumns(search, workspaceSlug ? { workspaceSlug } : undefined, {
+        excludeSharedWithMe: isWorkspaceScope,
+      }),
+    [search, workspaceSlug, isWorkspaceScope],
   );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -226,6 +232,7 @@ export const UserFeedsTable: React.FC = () => {
           onStatusSelect={onStatusSelect}
           columnVisibility={columnVisibility}
           onColumnVisibilityChange={setColumnVisibility}
+          excludeSharedWithMe={isWorkspaceScope}
         />
       )}
       {!isInitiallyLoading && hasActiveFilters && (

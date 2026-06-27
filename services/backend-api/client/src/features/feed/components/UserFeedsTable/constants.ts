@@ -3,6 +3,14 @@ import { UserFeedComputedStatus } from "../../types";
 
 export const DEFAULT_MAX_PER_PAGE = 20;
 
+/**
+ * The "Shared with Me" column. It distinguishes feeds shared into a user's
+ * personal view from their own, which only has meaning in personal scope: every
+ * feed in a workspace is shared with members by definition. Workspace-scoped
+ * tables omit it.
+ */
+export const SHARED_WITH_ME_COLUMN_ID = "ownedByUser";
+
 export const PREFERENCE_DEBOUNCE_MS = 500;
 
 export const STATUS_FILTERS = [
@@ -38,7 +46,7 @@ export const TOGGLEABLE_COLUMNS = [
   { id: "url", label: "URL" },
   { id: "createdAt", label: "Added On" },
   { id: "refreshRateSeconds", label: "Refresh Rate" },
-  { id: "ownedByUser", label: "Shared with Me" },
+  { id: SHARED_WITH_ME_COLUMN_ID, label: "Shared with Me" },
 ] as const;
 
 export const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {

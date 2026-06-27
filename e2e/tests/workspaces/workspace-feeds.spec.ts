@@ -73,6 +73,30 @@ test.describe("Workspace feeds", () => {
     await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/add-feeds$`));
   });
 
+  test('omits the "Shared with Me" column in workspace scope', async ({ page }) => {
+    await page.goto("/feeds");
+    await waitForAuthenticatedApp(page);
+    await enableWorkspacesForCurrentUser(page);
+
+    await createWorkspace(page, `E2E Shared Col Workspace ${Date.now()}`);
+    await addFeedViaDiscovery(page);
+    await expect(page.getByRole("link", { name: /^Configure/ })).toBeVisible();
+
+    // Every workspace feed is shared with members by definition, so the column
+    // (and its toggle) carry no meaning and are dropped in workspace scope.
+    await expect(
+      page.locator("table th").filter({ hasText: "Shared with Me" }),
+    ).toHaveCount(0);
+
+    await page.locator('button[aria-label^="Display table columns"]').first().click();
+    await expect(
+      page.getByRole("menuitemcheckbox", { name: "Status" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("menuitemcheckbox", { name: "Shared with Me" }),
+    ).toHaveCount(0);
+  });
+
   test("workspace feeds do not appear in the personal feeds dashboard", async ({ page }) => {
     await page.goto("/feeds");
     await waitForAuthenticatedApp(page);
