@@ -21,7 +21,7 @@ import { useTranslation } from "react-i18next";
 import { VisibilityState } from "@tanstack/react-table";
 import { UserFeedComputedStatus } from "../../../types";
 import { UserFeedStatusTag } from "../UserFeedStatusTag";
-import { STATUS_FILTERS, TOGGLEABLE_COLUMNS } from "../constants";
+import { SHARED_WITH_ME_COLUMN_ID, STATUS_FILTERS, TOGGLEABLE_COLUMNS } from "../constants";
 import { MenuRoot, MenuTrigger, MenuContent, MenuCheckboxItem } from "@/components/ui/menu";
 
 interface TableToolbarProps {
@@ -38,6 +38,8 @@ interface TableToolbarProps {
   onColumnVisibilityChange: (
     visibility: VisibilityState | ((prev: VisibilityState) => VisibilityState),
   ) => void;
+  /** Drop the "Shared with Me" column toggle (it has no meaning in workspace scope). */
+  excludeSharedWithMe?: boolean;
 }
 
 export const TableToolbar: React.FC<TableToolbarProps> = ({
@@ -52,11 +54,16 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   onStatusSelect,
   columnVisibility,
   onColumnVisibilityChange,
+  excludeSharedWithMe,
 }) => {
   const { t } = useTranslation();
 
-  const visibleColumnCount = TOGGLEABLE_COLUMNS.filter(({ id }) => columnVisibility[id]).length;
-  const selectedTableColumnCountLabel = `${visibleColumnCount} of ${TOGGLEABLE_COLUMNS.length}`;
+  const toggleableColumns = excludeSharedWithMe
+    ? TOGGLEABLE_COLUMNS.filter(({ id }) => id !== SHARED_WITH_ME_COLUMN_ID)
+    : TOGGLEABLE_COLUMNS;
+
+  const visibleColumnCount = toggleableColumns.filter(({ id }) => columnVisibility[id]).length;
+  const selectedTableColumnCountLabel = `${visibleColumnCount} of ${toggleableColumns.length}`;
 
   const handleStatusToggle = (value: UserFeedComputedStatus) => {
     if (statusFilters.includes(value)) {
@@ -69,7 +76,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   const handleColumnVisibilityToggle = (id: string) => {
     onColumnVisibilityChange((prev) => {
       const isVisible = prev[id];
-      const visibleCount = TOGGLEABLE_COLUMNS.filter(({ id: colId }) => prev[colId]).length;
+      const visibleCount = toggleableColumns.filter(({ id: colId }) => prev[colId]).length;
       const isLastVisible = isVisible && visibleCount === 1;
 
       if (isLastVisible) {
@@ -185,7 +192,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               </Button>
             </MenuTrigger>
             <MenuContent maxW="250px">
-              {TOGGLEABLE_COLUMNS.map(({ id, label }) => {
+              {toggleableColumns.map(({ id, label }) => {
                 const isVisible = columnVisibility[id];
                 const isLastVisible = isVisible && visibleColumnCount === 1;
 
