@@ -372,13 +372,11 @@ describe("Email verification API", () => {
     assert.strictEqual(resend.status, 200);
   });
 
-  it("returns a standardized 429 (not a 500) when the per-IP send limit is exceeded", async () => {
+  it("returns a standardized 429 (not a 500) when the per-user send limit is exceeded", async () => {
     const { user } = await makeUser();
-    // The per-route IP limit is 10/hour; pin a dedicated source IP so this test
-    // owns its own bucket. Distinct emails so each request reaches the limiter.
-    const ip = `203.0.115.${Math.floor(Math.random() * 250) + 1}`;
-    const headers = { "x-forwarded-for": ip };
-
+    // The per-route send limit is 10/hour, keyed by the authenticated user (not
+    // the source IP), so this fresh user owns its own bucket. Distinct emails so
+    // each request reaches the limiter.
     let lastStatus = 0;
     let lastBody: ErrorResult = { code: "" };
     // 11 requests: the 11th must be rejected by the rate-limit plugin (before the
@@ -387,14 +385,13 @@ describe("Email verification API", () => {
     for (let i = 0; i < 11; i += 1) {
       const res = await user.fetch("/api/v1/users/@me/email-verification", {
         method: "POST",
-        headers,
         body: JSON.stringify({ email: `ip-${i}-${randomUUID()}@example.com` }),
       });
       lastStatus = res.status;
       lastBody = await readJson<ErrorResult>(res).catch(() => ({ code: "" }));
     }
 
-    assert.strictEqual(lastStatus, 429, "IP-limit rejection must be 429, not 500");
+    assert.strictEqual(lastStatus, 429, "rate-limit rejection must be 429, not 500");
     assert.strictEqual(lastBody.code, "TOO_MANY_REQUESTS");
   });
 

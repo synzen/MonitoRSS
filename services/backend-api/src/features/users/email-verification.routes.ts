@@ -18,6 +18,13 @@ export async function emailVerificationRoutes(
 ): Promise<void> {
   await app.register(rateLimit, { global: false });
 
+  // These two routes are authenticated, so the cap belongs per-account, not
+  // per-IP: the default IP key collapses everyone behind one address (a shared
+  // proxy, or the E2E fleet on one runner) into a single bucket, throttling
+  // unrelated users. Key by the authenticated user instead. This requires the
+  // limiter to run at preHandler, after requireAuthHook has set discordUserId
+  // (the default onRequest hook runs before auth). Per-user flooding is still
+  // bounded by the service's own resend cooldown and distinct-target cap.
   app.post("/@me/email-verification", {
     preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
     schema: { body: SendEmailVerificationBodySchema },
@@ -25,6 +32,8 @@ export async function emailVerificationRoutes(
       rateLimit: {
         max: 10,
         timeWindow: "1 hour",
+        hook: "preHandler",
+        keyGenerator: (request) => request.discordUserId ?? request.ip,
       },
     },
     handler: sendEmailVerificationHandler,
@@ -37,6 +46,8 @@ export async function emailVerificationRoutes(
       rateLimit: {
         max: 20,
         timeWindow: "1 hour",
+        hook: "preHandler",
+        keyGenerator: (request) => request.discordUserId ?? request.ip,
       },
     },
     handler: confirmEmailVerificationHandler,
