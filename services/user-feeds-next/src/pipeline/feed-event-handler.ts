@@ -107,6 +107,11 @@ export async function handleFeedV2Event(
 
   let numberOfArticles = 0;
   let eventError: string | undefined;
+  // The body hash that should be advanced for this cycle, if any. It is applied
+  // in the finally block ONLY after the article-field flush succeeds, so a
+  // failed flush cannot leave an article marked seen behind an advanced hash
+  // (which would lock it out of redelivery via the match-hash fast path).
+  const pendingBodyHash: { value?: string } = {};
 
   return deliveryRecordStore.startContext(async () =>
     articleFieldStore.startContext(async () => {
@@ -124,6 +129,7 @@ export async function handleFeedV2Event(
           queuePublisher,
           debugLog,
           feedRequestsServiceHost,
+          pendingBodyHash,
         });
         numberOfArticles = result?.length ?? 0;
         return result;
@@ -131,12 +137,15 @@ export async function handleFeedV2Event(
         eventError = (err as Error).stack;
         throw err;
       } finally {
+        let articleFlushSucceeded = false;
+
         try {
           const { affectedRows: articleRows } =
             await articleFieldStore.flushPendingInserts();
           if (articleRows > 0) {
             logger.debug(`Flushed ${articleRows} article field inserts`);
           }
+          articleFlushSucceeded = true;
         } catch (err) {
           logger.error("Failed to flush ORM while handling feed event", {
             event,
@@ -155,6 +164,23 @@ export async function handleFeedV2Event(
             event,
             error: (err as Error).stack,
           });
+        }
+
+        // Only advance the body hash once the articles for this cycle are
+        // durably stored as seen. If the article-field flush failed, leave the
+        // hash unadvanced so the next cycle re-fetches and reconsiders them.
+        if (pendingBodyHash.value && articleFlushSucceeded) {
+          try {
+            await responseHashStore.set(feed.id, pendingBodyHash.value);
+          } catch (err) {
+            logger.error(
+              "Failed to advance body hash while handling feed event",
+              {
+                event,
+                error: (err as Error).stack,
+              }
+            );
+          }
         }
 
         const finishedTs = Date.now() - startTime;
@@ -188,6 +214,7 @@ async function handleFeedV2EventInternal({
   queuePublisher,
   debugLog,
   feedRequestsServiceHost,
+  pendingBodyHash,
 }: {
   event: FeedV2Event;
   feed: FeedV2Event["data"]["feed"];
@@ -201,6 +228,7 @@ async function handleFeedV2EventInternal({
   queuePublisher: (queue: string, message: unknown) => Promise<void>;
   debugLog: (message: string, data?: Record<string, unknown>) => void;
   feedRequestsServiceHost: string;
+  pendingBodyHash: { value?: string };
 }): Promise<ArticleDeliveryState[] | null> {
   const hashToCompare = await getHashToCompare(
     feed.id,
@@ -396,7 +424,7 @@ async function handleFeedV2EventInternal({
     debugLog(`Debug feed ${feed.id}: No new articles to deliver, returning early`);
 
     if (feedResult.bodyHash) {
-      await responseHashStore.set(feed.id, feedResult.bodyHash);
+      pendingBodyHash.value = feedResult.bodyHash;
     }
 
     return [];
@@ -481,6 +509,19 @@ async function handleFeedV2EventInternal({
     `Debug feed ${feed.id}: Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed, total ${deliveryResults.length}`
   );
 
+  // Articles reached the delivery stage but it produced no result at all
+  // (no sent, filtered, rate-limited, or failed record). That is the silent
+  // stored-but-not-delivered signature, so surface it even with debug off.
+  if (
+    comparisonResult.articlesToDeliver.length > 0 &&
+    deliveryResults.length === 0
+  ) {
+    logger.warn("Articles were to be delivered but produced no results", {
+      feedId: feed.id,
+      toDeliver: comparisonResult.articlesToDeliver.length,
+    });
+  }
+
   for (const state of deliveryResults) {
     const rejectionEvent = getRejectionEventFromDeliveryState(feed.id, state);
 
@@ -490,7 +531,7 @@ async function handleFeedV2EventInternal({
   }
 
   if (feedResult.bodyHash) {
-    await responseHashStore.set(feed.id, feedResult.bodyHash);
+    pendingBodyHash.value = feedResult.bodyHash;
   }
 
   return deliveryResults;
