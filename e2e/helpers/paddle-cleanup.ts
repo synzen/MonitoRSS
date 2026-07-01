@@ -147,8 +147,15 @@ export async function cancelAndDeleteWorkspace(
   page: Page,
   workspaceSlug: string,
 ): Promise<void> {
+  // The backend's cancel handler blocks on the Paddle API call AND then polls
+  // the local record until the webhook writes cancellationDate (~1s x up to 50
+  // tries). Against the sandbox this routinely runs past Playwright's default
+  // 15s actionTimeout, so the request must be given the same webhook-scale
+  // budget the setup helpers use, or teardown flakes out on an otherwise green
+  // test. Same reasoning applies to the delete, which runs the guard re-check.
   const cancelRes = await page.request.post(
     `/api/v1/workspaces/${workspaceSlug}/billing/cancel`,
+    { timeout: POLL_TIMEOUT_MS },
   );
 
   // 204 = cancelled; 409/404 = nothing to cancel (never subscribed). Either way
@@ -159,7 +166,9 @@ export async function cancelAndDeleteWorkspace(
     );
   }
 
-  const deleteRes = await page.request.delete(`/api/v1/workspaces/${workspaceSlug}`);
+  const deleteRes = await page.request.delete(`/api/v1/workspaces/${workspaceSlug}`, {
+    timeout: POLL_TIMEOUT_MS,
+  });
 
   if (deleteRes.status() !== 204) {
     throw new Error(
