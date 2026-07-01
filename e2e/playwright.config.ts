@@ -39,6 +39,7 @@ const PADDLE_CHECKOUT_TESTS = [
   // "Manage Subscription" button never appears and the test times out.
   "**/billing/pricing-dialog-focus.spec.ts",
   "**/billing/paddle-workspace-slug-reuse-regression.spec.ts",
+  "**/billing/paddle-workspace-feed-discovery-limit-regression.spec.ts",
 ];
 
 export default defineConfig({

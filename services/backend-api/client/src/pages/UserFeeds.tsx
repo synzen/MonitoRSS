@@ -87,7 +87,12 @@ const UserFeedsInner: React.FC = () => {
   const { t } = useTranslation();
   const { state } = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { workspaceSlug, workspaceDormant } = useFeedScope();
+  const {
+    workspaceId,
+    workspaceSlug,
+    workspaceDormant,
+    maxFeeds: workspaceMaxFeeds,
+  } = useFeedScope();
   const scope = useMemo(() => (workspaceSlug ? { workspaceSlug } : undefined), [workspaceSlug]);
   const currentWorkspace = useCurrentWorkspace();
   const { data: userMeData } = useUserMe();
@@ -294,10 +299,15 @@ const UserFeedsInner: React.FC = () => {
   const { justConverted: showConvertedBanner, clearConverted: dismissConvertedBanner } =
     useJustConvertedWorkspace();
 
+  // The feed limit is scope-specific: in workspace scope the cap is the
+  // workspace's (subscription-derived), in personal scope it's the user's. Using
+  // the personal maxUserFeeds in workspace scope wrongly gated feed discovery on
+  // the owner's personal limit, showing "Limit reached" despite workspace headroom.
+  const scopedMaxFeeds = workspaceId ? workspaceMaxFeeds : discordUserMe?.maxUserFeeds;
   const isAtLimit = !!(
     userFeedsResults &&
-    discordUserMe &&
-    userFeedsResults.total >= discordUserMe.maxUserFeeds
+    scopedMaxFeeds !== undefined &&
+    userFeedsResults.total >= scopedMaxFeeds
   );
 
   const addedFeedKeys = useMemo(

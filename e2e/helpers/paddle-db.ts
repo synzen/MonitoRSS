@@ -48,6 +48,37 @@ export async function clearSupporterStatusInDb(
   }
 }
 
+/**
+ * Cap the signed-in user's PERSONAL feed limit by seeding a supporter override
+ * (`supporters.maxUserFeeds`), the same field the benefits resolver reads for a
+ * manual supporter. Used to reproduce the workspace feed-discovery limit bug:
+ * a workspace scope must gate on the WORKSPACE limit, not this personal one, so
+ * setting the personal cap below the workspace's limit surfaces the regression
+ * where the discovery cards read "Limit reached" despite workspace headroom.
+ */
+export async function setPersonalFeedLimitInDb(
+  discordUserId: string,
+  maxUserFeeds: number,
+): Promise<void> {
+  const expireAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+  const client = new MongoClient(MONGO_URI, { directConnection: true });
+
+  try {
+    await client.connect();
+    await client
+      .db()
+      .collection("supporters")
+      .updateOne(
+        { _id: discordUserId as unknown as import("mongodb").ObjectId },
+        { $set: { expireAt, guilds: [], maxUserFeeds } },
+        { upsert: true },
+      );
+  } finally {
+    await client.close();
+  }
+}
+
 export async function setCancellationDateInDb(
   discordUserId: string,
 ): Promise<void> {

@@ -206,14 +206,17 @@ vi.mock("../features/feed", async () => {
       isOpen,
       onClose,
       onAdd,
+      isAtLimit,
     }: {
       isOpen: boolean;
       onClose: () => void;
       onAdd: (feed: CuratedFeed) => void;
+      isAtLimit: boolean;
     }) =>
       isOpen ? (
         <div role="dialog">
           <span>Add a Feed</span>
+          <span data-testid="browse-modal-at-limit">{String(isAtLimit)}</span>
           <button type="button" aria-label="Close" onClick={onClose}>
             Close
           </button>
@@ -961,5 +964,78 @@ describe("UserFeeds - Dormant workspace activation", () => {
 
     expect(screen.getByTestId("user-feeds-table")).toBeInTheDocument();
     expect(screen.queryByText(/your plan moved to this workspace/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("UserFeeds - scope-aware feed limit", () => {
+  // Regression: in workspace scope the feed-discovery "at limit" gate must key on
+  // the WORKSPACE limit (maxFeeds), not the owner's personal maxUserFeeds. The
+  // personal mock is 25; a workspace with maxFeeds 70 and 30 feeds has headroom,
+  // but the old code compared 30 >= 25 (personal) and reported at-limit, showing
+  // "Limit reached" throughout discovery despite 40 free slots.
+  const tier2 = { productKey: "tier2" } as const;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
+  });
+
+  afterEach(() => {
+    mockCurrentWorkspace.current = undefined;
+  });
+
+  const renderWorkspaceScope = (maxFeeds: number) => {
+    mockCurrentWorkspace.current = {
+      id: "ws-1",
+      slug: "ws-1",
+      name: "Workspace One",
+      subscription: tier2,
+    };
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const user = userEvent.setup();
+    const result = render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <FeedScopeProvider value={{ workspaceId: "ws-1", workspaceSlug: "ws-1", maxFeeds }}>
+                <UserFeeds />
+              </FeedScopeProvider>
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>
+      </QueryClientProvider>,
+    );
+
+    return { user, ...result };
+  };
+
+  it("is not at limit when the workspace has headroom despite a lower personal limit", async () => {
+    // 30 feeds, workspace cap 70 (headroom), personal cap 25. Buggy code keyed on
+    // the personal 25 and reported at-limit; the fix keys on the workspace 70.
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [{ id: "1" }], total: 30, feedsWithoutConnections: 0 },
+    });
+    const { user } = renderWorkspaceScope(70);
+
+    await user.click(screen.getByRole("button", { name: "Add Feed" }));
+
+    const modal = screen.getByRole("dialog");
+    expect(within(modal).getByTestId("browse-modal-at-limit")).toHaveTextContent("false");
+  });
+
+  it("is at limit when the workspace's own limit is reached", async () => {
+    // 70 feeds against a workspace cap of 70: genuinely at the workspace limit.
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [{ id: "1" }], total: 70, feedsWithoutConnections: 0 },
+    });
+    const { user } = renderWorkspaceScope(70);
+
+    await user.click(screen.getByRole("button", { name: "Add Feed" }));
+
+    const modal = screen.getByRole("dialog");
+    expect(within(modal).getByTestId("browse-modal-at-limit")).toHaveTextContent("true");
   });
 });
