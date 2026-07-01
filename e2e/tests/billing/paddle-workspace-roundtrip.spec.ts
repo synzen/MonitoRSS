@@ -421,7 +421,11 @@ test.describe("Paddle workspace roundtrip", () => {
     }).toPass({ timeout: 120_000, intervals: [5000] });
 
     await changeDialog.getByRole("button", { name: /confirm change/i }).click();
-    await expect(changeDialog).toHaveCount(0, { timeout: 60000 });
+    // The confirm handler blocks on Paddle then polls the local record until the
+    // webhook lands (~1s x up to 50 tries), so the dialog can stay open close to
+    // a minute against the sandbox. Budget the full webhook window used elsewhere
+    // in the suite rather than the tighter 60s, which flakes on a slow sandbox.
+    await expect(changeDialog).toHaveCount(0, { timeout: 120_000 });
 
     // The change lands via webhook, so the rendered current-plan text lags the
     // confirmed change; reload until it reflects the new 200-feed capacity (base

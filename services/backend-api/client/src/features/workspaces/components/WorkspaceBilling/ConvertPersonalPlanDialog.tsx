@@ -129,9 +129,10 @@ export const ConvertPersonalPlanDialog = ({
   const selectedCount = selectedIds.size;
   const overCapacity = selectedCount > feedLimit;
   const overLimit = loadInfo?.overLimit ?? false;
-  // Nothing selected = nothing to move. Only reachable in the over-limit case
-  // (under the limit the list defaults to everything selected).
-  const nothingSelected = loadInfo !== null && selectedCount === 0;
+  // Nothing selected while the owner HAS feeds = nothing to move; block. But an
+  // account with no personal feeds is still convertible (move the plan, bring
+  // nothing), so a zero selection is only invalid when there were feeds to pick.
+  const nothingSelected = loadInfo !== null && loadInfo.total > 0 && selectedCount === 0;
 
   const onConfirm = async () => {
     await convertMutation.mutateAsync({
