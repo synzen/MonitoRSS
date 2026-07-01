@@ -256,6 +256,14 @@ test.describe("Paddle workspace conversion", () => {
       .fill(workspaceSlug);
     await convertDialog.getByRole("button", { name: /^move plan$/i }).click();
 
+    // The move-plan handler only closes the dialog once the convert mutation
+    // resolves, and that mutation blocks on Paddle then polls the local record
+    // until the webhook lands (~1s x up to 50 tries). Wait for the dialog to
+    // close on the full webhook budget before asserting on the page underneath;
+    // otherwise the still-open modal aria-hides the feeds page and the later
+    // table assertion races a slow sandbox and fails.
+    await expect(convertDialog).toBeHidden({ timeout: 120_000 });
+
     // 5. The webhook re-homes the subscription onto the team. The dialog closed
     //    on the feeds page, which polls the workspace read in place and, once the
     //    subscription lands, drops the activation pitch WITHOUT any navigation.
