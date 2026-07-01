@@ -14,6 +14,8 @@ import { TestSendFeedback } from "../../types";
 import { Article, Branding } from "./types";
 import { useBrandingContext } from "./BrandingContext";
 import { useDiscordBot } from "@/features/discordUser";
+import { DiscordUnfurlNote } from "./DiscordUnfurlNote";
+import { previewMayUnfurl } from "./discordUnfurl";
 
 const PreviewPlaceholder = ({ children }: { children: React.ReactNode }) => (
   <Box p={8} textAlign="center" bg="bg.panel" borderRadius="l3" color="fg.subtle">
@@ -74,6 +76,8 @@ export const PreviewColumn = ({
     brandingDisplayName,
     botAvatarUrl: bot?.result.avatar,
   });
+
+  const showUnfurlNote = previewMayUnfurl(previewMessages);
 
   return (
     <Panel
@@ -198,13 +202,16 @@ export const PreviewColumn = ({
               !isActuallyLoading &&
               !isPreviewError &&
               previewMessages.length > 0 && (
-                <DiscordMessageDisplay
-                  messages={previewMessages}
-                  maxHeight={{ base: 250, lg: 200 }}
-                  username={brandingDisplayName || undefined}
-                  avatarUrl={resolvedAvatarUrl}
-                  showVerifiedInAppBadge={!hasBrandingValues}
-                />
+                <>
+                  <DiscordMessageDisplay
+                    messages={previewMessages}
+                    maxHeight={{ base: 250, lg: 200 }}
+                    username={brandingDisplayName || undefined}
+                    avatarUrl={resolvedAvatarUrl}
+                    showVerifiedInAppBadge={!hasBrandingValues}
+                  />
+                  {showUnfurlNote && <DiscordUnfurlNote />}
+                </>
               )}
             {selectedTemplateId &&
               !isActuallyLoading &&
@@ -239,13 +246,16 @@ export const PreviewColumn = ({
             !isActuallyLoading &&
             !isPreviewError &&
             previewMessages.length > 0 && (
-              <DiscordMessageDisplay
-                messages={previewMessages}
-                maxHeight={{ base: 300, lg: 350 }}
-                username={brandingDisplayName || undefined}
-                avatarUrl={resolvedAvatarUrl}
-                showVerifiedInAppBadge={!hasBrandingValues}
-              />
+              <>
+                <DiscordMessageDisplay
+                  messages={previewMessages}
+                  maxHeight={{ base: 300, lg: 350 }}
+                  username={brandingDisplayName || undefined}
+                  avatarUrl={resolvedAvatarUrl}
+                  showVerifiedInAppBadge={!hasBrandingValues}
+                />
+                {showUnfurlNote && <DiscordUnfurlNote />}
+              </>
             )}
           {selectedTemplateId &&
             !isActuallyLoading &&
@@ -257,7 +267,7 @@ export const PreviewColumn = ({
                 will be available once articles arrive.
               </Text>
             )}
-          {!!articles.length && (
+          {!!articles.length && !showUnfurlNote && (
             <Text fontSize="sm" color="fg.muted" mt={2}>
               This is an approximate preview. Send to Discord to see the actual representation.
             </Text>
