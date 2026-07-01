@@ -31,6 +31,27 @@ export async function handleArticleDeliveryResult(
   );
 
   const deliveryId = deliveryResult.job.meta?.id;
+
+  // For debug feeds, surface the terminal delivery outcome to Datadog. This is
+  // the step that transitions a record out of `pending-delivery`; without it a
+  // debug-feed trace ends at enqueue and cannot distinguish a delivered article
+  // from one silently stuck pending. Mirrors the `debugLog` gate in
+  // feed-event-handler (feed id in the message text, not an attribute).
+  if (processed.meta.debug) {
+    logger.datadog(
+      `Debug feed ${processed.meta.feedId}: delivery ${
+        deliveryId ?? "unknown"
+      } resolved: ${processed.status}`,
+      {
+        feedId: processed.meta.feedId,
+        deliveryId,
+        mediumId: processed.meta.mediumId,
+        articleId: processed.meta.articleId,
+        status: processed.status,
+        errorCode: processed.errorCode,
+      }
+    );
+  }
   if (deliveryId) {
     try {
       await deliveryRecordStore.updateDeliveryStatus(deliveryId, {

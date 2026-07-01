@@ -485,6 +485,7 @@ async function handleFeedV2EventInternal({
       articleDayLimit: event.data.articleDayLimit,
       discordClient,
       deliveryRecordStore,
+      debug: event.debug === true,
     }
   );
 

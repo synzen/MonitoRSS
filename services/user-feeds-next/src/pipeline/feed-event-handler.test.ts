@@ -13,6 +13,7 @@ import {
   ArticleDeliveryContentType,
 } from "../delivery";
 import { MessageBrokerQueue } from "../shared/constants";
+import { logger } from "../shared/utils";
 import {
   setupTestDatabase,
   teardownTestDatabase,
@@ -342,6 +343,75 @@ describe("feed-event-handler", () => {
       );
 
       assert.strictEqual(await queryRecordStatus(deliveryId), "pending-delivery");
+    });
+  });
+
+  describe("handleArticleDeliveryResult — debug-feed logging", () => {
+    async function captureDatadogLogs(
+      run: () => Promise<void>
+    ): Promise<Array<{ message: string; data?: unknown }>> {
+      const calls: Array<{ message: string; data?: unknown }> = [];
+      const original = logger.datadog;
+      (logger as unknown as { datadog: unknown }).datadog = (
+        message: string,
+        data?: unknown
+      ) => {
+        calls.push({ message, data });
+      };
+      try {
+        await run();
+      } finally {
+        (logger as unknown as { datadog: unknown }).datadog = original;
+      }
+      return calls;
+    }
+
+    it("emits a Debug feed resolved line for debug feeds", async () => {
+      const { publisher } = createMockPublisher();
+      const calls = await captureDatadogLogs(async () => {
+        await handleArticleDeliveryResult(
+          {
+            job: createJobData({
+              feedId: "feed-debug",
+              mediumId: "medium-1",
+              id: "delivery-1",
+              debug: true,
+            }),
+            result: createSuccessResult(200, { id: "msg-123" }),
+          },
+          publisher,
+          stores.deliveryRecordStore
+        );
+      });
+
+      const resolved = calls.find((c) =>
+        c.message.includes("Debug feed feed-debug: delivery delivery-1 resolved: sent")
+      );
+      assert.ok(
+        resolved,
+        `expected a resolved datadog line, got: ${JSON.stringify(calls)}`
+      );
+    });
+
+    it("does not emit a resolved line for non-debug feeds", async () => {
+      const { publisher } = createMockPublisher();
+      const calls = await captureDatadogLogs(async () => {
+        await handleArticleDeliveryResult(
+          {
+            job: createJobData({
+              feedId: "feed-plain",
+              mediumId: "medium-1",
+              id: "delivery-2",
+            }),
+            result: createSuccessResult(200, { id: "msg-123" }),
+          },
+          publisher,
+          stores.deliveryRecordStore
+        );
+      });
+
+      const resolved = calls.find((c) => c.message.includes("resolved:"));
+      assert.strictEqual(resolved, undefined);
     });
   });
 });

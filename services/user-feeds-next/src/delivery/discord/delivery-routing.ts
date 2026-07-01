@@ -80,6 +80,7 @@ interface BuildEnqueuePayloadsOptions {
   channelId?: string;
   webhookId?: string;
   parentDeliveryId?: string;
+  debug?: boolean;
 }
 
 function buildEnqueuePayloads(
@@ -96,6 +97,7 @@ function buildEnqueuePayloads(
     channelId,
     webhookId,
     parentDeliveryId: existingParentId,
+    debug,
   } = options;
 
   const parentDeliveryId = existingParentId || generateDeliveryId();
@@ -124,12 +126,14 @@ function buildEnqueuePayloads(
       meta: {
         id: deliveryId,
         articleID: article.flattened.id,
+        articleIdHash: article.flattened.idHash,
         feedURL: feedUrl,
         ...(channelId ? { channel: channelId } : {}),
         ...(webhookId ? { webhookId } : {}),
         feedId,
         guildId,
         mediumId,
+        ...(debug ? { debug: true } : {}),
         emitDeliveryResult: true,
       },
     });
@@ -241,6 +245,7 @@ interface InternalDeliverArticleContext {
   feedId: string;
   feedUrl: string;
   guildId: string;
+  debug: boolean;
   filterReferences: Map<string, string>;
   deliverySettings: {
     channel?: DeliveryMedium["details"]["channel"];
@@ -391,6 +396,7 @@ async function deliverToWebhookForum(
     guildId: context.guildId,
     channelId: threadId,
     parentDeliveryId,
+    debug: context.debug,
   });
 
   return {
@@ -487,6 +493,7 @@ async function deliverToChannelForum(
     guildId: context.guildId,
     channelId: threadId,
     parentDeliveryId,
+    debug: context.debug,
   });
 
   return {
@@ -673,6 +680,7 @@ async function deliverToChannel(
     guildId: context.guildId,
     channelId: useChannelId,
     parentDeliveryId: parentDeliveryId || undefined,
+    debug: context.debug,
   });
 
   return {
@@ -722,6 +730,7 @@ async function deliverToWebhook(
     feedUrl: context.feedUrl,
     guildId: context.guildId,
     webhookId: webhook.id,
+    debug: context.debug,
   });
 }
 
@@ -736,6 +745,7 @@ async function sendArticleToMedium(
   feedId: string,
   feedUrl: string,
   discordClient: DiscordRestClient,
+  debug: boolean,
   filterReferences?: Map<string, string>
 ): Promise<DeliveryResult> {
   try {
@@ -831,6 +841,7 @@ async function sendArticleToMedium(
       feedId,
       feedUrl,
       guildId: medium.details.guildId,
+      debug,
       filterReferences: collectedFilterReferences,
       deliverySettings: {
         channel,
@@ -960,6 +971,7 @@ export async function deliverArticles(
     articleDayLimit: number;
     deliveryRecordStore: DeliveryRecordStore;
     discordClient: DiscordRestClient;
+    debug?: boolean;
   }
 ): Promise<ArticleDeliveryState[]> {
   const { deliveryRecordStore, discordClient } = options;
@@ -1024,7 +1036,8 @@ export async function deliverArticles(
         limitState,
         options.feedId,
         options.feedUrl,
-        options.discordClient
+        options.discordClient,
+        options.debug === true
       );
       allStates.push(...states);
       allPayloads.push(...pendingPayloads);

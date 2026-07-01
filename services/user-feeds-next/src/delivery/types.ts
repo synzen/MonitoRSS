@@ -155,6 +155,7 @@ export interface DeliveryJobMeta {
   articleIdHash: string;
   mediumId: string;
   articleId?: string;
+  debug?: boolean;
 }
 
 export interface ProcessedDeliveryResult {

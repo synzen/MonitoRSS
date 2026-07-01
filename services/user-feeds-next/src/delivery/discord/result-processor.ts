@@ -21,6 +21,7 @@ export function processDeliveryResult(deliveryResult: DiscordDeliveryResult): {
     articleIdHash: job.meta?.articleIdHash ?? "",
     mediumId: job.meta?.mediumId ?? "",
     articleId: job.meta?.articleId,
+    debug: job.meta?.debug === true,
   };
 
   if (result.state === "error") {
