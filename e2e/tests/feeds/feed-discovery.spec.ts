@@ -1045,7 +1045,10 @@ test.describe("Feed Discovery", () => {
         page.getByRole("heading", { name: "Add a Feed" }),
       ).toBeVisible({ timeout: 10000 });
 
-      await page.getByRole("button", { name: "Close" }).click();
+      await page
+        .getByRole("dialog", { name: "Add a Feed" })
+        .getByRole("button", { name: "Close" })
+        .click();
 
       // Second time: same flow should work again
       await page
@@ -1073,7 +1076,10 @@ test.describe("Feed Discovery", () => {
         page.getByRole("heading", { name: "Add a Feed" }),
       ).toBeVisible({ timeout: 10000 });
 
-      await page.getByRole("button", { name: "Close" }).click();
+      await page
+        .getByRole("dialog", { name: "Add a Feed" })
+        .getByRole("button", { name: "Close" })
+        .click();
     });
 
     test("add feed from modal, success banner shown", async ({
