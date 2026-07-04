@@ -18,7 +18,6 @@ import { parse as parseHtml, valid as isValidHtml } from "node-html-parser";
 import {
   getFeedArticlesFromCache,
   setFeedArticlesInCache,
-  refreshFeedArticlesCacheExpiration,
 } from "../../stores/parsed-articles-cache-helpers";
 import type {
   ParsedArticlesCacheStore,
@@ -156,11 +155,11 @@ export async function findOrFetchFeedArticles(
   );
 
   if (cachedArticles) {
-    await refreshFeedArticlesCacheExpiration(parsedArticlesCacheStore, {
-      url,
-      options: cacheKeyOptions,
-    });
-
+    // Deliberately do NOT slide the TTL on read. The cache entry must expire
+    // relative to when it was written so the listing cannot be pinned to a stale
+    // snapshot indefinitely by repeated reads (e.g. reopening the article
+    // selector), which would keep surfacing articles that have since rolled off
+    // the feed and fail the "does this article exist" lookup in preview/delivery.
     return {
       output: {
         articles: cachedArticles.articles,

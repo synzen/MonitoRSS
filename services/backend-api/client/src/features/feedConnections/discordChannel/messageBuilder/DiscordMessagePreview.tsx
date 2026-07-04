@@ -1,4 +1,5 @@
 import React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Box, HStack, Text, Stack, Input, Icon, chakra, VisuallyHidden } from "@chakra-ui/react";
 import { FaChevronRight, FaLock } from "react-icons/fa6";
 import { Avatar } from "@/components/ui/avatar";
@@ -23,6 +24,7 @@ import { useUserFeedConnectionContext } from "@/features/feed";
 import { DiscordServerName, DiscordChannelName } from "@/features/discordServers";
 import { CreateDiscordChannelConnectionPreviewInput } from "../connection/api";
 import { MentionDataProvider, useMentionData } from "../shared/contexts/MentionDataContext";
+import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 
 interface DiscordMessagePreviewProps {
   maxHeight?: string | number;
@@ -151,6 +153,29 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
       },
     },
   });
+
+  // Self-heal the stale article list. The article selector and this preview
+  // resolve articles through separate caches, so the selector can offer an
+  // article that has since rolled off the feed and no longer exists when the
+  // preview looks it up. When that happens, refetch the feed's articles so the
+  // builder re-resolves a current article instead of leaving the user stuck on a
+  // dead selection. Guard on the article id so we invalidate at most once per
+  // offending article and never loop.
+  const queryClient = useQueryClient();
+  const healedArticleIdRef = React.useRef<string | undefined>(undefined);
+
+  React.useEffect(() => {
+    const staleArticleId = currentArticle?.id;
+
+    if (
+      error?.errorCode === ApiErrorCode.FEED_ARTICLE_NOT_FOUND &&
+      staleArticleId &&
+      healedArticleIdRef.current !== staleArticleId
+    ) {
+      healedArticleIdRef.current = staleArticleId;
+      queryClient.invalidateQueries(["user-feed-articles", { feedId: userFeed.id }]);
+    }
+  }, [error, currentArticle?.id, userFeed.id, queryClient]);
 
   const isFetching = fetchStatus === "fetching";
   const messages = connectionPreview?.result.messages ?? emptyMessages;
