@@ -7,8 +7,38 @@ import SimpleMarkdown from "simple-markdown";
 import Twemoji from "twemoji";
 import hljs from "highlight.js";
 import uniqueId from "lodash/uniqueId";
+import dayjs from "dayjs";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { getChannelIcon } from "../../../utils/getChannelIcon";
 import Emoji from "@/constants/emojis";
+
+dayjs.extend(localizedFormat);
+dayjs.extend(relativeTime);
+
+// Discord timestamp styles map to dayjs format tokens (R is handled separately)
+const TIMESTAMP_STYLE_FORMATS = {
+  t: "LT",
+  T: "LTS",
+  d: "L",
+  D: "LL",
+  f: "LLL",
+  F: "LLLL",
+};
+
+function formatDiscordTimestamp(unixSeconds, style) {
+  const m = dayjs.unix(unixSeconds);
+
+  if (!m.isValid()) {
+    return null;
+  }
+
+  if (style === "R") {
+    return m.fromNow();
+  }
+
+  return m.format(TIMESTAMP_STYLE_FORMATS[style] || TIMESTAMP_STYLE_FORMATS.f);
+}
 
 // this is mostly translated from discord's client,
 // although it's not 1:1 since the client js is minified
@@ -506,6 +536,34 @@ const baseRules = {
       return (
         <span key={state.key} className="discord-mention">
           {node.raw}
+        </span>
+      );
+    },
+  },
+  discordTimestamp: {
+    order: SimpleMarkdown.defaultRules.escape.order,
+    match(source) {
+      // Match Discord timestamps: <t:UNIX> or <t:UNIX:STYLE> (style is one of t T d D f F R)
+      return /^<t:(-?\d+)(?::([tTdDfFR]))?>/.exec(source);
+    },
+    parse(capture) {
+      return {
+        type: "discordTimestamp",
+        unix: Number(capture[1]),
+        style: capture[2] || "f",
+        raw: capture[0],
+      };
+    },
+    react(node, recurseOutput, state) {
+      const formatted = formatDiscordTimestamp(node.unix, node.style);
+
+      if (formatted == null) {
+        return <span key={state.key}>{node.raw}</span>;
+      }
+
+      return (
+        <span key={state.key} className="discord-timestamp">
+          {formatted}
         </span>
       );
     },
