@@ -174,10 +174,13 @@ const ForumThreadTagSchema = Type.Object(
   {
     id: Type.String({ minLength: 1 }),
     filters: Type.Optional(
-      Type.Object(
-        { expression: Type.Object({}, { additionalProperties: true }) },
-        { additionalProperties: false },
-      ),
+      Type.Union([
+        Type.Object(
+          { expression: Type.Object({}, { additionalProperties: true }) },
+          { additionalProperties: false },
+        ),
+        Type.Null(),
+      ]),
     ),
   },
   { additionalProperties: false },

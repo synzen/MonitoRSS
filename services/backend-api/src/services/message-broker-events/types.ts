@@ -22,7 +22,7 @@ export interface DiscordMediumEventDetails {
   forumThreadTitle?: string;
   forumThreadTags?: Array<{
     id: string;
-    filters?: { expression: Record<string, unknown> };
+    filters?: { expression: Record<string, unknown> } | null;
   }>;
   mentions?: {
     targets?: Array<{

@@ -502,5 +502,22 @@ describe(
 
       assert.strictEqual(response.status, 201);
     });
+
+    it("returns 201 when forumThreadTags has null filters", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const { feedId, connectionId } = await createTestFeedWithConnection(ctx, {
+        discordUserId,
+      });
+
+      const response = await user.fetch(testUrl(feedId, connectionId), {
+        method: "POST",
+        body: JSON.stringify({
+          forumThreadTags: [{ id: generateSnowflake(), filters: null }],
+        }),
+      });
+
+      assert.strictEqual(response.status, 201);
+    });
   },
 );
