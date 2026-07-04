@@ -514,6 +514,40 @@ describe(
         assert.strictEqual(body.result.details.embeds[0]?.title, "Test Embed");
       });
 
+      it("accepts forumThreadTags with null filters", async () => {
+        const discordUserId = generateSnowflake();
+        const user = await ctx.asUser(discordUserId);
+        const { feedId, connectionId } = await createTestFeedWithConnection(
+          ctx,
+          { discordUserId },
+        );
+
+        const tagId = generateSnowflake();
+
+        const response = await user.fetch(testUrl(feedId, connectionId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            forumThreadTags: [{ id: tagId, filters: null }],
+          }),
+        });
+
+        assert.strictEqual(response.status, 200);
+
+        const feed = await ctx.container.userFeedRepository.findById(feedId);
+        const storedConnection = feed?.connections.discordChannels.find(
+          (c) => c.id === connectionId,
+        );
+
+        assert.strictEqual(
+          storedConnection?.details.forumThreadTags?.length,
+          1,
+        );
+        assert.strictEqual(
+          storedConnection?.details.forumThreadTags?.[0]?.id,
+          tagId,
+        );
+      });
+
       it("preserves detail fields omitted from request", async () => {
         const discordUserId = generateSnowflake();
         const user = await ctx.asUser(discordUserId);

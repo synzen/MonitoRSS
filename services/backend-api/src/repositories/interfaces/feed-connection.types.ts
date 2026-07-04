@@ -17,7 +17,7 @@ export interface IFilters {
 // ForumThreadTag
 export interface IForumThreadTag {
   id: string;
-  filters?: IFilters;
+  filters?: IFilters | null;
 }
 
 // DiscordFormatter
