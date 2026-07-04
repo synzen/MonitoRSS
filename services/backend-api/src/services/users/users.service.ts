@@ -13,7 +13,7 @@ import {
   SubscriptionProductKey,
   UserExternalCredentialType,
 } from "../../repositories/shared/enums";
-import { formatCurrency } from "../../utils/format-currency";
+import { formatCurrency } from "../../shared/utils/format-currency";
 import { encrypt } from "../../utils/encrypt";
 import { reconcileFeedLookupKeys } from "../../shared/utils/reconcile-feed-lookup-keys";
 import { isBillingEnabled } from "../../shared/utils/billing";
