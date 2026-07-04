@@ -3,7 +3,7 @@ import type { ISupporterRepository } from "../../repositories/interfaces/support
 import type { IUserRepository } from "../../repositories/interfaces/user.types";
 import { SubscriptionAlreadyCancelledException } from "../../shared/exceptions/paddle.exceptions";
 import { pollUntil } from "../../shared/utils/poll-until";
-import { formatCurrency } from "../../utils/format-currency";
+import { formatCurrency } from "../../shared/utils/format-currency";
 import type { MessageBrokerService } from "../message-broker/message-broker.service";
 import type { PaddleService } from "../paddle/paddle.service";
 import { SubscriptionProductKey } from "../paddle/types";

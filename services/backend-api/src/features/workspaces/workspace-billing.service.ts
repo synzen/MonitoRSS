@@ -33,7 +33,7 @@ import {
   WORKSPACE_PRODUCT_KEYS,
 } from "../../shared/utils/billing";
 import { pollUntil } from "../../shared/utils/poll-until";
-import { formatCurrency } from "../../utils/format-currency";
+import { formatCurrency } from "../../shared/utils/format-currency";
 
 export interface WorkspaceBillingServiceDeps {
   config: Config;
