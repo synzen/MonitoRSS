@@ -25,9 +25,7 @@ const formattersByCurrency: Record<string, (input: string) => string> = {
   INR: (input) => `₹${input}`,
 };
 
-// Currencies Paddle bills in whole units (no minor unit), so the amount must
-// not be split into a two-digit fractional part.
-const ZERO_DECIMAL_CURRENCIES = ["JPY", "KRW", "HUF", "TWD", "VND"];
+const ZERO_DECIMAL_CURRENCIES = ["JPY", "KRW", "VND"];
 
 export function formatCurrency(input: string, currencyCode: string): string {
   const formatter = formattersByCurrency[currencyCode];

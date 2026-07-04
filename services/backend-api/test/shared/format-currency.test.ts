@@ -39,15 +39,19 @@ describe("formatCurrency", () => {
     assert.strictEqual(formatCurrency("-500", "JPY"), "-¥500");
   });
 
-  it("treats KRW and HUF as zero-decimal", () => {
+  it("treats KRW as zero-decimal", () => {
     assert.strictEqual(formatCurrency("5000", "KRW"), "₩5000");
-    assert.strictEqual(formatCurrency("5000", "HUF"), "5000 Ft");
   });
 
-  it("formats TWD and VND as zero-decimal currencies", () => {
-    assert.strictEqual(formatCurrency("500", "TWD"), "NT$500");
-    assert.strictEqual(formatCurrency("-500", "TWD"), "-NT$500");
+  it("formats VND as a zero-decimal currency", () => {
     assert.strictEqual(formatCurrency("25000", "VND"), "25000 ₫");
+    assert.strictEqual(formatCurrency("-25000", "VND"), "-25000 ₫");
+  });
+
+  it("formats HUF and TWD as two-decimal currencies", () => {
+    assert.strictEqual(formatCurrency("500000", "HUF"), "5000 Ft");
+    assert.strictEqual(formatCurrency("50000", "TWD"), "NT$500");
+    assert.strictEqual(formatCurrency("-50000", "TWD"), "-NT$500");
   });
 
   it("formats CHF and INR with cents", () => {
