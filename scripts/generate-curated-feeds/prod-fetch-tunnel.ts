@@ -246,6 +246,8 @@ async function readApiKey(config: TunnelConfig): Promise<string> {
 // ---------------------------------------------------------------------------
 
 let tunnelProcess: ChildProcess | null = null;
+let tunnelSessionId: string | null = null;
+let tunnelConfig: TunnelConfig | null = null;
 
 function killTunnel(): void {
   const child = tunnelProcess;
@@ -264,6 +266,23 @@ function killTunnel(): void {
     spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"]);
   } else {
     child.kill("SIGTERM");
+  }
+
+  // The force-kill drops the connection without ending the session on the
+  // server, which would otherwise linger until its idle timeout.
+  if (tunnelSessionId && tunnelConfig) {
+    spawnSync("aws", [
+      "ssm",
+      "terminate-session",
+      "--session-id",
+      tunnelSessionId,
+      "--profile",
+      tunnelConfig.awsProfile,
+      "--region",
+      tunnelConfig.awsRegion,
+      "--no-cli-pager",
+    ]);
+    tunnelSessionId = null;
   }
 }
 
@@ -309,7 +328,12 @@ function spawnTunnel(
 
   const recentOutput: string[] = [];
   const record = (chunk: Buffer) => {
-    recentOutput.push(chunk.toString());
+    const text = chunk.toString();
+    const sessionIdMatch = text.match(/SessionId: (\S+)/);
+    if (sessionIdMatch) {
+      tunnelSessionId = sessionIdMatch[1];
+    }
+    recentOutput.push(text);
     if (recentOutput.length > 20) {
       recentOutput.shift();
     }
@@ -403,6 +427,7 @@ export async function setUpProdFeedRequestsApi(): Promise<ProdFetchSession> {
       `on local port ${config.localPort}...`,
   );
   registerTeardownHandlers();
+  tunnelConfig = config;
   const { child, exited } = spawnTunnel(config, natInstanceId, taskIp);
 
   const apiUrl = `http://127.0.0.1:${config.localPort}`;
