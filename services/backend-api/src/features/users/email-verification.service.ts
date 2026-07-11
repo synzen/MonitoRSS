@@ -18,16 +18,39 @@ import {
 } from "../../infra/error-handler";
 import logger from "../../infra/logger";
 import EMAIL_VERIFICATION_TEMPLATE from "./email-verification.template";
+import ACCOUNT_DELETION_TEMPLATE from "./account-deletion.template";
 import VERIFIED_EMAIL_CHANGED_TEMPLATE from "./verified-email-changed.template";
 import VERIFIED_EMAIL_REVERTED_TEMPLATE from "./verified-email-reverted.template";
 
 const verificationTemplate = Handlebars.compile(EMAIL_VERIFICATION_TEMPLATE);
+const accountDeletionTemplate = Handlebars.compile(ACCOUNT_DELETION_TEMPLATE);
 const verifiedEmailChangedTemplate = Handlebars.compile(
   VERIFIED_EMAIL_CHANGED_TEMPLATE,
 );
 const verifiedEmailRevertedTemplate = Handlebars.compile(
   VERIFIED_EMAIL_REVERTED_TEMPLATE,
 );
+
+// A code is only spendable for the action it was issued for: the email a user
+// receives states what the code authorizes, so letting a code issued under one
+// purpose be consumed by another would bypass that informed consent (e.g. a
+// hijacked session requesting an innocuous "verify your email" code and
+// spending it on account deletion).
+export type EmailVerificationPurpose = "verify-email" | "account-deletion";
+
+const PURPOSE_EMAILS: Record<
+  EmailVerificationPurpose,
+  { subject: string; template: Handlebars.TemplateDelegate }
+> = {
+  "verify-email": {
+    subject: "Verify your email for MonitoRSS",
+    template: verificationTemplate,
+  },
+  "account-deletion": {
+    subject: "Confirm your MonitoRSS account deletion",
+    template: accountDeletionTemplate,
+  },
+};
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 // Revert-link lifetime: long enough that an infrequent email-checker still
@@ -100,7 +123,21 @@ export class EmailVerificationService {
     return this.signWith(this.otpKey, code);
   }
 
-  async sendCode(userId: string, rawEmail: string): Promise<void> {
+  // Records created before purposes existed have none; they were all issued by
+  // the verify-email flow, so treat a missing purpose as verify-email to keep
+  // in-flight codes working across the deploy that introduced purposes.
+  private purposeMatches(
+    recordPurpose: string | null,
+    expected: EmailVerificationPurpose,
+  ): boolean {
+    return (recordPurpose ?? "verify-email") === expected;
+  }
+
+  async sendCode(
+    userId: string,
+    rawEmail: string,
+    purpose: EmailVerificationPurpose,
+  ): Promise<void> {
     if (!this.deps.smtpTransport) {
       throw new ServiceUnavailableError(
         ApiErrorCode.EMAIL_VERIFICATION_UNAVAILABLE,
@@ -153,18 +190,27 @@ export class EmailVerificationService {
     await this.deps.emailVerificationRepository.createCode({
       userId,
       email,
+      purpose,
       codeHash: this.hashCode(code),
       expiresAt: new Date(Date.now() + CODE_TTL_MS),
     });
 
     await this.deps.emailVerificationRepository.recordSend(userId, email);
 
+    const { subject, template } = PURPOSE_EMAILS[purpose];
+
     await this.deps.smtpTransport.sendMail({
       from: createFromFormatter(this.deps.config)("MonitoRSS", "noreply"),
       to: email,
-      subject: "Verify your email for MonitoRSS",
-      html: this.renderEmail(verificationTemplate, { code }),
+      subject,
+      html: this.renderEmail(template, { code }),
     });
+  }
+
+  // Drops every in-flight verification code and send-audit row for a user.
+  // Used by account erasure to clear the user's verification state.
+  async deleteAllForUser(userId: string): Promise<void> {
+    await this.deps.emailVerificationRepository.deleteAllForUser(userId);
   }
 
   async confirm(userId: string, rawEmail: string, code: string): Promise<void> {
@@ -174,7 +220,7 @@ export class EmailVerificationService {
       email,
     );
 
-    if (!record) {
+    if (!record || !this.purposeMatches(record.purpose, "verify-email")) {
       throw new BadRequestError(ApiErrorCode.EMAIL_VERIFICATION_INVALID_CODE);
     }
 
@@ -245,6 +291,60 @@ export class EmailVerificationService {
         email,
       );
     }
+  }
+
+  // Identity confirmation that checks a code WITHOUT mutating the user's
+  // verified email (unlike confirm, which sets it). Used to gate an
+  // irreversible action — account deletion — behind proof of mailbox control.
+  // The code is consumed on success; failures increment attempts and surface
+  // the same error codes as confirm. Throws on an invalid, expired, or
+  // exhausted code.
+  async verifyCodeOnly(
+    userId: string,
+    rawEmail: string,
+    code: string,
+    purpose: EmailVerificationPurpose,
+  ): Promise<void> {
+    const email = this.normalizeEmail(rawEmail);
+    const record = await this.deps.emailVerificationRepository.findByUserEmail(
+      userId,
+      email,
+    );
+
+    if (!record || !this.purposeMatches(record.purpose, purpose)) {
+      throw new BadRequestError(ApiErrorCode.EMAIL_VERIFICATION_INVALID_CODE);
+    }
+
+    if (record.expiresAt.getTime() < Date.now()) {
+      await this.deps.emailVerificationRepository.deleteForUserEmail(
+        userId,
+        email,
+      );
+      throw new BadRequestError(ApiErrorCode.EMAIL_VERIFICATION_EXPIRED);
+    }
+
+    if (record.attempts >= MAX_ATTEMPTS) {
+      await this.deps.emailVerificationRepository.deleteForUserEmail(
+        userId,
+        email,
+      );
+      throw new TooManyRequestsError(
+        ApiErrorCode.EMAIL_VERIFICATION_TOO_MANY_ATTEMPTS,
+      );
+    }
+
+    if (!this.codesMatch(this.hashCode(code), record.codeHash)) {
+      await this.deps.emailVerificationRepository.incrementAttempts(
+        userId,
+        email,
+      );
+      throw new BadRequestError(ApiErrorCode.EMAIL_VERIFICATION_INVALID_CODE);
+    }
+
+    await this.deps.emailVerificationRepository.deleteForUserEmail(
+      userId,
+      email,
+    );
   }
 
   async createRevertToken(

@@ -11,6 +11,9 @@ export interface IEmailVerification {
   id: string;
   userId: string;
   email: string;
+  // The action this code was issued for; a code is only spendable for its own
+  // purpose. Null on records created before purposes existed (verify-email).
+  purpose: string | null;
   codeHash: string;
   expiresAt: Date;
   attempts: number;
@@ -21,6 +24,7 @@ const EmailVerificationSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, required: true },
     email: { type: String, required: true },
+    purpose: { type: String },
     codeHash: { type: String, required: true },
     expiresAt: { type: Date, required: true },
     attempts: { type: Number, required: true, default: 0 },
@@ -85,6 +89,7 @@ export class EmailVerificationMongooseRepository extends BaseMongooseRepository<
       id: this.objectIdToString(doc._id),
       userId: this.objectIdToString(doc.userId),
       email: doc.email,
+      purpose: doc.purpose ?? null,
       codeHash: doc.codeHash,
       expiresAt: doc.expiresAt,
       attempts: doc.attempts,
@@ -95,6 +100,7 @@ export class EmailVerificationMongooseRepository extends BaseMongooseRepository<
   async createCode(input: {
     userId: string;
     email: string;
+    purpose: string;
     codeHash: string;
     expiresAt: Date;
   }): Promise<void> {
@@ -103,6 +109,7 @@ export class EmailVerificationMongooseRepository extends BaseMongooseRepository<
     await this.model.create({
       userId,
       email: input.email,
+      purpose: input.purpose,
       codeHash: input.codeHash,
       expiresAt: input.expiresAt,
       attempts: 0,
@@ -153,6 +160,14 @@ export class EmailVerificationMongooseRepository extends BaseMongooseRepository<
       userId: this.stringToObjectId(userId),
       email,
     });
+  }
+
+  // Drops every in-flight verification code and send-audit row for a user,
+  // across all addresses. Used by account erasure.
+  async deleteAllForUser(userId: string): Promise<void> {
+    const id = this.stringToObjectId(userId);
+    await this.model.deleteMany({ userId: id });
+    await this.sendModel.deleteMany({ userId: id });
   }
 
   // Append a row to the send audit (used by the distinct-target cap). Separate

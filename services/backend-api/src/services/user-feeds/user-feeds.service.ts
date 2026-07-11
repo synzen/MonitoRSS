@@ -948,6 +948,31 @@ export class UserFeedsService {
     return feed;
   }
 
+  // Account erasure: deletes every personal feed (no workspaceId) the user
+  // owns, routing each through deleteFeedById so the Discord connection cleanup
+  // and feed-deleted event fire per feed. Workspace feeds are untouched (they
+  // belong to the workspace, not the departing user). Idempotent: a re-run
+  // after some feeds are already gone simply finds fewer.
+  async deletePersonalFeedsForUser(discordUserId: string): Promise<number> {
+    const feedIds =
+      await this.deps.userFeedRepository.findPersonalFeedIdsByOwner(
+        discordUserId,
+      );
+
+    for (const feedId of feedIds) {
+      await this.deleteFeedById(feedId);
+    }
+
+    return feedIds.length;
+  }
+
+  // Account erasure: removes the user from the co-manage invites of every feed
+  // owned by someone else where they were invited. The feeds themselves are not
+  // the user's, so only their invite entry is pulled.
+  async removeCoManageInvitesForUser(discordUserId: string): Promise<void> {
+    await this.deps.userFeedRepository.removeInvitesForUser(discordUserId);
+  }
+
   async manuallyRequest(feed: IUserFeed) {
     const lastRequestTime = feed.lastManualRequestAt || new Date(0);
     const waitDurationSeconds = getEffectiveRefreshRateSeconds(feed, 10 * 60)!;

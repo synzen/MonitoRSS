@@ -81,6 +81,8 @@ export enum ApiErrorCode {
   WORKSPACE_BILLING_NOT_CONFIGURED = "WORKSPACE_BILLING_NOT_CONFIGURED",
   WORKSPACE_INVALID_TIER = "WORKSPACE_INVALID_TIER",
   WORKSPACE_HAS_ACTIVE_SUBSCRIPTION = "WORKSPACE_HAS_ACTIVE_SUBSCRIPTION",
+  ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER = "ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER",
+  ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION = "ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION",
 }
 
 const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
@@ -193,6 +195,10 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
     "This plan is not available for workspaces. Choose one of the workspace plans and try again.",
   WORKSPACE_HAS_ACTIVE_SUBSCRIPTION:
     "Cancel this workspace's subscription on the billing page before deleting it.",
+  ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER:
+    "You are the only owner of one or more workspaces. Transfer ownership or delete those workspaces before deleting your account.",
+  ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION:
+    "Cancel your subscription before deleting your account. Once it is cancelled, you can delete your account.",
 };
 
 export const getStandardErrorCodeMessage = (code: ApiErrorCode) => {

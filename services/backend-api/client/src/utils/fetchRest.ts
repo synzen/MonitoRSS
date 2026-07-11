@@ -109,7 +109,7 @@ const fetchRest = async <T>(url: string, fetchOptions?: FetchOptions<T>): Promis
 const determineHeaders = (requestOptions?: RequestInit) => {
   const headers: RequestInit["headers"] = {};
 
-  const isJsonMethod = ["POST", "PUT", "PATCH", "GET"].includes(
+  const isJsonMethod = ["POST", "PUT", "PATCH", "GET", "DELETE"].includes(
     requestOptions?.method?.toUpperCase() || "",
   );
 

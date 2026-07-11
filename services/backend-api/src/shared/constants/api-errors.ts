@@ -99,6 +99,8 @@ export enum ApiErrorCode {
   CANNOT_REMOVE_LAST_OWNER = "CANNOT_REMOVE_LAST_OWNER",
   WORKSPACE_TRANSFER_TARGET_INVALID = "WORKSPACE_TRANSFER_TARGET_INVALID",
   WORKSPACE_FEED_SHARING_DISABLED = "WORKSPACE_FEED_SHARING_DISABLED",
+  ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER = "ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER",
+  ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION = "ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION",
   WORKSPACE_HAS_ACTIVE_SUBSCRIPTION = "WORKSPACE_HAS_ACTIVE_SUBSCRIPTION",
   ROUTE_NOT_FOUND = "ROUTE_NOT_FOUND",
 }
@@ -247,6 +249,10 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     "Ownership can only be transferred to an existing admin member of this workspace.",
   WORKSPACE_FEED_SHARING_DISABLED:
     "Per-user feed management invites are disabled for workspace feeds. Manage access through workspace members instead.",
+  ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER:
+    "You are the only owner of one or more workspaces. Transfer ownership or delete those workspaces before deleting your account.",
+  ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION:
+    "Cancel your subscription before deleting your account. Once the subscription is cancelled, you can delete your account.",
   WORKSPACE_HAS_ACTIVE_SUBSCRIPTION:
     "Cancel this workspace's subscription before deleting it. Once the subscription is cancelled, you can delete the workspace.",
   ROUTE_NOT_FOUND: "Not Found",
