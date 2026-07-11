@@ -17,6 +17,7 @@
     "discover.ts",
     "backfill-search-terms.ts",
     "prod-fetch.ts",
-    "prod-fetch.test.ts"
+    "prod-fetch.test.ts",
+    "prod-fetch-tunnel.ts"
   ]
 }

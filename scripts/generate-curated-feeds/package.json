@@ -7,6 +7,7 @@
     "review": "npx tsx discover.ts --review",
     "add": "npx tsx discover.ts --add",
     "backfill-search-terms": "npx tsx backfill-search-terms.ts",
+    "tunnel": "npx tsx prod-fetch-tunnel.ts",
     "test": "npx tsx --test prod-fetch.test.ts"
   },
   "dependencies": {
