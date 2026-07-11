@@ -6,7 +6,8 @@
     "discover": "npx tsx discover.ts",
     "review": "npx tsx discover.ts --review",
     "add": "npx tsx discover.ts --add",
-    "backfill-search-terms": "npx tsx backfill-search-terms.ts"
+    "backfill-search-terms": "npx tsx backfill-search-terms.ts",
+    "test": "npx tsx --test prod-fetch.test.ts"
   },
   "dependencies": {
     "mongodb": "^6.0.0",

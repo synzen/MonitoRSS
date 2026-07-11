@@ -12,5 +12,11 @@
     "declaration": false,
     "noImplicitAny": false
   },
-  "include": ["index.ts", "discover.ts", "backfill-search-terms.ts"]
+  "include": [
+    "index.ts",
+    "discover.ts",
+    "backfill-search-terms.ts",
+    "prod-fetch.ts",
+    "prod-fetch.test.ts"
+  ]
 }
