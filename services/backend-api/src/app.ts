@@ -31,6 +31,7 @@ import { supporterSubscriptionsRoutes } from "./features/supporter-subscriptions
 import { userFeedManagementInvitesRoutes } from "./features/user-feed-management-invites/user-feed-management-invites.routes";
 import { usersRoutes } from "./features/users/users.routes";
 import { emailVerificationRoutes } from "./features/users/email-verification.routes";
+import { accountRoutes } from "./features/account/account.routes";
 import { workspacesRoutes } from "./features/workspaces/workspaces.routes";
 import { workspaceInvitesRoutes } from "./features/workspace-invites/workspace-invites.routes";
 import { redditAuthRoutes } from "./features/reddit-auth/reddit-auth.routes";
@@ -233,6 +234,9 @@ export async function createApp(
 
       // Users routes
       await instance.register(usersRoutes, { prefix: "/users" });
+
+      // Account lifecycle (deletion). Gated by auth alone, not a feature flag.
+      await instance.register(accountRoutes, { prefix: "/account" });
 
       // Workspaces. Access is gated per-user by the workspaces feature flag
       // (requireWorkspacesFeatureHook), so the routes always register and a

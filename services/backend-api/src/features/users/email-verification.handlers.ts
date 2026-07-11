@@ -17,7 +17,11 @@ export async function sendEmailVerificationHandler(
     throw new NotFoundError(ApiErrorCode.USER_NOT_FOUND);
   }
 
-  await emailVerificationService.sendCode(userId, request.body.email);
+  await emailVerificationService.sendCode(
+    userId,
+    request.body.email,
+    "verify-email",
+  );
 
   return reply.send({ result: { ok: true } });
 }

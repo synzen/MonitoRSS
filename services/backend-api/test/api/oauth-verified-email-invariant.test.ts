@@ -126,7 +126,11 @@ describe("OAuth verified-email security invariant", () => {
     const beforeVerify = await ctx.container.userRepository.findById(userId);
     assert.strictEqual(beforeVerify?.verifiedEmail, undefined, "starts unverified");
 
-    await ctx.container.emailVerificationService.sendCode(userId, verifyEmail);
+    await ctx.container.emailVerificationService.sendCode(
+      userId,
+      verifyEmail,
+      "verify-email",
+    );
     assert.ok(capturedCodes.length === 1, "one code should be captured");
     const { code } = capturedCodes[0]!;
 
