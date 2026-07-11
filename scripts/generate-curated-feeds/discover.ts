@@ -1,10 +1,13 @@
 import { MongoClient } from "mongodb";
 import { execFileSync } from "child_process";
-import https from "https";
-import http from "http";
 import readline from "readline";
 import crypto from "crypto";
-import type { IncomingMessage } from "http";
+import {
+  fetchFeedViaProd,
+  ProdFetchAbortError,
+  type ProdFetchResult,
+} from "./prod-fetch";
+import { setUpProdFeedRequestsApi } from "./prod-fetch-tunnel";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -60,7 +63,6 @@ const MIN_SEARCH_COUNT = 3;
 const LOOKBACK_DAYS = 30;
 const MAX_TERMS = 50;
 const CONCURRENCY_LIMIT = 10;
-const TIMEOUT_MS = 10000;
 
 const EXCLUDED_DOMAINS = ["youtube.com", "reddit.com"];
 
@@ -111,16 +113,6 @@ const CATEGORIES = [
   },
   { id: "other", description: "Deals, science, and other interesting feeds" },
 ];
-
-const BROWSER_HEADERS = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-  Accept:
-    "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
-  "Accept-Language": "en-US,en;q=0.9",
-  "Accept-Encoding": "identity",
-  Connection: "keep-alive",
-};
 
 // ---------------------------------------------------------------------------
 // AI Helpers
@@ -190,51 +182,16 @@ function callClaude(
 }
 
 // ---------------------------------------------------------------------------
-// HTTP Helpers
+// Feed Helpers
 // ---------------------------------------------------------------------------
 
-function fetchUrl(url: string, timeoutMs: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const parsedUrl = new URL(url);
-    const client = parsedUrl.protocol === "https:" ? https : http;
-    const options = {
-      hostname: parsedUrl.hostname,
-      port: parsedUrl.port,
-      path: parsedUrl.pathname + parsedUrl.search,
-      method: "GET",
-      headers: BROWSER_HEADERS,
-      timeout: timeoutMs,
-    };
-
-    const req = client.request(options, (res: IncomingMessage) => {
-      if (
-        res.statusCode! >= 300 &&
-        res.statusCode! < 400 &&
-        res.headers.location
-      ) {
-        resolve(
-          fetchUrl(new URL(res.headers.location, url).toString(), timeoutMs),
-        );
-        return;
-      }
-      if (res.statusCode !== 200) {
-        reject(new Error(`HTTP ${res.statusCode}`));
-        return;
-      }
-      let data = "";
-      res.on("data", (chunk: Buffer) => {
-        data += chunk;
-      });
-      res.on("end", () => resolve(data));
-    });
-
-    req.on("error", reject);
-    req.on("timeout", () => {
-      req.destroy();
-      reject(new Error("Timeout"));
-    });
-    req.end();
-  });
+function describeFeedFailure(
+  result: Extract<ProdFetchResult, { kind: "feed-failure" }>,
+): string {
+  return (
+    `prod: ${result.prodStatus}` +
+    (result.statusCode !== undefined ? ` (HTTP ${result.statusCode})` : "")
+  );
 }
 
 function isValidFeedXml(body: string): boolean {
@@ -531,11 +488,21 @@ async function step4_validateFeeds(
 
   const validated: ValidatedFeed[] = [];
   const executing: Promise<void>[] = [];
+  let abortError: ProdFetchAbortError | null = null;
 
   for (const candidate of filtered) {
+    if (abortError) break;
     const promise = (async () => {
+      if (abortError) return;
       try {
-        const xml = await fetchUrl(candidate.url, TIMEOUT_MS);
+        const result = await fetchFeedViaProd(candidate.url);
+        if (result.kind === "feed-failure") {
+          console.log(
+            `  FAIL (${describeFeedFailure(result)}): ${candidate.url}`,
+          );
+          return;
+        }
+        const xml = result.body;
         if (!isValidFeedXml(xml)) {
           console.log(`  FAIL (not valid RSS/Atom): ${candidate.url}`);
           return;
@@ -555,6 +522,10 @@ async function step4_validateFeeds(
           rawXml: xml,
         });
       } catch (err) {
+        if (err instanceof ProdFetchAbortError) {
+          abortError ??= err;
+          return;
+        }
         console.log(`  FAIL (${(err as Error).message}): ${candidate.url}`);
       }
     })().then(() => {
@@ -564,6 +535,10 @@ async function step4_validateFeeds(
     if (executing.length >= CONCURRENCY_LIMIT) await Promise.race(executing);
   }
   await Promise.all(executing);
+
+  if (abortError) {
+    throw abortError;
+  }
 
   console.log(`  ${validated.length}/${filtered.length} passed validation`);
 
@@ -1009,18 +984,19 @@ async function addMode(
   console.log(`Search term: "${term}"`);
 
   // Fetch the feed XML for classification context
-  console.log("\nFetching feed for classification context...");
+  console.log("\nFetching feed via prod for classification context...");
   let rawXml = "";
   let feedTitle = "";
-  try {
-    rawXml = await fetchUrl(url, TIMEOUT_MS);
+  const result = await fetchFeedViaProd(url);
+  if (result.kind === "success") {
+    rawXml = result.body;
     feedTitle = extractFeedTitle(rawXml) || "";
     if (feedTitle) {
       console.log(`  Feed title: "${feedTitle}"`);
     }
-  } catch (err) {
+  } else {
     console.log(
-      `  Warning: Could not fetch feed (${(err as Error).message}). Classifying without XML context.`,
+      `  Warning: Could not fetch feed (${describeFeedFailure(result)}). Classifying without XML context.`,
     );
   }
 
@@ -1062,20 +1038,22 @@ async function main(): Promise<void> {
   const isReview = process.argv.includes("--review");
   const isAdd = process.argv.includes("--add");
 
+  const url = getArgValue("--url");
+  const term = getArgValue("--term");
+  if (isAdd && (!url || !term)) {
+    throw new Error("--add requires --url <feed-url> and --term <search-term>");
+  }
+
+  // Review mode never probes feeds, so it does not need the prod tunnel
+  const session = isReview ? null : await setUpProdFeedRequestsApi();
+
   const client = new MongoClient(mongoUri);
   await client.connect();
   console.log("Connected to MongoDB");
 
   try {
     if (isAdd) {
-      const url = getArgValue("--url");
-      const term = getArgValue("--term");
-      if (!url || !term) {
-        throw new Error(
-          "--add requires --url <feed-url> and --term <search-term>",
-        );
-      }
-      await addMode(client, url, term);
+      await addMode(client, url!, term!);
     } else if (isReview) {
       await reviewMode(client);
     } else {
@@ -1083,10 +1061,15 @@ async function main(): Promise<void> {
     }
   } finally {
     await client.close();
+    session?.stop();
   }
 }
 
 main().catch((err) => {
-  console.error("Fatal error:", err);
+  if (err instanceof ProdFetchAbortError) {
+    console.error(`Aborting run: ${err.message}`);
+  } else {
+    console.error("Fatal error:", err);
+  }
   process.exit(1);
 });
