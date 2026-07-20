@@ -32,6 +32,51 @@ export class ProdFetchAbortError extends Error {
   }
 }
 
+/**
+ * The SSM tunnel's mux occasionally aborts individual connections under
+ * concurrent load (surfaces as write ECONNABORTED / ECONNRESET locally), so
+ * these get a bounded retry before aborting the run. ECONNREFUSED is
+ * deliberately absent: a dead tunnel must abort immediately, not retry.
+ */
+const TRANSIENT_SOCKET_ERROR_CODES = new Set([
+  "ECONNABORTED",
+  "ECONNRESET",
+  "EPIPE",
+  "UND_ERR_SOCKET",
+]);
+
+const MAX_TRANSIENT_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 500;
+
+function findTransientErrorCode(err: unknown): string | undefined {
+  let current = err as (Error & { code?: string; cause?: unknown }) | undefined;
+  for (let depth = 0; current && depth < 5; depth++) {
+    if (current.code && TRANSIENT_SOCKET_ERROR_CODES.has(current.code)) {
+      return current.code;
+    }
+    current = current.cause as typeof current;
+  }
+  return undefined;
+}
+
+export function isValidFeedXml(body: string): boolean {
+  return (
+    /<rss[\s>]/i.test(body) ||
+    /<feed[\s>]/i.test(body) ||
+    /<channel[\s>]/i.test(body) ||
+    /<rdf:RDF[\s>]/i.test(body)
+  );
+}
+
+export function describeFeedFailure(
+  result: Extract<ProdFetchResult, { kind: "feed-failure" }>,
+): string {
+  return (
+    `prod: ${result.prodStatus}` +
+    (result.statusCode !== undefined ? ` (HTTP ${result.statusCode})` : "")
+  );
+}
+
 export async function fetchFeedViaProd(url: string): Promise<ProdFetchResult> {
   const apiUrl = process.env.FEED_REQUESTS_API_URL?.replace(/\/+$/, "");
   const apiKey = process.env.FEED_REQUESTS_API_KEY;
@@ -44,21 +89,38 @@ export async function fetchFeedViaProd(url: string): Promise<ProdFetchResult> {
 
   let response: Response;
 
-  try {
-    response = await fetch(`${apiUrl}/v1/feed-requests`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": apiKey,
-      },
-      body: JSON.stringify({ url, executeFetchIfStale: true }),
-    });
-  } catch (err) {
-    // undici wraps the real network error (e.g. ECONNREFUSED) in `cause`
-    const { cause, message } = err as Error & { cause?: unknown };
-    throw new ProdFetchAbortError(
-      `Failed to reach the feed-requests API at ${apiUrl}: ${cause ?? message}`,
-    );
+  for (let attempt = 0; ; attempt++) {
+    try {
+      response = await fetch(`${apiUrl}/v1/feed-requests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": apiKey,
+        },
+        body: JSON.stringify({ url, executeFetchIfStale: true }),
+      });
+      break;
+    } catch (err) {
+      const transientCode = findTransientErrorCode(err);
+      if (transientCode && attempt < MAX_TRANSIENT_RETRIES) {
+        console.log(
+          `  Transient ${transientCode} reaching the feed-requests API for ${url} — ` +
+            `retry ${attempt + 1}/${MAX_TRANSIENT_RETRIES}...`,
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, RETRY_BASE_DELAY_MS * (attempt + 1)),
+        );
+        continue;
+      }
+      // undici wraps the real network error (e.g. ECONNREFUSED) in `cause`
+      const { cause, message } = err as Error & { cause?: unknown };
+      throw new ProdFetchAbortError(
+        `Failed to reach the feed-requests API at ${apiUrl}: ${cause ?? message}` +
+          (transientCode
+            ? ` (persisted across ${MAX_TRANSIENT_RETRIES + 1} attempts)`
+            : ""),
+      );
+    }
   }
 
   if (!response.ok) {

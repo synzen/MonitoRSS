@@ -1,11 +1,15 @@
 import fs from "fs";
 import path from "path";
-import https from "https";
-import http from "http";
 import { execFileSync } from "child_process";
 import crypto from "crypto";
-import type { IncomingMessage } from "http";
 import type { AnyBulkWriteOperation } from "mongodb";
+import {
+  describeFeedFailure,
+  fetchFeedViaProd,
+  ProdFetchAbortError,
+} from "./prod-fetch";
+import { checkUrlsReliability, probeExistingFeeds } from "./disable-probe";
+import { setUpProdFeedRequestsApi } from "./prod-fetch-tunnel";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -73,7 +77,6 @@ interface FetchResult {
 // ---------------------------------------------------------------------------
 
 const MIN_COUNT = 15;
-const TIMEOUT_MS = 10000;
 const CONCURRENCY_LIMIT = 10;
 const POPULAR_PER_CATEGORY = 3;
 
@@ -558,29 +561,6 @@ ${feedList}`;
 // Step 4: PostgreSQL Reliability Filter
 // ---------------------------------------------------------------------------
 
-async function checkUrlsReliability(
-  pgClient: import("pg").Client,
-  urls: string[],
-): Promise<Set<string>> {
-  const SAMPLE_SIZE = 100;
-  const { rows } = await pgClient.query(
-    `SELECT url
-     FROM (
-       SELECT url, status,
-              ROW_NUMBER() OVER (PARTITION BY url ORDER BY created_at DESC) AS rn
-       FROM request_partitioned
-       WHERE lookup_key = ANY($1)
-         AND created_at >= NOW() - INTERVAL '30 days'
-     ) sampled
-     WHERE rn <= $2
-     GROUP BY url
-     HAVING COUNT(*) FILTER (WHERE status IN ('OK', 'MATCHED_HASH'))::float
-          / COUNT(*) >= 0.5`,
-    [urls, SAMPLE_SIZE],
-  );
-  return new Set(rows.map((r: { url: string }) => r.url));
-}
-
 async function step4_postgresFilter(
   feeds: PipelineFeed[],
 ): Promise<PipelineFeed[]> {
@@ -661,50 +641,6 @@ async function step4_postgresFilter(
 // Step 5: Fetch Raw Descriptions
 // ---------------------------------------------------------------------------
 
-function fetchUrl(url: string, timeoutMs: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const parsedUrl = new URL(url);
-    const client = parsedUrl.protocol === "https:" ? https : http;
-    const options = {
-      hostname: parsedUrl.hostname,
-      port: parsedUrl.port,
-      path: parsedUrl.pathname + parsedUrl.search,
-      method: "GET",
-      headers: { "User-Agent": "MonitoRSS/1.0 Feed Description Fetcher" },
-      timeout: timeoutMs,
-    };
-
-    const req = client.request(options, (res: IncomingMessage) => {
-      if (
-        res.statusCode! >= 300 &&
-        res.statusCode! < 400 &&
-        res.headers.location
-      ) {
-        resolve(
-          fetchUrl(new URL(res.headers.location, url).toString(), timeoutMs),
-        );
-        return;
-      }
-      if (res.statusCode !== 200) {
-        reject(new Error(`HTTP ${res.statusCode}`));
-        return;
-      }
-      let data = "";
-      res.on("data", (chunk: Buffer) => {
-        data += chunk;
-      });
-      res.on("end", () => resolve(data));
-    });
-
-    req.on("error", reject);
-    req.on("timeout", () => {
-      req.destroy();
-      reject(new Error("Timeout"));
-    });
-    req.end();
-  });
-}
-
 function extractFeedTitle(xml: string): string | null {
   // RSS <channel><title>
   let match = xml.match(
@@ -740,15 +676,6 @@ function extractFeedDescription(xml: string): string | null {
   return null;
 }
 
-function isValidFeedResponse(body: string): boolean {
-  return (
-    /<rss[\s>]/i.test(body) ||
-    /<feed[\s>]/i.test(body) ||
-    /<channel[\s>]/i.test(body) ||
-    /<rdf:RDF[\s>]/i.test(body)
-  );
-}
-
 function markPopularFeeds(feeds: Array<{ category: string | null; popular?: boolean }>): void {
   for (const feed of feeds) {
     delete feed.popular;
@@ -767,22 +694,36 @@ async function step5_fetchDescriptions(
   feeds: PipelineFeed[],
 ): Promise<PipelineFeed[]> {
   console.log(
-    `\nFetching descriptions for ${feeds.length} feeds (concurrency: ${CONCURRENCY_LIMIT})...`,
+    `\nFetching descriptions for ${feeds.length} feeds via prod (concurrency: ${CONCURRENCY_LIMIT})...`,
   );
 
   const results = new Array<FetchResult | null>(feeds.length);
   const executing: Promise<void>[] = [];
+  let abortError: ProdFetchAbortError | null = null;
 
   for (let i = 0; i < feeds.length; i++) {
+    if (abortError) break;
     const idx = i;
     const promise = (async () => {
+      if (abortError) return;
       try {
-        const xml = await fetchUrl(feeds[idx].url, TIMEOUT_MS);
+        const result = await fetchFeedViaProd(feeds[idx].url);
+        if (result.kind === "feed-failure") {
+          console.log(
+            `  FAIL (${describeFeedFailure(result)}): ${feeds[idx].url}`,
+          );
+          results[idx] = null;
+          return;
+        }
         results[idx] = {
-          description: extractFeedDescription(xml),
-          title: extractFeedTitle(xml),
+          description: extractFeedDescription(result.body),
+          title: extractFeedTitle(result.body),
         };
-      } catch {
+      } catch (err) {
+        if (err instanceof ProdFetchAbortError) {
+          abortError ??= err;
+          return;
+        }
         results[idx] = null;
       }
     })().then(() => {
@@ -792,6 +733,10 @@ async function step5_fetchDescriptions(
     if (executing.length >= CONCURRENCY_LIMIT) await Promise.race(executing);
   }
   await Promise.all(executing);
+
+  if (abortError) {
+    throw abortError;
+  }
 
   let descFound = 0;
   let titleFound = 0;
@@ -1012,30 +957,16 @@ async function step7_5_preserveExistingFeeds(
   const needsHttpCheck = existingFeeds.filter(
     (f) => !reliableUrls.has(f.url as string),
   );
-  const httpValid = new Set<string>();
+  let httpValid = new Set<string>();
 
   if (needsHttpCheck.length > 0) {
-    console.log(`  HTTP-probing ${needsHttpCheck.length} feeds...`);
-    const executing: Promise<void>[] = [];
-    for (const feed of needsHttpCheck) {
-      const promise = (async () => {
-        try {
-          const body = await fetchUrl(feed.url as string, TIMEOUT_MS);
-          if (isValidFeedResponse(body)) {
-            httpValid.add(feed.url as string);
-          }
-        } catch {
-          // failed - will be disabled
-        }
-      })().then(() => {
-        executing.splice(executing.indexOf(promise), 1);
-      });
-      executing.push(promise);
-      if (executing.length >= CONCURRENCY_LIMIT) await Promise.race(executing);
-    }
-    await Promise.all(executing);
+    console.log(`  Probing ${needsHttpCheck.length} feeds via prod...`);
+    httpValid = await probeExistingFeeds(
+      needsHttpCheck.map((f) => f.url as string),
+      CONCURRENCY_LIMIT,
+    );
     console.log(
-      `  HTTP probe: ${httpValid.size}/${needsHttpCheck.length} valid`,
+      `  Prod probe: ${httpValid.size}/${needsHttpCheck.length} valid`,
     );
   }
 
@@ -1221,53 +1152,63 @@ async function main(): Promise<void> {
 
   console.log("=== Unified Feed Curation Pipeline ===\n");
 
-  // Step 1
-  console.log("--- Step 1: Data source ---");
-  const rawFeeds = await step1_mongoExport();
-  console.log(`Loaded ${rawFeeds.length} feeds\n`);
+  const session = await setUpProdFeedRequestsApi();
 
-  // Step 2
-  console.log("--- Step 2: Filter & deduplicate ---");
-  const filtered = step2_filterAndDedup(rawFeeds);
-  console.log();
+  try {
+    // Step 1
+    console.log("--- Step 1: Data source ---");
+    const rawFeeds = await step1_mongoExport();
+    console.log(`Loaded ${rawFeeds.length} feeds\n`);
 
-  // Step 3
-  console.log("--- Step 3: Assign domains ---");
-  const withDomains = step3_assignDomains(filtered);
-  console.log();
+    // Step 2
+    console.log("--- Step 2: Filter & deduplicate ---");
+    const filtered = step2_filterAndDedup(rawFeeds);
+    console.log();
 
-  // Step 4
-  console.log("--- Step 4: Reliability filter ---");
-  const reliable = await step4_postgresFilter(withDomains);
-  console.log();
+    // Step 3
+    console.log("--- Step 3: Assign domains ---");
+    const withDomains = step3_assignDomains(filtered);
+    console.log();
 
-  // Step 5
-  console.log("--- Step 5: Fetch raw descriptions ---");
-  const withDescs = await step5_fetchDescriptions(reliable);
-  console.log();
+    // Step 4
+    console.log("--- Step 4: Reliability filter ---");
+    const reliable = await step4_postgresFilter(withDomains);
+    console.log();
 
-  // Step 6
-  console.log(
-    "--- Step 6: AI classification (title + category + description) ---",
-  );
-  const classified = step6_aiClassify(withDescs);
-  markPopularFeeds(classified);
-  console.log();
+    // Step 5
+    console.log("--- Step 5: Fetch raw descriptions ---");
+    const withDescs = await step5_fetchDescriptions(reliable);
+    console.log();
 
-  // Step 7
-  console.log("--- Step 7: Output ---");
-  const output = step7_output(classified);
+    // Step 6
+    console.log(
+      "--- Step 6: AI classification (title + category + description) ---",
+    );
+    const classified = step6_aiClassify(withDescs);
+    markPopularFeeds(classified);
+    console.log();
 
-  // Step 7.5
-  console.log("\n--- Step 7.5: Preserve existing feeds ---");
-  const finalOutput = await step7_5_preserveExistingFeeds(output);
+    // Step 7
+    console.log("--- Step 7: Output ---");
+    const output = step7_output(classified);
 
-  // Step 8
-  console.log("\n--- Step 8: Write to MongoDB ---");
-  await step8_mongoWrite(finalOutput);
+    // Step 7.5
+    console.log("\n--- Step 7.5: Preserve existing feeds ---");
+    const finalOutput = await step7_5_preserveExistingFeeds(output);
+
+    // Step 8
+    console.log("\n--- Step 8: Write to MongoDB ---");
+    await step8_mongoWrite(finalOutput);
+  } finally {
+    session.stop();
+  }
 }
 
 main().catch((err) => {
-  console.error("Fatal error:", err);
+  if (err instanceof ProdFetchAbortError) {
+    console.error(`Aborting run: ${err.message}`);
+  } else {
+    console.error("Fatal error:", err);
+  }
   process.exit(1);
 });

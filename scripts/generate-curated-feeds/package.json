@@ -4,11 +4,13 @@
   "scripts": {
     "start": "npx tsx index.ts",
     "discover": "npx tsx discover.ts",
+    "discover:smoke": "npx tsx discover.ts --limit 5",
     "review": "npx tsx discover.ts --review",
     "add": "npx tsx discover.ts --add",
     "backfill-search-terms": "npx tsx backfill-search-terms.ts",
+    "prune": "npx tsx prune.ts",
     "tunnel": "npx tsx prod-fetch-tunnel.ts",
-    "test": "npx tsx --test prod-fetch.test.ts"
+    "test": "npx tsx --test prod-fetch.test.ts disable-probe.test.ts"
   },
   "dependencies": {
     "mongodb": "^6.0.0",

@@ -170,6 +170,41 @@ for (const prodStatus of [
   });
 }
 
+test("a transient socket drop is retried and the probe succeeds", async () => {
+  let requestCount = 0;
+  const { calls } = await startStubServer((res) => {
+    requestCount++;
+    if (requestCount === 1) {
+      res.destroy();
+      return;
+    }
+    respondJson(res, 200, {
+      requestStatus: "SUCCESS",
+      response: { body: "<rss></rss>", statusCode: 200 },
+    });
+  });
+
+  const result = await fetchFeedViaProd("https://example.com/feed.xml");
+
+  assert.deepEqual(result, { kind: "success", body: "<rss></rss>" });
+  assert.equal(calls.length, 2);
+});
+
+test("a persistent socket drop exhausts retries and aborts with the infra error", async () => {
+  const { calls } = await startStubServer((res) => res.destroy());
+
+  await assert.rejects(
+    fetchFeedViaProd("https://example.com/feed.xml"),
+    (err: unknown) => {
+      assert.ok(err instanceof ProdFetchAbortError);
+      assert.match((err as Error).message, /attempts/);
+      return true;
+    },
+  );
+
+  assert.equal(calls.length, 3);
+});
+
 test("connection refused aborts the run with the distinct infra error, not a feed failure", async () => {
   await startStubServer((res) => respondJson(res, 200, {}));
   const unreachableUrl = process.env.FEED_REQUESTS_API_URL;
@@ -181,6 +216,11 @@ test("connection refused aborts the run with the distinct infra error, not a fee
     fetchFeedViaProd("https://example.com/feed.xml"),
     (err: unknown) => {
       assert.ok(err instanceof ProdFetchAbortError);
+      assert.doesNotMatch(
+        (err as Error).message,
+        /attempts/,
+        "a dead tunnel must abort immediately, not retry",
+      );
       return true;
     },
   );

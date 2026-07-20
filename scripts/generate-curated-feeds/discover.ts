@@ -3,9 +3,10 @@ import { execFileSync } from "child_process";
 import readline from "readline";
 import crypto from "crypto";
 import {
+  describeFeedFailure,
   fetchFeedViaProd,
+  isValidFeedXml,
   ProdFetchAbortError,
-  type ProdFetchResult,
 } from "./prod-fetch";
 import { setUpProdFeedRequestsApi } from "./prod-fetch-tunnel";
 
@@ -184,24 +185,6 @@ function callClaude(
 // ---------------------------------------------------------------------------
 // Feed Helpers
 // ---------------------------------------------------------------------------
-
-function describeFeedFailure(
-  result: Extract<ProdFetchResult, { kind: "feed-failure" }>,
-): string {
-  return (
-    `prod: ${result.prodStatus}` +
-    (result.statusCode !== undefined ? ` (HTTP ${result.statusCode})` : "")
-  );
-}
-
-function isValidFeedXml(body: string): boolean {
-  return (
-    /<rss[\s>]/i.test(body) ||
-    /<feed[\s>]/i.test(body) ||
-    /<channel[\s>]/i.test(body) ||
-    /<rdf:RDF[\s>]/i.test(body)
-  );
-}
 
 function hasRecentArticles(xml: string): boolean {
   const datePatterns = [
@@ -785,8 +768,11 @@ async function step7_recordProcessedTerms(
 // Discovery Mode
 // ---------------------------------------------------------------------------
 
-async function discoveryMode(client: MongoClient): Promise<void> {
+async function discoveryMode(client: MongoClient, limit?: number): Promise<void> {
   console.log("=== Feed Discovery Pipeline ===\n");
+  if (limit !== undefined) {
+    console.log(`Limiting run to ${limit} search term(s)\n`);
+  }
 
   console.log("--- Step 1: Aggregate demand signals ---");
   const signals = await step1_aggregateDemandSignals(client);
@@ -800,7 +786,7 @@ async function discoveryMode(client: MongoClient): Promise<void> {
   }
 
   console.log("\n--- Step 2: Filter against existing curated feeds ---");
-  const filtered = await step2_filterAgainstExisting(client, signals);
+  let filtered = await step2_filterAgainstExisting(client, signals);
   const filteredSet = new Set(filtered.map((f) => f.searchTerm));
   const discarded = signals.filter((s) => !filteredSet.has(s.searchTerm));
   if (discarded.length > 0) {
@@ -815,6 +801,18 @@ async function discoveryMode(client: MongoClient): Promise<void> {
   if (filtered.length === 0) {
     console.log("All terms already covered. Done.");
     return;
+  }
+
+  if (limit !== undefined && filtered.length > limit) {
+    // Terms beyond the limit are not recorded in discovery_feed_lookups, so
+    // a later full run will still pick them up.
+    console.log(
+      `Limiting to the top ${limit} of ${filtered.length} term(s) (--limit)`,
+    );
+    filtered = filtered.slice(0, limit);
+    for (const s of filtered) {
+      console.log(`  "${s.searchTerm}" (${s.count} searches)`);
+    }
   }
 
   console.log("\n--- Step 3: Web search for feeds ---");
@@ -1044,6 +1042,15 @@ async function main(): Promise<void> {
     throw new Error("--add requires --url <feed-url> and --term <search-term>");
   }
 
+  const limitArg = getArgValue("--limit");
+  let limit: number | undefined;
+  if (limitArg !== undefined) {
+    limit = Number(limitArg);
+    if (!Number.isInteger(limit) || limit < 1) {
+      throw new Error("--limit requires a positive integer");
+    }
+  }
+
   // Review mode never probes feeds, so it does not need the prod tunnel
   const session = isReview ? null : await setUpProdFeedRequestsApi();
 
@@ -1057,7 +1064,7 @@ async function main(): Promise<void> {
     } else if (isReview) {
       await reviewMode(client);
     } else {
-      await discoveryMode(client);
+      await discoveryMode(client, limit);
     }
   } finally {
     await client.close();
