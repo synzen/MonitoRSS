@@ -472,5 +472,4 @@ describe("Workspace invites API", () => {
     assert.strictEqual(mismatchBody, matchBody);
     assert.strictEqual(unknownBody, matchBody);
   });
-
 });

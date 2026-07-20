@@ -41,6 +41,7 @@ import {
   usePaddleContext,
 } from "@/features/subscriptionProducts";
 import { DatePreferencesForm, RedditConnectionSetting } from "@/features/feed";
+import { DeleteAccountSection } from "@/features/account";
 import { VerifiedEmailSettingsRow, WorkspacesSettingsSection } from "@/features/workspaces";
 import {
   PageAlertContextOutlet,
@@ -719,6 +720,8 @@ const UserSettingsInner = () => {
           <SavedUnsavedChangesPopupBar restoreFocusRef={formFocusRef} />
         </form>
       </FormProvider>
+      <Separator />
+      <DeleteAccountSection />
     </Stack>
   );
 };

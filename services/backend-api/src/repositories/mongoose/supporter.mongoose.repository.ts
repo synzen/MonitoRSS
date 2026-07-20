@@ -330,6 +330,13 @@ export class SupporterMongooseRepository
     return this.toEntity(doc as SupporterDoc & { _id: string });
   }
 
+  async clearPaddleEmailById(discordUserId: string): Promise<void> {
+    await this.model.updateOne(
+      { _id: discordUserId, "paddleCustomer.email": { $exists: true } },
+      { $unset: { "paddleCustomer.email": "" } },
+    );
+  }
+
   async nullifySubscriptionBySubscriptionId(
     subscriptionId: string,
   ): Promise<ISupporter | null> {

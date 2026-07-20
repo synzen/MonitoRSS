@@ -8,6 +8,7 @@ import { createEmailRenderer } from "../src/infra/email-render";
 import type { Config } from "../src/config";
 
 import EMAIL_VERIFICATION_TEMPLATE from "../src/features/users/email-verification.template";
+import ACCOUNT_DELETION_TEMPLATE from "../src/features/users/account-deletion.template";
 import VERIFIED_EMAIL_CHANGED_TEMPLATE from "../src/features/users/verified-email-changed.template";
 import VERIFIED_EMAIL_REVERTED_TEMPLATE from "../src/features/users/verified-email-reverted.template";
 import WORKSPACE_INVITE_TEMPLATE from "../src/features/workspaces/workspace-invite.template";
@@ -29,6 +30,10 @@ const emails: Array<{ name: string; html: string }> = [
   {
     name: "01-email-verification",
     html: renderEmail(compile(EMAIL_VERIFICATION_TEMPLATE), { code: "428913" }),
+  },
+  {
+    name: "01b-account-deletion",
+    html: renderEmail(compile(ACCOUNT_DELETION_TEMPLATE), { code: "428913" }),
   },
   {
     name: "02-verified-email-changed",

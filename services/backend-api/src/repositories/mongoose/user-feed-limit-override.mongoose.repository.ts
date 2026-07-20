@@ -79,6 +79,10 @@ export class UserFeedLimitOverrideMongooseRepository
     await this.model.deleteMany({});
   }
 
+  async deleteById(id: string): Promise<void> {
+    await this.model.deleteOne({ _id: id });
+  }
+
   async upsertIncrement(
     id: string,
     incrementAmount: number,

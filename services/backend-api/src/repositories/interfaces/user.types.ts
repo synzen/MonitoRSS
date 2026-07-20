@@ -107,6 +107,7 @@ export interface IUserRepository {
   findByDiscordId(discordUserId: string): Promise<IUser | null>;
   findIdByDiscordId(discordUserId: string): Promise<string | null>;
   create(input: CreateUserInput): Promise<IUser>;
+  deleteById(userId: string): Promise<void>;
   updateEmailByDiscordId(
     discordUserId: string,
     email: string,
