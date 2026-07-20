@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Box, Text, HStack, Icon, VStack, chakra } from "@chakra-ui/react";
 import { FaCircleInfo } from "react-icons/fa6";
 import {
@@ -19,51 +20,66 @@ const WONT_APPEAR_REASONS = [
   "Discord cannot reach or read the article page.",
 ];
 
-export const DiscordUnfurlNote = () => (
-  <HStack gap={1.5} align="center" flexWrap="wrap" mt={2}>
-    <Text fontSize="sm" color="fg.muted">
-      {NOTE_COPY}
-    </Text>
-    <PopoverRoot positioning={{ placement: "top" }}>
-      <PopoverTrigger asChild>
-        <chakra.button
-          type="button"
-          aria-label={WONT_APPEAR_TITLE}
-          cursor="pointer"
-          color="fg.muted"
-          _hover={{ color: "fg" }}
-          _focusVisible={{
-            outline: "2px solid",
-            outlineColor: "brand.focusRing",
-            outlineOffset: "2px",
-            borderRadius: "sm",
-          }}
-          display="inline-flex"
-          alignItems="center"
-        >
-          <Icon as={FaCircleInfo} boxSize={3.5} aria-hidden="true" />
-        </chakra.button>
-      </PopoverTrigger>
-      <PopoverContent maxW="320px">
-        <PopoverArrow />
-        <PopoverBody>
-          <PopoverTitle fontWeight="medium" fontSize="sm" mb={2}>
-            {WONT_APPEAR_TITLE}
-          </PopoverTitle>
-          <VStack as="ul" align="start" gap={1.5} pl={0} listStyleType="none">
-            {WONT_APPEAR_REASONS.map((reason) => (
-              <HStack as="li" key={reason} align="start" gap={2}>
-                <Box as="span" aria-hidden="true" color="fg.muted" lineHeight="1.5">
-                  •
-                </Box>
-                <Text fontSize="sm" color="fg.muted">
-                  {reason}
-                </Text>
-              </HStack>
-            ))}
-          </VStack>
-        </PopoverBody>
-      </PopoverContent>
-    </PopoverRoot>
-  </HStack>
-);
+export const DiscordUnfurlNote = () => {
+  // This popover lives inside the modal template gallery Dialog. Both register
+  // document-level Escape listeners, and when the popover content is portalled
+  // the dialog's listener can also fire and dismiss the whole dialog on the same
+  // keypress (a CI-timing-dependent race). Stop the Escape from reaching the
+  // dialog's listener once the popover has consumed it, and pin focus
+  // restoration to the trigger so the dialog's focus trap can't drop it.
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <HStack gap={1.5} align="center" flexWrap="wrap" mt={2}>
+      <Text fontSize="sm" color="fg.muted">
+        {NOTE_COPY}
+      </Text>
+      <PopoverRoot
+        positioning={{ placement: "top" }}
+        finalFocusEl={() => triggerRef.current}
+        onEscapeKeyDown={(e) => e.stopImmediatePropagation()}
+      >
+        <PopoverTrigger asChild>
+          <chakra.button
+            ref={triggerRef}
+            type="button"
+            aria-label={WONT_APPEAR_TITLE}
+            cursor="pointer"
+            color="fg.muted"
+            _hover={{ color: "fg" }}
+            _focusVisible={{
+              outline: "2px solid",
+              outlineColor: "brand.focusRing",
+              outlineOffset: "2px",
+              borderRadius: "sm",
+            }}
+            display="inline-flex"
+            alignItems="center"
+          >
+            <Icon as={FaCircleInfo} boxSize={3.5} aria-hidden="true" />
+          </chakra.button>
+        </PopoverTrigger>
+        <PopoverContent maxW="320px">
+          <PopoverArrow />
+          <PopoverBody>
+            <PopoverTitle fontWeight="medium" fontSize="sm" mb={2}>
+              {WONT_APPEAR_TITLE}
+            </PopoverTitle>
+            <VStack as="ul" align="start" gap={1.5} pl={0} listStyleType="none">
+              {WONT_APPEAR_REASONS.map((reason) => (
+                <HStack as="li" key={reason} align="start" gap={2}>
+                  <Box as="span" aria-hidden="true" color="fg.muted" lineHeight="1.5">
+                    •
+                  </Box>
+                  <Text fontSize="sm" color="fg.muted">
+                    {reason}
+                  </Text>
+                </HStack>
+              ))}
+            </VStack>
+          </PopoverBody>
+        </PopoverContent>
+      </PopoverRoot>
+    </HStack>
+  );
+};
