@@ -138,7 +138,6 @@ const migrations: Migration[] = [
       if (!(await tableExists(pool, "feed_article_field_partitioned"))) {
         await pool.query(`
           CREATE TABLE feed_article_field_partitioned (
-            id SERIAL NOT NULL,
             feed_id TEXT NOT NULL,
             field_name TEXT NOT NULL,
             field_hashed_value TEXT NOT NULL,
@@ -241,8 +240,7 @@ const migrations: Migration[] = [
       if (!(await tableExists(pool, "response_hash"))) {
         await pool.query(`
           CREATE TABLE response_hash (
-            id SERIAL PRIMARY KEY,
-            feed_id TEXT NOT NULL UNIQUE,
+            feed_id TEXT PRIMARY KEY,
             hash TEXT NOT NULL,
             updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
           )
@@ -265,6 +263,60 @@ const migrations: Migration[] = [
           ALTER TABLE feed_retry_record
           ADD COLUMN created_at TIMESTAMPTZ DEFAULT now() NOT NULL
         `);
+      }
+    },
+  },
+  {
+    version: "20260720_001",
+    name: "drop_unused_feed_article_field_id",
+    up: async (pool) => {
+      // The id column was a write-only serial: nothing reads it, and its
+      // sequence exhausted the integer range in production, failing all
+      // inserts. Dropping the column is metadata-only. DROP SEQUENCE covers
+      // databases where the sequence is not owned by the column (production's
+      // legacy schema has id as TEXT with a plain nextval default).
+      await pool.query(
+        `ALTER TABLE feed_article_field_partitioned DROP COLUMN IF EXISTS id`
+      );
+    },
+  },
+  {
+    version: "20260720_002",
+    name: "drop_unused_response_hash_id",
+    up: async (pool) => {
+      // Same write-only serial problem as feed_article_field_partitioned: the
+      // upsert in postgres-response-hash-store consumes a sequence value on
+      // every fetch cycle even when the row already exists, so the sequence
+      // far outpaces the row count and would exceed the integer column's
+      // range. Nothing queries id; feed_id is the real key.
+      const { rows } = await pool.query(
+        `SELECT 1 FROM information_schema.columns
+         WHERE table_name = 'response_hash' AND column_name = 'id'`
+      );
+
+      if (rows.length === 0) {
+        return;
+      }
+
+      // Dropping id also drops its PRIMARY KEY constraint, so promote feed_id
+      // (already UNIQUE NOT NULL) to primary key in the same statement to
+      // keep the ON CONFLICT (feed_id) upsert working throughout.
+      await pool.query(
+        `ALTER TABLE response_hash DROP COLUMN id, ADD PRIMARY KEY (feed_id)`
+      );
+      await pool.query(`DROP SEQUENCE IF EXISTS response_hash_id_seq`);
+
+      // The pre-existing UNIQUE constraint on feed_id is now redundant with
+      // the primary key. Its name varies across environments, so look it up.
+      const { rows: uniqueConstraints } = await pool.query(
+        `SELECT conname FROM pg_constraint
+         WHERE conrelid = 'response_hash'::regclass AND contype = 'u'`
+      );
+
+      for (const constraint of uniqueConstraints) {
+        await pool.query(
+          `ALTER TABLE response_hash DROP CONSTRAINT "${constraint.conname}"`
+        );
       }
     },
   },
