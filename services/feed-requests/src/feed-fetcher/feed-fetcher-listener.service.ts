@@ -56,10 +56,15 @@ export class FeedFetcherListenerService {
 
   calculateCurrentlyProcessingCacheKeyForMessage = (
     event: BatchRequestMessage['data'][number],
+    rateSeconds: number,
   ) => {
     const lookupKey = event.lookupKey || event.url;
 
-    return `listener-service-${lookupKey}`;
+    // Scope the lock by refresh rate. Feeds sharing a URL but on different
+    // refresh rates each get their own lock, so a fast-refreshing feed can't
+    // starve a slower one by holding a URL-wide lock and causing its cycles to
+    // be skipped (which drops the fetch-completed event and delays delivery).
+    return `listener-service-${lookupKey}-${rateSeconds}`;
   };
 
   static BASE_FAILED_ATTEMPT_WAIT_MINUTES = 5;
@@ -126,7 +131,10 @@ export class FeedFetcherListenerService {
             }
 
             const cacheKey =
-              this.calculateCurrentlyProcessingCacheKeyForMessage(message);
+              this.calculateCurrentlyProcessingCacheKeyForMessage(
+                message,
+                rateSeconds,
+              );
             const lockExpSeconds = Math.min(
               Math.floor(rateSeconds * 0.75),
               120,

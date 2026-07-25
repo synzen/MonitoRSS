@@ -131,7 +131,7 @@ describe('FeedFetcherListenerService', () => {
       await runHandler();
 
       expect(cacheStorageService.del).toHaveBeenCalledWith(
-        `listener-service-${feedUrl}`,
+        `listener-service-${feedUrl}-${batchRequest.rateSeconds}`,
       );
     });
   });

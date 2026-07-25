@@ -463,6 +463,8 @@ export const FeedCard = ({
                   color="fg.muted"
                   ml={2}
                   display="inline-flex"
+                  h="auto"
+                  minH="0"
                   verticalAlign="baseline"
                   onClick={() => setShowDetails((prev) => !prev)}
                   aria-expanded={showDetails}
