@@ -175,3 +175,96 @@ describe("WorkspaceBillingService.convertPersonalSubscriptionToWorkspace", () =>
     assert.ok(!calls.includes("patch"));
   });
 });
+
+// Cancel and resume both mutate the subscription at Paddle FIRST and then poll
+// the local record until the webhook writes the change. Paddle has already
+// accepted by the time the poll runs, so a slow webhook must not be reported as
+// a failed operation: doing so tells the caller the cancellation did not happen
+// when it did, and invites a retry against an already-cancelled subscription.
+describe("WorkspaceBillingService cancel/resume webhook read-back", () => {
+  const workspaceId = "507f1f77bcf86cd799439011";
+  const subscriptionId = "sub-1";
+
+  let calls: string[];
+  let apiCallShouldFail: boolean;
+
+  function buildWorkspace(): IWorkspace {
+    return {
+      id: workspaceId,
+      paddleCustomer: { subscription: { id: subscriptionId } },
+    } as unknown as IWorkspace;
+  }
+
+  function buildDeps(): WorkspaceBillingServiceDeps {
+    calls = [];
+    apiCallShouldFail = false;
+
+    return {
+      config: {
+        BACKEND_API_ENABLE_SUPPORTERS: true,
+        BACKEND_API_PADDLE_KEY: "key",
+        BACKEND_API_PADDLE_URL: "https://paddle.test",
+      } as Config,
+      // Fast poll so a timeout resolves in milliseconds, not ~51s.
+      pollOptions: { intervalMs: 1, maxTries: 2 },
+      workspaceRepository: {
+        // Never reports the change, so every poll exhausts its tries. This is
+        // the slow-webhook case.
+        findById: async () =>
+          ({
+            id: workspaceId,
+            paddleCustomer: { subscription: { id: subscriptionId } },
+          }) as unknown as IWorkspace,
+        nullifySubscriptionBySubscriptionId: async () => {
+          calls.push("nullify");
+        },
+      } as unknown as WorkspaceBillingServiceDeps["workspaceRepository"],
+      paddleService: {
+        executeApiCall: async () => {
+          calls.push("paddleApiCall");
+
+          if (apiCallShouldFail) {
+            throw new Error("paddle rejected the request");
+          }
+        },
+      } as unknown as WorkspaceBillingServiceDeps["paddleService"],
+    } as unknown as WorkspaceBillingServiceDeps;
+  }
+
+  it("does not throw when the cancellation webhook is slow and the poll times out", async () => {
+    const deps = buildDeps();
+    const service = new WorkspaceBillingService(deps);
+
+    await assert.doesNotReject(
+      service.cancelSubscription(buildWorkspace()),
+      "Paddle already accepted the cancellation, so a slow webhook must not surface as a failed cancel",
+    );
+
+    assert.ok(calls.includes("paddleApiCall"));
+  });
+
+  it("does not throw when the resume webhook is slow and the poll times out", async () => {
+    const deps = buildDeps();
+    const service = new WorkspaceBillingService(deps);
+
+    await assert.doesNotReject(
+      service.resumeSubscription(buildWorkspace()),
+      "Paddle already cleared the scheduled change, so a slow webhook must not surface as a failed resume",
+    );
+
+    assert.ok(calls.includes("paddleApiCall"));
+  });
+
+  it("still throws when the Paddle cancel call itself fails", async () => {
+    const deps = buildDeps();
+    const service = new WorkspaceBillingService(deps);
+    apiCallShouldFail = true;
+
+    // Only the read-back timeout is absorbed. A genuine failure at Paddle means
+    // nothing was cancelled and must still reach the caller.
+    await assert.rejects(
+      service.cancelSubscription(buildWorkspace()),
+      "a failed Paddle cancel must not be reported as success",
+    );
+  });
+});

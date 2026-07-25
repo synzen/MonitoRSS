@@ -4,6 +4,7 @@ import {
   createPaddleCustomer,
   simulateSubscriptionCreation,
 } from "./paddle-api";
+import { withCrossWorkerLock } from "./cross-worker-lock";
 
 async function getUserEmail(page: Page): Promise<string> {
   const response = await page.request.get("/api/v1/users/@me");
@@ -99,8 +100,19 @@ export async function ensurePaidSubscriptionState(
 
   // Traffic source is set to "all" once in paddle.setup.ts and left there;
   // toggling it per-test races other parallel tests' webhook delivery.
-  await simulateSubscriptionCreation({ customerId, priceId: opts.priceId });
-  await waitForPaidState(page);
+  //
+  // Simulation runs are keyed to the notification setting, and the whole run
+  // shares ONE of those (the backend reads a single signing secret at startup,
+  // and Paddle caps active settings), so concurrent runs against it delay or
+  // drop each other's webhooks: a CI run showed 5 runs started but only 2 users
+  // ever reaching paid tier, with the rest starving out the 150s wait. Hold the
+  // simulation AND its confirmation under one lock so a worker sees its own
+  // webhook land before the next simulation is queued. Only this section
+  // serializes; the tests themselves stay parallel.
+  await withCrossWorkerLock("paddle-simulation", async () => {
+    await simulateSubscriptionCreation({ customerId, priceId: opts.priceId });
+    await waitForPaidState(page);
+  });
 
   await page.goto("about:blank");
   await page.evaluate(() => {

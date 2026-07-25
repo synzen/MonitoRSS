@@ -207,6 +207,12 @@ export async function createPaddleCustomer(email: string): Promise<string> {
   return result.data.id;
 }
 
+// The simulation's `entities` schema is closed: Paddle rejects custom_data on it
+// ("The property custom_data is not defined and the definition does not allow
+// additional properties"), so a simulated subscription cannot carry a userId the
+// way a real checkout does. The webhook handler therefore resolves the user via
+// its billing-email fallback, which is why the customer is created with the
+// user's own unique e2e email.
 export async function simulateSubscriptionCreation({
   customerId,
   priceId,

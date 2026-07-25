@@ -32,7 +32,7 @@ import {
   WORKSPACE_BASE_TIER_KEYS,
   WORKSPACE_PRODUCT_KEYS,
 } from "../../shared/utils/billing";
-import { pollUntil } from "../../shared/utils/poll-until";
+import { pollUntil, PollTimeoutException } from "../../shared/utils/poll-until";
 import { formatCurrency } from "../../shared/utils/format-currency";
 
 export interface WorkspaceBillingServiceDeps {
@@ -245,7 +245,12 @@ export class WorkspaceBillingService {
       throw err;
     }
 
-    await this.pollForSubscriptionChange(
+    // Paddle has accepted the cancellation at this point; the poll only waits for
+    // the webhook to write it locally. Treating that wait as failure would tell
+    // the caller the cancellation did not happen when it did, inviting a retry
+    // against an already-cancelled subscription. The webhook remains the single
+    // writer and lands on its own, so a timeout here is eventual consistency.
+    await this.pollForSubscriptionChangeAllowingTimeout(
       workspace.id,
       (sub) => !!sub?.cancellationDate,
     );
@@ -262,7 +267,10 @@ export class WorkspaceBillingService {
       },
     );
 
-    await this.pollForSubscriptionChange(
+    // As with cancellation, Paddle has already cleared the scheduled change; the
+    // poll only confirms the webhook's local write, so a timeout is eventual
+    // consistency rather than a failed resume.
+    await this.pollForSubscriptionChangeAllowingTimeout(
       workspace.id,
       (sub) => !sub?.cancellationDate,
     );
@@ -361,13 +369,13 @@ export class WorkspaceBillingService {
     // parented (the guard's TTL bounds the exposure) and the caller surfaces a
     // "still confirming" state rather than rolling back — so a slow webhook
     // must not error out a conversion that has, in fact, succeeded.
-    try {
-      await this.pollForSubscriptionChange(workspace.id, (sub) => !!sub);
-    } catch {
-      // Timed out waiting for the webhook; the conversion is committed and
-      // will reconcile when it lands. The client polls the workspace detail
-      // for the recorded subscription and shows a confirming state meanwhile.
-    }
+    // Timing out waiting for the webhook is fine: the conversion is committed and
+    // reconciles when it lands, and the client polls the workspace detail for the
+    // recorded subscription and shows a confirming state meanwhile.
+    await this.pollForSubscriptionChangeAllowingTimeout(
+      workspace.id,
+      (sub) => !!sub,
+    );
   }
 
   private async assertConvertibleFeedSelection(
@@ -501,5 +509,25 @@ export class WorkspaceBillingService {
       `workspace ${workspaceId} subscription change`,
       this.deps.pollOptions,
     );
+  }
+
+  // For mutations Paddle has already accepted, where the poll is only a
+  // read-back of the webhook's local write. The change is committed regardless,
+  // so a timeout must not surface as a failed operation; the webhook lands on
+  // its own and the client's refetch picks it up. Only the timeout is absorbed:
+  // a repository or connection failure still propagates.
+  private async pollForSubscriptionChangeAllowingTimeout(
+    workspaceId: string,
+    check: (subscription: IPaddleCustomerSubscription | null) => boolean,
+  ): Promise<void> {
+    try {
+      await this.pollForSubscriptionChange(workspaceId, check);
+    } catch (err) {
+      if (err instanceof PollTimeoutException) {
+        return;
+      }
+
+      throw err;
+    }
   }
 }
