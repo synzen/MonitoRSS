@@ -10,6 +10,7 @@ Object.assign(globalThis, {
 });
 
 import { FeedFetcherListenerService } from './feed-fetcher-listener.service';
+import { RequestStatus } from './constants';
 
 jest.mock('../utils/logger');
 
@@ -22,6 +23,9 @@ describe('FeedFetcherListenerService', () => {
   let partitionedRequestsStoreService: {
     flushInserts: jest.Mock;
     wasRequestedInPastSeconds: jest.Mock;
+    getLatestRequestWithOkStatus: jest.Mock;
+    countFailedRequests: jest.Mock;
+    getLatestNextRetryDate: jest.Mock;
   };
   let hostRateLimiterService: { incrementUrlCount: jest.Mock };
   let cacheStorageService: { setNX: jest.Mock; del: jest.Mock };
@@ -45,6 +49,9 @@ describe('FeedFetcherListenerService', () => {
     partitionedRequestsStoreService = {
       flushInserts: jest.fn().mockResolvedValue(undefined),
       wasRequestedInPastSeconds: jest.fn(),
+      getLatestRequestWithOkStatus: jest.fn().mockResolvedValue(null),
+      countFailedRequests: jest.fn().mockResolvedValue(0),
+      getLatestNextRetryDate: jest.fn().mockResolvedValue(null),
     };
     hostRateLimiterService = {
       incrementUrlCount: jest.fn().mockResolvedValue({ isRateLimited: false }),
@@ -132,6 +139,82 @@ describe('FeedFetcherListenerService', () => {
 
       expect(cacheStorageService.del).toHaveBeenCalledWith(
         `listener-service-${feedUrl}-${batchRequest.rateSeconds}`,
+      );
+    });
+
+    it('emits url.fetch.completed without fetching when the cache is still fresh', async () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.wasRequestedInPastSeconds.mockResolvedValue(
+        false,
+      );
+      partitionedRequestsStoreService.getLatestRequestWithOkStatus.mockResolvedValue(
+        {
+          createdAt: new Date(),
+          requestInitiatedAt: new Date(),
+          responseHeaders: {
+            'cache-control': 'public, max-age=3600',
+            date: new Date().toUTCString(),
+          },
+        },
+      );
+
+      await runHandler();
+
+      expect(feedFetcherService.fetchAndSaveResponse).not.toHaveBeenCalled();
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        '',
+        'url.fetch.completed',
+        {
+          data: {
+            lookupKey: undefined,
+            url: feedUrl,
+            rateSeconds: batchRequest.rateSeconds,
+            debug: undefined,
+          },
+        },
+      );
+    });
+
+    it('emits url.fetch.completed when the fetch succeeds', async () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.wasRequestedInPastSeconds.mockResolvedValue(
+        false,
+      );
+      feedFetcherService.fetchAndSaveResponse.mockResolvedValue({
+        request: { status: RequestStatus.OK },
+      });
+
+      await runHandler();
+
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        '',
+        'url.fetch.completed',
+        {
+          data: {
+            lookupKey: undefined,
+            url: feedUrl,
+            rateSeconds: batchRequest.rateSeconds,
+            debug: undefined,
+          },
+        },
+      );
+    });
+
+    it('does not emit url.fetch.completed when the fetch fails', async () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.wasRequestedInPastSeconds.mockResolvedValue(
+        false,
+      );
+      feedFetcherService.fetchAndSaveResponse.mockResolvedValue({
+        request: { status: RequestStatus.FETCH_ERROR },
+      });
+
+      await runHandler();
+
+      expect(amqpConnection.publish).not.toHaveBeenCalledWith(
+        '',
+        'url.fetch.completed',
+        expect.anything(),
       );
     });
   });

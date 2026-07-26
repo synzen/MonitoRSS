@@ -324,19 +324,35 @@ export class FeedFetcherListenerService {
       return { emitFetchCompleted: false };
     }
 
-    const { isCacheStillActive, latestOkRequest } =
-      await this.isLatestResponseStillFreshInCache({
-        lookupKey: lookupKey || url,
-      });
+    const {
+      isCacheStillActive,
+      latestOkRequest,
+      freshnessLifetimeMs,
+      responseAgeMs,
+    } = await this.isLatestResponseStillFreshInCache({
+      lookupKey: lookupKey || url,
+    });
 
     if (isCacheStillActive) {
-      contextLogger.debug(
-        `Request with lookup key ${
-          lookupKey || url
-        } still has active cache-control, skipping`,
-      );
+      const cacheSkipMessage =
+        `Request with lookup key ${lookupKey || url} still has active` +
+        ` cache-control, skipping fetch but emitting fetch completed`;
 
-      return { emitFetchCompleted: false };
+      if (data.saveToObjectStorage) {
+        contextLogger.info(cacheSkipMessage, {
+          freshnessLifetimeMs,
+          responseAgeMs,
+          rateSeconds,
+        });
+      } else {
+        contextLogger.debug(cacheSkipMessage);
+      }
+
+      // The cached response may have been fetched by a cycle of a different
+      // refresh rate on the same URL, whose fetch-completed event only
+      // triggers delivery for feeds on that rate. Feeds on this rate must
+      // still be notified or they starve until timing happens to align.
+      return { emitFetchCompleted: true };
     }
 
     if (data.saveToObjectStorage) {
@@ -579,6 +595,8 @@ export class FeedFetcherListenerService {
     lookupKey: string;
   }): Promise<{
     isCacheStillActive: boolean;
+    freshnessLifetimeMs?: number;
+    responseAgeMs?: number;
     latestOkRequest?: Awaited<
       ReturnType<
         typeof FeedFetcherListenerService.prototype.partitionedRequestsStoreService.getLatestRequestWithOkStatus
@@ -614,6 +632,8 @@ export class FeedFetcherListenerService {
     return {
       latestOkRequest,
       isCacheStillActive: freshnessLifetime ? responseIsFresh : false,
+      freshnessLifetimeMs: freshnessLifetime,
+      responseAgeMs: currentAgeOfResponse,
     };
   }
 
