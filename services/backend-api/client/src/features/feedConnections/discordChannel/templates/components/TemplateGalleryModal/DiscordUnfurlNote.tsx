@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { Box, Text, HStack, Icon, VStack, chakra } from "@chakra-ui/react";
 import { FaCircleInfo } from "react-icons/fa6";
 import {
-  PopoverRoot,
+  NestedPopoverRoot,
   PopoverTrigger,
   PopoverContent,
   PopoverArrow,
@@ -21,12 +21,6 @@ const WONT_APPEAR_REASONS = [
 ];
 
 export const DiscordUnfurlNote = () => {
-  // This popover lives inside the modal template gallery Dialog. Both register
-  // document-level Escape listeners, and when the popover content is portalled
-  // the dialog's listener can also fire and dismiss the whole dialog on the same
-  // keypress (a CI-timing-dependent race). Stop the Escape from reaching the
-  // dialog's listener once the popover has consumed it, and pin focus
-  // restoration to the trigger so the dialog's focus trap can't drop it.
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   return (
@@ -34,11 +28,7 @@ export const DiscordUnfurlNote = () => {
       <Text fontSize="sm" color="fg.muted">
         {NOTE_COPY}
       </Text>
-      <PopoverRoot
-        positioning={{ placement: "top" }}
-        finalFocusEl={() => triggerRef.current}
-        onEscapeKeyDown={(e) => e.stopImmediatePropagation()}
-      >
+      <NestedPopoverRoot positioning={{ placement: "top" }} finalFocusEl={() => triggerRef.current}>
         <PopoverTrigger asChild>
           <chakra.button
             ref={triggerRef}
@@ -79,7 +69,7 @@ export const DiscordUnfurlNote = () => {
             </VStack>
           </PopoverBody>
         </PopoverContent>
-      </PopoverRoot>
+      </NestedPopoverRoot>
     </HStack>
   );
 };

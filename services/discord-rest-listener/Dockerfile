@@ -8,12 +8,12 @@ RUN npm install
 
 COPY . ./
 
+# docker-compose.base.yml runs this target directly, so it must contain build/app.js.
+RUN npm run build
+
 FROM build AS build-prod
 
 WORKDIR /usr/src/app
-COPY --from=build /usr/src/app ./
-
-RUN npm run build
 
 RUN npm prune --production
 

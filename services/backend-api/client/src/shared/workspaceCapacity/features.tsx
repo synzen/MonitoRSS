@@ -8,7 +8,7 @@ import {
   PopoverCloseTrigger,
   PopoverContent,
   PopoverHeader,
-  PopoverRoot,
+  NestedPopoverRoot,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { EXTERNAL_PROPERTIES_MAX_ARTICLES } from "@/constants/externalPropertiesMaxArticles";
@@ -59,17 +59,7 @@ const FeatureInfoPopover = ({ title, body }: { title: string; body: string }) =>
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <PopoverRoot
-      positioning={{ placement: "top" }}
-      finalFocusEl={() => triggerRef.current}
-      // This popover lives inside a modal Dialog. Both register document-level
-      // Escape listeners, and when the popover content is portalled the dialog's
-      // listener can also fire and dismiss the whole dialog on the same keypress
-      // (a CI-timing-dependent race). Stop the Escape from reaching the dialog's
-      // listener once the popover has consumed it, so Escape closes only the
-      // popover and focus returns to the trigger.
-      onEscapeKeyDown={(e) => e.stopImmediatePropagation()}
-    >
+    <NestedPopoverRoot positioning={{ placement: "top" }} finalFocusEl={() => triggerRef.current}>
       <PopoverTrigger asChild>
         <Button
           ref={triggerRef}
@@ -89,7 +79,7 @@ const FeatureInfoPopover = ({ title, body }: { title: string; body: string }) =>
         <PopoverHeader fontWeight="semibold">{title}</PopoverHeader>
         <PopoverBody>{body}</PopoverBody>
       </PopoverContent>
-    </PopoverRoot>
+    </NestedPopoverRoot>
   );
 };
 
