@@ -1,15 +1,6 @@
 FROM node:24 AS build
 WORKDIR /usr/src/app
 
-COPY package*.json ./
-COPY client/package*.json client/
-
-RUN npm install && cd client && npm install
-
-COPY . ./
-
-FROM node:24 AS build-prod
-
 ARG VITE_FRESHDESK_WIDGET_ID
 ARG VITE_PADDLE_PW_AUTH
 ARG VITE_SENTRY_DSN
@@ -19,8 +10,12 @@ ARG SENTRY_PROJECT
 ARG SENTRY_AUTH_TOKEN
 ARG SENTRY_RELEASE
 
-WORKDIR /usr/src/app
-COPY --from=build /usr/src/app ./
+COPY package*.json ./
+COPY client/package*.json client/
+
+RUN npm install && cd client && npm install
+
+COPY . ./
 
 ENV SKIP_PREFLIGHT_CHECK=true
 ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
@@ -31,7 +26,11 @@ ENV SENTRY_ORG=$SENTRY_ORG
 ENV SENTRY_PROJECT=$SENTRY_PROJECT
 ENV SENTRY_RELEASE=$SENTRY_RELEASE
 
-RUN npm run build && cd client && npm run build
+RUN npm run build && cd client && npm run build && mkdir -p /usr/src/backend-api/client && cp -r dist /usr/src/backend-api/client/dist
+
+FROM build AS build-prod
+
+WORKDIR /usr/src/app
 
 RUN npm prune --production
 

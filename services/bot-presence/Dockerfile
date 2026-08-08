@@ -8,12 +8,11 @@ RUN npm install
 
 COPY . ./
 
-FROM node:24 AS build-prod
+RUN npm run build
+
+FROM build AS build-prod
 
 WORKDIR /usr/src/app
-COPY --from=build /usr/src/app ./
-
-RUN npm run build
 
 RUN npm prune --production
 
