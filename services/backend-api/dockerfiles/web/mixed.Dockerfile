@@ -26,6 +26,7 @@ ENV SENTRY_ORG=$SENTRY_ORG
 ENV SENTRY_PROJECT=$SENTRY_PROJECT
 ENV SENTRY_RELEASE=$SENTRY_RELEASE
 
+# Compose builds schedule-emitter from this target under the monolith image tag, so keep all runtime artifacts here.
 RUN npm run build && cd client && npm run build && mkdir -p /usr/src/backend-api/client && cp -r dist /usr/src/backend-api/client/dist
 
 FROM build AS build-prod
