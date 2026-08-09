@@ -1,6 +1,5 @@
 import fs from "fs";
 import path from "path";
-import { execFileSync } from "child_process";
 import crypto from "crypto";
 import type { AnyBulkWriteOperation } from "mongodb";
 import {
@@ -10,6 +9,7 @@ import {
 } from "./prod-fetch";
 import { checkUrlsReliability, probeExistingFeeds } from "./disable-probe";
 import { setUpProdFeedRequestsApi } from "./prod-fetch-tunnel";
+import { callAi } from "./ai";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,11 +52,6 @@ interface PipelineOutput {
   categories: Category[];
   feeds: FinalFeed[];
   _feedOps?: AnyBulkWriteOperation[];
-}
-
-interface ClaudeResponse {
-  structured_output?: Record<string, unknown>;
-  result?: string;
 }
 
 interface DomainBatchResult {
@@ -401,39 +396,6 @@ function step2_filterAndDedup(feeds: RawFeed[]): PipelineFeed[] {
 }
 
 // ---------------------------------------------------------------------------
-// AI Helper
-// ---------------------------------------------------------------------------
-
-function callClaude(
-  prompt: string,
-  schema: Record<string, unknown>,
-): unknown {
-  const env = { ...process.env };
-  delete env.CLAUDECODE;
-  const raw = execFileSync(
-    "claude",
-    [
-      "-p",
-      prompt,
-      "--output-format",
-      "json",
-      "--json-schema",
-      JSON.stringify(schema),
-      "--no-session-persistence",
-      "--max-turns",
-      "3",
-      "--tools",
-      "",
-    ],
-    { encoding: "utf-8", maxBuffer: 10 * 1024 * 1024, env },
-  );
-  const parsed = JSON.parse(raw) as ClaudeResponse;
-  if (parsed.structured_output) return parsed.structured_output;
-  if (parsed.result) return JSON.parse(parsed.result);
-  throw new Error("No structured_output in claude response");
-}
-
-// ---------------------------------------------------------------------------
 // Step 3: Domain Assignment
 // ---------------------------------------------------------------------------
 
@@ -526,7 +488,7 @@ ${feedList}`;
       };
 
       try {
-        const response = callClaude(prompt, schema) as DomainBatchResult;
+        const response = callAi(prompt, schema) as DomainBatchResult;
         const results = response.result || [];
         if (results.length !== batch.length) {
           console.warn(
@@ -818,7 +780,7 @@ ${feedList}`;
     };
 
     try {
-      const response = callClaude(prompt, schema) as ClassifyBatchResult;
+      const response = callAi(prompt, schema) as ClassifyBatchResult;
       const results = response.result || [];
       if (results.length !== batch.length) {
         console.warn(
