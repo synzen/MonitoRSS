@@ -12,6 +12,11 @@ import { disableFeed } from './send-failure-notification'
 import { BAD_FORMAT } from './constants/feedDisableReasons'
 import { AmqpChannel } from './constants/amqpChannels'
 import type { ConfigType } from './schemas/ConfigSchema'
+import {
+  DEFAULT_RABBITMQ_DISCONNECT_GRACE_MS,
+  isRabbitMqConsumerConnectionError,
+  watchRabbitMqConnection,
+} from './utils/rabbitmq-health'
 
 dayjs.extend(utc)
 
@@ -83,7 +88,30 @@ export interface ConsumerAppHandle {
 export async function createConsumerApp(deps: ConsumerAppDeps): Promise<ConsumerAppHandle> {
   const { exit, config } = deps
   const initializedData = await setup(config)
-  const { orm, amqpChannelWrapper, pollInterval } = initializedData
+  const { orm, amqpConnection, amqpChannelWrapper, pollInterval } = initializedData
+  let exitRequested = false
+  const exitForRabbitMqFailure = (message: string, error?: Error) => {
+    if (exitRequested) {
+      return
+    }
+
+    exitRequested = true
+    log.error(message, error)
+    logDatadog('error', message, {
+      stack: error?.stack,
+    })
+    exit(1)
+  }
+  const stopRabbitMqWatchdog = watchRabbitMqConnection({
+    connection: amqpConnection,
+    gracePeriodMs: DEFAULT_RABBITMQ_DISCONNECT_GRACE_MS,
+    onUnavailable: (error) => {
+      exitForRabbitMqFailure(
+        `RabbitMQ unavailable for ${DEFAULT_RABBITMQ_DISCONNECT_GRACE_MS}ms, shutting down`,
+        error
+      )
+    },
+  })
   const producer = new RESTProducer(config.rabbitmqUri, {
     clientId: config.discordClientId
   })
@@ -106,6 +134,11 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
   })
 
   consumer.on('err', (err) => {
+    if (isRabbitMqConsumerConnectionError(err)) {
+      exitForRabbitMqFailure('RabbitMQ consumer connection lost, shutting down', err)
+      return
+    }
+
     const errorMessage = `Consumer error: ${err.message}`
     log.error(errorMessage)
     logDatadog('error', errorMessage, {
@@ -292,9 +325,11 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
     consumer,
     producer,
     close: async () => {
+      stopRabbitMqWatchdog()
       clearInterval(pollInterval)
       await consumer.close()
       await producer.close()
+      await amqpConnection.close()
       await orm.close(true)
     },
   }
