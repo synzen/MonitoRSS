@@ -5,6 +5,7 @@ import {
   type Model,
   type InferSchemaType,
   type PipelineStage,
+  type ClientSession,
 } from "mongoose";
 import type {
   IUserFeed,
@@ -42,8 +43,15 @@ import type {
   WorkspaceMaxDailyArticlesSyncInput,
   UserFeedForDelivery,
   FeedLimitScope,
+  MovePersonalFeedsToWorkspaceInput,
+  PersonalFeedMoveReceipt,
 } from "../interfaces/user-feed.types";
-import { FeedLimitExceededError } from "../interfaces/user-feed.types";
+import {
+  FeedLimitExceededError,
+  PersonalFeedMoveCapacityExceededError,
+  PersonalFeedMoveInvalidSelectionError,
+  PersonalFeedMoveWorkspaceNotFoundError,
+} from "../interfaces/user-feed.types";
 import type { SlotWindow } from "../../shared/types/slot-window.types";
 import { getCommonFeedAggregateStages } from "../../shared/utils/get-common-feed-aggregate-stages";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
@@ -275,9 +283,10 @@ export class UserFeedMongooseRepository
       externalProperties: doc.externalProperties,
       healthStatus: doc.healthStatus,
       connections: {
-        discordChannels: discordChannels?.map((conn) =>
-          this.mapDiscordChannelConnection(conn),
-        ) || [],
+        discordChannels:
+          discordChannels?.map((conn) =>
+            this.mapDiscordChannelConnection(conn),
+          ) || [],
       },
       user: {
         id: this.objectIdToString(doc.user.id),
@@ -459,7 +468,9 @@ export class UserFeedMongooseRepository
         id: new Types.ObjectId(input.user.id),
         discordUserId: input.user.discordUserId,
       },
-      workspaceId: input.workspaceId ? new Types.ObjectId(input.workspaceId) : undefined,
+      workspaceId: input.workspaceId
+        ? new Types.ObjectId(input.workspaceId)
+        : undefined,
       refreshRateSeconds: input.refreshRateSeconds,
       maxDailyArticles: input.maxDailyArticles,
       dateCheckOptions: input.dateCheckOptions,
@@ -491,10 +502,6 @@ export class UserFeedMongooseRepository
     );
   }
 
-  // Counts the scope's feeds and throws FeedLimitExceededError when the new
-  // feed would exceed `maxFeeds`. Best-effort: concurrent creates can race the
-  // count, which is accepted — only serial requests are guaranteed not to
-  // exceed the limit.
   async createWithLimitEnforcement(
     input: CreateUserFeedInput,
     limit: FeedLimitScope,
@@ -509,12 +516,35 @@ export class UserFeedMongooseRepository
     buildDoc: () => Record<string, unknown>,
     limit: FeedLimitScope,
   ): Promise<IUserFeed> {
-    const countFilter =
-      limit.scope === "workspace"
-        ? { workspaceId: this.stringToObjectId(limit.workspaceId) }
-        : {
-            $and: [this.getOwnershipFilter(limit.discordUserId), { workspaceId: null }],
-          };
+    if (limit.scope === "workspace") {
+      return this.withWorkspaceCapacityLock(
+        limit.workspaceId,
+        async (session) => {
+          const count = await this.model
+            .countDocuments({
+              workspaceId: this.stringToObjectId(limit.workspaceId),
+            })
+            .session(session);
+
+          if (count >= limit.maxFeeds) {
+            throw new FeedLimitExceededError();
+          }
+
+          const [doc] = await this.model.create([buildDoc()], { session });
+
+          return this.toEntity(
+            doc!.toObject() as UserFeedDoc & { _id: Types.ObjectId },
+          );
+        },
+      );
+    }
+
+    const countFilter = {
+      $and: [
+        this.getOwnershipFilter(limit.discordUserId),
+        { workspaceId: null },
+      ],
+    };
 
     const count = await this.model.countDocuments(countFilter);
 
@@ -590,7 +620,10 @@ export class UserFeedMongooseRepository
     return this.toEntity(doc as UserFeedDoc & { _id: Types.ObjectId });
   }
 
-  private getOwnershipFilter(discordUserId: string, myWorkspaceIds: string[] = []) {
+  private getOwnershipFilter(
+    discordUserId: string,
+    myWorkspaceIds: string[] = [],
+  ) {
     const $or: Record<string, unknown>[] = [
       { "user.discordUserId": discordUserId },
       {
@@ -607,7 +640,9 @@ export class UserFeedMongooseRepository
       // Any member of a workspace may access that workspace's feeds; roles do not
       // restrict feed actions.
       $or.push({
-        workspaceId: { $in: myWorkspaceIds.map((id) => this.stringToObjectId(id)) },
+        workspaceId: {
+          $in: myWorkspaceIds.map((id) => this.stringToObjectId(id)),
+        },
       });
     }
 
@@ -649,7 +684,9 @@ export class UserFeedMongooseRepository
     // scope and vice versa.
     const scopeMatch: PipelineStage.Match["$match"] = workspaceId
       ? { workspaceId: this.stringToObjectId(workspaceId) }
-      : { $and: [this.getOwnershipFilter(discordUserId), { workspaceId: null }] };
+      : {
+          $and: [this.getOwnershipFilter(discordUserId), { workspaceId: null }],
+        };
 
     const pipeline: PipelineStage[] = [
       { $match: scopeMatch },
@@ -699,7 +736,10 @@ export class UserFeedMongooseRepository
                       else: {
                         $cond: {
                           if: {
-                            $eq: ["$healthStatus", UserFeedHealthStatus.Failing],
+                            $eq: [
+                              "$healthStatus",
+                              UserFeedHealthStatus.Failing,
+                            ],
                           },
                           then: UserFeedComputedStatus.Retrying,
                           else: UserFeedComputedStatus.Ok,
@@ -921,7 +961,9 @@ export class UserFeedMongooseRepository
   }
 
   async countByWorkspace(workspaceId: string): Promise<number> {
-    return this.model.countDocuments({ workspaceId: this.stringToObjectId(workspaceId) });
+    return this.model.countDocuments({
+      workspaceId: this.stringToObjectId(workspaceId),
+    });
   }
 
   async findIdsByWorkspace(workspaceId: string): Promise<string[]> {
@@ -1154,33 +1196,175 @@ export class UserFeedMongooseRepository
     return result.modifiedCount;
   }
 
-  async reparentFeedsToWorkspace(
-    feedIds: string[],
-    workspaceId: string,
-  ): Promise<number> {
-    if (feedIds.length === 0) {
-      return 0;
+  async movePersonalFeedsToWorkspace(
+    input: MovePersonalFeedsToWorkspaceInput,
+  ): Promise<PersonalFeedMoveReceipt> {
+    const uniqueFeedIds = new Set(input.feedIds);
+
+    if (
+      input.feedIds.length === 0 ||
+      uniqueFeedIds.size !== input.feedIds.length ||
+      !this.areAllValidIds(input.feedIds) ||
+      !Types.ObjectId.isValid(input.workspaceId)
+    ) {
+      throw new PersonalFeedMoveInvalidSelectionError();
     }
 
-    const result = await this.model.updateMany(
-      { _id: { $in: feedIds.map((id) => this.stringToObjectId(id)) } },
-      { $set: { workspaceId: this.stringToObjectId(workspaceId) } },
-    );
+    const objectIds = input.feedIds.map((id) => this.stringToObjectId(id));
 
-    return result.modifiedCount;
+    return this.withWorkspaceCapacityLock(
+      input.workspaceId,
+      async (session) => {
+        const workspaceFeedCount = await this.model
+          .countDocuments({
+            workspaceId: this.stringToObjectId(input.workspaceId),
+          })
+          .session(session);
+        const docs = await this.model
+          .find({
+            _id: { $in: objectIds },
+            "user.discordUserId": input.discordUserId,
+            workspaceId: null,
+          })
+          .session(session)
+          .lean();
+
+        if (docs.length !== input.feedIds.length) {
+          throw new PersonalFeedMoveInvalidSelectionError();
+        }
+
+        if (
+          workspaceFeedCount + input.feedIds.length >
+          input.maxWorkspaceFeeds
+        ) {
+          throw new PersonalFeedMoveCapacityExceededError();
+        }
+
+        const result = await this.model.updateMany(
+          {
+            _id: { $in: objectIds },
+            "user.discordUserId": input.discordUserId,
+            workspaceId: null,
+          },
+          {
+            $set: { workspaceId: this.stringToObjectId(input.workspaceId) },
+            $unset: { shareManageOptions: "" },
+          },
+          { session },
+        );
+
+        if (result.modifiedCount !== input.feedIds.length) {
+          throw new PersonalFeedMoveInvalidSelectionError();
+        }
+
+        return {
+          discordUserId: input.discordUserId,
+          workspaceId: input.workspaceId,
+          feeds: docs.map((doc) => {
+            const feed = this.toEntity(
+              doc as UserFeedDoc & { _id: Types.ObjectId },
+            );
+            return {
+              id: feed.id,
+              shareManageOptions: feed.shareManageOptions,
+            };
+          }),
+        };
+      },
+    );
   }
 
-  async reparentFeedsToPersonal(feedIds: string[]): Promise<number> {
-    if (feedIds.length === 0) {
-      return 0;
-    }
+  async restorePersonalFeedsFromWorkspace(
+    receipt: PersonalFeedMoveReceipt,
+  ): Promise<void> {
+    await this.withWorkspaceCapacityLock(
+      receipt.workspaceId,
+      async (session) => {
+        for (const feed of receipt.feeds) {
+          const update: Record<string, Record<string, unknown>> = {
+            $unset: { workspaceId: "" },
+            $currentDate: { updatedAt: true },
+          };
 
-    const result = await this.model.updateMany(
-      { _id: { $in: feedIds.map((id) => this.stringToObjectId(id)) } },
-      { $unset: { workspaceId: "" } },
+          if (feed.shareManageOptions) {
+            update.$set = {
+              shareManageOptions: {
+                invites: feed.shareManageOptions.invites.map((invite) => ({
+                  id: this.stringToObjectId(invite.id),
+                  type: invite.type,
+                  discordUserId: invite.discordUserId,
+                  status: invite.status,
+                  connections: invite.connections?.map((connection) => ({
+                    connectionId: this.stringToObjectId(
+                      connection.connectionId,
+                    ),
+                  })),
+                  createdAt: invite.createdAt,
+                  updatedAt: invite.updatedAt,
+                })),
+              },
+            };
+          } else {
+            update.$unset!.shareManageOptions = "";
+          }
+
+          const result = await this.model.collection.updateOne(
+            {
+              _id: this.stringToObjectId(feed.id),
+              "user.discordUserId": receipt.discordUserId,
+              workspaceId: this.stringToObjectId(receipt.workspaceId),
+            },
+            update,
+            { session },
+          );
+
+          if (result.matchedCount !== 1) {
+            throw new PersonalFeedMoveInvalidSelectionError();
+          }
+        }
+      },
     );
+  }
 
-    return result.modifiedCount;
+  private async withWorkspaceCapacityLock<T>(
+    workspaceId: string,
+    operation: (session: ClientSession) => Promise<T>,
+  ): Promise<T> {
+    const session = await this.model.db.startSession();
+    let operationResult: T | undefined;
+    let operationCompleted = false;
+
+    try {
+      await session.withTransaction(async () => {
+        // MongoDB has no application-level document-lock operation. This
+        // otherwise meaningless write acquires the workspace document's
+        // transactional write lock. A competing capacity transaction is
+        // aborted and retried before counting feeds, so its retry sees the
+        // winner's committed feed count.
+        const lock = await this.model.db
+          .collection("workspaces")
+          .updateOne(
+            { _id: this.stringToObjectId(workspaceId) },
+            { $inc: { feedCapacityVersion: 1 } },
+            { session },
+          );
+
+        if (lock.matchedCount !== 1) {
+          throw new PersonalFeedMoveWorkspaceNotFoundError();
+        }
+
+        operationResult = await operation(session);
+        operationCompleted = true;
+      });
+
+      if (!operationCompleted) {
+        throw new Error("Workspace capacity transaction returned no result");
+      }
+
+      return operationResult as T;
+    } finally {
+      await session.endSession();
+    }
   }
 
   areAllValidIds(ids: string[]): boolean {
@@ -1305,9 +1489,15 @@ export class UserFeedMongooseRepository
     // a workspace feed under the creator's personal limit.
     const matchFilter =
       query.type === "include"
-        ? { "user.discordUserId": { $in: query.discordUserIds }, workspaceId: null }
+        ? {
+            "user.discordUserId": { $in: query.discordUserIds },
+            workspaceId: null,
+          }
         : query.discordUserIds.length > 0
-          ? { "user.discordUserId": { $nin: query.discordUserIds }, workspaceId: null }
+          ? {
+              "user.discordUserId": { $nin: query.discordUserIds },
+              workspaceId: null,
+            }
           : { workspaceId: null };
 
     if (query.type === "include" && query.discordUserIds.length === 0) {

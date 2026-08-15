@@ -80,28 +80,27 @@ describe("WorkspaceBillingService.convertPersonalSubscriptionToWorkspace", () =>
           },
         }),
       } as unknown as WorkspaceBillingServiceDeps["supporterRepository"],
-      userFeedRepository: {
-        areAllValidIds: () => true,
-        findByIds: async () =>
-          feedIds.map((id) => ({
-            id,
-            user: { discordUserId },
-            workspaceId: null,
-          })),
-        reparentFeedsToWorkspace:
-          overrides.reparentToWorkspace ??
-          (async () => {
+      userFeedRepository:
+        {} as unknown as WorkspaceBillingServiceDeps["userFeedRepository"],
+      personalFeedMovesService: {
+        moveToWorkspace: async () => {
+          if (overrides.reparentToWorkspace) {
+            await overrides.reparentToWorkspace();
+          } else {
             calls.push("reparentToWorkspace");
-          }),
-        reparentFeedsToPersonal: async () => {
-          calls.push("reparentToPersonal");
+          }
+
+          return {
+            discordUserId,
+            workspaceId,
+            feeds: feedIds.map((id) => ({ id })),
+          };
         },
-      } as unknown as WorkspaceBillingServiceDeps["userFeedRepository"],
-      feedCredentialsService: {
-        syncLookupKeys: async () => {
+        rollback: async () => {
+          calls.push("reparentToPersonal");
           calls.push("syncLookupKeys");
         },
-      } as unknown as WorkspaceBillingServiceDeps["feedCredentialsService"],
+      } as unknown as WorkspaceBillingServiceDeps["personalFeedMovesService"],
     };
   }
 
