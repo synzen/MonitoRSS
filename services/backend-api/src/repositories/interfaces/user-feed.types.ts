@@ -459,6 +459,43 @@ export class FeedLimitExceededError extends Error {
   }
 }
 
+export class PersonalFeedMoveInvalidSelectionError extends Error {
+  constructor() {
+    super("Selected feeds must all be owned personal feeds");
+    this.name = "PersonalFeedMoveInvalidSelectionError";
+  }
+}
+
+export class PersonalFeedMoveCapacityExceededError extends Error {
+  constructor() {
+    super("Moving the selected feeds would exceed workspace capacity");
+    this.name = "PersonalFeedMoveCapacityExceededError";
+  }
+}
+
+export class PersonalFeedMoveWorkspaceNotFoundError extends Error {
+  constructor() {
+    super("The destination workspace does not exist");
+    this.name = "PersonalFeedMoveWorkspaceNotFoundError";
+  }
+}
+
+export interface PersonalFeedMoveReceipt {
+  discordUserId: string;
+  workspaceId: string;
+  feeds: Array<{
+    id: string;
+    shareManageOptions?: IUserFeedShareManageOptions;
+  }>;
+}
+
+export interface MovePersonalFeedsToWorkspaceInput {
+  feedIds: string[];
+  discordUserId: string;
+  workspaceId: string;
+  maxWorkspaceFeeds: number;
+}
+
 export type FeedLimitScope =
   | { scope: "workspace"; workspaceId: string; maxFeeds: number }
   | { scope: "personal"; discordUserId: string; maxFeeds: number };
@@ -552,15 +589,12 @@ export interface IUserFeedRepository {
   areAllValidIds(ids: string[]): boolean;
   countByIds(ids: string[]): Promise<number>;
   findByIds(ids: string[]): Promise<IUserFeed[]>;
-  // Re-parents the given feeds to a workspace (personal → workspace
-  // conversion). Returns the number of feeds moved.
-  reparentFeedsToWorkspace(
-    feedIds: string[],
-    workspaceId: string,
-  ): Promise<number>;
-  // Re-parents the given feeds back to a discord user as personal feeds
-  // (conversion rollback). Returns the number of feeds moved.
-  reparentFeedsToPersonal(feedIds: string[]): Promise<number>;
+  movePersonalFeedsToWorkspace(
+    input: MovePersonalFeedsToWorkspaceInput,
+  ): Promise<PersonalFeedMoveReceipt>;
+  restorePersonalFeedsFromWorkspace(
+    receipt: PersonalFeedMoveReceipt,
+  ): Promise<void>;
   findEligibleFeedsForDisable(
     feedIds: string[],
     eligibleDisabledCodes: UserFeedDisabledCode[],
@@ -657,7 +691,9 @@ export interface IUserFeedRepository {
   findDebugFeedUrls(): Promise<Set<string>>;
   syncRefreshRates(input: RefreshRateSyncInput): Promise<void>;
   syncMaxDailyArticles(input: MaxDailyArticlesSyncInput): Promise<void>;
-  syncWorkspaceRefreshRates(input: WorkspaceRefreshRateSyncInput): Promise<void>;
+  syncWorkspaceRefreshRates(
+    input: WorkspaceRefreshRateSyncInput,
+  ): Promise<void>;
   syncWorkspaceMaxDailyArticles(
     input: WorkspaceMaxDailyArticlesSyncInput,
   ): Promise<void>;

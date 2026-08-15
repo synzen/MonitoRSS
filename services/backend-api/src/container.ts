@@ -61,6 +61,7 @@ import { EmailVerificationService } from "./features/users/email-verification.se
 import { AccountService } from "./features/account/account.service";
 import { WorkspacesService } from "./features/workspaces/workspaces.service";
 import { WorkspaceBillingService } from "./features/workspaces/workspace-billing.service";
+import { PersonalFeedMovesService } from "./features/personal-feed-moves/personal-feed-moves.service";
 import { DiscordServersService } from "./services/discord-servers/discord-servers.service";
 import { UserFeedConnectionEventsService } from "./services/user-feed-connection-events/user-feed-connection-events.service";
 import { MongoMigrationsService } from "./services/mongo-migrations/mongo-migrations.service";
@@ -134,6 +135,7 @@ export interface Container {
   accountService: AccountService;
   workspacesService: WorkspacesService;
   workspaceBillingService: WorkspaceBillingService;
+  personalFeedMovesService: PersonalFeedMovesService;
   discordServersService: DiscordServersService;
   userFeedConnectionEventsService: UserFeedConnectionEventsService;
   mongoMigrationsService: MongoMigrationsService;
@@ -329,13 +331,18 @@ export function createContainer(deps: {
     workspacesService,
   });
 
+  const personalFeedMovesService = new PersonalFeedMovesService({
+    userFeedRepository,
+    feedCredentialsService,
+  });
+
   const workspaceBillingService = new WorkspaceBillingService({
     config: deps.config,
     workspaceRepository,
     paddleService,
     supporterRepository,
     userFeedRepository,
-    feedCredentialsService,
+    personalFeedMovesService,
   });
 
   const feedConnectionsDiscordChannelsService =
@@ -494,6 +501,7 @@ export function createContainer(deps: {
     accountService,
     workspacesService,
     workspaceBillingService,
+    personalFeedMovesService,
     discordServersService,
     userFeedConnectionEventsService,
     mongoMigrationsService,

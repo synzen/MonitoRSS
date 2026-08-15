@@ -188,6 +188,9 @@ const WorkspaceSchema = new Schema(
     paddleCustomer: { type: PaddleCustomerSchema },
     firstActivatedAt: { type: Date },
     conversionInProgressAt: { type: Date },
+    // Incremented transactionally to serialize writes that consume workspace
+    // feed capacity across feed creation, cloning, and personal-feed moves.
+    feedCapacityVersion: { type: Number, default: 0, select: false },
   },
   { timestamps: true },
 );

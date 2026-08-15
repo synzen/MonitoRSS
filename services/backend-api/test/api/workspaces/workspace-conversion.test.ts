@@ -16,7 +16,11 @@ import {
   createMockPaddleApi,
   buildPaddleCustomer,
 } from "../../helpers/paddle-fixtures";
-import { SubscriptionProductKey } from "../../../src/repositories/shared/enums";
+import {
+  SubscriptionProductKey,
+  UserFeedManagerInviteType,
+  UserFeedManagerStatus,
+} from "../../../src/repositories/shared/enums";
 
 async function readJson<T>(res: Response): Promise<T> {
   return (await res.json()) as T;
@@ -131,11 +135,29 @@ describe("Workspace conversion (personal → workspace)", { concurrency: true },
       title: "Feed A",
       url: "https://example.com/a.xml",
       user: { id: generateTestId(), discordUserId },
+      shareManageOptions: {
+        invites: [
+          {
+            discordUserId: randomUUID(),
+            type: UserFeedManagerInviteType.CoManage,
+            status: UserFeedManagerStatus.Pending,
+          },
+        ],
+      },
     });
     const feedB = await ctx.container.userFeedRepository.create({
       title: "Feed B",
       url: "https://example.com/b.xml",
       user: { id: generateTestId(), discordUserId },
+      shareManageOptions: {
+        invites: [
+          {
+            discordUserId: randomUUID(),
+            type: UserFeedManagerInviteType.CoManage,
+            status: UserFeedManagerStatus.Accepted,
+          },
+        ],
+      },
     });
 
     // The product/customer lookups the re-emitted webhook will perform.
@@ -201,6 +223,8 @@ describe("Workspace conversion (personal → workspace)", { concurrency: true },
     assert.strictEqual(movedB?.workspaceId, workspaceId);
     assert.strictEqual(movedA?.disabledCode, undefined);
     assert.strictEqual(movedB?.disabledCode, undefined);
+    assert.strictEqual(movedA?.shareManageOptions, undefined);
+    assert.strictEqual(movedB?.shareManageOptions, undefined);
 
     // The personal supporter record no longer carries the subscription: one
     // subscription, one owner.
@@ -316,7 +340,19 @@ describe("Workspace conversion (personal → workspace)", { concurrency: true },
       title: "Feed to roll back",
       url: "https://example.com/rollback.xml",
       user: { id: generateTestId(), discordUserId },
+      shareManageOptions: {
+        invites: [
+          {
+            discordUserId: randomUUID(),
+            type: UserFeedManagerInviteType.CoManage,
+            status: UserFeedManagerStatus.Accepted,
+          },
+        ],
+      },
     });
+    const sharingBefore = (
+      await ctx.container.userFeedRepository.findById(feed.id)
+    )?.shareManageOptions;
 
     // Paddle rejects the custom_data patch: no re-emitted webhook, the personal
     // subscription was never actually mutated on Paddle's side.
@@ -340,6 +376,7 @@ describe("Workspace conversion (personal → workspace)", { concurrency: true },
     const rolledBack = await ctx.container.userFeedRepository.findById(feed.id);
     assert.strictEqual(rolledBack?.workspaceId, undefined);
     assert.strictEqual(rolledBack?.disabledCode, undefined);
+    assert.deepStrictEqual(rolledBack?.shareManageOptions, sharingBefore);
 
     // The guard is cleared, so enforcement is not exempted going forward.
     const workspaceDoc = await ctx.connection
@@ -436,9 +473,9 @@ describe("Workspace conversion (personal → workspace)", { concurrency: true },
     // subscription has not landed yet. The convert affordance must not be
     // re-offered (which would let a second tab fire a duplicate conversion).
     await ctx.connection.collection("workspaces").updateOne(
-      { _id: new Types.ObjectId(workspaceId) },
-      { $set: { conversionInProgressAt: new Date() } },
-    );
+        { _id: new Types.ObjectId(workspaceId) },
+        { $set: { conversionInProgressAt: new Date() } },
+      );
 
     assert.strictEqual(await readConversion(user, slug), null);
   });
@@ -471,9 +508,9 @@ describe("Workspace conversion (personal → workspace)", { concurrency: true },
     // Once the guard is older than the TTL it is reclaimable, so a fresh
     // conversion can start (a dropped webhook can't block forever).
     await ctx.connection.collection("workspaces").updateOne(
-      { _id: new Types.ObjectId(workspaceId) },
+        { _id: new Types.ObjectId(workspaceId) },
       { $set: { conversionInProgressAt: new Date(Date.now() - ttlMs - 1000) } },
-    );
+      );
     assert.strictEqual(
       await ctx.container.workspaceRepository.setConversionInProgress(
         workspaceId,
@@ -501,9 +538,9 @@ describe("Workspace conversion (personal → workspace)", { concurrency: true },
       await createWorkspaceAsUser(noGuardOwner);
 
     await ctx.connection.collection("workspaces").updateOne(
-      { _id: new Types.ObjectId(liveId) },
-      { $set: { conversionInProgressAt: new Date() } },
-    );
+        { _id: new Types.ObjectId(liveId) },
+        { $set: { conversionInProgressAt: new Date() } },
+      );
     await ctx.connection.collection("workspaces").updateOne(
       { _id: new Types.ObjectId(expiredId) },
       {
