@@ -11,6 +11,7 @@ export interface GetUserFeedsInput {
     computedStatuses?: UserFeedComputedStatus[];
     disabledCodes?: UserFeedDisabledCode[];
     hasConnections?: boolean;
+    ownedByUser?: boolean;
   };
   /**
    * Optional workspace scope. Undefined = personal feeds; set = the workspace's feeds.
@@ -41,6 +42,10 @@ export const getUserFeeds = async (options: GetUserFeedsInput): Promise<GetUserF
 
   if (options.filters?.hasConnections !== undefined) {
     params.append(`filters[hasConnections]`, String(options.filters.hasConnections));
+  }
+
+  if (options.filters?.ownedByUser !== undefined) {
+    params.append(`filters[ownedByUser]`, String(options.filters.ownedByUser));
   }
 
   if (options.workspaceId) {

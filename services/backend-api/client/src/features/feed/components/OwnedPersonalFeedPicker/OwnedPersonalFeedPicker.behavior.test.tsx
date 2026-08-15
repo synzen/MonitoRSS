@@ -5,17 +5,14 @@ import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
-import { ConvertPersonalPlanFeedList } from "./ConvertPersonalPlanFeedList";
-import { useUserFeedsInfinite } from "../../../feed/hooks/useUserFeedsInfinite";
-import { getUserFeeds } from "../../../feed/api";
+import { OwnedPersonalFeedPicker } from "./OwnedPersonalFeedPicker";
+import { useOwnedPersonalFeeds } from "../../hooks/useOwnedPersonalFeeds";
 
-vi.mock("../../../feed/hooks/useUserFeedsInfinite", () => ({
-  useUserFeedsInfinite: vi.fn(),
+vi.mock("../../hooks/useOwnedPersonalFeeds", () => ({
+  useOwnedPersonalFeeds: vi.fn(),
 }));
 
-vi.mock("../../../feed/api", () => ({
-  getUserFeeds: vi.fn(),
-}));
+const getByAge = vi.fn();
 
 const PAGE_SIZE = 25;
 
@@ -26,7 +23,7 @@ const makeFeeds = (n: number, startId = 1) =>
     createdAt: new Date(2020, 0, startId + i).toISOString(),
   }));
 
-// A stateful fake of useUserFeedsInfinite: feeds are paginated, fetchNextPage
+// A stateful fake of useOwnedPersonalFeeds: feeds are paginated, fetchNextPage
 // reveals the next page and re-renders, and setSearch filters by title and
 // resets pagination — mirroring how the real infinite query progresses. This
 // exercises both the seeding-across-pages logic and the search interactions.
@@ -64,11 +61,11 @@ const installPaginatedFeeds = (allFeeds: Array<{ id: string; title: string }>) =
     };
   };
 
-  vi.mocked(useUserFeedsInfinite).mockImplementation(() => {
+  vi.mocked(useOwnedPersonalFeeds).mockImplementation(() => {
     const [, force] = useReducer((n: number) => n + 1, 0);
     rerender = force;
 
-    return read() as never;
+    return { ...read(), getByAge } as never;
   });
 };
 
@@ -89,10 +86,10 @@ const Harness = ({
 
   return (
     <ChakraProvider value={system}>
-      <ConvertPersonalPlanFeedList
+      <OwnedPersonalFeedPicker
         selectedIds={selected}
         onSelectedIdsChange={setSelected}
-        feedLimit={feedLimit}
+        allowance={feedLimit}
         onLoaded={vi.fn()}
         onSharingChange={onSharingChange}
         onRedditChange={onRedditChange}
@@ -104,9 +101,10 @@ const Harness = ({
 const REDDIT_URL = "https://www.reddit.com/r/rss/.rss";
 const NON_REDDIT_URL = "https://example.com/feed.xml";
 
-describe("ConvertPersonalPlanFeedList", () => {
+describe("OwnedPersonalFeedPicker behavior", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getByAge.mockReset();
   });
 
   it("selects every feed by default, loading lazy pages so none is left unchecked", async () => {
@@ -143,7 +141,7 @@ describe("ConvertPersonalPlanFeedList", () => {
     // page. The picked feeds surface at the top, checked.
     installPaginatedFeeds(makeFeeds(104));
     const newest70 = makeFeeds(70, 35).reverse(); // ids 104..35, newest-first
-    vi.mocked(getUserFeeds).mockResolvedValue({
+    getByAge.mockResolvedValue({
       results: newest70,
       total: 104,
       feedsWithoutConnections: 0,
@@ -155,9 +153,7 @@ describe("ConvertPersonalPlanFeedList", () => {
     await userEvent.click(screen.getByRole("button", { name: /select my newest 70 feeds/i }));
 
     // The request asked for exactly the cap, newest-first.
-    expect(getUserFeeds).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 70, sort: "-createdAt" }),
-    );
+    expect(getByAge).toHaveBeenCalledWith("newest", 70);
 
     await waitFor(() => {
       const checked = screen
@@ -174,7 +170,7 @@ describe("ConvertPersonalPlanFeedList", () => {
     expect(
       screen.getAllByText(/Selected your newest 70 feeds, shown first below/i).length,
     ).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/34 stay on your personal plan/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/34 remain personal/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it("moves focus to 'Clear selection' after auto-pick, so the keyboard user is not stranded", async () => {
@@ -182,7 +178,7 @@ describe("ConvertPersonalPlanFeedList", () => {
     // selection". Without a focus handoff, the unmounted button would drop focus
     // to the body. Focus must land on the successor control.
     installPaginatedFeeds(makeFeeds(104));
-    vi.mocked(getUserFeeds).mockResolvedValue({
+    getByAge.mockResolvedValue({
       results: makeFeeds(70, 1),
       total: 104,
       feedsWithoutConnections: 0,
@@ -193,13 +189,15 @@ describe("ConvertPersonalPlanFeedList", () => {
     await screen.findByRole("checkbox", { name: /^Feed 1$/ });
     await userEvent.click(screen.getByRole("button", { name: /select my newest 70 feeds/i }));
 
-    const clearButton = await screen.findByRole("button", { name: /clear selection/i });
+    const clearButton = await screen.findByRole("button", {
+      name: /clear selection/i,
+    });
     await waitFor(() => expect(clearButton).toHaveFocus());
   });
 
   it("returns focus to the auto-pick action after clearing, so focus is never lost", async () => {
     installPaginatedFeeds(makeFeeds(104));
-    vi.mocked(getUserFeeds).mockResolvedValue({
+    getByAge.mockResolvedValue({
       results: makeFeeds(70, 1),
       total: 104,
       feedsWithoutConnections: 0,
@@ -219,7 +217,7 @@ describe("ConvertPersonalPlanFeedList", () => {
 
   it("auto-picks oldest with the ascending sort when the owner switches direction", async () => {
     installPaginatedFeeds(makeFeeds(104));
-    vi.mocked(getUserFeeds).mockResolvedValue({
+    getByAge.mockResolvedValue({
       results: makeFeeds(70, 1),
       total: 104,
       feedsWithoutConnections: 0,
@@ -228,12 +226,10 @@ describe("ConvertPersonalPlanFeedList", () => {
     render(<Harness feedLimit={70} />);
 
     await screen.findByRole("checkbox", { name: /^Feed 1$/ });
-    await userEvent.selectOptions(screen.getByLabelText(/which feeds to bring/i), "oldest");
+    await userEvent.selectOptions(screen.getByLabelText(/which feeds to select/i), "oldest");
     await userEvent.click(screen.getByRole("button", { name: /select my oldest 70 feeds/i }));
 
-    expect(getUserFeeds).toHaveBeenCalledWith(
-      expect.objectContaining({ limit: 70, sort: "createdAt" }),
-    );
+    expect(getByAge).toHaveBeenCalledWith("oldest", 70);
     await waitFor(() => {
       const checked = screen
         .getAllByRole("checkbox")
@@ -264,7 +260,7 @@ describe("ConvertPersonalPlanFeedList", () => {
 
   it("surfaces a recoverable error if the auto-pick request fails", async () => {
     installPaginatedFeeds(makeFeeds(104));
-    vi.mocked(getUserFeeds).mockRejectedValue(new Error("network"));
+    getByAge.mockRejectedValue(new Error("network"));
 
     render(<Harness feedLimit={70} />);
 
@@ -324,7 +320,7 @@ describe("ConvertPersonalPlanFeedList", () => {
     // meaningful against the full list. Running it under a search filter would
     // leave the result hidden behind the filter, so auto-pick clears the search.
     installPaginatedFeeds(makeFeeds(104));
-    vi.mocked(getUserFeeds).mockResolvedValue({
+    getByAge.mockResolvedValue({
       results: makeFeeds(70, 35).reverse(),
       total: 104,
       feedsWithoutConnections: 0,
@@ -358,7 +354,7 @@ describe("ConvertPersonalPlanFeedList", () => {
     // exactly once and checked; Feed 90 (loaded? no — off page) — instead use
     // an un-picked feed visible after the pick to confirm it stays unchecked.
     installPaginatedFeeds(makeFeeds(104));
-    vi.mocked(getUserFeeds).mockResolvedValue({
+    getByAge.mockResolvedValue({
       results: makeFeeds(70, 1), // oldest-first: feeds 1..70
       total: 104,
       feedsWithoutConnections: 0,
@@ -367,7 +363,7 @@ describe("ConvertPersonalPlanFeedList", () => {
     render(<Harness feedLimit={70} />);
 
     await screen.findByRole("checkbox", { name: /^Feed 1$/ });
-    await userEvent.selectOptions(screen.getByLabelText(/which feeds to bring/i), "oldest");
+    await userEvent.selectOptions(screen.getByLabelText(/which feeds to select/i), "oldest");
     await userEvent.click(screen.getByRole("button", { name: /select my oldest 70 feeds/i }));
     await waitFor(() => expect(screen.getByRole("checkbox", { name: /^Feed 1$/ })).toBeChecked());
 
@@ -388,7 +384,7 @@ describe("ConvertPersonalPlanFeedList", () => {
     // the actual DOM order: the picked feed (Feed 80, off the first page) comes
     // before the first browse-list feed (Feed 1).
     installPaginatedFeeds(makeFeeds(104));
-    vi.mocked(getUserFeeds).mockResolvedValue({
+    getByAge.mockResolvedValue({
       results: makeFeeds(70, 35).reverse(), // newest-first: 104..35
       total: 104,
       feedsWithoutConnections: 0,
@@ -418,7 +414,7 @@ describe("ConvertPersonalPlanFeedList", () => {
     // searches, the list must show the SEARCH MATCHES, not keep showing 70
     // unfiltered pinned rows — searching for one feed should not surface 70.
     installPaginatedFeeds(makeFeeds(104));
-    vi.mocked(getUserFeeds).mockResolvedValue({
+    getByAge.mockResolvedValue({
       results: makeFeeds(70, 1),
       total: 104,
       feedsWithoutConnections: 0,
@@ -531,7 +527,9 @@ describe("ConvertPersonalPlanFeedList", () => {
 
     await screen.findByRole("checkbox", { name: /^Reddit One$/ });
     await waitFor(() =>
-      expect(onRedditChange).toHaveBeenLastCalledWith({ redditSelectedCount: 2 }),
+      expect(onRedditChange).toHaveBeenLastCalledWith({
+        redditSelectedCount: 2,
+      }),
     );
   });
 
@@ -541,14 +539,20 @@ describe("ConvertPersonalPlanFeedList", () => {
 
     render(<Harness feedLimit={70} onRedditChange={onRedditChange} />);
 
-    const checkbox = await screen.findByRole("checkbox", { name: /^Reddit One$/ });
+    const checkbox = await screen.findByRole("checkbox", {
+      name: /^Reddit One$/,
+    });
     await waitFor(() =>
-      expect(onRedditChange).toHaveBeenLastCalledWith({ redditSelectedCount: 1 }),
+      expect(onRedditChange).toHaveBeenLastCalledWith({
+        redditSelectedCount: 1,
+      }),
     );
 
     await userEvent.click(checkbox);
     await waitFor(() =>
-      expect(onRedditChange).toHaveBeenLastCalledWith({ redditSelectedCount: 0 }),
+      expect(onRedditChange).toHaveBeenLastCalledWith({
+        redditSelectedCount: 0,
+      }),
     );
   });
 
@@ -566,9 +570,11 @@ describe("ConvertPersonalPlanFeedList", () => {
 
     render(<Harness feedLimit={70} />);
 
-    const checkbox = await screen.findByRole("checkbox", { name: /^Reddit One$/ });
+    const checkbox = await screen.findByRole("checkbox", {
+      name: /^Reddit One$/,
+    });
     await userEvent.click(checkbox);
-    expect(screen.getByText(/Reddit. Staying personal, connection kept/i)).toBeVisible();
+    expect(screen.getByText(/Reddit. Remains personal, connection kept/i)).toBeVisible();
   });
 
   it("drops the feed from the warning when it is unselected, and reassures it stays shared", async () => {
@@ -584,7 +590,9 @@ describe("ConvertPersonalPlanFeedList", () => {
     render(<Harness feedLimit={70} onSharingChange={onSharingChange} />);
 
     // Selected by default -> warned.
-    const checkbox = await screen.findByRole("checkbox", { name: /^Shared Feed$/ });
+    const checkbox = await screen.findByRole("checkbox", {
+      name: /^Shared Feed$/,
+    });
     await waitFor(() =>
       expect(onSharingChange).toHaveBeenLastCalledWith(
         expect.objectContaining({ sharedSelectedCount: 1 }),
@@ -599,6 +607,6 @@ describe("ConvertPersonalPlanFeedList", () => {
         expect.objectContaining({ sharedSelectedCount: 0 }),
       ),
     );
-    expect(screen.getByText("Shared. Staying personal, sharing kept")).toBeVisible();
+    expect(screen.getByText("Shared. Remains personal, sharing kept")).toBeVisible();
   });
 });

@@ -27,3 +27,4 @@ export * from "./useDeliveryPreviewWithPagination";
 export * from "./useCuratedFeeds";
 export * from "./useCuratedFeedPreview";
 export * from "./useUnconfiguredFeeds";
+export * from "./useOwnedPersonalFeeds";

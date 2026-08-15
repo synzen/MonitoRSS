@@ -14,14 +14,31 @@ import { FaChevronRight, FaUpRightFromSquare } from "react-icons/fa6";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { DiscordUsername } from "@/features/discordUser";
 import { pages } from "@/constants";
+import { OwnedPersonalFeedPicker, type OwnedPersonalFeedPickerCopy } from "@/features/feed";
 import { useConvertWorkspaceBilling } from "../../hooks";
-import { ConvertPersonalPlanFeedList } from "./ConvertPersonalPlanFeedList";
 
 interface SharingInfo {
   sharedSelectedCount: number;
   affectedUserIds: string[];
   anyConnectionScoped: boolean;
 }
+
+const planConversionPickerCopy: Partial<OwnedPersonalFeedPickerCopy> = {
+  legend: "Feeds to bring to this workspace",
+  capacityFull: "Plan full",
+  autoPickDirectionLabel: "Which feeds to bring when you have more than the plan allows",
+  autoPickLead: "Bring my",
+  pickedResult: (direction, selected, remaining) =>
+    `Selected your ${direction} ${selected} feeds, shown first below.${
+      remaining > 0 ? ` ${remaining} stay on your personal plan.` : ""
+    }`,
+  unselectedPlain: "Stays personal",
+  sharedSelected: "Shared. Its co-managers lose access when this feed moves to the workspace.",
+  sharedUnselected: "Shared. Staying on your personal plan, so its sharing is kept.",
+  redditUnselected: "Reddit feed. Staying on your personal plan, so its connection is kept.",
+  sharedUnselectedBadge: "Shared. Staying personal, sharing kept",
+  redditUnselectedBadge: "Reddit. Staying personal, connection kept",
+};
 
 // The feed-move dialog for activating a workspace by moving a personal plan
 // onto it. The common case (more slots than feeds) is a one-click "bring
@@ -50,7 +67,10 @@ export const ConvertPersonalPlanDialog = ({
 }) => {
   const convertMutation = useConvertWorkspaceBilling();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [loadInfo, setLoadInfo] = useState<{ total: number; overLimit: boolean } | null>(null);
+  const [loadInfo, setLoadInfo] = useState<{
+    total: number;
+    overLimit: boolean;
+  } | null>(null);
   const [sharing, setSharing] = useState<SharingInfo | null>(null);
   const [redditSelectedCount, setRedditSelectedCount] = useState(0);
   // The under-limit feed list is a disclosure. Controlled so it can auto-open
@@ -144,10 +164,11 @@ export const ConvertPersonalPlanDialog = ({
   };
 
   const feedList = (
-    <ConvertPersonalPlanFeedList
+    <OwnedPersonalFeedPicker
       selectedIds={selectedIds}
       onSelectedIdsChange={setSelectedIds}
-      feedLimit={feedLimit}
+      allowance={feedLimit}
+      copy={planConversionPickerCopy}
       onLoaded={setLoadInfo}
       onSharingChange={onSharingChange}
       onRedditChange={onRedditChange}
