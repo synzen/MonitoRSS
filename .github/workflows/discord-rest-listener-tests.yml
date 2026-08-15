@@ -1,6 +1,11 @@
 name: Discord REST Listener Tests
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "services/discord-rest-listener/**"
+      - ".github/workflows/discord-rest-listener-tests.yml"
   pull_request:
     branches: [main]
     paths:
