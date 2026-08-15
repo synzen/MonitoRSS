@@ -17,11 +17,10 @@ import {
   chakra,
 } from "@chakra-ui/react";
 import { FaMagnifyingGlass, FaUpRightFromSquare, FaXmark } from "react-icons/fa6";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { captureException } from "@sentry/react";
-import { useUserFeedsInfinite } from "../../../feed/hooks/useUserFeedsInfinite";
-import { getUserFeeds } from "../../../feed/api";
-import { isRedditFeedUrl } from "../../../feed/utils/isRedditFeedUrl";
+import { useOwnedPersonalFeeds } from "../../hooks/useOwnedPersonalFeeds";
+import { isRedditFeedUrl } from "../../utils/isRedditFeedUrl";
 import { InlineErrorAlert } from "@/components";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
@@ -30,50 +29,83 @@ import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
 
 const LIMIT = 25;
 
-type KeepDirection = "newest" | "oldest";
+export type KeepDirection = "newest" | "oldest";
+
+export interface OwnedPersonalFeedPickerCopy {
+  legend: string;
+  capacityFull: string;
+  autoPickDirectionLabel: string;
+  autoPickLead: string;
+  autoPickSuffix: (allowance: number) => string;
+  autoPickButton: string;
+  autoPickButtonLabel: (direction: KeepDirection, allowance: number) => string;
+  pickedResult: (direction: KeepDirection, selected: number, remaining: number) => string;
+  unselectedPlain: string;
+  sharedSelected: string;
+  sharedConnectionScopedSelected: string;
+  sharedUnselected: string;
+  redditSelected: string;
+  redditUnselected: string;
+  sharedSelectedBadge: string;
+  sharedConnectionScopedSelectedBadge: string;
+  sharedUnselectedBadge: string;
+  redditSelectedBadge: string;
+  redditUnselectedBadge: string;
+}
+
+const defaultCopy: OwnedPersonalFeedPickerCopy = {
+  legend: "Personal feeds to select",
+  capacityFull: "Capacity full",
+  autoPickDirectionLabel: "Which feeds to select when they do not all fit",
+  autoPickLead: "Select my",
+  autoPickSuffix: (allowance) => `${allowance} feeds:`,
+  autoPickButton: "Select them for me",
+  autoPickButtonLabel: (direction, allowance) => `Select my ${direction} ${allowance} feeds`,
+  pickedResult: (direction, selected, remaining) =>
+    `Selected your ${direction} ${selected} feeds, shown first below.${
+      remaining > 0 ? ` ${remaining} remain personal.` : ""
+    }`,
+  unselectedPlain: "Remains personal",
+  sharedSelected: "Shared. Its co-managers lose access when this feed moves.",
+  sharedConnectionScopedSelected:
+    "Shared. A co-manager has access to only some connections; moving this feed gives them access to the whole feed in the workspace.",
+  sharedUnselected: "Shared. This feed remains personal, so its sharing is kept.",
+  redditSelected: "Reddit feed. It will pause until you connect Reddit to this workspace.",
+  redditUnselected: "Reddit feed. This feed remains personal, so its connection is kept.",
+  sharedSelectedBadge: "Shared. Co-managers lose access",
+  sharedConnectionScopedSelectedBadge: "Shared. Per-connection access dropped",
+  sharedUnselectedBadge: "Shared. Remains personal, sharing kept",
+  redditSelectedBadge: "Reddit. Will pause until connected",
+  redditUnselectedBadge: "Reddit. Remains personal, connection kept",
+};
 
 interface Props {
-  // The feeds the owner has chosen to move. Owned by the dialog so it can drive
-  // the over-capacity guard and the conversion payload.
   selectedIds: Set<string>;
   onSelectedIdsChange: (next: Set<string>) => void;
-  // The moving plan's feed limit. When the owner has more feeds than this, the
-  // list opens empty (the owner triages which to bring) and the bulk actions
-  // fill selection only up to this cap.
-  feedLimit: number;
-  // Lets the dialog react once the total is known (e.g. to frame the over-limit
-  // case) without re-deriving it.
+  allowance: number;
+  copy?: Partial<OwnedPersonalFeedPickerCopy>;
   onLoaded?: (info: { total: number; overLimit: boolean }) => void;
-  // Lets the dialog surface a warning when any SELECTED feed has co-managers
-  // (feed sharing does not carry into a workspace). Recomputed as the selection
-  // changes so the warning tracks what is actually being moved.
   onSharingChange?: (info: {
     sharedSelectedCount: number;
     affectedUserIds: string[];
     anyConnectionScoped: boolean;
   }) => void;
-  // Lets the dialog surface a warning when any SELECTED feed is a Reddit feed.
-  // A workspace feed resolves the WORKSPACE's Reddit connection, never the
-  // owner's personal one, so a moved Reddit feed pauses until the workspace has
-  // its own grant. The list only reports the count; the dialog decides whether
-  // to warn (it knows whether the workspace already has an active grant).
   onRedditChange?: (info: { redditSelectedCount: number }) => void;
-  // Fired on a user-driven selection edit (a row toggle, auto-pick, or clear) but
-  // NOT the initial auto-seed. The dialog uses this to know the warnings have
-  // become live updates (vs. static open-read content), so its aria-live regions
-  // may start announcing without double-reading on open.
   onUserEdit?: () => void;
 }
 
-export const ConvertPersonalPlanFeedList = ({
+export const OwnedPersonalFeedPicker = ({
   selectedIds,
   onSelectedIdsChange,
-  feedLimit,
+  allowance,
+  copy: copyOverrides,
   onLoaded,
   onSharingChange,
   onRedditChange,
   onUserEdit,
 }: Props) => {
+  const copy = { ...defaultCopy, ...copyOverrides };
+  const keepDirectionId = useId();
   const [searchInput, setSearchInput] = useState("");
   const [keep, setKeep] = useState<KeepDirection>("newest");
   const {
@@ -86,11 +118,8 @@ export const ConvertPersonalPlanFeedList = ({
     setSearch,
     isFetching,
     search,
-  } = useUserFeedsInfinite(
-    // Oldest-first for a stable, deterministic display order across pages.
-    { limit: LIMIT, sort: "createdAt" },
-    { forcePersonal: true },
-  );
+    getByAge,
+  } = useOwnedPersonalFeeds({ limit: LIMIT, sort: "createdAt" });
 
   const totalCount = data?.pages[0]?.total;
   const browseFeeds = data?.pages.flatMap((p) => p.results) ?? [];
@@ -108,7 +137,7 @@ export const ConvertPersonalPlanFeedList = ({
   }
 
   const fullTotal = fullTotalRef.current;
-  const overLimit = fullTotal !== undefined && fullTotal > feedLimit;
+  const overLimit = fullTotal !== undefined && fullTotal > allowance;
 
   // Sharing data for the warning, keyed by feed id and accumulated across every
   // feed we have seen (browse pages + auto-pick results). A feed can be selected
@@ -139,7 +168,10 @@ export const ConvertPersonalPlanFeedList = ({
   // sit at the tail of the oldest-first browse list) are surfaced as their own
   // block above the browse list, so the result is immediately visible instead of
   // a count over empty-looking rows. Cleared the moment the owner hand-edits.
-  const [pickedTop, setPickedTop] = useState<Array<{ id: string; title: string }> | null>(null);
+  const [pickedTop, setPickedTop] = useState<Array<{
+    id: string;
+    title: string;
+  }> | null>(null);
   const [resultLine, setResultLine] = useState<string | null>(null);
   const [isPicking, setIsPicking] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
@@ -192,12 +224,8 @@ export const ConvertPersonalPlanFeedList = ({
     }
   });
 
-  // Under the limit the safe default is "bring everything", which needs explicit
-  // ids (the convert API moves an explicit list), so all feeds must be loaded
-  // first — a bounded set, at most the plan limit. Over the limit there is no
-  // sensible machine default ("which of your 104 feeds matter?" is the user's
-  // call), so the list opens empty and the owner picks. `seededRef` makes the
-  // bring-all default fire exactly once.
+  // Under the allowance, every eligible id must be loaded before seeding the
+  // controlled selection. Oversized collections start empty so the user chooses.
   const seededRef = useRef(false);
   const announcedLoadRef = useRef(false);
 
@@ -292,11 +320,7 @@ export const ConvertPersonalPlanFeedList = ({
     setPickError(null);
 
     try {
-      const { results } = await getUserFeeds({
-        limit: feedLimit,
-        offset: 0,
-        sort: keep === "newest" ? "-createdAt" : "createdAt",
-      });
+      const { results } = await getByAge(keep, allowance);
       // Auto-pick operates on the full account, and its picked-to-top result is
       // only visible on the unfiltered list — so clear any active search first.
       // Clearing to empty does not trigger the search effect that drops the pick
@@ -319,9 +343,7 @@ export const ConvertPersonalPlanFeedList = ({
       // "Clear selection"; hand focus there after the swap.
       focusClearAfterPickRef.current = true;
       const left = (fullTotal ?? results.length) - results.length;
-      const line = `Selected your ${keep} ${results.length} feeds, shown first below.${
-        left > 0 ? ` ${left} stay on your personal plan.` : ""
-      }`;
+      const line = copy.pickedResult(keep, results.length, left);
       setResultLine(line);
       announce(line);
     } catch (err) {
@@ -350,12 +372,12 @@ export const ConvertPersonalPlanFeedList = ({
       next.add(id);
     }
 
-    const over = next.size - feedLimit;
+    const over = next.size - allowance;
     const verb = selectedIds.has(id) ? "Removed" : "Added";
     announce(
       over > 0
-        ? `${verb} ${title}. ${next.size} of ${feedLimit}; remove ${over} to continue.`
-        : `${verb} ${title}. ${feedLimit - next.size} slots left.`,
+        ? `${verb} ${title}. ${next.size} of ${allowance}; remove ${over} to continue.`
+        : `${verb} ${title}. ${allowance - next.size} slots left.`,
     );
     onSelectedIdsChange(next);
   };
@@ -364,15 +386,15 @@ export const ConvertPersonalPlanFeedList = ({
     onUserEdit?.();
     clearPickFraming();
     onSelectedIdsChange(new Set());
-    announce(`Cleared. ${feedLimit} slots left.`);
+    announce(`Cleared. ${allowance} slots left.`);
     // Clearing drops below the cap, so the header swaps this button back for the
     // auto-pick action; hand focus there after the swap.
     focusAutoPickAfterClearRef.current = true;
   };
 
-  const remaining = feedLimit - selectedIds.size;
+  const remaining = allowance - selectedIds.size;
   const atCap = remaining === 0;
-  const overBy = Math.max(0, selectedIds.size - feedLimit);
+  const overBy = Math.max(0, selectedIds.size - allowance);
   const overCap = overBy > 0;
 
   // The rows to render: after an auto-pick, the picked feeds first (a bounded
@@ -417,9 +439,9 @@ export const ConvertPersonalPlanFeedList = ({
     let redditDescription = "";
 
     if (isReddit && isSelected) {
-      redditDescription = "Reddit feed. It will pause until you connect Reddit to this workspace.";
+      redditDescription = copy.redditSelected;
     } else if (isReddit && !isSelected) {
-      redditDescription = "Reddit feed. Staying on your personal plan, so its connection is kept.";
+      redditDescription = copy.redditUnselected;
     }
 
     // The per-feed sharing detail, tied to THIS checkbox via aria-describedby so
@@ -432,10 +454,10 @@ export const ConvertPersonalPlanFeedList = ({
 
     if (isShared && isSelected) {
       sharedDescription = isConnectionScoped
-        ? "Shared. A co-manager has access to only some connections; moving this feed gives them access to the whole feed in the workspace."
-        : "Shared. Its co-managers lose access when this feed moves to the workspace.";
+        ? copy.sharedConnectionScopedSelected
+        : copy.sharedSelected;
     } else if (isShared && !isSelected) {
-      sharedDescription = "Shared. Staying on your personal plan, so its sharing is kept.";
+      sharedDescription = copy.sharedUnselected;
     }
 
     return (
@@ -490,16 +512,14 @@ export const ConvertPersonalPlanFeedList = ({
                 {/* eslint-disable-next-line no-nested-ternary */}
                 {isSelected
                   ? isConnectionScoped
-                    ? "Shared. Per-connection access dropped"
-                    : "Shared. Co-managers lose access"
-                  : "Shared. Staying personal, sharing kept"}
+                    ? copy.sharedConnectionScopedSelectedBadge
+                    : copy.sharedSelectedBadge
+                  : copy.sharedUnselectedBadge}
               </Badge>
             ) : null}
             {isReddit ? (
               <Badge colorPalette={isSelected ? "orange" : undefined} variant="subtle" size="sm">
-                {isSelected
-                  ? "Reddit. Will pause until connected"
-                  : "Reddit. Staying personal, connection kept"}
+                {isSelected ? copy.redditSelectedBadge : copy.redditUnselectedBadge}
               </Badge>
             ) : null}
           </HStack>
@@ -516,7 +536,7 @@ export const ConvertPersonalPlanFeedList = ({
             visibility={isSelected ? "hidden" : "visible"}
             aria-hidden
           >
-            Stays personal
+            {copy.unselectedPlain}
           </chakra.span>
         )}
         {/* Lets the owner review this feed's co-managers before deciding. Opens
@@ -526,7 +546,9 @@ export const ConvertPersonalPlanFeedList = ({
         {isShared ? (
           <Box pl="calc(var(--chakra-spacing-6) + var(--chakra-spacing-2))" mt={1}>
             <Link
-              href={pages.userFeed(feed.id, { tab: UserFeedTabSearchParam.Settings })}
+              href={pages.userFeed(feed.id, {
+                tab: UserFeedTabSearchParam.Settings,
+              })}
               target="_blank"
               rel="noopener noreferrer"
               color="text.link"
@@ -592,7 +614,7 @@ export const ConvertPersonalPlanFeedList = ({
         maxHeight={overLimit ? 520 : 350}
         overflow="auto"
       >
-        <VisuallyHidden as="legend">Feeds to bring to this workspace</VisuallyHidden>
+        <VisuallyHidden as="legend">{copy.legend}</VisuallyHidden>
         {overLimit && (
           // A sticky control header: the capacity meter, progress bar, and the
           // one bulk action stay in view while the list scrolls, and sit at the
@@ -619,18 +641,22 @@ export const ConvertPersonalPlanFeedList = ({
                     fontSize="sm"
                     color={overCap ? "text.warning" : undefined}
                   >
-                    {selectedIds.size} of {feedLimit} selected
+                    {selectedIds.size} of {allowance} selected
                   </Text>
                   <Text fontSize="xs" color={atCap || overCap ? "text.warning" : "fg.muted"}>
                     {/* eslint-disable-next-line no-nested-ternary */}
-                    {overCap ? `Remove ${overBy}` : atCap ? "Plan full" : `${remaining} slots left`}
+                    {overCap
+                      ? `Remove ${overBy}`
+                      : atCap
+                        ? copy.capacityFull
+                        : `${remaining} slots left`}
                   </Text>
                 </HStack>
                 {/* The bar saturates at the cap; over-capacity is carried by the
                     warning text, not an overflowing bar. */}
                 <Progress.Root
-                  value={Math.min(selectedIds.size, feedLimit)}
-                  max={feedLimit}
+                  value={Math.min(selectedIds.size, allowance)}
+                  max={allowance}
                   size="sm"
                   colorPalette={overCap ? "orange" : "brand"}
                   aria-hidden
@@ -656,12 +682,12 @@ export const ConvertPersonalPlanFeedList = ({
                   {/* The select's accessible name is a visually-hidden label tied
                       by htmlFor; the visible "Bring my … feeds" prose gives the
                       sighted reading and is aria-hidden to avoid duplication. */}
-                  <chakra.label htmlFor="convert-keep-direction" srOnly>
-                    Which feeds to bring when you have more than the plan allows
+                  <chakra.label htmlFor={keepDirectionId} srOnly>
+                    {copy.autoPickDirectionLabel}
                   </chakra.label>
-                  <Text aria-hidden>Bring my</Text>
+                  <Text aria-hidden>{copy.autoPickLead}</Text>
                   <chakra.select
-                    id="convert-keep-direction"
+                    id={keepDirectionId}
                     value={keep}
                     onChange={(e) => setKeep(e.target.value as KeepDirection)}
                     bg="bg.panel"
@@ -675,15 +701,15 @@ export const ConvertPersonalPlanFeedList = ({
                     <option value="newest">newest</option>
                     <option value="oldest">oldest</option>
                   </chakra.select>
-                  <Text aria-hidden>{feedLimit} feeds:</Text>
+                  <Text aria-hidden>{copy.autoPickSuffix(allowance)}</Text>
                   <PrimaryActionButton
                     ref={autoPickButtonRef}
                     size="xs"
                     onClick={autoPick}
                     loading={isPicking}
-                    aria-label={`Select my ${keep} ${feedLimit} feeds`}
+                    aria-label={copy.autoPickButtonLabel(keep, allowance)}
                   >
-                    Select them for me
+                    {copy.autoPickButton}
                   </PrimaryActionButton>
                 </HStack>
               )}
