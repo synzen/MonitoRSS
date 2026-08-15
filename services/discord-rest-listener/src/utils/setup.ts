@@ -46,6 +46,7 @@ async function setup (config: ConfigType) {
 
   return {
     orm,
+    amqpConnection,
     amqpChannelWrapper,
     pollInterval,
   }

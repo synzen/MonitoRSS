@@ -11,7 +11,9 @@ describe("consumer integration", () => {
   let ctx: TestContext
 
   before(async () => {
-    ctx = await createTestContext()
+    ctx = await createTestContext({
+      configOverrides: { exitOnGlobalBlock: true },
+    })
   })
 
   after(async () => {
@@ -287,7 +289,7 @@ describe("consumer integration", () => {
   // NOTE: this test must run LAST. The Cloudflare 429 handler in synzen's
   // RESTHandler globally blocks the queue for 3 hours, which would cause every
   // subsequent test to hang waiting for the bucket to unblock.
-  it("[LIBRARY] Cloudflare 429 (x-ratelimit-global + no retry-after) calls exit(0)", async () => {
+  it("[LIBRARY] Cloudflare 429 (x-ratelimit-global + no retry-after) calls exit(0) when configured", async () => {
     // LIBRARY BEHAVIOR: synzen's Bucket treats 429 with x-ratelimit-global header
     // but no parseable retry-after as a Cloudflare ban, emits 'cloudflareRateLimit',
     // which RESTConsumer surfaces as a 'globalBlock' event and our handler maps to

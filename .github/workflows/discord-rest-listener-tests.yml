@@ -1,0 +1,24 @@
+name: Discord REST Listener Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/discord-rest-listener/**"
+      - ".github/workflows/discord-rest-listener-tests.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "services/discord-rest-listener/**"
+      - ".github/workflows/discord-rest-listener-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run discord-rest-listener tests
+        working-directory: services/discord-rest-listener
+        run: bash test.sh

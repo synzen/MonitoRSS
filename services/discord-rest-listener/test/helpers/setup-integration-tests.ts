@@ -39,6 +39,7 @@ export function setupTestEnvironment(): TestEnvironment {
     rabbitmqUri: RABBITMQ_URI,
     discordClientId: clientId,
     maxRequestsPerSecond: 100,
+    exitOnGlobalBlock: false,
   }
 
   return {

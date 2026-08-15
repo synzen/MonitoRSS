@@ -42,3 +42,4 @@ yarn.lock
 
 **/config.json
 *.sh
+!/test.sh
