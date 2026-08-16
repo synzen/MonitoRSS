@@ -1,7 +1,4 @@
-import { ReactElement, ReactNode, createContext, useContext, useMemo } from "react";
-import { Spinner } from "@chakra-ui/react";
-import { ErrorAlert } from "@/components/ErrorAlert";
-import { useWorkspace } from "../hooks";
+import { ReactNode, createContext, useContext, useMemo } from "react";
 import { Workspace, WorkspaceRole } from "../types";
 
 export interface CurrentWorkspace {
@@ -27,18 +24,12 @@ export interface CurrentWorkspace {
 const CurrentWorkspaceContext = createContext<CurrentWorkspace | null>(null);
 
 export const CurrentWorkspaceProvider = ({
-  workspaceSlug,
+  workspace,
   children,
-  loadingComponent,
-  errorComponent,
 }: {
-  workspaceSlug?: string;
+  workspace?: Workspace;
   children: ReactNode;
-  loadingComponent?: ReactElement;
-  errorComponent?: ReactElement;
 }) => {
-  const { workspace, status, error } = useWorkspace({ workspaceSlug });
-
   const value = useMemo<CurrentWorkspace | null>(
     () =>
       workspace
@@ -53,14 +44,6 @@ export const CurrentWorkspaceProvider = ({
         : null,
     [workspace],
   );
-
-  if (error) {
-    return errorComponent || <ErrorAlert description={error.message} />;
-  }
-
-  if (status === "loading" || !workspace) {
-    return loadingComponent || <Spinner />;
-  }
 
   return (
     <CurrentWorkspaceContext.Provider value={value}>{children}</CurrentWorkspaceContext.Provider>

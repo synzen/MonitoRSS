@@ -1,4 +1,4 @@
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate, Outlet } from "react-router-dom";
 import * as Sentry from "@sentry/react";
 import { Heading, Stack } from "@chakra-ui/react";
 import { Suspense } from "react";
@@ -172,24 +172,21 @@ const Pages: React.FC = () => (
       }
     />
     {/* Workspace-scoped routes reuse the same page components as personal scope.
-        WorkspaceScopeLayout provides the workspace + feed scope so feed queries,
-        mutations, and links stay workspace-scoped. Each child renders its own header
-        (mirroring the personal routes) so the message-builder route can be
-        full-screen with no header, exactly like personal scope. */}
+        The pathless layouts keep the header outside the async content boundary while
+        preserving the full-screen message-builder route. */}
     <Route
       path="/workspaces/:workspaceSlug"
       element={
         <RequireAuth waitForUserFetch>
-          <WorkspaceScopeLayout />
+          <Outlet />
         </RequireAuth>
       }
     >
-      <Route index element={<Navigate to="feeds" replace />} />
-      <Route
-        path="feeds"
-        element={
-          <>
-            <AppHeader />
+      <Route element={<WorkspaceScopeLayout header={<AppHeader />} />}>
+        <Route index element={<Navigate to="feeds" replace />} />
+        <Route
+          path="feeds"
+          element={
             <Suspense fallback={<LoadingFallback />}>
               <MultiSelectUserFeedProvider>
                 <UserFeedStatusFilterProvider>
@@ -197,75 +194,60 @@ const Pages: React.FC = () => (
                 </UserFeedStatusFilterProvider>
               </MultiSelectUserFeedProvider>
             </Suspense>
-          </>
-        }
-      />
-      <Route
-        path="add-feeds"
-        element={
-          <>
-            <AppHeader invertBackground />
+          }
+        />
+        <Route
+          path="feeds/:feedId"
+          element={
+            <PageContentV2>
+              <Suspense fallback={<LoadingFallback />}>
+                <UserFeed />
+              </Suspense>
+            </PageContentV2>
+          }
+        />
+        <Route
+          path="feeds/:feedId/discord-channel-connections/:connectionId"
+          element={
+            <PageContentV2>
+              <Suspense fallback={<LoadingFallback />}>
+                <ConnectionSettings connectionType={FeedConnectionType.DiscordChannel} />
+              </Suspense>
+            </PageContentV2>
+          }
+        />
+        <Route path="settings" element={<WorkspaceSettingsPage />} />
+        <Route path="settings/billing" element={<WorkspaceBillingPage />} />
+      </Route>
+      <Route element={<WorkspaceScopeLayout header={<AppHeader invertBackground />} />}>
+        <Route
+          path="add-feeds"
+          element={
             <Suspense fallback={<LoadingFallback />}>
               <AddUserFeeds />
             </Suspense>
-          </>
-        }
-      />
-      <Route
-        path="feeds/:feedId"
-        element={
-          <PageContentV2 header={<AppHeader />}>
-            <Suspense fallback={<LoadingFallback />}>
-              <UserFeed />
-            </Suspense>
-          </PageContentV2>
-        }
-      />
-      <Route
-        path="feeds/:feedId/discord-channel-connections/:connectionId"
-        element={
-          <PageContentV2 header={<AppHeader />}>
-            <Suspense fallback={<LoadingFallback />}>
-              <ConnectionSettings connectionType={FeedConnectionType.DiscordChannel} />
-            </Suspense>
-          </PageContentV2>
-        }
-      />
-      <Route
-        path="feeds/:feedId/discord-channel-connections/:connectionId/message-builder"
-        element={
-          <SuspenseErrorBoundary>
-            <Suspense
-              fallback={
-                <Stack alignItems="center" justifyContent="center" height="100%" gap="2rem">
-                  <Loading size="xl" />
-                  <Heading>Loading Message Builder...</Heading>
-                </Stack>
-              }
-            >
-              <MessageBuilder />
-            </Suspense>
-          </SuspenseErrorBoundary>
-        }
-      />
-      <Route
-        path="settings"
-        element={
-          <>
-            <AppHeader />
-            <WorkspaceSettingsPage />
-          </>
-        }
-      />
-      <Route
-        path="settings/billing"
-        element={
-          <>
-            <AppHeader />
-            <WorkspaceBillingPage />
-          </>
-        }
-      />
+          }
+        />
+      </Route>
+      <Route element={<WorkspaceScopeLayout />}>
+        <Route
+          path="feeds/:feedId/discord-channel-connections/:connectionId/message-builder"
+          element={
+            <SuspenseErrorBoundary>
+              <Suspense
+                fallback={
+                  <Stack alignItems="center" justifyContent="center" height="100%" gap="2rem">
+                    <Loading size="xl" />
+                    <Heading>Loading Message Builder...</Heading>
+                  </Stack>
+                }
+              >
+                <MessageBuilder />
+              </Suspense>
+            </SuspenseErrorBoundary>
+          }
+        />
+      </Route>
     </Route>
     {/* Invitation landing page. RequireAuth bootstraps a logged-out invitee
         through Discord OAuth and returns them here (the path is preserved via

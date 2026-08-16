@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { MenuItem } from "@/components/ui/menu";
 import { LogoutButton } from "@/features/auth";
 import { useDiscordBot, useDiscordUserMe } from "@/features/discordUser";
-import { SearchFeedsModal } from "@/features/feed";
+import { SearchFeedsModal, useFeedScope } from "@/features/feed";
 import {
   CreateWorkspaceDialog,
   WorkspaceDormantBanner,
@@ -34,6 +34,8 @@ export const AppHeader = ({ invertBackground }: Props) => {
   const { t } = useTranslation();
   // The logo is scope-relative: "home" inside a workspace is that workspace's feeds.
   const { workspaceSlug } = useParams<RouteParams>();
+  const { workspaceId } = useFeedScope();
+  const isWorkspaceLoading = !!workspaceSlug && !workspaceId;
 
   const createWorkspaceDisclosure = useDisclosure();
 
@@ -47,7 +49,7 @@ export const AppHeader = ({ invertBackground }: Props) => {
         user={discordUserMe}
         logoHref={pages.userFeeds(workspaceSlug ? { workspaceSlug } : undefined)}
         workspaceSlot={<WorkspaceSwitcher onCreateWorkspace={createWorkspaceDisclosure.onOpen} />}
-        searchSlot={<SearchFeedsModal />}
+        searchSlot={isWorkspaceLoading ? undefined : <SearchFeedsModal />}
         logoutSlot={
           <LogoutButton
             trigger={

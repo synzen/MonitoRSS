@@ -30,7 +30,10 @@ const renderLayout = () =>
     <ChakraProvider value={system}>
       <MemoryRouter initialEntries={["/workspaces/acme-marketing/feeds"]}>
         <Routes>
-          <Route path="/workspaces/:workspaceSlug" element={<WorkspaceScopeLayout />}>
+          <Route
+            path="/workspaces/:workspaceSlug"
+            element={<WorkspaceScopeLayout header={<header>APP HEADER</header>} />}
+          >
             <Route path="feeds" element={<div>SCOPED CONTENT</div>} />
           </Route>
           <Route path="/not-found" element={<div>NOT FOUND PAGE</div>} />
@@ -58,6 +61,7 @@ describe("WorkspaceScopeLayout", () => {
 
     renderLayout();
 
+    expect(screen.getByText("APP HEADER")).toBeInTheDocument();
     expect(await screen.findByText("SCOPED CONTENT")).toBeInTheDocument();
   });
 
@@ -74,7 +78,7 @@ describe("WorkspaceScopeLayout", () => {
     expect(screen.queryByText("SCOPED CONTENT")).not.toBeInTheDocument();
   });
 
-  it("shows neither content nor not-found while the workspace is loading", () => {
+  it("keeps the header mounted and announces loading while the workspace is loading", () => {
     vi.mocked(useWorkspace).mockReturnValue({
       status: "loading",
       workspace: undefined,
@@ -83,6 +87,9 @@ describe("WorkspaceScopeLayout", () => {
 
     renderLayout();
 
+    expect(screen.getByText("APP HEADER")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Loading workspace");
+    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
     expect(screen.queryByText("SCOPED CONTENT")).not.toBeInTheDocument();
     expect(screen.queryByText("NOT FOUND PAGE")).not.toBeInTheDocument();
   });
