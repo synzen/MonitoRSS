@@ -13,8 +13,9 @@
   "scripts": {
     "build:packages": "npm run build --workspace=packages/contracts --workspace=packages/logger",
     "dev": "npm run dev --workspace=e2e",
-    "e2e": "npm run e2e --workspace=e2e",
-    "e2e:paddle": "npm run e2e:paddle --workspace=e2e",
-    "e2e:web": "npm run e2e:web --workspace=e2e"
+    "e2e": "tsx e2e/scripts/run-e2e.ts",
+    "e2e:doctor": "tsx e2e/scripts/run-e2e.ts --doctor",
+    "e2e:paddle": "tsx e2e/scripts/run-e2e.ts --project=e2e-paddle",
+    "e2e:web": "tsx e2e/scripts/run-e2e.ts --project=e2e-web"
   }
 }

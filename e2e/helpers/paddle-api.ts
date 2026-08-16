@@ -49,7 +49,7 @@ function getNotificationSettingId(): string {
   if (!id) {
     throw new Error(
       "E2E_PADDLE_NOTIFICATION_SETTING_ID is not set. Either run Paddle tests " +
-        "via e2e-mock.sh (it creates an ephemeral setting), or set it yourself " +
+        "via npm run e2e:paddle (it creates an ephemeral setting), or set it yourself " +
         "in e2e/.env alongside a matching BACKEND_API_PADDLE_WEBHOOK_SECRET.",
     );
   }
@@ -95,10 +95,14 @@ export async function deleteStaleEphemeralNotificationSettings(): Promise<void> 
 
     try {
       await deleteNotificationSetting(setting.id);
-      // stderr: the create script's stdout is parsed (id/secret lines) by e2e-mock.sh.
-      console.error(`Deleted stale ephemeral notification setting: ${setting.id}`);
+      console.error(
+        `Deleted stale ephemeral notification setting: ${setting.id}`,
+      );
     } catch (err) {
-      console.error(`Failed to delete stale notification setting ${setting.id}:`, err);
+      console.error(
+        `Failed to delete stale notification setting ${setting.id}:`,
+        err,
+      );
     }
   }
 }

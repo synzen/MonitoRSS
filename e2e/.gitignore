@@ -1,4 +1,4 @@
-# Local run artifacts captured by e2e-mock.sh
+# Local run artifacts captured by the E2E runner
 logs/
 .paddle-state*.json
 test-results
