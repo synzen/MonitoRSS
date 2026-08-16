@@ -96,6 +96,46 @@ test.describe("Workspace navigation", () => {
     ).toBeVisible();
   });
 
+  test("keeps the header visible while an uncached workspace is loading", async ({ page }) => {
+    await page.goto("/feeds");
+    await waitForAuthenticatedApp(page);
+    await enableWorkspacesForCurrentUser(page);
+
+    const workspaceName = `E2E Nav Loading ${Date.now()}`;
+    const slug = await createWorkspace(page, workspaceName);
+
+    await page.goto("/feeds");
+    await waitForAuthenticatedApp(page);
+
+    let releaseWorkspaceRequest!: () => void;
+    const workspaceRequestRelease = new Promise<void>((resolve) => {
+      releaseWorkspaceRequest = resolve;
+    });
+    let workspaceRequestHeld = false;
+    await page.route(`**/api/v1/workspaces/${slug}`, async (route) => {
+      workspaceRequestHeld = true;
+      await workspaceRequestRelease;
+      await route.continue();
+    });
+
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
+    await page.getByRole("menuitemradio", { name: workspaceName }).click();
+    await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/feeds$`));
+    await expect.poll(() => workspaceRequestHeld).toBe(true);
+
+    try {
+      await expect(page.locator("header")).toHaveCount(1);
+      await expect(page.getByRole("button", { name: "Account settings" })).toBeVisible();
+      await expect(page.locator('main[role="status"][aria-busy="true"]')).toContainText("Loading workspace");
+    } finally {
+      releaseWorkspaceRequest();
+    }
+
+    await expect(page.getByRole("heading", { name: workspaceName })).toBeVisible({
+      timeout: 15000,
+    });
+  });
+
   test("workspace feeds page shows the team heading with an on-page settings link, and the logo stays in scope", async ({
     page,
   }) => {
