@@ -12,3 +12,4 @@ export * from "./InvitePage";
 export * from "./PendingInvitationsList";
 export * from "./WorkspaceBilling";
 export * from "./WorkspaceDormant";
+export * from "./MovePersonalFeedsAction";

@@ -62,9 +62,11 @@ import { ReducedLimitAlert } from "@/features/subscriptionProducts";
 import {
   useCurrentWorkspace,
   useJustConvertedWorkspace,
+  MovePersonalFeedsAction,
   WorkspaceActivationEmptyState,
 } from "@/features/workspaces";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
+import { WorkspaceFeedDiscoveryEmptyState } from "./WorkspaceFeedDiscoveryEmptyState";
 
 export const UserFeeds = () => {
   return (
@@ -92,6 +94,7 @@ const UserFeedsInner: React.FC = () => {
     workspaceSlug,
     workspaceDormant,
     maxFeeds: workspaceMaxFeeds,
+    redditConnection,
   } = useFeedScope();
   const scope = useMemo(() => (workspaceSlug ? { workspaceSlug } : undefined), [workspaceSlug]);
   const currentWorkspace = useCurrentWorkspace();
@@ -338,6 +341,10 @@ const UserFeedsInner: React.FC = () => {
         body: DISCOVERY_BROWSE_HINT,
       };
 
+  const workspaceEmptyStateSkeletons = Array.from({ length: 8 }, (_, i) => (
+    <Skeleton key={i} height="80px" borderRadius="l3" />
+  ));
+
   const handleCuratedFeedAdd = useCallback(
     async (feed: CuratedFeed) => {
       setFeedActionStates((prev) => ({
@@ -461,6 +468,18 @@ const UserFeedsInner: React.FC = () => {
   const handleExitDiscovery = useCallback(() => {
     setAddingSessionScope(null);
   }, []);
+
+  const handlePersonalFeedsMoved = useCallback(
+    (movedCount: number) => {
+      setAddingSessionScope(null);
+      refetchUserFeedsSummary();
+      createSuccessAlert({
+        title: `${movedCount} personal feed${movedCount === 1 ? "" : "s"} moved`,
+        description: `They now belong to ${currentWorkspace?.name ?? "this team"} and can be managed by its members.`,
+      });
+    },
+    [createSuccessAlert, currentWorkspace?.name, refetchUserFeedsSummary],
+  );
 
   const handleSetupConnectionCreated = useCallback(() => {
     refetchUnconfiguredFeeds();
@@ -870,102 +889,187 @@ const UserFeedsInner: React.FC = () => {
           </>
         )}
       </Stack>
-      {isInDiscoveryMode && (
-        <Box>
-          <Stack gap={6} py={8}>
-            <Stack textAlign="center" gap={2} role="status" aria-live="polite">
-              {addedFeedKeys.length > 0 ? (
-                <Panel
-                  display="flex"
-                  flexDirection="column"
-                  textAlign="center"
-                  gap={3}
-                  p={6}
-                  alignItems="center"
-                >
-                  <Icon as={FaCircleCheck} color="text.success" boxSize={8} aria-hidden="true" />
-                  <Heading as="h2" size="lg">
-                    {addedFeedKeys.length} feed
-                    {addedFeedKeys.length !== 1 ? "s" : ""} added!
-                  </Heading>
-                  <Text color="fg.muted">
-                    Add more feeds below, or view your feeds to set up delivery.
-                  </Text>
-                  <Box>
-                    <PrimaryActionButton size="sm" onClick={handleExitDiscovery}>
-                      View your feeds{" "}
-                      <Box as="span" aria-hidden="true">
-                        &rarr;
-                      </Box>
-                    </PrimaryActionButton>
-                  </Box>
-                </Panel>
-              ) : (
+      {isInDiscoveryMode &&
+        (currentWorkspace && userFeedsResults?.total === 0 && addedFeedKeys.length === 0 ? (
+          <Box>
+            <WorkspaceFeedDiscoveryEmptyState
+              workspaceName={currentWorkspace.name}
+              moveAction={
+                <MovePersonalFeedsAction
+                  workspaceName={currentWorkspace.name}
+                  workspaceSlug={currentWorkspace.slug}
+                  allowance={workspaceMaxFeeds ?? 0}
+                  workspaceHasActiveRedditGrant={redditConnection?.status === "ACTIVE"}
+                  onMoved={handlePersonalFeedsMoved}
+                />
+              }
+              search={
+                <Stack gap={2}>
+                  <FeedDiscoverySearch
+                    key={workspaceSlug}
+                    feedActionStates={feedActionStates}
+                    isAtLimit={isAtLimit}
+                    onAdd={handleCuratedFeedAdd}
+                    onRemove={handleCuratedFeedRemove}
+                    onSearchChange={handleSearchChange}
+                    onFeedAdded={handleUrlFeedAdded}
+                    onFeedRemoved={handleUrlFeedRemoved}
+                  />
+                  {!isSearchActive && (
+                    <Text color="fg.muted" fontSize="sm" textAlign="center">
+                      Try a YouTube channel, subreddit, blog, news site, or any feed URL
+                    </Text>
+                  )}
+                  <FeedLimitBar showOnlyWhenConstrained />
+                </Stack>
+              }
+              popularFeeds={
                 <>
-                  <Heading as="h2" size="lg">
-                    {discoveryIntro.heading}
-                  </Heading>
-                  <Text color="fg.muted">{discoveryIntro.body}</Text>
+                  {curatedLoading && !isSearchActive && (
+                    <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} gap={4}>
+                      {workspaceEmptyStateSkeletons}
+                    </SimpleGrid>
+                  )}
+                  {!!curatedError && !curatedLoading && (
+                    <Alert.Root status="error">
+                      <Alert.Indicator />
+                      <Alert.Description>
+                        Failed to load feeds.{" "}
+                        <Button
+                          variant="plain"
+                          textDecoration="underline"
+                          onClick={() => curatedRefetch()}
+                          colorPalette="brand"
+                        >
+                          Retry
+                        </Button>
+                      </Alert.Description>
+                    </Alert.Root>
+                  )}
+                  {!isSearchActive &&
+                    curatedData &&
+                    !curatedLoading &&
+                    curatedData.feeds.length > 0 && (
+                      <Stack gap={3}>
+                        <Heading as="h3" size="sm">
+                          Popular feeds
+                        </Heading>
+                        <CategoryGrid
+                          categories={curatedData.categories}
+                          totalFeedCount={curatedData.feeds.length ?? 0}
+                          getCategoryPreviewText={getCategoryPreviewText}
+                          onSelectCategory={handleOpenBrowseModal}
+                        />
+                      </Stack>
+                    )}
                 </>
-              )}
-            </Stack>
-            <Stack gap={2}>
-              {/* Keyed by scope: a search submitted just before a scope switch commits is
-                  validated against the OLD scope's credentials. Remounting on scope change
-                  guarantees no cross-scope search state (query, result, Add button) is ever
-                  shown under the new scope. */}
-              <FeedDiscoverySearch
-                key={workspaceSlug ?? "personal"}
-                feedActionStates={feedActionStates}
-                isAtLimit={isAtLimit}
-                onAdd={handleCuratedFeedAdd}
-                onRemove={handleCuratedFeedRemove}
-                onSearchChange={handleSearchChange}
-                onFeedAdded={handleUrlFeedAdded}
-                onFeedRemoved={handleUrlFeedRemoved}
-              />
-              {!isSearchActive && (
-                <Text color="fg.muted" fontSize="sm" textAlign="center">
-                  Many websites support feeds - try pasting a YouTube channel, subreddit, blog, or
-                  news site URL
-                </Text>
-              )}
-              <FeedLimitBar showOnlyWhenConstrained />
-            </Stack>
-            {curatedLoading && !isSearchActive && (
-              <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} gap={4}>
-                {Array.from({ length: 8 }, (_, i) => (
-                  <Skeleton key={i} height="80px" borderRadius="l3" />
-                ))}
-              </SimpleGrid>
-            )}
-            {!!curatedError && !curatedLoading && (
-              <Alert.Root status="error">
-                <Alert.Indicator />
-                <Alert.Description>
-                  Failed to load feeds.{" "}
-                  <Button
-                    variant="plain"
-                    textDecoration="underline"
-                    onClick={() => curatedRefetch()}
-                    colorPalette="brand"
+              }
+            />
+          </Box>
+        ) : (
+          <Box>
+            <Stack gap={5} pt={4} pb={8}>
+              <Stack gap={2} role="status" aria-live="polite">
+                {addedFeedKeys.length > 0 ? (
+                  <Panel
+                    display="flex"
+                    flexDirection="column"
+                    textAlign="center"
+                    gap={3}
+                    p={6}
+                    alignItems="center"
                   >
-                    Retry
-                  </Button>
-                </Alert.Description>
-              </Alert.Root>
-            )}
-            {!isSearchActive && curatedData && !curatedLoading && curatedData.feeds.length > 0 && (
-              <CategoryGrid
-                categories={curatedData.categories}
-                totalFeedCount={curatedData.feeds.length ?? 0}
-                getCategoryPreviewText={getCategoryPreviewText}
-                onSelectCategory={handleOpenBrowseModal}
-              />
-            )}
-          </Stack>
-        </Box>
-      )}
+                    <Icon as={FaCircleCheck} color="text.success" boxSize={8} aria-hidden="true" />
+                    <Heading as="h2" size="lg">
+                      {addedFeedKeys.length} feed
+                      {addedFeedKeys.length !== 1 ? "s" : ""} added!
+                    </Heading>
+                    <Text color="fg.muted">
+                      Add more feeds below, or view your feeds to set up delivery.
+                    </Text>
+                    <Box>
+                      <PrimaryActionButton size="sm" onClick={handleExitDiscovery}>
+                        View your feeds{" "}
+                        <Box as="span" aria-hidden="true">
+                          &rarr;
+                        </Box>
+                      </PrimaryActionButton>
+                    </Box>
+                  </Panel>
+                ) : (
+                  <Stack gap={1}>
+                    <Heading as="h2" size="lg">
+                      {discoveryIntro.heading}
+                    </Heading>
+                    <Text color="fg.muted">{discoveryIntro.body}</Text>
+                  </Stack>
+                )}
+              </Stack>
+              <Stack gap={2}>
+                {/* Keyed by scope: a search submitted just before a scope switch commits is
+                    validated against the OLD scope's credentials. Remounting on scope change
+                    guarantees no cross-scope search state (query, result, Add button) is ever
+                    shown under the new scope. */}
+                <FeedDiscoverySearch
+                  key={workspaceSlug ?? "personal"}
+                  feedActionStates={feedActionStates}
+                  isAtLimit={isAtLimit}
+                  onAdd={handleCuratedFeedAdd}
+                  onRemove={handleCuratedFeedRemove}
+                  onSearchChange={handleSearchChange}
+                  onFeedAdded={handleUrlFeedAdded}
+                  onFeedRemoved={handleUrlFeedRemoved}
+                />
+                {!isSearchActive && (
+                  <Text color="fg.muted" fontSize="sm" textAlign="center">
+                    Many websites support feeds - try pasting a YouTube channel, subreddit, blog, or
+                    news site URL
+                  </Text>
+                )}
+                <FeedLimitBar showOnlyWhenConstrained />
+              </Stack>
+              {curatedLoading && !isSearchActive && (
+                <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} gap={4}>
+                  {Array.from({ length: 8 }, (_, i) => (
+                    <Skeleton key={i} height="80px" borderRadius="l3" />
+                  ))}
+                </SimpleGrid>
+              )}
+              {!!curatedError && !curatedLoading && (
+                <Alert.Root status="error">
+                  <Alert.Indicator />
+                  <Alert.Description>
+                    Failed to load feeds.{" "}
+                    <Button
+                      variant="plain"
+                      textDecoration="underline"
+                      onClick={() => curatedRefetch()}
+                      colorPalette="brand"
+                    >
+                      Retry
+                    </Button>
+                  </Alert.Description>
+                </Alert.Root>
+              )}
+              {!isSearchActive &&
+                curatedData &&
+                !curatedLoading &&
+                curatedData.feeds.length > 0 && (
+                  <Stack gap={3}>
+                    <Heading as="h3" size="sm">
+                      Popular feeds
+                    </Heading>
+                    <CategoryGrid
+                      categories={curatedData.categories}
+                      totalFeedCount={curatedData.feeds.length ?? 0}
+                      getCategoryPreviewText={getCategoryPreviewText}
+                      onSelectCategory={handleOpenBrowseModal}
+                    />
+                  </Stack>
+                )}
+            </Stack>
+          </Box>
+        ))}
       {isInDiscoveryMode === false && <UserFeedsTable />}
       <BrowseFeedsModal
         isOpen={isBrowseModalOpen}

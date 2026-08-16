@@ -1,6 +1,7 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
 import {
   ApiErrorCode,
+  BadRequestError,
   ConflictError,
   ForbiddenError,
 } from "../../infra/error-handler";
@@ -12,6 +13,7 @@ import type {
   UpdateWorkspaceBody,
   WorkspaceInviteParams,
   WorkspaceMemberParams,
+  WorkspacePersonalFeedMovesBody,
   WorkspaceSlugParams,
 } from "./workspaces.schemas";
 
@@ -165,6 +167,35 @@ export async function disconnectWorkspaceRedditHandler(
   );
 
   return reply.status(200).send({ result: { ok: true } });
+}
+
+export async function movePersonalFeedsToWorkspaceHandler(
+  request: FastifyRequest<{
+    Params: WorkspaceSlugParams;
+    Body: WorkspacePersonalFeedMovesBody;
+  }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const { workspacesService, supportersService, personalFeedMovesService } =
+    request.container;
+  const { workspace } = await workspacesService.getWorkspaceForMemberBySlug(
+    request.params.workspaceSlug,
+    request.userId as string,
+  );
+  const benefits = await supportersService.getWorkspaceBenefits(workspace.id);
+
+  if (benefits.dormant) {
+    throw new BadRequestError(ApiErrorCode.WORKSPACE_NOT_SUBSCRIBED);
+  }
+
+  const receipt = await personalFeedMovesService.moveToWorkspace({
+    discordUserId: request.discordUserId,
+    feedIds: request.body.feedIds,
+    workspaceId: workspace.id,
+    maxWorkspaceFeeds: benefits.maxFeeds,
+  });
+
+  return reply.send({ result: { movedCount: receipt.feeds.length } });
 }
 
 export async function deleteWorkspaceHandler(

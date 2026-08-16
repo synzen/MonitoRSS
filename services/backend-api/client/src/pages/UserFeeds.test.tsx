@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
@@ -21,6 +21,7 @@ const {
   curatedFeedsMockImpl,
   mockUnconfiguredFeedsReturn,
   mockCurrentWorkspace,
+  mockUseOwnedPersonalFeedsReturn,
 } = vi.hoisted(() => {
   const categoriesFixture = [
     { id: "gaming", label: "Gaming", count: 25 },
@@ -64,6 +65,7 @@ const {
   const createUserFeedMock = vi.fn();
   const useUserFeedsReturnMock = vi.fn();
   const unconfiguredFeedsReturnMock = vi.fn();
+  const useOwnedPersonalFeedsReturnMock = vi.fn();
   // Personal scope (the default for most tests) has no current workspace; the
   // dormant-activation tests set this to a workspace before rendering.
   const currentWorkspaceMock: {
@@ -112,6 +114,7 @@ const {
     curatedFeedsMockImpl: curatedFeedsImplFn,
     mockUnconfiguredFeedsReturn: unconfiguredFeedsReturnMock,
     mockCurrentWorkspace: currentWorkspaceMock,
+    mockUseOwnedPersonalFeedsReturn: useOwnedPersonalFeedsReturnMock,
   };
 });
 
@@ -245,6 +248,7 @@ vi.mock("../features/feed", async () => {
     useUserFeedManagementInvitesCount: () => ({ data: { total: 0 } }),
     useCreateUserFeed: () => ({ mutateAsync: mockCreateUserFeed }),
     useCuratedFeeds: curatedFeedsMockImpl,
+    useOwnedPersonalFeeds: () => mockUseOwnedPersonalFeedsReturn(),
   };
 });
 
@@ -349,6 +353,7 @@ describe("UserFeeds - Discovery Mode", () => {
     expect(
       screen.getByText("Browse popular feeds to get started, or paste a URL to check any website."),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Move personal feeds" })).not.toBeInTheDocument();
   });
 
   it("shows search bar in discovery mode", () => {
@@ -397,6 +402,227 @@ describe("UserFeeds - Discovery Mode", () => {
   it("does not show added count when no feeds have been added", () => {
     renderPage();
     expect(screen.queryByText(/feed.*added/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("UserFeeds - active empty workspace personal feed move", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCurrentWorkspace.current = {
+      id: "ws-1",
+      slug: "workspace-one",
+      name: "Workspace One",
+      subscription: { productKey: "tier2" },
+    };
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [], total: 0, feedsWithoutConnections: 0 },
+    });
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
+    mockUseOwnedPersonalFeedsReturn.mockReturnValue({
+      data: { pages: [{ results: [{ id: "personal-1" }], total: 1 }] },
+      status: "success",
+      error: null,
+      refetch: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    mockCurrentWorkspace.current = undefined;
+    vi.unstubAllGlobals();
+  });
+
+  it("offers to move owned personal feeds from the empty workspace", () => {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <FeedScopeProvider
+                value={{
+                  workspaceId: "ws-1",
+                  workspaceSlug: "workspace-one",
+                  maxFeeds: 70,
+                  redditConnection: null,
+                }}
+              >
+                <UserFeeds />
+              </FeedScopeProvider>
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Add feeds to Workspace One" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Find a feed")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Move personal feeds" })).toBeInTheDocument();
+  });
+
+  it("hides the action when the member owns no personal feeds", () => {
+    mockUseOwnedPersonalFeedsReturn.mockReturnValue({
+      data: { pages: [{ results: [], total: 0 }] },
+      status: "success",
+      error: null,
+      refetch: vi.fn(),
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <FeedScopeProvider
+                value={{
+                  workspaceId: "ws-1",
+                  workspaceSlug: "workspace-one",
+                  maxFeeds: 70,
+                  redditConnection: null,
+                }}
+              >
+                <UserFeeds />
+              </FeedScopeProvider>
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.queryByRole("button", { name: "Move personal feeds" })).not.toBeInTheDocument();
+  });
+
+  it("refreshes the rendered feed list and shows the exact moved count", async () => {
+    const refetchUserFeedsSummary = vi.fn();
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: { results: [], total: 0, feedsWithoutConnections: 0 },
+      refetch: refetchUserFeedsSummary,
+    });
+    mockUseOwnedPersonalFeedsReturn.mockReturnValue({
+      data: {
+        pages: [
+          {
+            total: 2,
+            results: [
+              {
+                id: "personal-1",
+                title: "First personal feed",
+                url: "https://example.com/first.xml",
+              },
+              {
+                id: "personal-2",
+                title: "Second personal feed",
+                url: "https://example.com/second.xml",
+              },
+            ],
+          },
+        ],
+      },
+      status: "success",
+      error: null,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
+      setSearch: vi.fn(),
+      isFetching: false,
+      search: "",
+      getByAge: vi.fn(),
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (url: string) => {
+        const body = url.startsWith("/api/v1/user-feeds?")
+          ? {
+              total: 2,
+              feedsWithoutConnections: 0,
+              results: [
+                {
+                  id: "personal-1",
+                  title: "First personal feed",
+                  url: "https://example.com/first.xml",
+                  createdAt: "2026-08-01T00:00:00.000Z",
+                  healthStatus: "OK",
+                  computedStatus: "OK",
+                  ownedByUser: true,
+                  connectionCount: 1,
+                },
+                {
+                  id: "personal-2",
+                  title: "Second personal feed",
+                  url: "https://example.com/second.xml",
+                  createdAt: "2026-08-02T00:00:00.000Z",
+                  healthStatus: "OK",
+                  computedStatus: "OK",
+                  ownedByUser: true,
+                  connectionCount: 1,
+                },
+              ],
+            }
+          : { result: { movedCount: 2 } };
+
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
+    );
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const user = userEvent.setup();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <FeedScopeProvider
+                value={{
+                  workspaceId: "ws-1",
+                  workspaceSlug: "workspace-one",
+                  maxFeeds: 70,
+                  redditConnection: null,
+                }}
+              >
+                <UserFeeds />
+              </FeedScopeProvider>
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Move personal feeds" }));
+    const dialog = await screen.findByRole("dialog", {
+      name: "Move personal feeds to Workspace One",
+    });
+    const firstFeed = await within(dialog).findByRole("checkbox", {
+      name: "First personal feed",
+    });
+    await waitFor(() => expect(firstFeed).toBeChecked());
+    await user.click(within(dialog).getByRole("button", { name: "Move feeds" }));
+
+    expect(await screen.findByText("2 personal feeds moved")).toBeInTheDocument();
+    expect(refetchUserFeedsSummary).toHaveBeenCalled();
   });
 });
 

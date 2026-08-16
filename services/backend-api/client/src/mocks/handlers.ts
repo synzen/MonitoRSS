@@ -89,6 +89,7 @@ import {
   CreateWorkspaceOutput,
   GetWorkspaceOutput,
   GetWorkspacesOutput,
+  MovePersonalFeedsToWorkspaceOutput,
   Workspace,
   UpdateWorkspaceOutput,
 } from "@/features/workspaces";
@@ -99,6 +100,7 @@ const CURATED_FEEDS_MIN_SEARCH_LENGTH = 3;
 
 // In-memory workspaces store so the mock create flow reflects in the chooser/list.
 const workspacesStore: Workspace[] = [...mockWorkspaces];
+const workspaceFeedIds = new Map<string, Set<string>>();
 
 function escapeRegex(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -292,6 +294,7 @@ const handlers = [
         slug: workspace.slug,
         role: workspace.role,
         needsBilling: workspace.needsBilling,
+        maxFeeds: workspace.maxFeeds,
       },
     });
   }),
@@ -349,6 +352,25 @@ const handlers = [
       },
     });
   }),
+  http.post(
+    "/api/v1/workspaces/:workspaceSlug/personal-feed-moves",
+    async ({ request, params }) => {
+      const body = (await request.json()) as { feedIds: string[] };
+      const workspace = workspacesStore.find((item) => item.slug === params.workspaceSlug);
+
+      if (workspace) {
+        const feedIds = workspaceFeedIds.get(workspace.id) ?? new Set<string>();
+        body.feedIds.forEach((id) => feedIds.add(id));
+        workspaceFeedIds.set(workspace.id, feedIds);
+      }
+
+      await delay(500);
+
+      return HttpResponse.json<MovePersonalFeedsToWorkspaceOutput>({
+        result: { movedCount: body.feedIds.length },
+      });
+    },
+  ),
   http.get("/api/v1/discord-users/bot", async () =>
     HttpResponse.json<GetDiscordBotOutput>({
       result: mockDiscordBot,
@@ -589,9 +611,13 @@ const handlers = [
     const limit = Number(url.searchParams.get("limit") || "10");
     const offset = Number(url.searchParams.get("offset") || "0");
     const search = url.searchParams.get("search");
+    const workspaceId = url.searchParams.get("workspaceId");
     const disabledCodes = url.searchParams.get("filters[disabledCodes]")?.split(",");
+    const movedFeedIds = new Set([...workspaceFeedIds.values()].flatMap((ids) => [...ids]));
+    const scopedFeedIds = workspaceId ? workspaceFeedIds.get(workspaceId) : undefined;
 
     const filtered = mockUserFeedSummary
+      .filter((feed) => (workspaceId ? scopedFeedIds?.has(feed.id) : !movedFeedIds.has(feed.id)))
       .filter((feed) => (search ? feed.title.toLowerCase().includes(search) : true))
       .filter((feed) => {
         if (!disabledCodes) {
