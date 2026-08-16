@@ -426,9 +426,7 @@ export class MessageBrokerEventsService {
 
     if (hasCustomPlaceholders || hasExternalProperties) {
       const benefits =
-        await this.deps.supportersService.getBenefitsOfDiscordUser(
-          userFeed.user.discordUserId,
-        );
+        await this.deps.supportersService.resolveFeedBenefits(userFeed);
 
       allowCustomPlaceholders = benefits.allowCustomPlaceholders;
       allowExternalProperties = benefits.allowExternalProperties;

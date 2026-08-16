@@ -5,7 +5,10 @@ import {
   type MessageBrokerEventsServiceDeps,
 } from "../../src/services/message-broker-events/message-broker-events.service";
 import type { Config } from "../../src/config";
-import type { IUserFeedRepository } from "../../src/repositories/interfaces/user-feed.types";
+import type {
+  IUserFeedRepository,
+  UserFeedForDelivery,
+} from "../../src/repositories/interfaces/user-feed.types";
 import type { SupportersService } from "../../src/services/supporters/supporters.service";
 import type { NotificationsService } from "../../src/services/notifications/notifications.service";
 import { generateTestId } from "./test-id";
@@ -27,6 +30,10 @@ export interface UserFeedRepositoryMockOptions {
 
 export interface SupportersServiceMockOptions {
   getBenefitsResult?: {
+    allowCustomPlaceholders: boolean;
+    allowExternalProperties: boolean;
+  };
+  resolveFeedBenefitsResult?: {
     allowCustomPlaceholders: boolean;
     allowExternalProperties: boolean;
   };
@@ -60,6 +67,7 @@ export interface MockUserFeedRepository {
 export interface MockSupportersService {
   syncDiscordSupporterRoles: ReturnType<typeof mock.fn>;
   getBenefitsOfDiscordUser: ReturnType<typeof mock.fn>;
+  resolveFeedBenefits: ReturnType<typeof mock.fn>;
 }
 
 export interface MockNotificationsService {
@@ -140,16 +148,27 @@ export function createMessageBrokerEventsHarness(): MessageBrokerEventsHarness {
         ),
       };
 
+      const getBenefitsOfDiscordUser = mock.fn((_discordUserId: string) =>
+        Promise.resolve(
+          options.supportersService?.getBenefitsResult ?? {
+            allowCustomPlaceholders: false,
+            allowExternalProperties: false,
+          },
+        ),
+      );
       const supportersService: MockSupportersService = {
         syncDiscordSupporterRoles: mock.fn(() => Promise.resolve()),
-        getBenefitsOfDiscordUser: mock.fn(() =>
-          Promise.resolve(
-            options.supportersService?.getBenefitsResult ?? {
-              allowCustomPlaceholders: false,
-              allowExternalProperties: false,
-            },
-          ),
-        ),
+        getBenefitsOfDiscordUser,
+        resolveFeedBenefits: mock.fn(async (feed: UserFeedForDelivery) => ({
+          maxFeeds: 0,
+          maxDailyArticles: 0,
+          refreshRateSeconds: 600,
+          allowWebhooks: false,
+          articleRateLimits: [],
+          dormant: false,
+          ...(options.supportersService?.resolveFeedBenefitsResult ??
+            (await getBenefitsOfDiscordUser(feed.user.discordUserId))),
+        })),
       };
 
       const notificationsService: MockNotificationsService = {

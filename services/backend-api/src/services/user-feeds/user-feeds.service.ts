@@ -225,33 +225,22 @@ export class UserFeedsService {
 
     const myWorkspaceIds = workspaceId ? [workspaceId] : [];
 
-    const [{ maxFeeds, maxDailyArticles, refreshRateSeconds, dormant }, sourceFeedToCopyFrom] =
-      await Promise.all([
-        workspaceId
-          ? this.deps.supportersService
-              .getWorkspaceBenefits(workspaceId)
-              .then((b) => ({
-                maxFeeds: b.maxFeeds,
-                maxDailyArticles: b.maxDailyArticles,
-                refreshRateSeconds: b.refreshRateSeconds,
-                dormant: b.dormant,
-              }))
-          : this.deps.supportersService
-              .getBenefitsOfDiscordUser(discordUserId)
-              .then((b) => ({
-                maxFeeds: b.maxUserFeeds,
-                maxDailyArticles: b.maxDailyArticles,
-                refreshRateSeconds: b.refreshRateSeconds,
-                dormant: false,
-              })),
-        sourceFeedId
-          ? this.deps.userFeedRepository.findByIdAndOwnership(
-              sourceFeedId,
-              discordUserId,
-              myWorkspaceIds,
-            )
-          : null,
-      ]);
+    const [
+      { maxFeeds, maxDailyArticles, refreshRateSeconds, dormant },
+      sourceFeedToCopyFrom,
+    ] = await Promise.all([
+      this.deps.supportersService.resolveFeedBenefits({
+        workspaceId,
+        user: { discordUserId },
+      }),
+      sourceFeedId
+        ? this.deps.userFeedRepository.findByIdAndOwnership(
+            sourceFeedId,
+            discordUserId,
+            myWorkspaceIds,
+          )
+        : null,
+    ]);
 
     // The dormant gate fires before any URL validation so the rejection is
     // unmistakable (activation prompt) rather than a generic fetch failure.
@@ -375,14 +364,8 @@ export class UserFeedsService {
 
     // Clone lands in the source's scope (the repo carries `workspaceId` over), so
     // the limit is the workspace's for a workspace feed, else the creator's.
-    const maxFeeds = sourceFeed.workspaceId
-      ? (await this.deps.supportersService.getWorkspaceBenefits(sourceFeed.workspaceId))
-          .maxFeeds
-      : (
-          await this.deps.supportersService.getBenefitsOfDiscordUser(
-            sourceFeed.user.discordUserId,
-          )
-        ).maxUserFeeds;
+    const { maxFeeds } =
+      await this.deps.supportersService.resolveFeedBenefits(sourceFeed);
 
     let inputUrl = sourceFeed.inputUrl;
     let finalUrl = sourceFeed.url;
@@ -683,8 +666,8 @@ export class UserFeedsService {
     },
     updates: UpdateFeedInput,
   ): Promise<IUserFeed | null> {
-    let userBenefits: Awaited<
-      ReturnType<typeof this.deps.supportersService.getBenefitsOfDiscordUser>
+    let feedBenefits: Awaited<
+      ReturnType<typeof this.deps.supportersService.resolveFeedBenefits>
     > | null = null;
 
     const feed = await this.deps.userFeedRepository.findById(id);
@@ -752,11 +735,9 @@ export class UserFeedsService {
     }
 
     if (updates.disabledCode !== undefined) {
-      if (!userBenefits) {
-        userBenefits =
-          await this.deps.supportersService.getBenefitsOfDiscordUser(
-            user.discordUserId,
-          );
+      if (!feedBenefits) {
+        feedBenefits =
+          await this.deps.supportersService.resolveFeedBenefits(feed);
       }
 
       if (
@@ -765,15 +746,13 @@ export class UserFeedsService {
         DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS.includes(disabledCode)
       ) {
         if (feed.workspaceId) {
-          const [{ maxFeeds }, currentFeedCount] = await Promise.all([
-            this.deps.supportersService.getWorkspaceBenefits(feed.workspaceId),
-            this.deps.userFeedRepository.countByWorkspaceExcludingDisabled(
+          const currentFeedCount =
+            await this.deps.userFeedRepository.countByWorkspaceExcludingDisabled(
               feed.workspaceId,
               DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-            ),
-          ]);
+            );
 
-          if (maxFeeds <= currentFeedCount) {
+          if (feedBenefits.maxFeeds <= currentFeedCount) {
             throw new FeedLimitReachedException(
               `Cannot enable feed ${id} because workspace ${feed.workspaceId} has reached the feed limit`,
             );
@@ -785,7 +764,7 @@ export class UserFeedsService {
               DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
             );
 
-          if (userBenefits.maxUserFeeds <= currentFeedCount) {
+          if (feedBenefits.maxFeeds <= currentFeedCount) {
             throw new FeedLimitReachedException(
               `Cannot enable feed ${id} because user ${user.discordUserId} has reached the feed limit`,
             );
@@ -825,14 +804,12 @@ export class UserFeedsService {
     }
 
     if (updates.userRefreshRateSeconds !== undefined) {
-      if (!userBenefits) {
-        userBenefits =
-          await this.deps.supportersService.getBenefitsOfDiscordUser(
-            user.discordUserId,
-          );
+      if (!feedBenefits) {
+        feedBenefits =
+          await this.deps.supportersService.resolveFeedBenefits(feed);
       }
 
-      const { refreshRateSeconds: fastestPossibleRate } = userBenefits;
+      const { refreshRateSeconds: fastestPossibleRate } = feedBenefits;
 
       if (
         updates.userRefreshRateSeconds === null ||
@@ -998,12 +975,10 @@ export class UserFeedsService {
       feed.disabledCode &&
       MANUALLY_RETRYABLE_DISABLED_CODES.includes(feed.disabledCode)
     ) {
-      if (feed.workspaceId) {
-        const { maxFeeds, dormant } =
-          await this.deps.supportersService.getWorkspaceBenefits(
-            feed.workspaceId,
-          );
+      const { maxFeeds, dormant } =
+        await this.deps.supportersService.resolveFeedBenefits(feed);
 
+      if (feed.workspaceId) {
         if (dormant) {
           throw new WorkspaceNotSubscribedException(
             `Workspace ${feed.workspaceId} has no active subscription`,
@@ -1024,17 +999,13 @@ export class UserFeedsService {
           );
         }
       } else {
-        const [{ maxUserFeeds }, currentFeedCount] = await Promise.all([
-          this.deps.supportersService.getBenefitsOfDiscordUser(
-            feed.user.discordUserId,
-          ),
-          this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
+        const currentFeedCount =
+          await this.deps.userFeedRepository.countByOwnershipExcludingDisabled(
             feed.user.discordUserId,
             DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
-          ),
-        ]);
+          );
 
-        if (currentFeedCount > maxUserFeeds) {
+        if (currentFeedCount > maxFeeds) {
           throw new FeedLimitReachedException(
             `Cannot re-enable feed ${feed.id} because user ${feed.user.discordUserId} has reached the feed limit`,
           );
@@ -1168,9 +1139,7 @@ export class UserFeedsService {
   }
   async getFeedDailyLimit(feed: IUserFeed) {
     const { articleRateLimits } =
-      await this.deps.supportersService.getBenefitsOfDiscordUser(
-        feed.user.discordUserId,
-      );
+      await this.deps.supportersService.resolveFeedBenefits(feed);
 
     const dailyLimit = articleRateLimits.find(
       (limit) => limit.timeWindowSeconds === 86400,
@@ -1874,9 +1843,7 @@ export class UserFeedsService {
         this.deps.usersService.getOrCreateUserByDiscordId(
           feed.user.discordUserId,
         ),
-      this.deps.supportersService.getBenefitsOfDiscordUser(
-        feed.user.discordUserId,
-      ),
+      this.deps.supportersService.resolveFeedBenefits(feed),
     ]);
 
     const lookupDetails = await this.deps.feedCredentialsService.getLookupDetails(

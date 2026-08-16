@@ -7,6 +7,7 @@ import {
 } from "../../helpers/test-context";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import { createMockFeedHandlerApi } from "../../helpers/mock-apis";
+import { buildPaddleCustomer } from "../../helpers/paddle-fixtures";
 import { UserFeedManagerStatus } from "../../../src/repositories/shared/enums";
 
 const feedHandler = createMockFeedHandlerApi();
@@ -145,6 +146,113 @@ describe(
         result: { status: string };
       };
       assert.strictEqual(body.result.status, "SUCCESS");
+    });
+
+    it("uses workspace subscription entitlements for premium preview fields", async () => {
+      const localFeedHandler = createMockFeedHandlerApi();
+      const localCtx = await createAppTestContext({
+        mockApis: { feedHandler: localFeedHandler },
+        configOverrides: {
+          BACKEND_API_ENABLE_SUPPORTERS: true,
+          BACKEND_API_PADDLE_KEY: "test-paddle-key",
+          BACKEND_API_PADDLE_URL: localFeedHandler.server.host,
+        },
+      });
+
+      try {
+        const discordUserId = generateSnowflake();
+        const user = await localCtx.asUser(discordUserId);
+        const storedUser =
+          await localCtx.container.usersService.getOrCreateUserByDiscordId(
+            discordUserId,
+          );
+        const workspace =
+          await localCtx.container.workspaceRepository.createWorkspaceWithOwner(
+            {
+              name: "Premium Preview Workspace",
+              slug: `premium-preview-${generateTestId()}`,
+              ownerUserId: storedUser.id,
+            },
+          );
+
+        await localCtx.connection.collection("workspaces").updateOne(
+          { _id: new Types.ObjectId(workspace.id) },
+          {
+            $set: {
+              paddleCustomer: buildPaddleCustomer({
+                subscriptionId: generateTestId(),
+              }),
+            },
+          },
+        );
+
+        const connectionId = generateTestId();
+        const feed = await localCtx.container.userFeedRepository.create({
+          title: "Workspace Feed",
+          url: `https://example.com/feed-${generateTestId()}.xml`,
+          user: { id: storedUser.id, discordUserId },
+          workspaceId: workspace.id,
+          connections: {
+            discordChannels: [
+              {
+                id: connectionId,
+                name: "workspace-connection",
+                details: {
+                  channel: { id: "ch-1", guildId: "guild-1" },
+                  embeds: [],
+                  formatter: {},
+                },
+              } as never,
+            ],
+          },
+        });
+        const articleId = generateTestId();
+        const customPlaceholder = {
+          id: "placeholder-1",
+          referenceName: "test",
+          sourcePlaceholder: "title",
+          steps: [],
+        };
+        const externalProperty = {
+          sourceField: "field1",
+          label: "Label 1",
+          cssSelector: ".selector",
+        };
+
+        const response = await user.fetch(testUrl(feed.id, connectionId), {
+          method: "POST",
+          body: JSON.stringify({
+            article: { id: articleId },
+            customPlaceholders: [customPlaceholder],
+            externalProperties: [externalProperty],
+          }),
+        });
+
+        assert.strictEqual(response.status, 201);
+
+        const request = localFeedHandler.server
+          .getRequestsForPath("/v1/user-feeds/test")
+          .find(
+            ({ body }) =>
+              (body as { article?: { id?: string } } | undefined)?.article
+                ?.id === articleId,
+          );
+        assert.ok(request);
+
+        const requestBody = request.body as {
+          feed: { externalProperties: unknown[] };
+          mediumDetails: { customPlaceholders: unknown[] };
+        };
+        assert.deepStrictEqual(requestBody.feed.externalProperties, [
+          externalProperty,
+        ]);
+        assert.deepStrictEqual(requestBody.mediumDetails.customPlaceholders, [
+          customPlaceholder,
+        ]);
+      } finally {
+        await localCtx.teardown();
+        await localFeedHandler.stop();
+      }
     });
 
     it("returns 201 for shared manager", async () => {

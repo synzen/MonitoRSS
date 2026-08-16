@@ -25,6 +25,7 @@ import type {
   BenefitsFromSupporter,
   SupporterSubscriptionResult,
   DiscordUserBenefits,
+  FeedBenefits,
 } from "./types";
 import type { GuildSubscriptionFormatted } from "../guild-subscriptions/types";
 import logger from "../../infra/logger";
@@ -531,6 +532,42 @@ export class SupportersService {
       refreshRateSeconds: this.defaultRefreshRateSeconds,
       allowWebhooks: false,
       dormant: true,
+    };
+  }
+
+  async resolveFeedBenefits(feed: {
+    workspaceId?: string;
+    user: { discordUserId: string };
+  }): Promise<FeedBenefits> {
+    if (feed.workspaceId) {
+      const benefits = await this.getWorkspaceBenefits(feed.workspaceId);
+
+      return {
+        ...benefits,
+        allowCustomPlaceholders: !benefits.dormant,
+        allowExternalProperties: !benefits.dormant,
+        articleRateLimits: [
+          {
+            max: benefits.maxDailyArticles,
+            timeWindowSeconds: 86400,
+          },
+        ],
+      };
+    }
+
+    const benefits = await this.getBenefitsOfDiscordUser(
+      feed.user.discordUserId,
+    );
+
+    return {
+      maxFeeds: benefits.maxUserFeeds,
+      maxDailyArticles: benefits.maxDailyArticles,
+      refreshRateSeconds: benefits.refreshRateSeconds,
+      allowWebhooks: benefits.isSupporter,
+      allowCustomPlaceholders: benefits.allowCustomPlaceholders,
+      allowExternalProperties: benefits.allowExternalProperties,
+      articleRateLimits: benefits.articleRateLimits,
+      dormant: false,
     };
   }
 

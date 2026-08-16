@@ -18,6 +18,17 @@ export interface ArticleRateLimit {
   timeWindowSeconds: number;
 }
 
+export interface FeedBenefits {
+  maxFeeds: number;
+  maxDailyArticles: number;
+  refreshRateSeconds: number;
+  allowWebhooks: boolean;
+  allowCustomPlaceholders: boolean;
+  allowExternalProperties: boolean;
+  articleRateLimits: ArticleRateLimit[];
+  dormant: boolean;
+}
+
 export interface SupporterBenefits {
   isSupporter: boolean;
   maxFeeds: number;

@@ -146,6 +146,7 @@ describe(
     };
     let mockSupportersService: {
       getBenefitsOfDiscordUser: ReturnType<typeof mock.fn>;
+      resolveFeedBenefits: ReturnType<typeof mock.fn>;
     };
     let mockUsersService: {
       getOrCreateUserByDiscordId: ReturnType<typeof mock.fn>;
@@ -163,10 +164,23 @@ describe(
           Promise.resolve({ status: TestDeliveryStatus.Success }),
         ),
       };
+      const getBenefitsOfDiscordUser = mock.fn((_discordUserId?: string) =>
+        Promise.resolve({
+          allowCustomPlaceholders: true,
+          allowExternalProperties: true,
+        }),
+      );
       mockSupportersService = {
-        getBenefitsOfDiscordUser: mock.fn(() =>
-          Promise.resolve({ allowCustomPlaceholders: true }),
-        ),
+        getBenefitsOfDiscordUser,
+        resolveFeedBenefits: mock.fn(async (feed: IUserFeed) => ({
+          maxFeeds: 5,
+          maxDailyArticles: 100,
+          refreshRateSeconds: 600,
+          allowWebhooks: true,
+          articleRateLimits: [],
+          dormant: false,
+          ...(await getBenefitsOfDiscordUser(feed.user.discordUserId)),
+        })),
       };
       mockUsersService = {
         getOrCreateUserByDiscordId: mock.fn(() =>
@@ -182,6 +196,8 @@ describe(
         mockFeedHandlerService.sendTestArticle;
       (ctx.container.supportersService as any).getBenefitsOfDiscordUser =
         mockSupportersService.getBenefitsOfDiscordUser;
+      (ctx.container.supportersService as any).resolveFeedBenefits =
+        mockSupportersService.resolveFeedBenefits;
       (ctx.container.usersService as any).getOrCreateUserByDiscordId =
         mockUsersService.getOrCreateUserByDiscordId;
     });
@@ -195,6 +211,7 @@ describe(
       mockFeedHandlerService.validateFilters.mock.resetCalls();
       mockFeedHandlerService.sendTestArticle.mock.resetCalls();
       mockSupportersService.getBenefitsOfDiscordUser.mock.resetCalls();
+      mockSupportersService.resolveFeedBenefits.mock.resetCalls();
       mockUsersService.getOrCreateUserByDiscordId.mock.resetCalls();
 
       mockFeedsService.canUseChannel.mock.mockImplementation(() =>
@@ -207,7 +224,24 @@ describe(
         Promise.resolve({ status: TestDeliveryStatus.Success }),
       );
       mockSupportersService.getBenefitsOfDiscordUser.mock.mockImplementation(
-        () => Promise.resolve({ allowCustomPlaceholders: true }),
+        () =>
+          Promise.resolve({
+            allowCustomPlaceholders: true,
+            allowExternalProperties: true,
+          }),
+      );
+      mockSupportersService.resolveFeedBenefits.mock.mockImplementation(
+        async (feed: IUserFeed) => ({
+          maxFeeds: 5,
+          maxDailyArticles: 100,
+          refreshRateSeconds: 600,
+          allowWebhooks: true,
+          articleRateLimits: [],
+          dormant: false,
+          ...(await mockSupportersService.getBenefitsOfDiscordUser(
+            feed.user.discordUserId,
+          )),
+        }),
       );
       mockUsersService.getOrCreateUserByDiscordId.mock.mockImplementation(() =>
         Promise.resolve({ preferences: {} }),
