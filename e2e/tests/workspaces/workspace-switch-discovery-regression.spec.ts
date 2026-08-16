@@ -78,7 +78,7 @@ test.describe("Workspace switch discovery regression", () => {
     const workspaceBName = `E2E Switch B ${Date.now()}`;
     await createWorkspace(page, workspaceBName);
     await expect(
-      page.getByRole("heading", { name: "Add feeds for your workspace" }),
+      page.getByRole("heading", { name: /^Add feeds to / }),
     ).toBeVisible({ timeout: 15000 });
 
     // Switch back to workspace A. Its feed is still there, so the table must reappear,
@@ -86,6 +86,6 @@ test.describe("Workspace switch discovery regression", () => {
     await switchToWorkspace(page, workspaceAName);
 
     await expect(page.getByRole("link", { name: /^Configure/ })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByRole("heading", { name: "Add feeds for your workspace" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: /^Add feeds to / })).toHaveCount(0);
   });
 });

@@ -151,7 +151,7 @@ test.describe("Paddle workspace feed-discovery limit regression", () => {
     // Fill the workspace up to the owner's PERSONAL limit (3). The workspace still
     // has 67 slots free, but the buggy gate keys on the personal 3.
     await expect(
-      page.getByRole("heading", { name: "Add feeds for your workspace" }),
+      page.getByRole("heading", { name: /^Add feeds to / }),
     ).toBeVisible({ timeout: 15000 });
     for (let i = 0; i < PERSONAL_FEED_LIMIT; i += 1) {
       await addMockFeedInline(page, i);
