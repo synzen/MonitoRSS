@@ -30,7 +30,7 @@ const PADDLE_CHECKOUT_TESTS = [
   "**/billing/paddle-workspace-roundtrip.spec.ts",
   "**/billing/paddle-workspace-conversion.spec.ts",
   // Not a checkout test, but it needs a billing-enabled backend (dormant
-  // workspaces only exist when Paddle is configured), and e2e-mock.sh blanks
+  // workspaces only exist when Paddle is configured), and the E2E runner blanks
   // the Paddle vars for every non-billing run.
   "**/billing/dormant-workspace-feed-retry.spec.ts",
   // Also not a checkout test: it opens the pricing dialog from the account
@@ -68,7 +68,7 @@ export default defineConfig({
     // tests burning minutes waiting on an element that will never appear.
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
-    headless: !!process.env.CI,
+    headless: process.env.E2E_HEADED !== "1",
     // Backend-issued OAuth redirects (mock Discord login, mock Reddit authorize)
     // point the BROWSER at host.docker.internal so the same base URL also works
     // for containers reaching the host-side mock servers. Docker Desktop adds
@@ -115,7 +115,7 @@ export default defineConfig({
   ],
   // Mock servers run on the HOST (not in Docker), so their output would otherwise be
   // lost. Each server tees its console to logs/mock-*.log (see helpers/log-to-file.ts)
-  // so e2e-mock.sh can fold them into the combined failure log; stdout/stderr are piped
+  // so the E2E runner can fold them into the combined failure log; stdout/stderr are piped
   // so Playwright also surfaces them in its own run output.
   webServer: [
     {

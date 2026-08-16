@@ -4,7 +4,7 @@ import { join } from "path";
 // Mock servers run on the HOST (launched by Playwright's webServer), so their console
 // output is otherwise lost. Tee it to logs/<name><suffix>.log — done in TS rather than a
 // shell `| tee` so it works regardless of the OS shell Playwright spawns (cmd.exe on
-// Windows has no tee). e2e-mock.sh folds these files into logs/combined.log on teardown.
+// Windows has no tee). The E2E runner folds these files into logs/combined.log on teardown.
 export function teeConsoleToFile(name: string): void {
   const suffix =
     !process.env.E2E_INSTANCE || process.env.E2E_INSTANCE === "0"

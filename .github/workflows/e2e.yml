@@ -36,8 +36,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests (web shard ${{ matrix.shard }}/4)
-        working-directory: e2e
-        run: bash e2e-mock.sh --project=e2e-web --shard=${{ matrix.shard }}/4
+        run: npm run e2e:web -- -- --shard=${{ matrix.shard }}/4
 
       - name: Upload test results
         if: ${{ !cancelled() }}
@@ -74,8 +73,7 @@ jobs:
           sudo dpkg -i cloudflared.deb
 
       - name: Run E2E tests (paddle)
-        working-directory: e2e
-        run: bash e2e-mock.sh --project=e2e-paddle
+        run: npm run e2e:paddle
 
       - name: Upload test results
         if: ${{ !cancelled() }}
