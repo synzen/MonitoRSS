@@ -17,6 +17,10 @@ export type RunProcessOptions = {
   ) => ChildProcess;
 };
 
+export function toPlaywrightArgs(args: string[]): string[] {
+  return args.filter((arg) => arg !== "--doctor" && arg !== "--");
+}
+
 export function classifyPortBindError(
   error: NodeJS.ErrnoException,
 ): "busy" | "unsupported" | "fatal" {

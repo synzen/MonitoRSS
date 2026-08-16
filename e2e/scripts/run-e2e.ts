@@ -17,7 +17,11 @@ import {
   deleteNotificationSetting,
   deleteStaleEphemeralNotificationSettings,
 } from "../helpers/paddle-api";
-import { isPortFree, runProcess as runChildProcess } from "./run-e2e-utils";
+import {
+  isPortFree,
+  runProcess as runChildProcess,
+  toPlaywrightArgs,
+} from "./run-e2e-utils";
 
 const E2E_DIR = resolve(__dirname, "..");
 const REPO_ROOT = resolve(E2E_DIR, "..");
@@ -499,7 +503,7 @@ async function main(): Promise<number> {
 
   const rawArgs = process.argv.slice(2);
   const doctorOnly = rawArgs.includes("--doctor");
-  const playwrightArgs = rawArgs.filter((arg) => arg !== "--doctor");
+  const playwrightArgs = toPlaywrightArgs(rawArgs);
   const effectiveArgs = playwrightArgs.length
     ? playwrightArgs
     : ["--project=e2e-web"];
