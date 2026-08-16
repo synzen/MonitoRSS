@@ -127,9 +127,11 @@ async function addMockFeedInline(page: Page, index: number): Promise<void> {
   const addButton = page.getByRole("button", { name: /^Add .+ feed$/i }).first();
   await expect(addButton).toBeVisible({ timeout: 30000 });
   await addButton.click();
-  await expect(page.getByRole("button", { name: /^Remove .+ feed$/i }).first()).toBeVisible({
-    timeout: 15000,
-  });
+  await expect(
+    page.getByRole("heading", {
+      name: new RegExp(`${index + 1} feeds? added`),
+    }),
+  ).toBeVisible({ timeout: 15000 });
 }
 
 test.describe("Paddle workspace feed-discovery limit regression", () => {
