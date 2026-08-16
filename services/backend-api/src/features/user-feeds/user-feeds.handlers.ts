@@ -113,8 +113,8 @@ interface SupportersServiceForFormat {
   defaultRefreshRateSeconds: number;
   defaultSupporterRefreshRateSeconds: number;
   areSupportersEnabled(): Promise<boolean | undefined>;
-  getBenefitsOfDiscordUser(
-    discordUserId: string,
+  resolveFeedBenefits(
+    feed: Pick<IUserFeed, "workspaceId" | "user">,
   ): Promise<{ refreshRateSeconds: number }>;
 }
 
@@ -128,6 +128,7 @@ export async function formatUserFeedResponse(
   );
 
   const isOwner = feed.user.discordUserId === discordUserId;
+  const feedBenefits = await supportersService.resolveFeedBenefits(feed);
 
   const userInviteId = feed.shareManageOptions?.invites?.find(
     (u) =>
@@ -144,14 +145,10 @@ export async function formatUserFeedResponse(
   ];
 
   if (await supportersService.areSupportersEnabled()) {
-    const feedOwnerBenefits = await supportersService.getBenefitsOfDiscordUser(
-      feed.user.discordUserId,
-    );
-
     refreshRateOptions.unshift({
       rateSeconds: supportersService.defaultSupporterRefreshRateSeconds,
       disabledCode:
-        feedOwnerBenefits.refreshRateSeconds >=
+        feedBenefits.refreshRateSeconds >=
         supportersService.defaultRefreshRateSeconds
           ? "INSUFFICIENT_SUPPORTER_TIER"
           : undefined,
@@ -176,12 +173,7 @@ export async function formatUserFeedResponse(
     formatOptions: feed.formatOptions,
     dateCheckOptions: feed.dateCheckOptions,
     refreshRateSeconds:
-      feed.refreshRateSeconds ||
-      (
-        await supportersService.getBenefitsOfDiscordUser(
-          feed.user.discordUserId,
-        )
-      ).refreshRateSeconds,
+      feed.refreshRateSeconds || feedBenefits.refreshRateSeconds,
     userRefreshRateSeconds: feed.userRefreshRateSeconds,
     // Workspace feeds use workspace membership for access, not per-user share invites,
     // so the sharing UI is never surfaced for them.

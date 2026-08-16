@@ -90,6 +90,75 @@ describe("SupportersService", { concurrency: true }, () => {
     });
   });
 
+  describe("resolveFeedBenefits", () => {
+    it("uses workspace benefits instead of the creator's personal benefits", async () => {
+      const ctx = harness.createContext();
+      await ctx.createValidSupporter();
+
+      const benefits = await ctx.service.resolveFeedBenefits({
+        workspaceId: ctx.generateId(),
+        user: { discordUserId: ctx.discordUserId },
+      });
+
+      assert.strictEqual(
+        benefits.refreshRateSeconds,
+        TEST_DEFAULTS.refreshRateSeconds,
+      );
+      assert.strictEqual(
+        benefits.maxDailyArticles,
+        TEST_DEFAULTS.maxDailyArticlesDefault,
+      );
+    });
+
+    it("preserves personal feed benefits", async () => {
+      const ctx = harness.createContext();
+      await ctx.createValidSupporter();
+
+      const benefits = await ctx.service.resolveFeedBenefits({
+        user: { discordUserId: ctx.discordUserId },
+      });
+
+      assert.strictEqual(benefits.refreshRateSeconds, 120);
+      assert.strictEqual(
+        benefits.maxDailyArticles,
+        TEST_DEFAULTS.maxDailyArticlesSupporter,
+      );
+    });
+
+    it("does not inherit capabilities from a dormant workspace creator", async () => {
+      const ctx = harness.createContext();
+      ctx.service.getBenefitsOfDiscordUser = async () => ({
+        isSupporter: true,
+        maxFeeds: 5,
+        guilds: [],
+        maxGuilds: 1,
+        refreshRateSeconds: 120,
+        maxDailyArticles: 500,
+        maxUserFeeds: 1000,
+        maxUserFeedsComposition: { base: 1000, legacy: 0 },
+        allowCustomPlaceholders: true,
+        articleRateLimits: [{ max: 500, timeWindowSeconds: 86400 }],
+        allowExternalProperties: true,
+      });
+      ctx.service.getWorkspaceBenefits = async () => ({
+        maxFeeds: 0,
+        maxDailyArticles: 50,
+        refreshRateSeconds: 600,
+        allowWebhooks: false,
+        dormant: true,
+      });
+
+      const benefits = await ctx.service.resolveFeedBenefits({
+        workspaceId: ctx.generateId(),
+        user: { discordUserId: ctx.discordUserId },
+      });
+
+      assert.strictEqual(benefits.allowCustomPlaceholders, false);
+      assert.strictEqual(benefits.allowExternalProperties, false);
+      assert.strictEqual(benefits.dormant, true);
+    });
+  });
+
   describe("getBenefitsOfServers", () => {
     it("always returns results for every input server id", async () => {
       const ctx = harness.createContext();

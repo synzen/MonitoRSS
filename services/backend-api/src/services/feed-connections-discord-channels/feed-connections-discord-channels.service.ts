@@ -93,11 +93,9 @@ export class FeedConnectionsDiscordChannelsService {
       };
     } else if (inputWebhook?.id || applicationWebhook?.channelId) {
       const benefits =
-        await this.deps.supportersService.getBenefitsOfDiscordUser(
-          feed.user.discordUserId,
-        );
+        await this.deps.supportersService.resolveFeedBenefits(feed);
 
-      if (!benefits.isSupporter) {
+      if (!benefits.allowWebhooks) {
         throw new InsufficientSupporterLevelException(
           "User must be a supporter to add webhooks",
         );
@@ -332,11 +330,9 @@ export class FeedConnectionsDiscordChannelsService {
         updates.details.webhook?.iconUrl ||
         updates.details.applicationWebhook?.iconUrl;
       const benefits =
-        await this.deps.supportersService.getBenefitsOfDiscordUser(
-          feed.user.discordUserId,
-        );
+        await this.deps.supportersService.resolveFeedBenefits(feed);
 
-      if (!benefits.isSupporter) {
+      if (!benefits.allowWebhooks) {
         throw new InsufficientSupporterLevelException(
           "User must be a supporter to add webhooks",
         );
@@ -936,9 +932,7 @@ export class FeedConnectionsDiscordChannelsService {
 
     if (hasPremiumFeatures) {
       const { allowCustomPlaceholders, allowExternalProperties } =
-        await this.deps.supportersService.getBenefitsOfDiscordUser(
-          userFeed.user.discordUserId,
-        );
+        await this.deps.supportersService.resolveFeedBenefits(userFeed);
 
       if (!allowCustomPlaceholders) {
         useCustomPlaceholders = [];
@@ -1123,11 +1117,6 @@ export class FeedConnectionsDiscordChannelsService {
             ) || [],
         }))
       : undefined;
-
-    const { isSupporter } =
-      await this.deps.supportersService.getBenefitsOfDiscordUser(
-        userFeed.user.discordUserId,
-      );
 
     let webhookDetails:
       | SendTestArticleInput["details"]["mediumDetails"]["webhook"]

@@ -6,6 +6,7 @@ import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handle
 import type { IDiscordChannelConnection } from "../../src/repositories/interfaces/feed-connection.types";
 import type { FeedConnectionDisabledCode } from "../../src/repositories/shared/enums";
 import type { SessionAccessToken } from "../../src/services/discord-auth/types";
+import type { IUserFeed } from "../../src/repositories/interfaces/user-feed.types";
 import { generateTestId } from "./test-id";
 
 export function createMockAccessToken(userId: string): SessionAccessToken {
@@ -72,24 +73,57 @@ export interface MockSupportersOptions {
 export function createMockSupportersService(
   options: MockSupportersOptions = {},
 ): UserFeedsServiceDeps["supportersService"] {
+  const personalBenefits = {
+    maxUserFeeds: options.maxUserFeeds ?? 5,
+    maxDailyArticles: options.maxDailyArticles ?? 100,
+    refreshRateSeconds: options.refreshRateSeconds ?? 600,
+    isSupporter: options.isSupporter ?? false,
+  };
+  const workspaceBenefits = {
+    maxFeeds: options.workspaceMaxFeeds ?? 5,
+    maxDailyArticles: options.workspaceMaxDailyArticles ?? 100,
+    refreshRateSeconds: options.workspaceRefreshRateSeconds ?? 600,
+    allowWebhooks: options.workspaceAllowWebhooks ?? false,
+    dormant: false,
+  };
+
   return {
     defaultMaxUserFeeds: options.defaultMaxUserFeeds ?? 5,
     defaultRefreshRateSeconds: options.defaultRefreshRateSeconds ?? 600,
     defaultSupporterRefreshRateSeconds:
       options.defaultSupporterRefreshRateSeconds ?? 120,
-    getBenefitsOfDiscordUser: async () => ({
-      maxUserFeeds: options.maxUserFeeds ?? 5,
-      maxDailyArticles: options.maxDailyArticles ?? 100,
-      refreshRateSeconds: options.refreshRateSeconds ?? 600,
-      isSupporter: options.isSupporter ?? false,
-    }),
-    getWorkspaceBenefits: async () => ({
-      maxFeeds: options.workspaceMaxFeeds ?? 5,
-      maxDailyArticles: options.workspaceMaxDailyArticles ?? 100,
-      refreshRateSeconds: options.workspaceRefreshRateSeconds ?? 600,
-      allowWebhooks: options.workspaceAllowWebhooks ?? false,
-      dormant: false,
-    }),
+    getBenefitsOfDiscordUser: async () => personalBenefits,
+    getWorkspaceBenefits: async () => workspaceBenefits,
+    resolveFeedBenefits: async (
+      feed: Pick<IUserFeed, "workspaceId" | "user">,
+    ) =>
+      feed.workspaceId
+        ? {
+            ...workspaceBenefits,
+            allowCustomPlaceholders: true,
+            allowExternalProperties: true,
+            articleRateLimits: [
+              {
+                max: workspaceBenefits.maxDailyArticles,
+                timeWindowSeconds: 86400,
+              },
+            ],
+          }
+        : {
+            maxFeeds: personalBenefits.maxUserFeeds,
+            maxDailyArticles: personalBenefits.maxDailyArticles,
+            refreshRateSeconds: personalBenefits.refreshRateSeconds,
+            allowWebhooks: personalBenefits.isSupporter,
+            allowCustomPlaceholders: personalBenefits.isSupporter,
+            allowExternalProperties: personalBenefits.isSupporter,
+            articleRateLimits: [
+              {
+                max: personalBenefits.maxDailyArticles,
+                timeWindowSeconds: 86400,
+              },
+            ],
+            dormant: false,
+          },
   } as unknown as UserFeedsServiceDeps["supportersService"];
 }
 

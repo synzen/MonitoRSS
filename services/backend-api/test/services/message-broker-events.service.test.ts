@@ -267,12 +267,12 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
       });
 
       assert.strictEqual(
-        ctx.supportersService.getBenefitsOfDiscordUser.mock.callCount(),
+        ctx.supportersService.resolveFeedBenefits.mock.callCount(),
         1,
       );
       assert.deepStrictEqual(
-        ctx.supportersService.getBenefitsOfDiscordUser.mock.calls[0]?.arguments,
-        ["user-123"],
+        ctx.supportersService.resolveFeedBenefits.mock.calls[0]?.arguments,
+        [mockFeed],
       );
     });
 
@@ -326,7 +326,7 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
       });
 
       assert.strictEqual(
-        ctx.supportersService.getBenefitsOfDiscordUser.mock.callCount(),
+        ctx.supportersService.resolveFeedBenefits.mock.callCount(),
         1,
       );
     });
@@ -367,7 +367,7 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
       });
 
       assert.strictEqual(
-        ctx.supportersService.getBenefitsOfDiscordUser.mock.callCount(),
+        ctx.supportersService.resolveFeedBenefits.mock.callCount(),
         0,
       );
     });
@@ -416,33 +416,18 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
         },
       });
 
-      ctx.supportersService.getBenefitsOfDiscordUser = {
-        mock: {
-          callCount: () => callCount,
-          calls: [],
-        },
-      } as never;
-
-      const originalGetBenefits =
-        ctx.supportersService.getBenefitsOfDiscordUser;
-      (
-        ctx.service as unknown as {
-          deps: {
-            supportersService: {
-              getBenefitsOfDiscordUser: () => Promise<unknown>;
-            };
+      ctx.supportersService.resolveFeedBenefits.mock.mockImplementation(
+        async () => {
+          callCount++;
+          if (callCount === 1) {
+            throw new Error("Simulated error");
+          }
+          return {
+            allowCustomPlaceholders: false,
+            allowExternalProperties: false,
           };
-        }
-      ).deps.supportersService.getBenefitsOfDiscordUser = async () => {
-        callCount++;
-        if (callCount === 1) {
-          throw new Error("Simulated error");
-        }
-        return {
-          allowCustomPlaceholders: false,
-          allowExternalProperties: false,
-        };
-      };
+        },
+      );
 
       await ctx.service.handleUrlFetchCompletedEvent({
         data: {
@@ -827,6 +812,66 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
   });
 
   describe("emitDeliverFeedArticlesEvent", () => {
+    it("publishes workspace-granted custom placeholders and external properties", async () => {
+      const ctx = harness.createContext({
+        supportersService: {
+          getBenefitsResult: {
+            allowCustomPlaceholders: false,
+            allowExternalProperties: false,
+          },
+          resolveFeedBenefitsResult: {
+            allowCustomPlaceholders: true,
+            allowExternalProperties: true,
+          },
+        },
+      });
+      const customPlaceholder = { id: "placeholder-1", steps: [] };
+      const externalProperty = {
+        id: "property-1",
+        sourceField: "title",
+        cssSelector: ".title",
+        label: "externalTitle",
+      };
+      const userFeed = {
+        id: "workspace-feed-123",
+        workspaceId: "workspace-123",
+        url: "https://example.com/workspace-feed.xml",
+        user: { discordUserId: "creator-123" },
+        connections: {
+          discordChannels: [
+            {
+              id: "connection-123",
+              details: {
+                channel: { id: "channel-123", guildId: "guild-123" },
+                embeds: [],
+                formatter: {},
+              },
+              customPlaceholders: [customPlaceholder],
+            },
+          ],
+        },
+        externalProperties: [externalProperty],
+      };
+
+      await ctx.service.emitDeliverFeedArticlesEventWithPremiumCheck(
+        userFeed as never,
+      );
+
+      const [, message] = ctx.publishMessage.mock.calls[0]?.arguments || [];
+      const data = (
+        message as {
+          data: {
+            feed: { externalProperties?: unknown[] };
+            mediums: Array<{ details: { customPlaceholders: unknown[] } }>;
+          };
+        }
+      ).data;
+      assert.deepStrictEqual(data.feed.externalProperties, [externalProperty]);
+      assert.deepStrictEqual(data.mediums[0]?.details.customPlaceholders, [
+        customPlaceholder,
+      ]);
+    });
+
     it("should publish message to feed.deliver-articles queue", async () => {
       const ctx = harness.createContext();
       const userFeed = {
