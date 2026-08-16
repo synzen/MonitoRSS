@@ -4,7 +4,13 @@ import {
   BadRequestError,
   ConflictError,
   ForbiddenError,
+  NotFoundError,
 } from "../../infra/error-handler";
+import {
+  PersonalFeedMoveCapacityExceededError,
+  PersonalFeedMoveFeedMissingError,
+  PersonalFeedMoveOwnershipChangedError,
+} from "../../repositories/interfaces/user-feed.types";
 import type { IWorkspaceInvite } from "../../repositories/mongoose/workspace.mongoose.repository";
 import { isAdminUser } from "../../shared/utils/admin";
 import type {
@@ -178,22 +184,54 @@ export async function movePersonalFeedsToWorkspaceHandler(
 ): Promise<void> {
   const { workspacesService, supportersService, personalFeedMovesService } =
     request.container;
-  const { workspace } = await workspacesService.getWorkspaceForMemberBySlug(
-    request.params.workspaceSlug,
-    request.userId as string,
-  );
+  const { workspace } = await workspacesService
+    .getWorkspaceForMemberBySlug(
+      request.params.workspaceSlug,
+      request.userId as string,
+    )
+    .catch((error: unknown) => {
+      if (error instanceof NotFoundError) {
+        throw new ConflictError(
+          ApiErrorCode.WORKSPACE_PERSONAL_FEED_MOVE_MEMBERSHIP_CHANGED,
+        );
+      }
+
+      throw error;
+    });
   const benefits = await supportersService.getWorkspaceBenefits(workspace.id);
 
   if (benefits.dormant) {
     throw new BadRequestError(ApiErrorCode.WORKSPACE_NOT_SUBSCRIBED);
   }
 
-  const receipt = await personalFeedMovesService.moveToWorkspace({
-    discordUserId: request.discordUserId,
-    feedIds: request.body.feedIds,
-    workspaceId: workspace.id,
-    maxWorkspaceFeeds: benefits.maxFeeds,
-  });
+  const receipt = await personalFeedMovesService
+    .moveToWorkspace({
+      discordUserId: request.discordUserId,
+      feedIds: request.body.feedIds,
+      workspaceId: workspace.id,
+      maxWorkspaceFeeds: benefits.maxFeeds,
+    })
+    .catch((error: unknown) => {
+      if (error instanceof PersonalFeedMoveCapacityExceededError) {
+        throw new ConflictError(
+          ApiErrorCode.WORKSPACE_PERSONAL_FEED_MOVE_CAPACITY_CHANGED,
+        );
+      }
+
+      if (error instanceof PersonalFeedMoveFeedMissingError) {
+        throw new ConflictError(
+          ApiErrorCode.WORKSPACE_PERSONAL_FEED_MOVE_FEED_MISSING,
+        );
+      }
+
+      if (error instanceof PersonalFeedMoveOwnershipChangedError) {
+        throw new ConflictError(
+          ApiErrorCode.WORKSPACE_PERSONAL_FEED_MOVE_OWNERSHIP_CHANGED,
+        );
+      }
+
+      throw error;
+    });
 
   return reply.send({ result: { movedCount: receipt.feeds.length } });
 }

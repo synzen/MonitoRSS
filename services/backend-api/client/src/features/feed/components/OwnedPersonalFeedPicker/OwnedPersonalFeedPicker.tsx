@@ -92,6 +92,7 @@ interface Props {
   }) => void;
   onRedditChange?: (info: { redditSelectedCount: number }) => void;
   onUserEdit?: () => void;
+  retainSelectedRows?: boolean;
 }
 
 export const OwnedPersonalFeedPicker = ({
@@ -103,6 +104,7 @@ export const OwnedPersonalFeedPicker = ({
   onSharingChange,
   onRedditChange,
   onUserEdit,
+  retainSelectedRows = false,
 }: Props) => {
   const copy = { ...defaultCopy, ...copyOverrides };
   const keepDirectionId = useId();
@@ -124,6 +126,11 @@ export const OwnedPersonalFeedPicker = ({
   const totalCount = data?.pages[0]?.total;
   const browseFeeds = data?.pages.flatMap((p) => p.results) ?? [];
   const fetchedSoFarCount = browseFeeds.length;
+  const observedFeedsRef = useRef<Map<string, { id: string; title: string }>>(new Map());
+
+  browseFeeds.forEach((feed) => {
+    observedFeedsRef.current.set(feed.id, { id: feed.id, title: feed.title });
+  });
 
   // The owner's full feed count, latched from the unsearched query. `totalCount`
   // reflects the *filtered* total during a search, so deriving over-limit from it
@@ -329,6 +336,8 @@ export const OwnedPersonalFeedPicker = ({
       setSearchInput("");
       setSearch("");
       results.forEach((f) => {
+        observedFeedsRef.current.set(f.id, { id: f.id, title: f.title });
+
         if (f.sharedManagers) {
           sharingByFeedIdRef.current.set(f.id, f.sharedManagers);
         }
@@ -402,6 +411,16 @@ export const OwnedPersonalFeedPicker = ({
   // feed twice. Otherwise the plain browse list.
   const pickedIds = new Set(pickedTop?.map((f) => f.id));
   const browseRows = pickedTop ? browseFeeds.filter((f) => !pickedIds.has(f.id)) : browseFeeds;
+  const renderedIds = new Set([...pickedIds, ...browseRows.map((feed) => feed.id)]);
+  const refreshedSelectedRows = retainSelectedRows
+    ? [...selectedIds]
+        .filter((id) => !renderedIds.has(id))
+        .flatMap((id) => {
+          const feed = observedFeedsRef.current.get(id);
+
+          return feed ? [feed] : [];
+        })
+    : [];
 
   let searchEndElement: ReactNode;
 
@@ -727,6 +746,7 @@ export const OwnedPersonalFeedPicker = ({
           </Box>
         )}
         <Stack as="ul" listStyleType="none" gap={3} p={4}>
+          {refreshedSelectedRows.map((feed) => renderRow(feed))}
           {pickedTop?.map((feed) => renderRow(feed))}
           {browseRows.map((feed) => renderRow(feed))}
           {status === "loading" && (

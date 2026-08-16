@@ -83,6 +83,10 @@ export enum ApiErrorCode {
   WORKSPACE_PERSONAL_PLAN_NOT_CONVERTIBLE = "WORKSPACE_PERSONAL_PLAN_NOT_CONVERTIBLE",
   WORKSPACE_ALREADY_SUBSCRIBED = "WORKSPACE_ALREADY_SUBSCRIBED",
   WORKSPACE_INVALID_CONVERSION_FEEDS = "WORKSPACE_INVALID_CONVERSION_FEEDS",
+  WORKSPACE_PERSONAL_FEED_MOVE_CAPACITY_CHANGED = "WORKSPACE_PERSONAL_FEED_MOVE_CAPACITY_CHANGED",
+  WORKSPACE_PERSONAL_FEED_MOVE_FEED_MISSING = "WORKSPACE_PERSONAL_FEED_MOVE_FEED_MISSING",
+  WORKSPACE_PERSONAL_FEED_MOVE_MEMBERSHIP_CHANGED = "WORKSPACE_PERSONAL_FEED_MOVE_MEMBERSHIP_CHANGED",
+  WORKSPACE_PERSONAL_FEED_MOVE_OWNERSHIP_CHANGED = "WORKSPACE_PERSONAL_FEED_MOVE_OWNERSHIP_CHANGED",
   WORKSPACE_CONVERSION_IN_PROGRESS = "WORKSPACE_CONVERSION_IN_PROGRESS",
   WORKSPACE_INSUFFICIENT_ROLE = "WORKSPACE_INSUFFICIENT_ROLE",
   WORKSPACE_SLUG_TAKEN = "WORKSPACE_SLUG_TAKEN",
@@ -212,14 +216,21 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     "You already own a workspace that has never been activated. Activate or delete it before creating another workspace.",
   WORKSPACE_BILLING_NOT_CONFIGURED:
     "Workspace billing is not available on this instance",
-  WORKSPACE_INVALID_TIER:
-    "This plan is not available for workspaces",
+  WORKSPACE_INVALID_TIER: "This plan is not available for workspaces",
   WORKSPACE_PERSONAL_PLAN_NOT_CONVERTIBLE:
     "A Tier 2 or Tier 3 personal plan is required to convert into a workspace plan",
   WORKSPACE_ALREADY_SUBSCRIBED:
     "This workspace already has its own subscription",
   WORKSPACE_INVALID_CONVERSION_FEEDS:
     "The selected feeds must all be your own personal feeds and fit within the plan's feed limit",
+  WORKSPACE_PERSONAL_FEED_MOVE_CAPACITY_CHANGED:
+    "The workspace's available feed capacity changed",
+  WORKSPACE_PERSONAL_FEED_MOVE_FEED_MISSING:
+    "One or more selected feeds no longer exist",
+  WORKSPACE_PERSONAL_FEED_MOVE_MEMBERSHIP_CHANGED:
+    "Your workspace membership changed",
+  WORKSPACE_PERSONAL_FEED_MOVE_OWNERSHIP_CHANGED:
+    "One or more selected feeds are no longer your personal feeds",
   WORKSPACE_CONVERSION_IN_PROGRESS:
     "A conversion is already in progress for this workspace. Please wait for it to finish",
   WORKSPACE_INSUFFICIENT_ROLE:
@@ -237,8 +248,7 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     "Verify the invited email address to act on this invitation",
   WORKSPACE_INVITE_EMAIL_MISMATCH:
     "This invitation was sent to a different email than your verified address",
-  WORKSPACE_INVITE_ALREADY_MEMBER:
-    "You are already a member of this workspace",
+  WORKSPACE_INVITE_ALREADY_MEMBER: "You are already a member of this workspace",
   WORKSPACE_INVITE_RESEND_TOO_SOON:
     "Please wait before resending this invitation.",
   WORKSPACE_INVITE_LIMIT_REACHED:

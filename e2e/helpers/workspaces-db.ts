@@ -15,7 +15,9 @@ async function withDb<T>(
 }
 
 async function withUsersCollection<T>(
-  fn: (collection: ReturnType<ReturnType<MongoClient["db"]>["collection"]>) => Promise<T>,
+  fn: (
+    collection: ReturnType<ReturnType<MongoClient["db"]>["collection"]>,
+  ) => Promise<T>,
 ): Promise<T> {
   return withDb((db) => fn(db.collection("users")));
 }
@@ -25,7 +27,9 @@ async function withUsersCollection<T>(
  * mirroring `setSupporterStatusInDb`. This flag is the sole gate for the workspaces
  * feature; without it the routes return 404.
  */
-export async function enableWorkspacesFeatureInDb(discordUserId: string): Promise<void> {
+export async function enableWorkspacesFeatureInDb(
+  discordUserId: string,
+): Promise<void> {
   await withUsersCollection((users) =>
     users.updateOne(
       { discordUserId },
@@ -97,7 +101,10 @@ export async function seedWorkspaceInviteInDb(input: {
       updatedAt: now,
     });
 
-    return { inviteId: inviteId.toHexString(), workspaceId: workspaceId.toHexString() };
+    return {
+      inviteId: inviteId.toHexString(),
+      workspaceId: workspaceId.toHexString(),
+    };
   });
 }
 
@@ -105,7 +112,9 @@ export async function seedWorkspaceInviteInDb(input: {
  * Opt a user into disabled-feed alert emails (the same preference the alerting
  * settings page writes). Alert/digest recipients are filtered on this flag.
  */
-export async function setDisabledFeedAlertPreferenceInDb(discordUserId: string): Promise<void> {
+export async function setDisabledFeedAlertPreferenceInDb(
+  discordUserId: string,
+): Promise<void> {
   await withUsersCollection((users) =>
     users.updateOne(
       { discordUserId },
@@ -196,6 +205,7 @@ export async function seedPersonalFeedsInDb(input: {
   feeds: Array<{
     title: string;
     url: string;
+    disabledCode?: string;
     acceptedManagerDiscordUserId?: string;
   }>;
 }): Promise<void> {
@@ -206,6 +216,7 @@ export async function seedPersonalFeedsInDb(input: {
       input.feeds.map((feed, index) => ({
         title: feed.title,
         url: feed.url,
+        ...(feed.disabledCode ? { disabledCode: feed.disabledCode } : {}),
         healthStatus: "OK",
         connections: { discordChannels: [] },
         user: { id: input.userId, discordUserId: input.discordUserId },
@@ -235,13 +246,64 @@ export async function seedPersonalFeedsInDb(input: {
   });
 }
 
+export async function deletePersonalFeedInDb(input: {
+  userId: ObjectId;
+  title: string;
+}): Promise<void> {
+  await withDb(async (db) => {
+    await db.collection("userfeeds").deleteOne({
+      title: input.title,
+      "user.id": input.userId,
+      workspaceId: { $exists: false },
+    });
+  });
+}
+
+export async function changePersonalFeedOwnerInDb(input: {
+  userId: ObjectId;
+  title: string;
+}): Promise<void> {
+  await withDb(async (db) => {
+    const nextOwnerId = new ObjectId();
+    await db.collection("userfeeds").updateOne(
+      {
+        title: input.title,
+        "user.id": input.userId,
+        workspaceId: { $exists: false },
+      },
+      {
+        $set: {
+          user: {
+            id: nextOwnerId,
+            discordUserId: `owner-${nextOwnerId.toHexString()}`,
+          },
+        },
+      },
+    );
+  });
+}
+
+export async function removeWorkspaceMembershipInDb(input: {
+  workspaceId: string;
+  userId: ObjectId;
+}): Promise<void> {
+  await withDb(async (db) => {
+    await db.collection("workspacememberships").deleteOne({
+      workspaceId: new ObjectId(input.workspaceId),
+      userId: input.userId,
+    });
+  });
+}
+
 /**
  * Resolve a Discord user id to the user's Mongo `_id`. Membership rows bind to the
  * Mongo user id (Discord-agnostic), so seeding the authenticated test user as a
  * member needs their `_id`, not their Discord id. The user document is created on
  * first authenticated request, so this is read after the app has loaded.
  */
-export async function getUserMongoIdFromDiscordId(discordUserId: string): Promise<ObjectId> {
+export async function getUserMongoIdFromDiscordId(
+  discordUserId: string,
+): Promise<ObjectId> {
   return withUsersCollection(async (users) => {
     const user = await users.findOne({ discordUserId });
 
@@ -454,4 +516,3 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
     return { workspaceId: workspaceId.toHexString(), slug };
   });
 }
-

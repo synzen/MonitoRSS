@@ -4,7 +4,9 @@ import { Types } from "mongoose";
 import { UserFeedMongooseRepository } from "../../src/repositories/mongoose/user-feed.mongoose.repository";
 import {
   PersonalFeedMoveCapacityExceededError,
+  PersonalFeedMoveFeedMissingError,
   PersonalFeedMoveInvalidSelectionError,
+  PersonalFeedMoveOwnershipChangedError,
 } from "../../src/repositories/interfaces/user-feed.types";
 import {
   UserFeedDisabledCode,
@@ -185,7 +187,7 @@ describe("UserFeedMongooseRepository personal feed moves", () => {
         workspaceId,
         maxWorkspaceFeeds: 2,
       }),
-      (error) => error instanceof PersonalFeedMoveInvalidSelectionError,
+      (error) => error instanceof PersonalFeedMoveOwnershipChangedError,
     );
 
     assert.strictEqual(
@@ -213,20 +215,20 @@ describe("UserFeedMongooseRepository personal feed moves", () => {
       workspaceId,
     });
 
-    for (const feedIds of [
-      [generateTestId()],
-      ["not-an-object-id"],
-      [feed.id, feed.id],
-      [workspaceFeed.id],
-    ]) {
+    for (const [feedIds, expectedError] of [
+      [[generateTestId()], PersonalFeedMoveFeedMissingError],
+      [["not-an-object-id"], PersonalFeedMoveInvalidSelectionError],
+      [[feed.id, feed.id], PersonalFeedMoveInvalidSelectionError],
+      [[workspaceFeed.id], PersonalFeedMoveOwnershipChangedError],
+    ] as const) {
       await assert.rejects(
         repository.movePersonalFeedsToWorkspace({
-          feedIds,
+          feedIds: [...feedIds],
           discordUserId,
           workspaceId,
           maxWorkspaceFeeds: 5,
         }),
-        (error) => error instanceof PersonalFeedMoveInvalidSelectionError,
+        (error) => error instanceof expectedError,
       );
     }
 

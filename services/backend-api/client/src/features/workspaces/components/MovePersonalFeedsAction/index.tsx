@@ -5,6 +5,7 @@ import { OwnedPersonalFeedPicker, useOwnedPersonalFeeds } from "@/features/feed"
 import { DiscordUsername } from "@/features/discordUser";
 import { pages } from "@/constants";
 import { useMovePersonalFeedsToWorkspace } from "../../hooks";
+import type { WorkspaceRole } from "../../types";
 
 interface SharingInfo {
   sharedSelectedCount: number;
@@ -17,6 +18,8 @@ interface Props {
   workspaceSlug: string;
   allowance: number;
   workspaceHasActiveRedditGrant: boolean;
+  workspaceRole?: WorkspaceRole | null;
+  presentation?: "banner" | "toolbar";
   onMoved: (movedCount: number) => void;
 }
 
@@ -25,6 +28,8 @@ export const MovePersonalFeedsAction = ({
   workspaceSlug,
   allowance,
   workspaceHasActiveRedditGrant,
+  workspaceRole,
+  presentation = "banner",
   onMoved,
 }: Props) => {
   const { data, status, error } = useOwnedPersonalFeeds({
@@ -91,12 +96,31 @@ export const MovePersonalFeedsAction = ({
     );
   }
 
-  if (!total) {
+  if (!total && !open) {
     return null;
   }
 
-  return (
-    <>
+  const capacityFull = allowance <= 0;
+  const trigger =
+    presentation === "toolbar" ? (
+      <Flex alignItems="center" gap={2} flexWrap="wrap">
+        <Button variant="outline" size="sm" disabled={capacityFull} onClick={() => setOpen(true)}>
+          Move personal feeds
+        </Button>
+        {capacityFull && (
+          <Text color="fg.muted" fontSize="sm">
+            Workspace is full.{" "}
+            {workspaceRole === "owner" ? (
+              <Link href={pages.workspaceBilling(workspaceSlug)} color="text.link">
+                Manage capacity
+              </Link>
+            ) : (
+              "Contact the owner to add capacity."
+            )}
+          </Text>
+        )}
+      </Flex>
+    ) : (
       <Flex
         alignItems={{ base: "flex-start", sm: "center" }}
         flexDirection={{ base: "column", sm: "row" }}
@@ -115,10 +139,21 @@ export const MovePersonalFeedsAction = ({
           </Text>{" "}
           Keep their existing delivery setup when you move them here.
         </Text>
-        <Button variant="outline" size="sm" flexShrink={0} onClick={() => setOpen(true)}>
+        <Button
+          variant="outline"
+          size="sm"
+          flexShrink={0}
+          disabled={capacityFull}
+          onClick={() => setOpen(true)}
+        >
           Move personal feeds
         </Button>
       </Flex>
+    );
+
+  return (
+    <>
+      {trigger}
       <ConfirmModal
         open={open}
         onOpenChange={setOpen}
@@ -196,6 +231,7 @@ export const MovePersonalFeedsAction = ({
               }}
               onSharingChange={onSharingChange}
               onRedditChange={onRedditChange}
+              retainSelectedRows={!!moveMutation.error}
             />
           </Stack>
         }

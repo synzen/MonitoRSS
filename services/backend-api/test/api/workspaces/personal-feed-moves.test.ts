@@ -2,6 +2,7 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert";
 import { randomUUID } from "node:crypto";
 import { Types } from "mongoose";
+import { UserFeedDisabledCode } from "../../../src/repositories/shared/enums";
 import {
   createAppTestContext,
   type AppTestContext,
@@ -95,6 +96,146 @@ describe("POST /api/v1/workspaces/:workspaceSlug/personal-feed-moves", () => {
     assert.strictEqual(personalFeeds.total, 0);
   });
 
+  it("counts every workspace feed and re-evaluates only personal-limit-disabled feeds", async () => {
+    const constrainedCtx = await createAppTestContext({
+      configOverrides: {
+        BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS: 4,
+      },
+    });
+
+    try {
+      const discordUserId = randomUUID();
+      await constrainedCtx.container.userRepository.create({
+        discordUserId,
+        email: `${discordUserId}@example.com`,
+      });
+      await constrainedCtx.connection.collection("users").updateOne(
+        { discordUserId },
+        {
+          $set: {
+            "featureFlags.workspaces": true,
+            verifiedEmail: `verified-${discordUserId}@example.com`,
+            verifiedEmailVerifiedAt: new Date(),
+          },
+        },
+      );
+      const userId =
+        (await constrainedCtx.container.userRepository.findIdByDiscordId(
+          discordUserId,
+        )) as string;
+      const user = await constrainedCtx.asUser(discordUserId);
+      const workspaceSlug = `constrained-${randomUUID().slice(0, 18)}`;
+      const workspaceResponse = await user.fetch("/api/v1/workspaces", {
+        method: "POST",
+        body: JSON.stringify({ name: "Constrained", slug: workspaceSlug }),
+      });
+      const workspace = (await workspaceResponse.json()) as {
+        result: { id: string };
+      };
+
+      const existingManual =
+        await constrainedCtx.container.userFeedRepository.create({
+          title: "Existing manual feed",
+          url: "https://example.com/existing-manual.xml",
+          user: { id: userId, discordUserId },
+          workspaceId: workspace.result.id,
+        });
+      const existingLimitDisabled =
+        await constrainedCtx.container.userFeedRepository.create({
+          title: "Existing limit-disabled feed",
+          url: "https://example.com/existing-limit.xml",
+          user: { id: userId, discordUserId },
+          workspaceId: workspace.result.id,
+        });
+      const movingManual =
+        await constrainedCtx.container.userFeedRepository.create({
+          title: "Moving manual feed",
+          url: "https://example.com/moving-manual.xml",
+          user: { id: userId, discordUserId },
+        });
+      const movingLimitDisabled =
+        await constrainedCtx.container.userFeedRepository.create({
+          title: "Moving limit-disabled feed",
+          url: "https://example.com/moving-limit.xml",
+          user: { id: userId, discordUserId },
+        });
+      await constrainedCtx.connection
+        .collection("userfeeds")
+        .updateOne(
+          { _id: new Types.ObjectId(existingManual.id) },
+          { $set: { disabledCode: UserFeedDisabledCode.Manual } },
+        );
+      await constrainedCtx.connection
+        .collection("userfeeds")
+        .updateOne(
+          { _id: new Types.ObjectId(existingLimitDisabled.id) },
+          { $set: { disabledCode: UserFeedDisabledCode.ExceededFeedLimit } },
+        );
+      await constrainedCtx.connection
+        .collection("userfeeds")
+        .updateOne(
+          { _id: new Types.ObjectId(movingManual.id) },
+          { $set: { disabledCode: UserFeedDisabledCode.Manual } },
+        );
+      await constrainedCtx.connection
+        .collection("userfeeds")
+        .updateOne(
+          { _id: new Types.ObjectId(movingLimitDisabled.id) },
+          { $set: { disabledCode: UserFeedDisabledCode.ExceededFeedLimit } },
+        );
+
+      const moveResponse = await user.fetch(
+        `/api/v1/workspaces/${workspaceSlug}/personal-feed-moves`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            feedIds: [movingManual.id, movingLimitDisabled.id],
+          }),
+        },
+      );
+
+      assert.strictEqual(moveResponse.status, 200);
+      assert.strictEqual(
+        (
+          await constrainedCtx.container.userFeedRepository.findById(
+            movingManual.id,
+          )
+        )?.disabledCode,
+        UserFeedDisabledCode.Manual,
+      );
+      assert.strictEqual(
+        (
+          await constrainedCtx.container.userFeedRepository.findById(
+            movingLimitDisabled.id,
+          )
+        )?.disabledCode,
+        undefined,
+      );
+
+      const extra = await constrainedCtx.container.userFeedRepository.create({
+        title: "No capacity remains",
+        url: "https://example.com/no-capacity.xml",
+        user: { id: userId, discordUserId },
+      });
+      const fullResponse = await user.fetch(
+        `/api/v1/workspaces/${workspaceSlug}/personal-feed-moves`,
+        {
+          method: "POST",
+          body: JSON.stringify({ feedIds: [extra.id] }),
+        },
+      );
+      const fullBody = (await fullResponse.json()) as { code: string };
+
+      assert.strictEqual(fullResponse.status, 409);
+      assert.strictEqual(
+        fullBody.code,
+        "WORKSPACE_PERSONAL_FEED_MOVE_CAPACITY_CHANGED",
+      );
+    } finally {
+      await constrainedCtx.teardown();
+    }
+  });
+
   it("lets an admin move their feeds and leaves them with the workspace after departure", async () => {
     const ownerDiscordUserId = randomUUID();
     await seedWorkspaceUser(ownerDiscordUserId);
@@ -186,7 +327,82 @@ describe("POST /api/v1/workspaces/:workspaceSlug/personal-feed-moves", () => {
       },
     );
 
-    assert.strictEqual(response.status, 404);
+    const body = (await response.json()) as { code: string };
+    assert.strictEqual(response.status, 409);
+    assert.strictEqual(
+      body.code,
+      "WORKSPACE_PERSONAL_FEED_MOVE_MEMBERSHIP_CHANGED",
+    );
+  });
+
+  it("reports when selected feed ownership changes before confirmation", async () => {
+    const discordUserId = randomUUID();
+    const userId = await seedWorkspaceUser(discordUserId);
+    const user = await ctx.asUser(discordUserId);
+    const workspaceSlug = `ownership-${randomUUID().slice(0, 18)}`;
+    const workspaceResponse = await user.fetch("/api/v1/workspaces", {
+      method: "POST",
+      body: JSON.stringify({ name: "Ownership Change", slug: workspaceSlug }),
+    });
+    assert.strictEqual(workspaceResponse.status, 201);
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Ownership changed",
+      url: "https://example.com/ownership-changed.xml",
+      user: { id: userId, discordUserId },
+    });
+    await ctx.connection
+      .collection("userfeeds")
+      .updateOne(
+        { _id: new Types.ObjectId(feed.id) },
+        { $set: { "user.discordUserId": randomUUID() } },
+      );
+
+    const response = await user.fetch(
+      `/api/v1/workspaces/${workspaceSlug}/personal-feed-moves`,
+      {
+        method: "POST",
+        body: JSON.stringify({ feedIds: [feed.id] }),
+      },
+    );
+    const body = (await response.json()) as { code: string };
+
+    assert.strictEqual(response.status, 409);
+    assert.strictEqual(
+      body.code,
+      "WORKSPACE_PERSONAL_FEED_MOVE_OWNERSHIP_CHANGED",
+    );
+  });
+
+  it("reports when a selected feed was deleted before confirmation", async () => {
+    const discordUserId = randomUUID();
+    const userId = await seedWorkspaceUser(discordUserId);
+    const user = await ctx.asUser(discordUserId);
+    const workspaceSlug = `deleted-feed-${randomUUID().slice(0, 18)}`;
+    const workspaceResponse = await user.fetch("/api/v1/workspaces", {
+      method: "POST",
+      body: JSON.stringify({ name: "Deleted Feed", slug: workspaceSlug }),
+    });
+    assert.strictEqual(workspaceResponse.status, 201);
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Deleted before confirmation",
+      url: "https://example.com/deleted-before-confirmation.xml",
+      user: { id: userId, discordUserId },
+    });
+    await ctx.connection.collection("userfeeds").deleteOne({
+      _id: new Types.ObjectId(feed.id),
+    });
+
+    const response = await user.fetch(
+      `/api/v1/workspaces/${workspaceSlug}/personal-feed-moves`,
+      {
+        method: "POST",
+        body: JSON.stringify({ feedIds: [feed.id] }),
+      },
+    );
+    const body = (await response.json()) as { code: string };
+
+    assert.strictEqual(response.status, 409);
+    assert.strictEqual(body.code, "WORKSPACE_PERSONAL_FEED_MOVE_FEED_MISSING");
   });
 
   it("rejects a dormant destination with the workspace subscription error", async () => {

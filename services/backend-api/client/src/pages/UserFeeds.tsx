@@ -161,6 +161,10 @@ const UserFeedsInner: React.FC = () => {
   const addFeedParamConsumed = useRef(false);
 
   const totalFeedCount = userFeedsResults?.total;
+  const remainingWorkspaceFeedCapacity =
+    workspaceMaxFeeds === undefined || totalFeedCount === undefined
+      ? 0
+      : Math.max(0, workspaceMaxFeeds - totalFeedCount);
   const feedsWithoutConnections = userFeedsResults?.feedsWithoutConnections ?? 0;
   const [setupDismissed, setSetupDismissed] = useState(false);
   const hadUnconfiguredFeeds = useRef(false);
@@ -736,6 +740,17 @@ const UserFeedsInner: React.FC = () => {
                 </Heading>
               </Flex>
               <HStack flexWrap="wrap">
+                {currentWorkspace && currentWorkspace.myRole !== null && !workspaceDormant && (
+                  <MovePersonalFeedsAction
+                    workspaceName={currentWorkspace.name}
+                    workspaceSlug={currentWorkspace.slug}
+                    allowance={remainingWorkspaceFeedCapacity}
+                    workspaceHasActiveRedditGrant={redditConnection?.status === "ACTIVE"}
+                    workspaceRole={currentWorkspace.myRole}
+                    presentation="toolbar"
+                    onMoved={handlePersonalFeedsMoved}
+                  />
+                )}
                 <MenuRoot>
                   <MenuTrigger asChild>
                     <Button
@@ -898,8 +913,9 @@ const UserFeedsInner: React.FC = () => {
                 <MovePersonalFeedsAction
                   workspaceName={currentWorkspace.name}
                   workspaceSlug={currentWorkspace.slug}
-                  allowance={workspaceMaxFeeds ?? 0}
+                  allowance={remainingWorkspaceFeedCapacity}
                   workspaceHasActiveRedditGrant={redditConnection?.status === "ACTIVE"}
+                  workspaceRole={currentWorkspace.myRole}
                   onMoved={handlePersonalFeedsMoved}
                 />
               }

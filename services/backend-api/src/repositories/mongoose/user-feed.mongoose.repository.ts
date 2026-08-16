@@ -49,6 +49,8 @@ import type {
 import {
   FeedLimitExceededError,
   PersonalFeedMoveCapacityExceededError,
+  PersonalFeedMoveFeedMissingError,
+  PersonalFeedMoveOwnershipChangedError,
   PersonalFeedMoveInvalidSelectionError,
   PersonalFeedMoveWorkspaceNotFoundError,
 } from "../interfaces/user-feed.types";
@@ -1221,16 +1223,22 @@ export class UserFeedMongooseRepository
           })
           .session(session);
         const docs = await this.model
-          .find({
-            _id: { $in: objectIds },
-            "user.discordUserId": input.discordUserId,
-            workspaceId: null,
-          })
+          .find({ _id: { $in: objectIds } })
           .session(session)
           .lean();
 
         if (docs.length !== input.feedIds.length) {
-          throw new PersonalFeedMoveInvalidSelectionError();
+          throw new PersonalFeedMoveFeedMissingError();
+        }
+
+        if (
+          docs.some(
+            (doc) =>
+              doc.user.discordUserId !== input.discordUserId ||
+              doc.workspaceId != null,
+          )
+        ) {
+          throw new PersonalFeedMoveOwnershipChangedError();
         }
 
         if (
@@ -1257,6 +1265,15 @@ export class UserFeedMongooseRepository
           throw new PersonalFeedMoveInvalidSelectionError();
         }
 
+        await this.model.updateMany(
+          {
+            _id: { $in: objectIds },
+            disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+          },
+          { $unset: { disabledCode: "" } },
+          { session },
+        );
+
         return {
           discordUserId: input.discordUserId,
           workspaceId: input.workspaceId,
@@ -1267,6 +1284,7 @@ export class UserFeedMongooseRepository
             return {
               id: feed.id,
               shareManageOptions: feed.shareManageOptions,
+              disabledCode: feed.disabledCode,
             };
           }),
         };
@@ -1306,6 +1324,15 @@ export class UserFeedMongooseRepository
             };
           } else {
             update.$unset!.shareManageOptions = "";
+          }
+
+          if (feed.disabledCode) {
+            update.$set = {
+              ...update.$set,
+              disabledCode: feed.disabledCode,
+            };
+          } else {
+            update.$unset!.disabledCode = "";
           }
 
           const result = await this.model.collection.updateOne(

@@ -70,7 +70,19 @@ const {
   // dormant-activation tests set this to a workspace before rendering.
   const currentWorkspaceMock: {
     current:
-      | { id: string; slug: string; name: string; subscription?: { productKey: string } }
+      | {
+          id: string;
+          slug: string;
+          name: string;
+          subscription?: { productKey: string };
+        }
+      | {
+          id: string;
+          slug: string;
+          name: string;
+          myRole: "owner" | "admin";
+          subscription?: { productKey: string };
+        }
       | undefined;
   } = { current: undefined };
 
@@ -344,7 +356,10 @@ describe("UserFeeds - Discovery Mode", () => {
     mockUseUserFeedsReturn.mockReturnValue({
       data: { results: [], total: 0, feedsWithoutConnections: 0 },
     });
-    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
   });
 
   it("shows discovery UI when total is 0", () => {
@@ -363,7 +378,9 @@ describe("UserFeeds - Discovery Mode", () => {
 
   it("shows category card grid with all categories plus Browse All", () => {
     renderPage();
-    const categoryGroup = screen.getByRole("group", { name: "Feed categories" });
+    const categoryGroup = screen.getByRole("group", {
+      name: "Feed categories",
+    });
     const items = within(categoryGroup).getAllByRole("button");
 
     expect(items).toHaveLength(mockCategories.length + 1);
@@ -463,9 +480,7 @@ describe("UserFeeds - active empty workspace personal feed move", () => {
       </QueryClientProvider>,
     );
 
-    expect(
-      screen.getByRole("heading", { name: "Add feeds to Workspace One" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Add feeds to Workspace One" })).toBeInTheDocument();
     expect(screen.getByText("Find a feed")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move personal feeds" })).toBeInTheDocument();
   });
@@ -626,13 +641,170 @@ describe("UserFeeds - active empty workspace personal feed move", () => {
   });
 });
 
+describe("UserFeeds - populated workspace personal feed move", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCurrentWorkspace.current = {
+      id: "ws-1",
+      slug: "workspace-one",
+      name: "Workspace One",
+      myRole: "owner",
+      subscription: { productKey: "tier2" },
+    };
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
+    mockUseOwnedPersonalFeedsReturn.mockReturnValue({
+      data: {
+        pages: [
+          {
+            total: 3,
+            results: [
+              { id: "personal-1", title: "First personal feed" },
+              { id: "personal-2", title: "Second personal feed" },
+              { id: "personal-3", title: "Third personal feed" },
+            ],
+          },
+        ],
+      },
+      status: "success",
+      error: null,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
+      setSearch: vi.fn(),
+      isFetching: false,
+      search: "",
+      getByAge: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    mockCurrentWorkspace.current = undefined;
+    vi.unstubAllGlobals();
+  });
+
+  const renderPopulatedWorkspace = (total: number, maxFeeds = 70) => {
+    mockUseUserFeedsReturn.mockReturnValue({
+      data: {
+        results: [{ id: "workspace-feed" }],
+        total,
+        feedsWithoutConnections: 0,
+      },
+      refetch: vi.fn(),
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <FeedScopeProvider
+                value={{
+                  workspaceId: "ws-1",
+                  workspaceSlug: "workspace-one",
+                  maxFeeds,
+                  redditConnection: null,
+                }}
+              >
+                <UserFeeds />
+              </FeedScopeProvider>
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>
+      </QueryClientProvider>,
+    );
+
+    return user;
+  };
+
+  it("offers the toolbar action and caps selection at remaining capacity", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            total: 3,
+            feedsWithoutConnections: 0,
+            results: [
+              {
+                id: "personal-1",
+                title: "First personal feed",
+                url: "https://example.com/first.xml",
+                createdAt: "2026-08-01T00:00:00.000Z",
+                healthStatus: "OK",
+                computedStatus: "OK",
+                ownedByUser: true,
+                connectionCount: 1,
+              },
+              {
+                id: "personal-2",
+                title: "Second personal feed",
+                url: "https://example.com/second.xml",
+                createdAt: "2026-08-02T00:00:00.000Z",
+                healthStatus: "OK",
+                computedStatus: "OK",
+                ownedByUser: true,
+                connectionCount: 1,
+              },
+              {
+                id: "personal-3",
+                title: "Third personal feed",
+                url: "https://example.com/third.xml",
+                createdAt: "2026-08-03T00:00:00.000Z",
+                healthStatus: "OK",
+                computedStatus: "OK",
+                ownedByUser: true,
+                connectionCount: 1,
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+    const user = renderPopulatedWorkspace(68);
+
+    await user.click(await screen.findByRole("button", { name: "Move personal feeds" }));
+    const dialog = await screen.findByRole("dialog", {
+      name: "Move personal feeds to Workspace One",
+    });
+
+    expect(within(dialog).getByRole("checkbox", { name: "First personal feed" })).not.toBeChecked();
+    expect(
+      within(dialog).getByRole("button", { name: "Select my newest 2 feeds" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the full-workspace action visible with owner capacity management", async () => {
+    renderPopulatedWorkspace(70);
+
+    expect(await screen.findByRole("button", { name: "Move personal feeds" })).toBeDisabled();
+    expect(screen.getByText(/workspace is full/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Manage capacity" })).toHaveAttribute(
+      "href",
+      "/workspaces/workspace-one/settings/billing",
+    );
+  });
+});
+
 describe("UserFeeds - Category card interactions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseUserFeedsReturn.mockReturnValue({
       data: { results: [], total: 0, feedsWithoutConnections: 0 },
     });
-    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
   });
 
   it("clicking a category card opens the browse modal", async () => {
@@ -661,7 +833,10 @@ describe("UserFeeds - Search interaction", () => {
     mockUseUserFeedsReturn.mockReturnValue({
       data: { results: [], total: 0, feedsWithoutConnections: 0 },
     });
-    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
   });
 
   it("hides category cards when search is active", async () => {
@@ -703,7 +878,10 @@ describe("UserFeeds - Feed adding & inline banner", () => {
     mockUseUserFeedsReturn.mockReturnValue({
       data: { results: [], total: 0, feedsWithoutConnections: 0 },
     });
-    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
     mockCreateUserFeed.mockResolvedValue({ result: { id: "feed-123" } });
   });
 
@@ -775,7 +953,14 @@ describe("UserFeeds - Exit discovery mode", () => {
     mockCreateUserFeed.mockResolvedValue({ result: { id: "feed-123" } });
     mockUnconfiguredFeedsReturn.mockReturnValue({
       data: {
-        results: [{ id: "feed-123", title: "Test", url: "https://test.com", connectionCount: 0 }],
+        results: [
+          {
+            id: "feed-123",
+            title: "Test",
+            url: "https://test.com",
+            connectionCount: 0,
+          },
+        ],
         total: 1,
         feedsWithoutConnections: 1,
       },
@@ -786,7 +971,11 @@ describe("UserFeeds - Exit discovery mode", () => {
   it("exits discovery mode and shows setup checklist when clicking 'View your feeds'", async () => {
     let totalFeeds = 0;
     mockUseUserFeedsReturn.mockImplementation(() => ({
-      data: { results: [], total: totalFeeds, feedsWithoutConnections: totalFeeds > 0 ? 1 : 0 },
+      data: {
+        results: [],
+        total: totalFeeds,
+        feedsWithoutConnections: totalFeeds > 0 ? 1 : 0,
+      },
     }));
 
     const { user } = renderPage();
@@ -811,7 +1000,10 @@ describe("UserFeeds - Exit discovery mode", () => {
 describe("UserFeeds - Non-discovery mode", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
   });
 
   it("shows feed table when user has feeds", () => {
@@ -829,7 +1021,10 @@ describe("UserFeeds - Non-discovery mode", () => {
       data: { results: [{ id: "1" }], total: 5, feedsWithoutConnections: 0 },
     });
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const { rerender } = renderPage();
 
@@ -861,7 +1056,10 @@ describe("UserFeeds - Non-discovery mode", () => {
       data: { results: [], total: totalFeeds, feedsWithoutConnections: 0 },
     }));
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const renderUserFeeds = () => (
       <QueryClientProvider client={queryClient}>
@@ -908,7 +1106,10 @@ describe("UserFeeds - Returning user Add Feed button", () => {
     mockUseUserFeedsReturn.mockReturnValue({
       data: { results: [{ id: "1" }], total: 5, feedsWithoutConnections: 0 },
     });
-    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
     mockCreateUserFeed.mockResolvedValue({ result: { id: "feed-new" } });
   });
 
@@ -976,11 +1177,22 @@ describe("UserFeeds - Setup checklist after exiting discovery", () => {
   it("shows setup checklist and feeds table after exiting discovery mode", async () => {
     let totalFeeds = 0;
     mockUseUserFeedsReturn.mockImplementation(() => ({
-      data: { results: [], total: totalFeeds, feedsWithoutConnections: totalFeeds > 0 ? 1 : 0 },
+      data: {
+        results: [],
+        total: totalFeeds,
+        feedsWithoutConnections: totalFeeds > 0 ? 1 : 0,
+      },
     }));
     mockUnconfiguredFeedsReturn.mockReturnValue({
       data: {
-        results: [{ id: "feed-123", title: "Test", url: "https://test.com", connectionCount: 0 }],
+        results: [
+          {
+            id: "feed-123",
+            title: "Test",
+            url: "https://test.com",
+            connectionCount: 0,
+          },
+        ],
         total: 1,
         feedsWithoutConnections: 1,
       },
@@ -1013,7 +1225,10 @@ describe("UserFeeds - Setup checklist after exiting discovery", () => {
 describe("UserFeeds - Inline setup checklist", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
   });
 
   it("shows setup checklist when feedsWithoutConnections > 0", () => {
@@ -1022,7 +1237,14 @@ describe("UserFeeds - Inline setup checklist", () => {
     });
     mockUnconfiguredFeedsReturn.mockReturnValue({
       data: {
-        results: [{ id: "1", title: "Test", url: "https://test.com", connectionCount: 0 }],
+        results: [
+          {
+            id: "1",
+            title: "Test",
+            url: "https://test.com",
+            connectionCount: 0,
+          },
+        ],
         total: 1,
         feedsWithoutConnections: 1,
       },
@@ -1050,8 +1272,15 @@ describe("UserFeeds - Dormant workspace activation", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
-    mockCurrentWorkspace.current = { id: "ws-1", slug: "ws-1", name: "Workspace One" };
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
+    mockCurrentWorkspace.current = {
+      id: "ws-1",
+      slug: "ws-1",
+      name: "Workspace One",
+    };
   });
 
   afterEach(() => {
@@ -1074,7 +1303,10 @@ describe("UserFeeds - Dormant workspace activation", () => {
 
   const renderDormant = (dormant: boolean, marked = false) => {
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
 
     const tree = (isDormant: boolean, isMarked: boolean) => (
@@ -1083,7 +1315,11 @@ describe("UserFeeds - Dormant workspace activation", () => {
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
               <FeedScopeProvider
-                value={{ workspaceId: "ws-1", workspaceSlug: "ws-1", workspaceDormant: isDormant }}
+                value={{
+                  workspaceId: "ws-1",
+                  workspaceSlug: "ws-1",
+                  workspaceDormant: isDormant,
+                }}
               >
                 <JustConvertedWorkspaceProvider>
                   <ConversionMarker marked={isMarked} />
@@ -1117,7 +1353,10 @@ describe("UserFeeds - Dormant workspace activation", () => {
     expect(screen.getByTestId("workspace-activation-empty-state")).toBeInTheDocument();
 
     // Activation lands and the conversion re-homes a feed into the workspace.
-    mockCurrentWorkspace.current = { ...mockCurrentWorkspace.current!, subscription: tier2 };
+    mockCurrentWorkspace.current = {
+      ...mockCurrentWorkspace.current!,
+      subscription: tier2,
+    };
     mockUseUserFeedsReturn.mockReturnValue({
       data: { results: [{ id: "1" }], total: 1, feedsWithoutConnections: 0 },
     });
@@ -1141,7 +1380,10 @@ describe("UserFeeds - Dormant workspace activation", () => {
     expect(screen.getByTestId("workspace-activation-empty-state")).toBeInTheDocument();
 
     // Frame 1: subscription appears (dormant -> false) but the summary still reads 0.
-    mockCurrentWorkspace.current = { ...mockCurrentWorkspace.current!, subscription: tier2 };
+    mockCurrentWorkspace.current = {
+      ...mockCurrentWorkspace.current!,
+      subscription: tier2,
+    };
     rerender(false);
 
     // Frame 2: the summary refetch lands with the re-homed feed.
@@ -1165,7 +1407,10 @@ describe("UserFeeds - Dormant workspace activation", () => {
 
     expect(screen.queryByText(/your plan moved to this workspace/i)).not.toBeInTheDocument();
 
-    mockCurrentWorkspace.current = { ...mockCurrentWorkspace.current!, subscription: tier2 };
+    mockCurrentWorkspace.current = {
+      ...mockCurrentWorkspace.current!,
+      subscription: tier2,
+    };
     mockUseUserFeedsReturn.mockReturnValue({
       data: { results: [{ id: "1" }], total: 1, feedsWithoutConnections: 0 },
     });
@@ -1203,7 +1448,10 @@ describe("UserFeeds - scope-aware feed limit", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUnconfiguredFeedsReturn.mockReturnValue({ data: undefined, refetch: vi.fn() });
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
   });
 
   afterEach(() => {
@@ -1218,7 +1466,10 @@ describe("UserFeeds - scope-aware feed limit", () => {
       subscription: tier2,
     };
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const user = userEvent.setup();
     const result = render(

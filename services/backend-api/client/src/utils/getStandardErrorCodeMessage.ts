@@ -81,6 +81,10 @@ export enum ApiErrorCode {
   WORKSPACE_BILLING_NOT_CONFIGURED = "WORKSPACE_BILLING_NOT_CONFIGURED",
   WORKSPACE_INVALID_TIER = "WORKSPACE_INVALID_TIER",
   WORKSPACE_HAS_ACTIVE_SUBSCRIPTION = "WORKSPACE_HAS_ACTIVE_SUBSCRIPTION",
+  WORKSPACE_PERSONAL_FEED_MOVE_CAPACITY_CHANGED = "WORKSPACE_PERSONAL_FEED_MOVE_CAPACITY_CHANGED",
+  WORKSPACE_PERSONAL_FEED_MOVE_FEED_MISSING = "WORKSPACE_PERSONAL_FEED_MOVE_FEED_MISSING",
+  WORKSPACE_PERSONAL_FEED_MOVE_MEMBERSHIP_CHANGED = "WORKSPACE_PERSONAL_FEED_MOVE_MEMBERSHIP_CHANGED",
+  WORKSPACE_PERSONAL_FEED_MOVE_OWNERSHIP_CHANGED = "WORKSPACE_PERSONAL_FEED_MOVE_OWNERSHIP_CHANGED",
   ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER = "ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER",
   ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION = "ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION",
 }
@@ -195,6 +199,14 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
     "This plan is not available for workspaces. Choose one of the workspace plans and try again.",
   WORKSPACE_HAS_ACTIVE_SUBSCRIPTION:
     "Cancel this workspace's subscription on the billing page before deleting it.",
+  WORKSPACE_PERSONAL_FEED_MOVE_CAPACITY_CHANGED:
+    "The workspace's available capacity changed. No feeds were moved. Review the updated capacity and try again.",
+  WORKSPACE_PERSONAL_FEED_MOVE_FEED_MISSING:
+    "One or more selected feeds no longer exist. No feeds were moved. Review the refreshed list and try again.",
+  WORKSPACE_PERSONAL_FEED_MOVE_MEMBERSHIP_CHANGED:
+    "Your workspace membership changed. No feeds were moved. Ask the workspace owner if you still need access.",
+  WORKSPACE_PERSONAL_FEED_MOVE_OWNERSHIP_CHANGED:
+    "One or more selected feeds are no longer your personal feeds. No feeds were moved. Review the refreshed list and try again.",
   ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER:
     "You are the only owner of one or more workspaces. Transfer ownership or delete those workspaces before deleting your account.",
   ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION:
