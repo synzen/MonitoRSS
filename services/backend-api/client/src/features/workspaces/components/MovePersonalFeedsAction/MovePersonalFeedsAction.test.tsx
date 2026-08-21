@@ -15,8 +15,7 @@ vi.mock("../../../feed/api", async (importOriginal) => ({
   getUserFeeds: vi.fn(),
 }));
 
-vi.mock("@/features/discordUser", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/features/discordUser")>()),
+vi.mock("@/features/discordUser", () => ({
   DiscordUsername: ({ userId }: { userId: string }) => (
     <span>{userId === "manager-1" ? "Manager Alice" : userId}</span>
   ),
@@ -102,7 +101,7 @@ describe("MovePersonalFeedsAction", () => {
     expect(within(dialog).queryByText(/type.*workspace-one.*to confirm/i)).not.toBeInTheDocument();
   });
 
-  it("names sharing impacts and explains the Reddit connection remedy", async () => {
+  it("uses the shared feed-move warnings", async () => {
     vi.mocked(getUserFeeds).mockResolvedValue({
       total: 1,
       results: [
@@ -110,7 +109,7 @@ describe("MovePersonalFeedsAction", () => {
           id: "shared-reddit-feed",
           title: "Shared Reddit feed",
           url: "https://www.reddit.com/r/rss/.rss",
-          sharedManagers: [{ discordUserId: "manager-1", connectionScoped: false }],
+          sharedManagers: [{ discordUserId: "manager-1", connectionScoped: true }],
         },
       ],
     } as never);
@@ -122,14 +121,16 @@ describe("MovePersonalFeedsAction", () => {
     });
 
     expect(await within(dialog).findByText("Manager Alice")).toBeInTheDocument();
-    expect(within(dialog).getByText(/personal sharing will be removed/i)).toBeInTheDocument();
-    expect(within(dialog).getByText(/will not be notified/i)).toBeInTheDocument();
     expect(
-      within(dialog).getByText(/may move in a paused.*needs-attention state/i),
+      within(dialog).getByText(/feed sharing does not move into a workspace/i),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText(/access to only specific connections/i)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(/these feeds will pause until you connect Reddit/i),
     ).toBeInTheDocument();
     expect(
       within(dialog).getByRole("link", {
-        name: "Connect Reddit for Workspace One",
+        name: "Connect Reddit to this workspace (opens in a new tab)",
       }),
     ).toHaveAttribute("href", "/workspaces/workspace-one/settings");
   });
@@ -142,7 +143,9 @@ describe("MovePersonalFeedsAction", () => {
       }),
     );
     vi.stubGlobal("fetch", fetchMock);
-    const { onMoved, user } = renderAction({ workspaceHasActiveRedditGrant: true });
+    const { onMoved, user } = renderAction({
+      workspaceHasActiveRedditGrant: true,
+    });
 
     await user.click(await screen.findByRole("button", { name: "Move personal feeds" }));
     const dialog = await screen.findByRole("dialog", {
@@ -170,7 +173,10 @@ describe("MovePersonalFeedsAction", () => {
   });
 
   it("starts oversized selections empty and caps age shortcuts at the remaining slots", async () => {
-    const { user } = renderAction({ allowance: 1, workspaceHasActiveRedditGrant: true });
+    const { user } = renderAction({
+      allowance: 1,
+      workspaceHasActiveRedditGrant: true,
+    });
 
     await user.click(await screen.findByRole("button", { name: "Move personal feeds" }));
     const dialog = await screen.findByRole("dialog", {

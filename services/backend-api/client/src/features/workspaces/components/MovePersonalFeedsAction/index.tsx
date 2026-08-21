@@ -1,17 +1,14 @@
-import { Alert, Button, Flex, Link, Skeleton, Stack, Text } from "@chakra-ui/react";
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Button, Flex, Link, Skeleton, Stack, Text } from "@chakra-ui/react";
+import { useCallback, useEffect, useState } from "react";
 import { ConfirmModal, InlineErrorAlert } from "@/components";
 import { OwnedPersonalFeedPicker, useOwnedPersonalFeeds } from "@/features/feed";
-import { DiscordUsername } from "@/features/discordUser";
 import { pages } from "@/constants";
 import { useMovePersonalFeedsToWorkspace } from "../../hooks";
 import type { WorkspaceRole } from "../../types";
-
-interface SharingInfo {
-  sharedSelectedCount: number;
-  affectedUserIds: string[];
-  anyConnectionScoped: boolean;
-}
+import {
+  PersonalFeedMoveWarnings,
+  type PersonalFeedSharingInfo,
+} from "../PersonalFeedMoveWarnings";
 
 interface Props {
   workspaceName: string;
@@ -39,10 +36,11 @@ export const MovePersonalFeedsAction = ({
   const total = data?.pages[0]?.total;
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [sharing, setSharing] = useState<SharingInfo | null>(null);
+  const [sharing, setSharing] = useState<PersonalFeedSharingInfo | null>(null);
   const [redditSelectedCount, setRedditSelectedCount] = useState(0);
+  const [liveReady, setLiveReady] = useState(false);
   const moveMutation = useMovePersonalFeedsToWorkspace();
-  const onSharingChange = useCallback((info: SharingInfo) => setSharing(info), []);
+  const onSharingChange = useCallback((info: PersonalFeedSharingInfo) => setSharing(info), []);
   const onRedditChange = useCallback(
     (info: { redditSelectedCount: number }) => setRedditSelectedCount(info.redditSelectedCount),
     [],
@@ -53,6 +51,7 @@ export const MovePersonalFeedsAction = ({
       setSelectedIds(new Set());
       setSharing(null);
       setRedditSelectedCount(0);
+      setLiveReady(false);
     }
   }, [open]);
 
@@ -173,50 +172,12 @@ export const MovePersonalFeedsAction = ({
             <Text color="fg.muted" fontSize="sm">
               Your personal subscription and this team&apos;s subscription do not change.
             </Text>
-            {(sharing?.sharedSelectedCount ?? 0) > 0 && (
-              <Alert.Root status="warning">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>
-                    {sharing?.sharedSelectedCount === 1
-                      ? "1 selected feed is shared"
-                      : `${sharing?.sharedSelectedCount} selected feeds are shared`}
-                  </Alert.Title>
-                  <Alert.Description>
-                    Personal sharing will be removed. Affected co-managers:{" "}
-                    {sharing?.affectedUserIds.map((id, index) => (
-                      <Fragment key={id}>
-                        {index > 0 ? ", " : ""}
-                        <DiscordUsername userId={id} />
-                      </Fragment>
-                    ))}
-                    . They will lose access and will not be notified. Invite them to the team if
-                    they should keep managing these feeds.
-                  </Alert.Description>
-                </Alert.Content>
-              </Alert.Root>
-            )}
-            {breakingRedditCount > 0 && (
-              <Alert.Root status="warning">
-                <Alert.Indicator />
-                <Alert.Content>
-                  <Alert.Title>Reddit connection needed</Alert.Title>
-                  <Alert.Description>
-                    {breakingRedditCount === 1 ? "This feed" : "These feeds"} may move in a paused
-                    or needs-attention state until this team has an active Reddit connection.
-                  </Alert.Description>
-                  <Link
-                    href={pages.workspaceSettings(workspaceSlug)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    color="text.link"
-                    aria-label={`Connect Reddit for ${workspaceName}`}
-                  >
-                    Connect Reddit for this team
-                  </Link>
-                </Alert.Content>
-              </Alert.Root>
-            )}
+            <PersonalFeedMoveWarnings
+              sharing={sharing}
+              breakingRedditCount={breakingRedditCount}
+              workspaceSlug={workspaceSlug}
+              liveReady={liveReady}
+            />
             <OwnedPersonalFeedPicker
               selectedIds={selectedIds}
               onSelectedIdsChange={setSelectedIds}
@@ -231,6 +192,7 @@ export const MovePersonalFeedsAction = ({
               }}
               onSharingChange={onSharingChange}
               onRedditChange={onRedditChange}
+              onUserEdit={() => setLiveReady(true)}
               retainSelectedRows={!!moveMutation.error}
             />
           </Stack>

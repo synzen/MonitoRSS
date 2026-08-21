@@ -1,27 +1,13 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import {
-  Alert,
-  Box,
-  Collapsible,
-  HStack,
-  Link,
-  Stack,
-  Text,
-  VisuallyHidden,
-  chakra,
-} from "@chakra-ui/react";
-import { FaChevronRight, FaUpRightFromSquare } from "react-icons/fa6";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Box, Collapsible, HStack, Stack, Text, chakra } from "@chakra-ui/react";
+import { FaChevronRight } from "react-icons/fa6";
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { DiscordUsername } from "@/features/discordUser";
-import { pages } from "@/constants";
 import { OwnedPersonalFeedPicker, type OwnedPersonalFeedPickerCopy } from "@/features/feed";
 import { useConvertWorkspaceBilling } from "../../hooks";
-
-interface SharingInfo {
-  sharedSelectedCount: number;
-  affectedUserIds: string[];
-  anyConnectionScoped: boolean;
-}
+import {
+  PersonalFeedMoveWarnings,
+  type PersonalFeedSharingInfo,
+} from "../PersonalFeedMoveWarnings";
 
 const planConversionPickerCopy: Partial<OwnedPersonalFeedPickerCopy> = {
   legend: "Feeds to bring to this workspace",
@@ -71,7 +57,7 @@ export const ConvertPersonalPlanDialog = ({
     total: number;
     overLimit: boolean;
   } | null>(null);
-  const [sharing, setSharing] = useState<SharingInfo | null>(null);
+  const [sharing, setSharing] = useState<PersonalFeedSharingInfo | null>(null);
   const [redditSelectedCount, setRedditSelectedCount] = useState(0);
   // The under-limit feed list is a disclosure. Controlled so it can auto-open
   // when a sharing warning appears (revealing the per-row remedy) while the owner
@@ -92,7 +78,7 @@ export const ConvertPersonalPlanDialog = ({
 
   // Stable so the feed list's effect that calls it does not re-run on every
   // render (it lists onSharingChange as a dependency).
-  const onSharingChange = useCallback((info: SharingInfo) => setSharing(info), []);
+  const onSharingChange = useCallback((info: PersonalFeedSharingInfo) => setSharing(info), []);
   const onRedditChange = useCallback(
     (info: { redditSelectedCount: number }) => setRedditSelectedCount(info.redditSelectedCount),
     [],
@@ -180,123 +166,6 @@ export const ConvertPersonalPlanDialog = ({
     />
   );
 
-  const sharedSelectedCount = sharing?.sharedSelectedCount ?? 0;
-  const affectedUserIds = sharing?.affectedUserIds ?? [];
-
-  // A single, stable sentence carrying the whole warning, used as the LIVE
-  // announcement. It is name-free on purpose: names resolve asynchronously
-  // (DiscordUsername fetches), and a value that mutates inside an aria-live
-  // region either announces mid-spinner or re-announces the whole alert on every
-  // name resolution. The spoken warning must be complete the moment it fires, so
-  // the async names are rendered OUTSIDE the live region (below), as a visual /
-  // queryable supplement that the urgent announcement does not depend on.
-  const liveMessage =
-    sharedSelectedCount > 0
-      ? `${
-          sharedSelectedCount === 1
-            ? "1 feed you are moving is shared with other people."
-            : `${sharedSelectedCount} feeds you are moving are shared with other people.`
-        } Feed sharing does not move into a workspace. The people who help manage these feeds will lose access until you invite them to the workspace as members.${
-          sharing?.anyConnectionScoped
-            ? " Some had access to only specific connections; in a workspace they would have access to the whole feed."
-            : ""
-        }`
-      : "";
-
-  // Only warn when a SELECTED feed is shared (an unselected shared feed stays
-  // personal with its sharing intact, so there is nothing to warn about). Placed
-  // above the feed list / disclosure so it is seen even when the list is
-  // collapsed.
-  // The VISIBLE warning, and the single source read top-to-bottom when the dialog
-  // opens. Its prose is NOT aria-hidden, so a screen reader reads it in DOM order
-  // on open. The matching live region above is silent on open (gated by
-  // liveReady) and speaks only on a LATER change, so the warning is never read
-  // twice. The async-resolved co-manager names sit in their own span: they are
-  // not in any live region, so a name resolving does not re-announce anything.
-  const sharingWarning =
-    sharedSelectedCount > 0 ? (
-      <Alert.Root status="warning" data-testid="convert-sharing-warning">
-        <Alert.Indicator aria-hidden />
-        <Alert.Content>
-          <Alert.Title display="block">
-            {sharedSelectedCount === 1
-              ? "1 feed you are moving is shared with other people"
-              : `${sharedSelectedCount} feeds you are moving are shared with other people`}
-          </Alert.Title>
-          <Alert.Description display="block">
-            Feed sharing does not move into a workspace. The people who help manage these feeds will
-            lose access until you invite them to the workspace as members.
-            {sharing?.anyConnectionScoped
-              ? " Some had access to only specific connections. In a workspace they would have" +
-                " access to the whole feed."
-              : ""}
-            {affectedUserIds.length > 0 ? (
-              <chakra.span display="block" mt={1}>
-                Affected:{" "}
-                {affectedUserIds.map((id, index) => (
-                  <Fragment key={id}>
-                    {index > 0 ? ", " : ""}
-                    <DiscordUsername userId={id} />
-                  </Fragment>
-                ))}
-              </chakra.span>
-            ) : null}
-          </Alert.Description>
-        </Alert.Content>
-      </Alert.Root>
-    ) : null;
-
-  // The Reddit warning, mirroring the sharing warning: a single stable sentence
-  // for the live announcement, and a separate aria-hidden visible alert (so the
-  // warning is announced exactly once). Unlike sharing, this one carries an
-  // action — connecting Reddit to the workspace is the remedy — rendered as a
-  // link that opens the workspace settings in a new tab so the in-progress
-  // dialog (selection + slug confirmation) is not lost.
-  const redditLiveMessage = hasBreakingReddit
-    ? `${
-        breakingRedditCount === 1
-          ? "1 feed you are moving uses your Reddit connection."
-          : `${breakingRedditCount} feeds you are moving use your Reddit connection.`
-      } Reddit connections do not move into a workspace, so these feeds will pause until you connect Reddit to this workspace.`
-    : "";
-
-  // The visible Reddit warning, read top-to-bottom on open (not aria-hidden), with
-  // the remedy LINK contained inside Alert.Content so the problem and its fix are
-  // encountered together. The matching live region above is gated by liveReady, so
-  // it is silent on open and speaks only on a later change — no double read.
-  const redditWarning = hasBreakingReddit ? (
-    <Alert.Root status="warning" data-testid="convert-reddit-warning">
-      <Alert.Indicator aria-hidden />
-      <Alert.Content>
-        <Alert.Title display="block">
-          {breakingRedditCount === 1
-            ? "1 feed you are moving uses your Reddit connection"
-            : `${breakingRedditCount} feeds you are moving use your Reddit connection`}
-        </Alert.Title>
-        <Alert.Description display="block">
-          Workspaces use their own Reddit connection, so these feeds will pause until you connect
-          Reddit to this workspace. Your personal Reddit connection is not moved.
-        </Alert.Description>
-        <Link
-          href={pages.workspaceSettings(workspaceSlug)}
-          target="_blank"
-          rel="noopener noreferrer"
-          color="text.link"
-          fontSize="sm"
-          fontWeight="medium"
-          display="inline-flex"
-          alignItems="center"
-          gap={1}
-          mt={2}
-          aria-label="Connect Reddit to this workspace (opens in a new tab)"
-        >
-          Connect Reddit to this workspace
-          <FaUpRightFromSquare aria-hidden />
-        </Link>
-      </Alert.Content>
-    </Alert.Root>
-  ) : null;
-
   return (
     <ConfirmModal
       open={open}
@@ -362,23 +231,12 @@ export const ConvertPersonalPlanDialog = ({
               {`${selectedCount} of ${feedLimit} feeds selected`}
             </Text>
           )}
-          {/* Spoken source for the sharing warning when it changes AFTER open
-              (the on-open read is the visible alert below). Empty until the first
-              user edit (liveReady), so opening the dialog does not announce it
-              twice. Carries the full, stable, name-free sentence so a later toggle
-              announces complete. */}
-          <VisuallyHidden role="status" aria-live="polite">
-            {liveReady ? liveMessage : ""}
-          </VisuallyHidden>
-          {sharingWarning}
-          {/* The Reddit warning's own spoken source, same gating: silent on open
-              (the visible alert is read top-to-bottom), live only on later
-              change. The remedy link lives inside the visible alert and stays
-              reachable regardless. */}
-          <VisuallyHidden role="status" aria-live="polite">
-            {liveReady ? redditLiveMessage : ""}
-          </VisuallyHidden>
-          {redditWarning}
+          <PersonalFeedMoveWarnings
+            sharing={sharing}
+            breakingRedditCount={breakingRedditCount}
+            workspaceSlug={workspaceSlug}
+            liveReady={liveReady}
+          />
           {overLimit ? (
             <>
               <Text fontSize="sm" color="text.warning">
