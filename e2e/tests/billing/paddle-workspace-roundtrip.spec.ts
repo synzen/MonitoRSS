@@ -254,7 +254,7 @@ test.describe("Paddle workspace roundtrip", () => {
     await expect(page.getByText("This workspace is not subscribed")).toHaveCount(0);
 
     await expect(
-      page.getByRole("heading", { name: "Add feeds for your workspace" }),
+      page.getByRole("heading", { name: /^Add feeds to / }),
     ).toBeVisible({ timeout: 15000 });
     const search = page.getByRole("textbox", { name: "Search popular feeds or paste a URL" });
     await search.fill(MOCK_RSS_FEED_URL);

@@ -35,7 +35,7 @@ async function addFeedViaDiscovery(page: Page): Promise<void> {
   // 0 workspace feeds -> the page renders the discovery UI, with the workspace-scoped
   // heading (personal scope uses "Get news delivered to your Discord").
   await expect(
-    page.getByRole("heading", { name: "Add feeds for your workspace" }),
+    page.getByRole("heading", { name: /^Add feeds to / }),
   ).toBeVisible({ timeout: 15000 });
   const search = page.getByRole("textbox", {
     name: "Search popular feeds or paste a URL",

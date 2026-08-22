@@ -17,4 +17,16 @@ describe("getStandardErrorCodeMessage", () => {
     expect(message).toBeTruthy();
     expect(message).not.toContain(GENERIC_FALLBACK_FRAGMENT);
   });
+
+  it.each([
+    ApiErrorCode.WORKSPACE_PERSONAL_FEED_MOVE_CAPACITY_CHANGED,
+    ApiErrorCode.WORKSPACE_PERSONAL_FEED_MOVE_FEED_MISSING,
+    ApiErrorCode.WORKSPACE_PERSONAL_FEED_MOVE_MEMBERSHIP_CHANGED,
+    ApiErrorCode.WORKSPACE_PERSONAL_FEED_MOVE_OWNERSHIP_CHANGED,
+  ])("explains the atomic personal-feed move conflict %s", (code) => {
+    const message = getStandardErrorCodeMessage(code);
+
+    expect(message).toContain("No feeds were moved");
+    expect(message).not.toContain(GENERIC_FALLBACK_FRAGMENT);
+  });
 });

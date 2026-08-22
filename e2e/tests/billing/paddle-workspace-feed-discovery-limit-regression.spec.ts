@@ -127,9 +127,11 @@ async function addMockFeedInline(page: Page, index: number): Promise<void> {
   const addButton = page.getByRole("button", { name: /^Add .+ feed$/i }).first();
   await expect(addButton).toBeVisible({ timeout: 30000 });
   await addButton.click();
-  await expect(page.getByRole("button", { name: /^Remove .+ feed$/i }).first()).toBeVisible({
-    timeout: 15000,
-  });
+  await expect(
+    page.getByRole("heading", {
+      name: new RegExp(`${index + 1} feeds? added`),
+    }),
+  ).toBeVisible({ timeout: 15000 });
 }
 
 test.describe("Paddle workspace feed-discovery limit regression", () => {
@@ -151,7 +153,7 @@ test.describe("Paddle workspace feed-discovery limit regression", () => {
     // Fill the workspace up to the owner's PERSONAL limit (3). The workspace still
     // has 67 slots free, but the buggy gate keys on the personal 3.
     await expect(
-      page.getByRole("heading", { name: "Add feeds for your workspace" }),
+      page.getByRole("heading", { name: /^Add feeds to / }),
     ).toBeVisible({ timeout: 15000 });
     for (let i = 0; i < PERSONAL_FEED_LIMIT; i += 1) {
       await addMockFeedInline(page, i);

@@ -176,7 +176,7 @@ test.describe("Paddle workspace conversion", () => {
     // is in the accessibility tree, not aria-hidden); the live region stays silent
     // on open to avoid a double read and speaks only on a later change. So the
     // visible alert is the anchor, present only while a shared feed is selected.
-    const sharingWarning = convertDialog.getByTestId("convert-sharing-warning");
+    const sharingWarning = convertDialog.getByTestId("personal-feed-move-sharing-warning");
     await expect(sharingWarning).toBeVisible({ timeout: 15000 });
     await expect(sharingWarning).toContainText(/you are moving .* shared with other people/i);
 
@@ -212,7 +212,7 @@ test.describe("Paddle workspace conversion", () => {
     // the workspace, and offers the connect remedy inside the warning alert. The
     // warning is read top-to-bottom on open via the visible alert; the remedy LINK
     // lives inside it and is present only while the warning is shown.
-    const redditWarning = convertDialog.getByTestId("convert-reddit-warning");
+    const redditWarning = convertDialog.getByTestId("personal-feed-move-reddit-warning");
     await expect(redditWarning).toBeVisible({ timeout: 15000 });
     await expect(redditWarning).toContainText(/uses your Reddit connection/i);
     const connectRedditLink = redditWarning.getByRole("link", {

@@ -15,6 +15,7 @@ import {
   removeWorkspaceMemberHandler,
   transferWorkspaceOwnershipHandler,
   disconnectWorkspaceRedditHandler,
+  movePersonalFeedsToWorkspaceHandler,
 } from "./workspaces.handlers";
 import {
   CreateWorkspaceBodySchema,
@@ -24,6 +25,7 @@ import {
   WorkspaceBillingUpdateBodySchema,
   WorkspaceInviteParamsSchema,
   WorkspaceMemberParamsSchema,
+  WorkspacePersonalFeedMovesBodySchema,
   WorkspaceSlugParamsSchema,
 } from "./workspaces.schemas";
 import { withExceptionFilter } from "../../shared/filters/exception-filter";
@@ -107,6 +109,15 @@ export async function workspacesRoutes(app: FastifyInstance): Promise<void> {
     preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
     schema: { params: WorkspaceSlugParamsSchema },
     handler: disconnectWorkspaceRedditHandler,
+  });
+
+  app.post("/:workspaceSlug/personal-feed-moves", {
+    preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
+    schema: {
+      params: WorkspaceSlugParamsSchema,
+      body: WorkspacePersonalFeedMovesBodySchema,
+    },
+    handler: movePersonalFeedsToWorkspaceHandler,
   });
 
   // Workspace billing management (owner-only; mirrors the personal

@@ -21,3 +21,4 @@ export * from "./leaveWorkspace";
 export * from "./deleteWorkspace";
 export * from "./disconnectWorkspaceReddit";
 export * from "./workspaceBilling";
+export * from "./movePersonalFeedsToWorkspace";

@@ -42,7 +42,7 @@ test.describe("Workspaces", () => {
     // scoped feeds page renders the discovery UI with the workspace heading.
     await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
     await expect(
-      page.getByRole("heading", { name: "Add feeds for your workspace" }),
+      page.getByRole("heading", { name: /^Add feeds to / }),
     ).toBeVisible();
 
     // The switcher now exists in the header and reflects the active workspace.
