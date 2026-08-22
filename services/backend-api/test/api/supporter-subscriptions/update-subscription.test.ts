@@ -183,46 +183,46 @@ describe(
         paddleApi.server.registerRoute(
           "PATCH",
           `/subscriptions/${subscriptionId}`,
-          {
-            status: 200,
-            body: {
-              data: {
-                id: subscriptionId,
-                status: "active",
-              },
-            },
-          },
-        );
-
-        setTimeout(async () => {
-          await ctx.container.supporterRepository.upsertPaddleCustomer(
-            discordUserId,
-            {
-              customerId,
-              email: `${discordUserId}@billing.com`,
-              lastCurrencyCodeUsed: "USD",
-              subscription: {
-                id: subscriptionId,
-                productKey: SubscriptionProductKey.Tier1,
-                status: SubscriptionStatus.Active,
-                currencyCode: "USD",
-                billingPeriodStart: new Date(),
-                billingPeriodEnd: new Date(),
-                billingInterval: "month",
-                benefits: {
-                  maxUserFeeds: 35,
-                  allowWebhooks: true,
-                  dailyArticleLimit: 1000,
-                  refreshRateSeconds: 120,
+          async () => {
+            await ctx.container.supporterRepository.upsertPaddleCustomer(
+              discordUserId,
+              {
+                customerId,
+                email: `${discordUserId}@billing.com`,
+                lastCurrencyCodeUsed: "USD",
+                subscription: {
+                  id: subscriptionId,
+                  productKey: SubscriptionProductKey.Tier1,
+                  status: SubscriptionStatus.Active,
+                  currencyCode: "USD",
+                  billingPeriodStart: new Date(),
+                  billingPeriodEnd: new Date(),
+                  billingInterval: "month",
+                  benefits: {
+                    maxUserFeeds: 35,
+                    allowWebhooks: true,
+                    dailyArticleLimit: 1000,
+                    refreshRateSeconds: 120,
+                  },
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
                 },
                 createdAt: new Date(),
                 updatedAt: new Date(),
               },
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          );
-        }, 500);
+            );
+
+            return {
+              status: 200,
+              body: {
+                data: {
+                  id: subscriptionId,
+                  status: "active",
+                },
+              },
+            };
+          },
+        );
 
         const user = await ctx.asUser(discordUserId);
 
@@ -281,46 +281,46 @@ describe(
         paddleApi.server.registerRoute(
           "PATCH",
           `/subscriptions/${subscriptionId}`,
-          {
-            status: 200,
-            body: {
-              data: {
-                id: subscriptionId,
-                status: "active",
-              },
-            },
-          },
-        );
-
-        setTimeout(async () => {
-          await ctx.container.supporterRepository.upsertPaddleCustomer(
-            discordUserId,
-            {
-              customerId,
-              email: `${discordUserId}@billing.com`,
-              lastCurrencyCodeUsed: "USD",
-              subscription: {
-                id: subscriptionId,
-                productKey: SubscriptionProductKey.Tier1,
-                status: SubscriptionStatus.Active,
-                currencyCode: "USD",
-                billingPeriodStart: new Date(),
-                billingPeriodEnd: new Date(),
-                billingInterval: "month",
-                benefits: {
-                  maxUserFeeds: 35,
-                  allowWebhooks: true,
-                  dailyArticleLimit: 1000,
-                  refreshRateSeconds: 120,
+          async () => {
+            await ctx.container.supporterRepository.upsertPaddleCustomer(
+              discordUserId,
+              {
+                customerId,
+                email: `${discordUserId}@billing.com`,
+                lastCurrencyCodeUsed: "USD",
+                subscription: {
+                  id: subscriptionId,
+                  productKey: SubscriptionProductKey.Tier1,
+                  status: SubscriptionStatus.Active,
+                  currencyCode: "USD",
+                  billingPeriodStart: new Date(),
+                  billingPeriodEnd: new Date(),
+                  billingInterval: "month",
+                  benefits: {
+                    maxUserFeeds: 35,
+                    allowWebhooks: true,
+                    dailyArticleLimit: 1000,
+                    refreshRateSeconds: 120,
+                  },
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
                 },
                 createdAt: new Date(),
                 updatedAt: new Date(),
               },
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          );
-        }, 500);
+            );
+
+            return {
+              status: 200,
+              body: {
+                data: {
+                  id: subscriptionId,
+                  status: "active",
+                },
+              },
+            };
+          },
+        );
 
         const user = await ctx.asUser(discordUserId);
 

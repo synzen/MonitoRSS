@@ -165,4 +165,43 @@ describe("FeedMongooseRepository Integration", { concurrency: true }, () => {
       assert.strictEqual(count, 2);
     });
   });
+
+  describe("findUnconvertedByGuilds", { concurrency: true }, () => {
+    it("reads map fields from legacy feeds stored as BSON objects", async () => {
+      const ctx = harness.createContext();
+
+      await ctx.createLegacyFeed({
+        title: "Legacy feed",
+        url: "https://example.com/legacy",
+        filters: { title: ["include", "release"] },
+        rfilters: { description: "error" },
+        regexOps: {
+          custom: [
+            {
+              name: "custom",
+              search: { regex: "(.*)" },
+            },
+          ],
+        },
+      });
+
+      const feeds = await ctx.repository.findUnconvertedByGuilds({
+        guildIds: [ctx.guildId],
+        conversionDisabledCodes: [],
+      });
+
+      assert.deepStrictEqual(feeds[0]?.filters, {
+        title: ["include", "release"],
+      });
+      assert.deepStrictEqual(feeds[0]?.rfilters, { description: "error" });
+      assert.deepStrictEqual(feeds[0]?.regexOps, {
+        custom: [
+          {
+            name: "custom",
+            search: { regex: "(.*)" },
+          },
+        ],
+      });
+    });
+  });
 });

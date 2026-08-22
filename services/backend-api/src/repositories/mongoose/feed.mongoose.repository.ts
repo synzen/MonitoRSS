@@ -25,6 +25,20 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function mapFieldToRecord<T>(value: unknown): Record<string, T> | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (value instanceof Map) {
+    return Object.fromEntries(value) as Record<string, T>;
+  }
+
+  return typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, T>)
+    : undefined;
+}
+
 const FeedRegexOpSearchSchema = new Schema(
   {
     regex: { type: String, required: true },
@@ -130,8 +144,8 @@ export class FeedMongooseRepository
       url: doc.url,
       guild: doc.guild,
       channel: doc.channel,
-      filters: doc.filters ? Object.fromEntries(doc.filters) : undefined,
-      rfilters: doc.rfilters ? Object.fromEntries(doc.rfilters) : undefined,
+      filters: mapFieldToRecord<string[]>(doc.filters),
+      rfilters: mapFieldToRecord<string>(doc.rfilters),
       embeds: doc.embeds,
       disabled: doc.disabled,
       checkTitles: doc.checkTitles,
@@ -145,7 +159,9 @@ export class FeedMongooseRepository
       webhook: doc.webhook,
       addedAt: doc.addedAt,
       split: doc.split,
-      regexOps: doc.regexOps ? Object.fromEntries(doc.regexOps) : undefined,
+      regexOps: mapFieldToRecord<NonNullable<IFeed["regexOps"]>[string]>(
+        doc.regexOps,
+      ),
       isFeedv2: doc.isFeedv2,
       connections: discordChannels
         ? {

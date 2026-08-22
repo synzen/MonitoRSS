@@ -20,6 +20,13 @@ export interface FeedRepositoryContext {
   createFeed(
     data?: Partial<FeedTestData>,
   ): Promise<{ id: string; title: string; url: string; guild: string }>;
+  createLegacyFeed(data: {
+    title: string;
+    url: string;
+    filters?: Record<string, string[]>;
+    rfilters?: Record<string, string>;
+    regexOps?: Record<string, unknown[]>;
+  }): Promise<void>;
 }
 
 export interface FeedRepositoryHarness {
@@ -67,6 +74,20 @@ export function createFeedRepositoryHarness(): FeedRepositoryHarness {
             url: feed.url,
             guild: feed.guild,
           };
+        },
+
+        async createLegacyFeed(data) {
+          await testContext.connection.collection("feeds").insertOne({
+            title: data.title,
+            url: data.url,
+            guild: guildId,
+            channel: `channel-${testId}`,
+            filters: data.filters,
+            rfilters: data.rfilters,
+            regexOps: data.regexOps,
+            embeds: [],
+            addedAt: new Date(),
+          });
         },
       };
     },
