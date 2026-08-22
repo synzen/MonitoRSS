@@ -158,7 +158,7 @@ export const CloneUserFeedDialog = ({ feedId, defaultValues, open, onOpenChange 
                       name="destination"
                       control={control}
                       render={({ field }) => (
-                        <NativeSelectField {...field}>
+                        <NativeSelectField {...field} required>
                           <option value={PERSONAL_DESTINATION}>Personal feeds</option>
                           {workspaces?.map((workspace) => (
                             <option key={workspace.id} value={workspace.id}>
