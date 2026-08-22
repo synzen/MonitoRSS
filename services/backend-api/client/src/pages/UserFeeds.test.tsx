@@ -725,7 +725,7 @@ describe("UserFeeds - populated workspace personal feed move", () => {
     return user;
   };
 
-  it("offers the toolbar action and caps selection at remaining capacity", async () => {
+  it("offers the move action in the Add Feed menu and caps selection at remaining capacity", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -772,7 +772,9 @@ describe("UserFeeds - populated workspace personal feed move", () => {
     );
     const user = renderPopulatedWorkspace(68);
 
-    await user.click(await screen.findByRole("button", { name: "Move personal feeds" }));
+    expect(screen.queryByRole("button", { name: "Move personal feeds" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "More ways to add feeds" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Move personal feeds" }));
     const dialog = await screen.findByRole("dialog", {
       name: "Move personal feeds to Workspace One",
     });
@@ -783,12 +785,17 @@ describe("UserFeeds - populated workspace personal feed move", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps the full-workspace action visible with owner capacity management", async () => {
-    renderPopulatedWorkspace(70);
+  it("keeps the full-workspace menu action visible with its disabled reason", async () => {
+    const user = renderPopulatedWorkspace(70);
 
-    expect(await screen.findByRole("button", { name: "Move personal feeds" })).toBeDisabled();
-    expect(screen.getByText(/workspace is full/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Manage capacity" })).toHaveAttribute(
+    await user.click(screen.getByRole("button", { name: "More ways to add feeds" }));
+
+    expect(
+      await screen.findByRole("menuitem", {
+        name: "Move personal feeds — workspace full",
+      }),
+    ).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("menuitem", { name: "Manage feed capacity" })).toHaveAttribute(
       "href",
       "/workspaces/workspace-one/settings/billing",
     );
@@ -1125,7 +1132,7 @@ describe("UserFeeds - Returning user Add Feed button", () => {
   it("dropdown still has 'Add multiple feeds' option", async () => {
     const { user } = renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Additional add feed options" }));
+    await user.click(screen.getByRole("button", { name: "More ways to add feeds" }));
 
     expect(screen.getByText("Add multiple feeds")).toBeInTheDocument();
   });

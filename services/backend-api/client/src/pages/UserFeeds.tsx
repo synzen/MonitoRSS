@@ -740,17 +740,6 @@ const UserFeedsInner: React.FC = () => {
                 </Heading>
               </Flex>
               <HStack flexWrap="wrap">
-                {currentWorkspace && currentWorkspace.myRole !== null && !workspaceDormant && (
-                  <MovePersonalFeedsAction
-                    workspaceName={currentWorkspace.name}
-                    workspaceSlug={currentWorkspace.slug}
-                    allowance={remainingWorkspaceFeedCapacity}
-                    workspaceHasActiveRedditGrant={redditConnection?.status === "ACTIVE"}
-                    workspaceRole={currentWorkspace.myRole}
-                    presentation="toolbar"
-                    onMoved={handlePersonalFeedsMoved}
-                  />
-                )}
                 <MenuRoot>
                   <MenuTrigger asChild>
                     <Button
@@ -872,12 +861,12 @@ const UserFeedsInner: React.FC = () => {
                     <FaPlus />
                     Add Feed
                   </PrimaryActionButton>
-                  <MenuRoot>
+                  <MenuRoot lazyMount={false} unmountOnExit={false}>
                     <MenuTrigger asChild>
                       <IconButton
                         variant="solid"
                         colorPalette="brand"
-                        aria-label="Additional add feed options"
+                        aria-label="More ways to add feeds"
                         borderLeftRadius={0}
                       >
                         <FaChevronDown fontSize={24} />
@@ -890,6 +879,19 @@ const UserFeedsInner: React.FC = () => {
                           Add multiple feeds
                         </Link>
                       </MenuItem>
+                      {currentWorkspace &&
+                        currentWorkspace.myRole !== null &&
+                        !workspaceDormant && (
+                          <MovePersonalFeedsAction
+                            workspaceName={currentWorkspace.name}
+                            workspaceSlug={currentWorkspace.slug}
+                            allowance={remainingWorkspaceFeedCapacity}
+                            workspaceHasActiveRedditGrant={redditConnection?.status === "ACTIVE"}
+                            workspaceRole={currentWorkspace.myRole}
+                            presentation="menu"
+                            onMoved={handlePersonalFeedsMoved}
+                          />
+                        )}
                     </MenuContent>
                   </MenuRoot>
                 </HStack>

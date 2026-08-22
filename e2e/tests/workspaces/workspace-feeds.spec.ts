@@ -68,7 +68,7 @@ test.describe("Workspace feeds", () => {
     await expect(page.getByRole("link", { name: /^Configure/ })).toBeVisible();
 
     // Bulk add ("Add multiple feeds") is available and stays workspace-scoped.
-    await page.getByRole("button", { name: /Additional add feed options/i }).click();
+    await page.getByRole("button", { name: "More ways to add feeds" }).click();
     await page.getByRole("menuitem", { name: /add multiple feeds/i }).click();
     await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/add-feeds$`));
   });
