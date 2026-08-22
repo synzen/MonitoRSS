@@ -28,6 +28,7 @@ interface NativeSelectItem {
 
 interface NativeSelectFieldProps extends Select.FieldProps {
   items?: Array<string | NativeSelectItem>;
+  required?: boolean;
 }
 
 export const NativeSelectField = React.forwardRef<HTMLSelectElement, NativeSelectFieldProps>(

@@ -3,8 +3,14 @@ name: E2E Tests
 on:
   push:
     branches: [main]
+    paths:
+      - 'services/backend-api/**'
+      - '.github/workflows/e2e.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'services/backend-api/**'
+      - '.github/workflows/e2e.yml'
 
 env:
   BACKEND_API_PADDLE_KEY: ${{ secrets.BACKEND_API_PADDLE_KEY }}
