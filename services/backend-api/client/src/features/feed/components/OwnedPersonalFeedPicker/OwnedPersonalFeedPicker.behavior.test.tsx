@@ -120,6 +120,7 @@ describe("OwnedPersonalFeedPicker behavior", () => {
     const lastFeed = await screen.findByRole("checkbox", { name: /^Feed 30$/ });
     await waitFor(() => expect(lastFeed).toBeChecked());
     expect(screen.getByRole("checkbox", { name: /^Feed 1$/ })).toBeChecked();
+    expect(screen.getByText("30 of 30 feeds selected")).toBeVisible();
   });
 
   it("starts empty when over capacity, so the owner chooses (no invisible default)", async () => {
@@ -132,6 +133,7 @@ describe("OwnedPersonalFeedPicker behavior", () => {
     const feed1 = await screen.findByRole("checkbox", { name: /^Feed 1$/ });
     expect(feed1).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: /^Feed 2$/ })).not.toBeChecked();
+    expect(screen.getByText("0 of 30 feeds selected")).toBeVisible();
   });
 
   it("auto-picks the newest feeds in one targeted request, shown first and checked", async () => {

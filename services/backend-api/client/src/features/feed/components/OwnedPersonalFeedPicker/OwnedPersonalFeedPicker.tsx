@@ -623,6 +623,11 @@ export const OwnedPersonalFeedPicker = ({
           Search
         </Button>
       </HStack>
+      {fullTotal !== undefined && (
+        <Text aria-live="polite" color="fg.muted" fontSize="sm" fontWeight="medium">
+          {selectedIds.size} of {fullTotal} feeds selected
+        </Text>
+      )}
       <chakra.fieldset
         borderWidth={1}
         borderColor="border.emphasized"

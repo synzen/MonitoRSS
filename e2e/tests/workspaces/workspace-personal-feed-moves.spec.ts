@@ -142,6 +142,62 @@ test("moves personal feeds from an active empty team and refreshes both rendered
   ).toHaveCount(0);
 });
 
+test("paginates an over-capacity personal feed move and shows the selected total", async ({
+  page,
+}) => {
+  await page.goto("/feeds");
+  await waitForAuthenticatedApp(page);
+
+  const discordUserId = await getDiscordUserIdFromPage(page);
+  await enableWorkspacesFeatureInDb(discordUserId);
+  await setVerifiedEmailInDb(
+    discordUserId,
+    `verified-${discordUserId}@example.com`,
+  );
+  const userId = await getUserMongoIdFromDiscordId(discordUserId);
+  const stamp = Date.now();
+  const workspaceName = `E2E Paginated Move ${stamp}`;
+  const { slug } = await seedWorkspaceWithMembershipsInDb({
+    workspaceName,
+    selfUserId: userId,
+    selfRole: "owner",
+    withActiveSubscription: true,
+  });
+  const feedTitles = Array.from(
+    { length: 71 },
+    (_, index) =>
+      `Paginated personal ${String(index + 1).padStart(2, "0")} ${stamp}`,
+  );
+  await seedPersonalFeedsInDb({
+    userId,
+    discordUserId,
+    feeds: feedTitles.map((title) => ({ title, url: MOCK_RSS_FEED_URL })),
+  });
+
+  await page.goto(`/workspaces/${slug}/feeds`);
+  await page.getByRole("button", { name: "Move personal feeds" }).click();
+  const dialog = page.getByRole("dialog", {
+    name: `Move personal feeds to ${workspaceName}`,
+  });
+
+  await expect(dialog.getByText("0 of 71 feeds selected")).toBeVisible({
+    timeout: 15_000,
+  });
+  const firstPageFeed = dialog.getByRole("checkbox", { name: feedTitles[0] });
+  await expect(firstPageFeed).toBeVisible();
+  await expect(
+    dialog.getByRole("checkbox", { name: feedTitles[25] }),
+  ).toHaveCount(0);
+
+  await dialog.getByRole("button", { name: "View more feeds" }).click();
+  const secondPageFeed = dialog.getByRole("checkbox", { name: feedTitles[25] });
+  await expect(secondPageFeed).toBeVisible({ timeout: 15_000 });
+
+  await dialog.locator("label").filter({ hasText: feedTitles[25] }).click();
+  await expect(secondPageFeed).toBeChecked();
+  await expect(dialog.getByText("1 of 71 feeds selected")).toBeVisible();
+});
+
 test("moves a constrained batch into a populated workspace and preserves disabled states", async ({
   page,
 }) => {
