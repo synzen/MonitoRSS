@@ -396,7 +396,11 @@ export async function cloneUserFeedHandler(
   const { id } = await userFeedsService.clone(
     feedId,
     accessToken.access_token,
-    { title: request.body?.title, url: request.body?.url },
+    {
+      title: request.body?.title,
+      url: request.body?.url,
+      workspaceId: request.body?.workspaceId,
+    },
     user,
   );
 

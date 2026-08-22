@@ -16,6 +16,11 @@ import { FaUpRightFromSquare } from "react-icons/fa6";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useCreateUserFeedClone } from "../../hooks";
 import { useFeedScope } from "../../contexts/FeedScopeContext";
+import { useWorkspaces } from "@/features/workspaces";
+import {
+  NativeSelectField,
+  NativeSelectRoot,
+} from "@/components/ui/native-select";
 import {
   InlineErrorAlert,
   InlineErrorIncompleteFormAlert,
@@ -38,9 +43,12 @@ const formSchema = object({
   url: string().required().matches(/^http/, {
     message: "Must be a valid URL",
   }),
+  destination: string().required(),
 });
 
 type FormData = InferType<typeof formSchema>;
+
+const PERSONAL_DESTINATION = "personal";
 
 interface Props {
   feedId?: string;
@@ -58,7 +66,8 @@ export const CloneUserFeedDialog = ({
   open,
   onOpenChange,
 }: Props) => {
-  const { workspaceSlug } = useFeedScope();
+  const { workspaceId } = useFeedScope();
+  const { workspaces } = useWorkspaces({ enabled: open });
   const {
     handleSubmit,
     control,
@@ -66,7 +75,10 @@ export const CloneUserFeedDialog = ({
     formState: { errors, isSubmitting, isSubmitted },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
-    defaultValues,
+    defaultValues: {
+      ...defaultValues,
+      destination: workspaceId ?? PERSONAL_DESTINATION,
+    },
   });
   const setOpen = onOpenChange;
   const initialRef = useRef<HTMLInputElement>(null);
@@ -75,15 +87,21 @@ export const CloneUserFeedDialog = ({
   const { createSuccessAlert } = usePageAlertContext();
 
   useEffect(() => {
-    reset(defaultValues);
+    reset({
+      ...defaultValues,
+      destination: workspaceId ?? PERSONAL_DESTINATION,
+    });
     resetError();
-  }, [open]);
+  }, [open, workspaceId]);
 
   useEffect(() => {
-    reset(defaultValues);
-  }, [JSON.stringify(defaultValues)]);
+    reset({
+      ...defaultValues,
+      destination: workspaceId ?? PERSONAL_DESTINATION,
+    });
+  }, [JSON.stringify(defaultValues), workspaceId]);
 
-  const onSubmit = async ({ title, url }: FormData) => {
+  const onSubmit = async ({ title, url, destination }: FormData) => {
     if (!feedId) {
       return;
     }
@@ -91,7 +109,19 @@ export const CloneUserFeedDialog = ({
     try {
       const {
         result: { id },
-      } = await mutateAsync({ feedId, details: { title, url } });
+      } = await mutateAsync({
+        feedId,
+        details: {
+          title,
+          url,
+          workspaceId:
+            destination === PERSONAL_DESTINATION ? null : destination,
+        },
+      });
+
+      const destinationWorkspace = workspaces?.find(
+        (workspace) => workspace.id === destination,
+      );
 
       createSuccessAlert({
         title: `Successfully cloned feed to: ${title}.`,
@@ -100,7 +130,9 @@ export const CloneUserFeedDialog = ({
             <Button asChild>
               <Link
                 href={pages.userFeed(id, {
-                  scope: workspaceSlug ? { workspaceSlug } : undefined,
+                  scope: destinationWorkspace
+                    ? { workspaceSlug: destinationWorkspace.slug }
+                    : undefined,
                 })}
                 target="_blank"
               >
@@ -137,6 +169,28 @@ export const CloneUserFeedDialog = ({
           <Stack gap={4}>
             <form id="clonefeed" onSubmit={handleSubmit(onSubmit)}>
               <Stack gap={4}>
+                <Field
+                  label="Destination"
+                  required
+                  helperText="Choose where the copied feed will be managed."
+                >
+                  <NativeSelectRoot>
+                    <Controller
+                      name="destination"
+                      control={control}
+                      render={({ field }) => (
+                        <NativeSelectField {...field} required>
+                          <option value={PERSONAL_DESTINATION}>Personal feeds</option>
+                          {workspaces?.map((workspace) => (
+                            <option key={workspace.id} value={workspace.id}>
+                              {workspace.name}
+                            </option>
+                          ))}
+                        </NativeSelectField>
+                      )}
+                    />
+                  </NativeSelectRoot>
+                </Field>
                 <Field
                   label="Title"
                   invalid={!!errors.title}

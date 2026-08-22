@@ -53,6 +53,11 @@ export const CloneUserFeedBodySchema = Type.Object(
   {
     title: Type.Optional(Type.String()),
     url: Type.Optional(Type.String()),
+    // Null explicitly targets personal feeds. When present as an id, the
+    // destination workspace membership is verified by the service.
+    workspaceId: Type.Optional(
+      Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
+    ),
   },
   { additionalProperties: false },
 );

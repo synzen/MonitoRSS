@@ -301,6 +301,7 @@ export interface CloneUserFeedInput {
     title?: string;
     url: string;
     inputUrl?: string;
+    workspaceId?: string;
   };
 }
 

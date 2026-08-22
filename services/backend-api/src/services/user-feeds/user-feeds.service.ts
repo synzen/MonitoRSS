@@ -353,6 +353,9 @@ export class UserFeedsService {
     data?: {
       title?: string;
       url?: string;
+      // `undefined` retains the legacy source scope; `null` explicitly targets
+      // personal feeds.
+      workspaceId?: string | null;
     },
     existingUser?: IUser,
   ) {
@@ -362,27 +365,50 @@ export class UserFeedsService {
       throw new Error(`Feed ${feedId} not found while cloning`);
     }
 
-    // Clone lands in the source's scope (the repo carries `workspaceId` over), so
-    // the limit is the workspace's for a workspace feed, else the creator's.
-    const { maxFeeds } =
-      await this.deps.supportersService.resolveFeedBenefits(sourceFeed);
+    const destinationWorkspaceId =
+      data?.workspaceId === undefined
+        ? sourceFeed.workspaceId
+        : (data.workspaceId ?? undefined);
+    const user =
+      existingUser ??
+      (await this.deps.usersService.getOrCreateUserByDiscordId(
+        sourceFeed.user.discordUserId,
+      ));
+
+    if (destinationWorkspaceId) {
+      await this.deps.workspacesService.getWorkspaceForMember(
+        destinationWorkspaceId,
+        user.id,
+      );
+    }
+
+    const { maxFeeds, dormant } =
+      await this.deps.supportersService.resolveFeedBenefits({
+        workspaceId: destinationWorkspaceId,
+        user: { discordUserId: sourceFeed.user.discordUserId },
+      });
+
+    if (destinationWorkspaceId && dormant) {
+      throw new WorkspaceNotSubscribedException(
+        `Workspace ${destinationWorkspaceId} has no active subscription`,
+      );
+    }
 
     let inputUrl = sourceFeed.inputUrl;
     let finalUrl = sourceFeed.url;
 
+    const credentialSource =
+      await this.deps.feedCredentialsService.resolveCredentialSource(
+        { workspaceId: destinationWorkspaceId },
+        user,
+      );
+
+    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+      finalUrl,
+      credentialSource,
+    );
+
     if (data?.url && data.url !== sourceFeed.url) {
-      const user =
-        existingUser ??
-        (await this.deps.usersService.getOrCreateUserByDiscordId(
-          sourceFeed.user.discordUserId,
-        ));
-
-      const credentialSource =
-        await this.deps.feedCredentialsService.resolveCredentialSource(
-          sourceFeed,
-          user,
-        );
-
       this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
         data.url,
         credentialSource,
@@ -412,10 +438,11 @@ export class UserFeedsService {
           title: data?.title,
           url: finalUrl,
           inputUrl,
+          workspaceId: destinationWorkspaceId,
         },
       },
       this.feedLimitScope({
-        workspaceId: sourceFeed.workspaceId ?? null,
+        workspaceId: destinationWorkspaceId ?? null,
         ownerDiscordUserId: sourceFeed.user.discordUserId,
         maxFeeds,
       }),

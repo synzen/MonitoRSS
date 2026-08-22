@@ -6,8 +6,90 @@ import {
   updateFeed,
   updateConnection,
 } from "../../helpers/api";
+import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
+import {
+  enableWorkspacesFeatureInDb,
+  setVerifiedEmailInDb,
+} from "../../helpers/workspaces-db";
 
 test.describe("Clone Feed", () => {
+  test("can clone a personal feed into a workspace through the UI", async ({
+    page,
+    testFeed,
+  }) => {
+    await page.goto("/feeds");
+    await expect(
+      page.getByRole("button", { name: "Account settings" }),
+    ).toBeVisible({ timeout: 15000 });
+
+    const discordUserId = await getDiscordUserIdFromPage(page);
+    await enableWorkspacesFeatureInDb(discordUserId);
+    await setVerifiedEmailInDb(
+      discordUserId,
+      `verified-${discordUserId}@example.com`,
+    );
+    await page.reload();
+
+    const workspaceName = `Clone destination ${Date.now()}`;
+    await page.getByRole("button", { name: /switch workspace/i }).click();
+    await page.getByRole("menuitem", { name: /create a workspace/i }).click();
+    const createWorkspaceDialog = page.getByRole("dialog");
+    await createWorkspaceDialog
+      .getByLabel("Workspace name")
+      .fill(workspaceName);
+    await createWorkspaceDialog
+      .getByRole("button", { name: "Create workspace" })
+      .click();
+    await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, {
+      timeout: 15000,
+    });
+    const workspaceSlug = page.url().match(/\/workspaces\/([^/]+)\/feeds/)?.[1];
+    expect(workspaceSlug).toBeTruthy();
+
+    let clonedFeedId: string | undefined;
+
+    try {
+      await page.goto(`/feeds/${testFeed.id}`);
+      await expect(
+        page.getByRole("heading", { name: testFeed.title }),
+      ).toBeVisible({ timeout: 10000 });
+
+      await page.getByRole("button", { name: "Feed Actions" }).click();
+      await page.getByRole("menuitem").filter({ hasText: "Clone" }).click();
+
+      const cloneDialog = page.getByRole("dialog");
+      await expect(cloneDialog).toBeVisible();
+      await cloneDialog.getByLabel("Destination").selectOption({
+        label: workspaceName,
+      });
+      await cloneDialog
+        .getByRole("button", { name: "Clone", exact: true })
+        .click();
+
+      const clonedFeedLink = page.getByRole("link", {
+        name: "View cloned feed",
+      });
+      await expect(clonedFeedLink).toBeVisible({ timeout: 30000 });
+      const clonedFeedUrl = await clonedFeedLink.getAttribute("href");
+      expect(clonedFeedUrl).toMatch(
+        new RegExp(`/workspaces/${workspaceSlug}/feeds/[^/]+$`),
+      );
+      clonedFeedId = clonedFeedUrl?.match(/\/feeds\/([^/?]+)/)?.[1];
+
+      await page.goto(clonedFeedUrl!);
+      await expect(page).toHaveURL(
+        new RegExp(`/workspaces/${workspaceSlug}/feeds/${clonedFeedId}$`),
+      );
+      await expect(
+        page.getByRole("heading", { name: testFeed.title }),
+      ).toBeVisible({ timeout: 10000 });
+    } finally {
+      if (clonedFeedId) {
+        await deleteFeed(page, clonedFeedId).catch(() => {});
+      }
+    }
+  });
+
   test("can clone a feed with all settings and connections through the UI", async ({
     page,
     testFeed,

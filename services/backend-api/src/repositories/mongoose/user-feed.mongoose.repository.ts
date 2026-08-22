@@ -564,11 +564,6 @@ export class UserFeedMongooseRepository
   private buildCloneDoc(input: CloneUserFeedInput) {
     const { sourceFeed, overrides } = input;
 
-    // `cloneableFields` intentionally retains `user` and `workspaceId` from the
-    // source, so a clone lands in the same scope as its source (a workspace feed
-    // clones into the same workspace; a personal feed stays personal). The
-    // service enforces the matching feed limit (workspace vs personal)
-    // accordingly.
     const {
       id,
       connections,
@@ -576,6 +571,7 @@ export class UserFeedMongooseRepository
       updatedAt,
       feedRequestLookupKey,
       slotOffsetMs,
+      workspaceId: _sourceWorkspaceId,
       ...cloneableFields
     } = sourceFeed;
 
@@ -588,6 +584,7 @@ export class UserFeedMongooseRepository
       title: overrides.title || cloneableFields.title,
       url,
       inputUrl: overrides.inputUrl,
+      workspaceId: overrides.workspaceId,
       connections: { discordChannels: [] },
       slotOffsetMs: effectiveRefreshRate
         ? calculateSlotOffsetMs(url, effectiveRefreshRate)
