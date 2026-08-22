@@ -148,6 +148,39 @@ describe("POST /api/v1/user-feeds/:feedId/clone", { concurrency: true }, () => {
     assert.strictEqual(clonedFeed.title, "Custom Cloned Title");
   });
 
+  it("returns 201 and clones a personal feed into a workspace", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const account =
+      await ctx.container.usersService.getOrCreateUserByDiscordId(
+        discordUserId,
+      );
+    const workspace =
+      await ctx.container.workspaceRepository.createWorkspaceWithOwner({
+        name: "Clone destination",
+        slug: `clone-destination-${generateTestId().slice(-8)}`,
+        ownerUserId: account.id,
+      });
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Personal source",
+      url: "https://example.com/clone-to-workspace.xml",
+      user: { id: account.id, discordUserId },
+    });
+
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}/clone`, {
+      method: "POST",
+      body: JSON.stringify({ workspaceId: workspace.id }),
+    });
+
+    assert.strictEqual(response.status, 201);
+    const body = (await response.json()) as { result: { id: string } };
+    const clonedFeed = await ctx.container.userFeedRepository.findById(
+      body.result.id,
+    );
+    assert.ok(clonedFeed);
+    assert.strictEqual(clonedFeed.workspaceId, workspace.id);
+  });
+
   it("returns 400 with FEED_LIMIT_REACHED when user is at feed limit", async () => {
     const discordUserId = generateSnowflake();
     const user = await ctx.asUser(discordUserId);

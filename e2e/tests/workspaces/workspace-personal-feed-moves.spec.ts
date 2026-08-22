@@ -21,6 +21,11 @@ async function waitForAuthenticatedApp(page: Page): Promise<void> {
   });
 }
 
+async function openMovePersonalFeedsFromAddMenu(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "More ways to add feeds" }).click();
+  await page.getByRole("menuitem", { name: "Move personal feeds" }).click();
+}
+
 async function openConcurrentMoveDialog(page: Page, label: string) {
   await page.goto("/feeds");
   await waitForAuthenticatedApp(page);
@@ -255,7 +260,7 @@ test("moves a constrained batch into a populated workspace and preserves disable
 
   await page.goto(`/workspaces/${slug}/feeds`);
   await expect(page.getByRole("table")).toBeVisible({ timeout: 15_000 });
-  await page.getByRole("button", { name: "Move personal feeds" }).click();
+  await openMovePersonalFeedsFromAddMenu(page);
   const dialog = page.getByRole("dialog", {
     name: `Move personal feeds to ${workspaceName}`,
   });
@@ -297,13 +302,15 @@ test("moves a constrained batch into a populated workspace and preserves disable
     timeout: 15_000,
   });
   await expect(limitRow.getByLabel("Ok")).toBeVisible();
+  await page.getByRole("button", { name: "More ways to add feeds" }).click();
   await expect(
-    page.getByRole("button", { name: "Move personal feeds" }),
-  ).toBeDisabled();
-  await expect(page.getByText(/workspace is full/i)).toBeVisible();
+    page.getByRole("menuitem", {
+      name: "Move personal feeds — workspace full",
+    }),
+  ).toHaveAttribute("aria-disabled", "true");
   await expect(
-    page.getByRole("link", { name: "Manage capacity" }),
-  ).toBeVisible();
+    page.getByRole("menuitem", { name: "Manage feed capacity" }),
+  ).toHaveAttribute("href", new RegExp(`/workspaces/${slug}/settings/billing$`));
 });
 
 test("keeps the selection visible and refreshes capacity after a concurrent workspace change", async ({
@@ -344,7 +351,7 @@ test("keeps the selection visible and refreshes capacity after a concurrent work
 
   await page.goto(`/workspaces/${slug}/feeds`);
   await expect(page.getByRole("table")).toBeVisible({ timeout: 15_000 });
-  await page.getByRole("button", { name: "Move personal feeds" }).click();
+  await openMovePersonalFeedsFromAddMenu(page);
   const dialog = page.getByRole("dialog", {
     name: `Move personal feeds to ${workspaceName}`,
   });

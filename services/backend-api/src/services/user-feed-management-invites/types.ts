@@ -7,11 +7,9 @@ import type {
   UserFeedManagerStatus,
 } from "../../repositories/shared/enums";
 import type { SupportersService } from "../supporters/supporters.service";
-import type { UserFeedsService } from "../user-feeds/user-feeds.service";
 
 export interface UserFeedManagementInvitesServiceDeps {
   userFeedRepository: IUserFeedRepository;
-  userFeedsService: UserFeedsService;
   supportersService: SupportersService;
 }
 

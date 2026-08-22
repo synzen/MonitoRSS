@@ -133,10 +133,9 @@ export class UserFeedManagementInvitesService {
         invite.discordUserId,
       );
 
-    const currentCount =
-      await this.deps.userFeedsService.calculateCurrentFeedCountOfDiscordUser(
-        invite.discordUserId,
-      );
+    const currentCount = await this.deps.userFeedRepository.countByOwnership(
+      invite.discordUserId,
+    );
 
     if (
       updates.status === UserFeedManagerStatus.Accepted &&

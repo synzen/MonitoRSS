@@ -1,6 +1,9 @@
-import { Button, Flex, Link, Skeleton, Stack, Text } from "@chakra-ui/react";
+import { Button, Flex, Skeleton, Stack, Text } from "@chakra-ui/react";
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { FaArrowRightArrowLeft, FaGaugeHigh } from "react-icons/fa6";
 import { ConfirmModal, InlineErrorAlert } from "@/components";
+import { MenuItem, MenuSeparator } from "@/components/ui/menu";
 import { OwnedPersonalFeedPicker, useOwnedPersonalFeeds } from "@/features/feed";
 import { pages } from "@/constants";
 import { useMovePersonalFeedsToWorkspace } from "../../hooks";
@@ -16,7 +19,7 @@ interface Props {
   allowance: number;
   workspaceHasActiveRedditGrant: boolean;
   workspaceRole?: WorkspaceRole | null;
-  presentation?: "banner" | "toolbar";
+  presentation?: "banner" | "menu";
   onMoved: (movedCount: number) => void;
 }
 
@@ -67,6 +70,18 @@ export const MovePersonalFeedsAction = ({
   };
 
   if (status === "loading") {
+    if (presentation === "menu") {
+      return (
+        <>
+          <MenuSeparator />
+          <MenuItem value="move-personal-feeds-loading" disabled>
+            <FaArrowRightArrowLeft />
+            Checking personal feeds…
+          </MenuItem>
+        </>
+      );
+    }
+
     return (
       <Flex
         role="status"
@@ -90,6 +105,18 @@ export const MovePersonalFeedsAction = ({
   }
 
   if (error) {
+    if (presentation === "menu") {
+      return (
+        <>
+          <MenuSeparator />
+          <MenuItem value="move-personal-feeds-error" disabled>
+            <FaArrowRightArrowLeft />
+            Could not check personal feeds
+          </MenuItem>
+        </>
+      );
+    }
+
     return (
       <InlineErrorAlert title="Could not check your personal feeds" description={error.message} />
     );
@@ -101,24 +128,26 @@ export const MovePersonalFeedsAction = ({
 
   const capacityFull = allowance <= 0;
   const trigger =
-    presentation === "toolbar" ? (
-      <Flex alignItems="center" gap={2} flexWrap="wrap">
-        <Button variant="outline" size="sm" disabled={capacityFull} onClick={() => setOpen(true)}>
-          Move personal feeds
-        </Button>
-        {capacityFull && (
-          <Text color="fg.muted" fontSize="sm">
-            Workspace is full.{" "}
-            {workspaceRole === "owner" ? (
-              <Link href={pages.workspaceBilling(workspaceSlug)} color="text.link">
-                Manage capacity
-              </Link>
-            ) : (
-              "Contact the owner to add capacity."
-            )}
-          </Text>
+    presentation === "menu" ? (
+      <>
+        <MenuSeparator />
+        <MenuItem value="move-personal-feeds" disabled={capacityFull} onClick={() => setOpen(true)}>
+          <FaArrowRightArrowLeft />
+          {capacityFull
+            ? `Move personal feeds — ${
+                workspaceRole === "owner" ? "workspace full" : "contact the owner for capacity"
+              }`
+            : "Move personal feeds"}
+        </MenuItem>
+        {capacityFull && workspaceRole === "owner" && (
+          <MenuItem value="manage-feed-capacity" asChild>
+            <Link to={pages.workspaceBilling(workspaceSlug)}>
+              <FaGaugeHigh />
+              Manage feed capacity
+            </Link>
+          </MenuItem>
         )}
-      </Flex>
+      </>
     ) : (
       <Flex
         alignItems={{ base: "flex-start", sm: "center" }}

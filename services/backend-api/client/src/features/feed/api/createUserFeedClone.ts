@@ -6,6 +6,7 @@ export interface CreateUserFeedCloneInput {
   details: {
     title?: string;
     url?: string;
+    workspaceId?: string | null;
   };
 }
 

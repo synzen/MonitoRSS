@@ -1,11 +1,12 @@
 import "@testing-library/jest-dom";
-import { ChakraProvider } from "@chakra-ui/react";
+import { Button, ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MenuContent, MenuRoot, MenuTrigger } from "@/components/ui/menu";
 import { system } from "@/utils/theme";
 import { getUserFeeds } from "../../../feed/api";
 import { MovePersonalFeedsAction } from ".";
@@ -31,19 +32,31 @@ const renderAction = (
   }),
 ) => {
   const onMoved = props.onMoved ?? vi.fn();
+  const action = (
+    <MovePersonalFeedsAction
+      workspaceName="Workspace One"
+      workspaceSlug="workspace-one"
+      allowance={70}
+      workspaceHasActiveRedditGrant={false}
+      onMoved={onMoved}
+      {...props}
+    />
+  );
 
   render(
     <QueryClientProvider client={queryClient}>
       <ChakraProvider value={system}>
         <MemoryRouter>
-          <MovePersonalFeedsAction
-            workspaceName="Workspace One"
-            workspaceSlug="workspace-one"
-            allowance={70}
-            workspaceHasActiveRedditGrant={false}
-            onMoved={onMoved}
-            {...props}
-          />
+          {props.presentation === "menu" ? (
+            <MenuRoot lazyMount={false} unmountOnExit={false}>
+              <MenuTrigger asChild>
+                <Button>More ways to add feeds</Button>
+              </MenuTrigger>
+              <MenuContent>{action}</MenuContent>
+            </MenuRoot>
+          ) : (
+            action
+          )}
         </MemoryRouter>
       </ChakraProvider>
     </QueryClientProvider>,
@@ -200,33 +213,87 @@ describe("MovePersonalFeedsAction", () => {
     );
   });
 
-  it("keeps a full workspace action disabled and directs owners to capacity management", async () => {
-    renderAction({
+  it("explains full workspace capacity in the disabled menu action", async () => {
+    const { user } = renderAction({
       allowance: 0,
       workspaceRole: "owner",
-      presentation: "toolbar",
+      presentation: "menu",
       workspaceHasActiveRedditGrant: true,
     });
 
-    expect(await screen.findByRole("button", { name: "Move personal feeds" })).toBeDisabled();
-    expect(screen.getByText(/workspace is full/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Manage capacity" })).toHaveAttribute(
+    await user.click(screen.getByRole("button", { name: "More ways to add feeds" }));
+
+    expect(
+      await screen.findByRole("menuitem", {
+        name: "Move personal feeds — workspace full",
+      }),
+    ).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("menuitem", { name: "Manage feed capacity" })).toHaveAttribute(
       "href",
       "/workspaces/workspace-one/settings/billing",
     );
   });
 
-  it("tells admins to contact the owner when the workspace is full", async () => {
-    renderAction({
+  it("directs admins to the owner when the workspace is full", async () => {
+    const { user } = renderAction({
       allowance: 0,
       workspaceRole: "admin",
-      presentation: "toolbar",
+      presentation: "menu",
+    });
+
+    await user.click(screen.getByRole("button", { name: "More ways to add feeds" }));
+
+    expect(
+      await screen.findByRole("menuitem", {
+        name: "Move personal feeds — contact the owner for capacity",
+      }),
+    ).toHaveAttribute("aria-disabled", "true");
+    expect(
+      screen.queryByRole("menuitem", { name: "Manage feed capacity" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens the move dialog from the menu presentation", async () => {
+    const { user } = renderAction({
+      presentation: "menu",
       workspaceHasActiveRedditGrant: true,
     });
 
-    expect(await screen.findByRole("button", { name: "Move personal feeds" })).toBeDisabled();
-    expect(screen.getByText(/contact the owner to add capacity/i)).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Manage capacity" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "More ways to add feeds" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Move personal feeds" }));
+
+    expect(
+      await screen.findByRole("dialog", {
+        name: "Move personal feeds to Workspace One",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the personal-feed query failure in the menu", async () => {
+    vi.mocked(getUserFeeds).mockRejectedValue(new Error("Request failed"));
+    const { user } = renderAction({ presentation: "menu" });
+
+    await user.click(screen.getByRole("button", { name: "More ways to add feeds" }));
+
+    expect(
+      await screen.findByRole("menuitem", {
+        name: "Could not check personal feeds",
+      }),
+    ).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("does not add a menu action when there are no personal feeds", async () => {
+    vi.mocked(getUserFeeds).mockResolvedValue({
+      total: 0,
+      results: [],
+    } as never);
+    const { user } = renderAction({ presentation: "menu" });
+
+    await user.click(screen.getByRole("button", { name: "More ways to add feeds" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("menuitem", { name: /personal feeds/i })).not.toBeInTheDocument(),
+    );
   });
 
   it("keeps the dialog selection visible and refreshes data after a capacity conflict", async () => {

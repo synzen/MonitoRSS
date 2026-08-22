@@ -380,7 +380,6 @@ export function createContainer(deps: {
   const userFeedManagementInvitesService = new UserFeedManagementInvitesService(
     {
       userFeedRepository,
-      userFeedsService,
       supportersService,
     },
   );
