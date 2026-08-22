@@ -472,12 +472,12 @@ export async function getDeliveryLogsHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService } = request.container;
+  const { feedHandlerService } = request.container;
   const { feedId } = request.params;
 
   const { feed } = await resolveFeedForRequester(request, feedId);
 
-  const result = await userFeedsService.getDeliveryLogs(feed.id, {
+  const result = await feedHandlerService.getDeliveryLogs(feed.id, {
     limit: request.query.limit ?? 25,
     skip: request.query.skip ?? 0,
   });
@@ -747,8 +747,12 @@ export async function getUserFeedsHandler(
   request: FastifyRequest<{ Querystring: GetUserFeedsQuery }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, usersService, workspacesService, config } =
-    request.container;
+  const {
+    userFeedRepository,
+    usersService,
+    workspacesService,
+    config,
+  } = request.container;
   const { discordUserId } = request;
   const { workspaceId } = request.query;
 
@@ -782,13 +786,18 @@ export async function getUserFeedsHandler(
   };
 
   const [feeds, count, feedsWithoutConnectionsCount] = await Promise.all([
-    userFeedsService.getFeedsByUser(user.id, discordUserId, input),
-    userFeedsService.getFeedCountByUser(user.id, discordUserId, input),
-    userFeedsService.getFeedsWithoutConnectionsCount(
-      user.id,
+    userFeedRepository.getUserFeedsListing({ discordUserId, ...input }),
+    userFeedRepository.getUserFeedsCount({
       discordUserId,
       workspaceId,
-    ),
+      search: input.search,
+      filters: input.filters,
+    }),
+    userFeedRepository.getUserFeedsCount({
+      discordUserId,
+      workspaceId,
+      filters: { hasConnections: false },
+    }),
   ]);
 
   return reply.status(200).send({

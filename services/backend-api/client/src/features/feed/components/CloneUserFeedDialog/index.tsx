@@ -1,12 +1,4 @@
-import {
-  Box,
-  Button,
-  HStack,
-  Input,
-  Link,
-  Stack,
-  Icon,
-} from "@chakra-ui/react";
+import { Box, Button, HStack, Input, Link, Stack, Icon } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -17,10 +9,7 @@ import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { useCreateUserFeedClone } from "../../hooks";
 import { useFeedScope } from "../../contexts/FeedScopeContext";
 import { useWorkspaces } from "@/features/workspaces";
-import {
-  NativeSelectField,
-  NativeSelectRoot,
-} from "@/components/ui/native-select";
+import { NativeSelectField, NativeSelectRoot } from "@/components/ui/native-select";
 import {
   InlineErrorAlert,
   InlineErrorIncompleteFormAlert,
@@ -50,6 +39,13 @@ type FormData = InferType<typeof formSchema>;
 
 const PERSONAL_DESTINATION = "personal";
 
+function getCloneFormDefaultValues(defaultValues: Props["defaultValues"], workspaceId?: string) {
+  return {
+    ...defaultValues,
+    destination: workspaceId ?? PERSONAL_DESTINATION,
+  };
+}
+
 interface Props {
   feedId?: string;
   defaultValues: {
@@ -60,12 +56,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-export const CloneUserFeedDialog = ({
-  feedId,
-  defaultValues,
-  open,
-  onOpenChange,
-}: Props) => {
+export const CloneUserFeedDialog = ({ feedId, defaultValues, open, onOpenChange }: Props) => {
   const { workspaceId } = useFeedScope();
   const { workspaces } = useWorkspaces({ enabled: open });
   const {
@@ -75,10 +66,7 @@ export const CloneUserFeedDialog = ({
     formState: { errors, isSubmitting, isSubmitted },
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
-    defaultValues: {
-      ...defaultValues,
-      destination: workspaceId ?? PERSONAL_DESTINATION,
-    },
+    defaultValues: getCloneFormDefaultValues(defaultValues, workspaceId),
   });
   const setOpen = onOpenChange;
   const initialRef = useRef<HTMLInputElement>(null);
@@ -87,18 +75,12 @@ export const CloneUserFeedDialog = ({
   const { createSuccessAlert } = usePageAlertContext();
 
   useEffect(() => {
-    reset({
-      ...defaultValues,
-      destination: workspaceId ?? PERSONAL_DESTINATION,
-    });
+    reset(getCloneFormDefaultValues(defaultValues, workspaceId));
     resetError();
   }, [open, workspaceId]);
 
   useEffect(() => {
-    reset({
-      ...defaultValues,
-      destination: workspaceId ?? PERSONAL_DESTINATION,
-    });
+    reset(getCloneFormDefaultValues(defaultValues, workspaceId));
   }, [JSON.stringify(defaultValues), workspaceId]);
 
   const onSubmit = async ({ title, url, destination }: FormData) => {
@@ -114,14 +96,11 @@ export const CloneUserFeedDialog = ({
         details: {
           title,
           url,
-          workspaceId:
-            destination === PERSONAL_DESTINATION ? null : destination,
+          workspaceId: destination === PERSONAL_DESTINATION ? null : destination,
         },
       });
 
-      const destinationWorkspace = workspaces?.find(
-        (workspace) => workspace.id === destination,
-      );
+      const destinationWorkspace = workspaces?.find((workspace) => workspace.id === destination);
 
       createSuccessAlert({
         title: `Successfully cloned feed to: ${title}.`,
@@ -200,9 +179,7 @@ export const CloneUserFeedDialog = ({
                   <Controller
                     name="title"
                     control={control}
-                    render={({ field }) => (
-                      <Input {...field} ref={initialRef} />
-                    )}
+                    render={({ field }) => <Input {...field} ref={initialRef} />}
                   />
                 </Field>
                 <Field

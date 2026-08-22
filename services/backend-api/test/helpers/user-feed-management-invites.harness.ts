@@ -69,12 +69,6 @@ export interface UserFeedManagementInvitesHarness {
   createContext(options?: TestContextOptions): TestContext;
 }
 
-function createMockUserFeedsService(currentFeedCount: number = 0) {
-  return {
-    calculateCurrentFeedCountOfDiscordUser: async () => currentFeedCount,
-  };
-}
-
 export function createUserFeedManagementInvitesHarness(): UserFeedManagementInvitesHarness {
   let testContext: ServiceTestContext;
   let userFeedRepository: UserFeedMongooseRepository;
@@ -96,9 +90,6 @@ export function createUserFeedManagementInvitesHarness(): UserFeedManagementInvi
 
       const serviceDeps: UserFeedManagementInvitesServiceDeps = {
         userFeedRepository,
-        userFeedsService: createMockUserFeedsService(
-          0,
-        ) as unknown as UserFeedManagementInvitesServiceDeps["userFeedsService"],
         supportersService: createMockSupportersService({
           maxUserFeeds: options.maxUserFeeds ?? 100,
           ...options,

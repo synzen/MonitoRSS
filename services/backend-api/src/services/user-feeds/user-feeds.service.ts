@@ -30,8 +30,6 @@ import {
 import logger from "../../infra/logger";
 import type {
   UserFeedsServiceDeps,
-  GetUserFeedsInput,
-  UserFeedListItem,
   UpdateFeedInput,
   CreateUserFeedInput,
   ValidateFeedUrlOutput,
@@ -86,10 +84,6 @@ interface WorkspaceLimitEnforcementOutcome {
 export class UserFeedsService {
   constructor(private readonly deps: UserFeedsServiceDeps) {}
 
-  async getFeedById(id: string): Promise<IUserFeed | null> {
-    return this.deps.userFeedRepository.findById(id);
-  }
-
   getDatePreview({
     dateFormat,
     dateLocale,
@@ -113,47 +107,6 @@ export class UserFeedsService {
       };
     }
   }
-  async getFeedsByUser(
-    _userId: string,
-    discordUserId: string,
-    input: GetUserFeedsInput,
-  ): Promise<UserFeedListItem[]> {
-    return this.deps.userFeedRepository.getUserFeedsListing({
-      discordUserId,
-      workspaceId: input.workspaceId,
-      limit: input.limit,
-      offset: input.offset,
-      search: input.search,
-      sort: input.sort,
-      filters: input.filters,
-    });
-  }
-
-  async getFeedCountByUser(
-    _userId: string,
-    discordUserId: string,
-    input: Omit<GetUserFeedsInput, "offset" | "limit" | "sort">,
-  ): Promise<number> {
-    return this.deps.userFeedRepository.getUserFeedsCount({
-      discordUserId,
-      workspaceId: input.workspaceId,
-      search: input.search,
-      filters: input.filters,
-    });
-  }
-
-  async getFeedsWithoutConnectionsCount(
-    _userId: string,
-    discordUserId: string,
-    workspaceId?: string,
-  ): Promise<number> {
-    return this.deps.userFeedRepository.getUserFeedsCount({
-      discordUserId,
-      workspaceId,
-      filters: { hasConnections: false },
-    });
-  }
-
   private feedLimitScope({
     workspaceId,
     ownerDiscordUserId,
@@ -663,22 +616,6 @@ export class UserFeedsService {
       ).toISOString(),
       reason: cacheGated ? "HOST_CACHE" : "REFRESH_RATE",
     };
-  }
-
-  async getDeliveryLogs(
-    feedId: string,
-    {
-      limit,
-      skip,
-    }: {
-      limit: number;
-      skip: number;
-    },
-  ) {
-    return this.deps.feedHandlerService.getDeliveryLogs(feedId, {
-      limit,
-      skip,
-    });
   }
 
   async updateFeedById(
@@ -1566,12 +1503,6 @@ export class UserFeedsService {
     const existingUrls = new Set(existingFeeds.map((f) => f.url));
 
     return urls.filter((url) => !existingUrls.has(url));
-  }
-
-  async calculateCurrentFeedCountOfDiscordUser(
-    discordUserId: string,
-  ): Promise<number> {
-    return this.deps.userFeedRepository.countByOwnership(discordUserId);
   }
 
   async enforceUserFeedLimit(discordUserId: string): Promise<void> {

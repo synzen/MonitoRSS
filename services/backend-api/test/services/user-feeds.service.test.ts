@@ -32,55 +32,6 @@ describe("UserFeedsService", { concurrency: true }, () => {
   before(() => harness.setup());
   after(() => harness.teardown());
 
-  describe("getFeedById", () => {
-    it("returns feed when found", async () => {
-      const ctx = harness.createContext();
-      const feed = await ctx.createFeed({ title: "Test Feed" });
-
-      const result = await ctx.service.getFeedById(feed.id);
-
-      assert.ok(result);
-      assert.strictEqual(result.id, feed.id);
-      assert.strictEqual(result.title, "Test Feed");
-    });
-
-    it("returns null when not found", async () => {
-      const ctx = harness.createContext();
-      const fakeId = ctx.generateId();
-
-      const result = await ctx.service.getFeedById(fakeId);
-
-      assert.strictEqual(result, null);
-    });
-  });
-
-  describe("calculateCurrentFeedCountOfDiscordUser", () => {
-    it("counts feeds owned by user", async () => {
-      const ctx = harness.createContext();
-      await ctx.createMany(2);
-
-      const count = await ctx.service.calculateCurrentFeedCountOfDiscordUser(
-        ctx.discordUserId,
-      );
-
-      assert.strictEqual(count, 2);
-    });
-
-    it("includes feeds with accepted invites", async () => {
-      const ctx = harness.createContext();
-      const ownerId = ctx.generateId();
-
-      await ctx.createFeed({ title: "Owned Feed" });
-      await ctx.createSharedFeed(ownerId);
-
-      const count = await ctx.service.calculateCurrentFeedCountOfDiscordUser(
-        ctx.discordUserId,
-      );
-
-      assert.strictEqual(count, 2);
-    });
-  });
-
   describe("deduplicateFeedUrls", () => {
     it("removes URLs that user already has", async () => {
       const ctx = harness.createContext();
@@ -311,70 +262,6 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       const updated = await ctx.findById(feed.id);
       assert.strictEqual(updated?.disabledCode, UserFeedDisabledCode.BadFormat);
-    });
-  });
-
-  describe("getFeedsByUser", () => {
-    it("returns feeds for user with pagination", async () => {
-      const ctx = harness.createContext();
-      await ctx.createMany(3);
-
-      const result = await ctx.service.getFeedsByUser(
-        ctx.userId,
-        ctx.discordUserId,
-        { limit: 2, offset: 0 },
-      );
-
-      assert.strictEqual(result.length, 2);
-    });
-
-    it("returns feeds sorted by createdAt descending by default", async () => {
-      const ctx = harness.createContext();
-
-      const feed1 = await ctx.createFeed({ title: "Older Feed" });
-      await new Promise((r) => setTimeout(r, 10));
-      const feed2 = await ctx.createFeed({ title: "Newer Feed" });
-
-      const result = await ctx.service.getFeedsByUser(
-        ctx.userId,
-        ctx.discordUserId,
-        { limit: 10, offset: 0 },
-      );
-
-      assert.strictEqual(result.length, 2);
-      assert.strictEqual(result[0]!.id, feed2.id);
-      assert.strictEqual(result[1]!.id, feed1.id);
-    });
-
-    it("includes feeds shared with user", async () => {
-      const ctx = harness.createContext();
-      const ownerId = ctx.generateId();
-
-      await ctx.createFeed({ title: "Owned Feed" });
-      await ctx.createSharedFeed(ownerId);
-
-      const result = await ctx.service.getFeedsByUser(
-        ctx.userId,
-        ctx.discordUserId,
-        { limit: 10, offset: 0 },
-      );
-
-      assert.strictEqual(result.length, 2);
-    });
-  });
-
-  describe("getFeedCountByUser", () => {
-    it("counts feeds for user", async () => {
-      const ctx = harness.createContext();
-      await ctx.createMany(2);
-
-      const count = await ctx.service.getFeedCountByUser(
-        ctx.userId,
-        ctx.discordUserId,
-        {},
-      );
-
-      assert.strictEqual(count, 2);
     });
   });
 
@@ -1322,14 +1209,6 @@ describe("UserFeedsService", { concurrency: true }, () => {
           supporterRefreshRate,
         );
       });
-    });
-  });
-
-  describe("error handling", () => {
-    it("throws error for invalid ObjectId format in getFeedById", async () => {
-      const ctx = harness.createContext();
-
-      await assert.rejects(() => ctx.service.getFeedById("not-a-valid-id"));
     });
   });
 
