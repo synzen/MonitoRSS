@@ -62,7 +62,7 @@ export interface DiscordGuildChannel {
   type: DiscordChannelType;
   parent_id: string | null;
   available_tags?: Array<{
-    id: string;
+    id: string | number;
     name: string;
     moderated: boolean;
     emoji_id: string | null;

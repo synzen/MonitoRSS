@@ -699,6 +699,39 @@ describe("DiscordServersService", { concurrency: true }, () => {
         });
       });
 
+      it("normalizes numeric forum tag IDs returned by Discord", async () => {
+        const mockChannels = [
+          {
+            id: "forum-1",
+            guild_id: serverId,
+            name: "forum-channel",
+            type: DiscordChannelType.GUILD_FORUM,
+            parent_id: null,
+            permission_overwrites: [],
+            available_tags: [
+              {
+                id: 1000,
+                name: "Pending",
+                moderated: false,
+                emoji_id: null,
+                emoji_name: null,
+              },
+            ],
+          },
+        ];
+        const ctx = harness.createContext({
+          discordApiService: {
+            executeBotRequest: async () => mockChannels,
+          },
+        });
+
+        const channels = await ctx.service.getTextChannelsOfServer(serverId, {
+          types: ["forum"],
+        });
+
+        assert.strictEqual(channels[0]!.availableTags![0]!.id, "1000");
+      });
+
       it("checks MANAGE_THREADS permission for moderated tags", async () => {
         const mockChannels = [
           {
