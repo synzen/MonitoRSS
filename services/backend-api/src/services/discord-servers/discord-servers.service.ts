@@ -204,7 +204,7 @@ export class DiscordServersService {
         if (channel.available_tags) {
           formatted.availableTags = channel.available_tags
             .map((t) => ({
-              id: t.id,
+              id: String(t.id),
               name: t.name,
               emojiId: t.emoji_id,
               emojiName: t.emoji_name,

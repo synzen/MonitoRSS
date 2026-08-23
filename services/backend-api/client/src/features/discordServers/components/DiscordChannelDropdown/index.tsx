@@ -1,5 +1,6 @@
 import { Box, Field } from "@chakra-ui/react";
-import { ThemedSelect } from "@/components";
+import { useTranslation } from "react-i18next";
+import { InlineErrorAlert, ThemedSelect } from "@/components";
 import { getChannelIcon } from "@/features/feedConnections";
 import { useDiscordServerChannels } from "../../hooks";
 import { GetDiscordChannelType } from "../../constants";
@@ -27,7 +28,11 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
   ariaLabelledBy,
   types,
 }) => {
-  const { data, error, isFetching } = useDiscordServerChannels({ serverId, types });
+  const { data, error, isFetching } = useDiscordServerChannels({
+    serverId,
+    types,
+  });
+  const { t } = useTranslation();
 
   const options =
     data?.results.map((channel) => ({
@@ -58,7 +63,16 @@ export const DiscordChannelDropdown: React.FC<Props> = ({
       {(!serverId || !error) && (
         <Field.HelperText>Only channels that the bot can view will appear.</Field.HelperText>
       )}
-      {serverId && error && <Field.ErrorText>{error?.message}</Field.ErrorText>}
+      {serverId && error && (
+        <Box mt={2}>
+          <InlineErrorAlert
+            title={t(
+              "features.feed.components.addDiscordChannelConnectionDialog.failedToGetChannels",
+            )}
+            description={error.message}
+          />
+        </Box>
+      )}
     </Box>
   );
 };
