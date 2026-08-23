@@ -75,6 +75,12 @@ export enum ApiErrorCode {
   WORKSPACE_INVITE_EMAIL_UNAVAILABLE = "WORKSPACE_INVITE_EMAIL_UNAVAILABLE",
   WORKSPACE_INVITE_RESEND_TOO_SOON = "WORKSPACE_INVITE_RESEND_TOO_SOON",
   WORKSPACE_INVITE_LIMIT_REACHED = "WORKSPACE_INVITE_LIMIT_REACHED",
+  WORKSPACE_TAG_NAME_INVALID = "WORKSPACE_TAG_NAME_INVALID",
+  WORKSPACE_TAG_NAME_TAKEN = "WORKSPACE_TAG_NAME_TAKEN",
+  WORKSPACE_TAG_LIMIT_REACHED = "WORKSPACE_TAG_LIMIT_REACHED",
+  WORKSPACE_TAG_INVALID_ASSIGNMENT = "WORKSPACE_TAG_INVALID_ASSIGNMENT",
+  WORKSPACE_TAGS_PERSONAL_FEED_UNSUPPORTED = "WORKSPACE_TAGS_PERSONAL_FEED_UNSUPPORTED",
+  USER_FEED_TAG_LIMIT_REACHED = "USER_FEED_TAG_LIMIT_REACHED",
   CANNOT_REMOVE_LAST_OWNER = "CANNOT_REMOVE_LAST_OWNER",
   WORKSPACE_TRANSFER_TARGET_INVALID = "WORKSPACE_TRANSFER_TARGET_INVALID",
   SUBSCRIPTION_ALREADY_CANCELLED = "SUBSCRIPTION_ALREADY_CANCELLED",
@@ -187,6 +193,14 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   WORKSPACE_INVITE_RESEND_TOO_SOON: "Please wait a moment before resending this invitation.",
   WORKSPACE_INVITE_LIMIT_REACHED:
     "This workspace has reached its limit of pending invitations. Revoke a pending invitation before sending another.",
+  WORKSPACE_TAG_NAME_INVALID: "Use 1–40 printable characters for the tag name.",
+  WORKSPACE_TAG_NAME_TAKEN: "A tag with this name already exists in this Team.",
+  WORKSPACE_TAG_LIMIT_REACHED:
+    "This Team already has 100 tags. Remove a tag before creating another.",
+  WORKSPACE_TAG_INVALID_ASSIGNMENT:
+    "One or more selected tags are no longer available in this Team. Refresh and try again.",
+  WORKSPACE_TAGS_PERSONAL_FEED_UNSUPPORTED: "Tags can only be assigned to Team feeds.",
+  USER_FEED_TAG_LIMIT_REACHED: "A feed can have at most 10 tags.",
   CANNOT_REMOVE_LAST_OWNER:
     "A workspace must have at least one owner. Transfer ownership before removing this member.",
   WORKSPACE_TRANSFER_TARGET_INVALID:

@@ -49,6 +49,7 @@ const UserFeedListColumnVisibilitySchema = new Schema(
     createdAt: { type: Boolean },
     ownedByUser: { type: Boolean },
     refreshRateSeconds: { type: Boolean },
+    tags: { type: Boolean },
   },
   { _id: false, timestamps: false },
 );

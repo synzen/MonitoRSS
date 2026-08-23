@@ -70,6 +70,7 @@ export interface IUserFeed {
   connections: IFeedConnections;
   user: IUserFeedUser;
   workspaceId?: string;
+  tagIds?: string[];
   formatOptions?: IUserFeedFormatOptions;
   dateCheckOptions?: IUserFeedDateCheckOptions;
   shareManageOptions?: IUserFeedShareManageOptions;
@@ -239,6 +240,7 @@ export interface UserFeedListItem {
   refreshRateSeconds?: number;
   connectionCount: number;
   sharedManagers?: UserFeedListItemSharedManager[];
+  tagIds?: string[];
 }
 
 export interface UserFeedLimitEnforcementResult {

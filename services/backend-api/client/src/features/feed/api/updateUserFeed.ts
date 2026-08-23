@@ -26,6 +26,7 @@ export interface UpdateUserFeedInput {
       }>;
     };
     userRefreshRateSeconds?: number;
+    tagIds?: string[];
   };
 }
 

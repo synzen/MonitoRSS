@@ -96,6 +96,7 @@ export interface UpdateFeedInput {
   };
   userRefreshRateSeconds?: number | null;
   externalProperties?: IExternalFeedProperty[];
+  tagIds?: string[];
 }
 
 export enum GetUserFeedsInputSortKey {

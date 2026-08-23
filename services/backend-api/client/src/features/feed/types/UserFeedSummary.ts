@@ -2,6 +2,7 @@ import { InferType, array, bool, number, object, string } from "yup";
 import { UserFeedDisabledCode } from "./UserFeedDisabledCode";
 import { UserFeedHealthStatus } from "./UserFeedHealthStatus";
 import { UserFeedComputedStatus } from "./UserFeedComputedStatus";
+import { WorkspaceTagSchema } from "../../workspaceTags";
 
 export const UserFeedSummarySchema = object({
   id: string().required(),
@@ -17,6 +18,7 @@ export const UserFeedSummarySchema = object({
   ownedByUser: bool().required(),
   refreshRateSeconds: number().optional(),
   connectionCount: number().required(),
+  tags: array(WorkspaceTagSchema.required()).optional(),
   // Accepted co-managers on the feed. Surfaced so the personal->workspace
   // conversion flow can warn that feed sharing does not carry into a workspace.
   sharedManagers: array(

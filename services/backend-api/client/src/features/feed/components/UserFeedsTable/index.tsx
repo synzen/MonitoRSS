@@ -107,6 +107,7 @@ export const UserFeedsTable: React.FC = () => {
     () =>
       createTableColumns(search, workspaceSlug ? { workspaceSlug } : undefined, {
         excludeSharedWithMe: isWorkspaceScope,
+        excludeTags: !isWorkspaceScope,
       }),
     [search, workspaceSlug, isWorkspaceScope],
   );
@@ -233,6 +234,7 @@ export const UserFeedsTable: React.FC = () => {
           columnVisibility={columnVisibility}
           onColumnVisibilityChange={setColumnVisibility}
           excludeSharedWithMe={isWorkspaceScope}
+          excludeTags={!isWorkspaceScope}
         />
       )}
       {!isInitiallyLoading && hasActiveFilters && (

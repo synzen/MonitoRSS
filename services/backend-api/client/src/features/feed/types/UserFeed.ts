@@ -3,6 +3,7 @@ import { ExternalPropertySchema, FeedConnectionSchema } from "../../../types";
 import { UserFeedDisabledCode } from "./UserFeedDisabledCode";
 import { UserFeedHealthStatus } from "./UserFeedHealthStatus";
 import { UserFeedManagerInviteType, UserFeedManagerStatus } from "../../../constants";
+import { WorkspaceTagSchema } from "../../workspaceTags";
 
 export const UserFeedSchema = object({
   id: string().required(),
@@ -14,6 +15,7 @@ export const UserFeedSchema = object({
    * that owns the feed.
    */
   workspaceId: string().nullable().optional(),
+  tags: array(WorkspaceTagSchema.required()).optional(),
   /**
    * Authoritative flag for workspace-owned feeds. Per-user feed management invites
    * are disabled for these; access is managed through workspace membership instead.

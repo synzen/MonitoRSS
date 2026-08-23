@@ -20,6 +20,7 @@ export interface UpdateUserMeInput {
         createdAt?: boolean;
         ownedByUser?: boolean;
         refreshRateSeconds?: boolean;
+        tags?: boolean;
       };
       feedListColumnOrder?: {
         columns: string[];

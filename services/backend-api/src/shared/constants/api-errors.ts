@@ -103,6 +103,12 @@ export enum ApiErrorCode {
   CANNOT_REMOVE_LAST_OWNER = "CANNOT_REMOVE_LAST_OWNER",
   WORKSPACE_TRANSFER_TARGET_INVALID = "WORKSPACE_TRANSFER_TARGET_INVALID",
   WORKSPACE_FEED_SHARING_DISABLED = "WORKSPACE_FEED_SHARING_DISABLED",
+  WORKSPACE_TAG_NAME_INVALID = "WORKSPACE_TAG_NAME_INVALID",
+  WORKSPACE_TAG_NAME_TAKEN = "WORKSPACE_TAG_NAME_TAKEN",
+  WORKSPACE_TAG_LIMIT_REACHED = "WORKSPACE_TAG_LIMIT_REACHED",
+  WORKSPACE_TAG_INVALID_ASSIGNMENT = "WORKSPACE_TAG_INVALID_ASSIGNMENT",
+  WORKSPACE_TAGS_PERSONAL_FEED_UNSUPPORTED = "WORKSPACE_TAGS_PERSONAL_FEED_UNSUPPORTED",
+  USER_FEED_TAG_LIMIT_REACHED = "USER_FEED_TAG_LIMIT_REACHED",
   ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER = "ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER",
   ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION = "ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION",
   WORKSPACE_HAS_ACTIVE_SUBSCRIPTION = "WORKSPACE_HAS_ACTIVE_SUBSCRIPTION",
@@ -259,6 +265,18 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     "Ownership can only be transferred to an existing admin member of this workspace.",
   WORKSPACE_FEED_SHARING_DISABLED:
     "Per-user feed management invites are disabled for workspace feeds. Manage access through workspace members instead.",
+  WORKSPACE_TAG_NAME_INVALID:
+    "Tag names must contain 1–40 printable characters.",
+  WORKSPACE_TAG_NAME_TAKEN:
+    "A tag with this name already exists in this workspace.",
+  WORKSPACE_TAG_LIMIT_REACHED:
+    "This workspace already has 100 tags. Remove a tag before creating another.",
+  WORKSPACE_TAG_INVALID_ASSIGNMENT:
+    "One or more selected tags are unavailable in this workspace.",
+  WORKSPACE_TAGS_PERSONAL_FEED_UNSUPPORTED:
+    "Tags can only be assigned to Team feeds.",
+  USER_FEED_TAG_LIMIT_REACHED:
+    "A feed can have at most 10 tags.",
   ACCOUNT_DELETE_SOLE_WORKSPACE_OWNER:
     "You are the only owner of one or more workspaces. Transfer ownership or delete those workspaces before deleting your account.",
   ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION:

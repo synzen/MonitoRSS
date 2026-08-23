@@ -10,6 +10,37 @@ import {
 } from "../constants";
 import { TablePreferences, TablePreferencesHandlers } from "../types";
 
+export function buildColumnOrder(savedColumnOrder?: string[]): string[] {
+  if (!savedColumnOrder?.length) {
+    return DEFAULT_COLUMN_ORDER;
+  }
+
+  const isFixed = (column: string) =>
+    FIXED_COLUMNS.includes(column as (typeof FIXED_COLUMNS)[number]);
+  const defaultMovableColumns = DEFAULT_COLUMN_ORDER.filter((column) => !isFixed(column));
+  const movableColumns = savedColumnOrder.filter((column) => !isFixed(column));
+
+  for (const column of defaultMovableColumns) {
+    if (movableColumns.includes(column)) {
+      continue;
+    }
+
+    const defaultIndex = defaultMovableColumns.indexOf(column);
+    const nextKnownColumn = defaultMovableColumns
+      .slice(defaultIndex + 1)
+      .find((candidate) => movableColumns.includes(candidate));
+    const insertionIndex = nextKnownColumn ? movableColumns.indexOf(nextKnownColumn) : -1;
+
+    if (insertionIndex === -1) {
+      movableColumns.push(column);
+    } else {
+      movableColumns.splice(insertionIndex, 0, column);
+    }
+  }
+
+  return ["select", ...movableColumns, "configure"];
+}
+
 export function useTablePreferences(): TablePreferences & TablePreferencesHandlers {
   const { data: userMe } = useUserMe();
   const { mutateAsync: updateUser } = useUpdateUserMe();
@@ -26,7 +57,12 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
   // Sorting state
   const [sorting, setSorting] = useState<SortingState>(() => {
     if (savedSortPreference) {
-      return [{ id: savedSortPreference.key, desc: savedSortPreference.direction === "desc" }];
+      return [
+        {
+          id: savedSortPreference.key,
+          desc: savedSortPreference.direction === "desc",
+        },
+      ];
     }
 
     return [];
@@ -37,22 +73,20 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
     useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
 
   // Column order state
-  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
-    if (savedColumnOrder && savedColumnOrder.length > 0) {
-      const isFixed = (col: string) =>
-        FIXED_COLUMNS.includes(col as (typeof FIXED_COLUMNS)[number]);
-
-      return ["select", ...savedColumnOrder.filter((col) => !isFixed(col)), "configure"];
-    }
-
-    return DEFAULT_COLUMN_ORDER;
-  });
+  const [columnOrder, setColumnOrder] = useState<string[]>(() =>
+    buildColumnOrder(savedColumnOrder),
+  );
 
   // Initialize sorting from saved preference (only on first load)
   useEffect(() => {
     if (savedSortPreference && !hasInitializedSorting.current) {
       hasInitializedSorting.current = true;
-      setSorting([{ id: savedSortPreference.key, desc: savedSortPreference.direction === "desc" }]);
+      setSorting([
+        {
+          id: savedSortPreference.key,
+          desc: savedSortPreference.direction === "desc",
+        },
+      ]);
     }
   }, [savedSortPreference?.key, savedSortPreference?.direction]);
 
@@ -60,7 +94,10 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       const newPreference = sorting[0]
-        ? { key: sorting[0].id, direction: (sorting[0].desc ? "desc" : "asc") as "asc" | "desc" }
+        ? {
+            key: sorting[0].id,
+            direction: (sorting[0].desc ? "desc" : "asc") as "asc" | "desc",
+          }
         : null;
 
       const currentKey = savedSortPreference?.key;
@@ -117,6 +154,7 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
                 createdAt: columnVisibility.createdAt,
                 refreshRateSeconds: columnVisibility.refreshRateSeconds,
                 ownedByUser: columnVisibility.ownedByUser,
+                tags: columnVisibility.tags,
               },
             },
           },
@@ -131,10 +169,7 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
   useEffect(() => {
     if (savedColumnOrder && savedColumnOrder.length > 0 && !hasInitializedColumnOrder.current) {
       hasInitializedColumnOrder.current = true;
-      const isFixed = (col: string) =>
-        FIXED_COLUMNS.includes(col as (typeof FIXED_COLUMNS)[number]);
-
-      setColumnOrder(["select", ...savedColumnOrder.filter((col) => !isFixed(col)), "configure"]);
+      setColumnOrder(buildColumnOrder(savedColumnOrder));
     }
   }, [savedColumnOrder]);
 

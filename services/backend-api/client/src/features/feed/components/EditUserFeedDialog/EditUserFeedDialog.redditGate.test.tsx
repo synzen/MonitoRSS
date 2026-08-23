@@ -131,7 +131,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     const urlInput = screen.getByDisplayValue("https://example.com/feed.xml");
     await user.clear(urlInput);
     await user.type(urlInput, "https://www.reddit.com/r/gaming");
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() => expect(onUpdate).toHaveBeenCalled());
 
@@ -335,7 +335,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     const urlInput = screen.getByDisplayValue("https://example.com/feed.xml");
     await user.clear(urlInput);
     await user.type(urlInput, "https://www.reddit.com/r/gaming");
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     // The first Save resolves the URL and pauses on confirm: no save, no close.
     await waitFor(() =>

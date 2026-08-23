@@ -23,6 +23,7 @@ export const UserMeSchema = object({
       createdAt: bool().optional(),
       ownedByUser: bool().optional(),
       refreshRateSeconds: bool().optional(),
+      tags: bool().optional(),
     }).optional(),
     feedListColumnOrder: object({
       columns: array(string().required()).required(),

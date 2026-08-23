@@ -2,7 +2,7 @@ import { Alert, Box, Button, HStack, Icon, Input, Link, Stack, Text } from "@cha
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { InferType, object, string } from "yup";
+import { array, InferType, object, string } from "yup";
 import React, { useEffect, useRef } from "react";
 import { FaUpRightFromSquare } from "react-icons/fa6";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
@@ -26,17 +26,19 @@ import {
   DialogCloseTrigger,
 } from "@/components/ui/dialog";
 import { Field } from "@/components/ui/field";
+import { WorkspaceTagSelector, type WorkspaceTag } from "@/features/workspaceTags";
 
 const formSchema = object({
   title: string().optional(),
   url: string().optional(),
+  tagIds: array(string().required()).optional(),
 });
 
 type FormData = InferType<typeof formSchema>;
 
 interface Props {
   onUpdate: (data: FormData) => Promise<void>;
-  defaultValues: Required<FormData>;
+  defaultValues: { title: string; url: string; tags?: WorkspaceTag[] };
   onCloseRef?: React.RefObject<HTMLButtonElement>;
   isOpen: boolean;
   onClose: () => void;
@@ -67,7 +69,11 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   } = useForm<FormData>({
     resolver: yupResolver(formSchema),
     mode: "all",
-    defaultValues,
+    defaultValues: {
+      title: defaultValues.title,
+      url: defaultValues.url,
+      tagIds: defaultValues.tags?.map((tag) => tag.id),
+    },
   });
   const [urlFromForm] = watch(["url"]);
   const {
@@ -99,7 +105,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
     redditGatePendingRef.current = true;
   }
 
-  const onSubmit = async ({ title, url }: FormData) => {
+  const onSubmit = async ({ title, url, tagIds }: FormData) => {
     if (!isDirty) {
       onClose();
 
@@ -114,7 +120,9 @@ export const EditUserFeedDialog: React.FC<Props> = ({
 
     try {
       if (url && !feedUrlValidationData && !skipPreValidation) {
-        const { result } = await createUserFeedUrlValidation({ details: { url } });
+        const { result } = await createUserFeedUrlValidation({
+          details: { url },
+        });
 
         if (result.resolvedToUrl) {
           return;
@@ -122,9 +130,9 @@ export const EditUserFeedDialog: React.FC<Props> = ({
       }
 
       const useUrl = feedUrlValidationData?.result.resolvedToUrl || url;
-      await onUpdate({ title, url: useUrl });
+      await onUpdate({ title, url: useUrl, tagIds });
       onClose();
-      reset({ title, url: useUrl });
+      reset({ title, url: useUrl, tagIds });
     } catch {
       // Surfaced to the user via the `error` prop; keep the dialog open on failure
     } finally {
@@ -156,7 +164,11 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   }, [hasRedditConnected]);
 
   useEffect(() => {
-    reset(defaultValues);
+    reset({
+      title: defaultValues.title,
+      url: defaultValues.url,
+      tagIds: defaultValues.tags?.map((tag) => tag.id),
+    });
     resetValidationMutation();
     redditGatePendingRef.current = false;
   }, [isOpen]);
@@ -244,28 +256,60 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                   invalid={!!errors.title}
                   required
                   label={t("features.feed.components.addFeedDialog.formTitleLabel")}
-                  errorText={errors.title?.message}
-                  helperText={t("features.feed.components.addFeedDialog.formTitleDescription")}
+                  errorText={
+                    errors.title?.message ? (
+                      <Text fontSize="sm">{errors.title.message}</Text>
+                    ) : undefined
+                  }
+                  helperText={
+                    <Text fontSize="sm">
+                      {t("features.feed.components.addFeedDialog.formTitleDescription")}
+                    </Text>
+                  }
                 >
                   <Controller
                     name="title"
                     control={control}
-                    render={({ field }) => <Input {...field} tabIndex={0} ref={initialFocusRef} />}
+                    render={({ field }) => (
+                      <Input {...field} size="lg" tabIndex={0} ref={initialFocusRef} />
+                    )}
                   />
                 </Field>
                 <Field
                   invalid={!!errors.url}
                   required
                   label="RSS Feed Link"
-                  errorText={errors.url?.message}
-                  helperText={t("features.feed.components.addFeedDialog.formLinkDescription")}
+                  errorText={
+                    errors.url?.message ? (
+                      <Text fontSize="sm">{errors.url.message}</Text>
+                    ) : undefined
+                  }
+                  helperText={
+                    <Text fontSize="sm">
+                      {t("features.feed.components.addFeedDialog.formLinkDescription")}
+                    </Text>
+                  }
                 >
                   <Controller
                     name="url"
                     control={control}
-                    render={({ field }) => <Input type="url" {...field} tabIndex={0} />}
+                    render={({ field }) => <Input type="url" {...field} size="lg" tabIndex={0} />}
                   />
                 </Field>
+                {feedScope.workspaceSlug && (
+                  <Controller
+                    name="tagIds"
+                    control={control}
+                    render={({ field }) => (
+                      <WorkspaceTagSelector
+                        workspaceSlug={feedScope.workspaceSlug as string}
+                        selectedTagIds={field.value ?? []}
+                        selectedTags={defaultValues.tags}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                )}
               </Stack>
             )}
             {error && !showCta && (
@@ -299,7 +343,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
               handleSubmit(onSubmit)();
             }}
           >
-            <span>{isLoading ? "Saving..." : t("common.buttons.save")}</span>
+            <span>{isLoading ? "Saving..." : t("common.buttons.saveChanges")}</span>
           </PrimaryActionButton>
         </DialogFooter>
       </DialogContent>

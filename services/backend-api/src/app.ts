@@ -33,6 +33,7 @@ import { usersRoutes } from "./features/users/users.routes";
 import { emailVerificationRoutes } from "./features/users/email-verification.routes";
 import { accountRoutes } from "./features/account/account.routes";
 import { workspacesRoutes } from "./features/workspaces/workspaces.routes";
+import { workspaceTagsRoutes } from "./features/workspace-tags/workspace-tags.routes";
 import { workspaceInvitesRoutes } from "./features/workspace-invites/workspace-invites.routes";
 import { redditAuthRoutes } from "./features/reddit-auth/reddit-auth.routes";
 import { errorReportsRoutes } from "./features/error-reports/error-reports.routes";
@@ -243,6 +244,7 @@ export async function createApp(
       // user without the flag gets a 404.
       await instance.register(emailVerificationRoutes, { prefix: "/users" });
       await instance.register(workspacesRoutes, { prefix: "/workspaces" });
+      await instance.register(workspaceTagsRoutes, { prefix: "/workspaces" });
       await instance.register(workspaceInvitesRoutes, {
         prefix: "/workspace-invites",
       });

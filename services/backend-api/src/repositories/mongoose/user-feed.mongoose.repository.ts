@@ -184,6 +184,7 @@ const UserFeedSchema = new Schema(
     // absent, the feed is personal (owned by `user`). A feed is personal XOR
     // one workspace's.
     workspaceId: { type: Schema.Types.ObjectId },
+    tagIds: { type: [Schema.Types.ObjectId], default: undefined },
     formatOptions: { type: UserFeedFormatOptionsSchema },
     dateCheckOptions: { type: UserFeedDateCheckOptionsSchema },
     shareManageOptions: { type: UserFeedShareManageOptionsSchema },
@@ -295,6 +296,7 @@ export class UserFeedMongooseRepository
         discordUserId: doc.user.discordUserId,
       },
       workspaceId: this.objectIdToString(doc.workspaceId),
+      tagIds: doc.tagIds?.map((id) => id.toString()),
       formatOptions: doc.formatOptions,
       dateCheckOptions: doc.dateCheckOptions,
       shareManageOptions: doc.shareManageOptions
@@ -571,7 +573,7 @@ export class UserFeedMongooseRepository
       updatedAt,
       feedRequestLookupKey,
       slotOffsetMs,
-      workspaceId: _sourceWorkspaceId,
+      workspaceId: sourceWorkspaceId,
       ...cloneableFields
     } = sourceFeed;
 
@@ -585,6 +587,10 @@ export class UserFeedMongooseRepository
       url,
       inputUrl: overrides.inputUrl,
       workspaceId: overrides.workspaceId,
+      tagIds:
+        sourceWorkspaceId?.toString() === overrides.workspaceId
+          ? cloneableFields.tagIds
+          : [],
       connections: { discordChannels: [] },
       slotOffsetMs: effectiveRefreshRate
         ? calculateSlotOffsetMs(url, effectiveRefreshRate)
@@ -901,6 +907,7 @@ export class UserFeedMongooseRepository
           refreshRateSeconds: 1,
           connectionCount: 1,
           sharedManagers: 1,
+          tagIds: 1,
         },
       },
     );
@@ -922,6 +929,7 @@ export class UserFeedMongooseRepository
         discordUserId: string;
         connectionScoped: boolean;
       }>;
+      tagIds?: Types.ObjectId[];
     }>(pipeline);
 
     return results.map((r) => ({
@@ -938,6 +946,7 @@ export class UserFeedMongooseRepository
       refreshRateSeconds: r.refreshRateSeconds,
       connectionCount: r.connectionCount,
       sharedManagers: r.sharedManagers,
+      tagIds: r.tagIds?.map((id) => id.toString()),
     }));
   }
 

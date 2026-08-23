@@ -94,6 +94,13 @@ import {
   UpdateWorkspaceOutput,
 } from "@/features/workspaces";
 import mockWorkspaces from "./data/workspaces";
+import {
+  CreateWorkspaceTagOutput,
+  GetWorkspaceTagsOutput,
+  WorkspaceTag,
+  WorkspaceTagColor,
+} from "@/features/workspaceTags";
+import { mockHasFlag, pickMockDelayMs } from "./mockOverrides";
 
 const CURATED_FEEDS_MAX_LIMIT = 25;
 const CURATED_FEEDS_MIN_SEARCH_LENGTH = 3;
@@ -101,6 +108,15 @@ const CURATED_FEEDS_MIN_SEARCH_LENGTH = 3;
 // In-memory workspaces store so the mock create flow reflects in the chooser/list.
 const workspacesStore: Workspace[] = [...mockWorkspaces];
 const workspaceFeedIds = new Map<string, Set<string>>();
+const workspaceTagsStore = new Map<string, WorkspaceTag[]>([
+  [
+    "acme-marketing",
+    [
+      { id: "workspace-tag-1", name: "News", color: "blue" },
+      { id: "workspace-tag-2", name: "Product", color: "purple" },
+    ],
+  ],
+]);
 
 function escapeRegex(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -297,6 +313,81 @@ const handlers = [
         maxFeeds: workspace.maxFeeds,
       },
     });
+  }),
+  http.get("/api/v1/workspaces/:workspaceSlug/tags", async ({ params }) => {
+    await delay(
+      pickMockDelayMs({
+        slowFlag: "mockWorkspaceTagsSlow",
+        loadingFlag: "mockWorkspaceTagsLoading",
+        defaultMs: 500,
+      }),
+    );
+
+    if (mockHasFlag("mockWorkspaceTagsError")) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to load tags",
+        }),
+        { status: 500 },
+      );
+    }
+
+    const workspaceSlug = params.workspaceSlug as string;
+    const results = [...(workspaceTagsStore.get(workspaceSlug) ?? [])].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+
+    return HttpResponse.json<GetWorkspaceTagsOutput>({ results });
+  }),
+  http.post("/api/v1/workspaces/:workspaceSlug/tags", async ({ request, params }) => {
+    await delay(
+      pickMockDelayMs({
+        slowFlag: "mockCreateWorkspaceTagSlow",
+        loadingFlag: "mockCreateWorkspaceTagLoading",
+        defaultMs: 500,
+      }),
+    );
+
+    if (mockHasFlag("mockCreateWorkspaceTagError")) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to create tag",
+        }),
+        { status: 500 },
+      );
+    }
+
+    const workspaceSlug = params.workspaceSlug as string;
+    const body = (await request.json()) as {
+      name: string;
+      color?: WorkspaceTagColor;
+    };
+    const tags = workspaceTagsStore.get(workspaceSlug) ?? [];
+    const name = body.name.trim();
+
+    if (
+      tags.some((tag) => tag.name.localeCompare(name, undefined, { sensitivity: "base" }) === 0)
+    ) {
+      return HttpResponse.json(
+        generateMockApiErrorResponse({
+          code: "WORKSPACE_TAG_NAME_TAKEN",
+          message: "A tag with this name already exists in this Team.",
+        }),
+        { status: 409 },
+      );
+    }
+
+    const result: WorkspaceTag = {
+      id: `workspace-tag-${Date.now()}`,
+      name,
+      color: body.color,
+    };
+    tags.push(result);
+    workspaceTagsStore.set(workspaceSlug, tags);
+
+    return HttpResponse.json<CreateWorkspaceTagOutput>({ result }, { status: 201 });
   }),
   http.patch("/api/v1/workspaces/:workspaceSlug", async ({ request, params }) => {
     await delay(500);
@@ -500,7 +591,10 @@ const handlers = [
 
   http.post("/api/v1/user-feed-management-invites", async ({ request }) => {
     const body = await request.json();
-    const { feedId, discordUserId } = body as { feedId: string; discordUserId: string };
+    const { feedId, discordUserId } = body as {
+      feedId: string;
+      discordUserId: string;
+    };
 
     const feed = mockUserFeeds.find((f) => f.id === feedId);
 
@@ -955,7 +1049,12 @@ const handlers = [
 
       return HttpResponse.json<GetUserFeedArticlesOutput>({
         result: {
-          articles: [article as Record<string, string> & { id: string; idHash: string }],
+          articles: [
+            article as Record<string, string> & {
+              id: string;
+              idHash: string;
+            },
+          ],
           totalArticles: 1,
           requestStatus: UserFeedArticleRequestStatus.Success,
           response: { statusCode: 200 },
@@ -1007,7 +1106,9 @@ const handlers = [
         response: {
           statusCode: 200,
         },
-        filterStatuses: mockUserFeedArticles.map((_, index) => ({ passed: index % 2 === 0 })),
+        filterStatuses: mockUserFeedArticles.map((_, index) => ({
+          passed: index % 2 === 0,
+        })),
         selectedProperties: ["id", "title"],
       },
     });
