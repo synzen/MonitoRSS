@@ -250,9 +250,10 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     });
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ url: "https://www.reddit.com/r/gaming" }),
-    );
+    expect(onUpdate).toHaveBeenCalledWith({
+      title: "Existing title",
+      url: "https://www.reddit.com/r/gaming",
+    });
   });
 
   it("saves directly (skipping the confirm step) on the post-connect retry, even for a resolving URL", async () => {
@@ -300,9 +301,10 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     // Saved with the entered URL (server does the resolution), not the confirm step.
-    expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ url: "https://www.reddit.com/r/gaming" }),
-    );
+    expect(onUpdate).toHaveBeenCalledWith({
+      title: "Existing title",
+      url: "https://www.reddit.com/r/gaming",
+    });
   });
 
   it("still pauses on the confirm step for a normal (non-retry) resolved URL", async () => {

@@ -89,6 +89,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   const canResolveError = !!error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
   const isRedditConnectionRequired = error?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
   const showCta = canResolveError || isRedditConnectionRequired;
+  const feedScope = useFeedScope();
 
   // Set while the post-connect Reddit retry is driving the save. A subreddit URL
   // resolves during validation, which normally pauses on a confirm step; but the
@@ -130,7 +131,11 @@ export const EditUserFeedDialog: React.FC<Props> = ({
       }
 
       const useUrl = feedUrlValidationData?.result.resolvedToUrl || url;
-      await onUpdate({ title, url: useUrl, tagIds });
+      await onUpdate({
+        title,
+        url: useUrl,
+        ...(feedScope.workspaceId ? { tagIds } : {}),
+      });
       onClose();
       reset({ title, url: useUrl, tagIds });
     } catch {
@@ -146,7 +151,6 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   // transition, so it owns the retry: on the not-connected -> connected edge while a Reddit gate is
   // showing, re-submit the form. In workspace scope the watched connection is the workspace's.
   const { data: userMe } = useUserMe();
-  const feedScope = useFeedScope();
   const hasRedditConnected = feedScope.workspaceId
     ? feedScope.redditConnection?.status === "ACTIVE"
     : userMe?.result.externalAccounts?.find((e) => e.type === "reddit")?.status === "ACTIVE";
