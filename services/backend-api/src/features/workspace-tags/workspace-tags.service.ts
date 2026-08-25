@@ -157,4 +157,24 @@ export class WorkspaceTagsService {
 
     return result;
   }
+
+  async resolveValidFilterTagIds(
+    workspaceId: string,
+    tagIds: string[],
+  ): Promise<string[]> {
+    const validIds = tagIds.filter((id) =>
+      this.repository.areAllValidIds([id]),
+    );
+
+    if (validIds.length === 0) {
+      return [];
+    }
+
+    const tags = await this.repository.findByIdsForWorkspace(
+      workspaceId,
+      validIds,
+    );
+
+    return tags.map((tag) => tag.id);
+  }
 }

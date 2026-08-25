@@ -766,6 +766,18 @@ function parseFilters(raw: unknown): GetUserFeedsInputFilters | undefined {
     filters.hasConnections = obj.hasConnections === "true";
   }
 
+  const rawTagIds = obj.tagIds;
+  const tagIdValues = Array.isArray(rawTagIds) ? rawTagIds : [rawTagIds];
+  const tagIds = tagIdValues
+    .filter((value): value is string => typeof value === "string")
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter((value) => value !== "");
+
+  if (tagIds.length > 0) {
+    filters.tagIds = [...new Set(tagIds)];
+  }
+
   return Object.keys(filters).length > 0 ? filters : undefined;
 }
 
@@ -778,6 +790,7 @@ export async function getUserFeedsHandler(
     usersService,
     workspacesService,
     config,
+    workspaceTagsService,
   } = request.container;
   const { discordUserId } = request;
   const { workspaceId } = request.query;
@@ -799,6 +812,17 @@ export async function getUserFeedsHandler(
   const rawQuery = request.url.split("?")[1] || "";
   const parsed = qs.parse(rawQuery);
   const filters = parseFilters(parsed.filters);
+
+  if (filters?.tagIds) {
+    if (workspaceId) {
+      filters.tagIds = await workspaceTagsService.resolveValidFilterTagIds(
+        workspaceId,
+        filters.tagIds,
+      );
+    } else {
+      delete filters.tagIds;
+    }
+  }
 
   const input = {
     limit: request.query.limit,
@@ -825,10 +849,11 @@ export async function getUserFeedsHandler(
       filters: { hasConnections: false },
     }),
   ]);
-  const tagsByFeedId = await request.container.workspaceTagsService.resolveFeedTagMap(
-    workspaceId,
-    feeds,
-  );
+  const tagsByFeedId =
+    await request.container.workspaceTagsService.resolveFeedTagMap(
+      workspaceId,
+      feeds,
+    );
 
   return reply.status(200).send({
     results: feeds.map((feed) => ({

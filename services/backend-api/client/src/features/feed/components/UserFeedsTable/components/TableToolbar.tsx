@@ -21,8 +21,21 @@ import { useTranslation } from "react-i18next";
 import { VisibilityState } from "@tanstack/react-table";
 import { UserFeedComputedStatus } from "../../../types";
 import { UserFeedStatusTag } from "../UserFeedStatusTag";
-import { SHARED_WITH_ME_COLUMN_ID, STATUS_FILTERS, TOGGLEABLE_COLUMNS } from "../constants";
-import { MenuRoot, MenuTrigger, MenuContent, MenuCheckboxItem } from "@/components/ui/menu";
+import {
+  SHARED_WITH_ME_COLUMN_ID,
+  STATUS_FILTERS,
+  TOGGLEABLE_COLUMNS,
+} from "../constants";
+import {
+  MenuRoot,
+  MenuTrigger,
+  MenuContent,
+  MenuCheckboxItem,
+} from "@/components/ui/menu";
+import {
+  WorkspaceTagFilter,
+  type WorkspaceTagFilterProps,
+} from "@/features/workspaceTags";
 
 interface TableToolbarProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
@@ -41,6 +54,7 @@ interface TableToolbarProps {
   /** Drop the "Shared with Me" column toggle (it has no meaning in workspace scope). */
   excludeSharedWithMe?: boolean;
   excludeTags?: boolean;
+  tagFilter?: WorkspaceTagFilterProps;
 }
 
 export const TableToolbar: React.FC<TableToolbarProps> = ({
@@ -57,6 +71,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   onColumnVisibilityChange,
   excludeSharedWithMe,
   excludeTags,
+  tagFilter,
 }) => {
   const { t } = useTranslation();
 
@@ -83,7 +98,9 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   const handleColumnVisibilityToggle = (id: string) => {
     onColumnVisibilityChange((prev) => {
       const isVisible = prev[id];
-      const visibleCount = scopedToggleableColumns.filter(({ id: colId }) => prev[colId]).length;
+      const visibleCount = scopedToggleableColumns.filter(
+        ({ id: colId }) => prev[colId],
+      ).length;
       const isLastVisible = isVisible && visibleCount === 1;
 
       if (isLastVisible) {
@@ -101,7 +118,12 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
 
   if (search && !isFetching) {
     searchEndElement = (
-      <IconButton aria-label="Clear search" size="sm" variant="plain" onClick={onSearchClear}>
+      <IconButton
+        aria-label="Clear search"
+        size="sm"
+        variant="plain"
+        onClick={onSearchClear}
+      >
         <FaXmark color="fg.muted" />
       </IconButton>
     );
@@ -138,6 +160,11 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             Search
           </Button>
         </Flex>
+        {!excludeTags && tagFilter && (
+          <Flex minWidth={0}>
+            <WorkspaceTagFilter {...tagFilter} />
+          </Flex>
+        )}
         <Flex>
           <MenuRoot closeOnSelect={false}>
             <MenuTrigger asChild>

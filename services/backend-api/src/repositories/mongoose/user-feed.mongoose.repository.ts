@@ -774,6 +774,16 @@ export class UserFeedMongooseRepository
       $match.$or = this.getSearchFilter(search).$or;
     }
 
+    if (filters?.tagIds?.length) {
+      const tagObjectIds = filters.tagIds
+        .filter((id) => Types.ObjectId.isValid(id))
+        .map((id) => new Types.ObjectId(id));
+
+      if (tagObjectIds.length > 0) {
+        $match.tagIds = { $all: tagObjectIds };
+      }
+    }
+
     if (filters?.disabledCodes) {
       $match.disabledCode = {
         $in: filters.disabledCodes.map((c) => c || null),

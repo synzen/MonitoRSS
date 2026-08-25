@@ -195,6 +195,8 @@ export interface UserFeedListingFilters {
   disabledCodes?: (UserFeedDisabledCode | null)[];
   connectionDisabledCodes?: (string | null)[];
   computedStatuses?: UserFeedComputedStatus[];
+  /** Workspace tag IDs. Matching any selected tag is intentional OR semantics. */
+  tagIds?: string[];
   ownedByUser?: boolean;
   hasConnections?: boolean;
 }

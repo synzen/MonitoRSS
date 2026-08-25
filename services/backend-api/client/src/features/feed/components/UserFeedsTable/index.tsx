@@ -35,6 +35,11 @@ import {
   LoadMoreSection,
 } from "./components";
 import { createTableColumns } from "./columns";
+import {
+  useWorkspaceTagFilter,
+  writeWorkspaceTagFilter,
+  type WorkspaceTagFilterFocusTarget,
+} from "@/features/workspaceTags";
 
 export const UserFeedsTable: React.FC = () => {
   const sensors = useSensors(
@@ -46,6 +51,15 @@ export const UserFeedsTable: React.FC = () => {
   const { rowSelection, setRowSelection, setLoadedFeeds } = useMultiSelectUserFeedContext();
   const { workspaceSlug } = useFeedScope();
   const isWorkspaceScope = !!workspaceSlug;
+  const workspaceTagFilter = useWorkspaceTagFilter(isWorkspaceScope ? workspaceSlug : undefined);
+  const tagFilterSelectRef = useRef<WorkspaceTagFilterFocusTarget>(null);
+  const selectedTags = useMemo(
+    () =>
+      workspaceTagFilter.selectedTagIds
+        .map((id) => workspaceTagFilter.availableTags.find((tag) => tag.id === id))
+        .filter((tag): tag is NonNullable<typeof tag> => !!tag),
+    [workspaceTagFilter.availableTags, workspaceTagFilter.selectedTagIds],
+  );
 
   // Preferences (sorting, column visibility, column order)
   const {
@@ -73,6 +87,7 @@ export const UserFeedsTable: React.FC = () => {
   } = useFeedTableData({
     sorting,
     statusFilters,
+    tagIds: isWorkspaceScope ? workspaceTagFilter.selectedTagIds : [],
   });
 
   // Search state
@@ -114,7 +129,7 @@ export const UserFeedsTable: React.FC = () => {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const hasActiveFilters = !!urlSearch || statusFilters.length > 0;
+  const hasActiveFilters = !!urlSearch || statusFilters.length > 0 || selectedTags.length > 0;
 
   // Selection is owned by the multi-select context as a feed-id map (TanStack's
   // native RowSelectionState). The table is the controlled view of it: toggles
@@ -188,7 +203,7 @@ export const UserFeedsTable: React.FC = () => {
 
   useEffect(() => {
     pendingAnnouncement.current = true;
-  }, [urlSearch, statusFilters]);
+  }, [urlSearch, statusFilters, selectedTags]);
 
   useEffect(() => {
     if (isInitiallyLoading || isFetching) return;
@@ -206,10 +221,16 @@ export const UserFeedsTable: React.FC = () => {
   }, [isInitiallyLoading, isFetching, isFilteredEmpty, hasActiveFilters, flatData.length, total]);
 
   const handleClearAllFilters = useCallback(() => {
-    onSearchClear();
+    setSearchInput("");
     onStatusSelect([]);
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      next.delete("search");
+
+      return writeWorkspaceTagFilter(next, []);
+    });
     searchInputRef.current?.focus();
-  }, [onSearchClear, onStatusSelect]);
+  }, [onStatusSelect, setSearchInput, setSearchParams]);
 
   if (status === "error") {
     return <Alert status="error" title={error?.message} />;
@@ -231,6 +252,21 @@ export const UserFeedsTable: React.FC = () => {
           isFetching={isFetching}
           statusFilters={statusFilters}
           onStatusSelect={onStatusSelect}
+          tagFilter={
+            isWorkspaceScope
+              ? {
+                  tags: workspaceTagFilter.availableTags,
+                  selectedTagIds: workspaceTagFilter.selectedTagIds,
+                  onChange: workspaceTagFilter.onChange,
+                  status: workspaceTagFilter.status,
+                  error: workspaceTagFilter.error,
+                  onRetry: () => {
+                    workspaceTagFilter.refetch();
+                  },
+                  selectRef: tagFilterSelectRef,
+                }
+              : undefined
+          }
           columnVisibility={columnVisibility}
           onColumnVisibilityChange={setColumnVisibility}
           excludeSharedWithMe={isWorkspaceScope}
@@ -243,6 +279,10 @@ export const UserFeedsTable: React.FC = () => {
           onSearchClear={onSearchClear}
           statusFilters={statusFilters}
           onStatusFiltersClear={() => onStatusSelect([])}
+          tags={selectedTags}
+          onTagsClear={() => workspaceTagFilter.onChange([])}
+          onClearAll={handleClearAllFilters}
+          onTagFilterFocus={() => tagFilterSelectRef.current?.focus()}
           searchInputRef={searchInputRef}
         />
       )}

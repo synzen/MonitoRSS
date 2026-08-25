@@ -66,6 +66,105 @@ async function createWorkspaceFeed(page: Page): Promise<string> {
   return slug as string;
 }
 
+async function createTagFilterWorkspace(page: Page): Promise<{
+  slug: string;
+  feeds: { alpha: string; beta: string };
+}> {
+  await page.goto("/feeds");
+  await waitForAuthenticatedApp(page);
+  const discordUserId = await getDiscordUserIdFromPage(page);
+  await enableWorkspacesFeatureInDb(discordUserId);
+  await setVerifiedEmailInDb(
+    discordUserId,
+    `verified-filter-${discordUserId}@example.com`,
+  );
+  await page.reload();
+  await waitForAuthenticatedApp(page);
+
+  await page.getByRole("button", { name: /switch workspace/i }).click();
+  await page.getByRole("menuitem", { name: /create a workspace/i }).click();
+  const createDialog = page.getByRole("dialog");
+  await createDialog
+    .getByLabel("Workspace name")
+    .fill(`E2E Tag Filter ${Date.now()}`);
+  await createDialog.getByRole("button", { name: "Create workspace" }).click();
+  await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, {
+    timeout: 15000,
+  });
+
+  const slug = page.url().match(/\/workspaces\/([^/]+)\/feeds/)?.[1];
+  expect(slug).toBeTruthy();
+  const workspaceResponse = await page.request.get(
+    `/api/v1/workspaces/${slug}`,
+  );
+  expect(workspaceResponse.ok()).toBeTruthy();
+  const workspaceBody = (await workspaceResponse.json()) as {
+    result: { id: string };
+  };
+  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const createFeed = async (title: string) => {
+    const response = await page.request.post("/api/v1/user-feeds", {
+      data: {
+        title,
+        url: `${MOCK_RSS_FEED_URL}?tag-filter=${uniqueSuffix}-${title}`,
+        workspaceId: workspaceBody.result.id,
+      },
+    });
+    expect(response.ok()).toBeTruthy();
+    const body = (await response.json()) as { result: { id: string } };
+
+    return body.result.id;
+  };
+
+  const feeds = {
+    alpha: `Tag filter alpha ${uniqueSuffix}`,
+    beta: `Tag filter beta ${uniqueSuffix}`,
+  };
+  const alphaId = await createFeed(feeds.alpha);
+  const betaId = await createFeed(feeds.beta);
+  const disableResponse = await page.request.patch("/api/v1/user-feeds", {
+    data: {
+      op: "bulk-disable",
+      data: { feeds: [{ id: betaId }] },
+    },
+  });
+  expect(disableResponse.ok()).toBeTruthy();
+
+  await page.goto(`/workspaces/${slug}/feeds`);
+  await expect(page.locator("table tbody tr")).toHaveCount(2, {
+    timeout: 15000,
+  });
+
+  return {
+    slug: slug as string,
+    feeds: { alpha: feeds.alpha, beta: feeds.beta },
+  };
+}
+
+async function assignInlineTag(
+  page: Page,
+  feedTitle: string,
+  tagName: string,
+): Promise<void> {
+  await page.getByRole("link", { name: `Configure ${feedTitle}` }).click();
+  await page.getByRole("button", { name: "Feed Actions" }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+
+  const editDialog = page.getByRole("dialog");
+  await editDialog.getByRole("button", { name: "New tag" }).click();
+  await editDialog.getByLabel("Tag name").fill(tagName);
+  await editDialog.getByRole("button", { name: "Create and add" }).click();
+  await expect(
+    editDialog
+      .getByTestId("workspace-tag-selected-chip")
+      .filter({ hasText: tagName }),
+  ).toBeVisible();
+  await editDialog.getByRole("button", { name: "Save changes" }).click();
+  await expect(editDialog).not.toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/);
+}
+
 test("creates and assigns a Team tag while editing a feed and renders it in the table", async ({
   page,
 }) => {
@@ -274,4 +373,63 @@ test("creates and assigns a Team tag while editing a feed and renders it in the 
       Number.parseFloat(getComputedStyle(button).fontSize),
     ),
   ).toBeGreaterThanOrEqual(14);
+});
+
+test("filters Team feeds by one or more tags and preserves the view in the URL", async ({
+  page,
+}) => {
+  const { slug, feeds } = await createTagFilterWorkspace(page);
+  const alphaTag = `Alpha ${Date.now()}`;
+  const betaTag = `Beta ${Date.now()}`;
+
+  await assignInlineTag(page, feeds.alpha, alphaTag);
+  await page.goto(`/workspaces/${slug}/feeds`);
+  await assignInlineTag(page, feeds.beta, betaTag);
+  await page.goto(`/workspaces/${slug}/feeds`);
+
+  const tagFilter = page.getByRole("button", {
+    name: "Filter feeds by tags: 0 selected",
+  });
+  await tagFilter.click();
+  await page
+    .getByRole("menuitemcheckbox", { name: alphaTag, exact: true })
+    .click();
+  await expect(page.locator("table tbody tr")).toHaveCount(1);
+  await expect(page.locator("table tbody tr").first()).toContainText(
+    feeds.alpha,
+  );
+
+  const singleTagUrl = new URL(page.url());
+  expect(singleTagUrl.searchParams.get("tags")).toBeTruthy();
+  expect(singleTagUrl.searchParams.get("tags")).not.toContain(alphaTag);
+
+  await page
+    .getByRole("menuitemcheckbox", { name: betaTag, exact: true })
+    .click();
+  await expect(page.locator("table tbody tr")).toHaveCount(0);
+  await expect(page.getByText("No feeds match current filters")).toBeVisible();
+
+  await page.getByRole("button", { name: /^Status$/ }).click();
+  await page.getByRole("menuitemcheckbox", { name: /Ok/ }).click();
+  await expect(page.locator("table tbody tr")).toHaveCount(1);
+  await expect(page.locator("table tbody tr").first()).toContainText(
+    feeds.alpha,
+  );
+
+  await page.getByRole("button", { name: "Remove tag filters" }).click();
+  await expect(page).not.toHaveURL(/tags=/);
+  await expect(page.locator("table tbody tr")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Remove status filter" }).click();
+  await expect(page.locator("table tbody tr")).toHaveCount(2);
+
+  await page.getByRole("button", { name: /switch workspace/i }).click();
+  await page.getByRole("menuitemradio", { name: /personal/i }).click();
+  await expect(page).toHaveURL(/\/feeds$/);
+  await expect(
+    page.getByRole("button", { name: /Filter feeds by tags/ }),
+  ).toHaveCount(0);
+  await expect(
+    page.locator("table th").filter({ hasText: "Tags" }),
+  ).toHaveCount(0);
 });
