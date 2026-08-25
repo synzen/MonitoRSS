@@ -15,6 +15,7 @@ export interface IUserFeedListColumnVisibility {
   createdAt?: boolean;
   ownedByUser?: boolean;
   refreshRateSeconds?: boolean;
+  tags?: boolean;
 }
 
 export interface IUserFeedListColumnOrder {

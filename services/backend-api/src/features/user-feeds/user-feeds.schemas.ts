@@ -368,6 +368,7 @@ export const UpdateUserFeedBodySchema = Type.Object(
         ),
       ),
     ),
+    tagIds: Type.Optional(Type.Array(Type.String({ minLength: 1 }))),
   },
   { additionalProperties: false },
 );

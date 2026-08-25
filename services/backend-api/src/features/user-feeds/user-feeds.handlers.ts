@@ -41,6 +41,8 @@ import type {
   GetUserFeedsInputFilters,
   GetUserFeedsInputSortKey,
 } from "../../services/user-feeds/types";
+import type { WorkspaceTagSummary } from "../workspace-tags/workspace-tags.repository";
+import { toWorkspaceTagHttpError } from "../workspace-tags/workspace-tags.http-errors";
 
 export async function deduplicateFeedUrlsHandler(
   request: FastifyRequest<{ Body: DeduplicateFeedUrlsBody }>,
@@ -104,6 +106,7 @@ export async function createUserFeedHandler(
     feed,
     discordUserId,
     supportersService,
+    request.container.workspaceTagsService,
   );
 
   return reply.status(201).send({ result: formatted });
@@ -118,10 +121,17 @@ interface SupportersServiceForFormat {
   ): Promise<{ refreshRateSeconds: number }>;
 }
 
+interface WorkspaceTagsServiceForFormat {
+  resolveFeedTags(
+    feed: Pick<IUserFeed, "workspaceId" | "tagIds">,
+  ): Promise<WorkspaceTagSummary[]>;
+}
+
 export async function formatUserFeedResponse(
   feed: IUserFeed,
   discordUserId: string,
   supportersService: SupportersServiceForFormat,
+  workspaceTagsService: WorkspaceTagsServiceForFormat,
 ) {
   const discordChannelConnections = feed.connections.discordChannels.map(
     (con) => formatDiscordChannelConnectionResponse(con),
@@ -129,6 +139,7 @@ export async function formatUserFeedResponse(
 
   const isOwner = feed.user.discordUserId === discordUserId;
   const feedBenefits = await supportersService.resolveFeedBenefits(feed);
+  const tags = await workspaceTagsService.resolveFeedTags(feed);
 
   const userInviteId = feed.shareManageOptions?.invites?.find(
     (u) =>
@@ -175,6 +186,7 @@ export async function formatUserFeedResponse(
     refreshRateSeconds:
       feed.refreshRateSeconds || feedBenefits.refreshRateSeconds,
     userRefreshRateSeconds: feed.userRefreshRateSeconds,
+    tags,
     // Workspace feeds use workspace membership for access, not per-user share invites,
     // so the sharing UI is never surfaced for them.
     shareManageOptions:
@@ -268,7 +280,7 @@ export async function getUserFeedHandler(
   request: FastifyRequest<{ Params: GetUserFeedParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { supportersService } = request.container;
+  const { supportersService, workspaceTagsService } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
@@ -294,6 +306,7 @@ export async function getUserFeedHandler(
     feed,
     discordUserId,
     supportersService,
+    workspaceTagsService,
   );
 
   return reply.status(200).send({ result: formatted });
@@ -306,7 +319,8 @@ export async function updateUserFeedHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, supportersService } = request.container;
+  const { userFeedsService, supportersService, workspaceTagsService } =
+    request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
@@ -314,6 +328,17 @@ export async function updateUserFeedHandler(
 
   if (request.body.shareManageOptions && feed.workspaceId) {
     throw new ForbiddenError(ApiErrorCode.WORKSPACE_FEED_SHARING_DISABLED);
+  }
+
+  if (request.body.tagIds !== undefined) {
+    try {
+      await workspaceTagsService.validateCompleteFeedTagSet(
+        feed,
+        request.body.tagIds,
+      );
+    } catch (error) {
+      throw toWorkspaceTagHttpError(error);
+    }
   }
 
   if (request.body.externalProperties) {
@@ -353,6 +378,7 @@ export async function updateUserFeedHandler(
     updated!,
     discordUserId,
     supportersService,
+    workspaceTagsService,
   );
 
   return reply.status(200).send({ result: formatted });
@@ -740,6 +766,18 @@ function parseFilters(raw: unknown): GetUserFeedsInputFilters | undefined {
     filters.hasConnections = obj.hasConnections === "true";
   }
 
+  const rawTagIds = obj.tagIds;
+  const tagIdValues = Array.isArray(rawTagIds) ? rawTagIds : [rawTagIds];
+  const tagIds = tagIdValues
+    .filter((value): value is string => typeof value === "string")
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter((value) => value !== "");
+
+  if (tagIds.length > 0) {
+    filters.tagIds = [...new Set(tagIds)];
+  }
+
   return Object.keys(filters).length > 0 ? filters : undefined;
 }
 
@@ -752,6 +790,7 @@ export async function getUserFeedsHandler(
     usersService,
     workspacesService,
     config,
+    workspaceTagsService,
   } = request.container;
   const { discordUserId } = request;
   const { workspaceId } = request.query;
@@ -773,6 +812,17 @@ export async function getUserFeedsHandler(
   const rawQuery = request.url.split("?")[1] || "";
   const parsed = qs.parse(rawQuery);
   const filters = parseFilters(parsed.filters);
+
+  if (filters?.tagIds) {
+    if (workspaceId) {
+      filters.tagIds = await workspaceTagsService.resolveValidFilterTagIds(
+        workspaceId,
+        filters.tagIds,
+      );
+    } else {
+      delete filters.tagIds;
+    }
+  }
 
   const input = {
     limit: request.query.limit,
@@ -799,6 +849,11 @@ export async function getUserFeedsHandler(
       filters: { hasConnections: false },
     }),
   ]);
+  const tagsByFeedId =
+    await request.container.workspaceTagsService.resolveFeedTagMap(
+      workspaceId,
+      feeds,
+    );
 
   return reply.status(200).send({
     results: feeds.map((feed) => ({
@@ -815,6 +870,7 @@ export async function getUserFeedsHandler(
       refreshRateSeconds: feed.refreshRateSeconds,
       connectionCount: feed.connectionCount,
       sharedManagers: feed.sharedManagers,
+      tags: tagsByFeedId.get(feed.id) ?? [],
     })),
     total: count,
     feedsWithoutConnections: feedsWithoutConnectionsCount,

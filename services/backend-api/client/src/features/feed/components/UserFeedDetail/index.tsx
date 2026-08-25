@@ -295,6 +295,7 @@ export const UserFeedDetail: React.FC = () => {
           defaultValues={{
             title: feed?.title as string,
             url: feed?.url as string,
+            tags: feed?.tags,
           }}
           onUpdate={onUpdateFeed}
           error={updateError}

@@ -21,8 +21,21 @@ import { useTranslation } from "react-i18next";
 import { VisibilityState } from "@tanstack/react-table";
 import { UserFeedComputedStatus } from "../../../types";
 import { UserFeedStatusTag } from "../UserFeedStatusTag";
-import { SHARED_WITH_ME_COLUMN_ID, STATUS_FILTERS, TOGGLEABLE_COLUMNS } from "../constants";
-import { MenuRoot, MenuTrigger, MenuContent, MenuCheckboxItem } from "@/components/ui/menu";
+import {
+  SHARED_WITH_ME_COLUMN_ID,
+  STATUS_FILTERS,
+  TOGGLEABLE_COLUMNS,
+} from "../constants";
+import {
+  MenuRoot,
+  MenuTrigger,
+  MenuContent,
+  MenuCheckboxItem,
+} from "@/components/ui/menu";
+import {
+  WorkspaceTagFilter,
+  type WorkspaceTagFilterProps,
+} from "@/features/workspaceTags";
 
 interface TableToolbarProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
@@ -40,6 +53,8 @@ interface TableToolbarProps {
   ) => void;
   /** Drop the "Shared with Me" column toggle (it has no meaning in workspace scope). */
   excludeSharedWithMe?: boolean;
+  excludeTags?: boolean;
+  tagFilter?: WorkspaceTagFilterProps;
 }
 
 export const TableToolbar: React.FC<TableToolbarProps> = ({
@@ -55,15 +70,22 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   columnVisibility,
   onColumnVisibilityChange,
   excludeSharedWithMe,
+  excludeTags,
+  tagFilter,
 }) => {
   const { t } = useTranslation();
 
   const toggleableColumns = excludeSharedWithMe
     ? TOGGLEABLE_COLUMNS.filter(({ id }) => id !== SHARED_WITH_ME_COLUMN_ID)
     : TOGGLEABLE_COLUMNS;
+  const scopedToggleableColumns = excludeTags
+    ? toggleableColumns.filter(({ id }) => id !== "tags")
+    : toggleableColumns;
 
-  const visibleColumnCount = toggleableColumns.filter(({ id }) => columnVisibility[id]).length;
-  const selectedTableColumnCountLabel = `${visibleColumnCount} of ${toggleableColumns.length}`;
+  const visibleColumnCount = scopedToggleableColumns.filter(
+    ({ id }) => columnVisibility[id],
+  ).length;
+  const selectedTableColumnCountLabel = `${visibleColumnCount} of ${scopedToggleableColumns.length}`;
 
   const handleStatusToggle = (value: UserFeedComputedStatus) => {
     if (statusFilters.includes(value)) {
@@ -76,7 +98,9 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   const handleColumnVisibilityToggle = (id: string) => {
     onColumnVisibilityChange((prev) => {
       const isVisible = prev[id];
-      const visibleCount = toggleableColumns.filter(({ id: colId }) => prev[colId]).length;
+      const visibleCount = scopedToggleableColumns.filter(
+        ({ id: colId }) => prev[colId],
+      ).length;
       const isLastVisible = isVisible && visibleCount === 1;
 
       if (isLastVisible) {
@@ -94,7 +118,12 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
 
   if (search && !isFetching) {
     searchEndElement = (
-      <IconButton aria-label="Clear search" size="sm" variant="plain" onClick={onSearchClear}>
+      <IconButton
+        aria-label="Clear search"
+        size="sm"
+        variant="plain"
+        onClick={onSearchClear}
+      >
         <FaXmark color="fg.muted" />
       </IconButton>
     );
@@ -131,6 +160,11 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             Search
           </Button>
         </Flex>
+        {!excludeTags && tagFilter && (
+          <Flex minWidth={0}>
+            <WorkspaceTagFilter {...tagFilter} />
+          </Flex>
+        )}
         <Flex>
           <MenuRoot closeOnSelect={false}>
             <MenuTrigger asChild>
@@ -192,7 +226,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               </Button>
             </MenuTrigger>
             <MenuContent maxW="250px">
-              {toggleableColumns.map(({ id, label }) => {
+              {scopedToggleableColumns.map(({ id, label }) => {
                 const isVisible = columnVisibility[id];
                 const isLastVisible = isVisible && visibleColumnCount === 1;
 

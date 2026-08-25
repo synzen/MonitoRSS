@@ -96,6 +96,7 @@ export interface UpdateFeedInput {
   };
   userRefreshRateSeconds?: number | null;
   externalProperties?: IExternalFeedProperty[];
+  tagIds?: string[];
 }
 
 export enum GetUserFeedsInputSortKey {
@@ -125,6 +126,7 @@ export interface GetUserFeedsInputFilters {
   disabledCodes?: (UserFeedDisabledCode | null)[];
   connectionDisabledCodes?: (string | null)[];
   computedStatuses?: UserFeedComputedStatus[];
+  tagIds?: string[];
   ownedByUser?: boolean;
   hasConnections?: boolean;
 }

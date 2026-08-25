@@ -935,7 +935,7 @@ test.describe("Feed Settings", () => {
       await expect(urlInput).toBeVisible({ timeout: 10000 });
       await urlInput.fill("https://www.reddit.com/r/gaming/.rss");
 
-      await editDialog.getByRole("button", { name: "Save" }).click();
+      await editDialog.getByRole("button", { name: "Save changes" }).click();
 
       // The mandatory-connection prompt is rendered inside the dialog instead of a flat error.
       await expect(

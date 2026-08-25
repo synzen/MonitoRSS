@@ -15,12 +15,14 @@ function convertSortStateToSortKey(state: SortingState): string | undefined {
 interface UseFeedTableDataOptions {
   sorting: SortingState;
   statusFilters: UserFeedComputedStatus[];
+  tagIds?: string[];
   limit?: number;
 }
 
 export function useFeedTableData({
   sorting,
   statusFilters,
+  tagIds,
   limit = DEFAULT_MAX_PER_PAGE,
 }: UseFeedTableDataOptions) {
   const {
@@ -38,6 +40,7 @@ export function useFeedTableData({
     sort: convertSortStateToSortKey(sorting),
     filters: {
       computedStatuses: statusFilters,
+      tagIds,
     },
   });
 

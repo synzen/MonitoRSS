@@ -31,6 +31,7 @@ const FeedListColumnVisibilitySchema = Type.Object(
     createdAt: Type.Optional(Type.Boolean()),
     ownedByUser: Type.Optional(Type.Boolean()),
     refreshRateSeconds: Type.Optional(Type.Boolean()),
+    tags: Type.Optional(Type.Boolean()),
   },
   {
     additionalProperties: false,
@@ -48,6 +49,7 @@ const FeedListColumnOrderSchema = Type.Object(
         Type.Literal("createdAt"),
         Type.Literal("refreshRateSeconds"),
         Type.Literal("ownedByUser"),
+        Type.Literal("tags"),
       ]),
     ),
   },

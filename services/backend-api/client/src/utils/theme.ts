@@ -47,6 +47,18 @@ interface InfoRamp {
   fg: string;
   focusRing: string;
 }
+
+const DARK_WORKSPACE_TAG_THEME_COLORS = {
+  gray: { background: "#2E2E32", text: "#FAFAFA", border: "#7A7A83" },
+  red: { background: "#3B1D24", text: "#FECDD3", border: "#FB7185" },
+  orange: { background: "#3B2618", text: "#FED7AA", border: "#FB923C" },
+  yellow: { background: "#342D16", text: "#FEF08A", border: "#FACC15" },
+  green: { background: "#173322", text: "#BBF7D0", border: "#4ADE80" },
+  teal: { background: "#123330", text: "#99F6E4", border: "#2DD4BF" },
+  blue: { background: "#182A4A", text: "#BFDBFE", border: "#60A5FA" },
+  purple: { background: "#2B2146", text: "#DDD6FE", border: "#A78BFA" },
+  pink: { background: "#3B1E36", text: "#FBCFE8", border: "#F472B6" },
+} as const;
 // `palette: "blue"` keeps v3's native blue-slot mechanic (no recipe override → byte-identical for a
 // scheme that just retints blue). `palette: "teal"` registers a real teal ramp + re-points the alert
 // info variant at it, and needs a `contrast` (the text on a solid teal info surface).
@@ -87,6 +99,7 @@ interface Scheme {
   // sets `info: "blue"`, it keeps v3's native blue-slot mechanic and adds NO recipe override (this is
   // what keeps `newsprint` byte-identical — it retints the `blue` slots directly).
   info: SchemeInfo;
+  workspaceTagColors: typeof DARK_WORKSPACE_TAG_THEME_COLORS;
 }
 
 // ── The scheme registry ───────────────────────────────────────────────────────────────────────────
@@ -127,6 +140,7 @@ const SCHEMES = {
       fg: "#9db4d4", // 6.66:1 on alert bg / 8.26:1 on panel
       focusRing: "#7d9bc4",
     },
+    workspaceTagColors: DARK_WORKSPACE_TAG_THEME_COLORS,
   },
 
   /**
@@ -171,6 +185,7 @@ const SCHEMES = {
       focusRing: "#4aa6a0",
       contrast: "#ffffff",
     },
+    workspaceTagColors: DARK_WORKSPACE_TAG_THEME_COLORS,
   },
 
   /**
@@ -206,6 +221,7 @@ const SCHEMES = {
       fg: "#8fb4e0",
       focusRing: "#5a82c0",
     },
+    workspaceTagColors: DARK_WORKSPACE_TAG_THEME_COLORS,
   },
 
   /**
@@ -246,6 +262,7 @@ const SCHEMES = {
       fg: "#a3cfff",
       focusRing: "#3b82f6",
     },
+    workspaceTagColors: DARK_WORKSPACE_TAG_THEME_COLORS,
   },
 } satisfies Record<string, Scheme>;
 
@@ -280,7 +297,10 @@ const buttonRecipe = {
   // explicit status palettes) and props win over the recipe. This also removes the need for any
   // per-call-site colorPalette="gray" (which the lint ratchet now bans).
   base: { ...defaultButtonRecipe.base, colorPalette: "gray" },
-  defaultVariants: { ...defaultButtonRecipe.defaultVariants, variant: "outline" },
+  defaultVariants: {
+    ...defaultButtonRecipe.defaultVariants,
+    variant: "outline",
+  },
   variants: {
     ...defaultButtonRecipe.variants,
     variant: {
@@ -325,6 +345,16 @@ const config = defineConfig({
         controlBorder: {
           value: { _light: "{colors.gray.500}", _dark: S.controlBorder },
         },
+        workspaceTag: Object.fromEntries(
+          Object.entries(S.workspaceTagColors).map(([name, colors]) => [
+            name,
+            {
+              background: { value: colors.background },
+              text: { value: colors.text },
+              border: { value: colors.border },
+            },
+          ]),
+        ),
         // ── INFO status hue (the native `blue` slots) ───────────────────────────────────────────
         // See `infoSlots` comment. status="info" Alerts read these unless re-pointed to `teal` below.
         blue: infoSlots,
@@ -385,8 +415,12 @@ const config = defineConfig({
       // Tier 1: point every recipe-driven control's outline at controlBorder ONCE here, so no
       // input/select/textarea/outline-button carries a borderColor prop. The default recipes set
       // borderColor in the `outline` VARIANT (not base), so the override must target the same place.
-      input: { variants: { variant: { outline: { borderColor: "controlBorder" } } } },
-      textarea: { variants: { variant: { outline: { borderColor: "controlBorder" } } } },
+      input: {
+        variants: { variant: { outline: { borderColor: "controlBorder" } } },
+      },
+      textarea: {
+        variants: { variant: { outline: { borderColor: "controlBorder" } } },
+      },
       // A bare <Button> (no variant) defaults to v3's `solid` `gray`, which inverts to a WHITE pill in
       // dark mode. 77 such buttons exist across 54 files, so the default belongs HERE. `buttonRecipe`
       // spreads the FULL default recipe and flips its default variant to `outline` + points that
@@ -404,11 +438,15 @@ const config = defineConfig({
       // blur. The blur does the real work — it smears competing detail so the dim needn't go heavier.
       dialog: {
         slots: ["backdrop"],
-        base: { backdrop: { bg: "blackAlpha.700", backdropFilter: "blur(12px)" } },
+        base: {
+          backdrop: { bg: "blackAlpha.700", backdropFilter: "blur(12px)" },
+        },
       },
       nativeSelect: {
         slots: ["root", "field", "indicator"],
-        variants: { variant: { outline: { field: { borderColor: "controlBorder" } } } },
+        variants: {
+          variant: { outline: { field: { borderColor: "controlBorder" } } },
+        },
       },
       // Checkbox / radio are CONTROLS, fixed in TWO ways here:
       //  1. UNCHECKED outline → `controlBorder` (≥3:1, WCAG 1.4.11). The stock recipes wire it to the
@@ -423,7 +461,9 @@ const config = defineConfig({
       checkbox: {
         slots: ["root", "label", "control", "indicator", "group"],
         base: { root: { colorPalette: "brand" } },
-        variants: { variant: { solid: { control: { borderColor: "controlBorder" } } } },
+        variants: {
+          variant: { solid: { control: { borderColor: "controlBorder" } } },
+        },
       },
       radioGroup: {
         slots: [
@@ -437,7 +477,9 @@ const config = defineConfig({
           "itemIndicator",
         ],
         base: { root: { colorPalette: "brand" } },
-        variants: { variant: { solid: { itemControl: { borderColor: "controlBorder" } } } },
+        variants: {
+          variant: { solid: { itemControl: { borderColor: "controlBorder" } } },
+        },
       },
       // Switch is a CONTROL with the same off-state problem: the stock recipe paints the unchecked
       // track `bg.emphasized` (the chip token), so a switch sitting on any emphasized surface has its
@@ -471,7 +513,9 @@ const config = defineConfig({
         base: { title: { fontWeight: "semibold" } },
         variants: {
           variant: {
-            subtle: { root: { borderWidth: "1px", borderColor: "colorPalette.solid" } },
+            subtle: {
+              root: { borderWidth: "1px", borderColor: "colorPalette.solid" },
+            },
           },
           ...(S.info.palette === "teal"
             ? { status: { info: { root: { colorPalette: "teal" } } } }

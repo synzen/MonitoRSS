@@ -70,6 +70,7 @@ export interface IUserFeed {
   connections: IFeedConnections;
   user: IUserFeedUser;
   workspaceId?: string;
+  tagIds?: string[];
   formatOptions?: IUserFeedFormatOptions;
   dateCheckOptions?: IUserFeedDateCheckOptions;
   shareManageOptions?: IUserFeedShareManageOptions;
@@ -194,6 +195,8 @@ export interface UserFeedListingFilters {
   disabledCodes?: (UserFeedDisabledCode | null)[];
   connectionDisabledCodes?: (string | null)[];
   computedStatuses?: UserFeedComputedStatus[];
+  /** Workspace tag IDs. Matching any selected tag is intentional OR semantics. */
+  tagIds?: string[];
   ownedByUser?: boolean;
   hasConnections?: boolean;
 }
@@ -239,6 +242,7 @@ export interface UserFeedListItem {
   refreshRateSeconds?: number;
   connectionCount: number;
   sharedManagers?: UserFeedListItemSharedManager[];
+  tagIds?: string[];
 }
 
 export interface UserFeedLimitEnforcementResult {

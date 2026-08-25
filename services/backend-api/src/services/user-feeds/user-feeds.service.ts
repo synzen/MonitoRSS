@@ -767,6 +767,12 @@ export class UserFeedsService {
       useUpdateObject.$set!.externalProperties = updates.externalProperties;
     }
 
+    if (updates.tagIds !== undefined) {
+      useUpdateObject.$set!.tagIds = updates.tagIds.map(
+        (tagId) => new Types.ObjectId(tagId),
+      );
+    }
+
     if (updates.userRefreshRateSeconds !== undefined) {
       if (!feedBenefits) {
         feedBenefits =

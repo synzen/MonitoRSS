@@ -10,6 +10,7 @@ export interface GetUserFeedsInput {
   filters?: {
     computedStatuses?: UserFeedComputedStatus[];
     disabledCodes?: UserFeedDisabledCode[];
+    tagIds?: string[];
     hasConnections?: boolean;
     ownedByUser?: boolean;
   };
@@ -38,6 +39,10 @@ export const getUserFeeds = async (options: GetUserFeedsInput): Promise<GetUserF
 
   if (options.filters?.disabledCodes) {
     params.append(`filters[disabledCodes]`, options.filters?.disabledCodes?.join(",") || "");
+  }
+
+  if (options.filters?.tagIds?.length) {
+    params.append(`filters[tagIds]`, options.filters.tagIds.join(","));
   }
 
   if (options.filters?.hasConnections !== undefined) {

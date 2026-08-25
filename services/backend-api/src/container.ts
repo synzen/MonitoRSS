@@ -76,6 +76,8 @@ import { SupporterSubscriptionsService } from "./services/supporter-subscription
 import { LegacyFeedConversionService } from "./services/legacy-feed-conversion/legacy-feed-conversion.service";
 import { ScheduleHandlerService } from "./services/schedule-handler/schedule-handler.service";
 import { MessageBrokerEventsService } from "./services/message-broker-events/message-broker-events.service";
+import { WorkspaceTagMongooseRepository } from "./features/workspace-tags/workspace-tags.repository";
+import { WorkspaceTagsService } from "./features/workspace-tags/workspace-tags.service";
 
 export interface Container {
   config: Config;
@@ -109,6 +111,7 @@ export interface Container {
   curatedFeedRepository: ICuratedFeedRepository;
   curatedCategoryRepository: ICuratedCategoryRepository;
   discoverySearchEventRepository: IDiscoverySearchEventRepository;
+  workspaceTagRepository: WorkspaceTagMongooseRepository;
 
   // External API Services
   discordApiService: DiscordApiService;
@@ -148,6 +151,7 @@ export interface Container {
   legacyFeedConversionService: LegacyFeedConversionService;
   scheduleHandlerService: ScheduleHandlerService;
   messageBrokerEventsService: MessageBrokerEventsService;
+  workspaceTagsService: WorkspaceTagsService;
 }
 
 export function createContainer(deps: {
@@ -208,6 +212,9 @@ export function createContainer(deps: {
   );
   const discoverySearchEventRepository =
     new DiscoverySearchEventMongooseRepository(deps.mongoConnection);
+  const workspaceTagRepository = new WorkspaceTagMongooseRepository(
+    deps.mongoConnection,
+  );
 
   // External API Services
   const discordApiService = new DiscordApiService(deps.config);
@@ -297,6 +304,9 @@ export function createContainer(deps: {
     emailVerificationService,
     redditApiService,
   });
+  const workspaceTagsService = new WorkspaceTagsService(
+    workspaceTagRepository,
+  );
 
   const notificationsService = new NotificationsService({
     config: deps.config,
@@ -474,6 +484,7 @@ export function createContainer(deps: {
     curatedFeedRepository,
     curatedCategoryRepository,
     discoverySearchEventRepository,
+    workspaceTagRepository,
 
     // External API Services
     discordApiService,
@@ -513,5 +524,6 @@ export function createContainer(deps: {
     legacyFeedConversionService,
     scheduleHandlerService,
     messageBrokerEventsService,
+    workspaceTagsService,
   };
 }

@@ -128,7 +128,7 @@ test.describe("Reddit OAuth (personal)", () => {
     const urlInput = editDialog.getByLabel("RSS Feed Link");
     await expect(urlInput).toBeVisible({ timeout: 10000 });
     await urlInput.fill(url);
-    await editDialog.getByRole("button", { name: "Save" }).click();
+    await editDialog.getByRole("button", { name: "Save changes" }).click();
 
     await expect(page.getByText("Connect your Reddit account to continue")).toBeVisible({
       timeout: 30000,

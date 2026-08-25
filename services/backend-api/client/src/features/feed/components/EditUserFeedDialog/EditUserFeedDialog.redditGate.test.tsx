@@ -131,7 +131,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     const urlInput = screen.getByDisplayValue("https://example.com/feed.xml");
     await user.clear(urlInput);
     await user.type(urlInput, "https://www.reddit.com/r/gaming");
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() => expect(onUpdate).toHaveBeenCalled());
 
@@ -250,9 +250,10 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     });
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ url: "https://www.reddit.com/r/gaming" }),
-    );
+    expect(onUpdate).toHaveBeenCalledWith({
+      title: "Existing title",
+      url: "https://www.reddit.com/r/gaming",
+    });
   });
 
   it("saves directly (skipping the confirm step) on the post-connect retry, even for a resolving URL", async () => {
@@ -300,9 +301,10 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     // Saved with the entered URL (server does the resolution), not the confirm step.
-    expect(onUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ url: "https://www.reddit.com/r/gaming" }),
-    );
+    expect(onUpdate).toHaveBeenCalledWith({
+      title: "Existing title",
+      url: "https://www.reddit.com/r/gaming",
+    });
   });
 
   it("still pauses on the confirm step for a normal (non-retry) resolved URL", async () => {
@@ -335,7 +337,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     const urlInput = screen.getByDisplayValue("https://example.com/feed.xml");
     await user.clear(urlInput);
     await user.type(urlInput, "https://www.reddit.com/r/gaming");
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     // The first Save resolves the URL and pauses on confirm: no save, no close.
     await waitFor(() =>

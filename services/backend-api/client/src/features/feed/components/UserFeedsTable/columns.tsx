@@ -10,7 +10,8 @@ import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { DATE_FORMAT, pages } from "../../../../constants";
 import type { RouteScope } from "../../../../constants";
 import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
-import { SHARED_WITH_ME_COLUMN_ID } from "./constants";
+import { SHARED_WITH_ME_COLUMN_ID, TAGS_COLUMN_ID } from "./constants";
+import { WorkspaceTagList } from "@/features/workspaceTags";
 
 const columnHelper = createColumnHelper<RowData>();
 
@@ -125,6 +126,12 @@ const columnConfigs: ColumnConfig[] = [
     sortable: true,
   },
   {
+    id: TAGS_COLUMN_ID,
+    header: "Tags",
+    accessor: "tags",
+    cell: (info) => <WorkspaceTagList tags={info.getValue() as RowData["tags"]} />,
+  },
+  {
     id: "createdAt",
     header: "Added on",
     accessor: "createdAt",
@@ -229,14 +236,16 @@ function createConfigureColumn(scope?: RouteScope): ColumnDef<RowData> {
 export function createTableColumns(
   search: string,
   scope?: RouteScope,
-  options?: { excludeSharedWithMe?: boolean },
+  options?: { excludeSharedWithMe?: boolean; excludeTags?: boolean },
 ): ColumnDef<RowData>[] {
   const selectColumn = createSelectColumn();
   const configureColumn = createConfigureColumn(scope);
 
-  const visibleConfigs = options?.excludeSharedWithMe
-    ? columnConfigs.filter((config) => config.id !== SHARED_WITH_ME_COLUMN_ID)
-    : columnConfigs;
+  const visibleConfigs = columnConfigs.filter(
+    (config) =>
+      !(options?.excludeSharedWithMe && config.id === SHARED_WITH_ME_COLUMN_ID) &&
+      !(options?.excludeTags && config.id === TAGS_COLUMN_ID),
+  );
 
   const dataColumns = visibleConfigs.map((config) => {
     if (typeof config.accessor === "function") {

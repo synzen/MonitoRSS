@@ -10,6 +10,7 @@ export const DEFAULT_MAX_PER_PAGE = 20;
  * tables omit it.
  */
 export const SHARED_WITH_ME_COLUMN_ID = "ownedByUser";
+export const TAGS_COLUMN_ID = "tags";
 
 export const PREFERENCE_DEBOUNCE_MS = 500;
 
@@ -44,6 +45,7 @@ export const STATUS_FILTERS = [
 export const TOGGLEABLE_COLUMNS = [
   { id: "computedStatus", label: "Status" },
   { id: "url", label: "URL" },
+  { id: TAGS_COLUMN_ID, label: "Tags" },
   { id: "createdAt", label: "Added On" },
   { id: "refreshRateSeconds", label: "Refresh Rate" },
   { id: SHARED_WITH_ME_COLUMN_ID, label: "Shared with Me" },
@@ -52,6 +54,7 @@ export const TOGGLEABLE_COLUMNS = [
 export const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
   computedStatus: true,
   url: true,
+  tags: true,
   createdAt: true,
   refreshRateSeconds: false,
   ownedByUser: true,
@@ -62,6 +65,7 @@ export const DEFAULT_COLUMN_ORDER = [
   "computedStatus",
   "title",
   "url",
+  "tags",
   "createdAt",
   "refreshRateSeconds",
   "ownedByUser",
