@@ -143,6 +143,7 @@ export async function createDiscordChannelConnectionHandler(
     componentsV2,
     placeholderLimits,
     formatter,
+    enablePlaceholderFallback,
   } = request.body;
 
   const connection =
@@ -161,6 +162,7 @@ export async function createDiscordChannelConnectionHandler(
         componentsV2: componentsV2 ?? undefined,
         placeholderLimits,
         formatter: formatter || undefined,
+        enablePlaceholderFallback,
       },
     });
 

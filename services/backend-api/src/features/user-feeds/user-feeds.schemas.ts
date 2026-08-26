@@ -297,6 +297,7 @@ export const SendTestArticleBodySchema = Type.Object(
       ]),
     ),
     placeholderLimits: Type.Optional(Type.Array(PlaceholderLimitSchema)),
+    enablePlaceholderFallback: Type.Optional(Type.Boolean()),
     webhook: Type.Optional(WebhookSchema),
     threadId: Type.Optional(Type.String()),
     channelNewThread: Type.Optional(Type.Boolean()),

@@ -37,7 +37,7 @@ export const DEFAULT_TEMPLATE: Template = {
 
     if (!content) {
       const descriptionField = fields?.description[0]?.field;
-      const fallbackField = titleField ?? descriptionField ?? "title||New untitled article";
+      const fallbackField = titleField ?? descriptionField ?? "title||text::New untitled article";
 
       content = `{{${fallbackField}}}`;
     }
@@ -76,7 +76,7 @@ export const RICH_EMBED_TEMPLATE: Template = {
 
     const hasImage = !!imageField;
     const hasTitle = !!titleField;
-    const safeTitleField = titleField ?? "title||New untitled article";
+    const safeTitleField = titleField ?? "title||text::New untitled article";
 
     const titleComponent = {
       type: ComponentType.V2TextDisplay as const,

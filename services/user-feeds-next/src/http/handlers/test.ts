@@ -22,6 +22,7 @@ import type { MentionTarget, ForumThreadTag } from "../../delivery/discord/forma
 import { CustomPlaceholderStepType, type CustomPlaceholder } from "../../formatting";
 import {
   CustomPlaceholderRegexEvalException,
+  EmptyDiscordPayloadException,
   FiltersRegexEvalException,
 } from "../../formatting/exceptions";
 import type { Article } from "../../articles/parser";
@@ -405,6 +406,13 @@ export async function handleTest(
       // Handle article not found
       if (err instanceof FeedArticleNotFoundException) {
         return jsonResponse({ message: err.message }, 404);
+      }
+
+      if (err instanceof EmptyDiscordPayloadException) {
+        return jsonResponse({
+          status: TestDeliveryStatus.BadPayload,
+          apiResponse: { message: err.message },
+        });
       }
 
       return handleError(err);

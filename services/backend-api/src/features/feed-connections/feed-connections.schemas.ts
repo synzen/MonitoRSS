@@ -321,6 +321,7 @@ export const CreateDiscordChannelConnectionBodySchema = Type.Object(
     ),
     placeholderLimits: Type.Optional(Type.Array(PlaceholderLimitSchema)),
     formatter: Type.Optional(Type.Union([FormatterOptionsSchema, Type.Null()])),
+    enablePlaceholderFallback: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 );

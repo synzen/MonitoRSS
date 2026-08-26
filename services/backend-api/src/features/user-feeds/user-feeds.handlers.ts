@@ -434,6 +434,7 @@ export async function sendTestArticleHandler(
       embeds: request.body.embeds,
       componentsV2: request.body.componentsV2 ?? undefined,
       placeholderLimits: request.body.placeholderLimits,
+      enablePlaceholderFallback: request.body.enablePlaceholderFallback,
       webhook: request.body.webhook,
       threadId: request.body.threadId,
       channelNewThread: request.body.channelNewThread,

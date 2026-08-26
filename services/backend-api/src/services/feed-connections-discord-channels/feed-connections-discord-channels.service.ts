@@ -216,6 +216,7 @@ export class FeedConnectionsDiscordChannelsService {
                 componentsV2: validatedComponentsV2,
                 placeholderLimits: templateData?.placeholderLimits,
                 formatter: templateData?.formatter || undefined,
+                enablePlaceholderFallback: templateData?.enablePlaceholderFallback,
               },
             },
           },
@@ -1077,6 +1078,7 @@ export class FeedConnectionsDiscordChannelsService {
         characterCount: number;
         appendString?: string;
       }[];
+      enablePlaceholderFallback?: boolean | null;
       webhook?: {
         name: string;
         iconUrl?: string;
@@ -1187,6 +1189,7 @@ export class FeedConnectionsDiscordChannelsService {
         content: castDiscordContentForMedium(input.content),
         embeds: castDiscordEmbedsForMedium(cleanedEmbeds || []),
         placeholderLimits: input.placeholderLimits,
+        enablePlaceholderFallback: input.enablePlaceholderFallback ?? undefined,
         componentsV2:
           input.content || input.embeds?.length
             ? undefined

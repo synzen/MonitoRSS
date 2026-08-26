@@ -391,6 +391,8 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                                     content: previewInput.data.content,
                                     embeds: previewInput.data.embeds,
                                     placeholderLimits: previewInput.data.placeholderLimits,
+                                    enablePlaceholderFallback:
+                                      previewInput.data.enablePlaceholderFallback,
                                     webhook: {
                                       name: webhookDisplayName,
                                       iconUrl: webhookAvatarUrl || undefined,

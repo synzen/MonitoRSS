@@ -404,6 +404,10 @@ const convertLegacyRootToConnectionUpdate = (
     details.placeholderLimits = component.placeholderLimits;
   }
 
+  if (component.enablePlaceholderFallback !== undefined) {
+    details.enablePlaceholderFallback = component.enablePlaceholderFallback;
+  }
+
   if (component.channelNewThreadTitle !== undefined) {
     details.channelNewThreadTitle = component.channelNewThreadTitle;
   }

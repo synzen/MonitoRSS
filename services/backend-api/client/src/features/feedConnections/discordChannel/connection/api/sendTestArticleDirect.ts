@@ -17,6 +17,7 @@ export interface SendTestArticleDirectInput {
       characterCount: number;
       appendString?: string | null;
     }> | null;
+    enablePlaceholderFallback?: boolean | null;
     webhook?: {
       name: string;
       iconUrl?: string;

@@ -76,6 +76,7 @@ export interface CreateDiscordChannelConnectionInput {
       disableImageLinkPreviews?: boolean | null;
       ignoreNewLines?: boolean | null;
     } | null;
+    enablePlaceholderFallback?: boolean | null;
   };
 }
 

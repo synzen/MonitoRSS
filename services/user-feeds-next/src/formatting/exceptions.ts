@@ -48,3 +48,10 @@ export class FiltersRegexEvalException extends RegexEvalException {
     this.name = "FiltersRegexEvalException";
   }
 }
+
+export class EmptyDiscordPayloadException extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EmptyDiscordPayloadException";
+  }
+}
