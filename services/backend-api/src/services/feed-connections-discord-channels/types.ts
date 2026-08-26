@@ -74,6 +74,7 @@ export interface CreateDiscordChannelConnectionInput {
     componentsV2?: Array<Record<string, unknown>>;
     placeholderLimits?: IPlaceholderLimit[];
     formatter?: IDiscordFormatter;
+    enablePlaceholderFallback?: boolean;
   };
 }
 

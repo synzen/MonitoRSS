@@ -40,6 +40,7 @@ import {
   getCreateChannelMessageThreadUrl,
 } from "./synzen-discord-rest";
 import { DiscordSendArticleOperationType } from "../../shared/constants";
+import { EmptyDiscordPayloadException } from "../../formatting/exceptions";
 
 // ============================================================================
 // Types
@@ -167,6 +168,12 @@ async function deliverTestToForum(
   if (channelId) {
     bodies = generatePayloads(article, details);
 
+    if (bodies.length === 0) {
+      throw new EmptyDiscordPayloadException(
+        "No Discord payloads generated for forum delivery - content and embeds are empty after placeholder resolution"
+      );
+    }
+
     threadBody = buildForumThreadBody({
       isWebhook: false,
       threadName,
@@ -183,6 +190,12 @@ async function deliverTestToForum(
       webhook?.iconUrl,
       payloadOptions
     );
+
+    if (bodies.length === 0) {
+      throw new EmptyDiscordPayloadException(
+        "No Discord payloads generated for forum webhook delivery - content and embeds are empty after placeholder resolution"
+      );
+    }
 
     threadBody = buildForumThreadBody({
       isWebhook: true,
@@ -272,6 +285,12 @@ async function deliverTestToWebhook(
     payloadOptions
   );
 
+  if (apiPayloads.length === 0) {
+    throw new EmptyDiscordPayloadException(
+      "No Discord payloads generated for webhook delivery - content and embeds are empty after placeholder resolution"
+    );
+  }
+
   const results = await Promise.all(
     apiPayloads.map((payload) =>
       discordClient.sendApiRequest(apiUrl, {
@@ -315,6 +334,13 @@ async function deliverTestToChannel(
   const payloadOptions = getPayloadOptions(details);
 
   const apiPayloads = generatePayloads(article, details);
+
+  if (apiPayloads.length === 0) {
+    throw new EmptyDiscordPayloadException(
+      "No Discord payloads generated for channel delivery - content and embeds are empty after placeholder resolution"
+    );
+  }
+
   let currentApiPayloadIndex = 0;
 
   const apiPayloadResults: DiscordApiResponse[] = [];

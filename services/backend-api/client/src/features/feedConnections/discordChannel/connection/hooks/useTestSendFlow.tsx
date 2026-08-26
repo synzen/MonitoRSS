@@ -115,6 +115,7 @@ export const useTestSendFlow = ({
             embeds: templateData.embeds,
             componentsV2: templateData.componentsV2,
             placeholderLimits: templateData.placeholderLimits,
+            enablePlaceholderFallback: templateData.enablePlaceholderFallback,
             webhook:
               branding?.name || webhookName
                 ? {

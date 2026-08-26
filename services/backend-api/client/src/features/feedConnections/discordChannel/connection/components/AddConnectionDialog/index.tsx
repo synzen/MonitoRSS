@@ -269,6 +269,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
           componentsV2: templateData.componentsV2,
           placeholderLimits: templateData.placeholderLimits,
           formatter: templateData.formatter,
+          enablePlaceholderFallback: templateData.enablePlaceholderFallback,
         },
       });
     },
@@ -419,6 +420,7 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
           componentsV2: templateData.componentsV2,
           placeholderLimits: templateData.placeholderLimits,
           formatter: templateData.formatter,
+          enablePlaceholderFallback: templateData.enablePlaceholderFallback,
         },
       });
 
