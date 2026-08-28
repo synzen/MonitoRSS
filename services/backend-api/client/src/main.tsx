@@ -91,12 +91,12 @@ async function prepare() {
             matchRoutes,
           }),
           Sentry.replayIntegration({
-            maskAllText: false,
-            blockAllMedia: false,
-            maskAllInputs: false,
-            networkDetailAllowUrls: ["/api/v1/*"],
+            maskAllText: true,
+            blockAllMedia: true,
+            maskAllInputs: true,
           }),
         ],
+        sendDefaultPii: false,
         tracesSampleRate: 0.2,
         // Session Replay
         replaysSessionSampleRate: 0.5, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
