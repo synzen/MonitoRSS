@@ -1,4 +1,4 @@
-import { Button, Input, Stack, Text } from "@chakra-ui/react";
+import { Button, Input, Stack } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogBody,
+  DialogDescription,
   DialogFooter,
   DialogTitle,
   DialogTrigger,
@@ -78,9 +79,7 @@ interface Props {
   /**
    * Element to receive focus when the dialog opens. Defaults to the Cancel button
    * (the safe, least-destructive target for a confirmation). Override for a
-   * content-rich dialog so focus lands at the TOP of the content and the user
-   * reads forward in order, instead of being dropped on Cancel at the end of the
-   * DOM with the task surface behind them.
+   * content-rich dialog so focus lands at the top of its content.
    */
   initialFocusEl?: () => HTMLElement | null;
 }
@@ -195,7 +194,7 @@ export const ConfirmModal = ({
         )}
         <DialogBody>
           <Stack gap={4}>
-            {description && !descriptionNode && <Text>{description}</Text>}
+            {description && !descriptionNode && <DialogDescription>{description}</DialogDescription>}
             {descriptionNode && !description && descriptionNode}
             {confirmationPhrase && (
               <Field label={`Type "${confirmationPhrase}" to confirm`} required>

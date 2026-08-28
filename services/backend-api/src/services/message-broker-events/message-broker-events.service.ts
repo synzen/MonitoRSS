@@ -1,4 +1,5 @@
 import type { Connection, Consumer } from "rabbitmq-client";
+import { UrlFetchCompletedSchema } from "@monitorss/contracts";
 import type { Config } from "../../config";
 import logger from "../../infra/logger";
 import { createConsumer, MessageBrokerQueue } from "../../infra/rabbitmq";
@@ -72,18 +73,18 @@ export class MessageBrokerEventsService {
     );
 
     this.consumers.push(
-      createQueueConsumer(MessageBrokerQueue.UrlFetchCompleted, (msg) =>
-        this.handleUrlFetchCompletedEvent(
-          msg as {
-            data: {
-              url: string;
-              lookupKey?: string;
-              rateSeconds: number;
-              debug?: boolean;
-            };
-          },
-        ),
-      ),
+      createQueueConsumer(MessageBrokerQueue.UrlFetchCompleted, async (msg) => {
+        const parsed = UrlFetchCompletedSchema.safeParse(msg);
+
+        if (!parsed.success) {
+          logger.error("Received invalid url.fetch.completed event, skipping", {
+            issues: parsed.error.issues,
+          });
+          return;
+        }
+
+        return this.handleUrlFetchCompletedEvent(parsed.data);
+      }),
     );
 
     this.consumers.push(
@@ -152,13 +153,14 @@ export class MessageBrokerEventsService {
   }
 
   async handleUrlFetchCompletedEvent({
-    data: { url, lookupKey, rateSeconds, debug },
+    data: { url, lookupKey, rateSeconds, debug, recovery },
   }: {
     data: {
       url: string;
       lookupKey?: string;
       rateSeconds: number;
       debug?: boolean;
+      recovery?: { startedAt: number };
     };
   }): Promise<void> {
     if (debug) {
@@ -172,6 +174,14 @@ export class MessageBrokerEventsService {
     logger.debug("Got url fetched event", { lookupKey, url, rateSeconds });
 
     const filter = lookupKey ? { lookupKey } : { url };
+
+    if (recovery) {
+      await this.deps.userFeedRepository.clearDisabledCodeForRecoveredFeeds(
+        filter,
+      );
+      return;
+    }
+
     const healthStatusUpdateCount =
       await this.deps.userFeedRepository.countWithHealthStatusFilter(
         filter,
@@ -272,6 +282,11 @@ export class MessageBrokerEventsService {
         });
       }
     }
+
+    // Feeds that were already disabled and in the bulk-recovery state have
+    // exhausted their fresh retry cycle: revert them to the terminal failed
+    // state so they stop being scheduled.
+    await this.deps.userFeedRepository.revertRecoveryFeedsToFailed(filter);
   }
 
   async handleFeedRejectedDisableFeed({

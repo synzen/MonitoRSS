@@ -11,6 +11,7 @@ Object.assign(globalThis, {
 
 import { FeedFetcherListenerService } from './feed-fetcher-listener.service';
 import { RequestStatus } from './constants';
+import { MessageBrokerQueue } from '@monitorss/contracts';
 
 jest.mock('../utils/logger');
 
@@ -216,6 +217,153 @@ describe('FeedFetcherListenerService', () => {
         'url.fetch.completed',
         expect.anything(),
       );
+    });
+  });
+
+  describe('bulk recovery attempts', () => {
+    const recoveryStartedAt = Date.now() - 60_000;
+    const recoveryBatchRequest = {
+      timestamp: Date.now(),
+      data: [{ url: feedUrl, recovery: { startedAt: recoveryStartedAt } }],
+      rateSeconds: 1800,
+    };
+
+    const runRecoveryHandler = async (
+      batchRequest: unknown = recoveryBatchRequest,
+    ) => {
+      await (
+        service as unknown as {
+          onBrokerFetchRequestBatchHandler: (
+            batchRequest: unknown,
+          ) => Promise<void>;
+        }
+      ).onBrokerFetchRequestBatchHandler(batchRequest);
+    };
+
+    const enableFreshCacheMocks = () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.getLatestRequestWithOkStatus.mockResolvedValue(
+        {
+          createdAt: new Date(recoveryStartedAt - 3_600_000),
+          requestInitiatedAt: new Date(recoveryStartedAt - 3_600_000),
+          responseHeaders: {
+            'cache-control': 'public, max-age=3600',
+            date: new Date(recoveryStartedAt - 1_800_000).toUTCString(),
+          },
+        },
+      );
+    };
+
+    it('performs a fresh request despite old terminal failures and recent-request state', async () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.wasRequestedInPastSeconds.mockResolvedValue(
+        true,
+      );
+      partitionedRequestsStoreService.countFailedRequests.mockImplementation(
+        (_lookupKey: string, since?: Date) =>
+          since && since.getTime() >= recoveryStartedAt ? 0 : 3,
+      );
+      feedFetcherService.fetchAndSaveResponse.mockResolvedValue({
+        request: { status: RequestStatus.OK },
+      });
+
+      await runRecoveryHandler();
+
+      expect(
+        partitionedRequestsStoreService.wasRequestedInPastSeconds,
+      ).not.toHaveBeenCalled();
+
+      const countCall =
+        partitionedRequestsStoreService.countFailedRequests.mock.calls[0];
+      expect(countCall[1]).toBeInstanceOf(Date);
+      expect((countCall[1] as Date).getTime()).toBeGreaterThanOrEqual(
+        recoveryStartedAt,
+      );
+
+      expect(feedFetcherService.fetchAndSaveResponse).toHaveBeenCalled();
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        '',
+        MessageBrokerQueue.UrlFetchCompleted,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            recovery: { startedAt: recoveryStartedAt },
+          }),
+        }),
+      );
+    });
+
+    it('fetches fresh instead of trusting a still-fresh cached response', async () => {
+      enableFreshCacheMocks();
+      partitionedRequestsStoreService.countFailedRequests.mockResolvedValue(0);
+      feedFetcherService.fetchAndSaveResponse.mockResolvedValue({
+        request: { status: RequestStatus.OK },
+      });
+
+      await runRecoveryHandler();
+
+      expect(feedFetcherService.fetchAndSaveResponse).toHaveBeenCalled();
+    });
+
+    it('emits the failed url event when the fresh recovery cycle is exhausted', async () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.countFailedRequests.mockResolvedValue(3);
+
+      await runRecoveryHandler();
+
+      expect(feedFetcherService.fetchAndSaveResponse).not.toHaveBeenCalled();
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        '',
+        'url.failed.disable-feeds',
+        expect.anything(),
+      );
+    });
+
+    it('honors fresh backoff recorded during the recovery cycle', async () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.countFailedRequests.mockResolvedValue(1);
+      partitionedRequestsStoreService.getLatestNextRetryDate.mockResolvedValue(
+        new Date(Date.now() + 10 * 60_000),
+      );
+
+      await runRecoveryHandler();
+
+      expect(feedFetcherService.fetchAndSaveResponse).not.toHaveBeenCalled();
+      expect(amqpConnection.publish).not.toHaveBeenCalledWith(
+        '',
+        'url.fetch.completed',
+        expect.anything(),
+      );
+    });
+
+    it('ignores stale backoff dates from the terminal failure history', async () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.countFailedRequests.mockResolvedValue(1);
+      // A backoff date from the old (terminal) cycle still far in the future.
+      partitionedRequestsStoreService.getLatestNextRetryDate.mockImplementation(
+        (_lookupKey: string, since?: Date) =>
+          since ? null : new Date(Date.now() + 48 * 3_600_000),
+      );
+      feedFetcherService.fetchAndSaveResponse.mockResolvedValue({
+        request: { status: RequestStatus.OK },
+      });
+
+      await runRecoveryHandler();
+
+      expect(feedFetcherService.fetchAndSaveResponse).toHaveBeenCalled();
+      expect(
+        partitionedRequestsStoreService.getLatestNextRetryDate,
+      ).toHaveBeenCalledWith(feedUrl, expect.any(Date));
+    });
+
+    it('skips the whole batch when it fails contract validation', async () => {
+      await runRecoveryHandler({
+        timestamp: Date.now(),
+        data: [{ url: feedUrl, recovery: { startedAt: 0 } }],
+        rateSeconds: 1800,
+      });
+
+      expect(cacheStorageService.setNX).not.toHaveBeenCalled();
+      expect(feedFetcherService.fetchAndSaveResponse).not.toHaveBeenCalled();
     });
   });
 });

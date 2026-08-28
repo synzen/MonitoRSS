@@ -1,5 +1,9 @@
 import type { PipelineStage, FilterQuery } from "mongoose";
 import type { SlotWindow } from "../types/slot-window.types";
+import {
+  UserFeedDisabledCode,
+  UserFeedHealthStatus,
+} from "../../repositories/shared/enums";
 
 function buildSlotWindowFilter(slotWindow: SlotWindow): FilterQuery<unknown> {
   if (slotWindow.wrapsAroundInterval) {
@@ -27,18 +31,37 @@ export function getCommonFeedAggregateStages({
   feedRequestLookupKey,
   withLookupKeys,
   slotWindow,
+  includeRecoveryFeeds,
 }: {
   refreshRateSeconds?: number;
   url?: string;
   feedRequestLookupKey?: string;
   withLookupKeys?: boolean;
   slotWindow?: SlotWindow;
+  // Opts scheduling queries into bulk-recovery feeds (disabled with
+  // FAILED_REQUESTS while health is FAILING). Delivery queries never pass this,
+  // so recovering feeds stay excluded from article delivery.
+  includeRecoveryFeeds?: boolean;
 }): PipelineStage[] {
+  const disabledCodeMatch: FilterQuery<unknown> = includeRecoveryFeeds
+    ? {
+        $or: [
+          { disabledCode: { $exists: false } },
+          {
+            disabledCode: UserFeedDisabledCode.FailedRequests,
+            healthStatus: UserFeedHealthStatus.Failing,
+          },
+        ],
+      }
+    : {
+        disabledCode: {
+          $exists: false,
+        },
+      };
+
   const query: FilterQuery<unknown> = {
     ...(url ? { url } : {}),
-    disabledCode: {
-      $exists: false,
-    },
+    ...disabledCodeMatch,
     ...(feedRequestLookupKey
       ? {
           feedRequestLookupKey,

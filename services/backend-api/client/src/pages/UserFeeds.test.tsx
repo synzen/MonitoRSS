@@ -17,6 +17,7 @@ const {
   mockCategories,
   allFeeds,
   mockCreateUserFeed,
+  mockRetryFailedFeeds,
   mockUseUserFeedsReturn,
   curatedFeedsMockImpl,
   mockUnconfiguredFeedsReturn,
@@ -63,6 +64,7 @@ const {
   );
 
   const createUserFeedMock = vi.fn();
+  const retryFailedFeedsMock = vi.fn();
   const useUserFeedsReturnMock = vi.fn();
   const unconfiguredFeedsReturnMock = vi.fn();
   const useOwnedPersonalFeedsReturnMock = vi.fn();
@@ -122,6 +124,7 @@ const {
     mockCategories: categoriesFixture,
     allFeeds: feedsFixture,
     mockCreateUserFeed: createUserFeedMock,
+    mockRetryFailedFeeds: retryFailedFeedsMock,
     mockUseUserFeedsReturn: useUserFeedsReturnMock,
     curatedFeedsMockImpl: curatedFeedsImplFn,
     mockUnconfiguredFeedsReturn: unconfiguredFeedsReturnMock,
@@ -253,10 +256,11 @@ vi.mock("../features/feed", async () => {
       ) : null,
     CloneUserFeedDialog: ({ trigger }: { trigger: React.ReactNode }) => trigger,
     FeedManagementInvitesDialog: ({ trigger }: { trigger: React.ReactNode }) => trigger,
-    useUserFeeds: () => mockUseUserFeedsReturn(),
+    useUserFeeds: (...args: unknown[]) => mockUseUserFeedsReturn(...args),
     useDeleteUserFeeds: () => ({ mutateAsync: vi.fn() }),
     useDisableUserFeeds: () => ({ mutateAsync: vi.fn() }),
     useEnableUserFeeds: () => ({ mutateAsync: vi.fn() }),
+    useRetryFailedFeeds: () => ({ mutateAsync: mockRetryFailedFeeds }),
     useUserFeedManagementInvitesCount: () => ({ data: { total: 0 } }),
     useCreateUserFeed: () => ({ mutateAsync: mockCreateUserFeed }),
     useCuratedFeeds: curatedFeedsMockImpl,
@@ -1522,4 +1526,41 @@ describe("UserFeeds - scope-aware feed limit", () => {
     const modal = screen.getByRole("dialog");
     expect(within(modal).getByTestId("browse-modal-at-limit")).toHaveTextContent("true");
   });
+
+  it("shows bulk retry as a contextual failed-feed alert", async () => {
+    mockUseUserFeedsReturn.mockImplementation((options?: { filters?: { disabledCodes?: unknown[] } }) => {
+      if (options?.filters?.disabledCodes || options?.filters?.computedStatuses) {
+        return {
+          data: { results: [], total: 3, feedsWithoutConnections: 0 },
+        };
+      }
+
+      return {
+        data: { results: [{ id: "workspace-feed" }], total: 1, feedsWithoutConnections: 0 },
+      };
+    });
+
+    const { user } = renderWorkspaceScope(70);
+
+    expect(screen.getByText("3 feeds require your attention!")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole("status", { hidden: true })
+          .map((status) => status.textContent)
+          .filter(Boolean),
+      ).toContain("3 failed feeds require your attention. Retry all 3 failed feeds is available."),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Retry all 3 failed feeds" }));
+
+    const dialog = screen.getByRole("alertdialog");
+    expect(within(dialog).getByText("Retry 3 failed feeds?")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        "Requests will run in the background. Each of the 3 feeds remain disabled until its request succeeds.",
+      ),
+    ).toBeInTheDocument();
+  });
+
 });

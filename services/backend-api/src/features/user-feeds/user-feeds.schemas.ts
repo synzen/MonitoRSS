@@ -93,6 +93,14 @@ export const UpdateUserFeedsBodySchema = Type.Object(
 );
 export type UpdateUserFeedsBody = Static<typeof UpdateUserFeedsBodySchema>;
 
+export const RetryFailedFeedsBodySchema = Type.Object(
+  {
+    workspaceId: Type.String({ minLength: 1 }),
+  },
+  { additionalProperties: false },
+);
+export type RetryFailedFeedsBody = Static<typeof RetryFailedFeedsBodySchema>;
+
 export const SUPPORTED_DATE_LOCALES = [
   "af",
   "am",

@@ -1,16 +1,34 @@
 import { Alert, HStack } from "@chakra-ui/react";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { CloseButton } from "@/components/ui/close-button";
 
 interface Props {
   status: "success" | "error" | "info";
   title?: ReactNode;
   description?: ReactNode;
+  focusOnMount?: boolean;
   onClosed?: () => void;
 }
 
-export const DismissableAlert = ({ status, description, title, onClosed }: Props) => {
+export const DismissableAlert = ({
+  status,
+  description,
+  title,
+  focusOnMount,
+  onClosed,
+}: Props) => {
   const [isOpen, setIsOpen] = useState(true);
+  const alertRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!focusOnMount || !isOpen) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => alertRef.current?.focus());
+
+    return () => cancelAnimationFrame(frame);
+  }, [focusOnMount, isOpen]);
 
   const onClose = () => {
     setIsOpen(false);
@@ -19,10 +37,12 @@ export const DismissableAlert = ({ status, description, title, onClosed }: Props
 
   return (
     <Alert.Root
+      ref={alertRef}
       role="alert"
       status={status}
       hidden={!isOpen}
       alignItems={description ? "flex-start" : "center"}
+      tabIndex={focusOnMount ? -1 : undefined}
     >
       <Alert.Indicator />
       <HStack

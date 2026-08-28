@@ -15,6 +15,7 @@ import {
   getUserFeedHandler,
   getUserFeedsHandler,
   manualRequestHandler,
+  retryFailedFeedsHandler,
   validateFeedUrlHandler,
   previewFeedByUrlHandler,
   updateUserFeedsHandler,
@@ -35,6 +36,7 @@ import {
   GetFeedRequestsQuerySchema,
   GetUserFeedParamsSchema,
   GetUserFeedsQuerySchema,
+  RetryFailedFeedsBodySchema,
   ValidateUrlBodySchema,
   PreviewByUrlBodySchema,
   UpdateUserFeedsBodySchema,
@@ -52,6 +54,7 @@ import {
   type GetFeedRequestsQuery,
   type GetUserFeedParams,
   type GetUserFeedsQuery,
+  type RetryFailedFeedsBody,
   type ValidateUrlBody,
   type PreviewByUrlBody,
   type UpdateUserFeedsBody,
@@ -80,6 +83,11 @@ export async function userFeedsRoutes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: DeduplicateFeedUrlsBody }>("/deduplicate-feed-urls", {
     schema: { body: DeduplicateFeedUrlsBodySchema },
     handler: deduplicateFeedUrlsHandler,
+  });
+
+  app.post<{ Body: RetryFailedFeedsBody }>("/retry-failed", {
+    schema: { body: RetryFailedFeedsBodySchema },
+    handler: retryFailedFeedsHandler,
   });
 
   app.post<{ Body: ValidateUrlBody }>("/url-validation", {

@@ -24,3 +24,4 @@ export * from "./createUserFeedManualRequest";
 export * from "./getDeliveryPreview";
 export * from "./getCuratedFeeds";
 export * from "./getCuratedFeedPreview";
+export * from "./retryFailedFeeds";

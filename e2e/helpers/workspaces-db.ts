@@ -167,7 +167,12 @@ export async function seedWorkspaceFeedsInDb(input: {
   workspaceId: string;
   userId: ObjectId;
   discordUserId: string;
-  feeds: Array<{ title: string; url: string; disabledCode?: string }>;
+  feeds: Array<{
+    title: string;
+    url: string;
+    disabledCode?: string;
+    healthStatus?: string;
+  }>;
 }): Promise<void> {
   await withDb(async (db) => {
     const base = Date.now() - input.feeds.length * 60_000;
@@ -177,7 +182,7 @@ export async function seedWorkspaceFeedsInDb(input: {
         title: feed.title,
         url: feed.url,
         ...(feed.disabledCode ? { disabledCode: feed.disabledCode } : {}),
-        healthStatus: "OK",
+        healthStatus: feed.healthStatus ?? "OK",
         connections: { discordChannels: [] },
         user: { id: input.userId, discordUserId: input.discordUserId },
         workspaceId: new ObjectId(input.workspaceId),

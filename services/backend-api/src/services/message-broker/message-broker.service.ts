@@ -1,4 +1,5 @@
 import { MessageBrokerQueue } from "../../infra/rabbitmq";
+import { UrlFetchBatchSchema } from "@monitorss/contracts";
 
 export class MessageBrokerService {
   constructor(
@@ -24,11 +25,18 @@ export class MessageBrokerService {
       saveToObjectStorage?: boolean;
       lookupKey?: string;
       headers?: Record<string, string>;
+      recovery?: { startedAt: number };
     }>;
   }): Promise<void> {
+    const message = { ...data, timestamp: Date.now() };
+
+    // Producers validate against the shared contract before publishing
+    // (ADR-007): fail loud on producer-side misshape.
+    UrlFetchBatchSchema.parse(message);
+
     await this.publishMessage(
       MessageBrokerQueue.UrlFetchBatch,
-      { ...data, timestamp: Date.now() },
+      message,
       { expiration: data.rateSeconds * 1000 },
     );
   }

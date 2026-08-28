@@ -81,6 +81,7 @@ export interface IUserFeed {
   debug?: boolean;
   feedRequestLookupKey?: string;
   lastManualRequestAt?: Date;
+  recoveryStartedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -369,11 +370,16 @@ export interface UserFeedForPendingInvites {
 
 export interface ScheduledFeedUrl {
   url: string;
+  // Epoch ms of the earliest active bulk-recovery transition among the feeds
+  // sharing this URL, when any of them is in the recovery state.
+  recoveryStartedAt?: number;
 }
 
 export interface ScheduledFeedWithLookupKey {
   url: string;
   feedRequestLookupKey?: string;
+  // Epoch ms when this feed entered the bulk-recovery state, when it is in it.
+  recoveryStartedAt?: number;
   workspaceId?: string;
   users: Array<{
     externalCredentials?: Array<{
@@ -726,11 +732,27 @@ export interface IUserFeedRepository {
   iterateUrlsForRefreshRate(
     refreshRateSeconds: number,
     slotWindow: SlotWindow,
-  ): AsyncIterable<{ url: string }>;
+  ): AsyncIterable<ScheduledFeedUrl>;
   iterateFeedsWithLookupKeysForRefreshRate(
     refreshRateSeconds: number,
     slotWindow: SlotWindow,
   ): AsyncIterable<ScheduledFeedWithLookupKey>;
+
+  // Bulk-recovery methods. The recovery queue is the feed state itself: feeds
+  // disabled with FAILED_REQUESTS (terminal, health FAILED) are marked into the
+  // recovery state (health FAILING + recoveryStartedAt), which makes them
+  // eligible for scheduled recovery requests while staying disabled for
+  // delivery.
+  hasActiveBulkRetry(workspaceId: string): Promise<boolean>;
+  markFeedsForBulkRetry(workspaceId: string): Promise<number>;
+  clearDisabledCodeForRecoveredFeeds(filter: {
+    url?: string;
+    lookupKey?: string;
+  }): Promise<number>;
+  revertRecoveryFeedsToFailed(filter: {
+    url?: string;
+    lookupKey?: string;
+  }): Promise<number>;
 
   // Message broker events methods
   updateHealthStatusByFilter(

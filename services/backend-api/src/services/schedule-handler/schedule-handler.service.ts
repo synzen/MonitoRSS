@@ -35,6 +35,11 @@ interface UrlBatchItem {
   saveToObjectStorage?: boolean;
   lookupKey?: string;
   headers?: Record<string, string>;
+  // Set when the URL is being fetched as part of a bulk-recovery cycle for
+  // feeds disabled with FAILED_REQUESTS. Travels through the url.fetch-batch
+  // contract so the request worker can treat the attempt as a fresh recovery
+  // verification instead of the continuation of the terminal failure history.
+  recovery?: { startedAt: number };
 }
 
 export class ScheduleHandlerService {
@@ -99,6 +104,7 @@ export class ScheduleHandlerService {
 
     for await (const {
       url,
+      recoveryStartedAt,
     } of this.deps.userFeedRepository.iterateUrlsForRefreshRate(
       refreshRateSeconds,
       slotWindow,
@@ -116,6 +122,7 @@ export class ScheduleHandlerService {
       urlBatch.push({
         url,
         saveToObjectStorage: urlsToDebug.has(url),
+        ...(recoveryStartedAt ? { recovery: { startedAt: recoveryStartedAt } } : {}),
       });
 
       if (urlBatch.length === 25) {
@@ -130,6 +137,7 @@ export class ScheduleHandlerService {
       workspaceId,
       users,
       workspaces,
+      recoveryStartedAt,
     } of this.deps.userFeedRepository.iterateFeedsWithLookupKeysForRefreshRate(
       refreshRateSeconds,
       slotWindow,
@@ -158,6 +166,7 @@ export class ScheduleHandlerService {
         saveToObjectStorage: urlsToDebug.has(url),
         lookupKey: lookupDetails?.key,
         headers: lookupDetails?.headers,
+        ...(recoveryStartedAt ? { recovery: { startedAt: recoveryStartedAt } } : {}),
       });
 
       if (urlBatch.length === 25) {

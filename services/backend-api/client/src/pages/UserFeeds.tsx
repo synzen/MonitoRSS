@@ -12,6 +12,7 @@ import {
   Skeleton,
   SimpleGrid,
   Icon,
+  VisuallyHidden,
 } from "@chakra-ui/react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -38,6 +39,7 @@ import {
   useUserFeedManagementInvitesCount,
   useUserFeeds,
   useFeedScope,
+  useRetryFailedFeeds,
 } from "../features/feed";
 import type { FeedActionState } from "../features/feed";
 import type { CuratedFeed } from "../features/feed/types";
@@ -124,6 +126,20 @@ const UserFeedsInner: React.FC = () => {
   const { data: discordUserMe } = useDiscordUserMe();
   const { mutateAsync: createUserFeed } = useCreateUserFeed();
   const { mutateAsync: deleteUserFeed } = useDeleteUserFeed();
+  const { data: retryFailedFeedsResults } = useUserFeeds(
+    {
+      limit: 1,
+      offset: 0,
+      filters: {
+        disabledCodes: [UserFeedDisabledCode.FailedRequests],
+        computedStatuses: [UserFeedComputedStatus.RequiresAttention],
+      },
+    },
+    {
+      enabled: !!workspaceId && !workspaceDormant,
+    },
+  );
+  const { mutateAsync: retryFailedFeeds } = useRetryFailedFeeds();
   const {
     data: curatedData,
     getCategoryPreviewText,
@@ -154,11 +170,14 @@ const UserFeedsInner: React.FC = () => {
   >();
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [pendingBulkAction, setPendingBulkAction] = useState<BulkAction | null>(null);
+  const [isRetryFailedFeedsDialogOpen, setIsRetryFailedFeedsDialogOpen] = useState(false);
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
   const [copySettingsOpen, setCopySettingsOpen] = useState(false);
   const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
+  const [failedFeedsAnnouncement, setFailedFeedsAnnouncement] = useState("");
   const limitAlertShownRef = useRef(false);
   const addFeedParamConsumed = useRef(false);
+  const previousFailedFeedsAnnouncementRef = useRef<string | undefined>(undefined);
 
   const totalFeedCount = userFeedsResults?.total;
   const remainingWorkspaceFeedCapacity =
@@ -187,6 +206,22 @@ const UserFeedsInner: React.FC = () => {
     (feedsWithoutConnections > 0 && unconfiguredFeedsLoaded) || hasCompletedSetup;
   const navigatedAlertTitle = state?.alertTitle;
   const navigatedAlertDescription = state?.alertDescription;
+
+  useEffect(() => {
+    const failedFeedCount = retryFailedFeedsResults?.total ?? 0;
+    const announcementKey = `${workspaceId ?? "personal"}:${failedFeedCount}`;
+
+    if (previousFailedFeedsAnnouncementRef.current === announcementKey) {
+      return;
+    }
+
+    previousFailedFeedsAnnouncementRef.current = announcementKey;
+    setFailedFeedsAnnouncement(
+      failedFeedCount
+        ? `${failedFeedCount} failed feed${failedFeedCount === 1 ? "" : "s"} require your attention. Retry all ${failedFeedCount} failed feed${failedFeedCount === 1 ? "" : "s"} is available.`
+        : "",
+    );
+  }, [retryFailedFeedsResults?.total, workspaceId]);
 
   useEffect(() => {
     if (navigatedAlertTitle) {
@@ -600,6 +635,38 @@ const UserFeedsInner: React.FC = () => {
     }
   };
 
+  const onRetryFailedFeeds = async () => {
+    if (!workspaceId) {
+      return;
+    }
+
+    try {
+      await retryFailedFeeds(workspaceId);
+      createSuccessAlert({
+        title: "Failed feeds queued for retry.",
+        description: (
+          <>
+            Requests run in the background. Each feed remains disabled until its request succeeds.{" "}
+            <ChakraLink
+              as="button"
+              color="text.link"
+              onClick={() => setStatusFilters([UserFeedComputedStatus.Retrying])}
+            >
+              View pending retries.
+            </ChakraLink>
+          </>
+        ),
+        focusOnMount: true,
+      });
+    } catch (err) {
+      createErrorAlert({
+        title: "Failed to queue failed feeds for retry.",
+        description: (err as Error).message,
+      });
+      throw err;
+    }
+  };
+
   const totalFeedsRequiringAttention = userFeedsRequireAttentionResults?.total || 0;
   const totalManagementInvites = managementInvitesCount?.total || 0;
 
@@ -641,6 +708,9 @@ const UserFeedsInner: React.FC = () => {
   return (
     <>
       <Stack gap={4}>
+        <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
+          {failedFeedsAnnouncement}
+        </VisuallyHidden>
         {workspaceHeader}
         {showConvertedBanner && (
           <DismissableAlert
@@ -658,38 +728,72 @@ const UserFeedsInner: React.FC = () => {
           />
           <ReducedLimitAlert />
           {totalFeedsRequiringAttention !== undefined && totalFeedsRequiringAttention > 0 && (
-            <Alert.Root status="warning" mt={2}>
-              <Alert.Indicator />
-              <Box>
-                <Alert.Title>
-                  {totalFeedsRequiringAttention} feed
-                  {totalFeedsRequiringAttention > 1 ? "s" : ""} require
-                  {totalFeedsRequiringAttention > 1 ? "" : "s"} your attention!
-                </Alert.Title>
-                <Alert.Description>
-                  Article delivery may be fully or partially paused.{" "}
-                  <ChakraLink
-                    textAlign="left"
-                    as="button"
-                    color="text.link"
-                    onClick={onApplyRequiresAttentionFilters}
-                  >
-                    Click here to apply filters and see which ones they are.
-                  </ChakraLink>
-                  {hasFailedFeedAlertsDisabled && (
-                    <>
-                      {" "}
-                      You can also{" "}
-                      <ChakraLink asChild color="text.link">
-                        <Link to={pages.userSettings()}>get notified when failures occur</Link>
-                      </ChakraLink>
-                      .
-                    </>
-                  )}
-                </Alert.Description>
-              </Box>
+            <Alert.Root
+              status="warning"
+              mt={2}
+              justifyContent="space-between"
+              alignItems="center"
+              flexWrap="wrap"
+              gap={4}
+            >
+              <HStack alignItems="flex-start" flex={1} minW={{ base: "100%", md: 0 }}>
+                <Alert.Indicator />
+                <Box flex={1}>
+                  <Alert.Title>
+                    {totalFeedsRequiringAttention} feed
+                    {totalFeedsRequiringAttention > 1 ? "s" : ""} require
+                    {totalFeedsRequiringAttention > 1 ? "" : "s"} your attention!
+                  </Alert.Title>
+                  <Alert.Description>
+                    Article delivery may be fully or partially paused.{" "}
+                    <ChakraLink
+                      textAlign="left"
+                      as="button"
+                      color="text.link"
+                      onClick={onApplyRequiresAttentionFilters}
+                    >
+                      Click here to apply filters and see which ones they are.
+                    </ChakraLink>
+                    {hasFailedFeedAlertsDisabled && (
+                      <>
+                        {" "}
+                        You can also{" "}
+                        <ChakraLink asChild color="text.link">
+                          <Link to={pages.userSettings()}>get notified when failures occur</Link>
+                        </ChakraLink>
+                        .
+                      </>
+                    )}
+                  </Alert.Description>
+                </Box>
+              </HStack>
+              {workspaceId && retryFailedFeedsResults?.total ? (
+                <PrimaryActionButton
+                  width={{ base: "100%", md: "auto" }}
+                  onClick={() => setIsRetryFailedFeedsDialogOpen(true)}
+                >
+                  Retry all {retryFailedFeedsResults.total} failed feed
+                  {retryFailedFeedsResults.total === 1 ? "" : "s"}
+                </PrimaryActionButton>
+              ) : null}
             </Alert.Root>
           )}
+          {workspaceId && retryFailedFeedsResults?.total ? (
+            <ConfirmModal
+              open={isRetryFailedFeedsDialogOpen}
+              onOpenChange={setIsRetryFailedFeedsDialogOpen}
+              title={`Retry ${retryFailedFeedsResults.total} failed feed${
+                retryFailedFeedsResults.total === 1 ? "" : "s"
+              }?`}
+              description={`Requests will run in the background. Each of the ${retryFailedFeedsResults.total} feed${
+                retryFailedFeedsResults.total === 1 ? " remains" : "s remain"
+              } disabled until its request succeeds.`}
+              onConfirm={onRetryFailedFeeds}
+              okText="Retry all failed feeds"
+              allowEscape
+              colorScheme="blue"
+            />
+          ) : null}
           <Alert.Root
             hidden={!totalManagementInvites}
             mt={2}
@@ -698,13 +802,15 @@ const UserFeedsInner: React.FC = () => {
             flexWrap="wrap"
             gap={4}
           >
-            <Alert.Indicator />
-            <Alert.Title flex={1}>
-              You have {totalManagementInvites} pending feed management invites
-            </Alert.Title>
+            <HStack alignItems="flex-start" flex={1} minW={{ base: "100%", md: 0 }}>
+              <Alert.Indicator />
+              <Alert.Title flex={1}>
+                You have {totalManagementInvites} pending feed management invites
+              </Alert.Title>
+            </HStack>
             <FeedManagementInvitesDialog
               trigger={
-                <Button variant="outline">
+                <Button width={{ base: "100%", md: "auto" }} variant="outline">
                   <span>View pending management invites</span>
                 </Button>
               }

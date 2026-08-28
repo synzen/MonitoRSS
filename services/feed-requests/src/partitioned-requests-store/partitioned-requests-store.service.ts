@@ -149,16 +149,20 @@ export default class PartitionedRequestsStoreService {
     }
   }
 
-  async getLatestNextRetryDate(lookupKey: string): Promise<Date | null> {
+  async getLatestNextRetryDate(
+    lookupKey: string,
+    since?: Date,
+  ): Promise<Date | null> {
     const em = this.orm.em.getConnection();
 
     const [result] = await em.execute(
       `SELECT next_retry_date FROM request_partitioned
        WHERE lookup_key = ?
        AND next_retry_date IS NOT NULL
+       ${since ? 'AND created_at >= ?' : ''}
        ORDER BY created_at DESC
        LIMIT 1`,
-      [lookupKey],
+      since ? [lookupKey, since.toISOString()] : [lookupKey],
     );
 
     if (!result) {

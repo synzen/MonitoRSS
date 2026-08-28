@@ -80,6 +80,29 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
   });
 
   describe("handleUrlFetchCompletedEvent", () => {
+    it("restores a recovery feed without delivering the recovery fetch articles", async () => {
+      const ctx = harness.createContext({
+        userFeedRepository: { countWithHealthStatusFilterResult: 1 },
+      });
+
+      await ctx.service.handleUrlFetchCompletedEvent({
+        data: {
+          url: "https://example.com/feed.xml",
+          rateSeconds: 600,
+          recovery: { startedAt: Date.now() },
+        },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.clearDisabledCodeForRecoveredFeeds.mock.callCount(),
+        1,
+      );
+      assert.strictEqual(
+        ctx.userFeedRepository.iterateFeedsForDelivery.mock.callCount(),
+        0,
+      );
+    });
+
     it("should update health status to Ok when feeds are not Ok", async () => {
       const ctx = harness.createContext({
         userFeedRepository: {

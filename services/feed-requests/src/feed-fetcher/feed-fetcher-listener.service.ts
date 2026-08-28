@@ -19,17 +19,16 @@ import calculateResponseFreshnessLifetime from '../shared/utils/calculate-respon
 import calculateCurrentResponseAge from '../shared/utils/calculate-current-response-age';
 import { CacheStorageService } from '../cache-storage/cache-storage.service';
 import contextLogger, { logContextStorage } from '../shared/utils/log-context';
+import {
+  UrlFetchBatchSchema,
+  type UrlFetchBatchPayload,
+  UrlFetchCompletedSchema,
+  type UrlFetchCompletedPayload,
+  MessageBrokerQueue,
+} from '@monitorss/contracts';
 
-interface BatchRequestMessage {
-  timestamp: number;
-  data: Array<{
-    lookupKey?: string;
-    url: string;
-    saveToObjectStorage?: boolean;
-    headers?: Record<string, string>;
-  }>;
-  rateSeconds: number;
-}
+type BatchRequestMessage = UrlFetchBatchPayload;
+type BatchRequestItem = UrlFetchBatchPayload['data'][number];
 
 @Injectable()
 export class FeedFetcherListenerService {
@@ -55,7 +54,7 @@ export class FeedFetcherListenerService {
   }
 
   calculateCurrentlyProcessingCacheKeyForMessage = (
-    event: BatchRequestMessage['data'][number],
+    event: BatchRequestItem,
     rateSeconds: number,
   ) => {
     const lookupKey = event.lookupKey || event.url;
@@ -88,9 +87,26 @@ export class FeedFetcherListenerService {
   private async onBrokerFetchRequestBatchHandler(
     batchRequest: BatchRequestMessage,
   ): Promise<void> {
-    const rateSeconds = batchRequest?.rateSeconds;
+    // Consumers validate against the shared contract (ADR-007): log + skip on
+    // validation failure instead of processing a misshapen message.
+    const parsedBatch = UrlFetchBatchSchema.safeParse(batchRequest);
 
-    if (!batchRequest.data || rateSeconds == null) {
+    if (!parsedBatch.success) {
+      logger.error(
+        `Received fetch batch request message failed contract validation, skipping`,
+        {
+          issues: parsedBatch.error.issues,
+          event: batchRequest,
+        },
+      );
+
+      return;
+    }
+
+    const validatedBatch: BatchRequestMessage = parsedBatch.data;
+    const rateSeconds = validatedBatch?.rateSeconds;
+
+    if (!validatedBatch.data || rateSeconds == null) {
       logger.error(
         `Received fetch batch request message has no urls and/or rateSeconds, skipping`,
         {
@@ -101,12 +117,7 @@ export class FeedFetcherListenerService {
       return;
     }
 
-    const fetchCompletedToEmit: Array<{
-      lookupKey?: string;
-      url: string;
-      rateSeconds: number;
-      debug?: boolean;
-    }> = [];
+    const fetchCompletedToEmit: UrlFetchCompletedPayload['data'][] = [];
     const requestInsertsToFlush: PartitionedRequestInsert[] = [];
 
     logger.debug(`Fetch batch request message received for batch urls`, {
@@ -115,8 +126,9 @@ export class FeedFetcherListenerService {
 
     try {
       const results = await Promise.allSettled(
-        batchRequest.data.map(async (message) => {
-          const { url, lookupKey, saveToObjectStorage, headers } = message;
+        validatedBatch.data.map(async (message) => {
+          const { url, lookupKey, saveToObjectStorage, headers, recovery } =
+            message;
           const logPrefix = saveToObjectStorage
             ? `DEBUG ${lookupKey || url}:`
             : '';
@@ -156,11 +168,14 @@ export class FeedFetcherListenerService {
             }
 
             try {
-              const recentlyProcessed =
-                await this.partitionedRequestsStoreService.wasRequestedInPastSeconds(
-                  lookupKey || url,
-                  Math.round(rateSeconds * 0.5),
-                );
+              // Recovery attempts must perform a fresh request even if the URL
+              // was recently processed by a prior (terminal-failure) cycle.
+              const recentlyProcessed = recovery
+                ? false
+                : await this.partitionedRequestsStoreService.wasRequestedInPastSeconds(
+                    lookupKey || url,
+                    Math.round(rateSeconds * 0.5),
+                  );
 
               if (recentlyProcessed) {
                 contextLogger.info(
@@ -174,6 +189,7 @@ export class FeedFetcherListenerService {
                   url,
                   rateSeconds,
                   debug: saveToObjectStorage,
+                  recovery,
                 });
 
                 return;
@@ -202,6 +218,7 @@ export class FeedFetcherListenerService {
                 rateSeconds,
                 saveToObjectStorage,
                 headers,
+                recovery,
               });
 
               if (result) {
@@ -218,6 +235,7 @@ export class FeedFetcherListenerService {
                   url,
                   rateSeconds,
                   debug: saveToObjectStorage,
+                  recovery,
                 });
               }
             } catch (err) {
@@ -295,13 +313,9 @@ export class FeedFetcherListenerService {
     }
   }
 
-  private async handleBrokerFetchRequest(data: {
-    lookupKey?: string;
-    url: string;
-    rateSeconds: number;
-    saveToObjectStorage?: boolean;
-    headers?: Record<string, string>;
-  }): Promise<{
+  private async handleBrokerFetchRequest(
+    data: BatchRequestItem & Pick<BatchRequestMessage, 'rateSeconds'>,
+  ): Promise<{
     emitFetchCompleted: boolean;
     request?: PartitionedRequestInsert;
   }> {
@@ -313,6 +327,7 @@ export class FeedFetcherListenerService {
       await this.shouldSkipAfterPreviousFailedAttempt({
         lookupKey,
         url,
+        recoveryStartedAt: data.recovery?.startedAt,
       });
 
     if (skip) {
@@ -333,7 +348,10 @@ export class FeedFetcherListenerService {
       lookupKey: lookupKey || url,
     });
 
-    if (isCacheStillActive) {
+    // Recovery attempts ignore a still-fresh cached response: the point of the
+    // cycle is to verify the URL with a fresh request, not to trust the cache
+    // built before the outage.
+    if (isCacheStillActive && !data.recovery) {
       const cacheSkipMessage =
         `Request with lookup key ${lookupKey || url} still has active` +
         ` cache-control, skipping fetch but emitting fetch completed`;
@@ -406,17 +424,39 @@ export class FeedFetcherListenerService {
   async shouldSkipAfterPreviousFailedAttempt({
     lookupKey,
     url,
+    recoveryStartedAt,
   }: {
     lookupKey?: string;
     url: string;
+    // Epoch ms of the active bulk-recovery cycle. When set, failure history
+    // that predates the recovery cycle (the terminal failure count and stale
+    // backoff dates that disabled the feed) is ignored so the recovery attempt
+    // runs as a fresh instance of the bounded retry cycle.
+    recoveryStartedAt?: number;
   }): Promise<{
     skip: boolean;
     failedAttemptsCount: number;
     nextRetryDate?: Date | null;
   }> {
+    const key = lookupKey || url;
+
+    const latestOkRequest =
+      await this.partitionedRequestsStoreService.getLatestRequestWithOkStatus(
+        key,
+        {},
+      );
+    const shouldStartNewRecoveryCycle =
+      recoveryStartedAt !== undefined &&
+      (!latestOkRequest ||
+        latestOkRequest.createdAt.getTime() < recoveryStartedAt);
+    const failureCycleStart = shouldStartNewRecoveryCycle
+      ? new Date(recoveryStartedAt)
+      : latestOkRequest?.createdAt ?? null;
+
     const failedAttempts = await this.countFailedRequests({
-      lookupKey: lookupKey || url,
+      lookupKey: key,
       url,
+      since: failureCycleStart,
     });
 
     if (failedAttempts === 0) {
@@ -437,7 +477,10 @@ export class FeedFetcherListenerService {
 
     const latestNextRetryDate =
       await this.partitionedRequestsStoreService.getLatestNextRetryDate(
-        lookupKey || url,
+        key,
+        recoveryStartedAt !== undefined
+          ? failureCycleStart ?? undefined
+          : undefined,
       );
 
     if (!latestNextRetryDate) {
@@ -545,12 +588,8 @@ export class FeedFetcherListenerService {
     url,
     rateSeconds,
     debug,
-  }: {
-    lookupKey?: string;
-    url: string;
-    rateSeconds: number;
-    debug?: boolean;
-  }) {
+    recovery,
+  }: UrlFetchCompletedPayload['data']) {
     try {
       if (debug) {
         contextLogger.info(
@@ -563,21 +602,15 @@ export class FeedFetcherListenerService {
         );
       }
 
-      this.amqpConnection.publish<{
-        data: {
-          lookupKey?: string;
-          url: string;
-          rateSeconds: number;
-          debug?: boolean;
-        };
-      }>('', 'url.fetch.completed', {
-        data: {
-          lookupKey,
-          url,
-          rateSeconds,
-          debug,
-        },
-      });
+      const event = {
+        data: { lookupKey, url, rateSeconds, debug, recovery },
+      };
+      UrlFetchCompletedSchema.parse(event);
+      this.amqpConnection.publish(
+        '',
+        MessageBrokerQueue.UrlFetchCompleted,
+        event,
+      );
     } catch (err) {
       contextLogger.error(
         `Failed to publish fetch completed event: ${lookupKey}`,
@@ -640,19 +673,27 @@ export class FeedFetcherListenerService {
   async countFailedRequests({
     lookupKey,
     url,
+    since,
   }: {
     lookupKey?: string;
     url: string;
+    // When provided, counts only failures created at/after this instant;
+    // otherwise failures since the latest OK request are counted.
+    since?: Date | null;
   }): Promise<number> {
-    const latestOkRequest =
-      await this.partitionedRequestsStoreService.getLatestRequestWithOkStatus(
-        lookupKey || url,
-        {},
-      );
+    const effectiveSince =
+      since !== undefined
+        ? since ?? undefined
+        : (
+            await this.partitionedRequestsStoreService.getLatestRequestWithOkStatus(
+              lookupKey || url,
+              {},
+            )
+          )?.createdAt;
 
     return this.partitionedRequestsStoreService.countFailedRequests(
       lookupKey || url,
-      latestOkRequest?.createdAt,
+      effectiveSince,
     );
   }
 
