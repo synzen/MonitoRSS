@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { HStack, Input, RadioCard, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import { Box, HStack, Input, RadioCard, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import {
   WORKSPACE_CAPACITY_QUICK_PICKS,
   WORKSPACE_MAX_FEEDS,
@@ -21,11 +21,15 @@ export const CapacityPicker = ({
   const labelId = useId();
   const helperId = useId();
   const exactInputId = useId();
-  const selectedValue = WORKSPACE_CAPACITY_QUICK_PICKS.includes(value) ? String(value) : null;
+  const selectedValue = WORKSPACE_CAPACITY_QUICK_PICKS.includes(value) ? String(value) : "custom";
+  const [customOpen, setCustomOpen] = useState(selectedValue === "custom");
 
   useEffect(() => {
     setDraft(String(value));
   }, [value]);
+
+  const isCustomVisible = selectedValue === "custom" || customOpen;
+  const radioValue = isCustomVisible ? "custom" : selectedValue;
 
   const commit = () => {
     const parsed = Number(draft);
@@ -49,7 +53,7 @@ export const CapacityPicker = ({
       </Text>
       <RadioCard.Root
         name={labelId}
-        value={selectedValue}
+        value={radioValue}
         variant="surface"
         colorPalette="brand"
         size="sm"
@@ -57,8 +61,14 @@ export const CapacityPicker = ({
         onValueChange={(details) => {
           if (!details.value) return;
 
+          if (details.value === "custom") {
+            setCustomOpen(true);
+            return;
+          }
+
           const feeds = Number(details.value);
           setMessage(undefined);
+          setCustomOpen(false);
           setDraft(String(feeds));
           onChange(feeds);
         }}
@@ -72,56 +82,79 @@ export const CapacityPicker = ({
                   <HStack gap={2} flex="1">
                     <RadioCard.ItemIndicator />
                     <RadioCard.ItemText fontWeight="medium">
-                    {formatWorkspaceFeedCount(feeds)}
+                      {formatWorkspaceFeedCount(feeds)}
                     </RadioCard.ItemText>
                   </HStack>
                 </RadioCard.ItemControl>
               </RadioCard.Item>
             );
           })}
+          <RadioCard.Item value="custom">
+            <RadioCard.ItemHiddenInput />
+            <RadioCard.ItemControl>
+              <HStack gap={2} flex="1">
+                <RadioCard.ItemIndicator />
+                <RadioCard.ItemText fontWeight="medium">Custom</RadioCard.ItemText>
+              </HStack>
+            </RadioCard.ItemControl>
+          </RadioCard.Item>
         </SimpleGrid>
       </RadioCard.Root>
-      <Stack gap={1} pt={1}>
-        <label htmlFor={exactInputId}>
-          <Text as="span" fontSize="sm" color="fg.muted">
-            Or enter an exact feed capacity
-          </Text>
-        </label>
-        <Input
-          id={exactInputId}
-          size="sm"
-          type="number"
-          min={WORKSPACE_MIN_FEEDS}
-          max={WORKSPACE_MAX_FEEDS}
-          step={1}
-          appearance="textfield"
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={commit}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.currentTarget.blur();
-            }
+      {isCustomVisible && (
+        <Box
+          bg="bg.subtle"
+          borderWidth="1px"
+          borderColor="border.emphasized"
+          borderLeftWidth="2px"
+          borderLeftColor="brandSolid"
+          rounded="md"
+          p={3}
+        >
+          <Stack gap={1}>
+            <label htmlFor={exactInputId}>
+              <Text as="span" fontSize="sm" color="fg.muted">
+                Or enter an exact feed capacity
+              </Text>
+            </label>
+            <Input
+              id={exactInputId}
+              size="sm"
+              type="number"
+              min={WORKSPACE_MIN_FEEDS}
+              max={WORKSPACE_MAX_FEEDS}
+              step={1}
+              appearance="textfield"
+              value={draft}
+              onChange={(event) => {
+                setDraft(event.target.value);
+              }}
+              onBlur={commit}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.currentTarget.blur();
+                }
 
-            if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-              event.preventDefault();
-            }
-          }}
-          aria-valuetext={formatWorkspaceFeedCount(value)}
-          aria-describedby={message ? undefined : helperId}
-          aria-errormessage={message ? helperId : undefined}
-          aria-invalid={!!message}
-          css={{
-            "&::-webkit-inner-spin-button, &::-webkit-outer-spin-button": {
-              WebkitAppearance: "none",
-              margin: 0,
-            },
-          }}
-        />
-      </Stack>
-      <Text id={helperId} color={message ? "text.error" : "fg.muted"} fontSize="sm">
-        {message ?? rangeMessage}
-      </Text>
+                if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                  event.preventDefault();
+                }
+              }}
+              aria-valuetext={formatWorkspaceFeedCount(value)}
+              aria-describedby={message ? undefined : helperId}
+              aria-errormessage={message ? helperId : undefined}
+              aria-invalid={!!message}
+              css={{
+                "&::-webkit-inner-spin-button, &::-webkit-outer-spin-button": {
+                  WebkitAppearance: "none",
+                  margin: 0,
+                },
+              }}
+            />
+            <Text id={helperId} color={message ? "text.error" : "fg.muted"} fontSize="sm">
+              {message ?? rangeMessage}
+            </Text>
+          </Stack>
+        </Box>
+      )}
     </Stack>
   );
 };

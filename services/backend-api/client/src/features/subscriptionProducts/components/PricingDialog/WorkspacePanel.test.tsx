@@ -43,7 +43,8 @@ describe("WorkspacePanel price announcer", () => {
   it("announces the new price when capacity changes", async () => {
     const { container } = renderPanel();
 
-    const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
+    await userEvent.click(screen.getByRole("radio", { name: "Custom" }));
+    const input = screen.getByRole("spinbutton", { name: /or enter an exact/i });
     fireEvent.change(input, { target: { value: "1100" } });
     fireEvent.blur(input);
 
@@ -52,7 +53,8 @@ describe("WorkspacePanel price announcer", () => {
 
   it("does not announce the price when only the billing interval changes", async () => {
     const { container, rerender } = renderPanel();
-    const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
+    await userEvent.click(screen.getByRole("radio", { name: "Custom" }));
+    const input = screen.getByRole("spinbutton", { name: /or enter an exact/i });
     fireEvent.change(input, { target: { value: "1100" } });
     fireEvent.blur(input);
     await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$525 per month."));
@@ -110,8 +112,8 @@ describe("WorkspacePanel price announcer", () => {
     // derived recurring price follows: 1000 + 230 * 50 = 12,500 minor units.
     await userEvent.click(screen.getByRole("radio", { name: "300 feeds" }));
 
-    const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
-    await waitFor(() => expect(input).toHaveAttribute("aria-valuetext", "300 feeds"));
+    await waitFor(() => expect(screen.getByRole("radio", { name: "300 feeds" })).toBeChecked());
+    expect(screen.queryByRole("spinbutton", { name: /or enter an exact/i })).not.toBeInTheDocument();
     await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$125 per month."));
   });
 
@@ -134,7 +136,8 @@ describe("WorkspacePanel price announcer", () => {
   it("reports a localized selected capacity", async () => {
     const { container } = renderPanel();
 
-    const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
+    await userEvent.click(screen.getByRole("radio", { name: "Custom" }));
+    const input = screen.getByRole("spinbutton", { name: /or enter an exact/i });
     fireEvent.change(input, { target: { value: "1100" } });
     fireEvent.blur(input);
 
@@ -146,6 +149,7 @@ describe("WorkspacePanel price announcer", () => {
     renderPanel();
 
     expect(screen.getByRole("radio", { name: "1,000 feeds" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: "Custom" }));
     const input = screen.getByRole("spinbutton", { name: /or enter an exact feed capacity/i });
     fireEvent.change(input, { target: { value: "2100" } });
     fireEvent.blur(input);

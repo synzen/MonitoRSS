@@ -512,16 +512,34 @@ export class SupportersService {
     const workspace =
       await this.deps.workspaceRepository.findById(workspaceId);
     const subscription = workspace?.paddleCustomer?.subscription;
+    const grant = workspace?.pendingCapacityGrant;
+
+    const isGrantLive =
+      grant != null && grant.expiresAt.getTime() > Date.now();
 
     if (
       subscription &&
       SupportersService.subscriptionGrantsBenefits(subscription)
     ) {
+      const effectiveMaxFeeds = isGrantLive
+        ? Math.max(subscription.benefits.maxUserFeeds, grant.feeds)
+        : subscription.benefits.maxUserFeeds;
+
       return {
-        maxFeeds: subscription.benefits.maxUserFeeds,
+        maxFeeds: effectiveMaxFeeds,
         maxDailyArticles: subscription.benefits.dailyArticleLimit,
         refreshRateSeconds: subscription.benefits.refreshRateSeconds,
         allowWebhooks: subscription.benefits.allowWebhooks,
+        dormant: false,
+      };
+    }
+
+    if (isGrantLive) {
+      return {
+        maxFeeds: grant.feeds,
+        maxDailyArticles: this.maxDailyArticlesDefault,
+        refreshRateSeconds: this.defaultRefreshRateSeconds,
+        allowWebhooks: true,
         dormant: false,
       };
     }

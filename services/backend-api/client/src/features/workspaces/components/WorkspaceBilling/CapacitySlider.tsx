@@ -72,12 +72,14 @@ export const CapacityCompareColumn = ({
   price,
   interval,
   emphasized,
+  showPrice = true,
 }: {
   heading: string;
   feeds: number;
   price?: string;
   interval?: "month" | "year";
   emphasized?: boolean;
+  showPrice?: boolean;
 }) => (
   <Box
     flex="1"
@@ -97,18 +99,18 @@ export const CapacityCompareColumn = ({
       <Text fontSize="2xl" fontWeight="bold" lineHeight="1.1">
         {formatWorkspaceFeedCount(feeds)}
       </Text>
-      {interval &&
+      {showPrice &&
+        interval &&
         (price ? (
           <Text color="fg.muted">
             {price} / {interval}
           </Text>
         ) : (
-          // The emphasized "After" column owns the live recurring price; show a
-          // skeleton the height of the price line while it loads so the row holds
-          // its shape without a spinner's "working" connotation or layout shift
-          // (the container's aria-busy covers assistive tech). The non-emphasized
-          // "Now" column passes no interval, so it never renders this.
-          emphasized && <Skeleton height="6" width="32" aria-hidden />
+          // Both columns show a skeleton the height of the price line while it
+          // loads so the row holds its shape without a spinner's "working"
+          // connotation or layout shift (the container's aria-busy covers
+          // assistive tech).
+          <Skeleton height="6" width="32" aria-hidden />
         ))}
     </Stack>
   </Box>

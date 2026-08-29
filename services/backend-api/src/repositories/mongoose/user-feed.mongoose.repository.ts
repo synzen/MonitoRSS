@@ -1062,6 +1062,33 @@ export class UserFeedMongooseRepository
     });
   }
 
+  async findOldestWorkspaceFeeds(
+    workspaceId: string,
+    limit: number,
+    excludeDisabledCodes: UserFeedDisabledCode[],
+  ): Promise<Array<{ id: string; title: string; url: string; createdAt: Date }>> {
+    const docs = await this.model
+      .find({
+        workspaceId: this.stringToObjectId(workspaceId),
+        $or: [
+          { disabledCode: { $exists: false } },
+          { disabledCode: null },
+          { disabledCode: { $nin: excludeDisabledCodes } },
+        ],
+      })
+      .sort({ createdAt: 1 })
+      .limit(limit)
+      .select("title url createdAt")
+      .lean();
+
+    return docs.map((d) => ({
+      id: this.objectIdToString(d._id as Types.ObjectId),
+      title: (d as unknown as { title: string }).title,
+      url: (d as unknown as { url: string }).url,
+      createdAt: (d as unknown as { createdAt: Date }).createdAt,
+    }));
+  }
+
   async findByIdAndOwnership(
     id: string,
     discordUserId: string,

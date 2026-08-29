@@ -197,15 +197,15 @@ test.describe("Paddle workspace roundtrip", () => {
     await expect(page.getByText(verifiedEmail)).toBeVisible({ timeout: 30000 });
 
     // Change-capacity confirmation discloses the prorated amount AND the recurring
-    // charge before committing. Open the capacity dialog, raise the slider to a
-    // higher detent, and assert the dialog renders the itemized "Due today"
-    // breakdown and the recurring "Then" line, driven by the real Paddle proration
-    // preview.
+    // charge before committing. Open the capacity dialog, raise the capacity to a
+    // higher value via the exact picker, and assert the dialog renders the itemized
+    // "Due today" breakdown and the recurring "Then" line, driven by the real Paddle
+    // proration preview.
     const changeDialog = page.getByRole("dialog");
     // The activation transaction may still be processing when we open the dialog;
     // Paddle then rejects the proration preview with
     // "subscription_credit_creation_against_processing_transaction" (a 400 the
-    // UI surfaces as "Failed to load change preview"). Re-open and re-drag until
+    // UI surfaces as "Failed to load change preview"). Re-open and re-enter until
     // the transaction settles and the preview resolves.
     await expect(async () => {
       if ((await changeDialog.count()) > 0) {
@@ -214,28 +214,38 @@ test.describe("Paddle workspace roundtrip", () => {
       }
 
       await page.getByRole("button", { name: /change capacity/i }).click();
-      // Dialog + slider are instant client renders; short timeouts so a UI break
+      // Dialog + picker are instant client renders; short timeouts so a UI break
       // fails this attempt fast instead of stalling the retry budget.
-      const slider = changeDialog.getByRole("slider", { name: /how many feeds/i });
-      await expect(slider).toBeVisible({ timeout: 10000 });
-      // Seeded at the current 70 feeds; step up two detents (70 -> 100 -> 140).
-      // Press the slider itself, not page.keyboard, so each key lands on the
-      // thumb even if a re-render moves document focus between presses.
-      await slider.press("ArrowRight");
-      await expect(slider).toHaveAttribute("aria-valuetext", "100 feeds", { timeout: 5000 });
-      await slider.press("ArrowRight");
-      await expect(slider).toHaveAttribute("aria-valuetext", "140 feeds", { timeout: 5000 });
+      const capacityInput = changeDialog.getByRole("spinbutton", { name: /or enter an exact feed capacity/i });
+      await expect(capacityInput).toBeVisible({ timeout: 10000 });
+      // Seeded at the current 70 feeds; enter an exact higher capacity (140) via the picker.
+      await capacityInput.fill("140");
+      await capacityInput.blur();
+      await expect(capacityInput).toHaveAttribute("aria-valuetext", "140 feeds", { timeout: 5000 });
+      // Also verify the preset radio reflects the exact value
+      await expect(changeDialog.getByRole("radio", { name: "140 feeds" })).toBeChecked({ timeout: 5000 });
       // Only the prorated preview is webhook-gated; it is the one slow wait here.
-      await expect(changeDialog.getByText("Total due today")).toBeVisible({ timeout: 15000 });
+      // For very small prorations Paddle may defer billing to renewal, showing the
+      // "Available now, billed at renewal" copy instead of "Total due today".
+      await expect(changeDialog.getByText(/Total due today|Available now, billed at renewal/)).toBeVisible({ timeout: 15000 });
     }).toPass({ timeout: 120_000, intervals: [5000] });
 
-    // Itemized due-today block, from the live Paddle proration preview. The
-    // preview already resolved inside the toPass above, so these are instant.
-    await expect(changeDialog.getByText("Subtotal")).toBeVisible({ timeout: 5000 });
-    await expect(changeDialog.getByText("Tax")).toBeVisible({ timeout: 5000 });
-    // The compliance-critical recurring disclosure.
-    await expect(changeDialog.getByText("Then")).toBeVisible({ timeout: 5000 });
-    await expect(changeDialog.getByText(/\/ month, starting/)).toBeVisible({ timeout: 5000 });
+    // Paddle proration preview: either an immediate "Due today" block or the
+    // low-value deferred "Available now, billed at renewal" copy, plus the
+    // recurring disclosure. The preview already resolved inside the toPass above.
+    const showingDeferred = await changeDialog
+      .getByText("Available now, billed at renewal")
+      .isVisible()
+      .catch(() => false);
+    if (!showingDeferred) {
+      await expect(changeDialog.getByText("Subtotal")).toBeVisible({ timeout: 5000 });
+      await expect(changeDialog.getByText("Tax")).toBeVisible({ timeout: 5000 });
+      await expect(changeDialog.getByText("Total due today")).toBeVisible({ timeout: 5000 });
+    } else {
+      await expect(changeDialog.getByText("Available now, billed at renewal")).toBeVisible({ timeout: 5000 });
+    }
+    // The compliance-critical recurring disclosure (present in both modes).
+    await expect(changeDialog.getByText("Then").first()).toBeVisible({ timeout: 5000 });
     await expect(changeDialog.getByText(/Renews automatically\. Cancel anytime\./)).toBeVisible({
       timeout: 5000,
     });

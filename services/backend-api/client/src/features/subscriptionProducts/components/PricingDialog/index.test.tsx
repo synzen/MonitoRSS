@@ -148,13 +148,15 @@ const renderDialog = (props: { target?: "workspace" } = {}) => {
 
 // The capacity picker sits inside the collapsed "Add more feeds" sizer, demoted
 // under the collaboration pitch. Open it so the picker is mounted before the
-// entry/CTA assertions run.
+// entry/CTA assertions run. The exact input is nested under "Custom" (new
+// picker UX), so enter that mode before returning the spinbutton.
 const openSizer = async (forTeam: HTMLElement) => {
   // Ark's accordion toggles on a full pointer sequence, not a bare click event,
   // so drive it with userEvent.
   await userEvent.click(within(forTeam).getByRole("button", { name: /add more feeds/i }));
+  await userEvent.click(within(forTeam).getByRole("radio", { name: "Custom" }));
 
-  return within(forTeam).findByRole("spinbutton", { name: /feed capacity/i });
+  return within(forTeam).findByRole("spinbutton", { name: /or enter an exact/i });
 };
 
 describe("PricingDialog two-region layout", () => {

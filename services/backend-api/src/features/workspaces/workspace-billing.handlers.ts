@@ -56,10 +56,14 @@ export async function updateWorkspaceBillingHandler(
   const workspace = await resolveWorkspaceForBilling(request);
   const { workspaceBillingService } = request.container;
 
-  await workspaceBillingService.changeSubscription(
+  const result = await workspaceBillingService.changeSubscription(
     workspace,
     request.body.prices,
   );
+
+  if (result?.deferred) {
+    return reply.status(200).send({ data: result });
+  }
 
   return reply.status(204).send();
 }

@@ -1,4 +1,4 @@
-import { InferType, number, object, string } from "yup";
+import { InferType, array, boolean, number, object, string } from "yup";
 import fetchRest from "@/utils/fetchRest";
 
 export interface WorkspaceBillingPricesInput {
@@ -15,19 +15,26 @@ const WorkspaceBillingChangePreviewOutputSchema = object({
       }).required(),
       subtotalFormatted: string().required(),
       taxFormatted: string().required(),
-      // Raw minor-unit credit alongside the formatted string so the dialog can
-      // tell a real credit from a "0" and hide the row when there is none.
       credit: string().required(),
       creditFormatted: string().required(),
       grandTotalFormatted: string().required(),
-    }).required(),
-    // Projected effect of the change on the workspace's feeds. Optional so
-    // self-hosted/billing-disabled responses (and older payloads) still
-    // validate; the confirmation dialog only warns when present.
+    })
+      .nullable()
+      .optional(),
+    deferred: boolean().optional(),
+    nextBillDate: string().nullable().optional(),
     feedImpact: object({
       newFeedLimit: number().required(),
       currentFeedCount: number().required(),
       willBeDisabledCount: number().required(),
+      affectedFeeds: array(
+        object({
+          id: string().required(),
+          title: string().required(),
+          url: string().required(),
+          createdAt: string().required(),
+        }).required(),
+      ).optional(),
     }).optional(),
   }).required(),
 }).required();
@@ -54,14 +61,26 @@ export const previewWorkspaceBillingChange = async ({
 export const updateWorkspaceBilling = async ({
   workspaceSlug,
   prices,
-}: WorkspaceBillingPricesInput): Promise<void> => {
-  await fetchRest(`/api/v1/workspaces/${workspaceSlug}/billing/update`, {
+}: WorkspaceBillingPricesInput): Promise<{
+  deferred?: boolean;
+  nextBillDate?: string | null;
+} | void> => {
+  const res = await fetchRest(`/api/v1/workspaces/${workspaceSlug}/billing/update`, {
     requestOptions: {
       method: "POST",
       body: JSON.stringify({ prices }),
     },
-    skipJsonParse: true,
   });
+
+  if (res instanceof Response) {
+    return undefined;
+  }
+
+  if (res && typeof res === "object" && "data" in (res as Record<string, unknown>)) {
+    return (res as { data: { deferred?: boolean; nextBillDate?: string | null } }).data;
+  }
+
+  return undefined;
 };
 
 export const cancelWorkspaceBilling = async (workspaceSlug: string): Promise<void> => {

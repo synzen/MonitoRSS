@@ -300,6 +300,17 @@ export class PaddleWebhooksService {
         return;
       }
 
+      // If a low-value courtesy grant is live and the new authoritative limit now covers it,
+      // promote by clearing the grant so benefits come solely from the subscription (no visible drop).
+      if (workspace.pendingCapacityGrant) {
+        const authoritativeLimit = useBenefits.maxUserFeeds;
+        if (authoritativeLimit >= workspace.pendingCapacityGrant.feeds) {
+          await this.deps.workspaceRepository.clearPendingCapacityGrant(workspaceId);
+        } else if (workspace.pendingCapacityGrant.expiresAt.getTime() <= Date.now()) {
+          await this.deps.workspaceRepository.clearPendingCapacityGrant(workspaceId);
+        }
+      }
+
       // A subscription id belongs to either a workspace or a personal
       // supporter record, never both. When a personal subscription is
       // converted to a workspace, its custom_data is re-pointed and Paddle
@@ -385,6 +396,11 @@ export class PaddleWebhooksService {
       );
 
     if (workspace) {
+      // A cancelled subscription loses the courtesy grant; over-capacity policy follows
+      if (workspace.pendingCapacityGrant) {
+        await this.deps.workspaceRepository.clearPendingCapacityGrant(workspace.id);
+      }
+
       await this.enforceWorkspaceFeedLimits(workspace.id);
 
       return;
