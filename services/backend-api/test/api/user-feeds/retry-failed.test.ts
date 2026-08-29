@@ -76,7 +76,7 @@ async function seedFeed(input: {
   return feed.id;
 }
 
-describe("Bulk retry of failed workspace feeds", { concurrency: false }, () => {
+describe("Bulk retry of failed workspace feeds", { concurrency: true }, () => {
   it("requires an authenticated workspace member", async () => {
     const workspaceId = new Types.ObjectId().toString();
     const anonymous = await ctx.fetch("/api/v1/user-feeds/retry-failed", {
@@ -145,6 +145,43 @@ describe("Bulk retry of failed workspace feeds", { concurrency: false }, () => {
       UserFeedDisabledCode.ExceededFeedLimit,
     );
     assert.strictEqual(excluded?.healthStatus, UserFeedHealthStatus.Failed);
+  });
+
+  it("queues more than 1,000 eligible feeds from the server-side workspace scope", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(discordUserId);
+    const user = await ctx.asUser(discordUserId);
+    const workspaceId = await createWorkspace(user, `retry-${randomUUID()}`);
+
+    await Promise.all(
+      Array.from({ length: 1001 }, (_, index) =>
+        seedFeed({
+          discordUserId,
+          workspaceId,
+          title: `Eligible ${index}`,
+          disabledCode: UserFeedDisabledCode.FailedRequests,
+          healthStatus: UserFeedHealthStatus.Failed,
+        }),
+      ),
+    );
+
+    const response = await user.fetch("/api/v1/user-feeds/retry-failed", {
+      method: "POST",
+      body: JSON.stringify({ workspaceId }),
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.deepStrictEqual(await response.json(), {
+      result: { retriedCount: 1001, recoveryAlreadyActive: false },
+    });
+    assert.strictEqual(
+      await ctx.container.userFeedRepository.getUserFeedsCount({
+        discordUserId,
+        workspaceId,
+        filters: { eligibleForBulkRetry: true },
+      }),
+      0,
+    );
   });
 
   it("lists only terminal request failures as eligible in the requested workspace", async () => {
@@ -237,4 +274,5 @@ describe("Bulk retry of failed workspace feeds", { concurrency: false }, () => {
       result: { retriedCount: 0, recoveryAlreadyActive: true },
     });
   });
+
 });

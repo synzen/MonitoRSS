@@ -2943,17 +2943,21 @@ export class UserFeedMongooseRepository
     return this.model.countDocuments(queryFilter);
   }
 
-  async hasActiveBulkRetry(workspaceId: string): Promise<boolean> {
-    return (
+  async startBulkRetry(workspaceId: string): Promise<{
+    retriedCount: number;
+    recoveryAlreadyActive: boolean;
+  }> {
+    const recoveryAlreadyActive =
       (await this.model.exists({
         workspaceId: this.stringToObjectId(workspaceId),
         disabledCode: UserFeedDisabledCode.FailedRequests,
         healthStatus: UserFeedHealthStatus.Failing,
-      })) !== null
-    );
-  }
+      })) !== null;
 
-  async markFeedsForBulkRetry(workspaceId: string): Promise<number> {
+    if (recoveryAlreadyActive) {
+      return { retriedCount: 0, recoveryAlreadyActive: true };
+    }
+
     const result = await this.model.updateMany(
       {
         workspaceId: this.stringToObjectId(workspaceId),
@@ -2968,7 +2972,10 @@ export class UserFeedMongooseRepository
       },
     );
 
-    return result.modifiedCount;
+    return {
+      retriedCount: result.modifiedCount,
+      recoveryAlreadyActive: false,
+    };
   }
 
   async clearDisabledCodeForRecoveredFeeds(

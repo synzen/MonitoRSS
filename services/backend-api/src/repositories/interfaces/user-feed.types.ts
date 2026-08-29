@@ -744,8 +744,10 @@ export interface IUserFeedRepository {
   // recovery state (health FAILING + recoveryStartedAt), which makes them
   // eligible for scheduled recovery requests while staying disabled for
   // delivery.
-  hasActiveBulkRetry(workspaceId: string): Promise<boolean>;
-  markFeedsForBulkRetry(workspaceId: string): Promise<number>;
+  startBulkRetry(workspaceId: string): Promise<{
+    retriedCount: number;
+    recoveryAlreadyActive: boolean;
+  }>;
   clearDisabledCodeForRecoveredFeeds(
     filter: {
       url?: string;

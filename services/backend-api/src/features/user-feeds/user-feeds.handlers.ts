@@ -852,20 +852,9 @@ export async function retryFailedFeedsHandler(
     );
   }
 
-  const recoveryAlreadyActive =
-    await userFeedRepository.hasActiveBulkRetry(workspaceId);
-  if (recoveryAlreadyActive) {
-    return reply.status(200).send({
-      result: { retriedCount: 0, recoveryAlreadyActive: true },
-    });
-  }
+  const result = await userFeedRepository.startBulkRetry(workspaceId);
 
-  const retriedCount =
-    await userFeedRepository.markFeedsForBulkRetry(workspaceId);
-
-  return reply.status(200).send({
-    result: { retriedCount, recoveryAlreadyActive: false },
-  });
+  return reply.status(200).send({ result });
 }
 
 export async function copySettingsHandler(

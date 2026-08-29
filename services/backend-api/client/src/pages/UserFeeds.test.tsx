@@ -7,8 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { system } from "@/utils/theme";
-import { CuratedFeed } from "../features/feed/types";
-import { UserFeedComputedStatus } from "../features/feed/types";
+import { CuratedFeed, UserFeedComputedStatus } from "../features/feed/types";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { FeedScopeProvider, UserFeedStatusFilterContext } from "../features/feed";
 import { JustConvertedWorkspaceProvider, useJustConvertedWorkspace } from "@/features/workspaces";
@@ -1529,27 +1528,33 @@ describe("UserFeeds - scope-aware feed limit", () => {
   });
 
   it("shows bulk retry as a contextual failed-feed alert", async () => {
-    mockUseUserFeedsReturn.mockImplementation((options?: {
-      filters?: {
-        disabledCodes?: unknown[];
-        computedStatuses?: unknown[];
-        eligibleForBulkRetry?: boolean;
-      };
-    }) => {
-      if (
-        options?.filters?.disabledCodes ||
-        options?.filters?.computedStatuses ||
-        options?.filters?.eligibleForBulkRetry
-      ) {
-        return {
-          data: { results: [], total: 3, feedsWithoutConnections: 0 },
+    mockUseUserFeedsReturn.mockImplementation(
+      (options?: {
+        filters?: {
+          disabledCodes?: unknown[];
+          computedStatuses?: unknown[];
+          eligibleForBulkRetry?: boolean;
         };
-      }
+      }) => {
+        if (
+          options?.filters?.disabledCodes ||
+          options?.filters?.computedStatuses ||
+          options?.filters?.eligibleForBulkRetry
+        ) {
+          return {
+            data: { results: [], total: 3, feedsWithoutConnections: 0 },
+          };
+        }
 
-      return {
-        data: { results: [{ id: "workspace-feed" }], total: 1, feedsWithoutConnections: 0 },
-      };
-    });
+        return {
+          data: {
+            results: [{ id: "workspace-feed" }],
+            total: 1,
+            feedsWithoutConnections: 0,
+          },
+        };
+      },
+    );
 
     const { user } = renderWorkspaceScope(70);
 
@@ -1573,7 +1578,6 @@ describe("UserFeeds - scope-aware feed limit", () => {
       ),
     ).toBeInTheDocument();
   });
-
 });
 
 describe("UserFeeds - bulk retry recovery presentation", () => {
@@ -1620,14 +1624,22 @@ describe("UserFeeds - bulk retry recovery presentation", () => {
               {statusFiltersContext ? (
                 <UserFeedStatusFilterContext.Provider value={statusFiltersContext}>
                   <FeedScopeProvider
-                    value={{ workspaceId: "ws-1", workspaceSlug: "ws-1", maxFeeds: 70 }}
+                    value={{
+                      workspaceId: "ws-1",
+                      workspaceSlug: "ws-1",
+                      maxFeeds: 70,
+                    }}
                   >
                     <UserFeeds />
                   </FeedScopeProvider>
                 </UserFeedStatusFilterContext.Provider>
               ) : (
                 <FeedScopeProvider
-                  value={{ workspaceId: "ws-1", workspaceSlug: "ws-1", maxFeeds: 70 }}
+                  value={{
+                    workspaceId: "ws-1",
+                    workspaceSlug: "ws-1",
+                    maxFeeds: 70,
+                  }}
                 >
                   <UserFeeds />
                 </FeedScopeProvider>
@@ -1648,15 +1660,38 @@ describe("UserFeeds - bulk retry recovery presentation", () => {
     // REQUIRES_ATTENTION again and the alert with the retry action returns.
     let requiresAttentionTotal = 0;
     mockUseUserFeedsReturn.mockImplementation(
-      (options?: { filters?: { computedStatuses?: unknown[] } }) => {
+      (options?: {
+        filters?: {
+          computedStatuses?: unknown[];
+          eligibleForBulkRetry?: boolean;
+        };
+      }) => {
         if (options?.filters?.computedStatuses) {
           return {
-            data: { results: [], total: requiresAttentionTotal, feedsWithoutConnections: 0 },
+            data: {
+              results: [],
+              total: requiresAttentionTotal,
+              feedsWithoutConnections: 0,
+            },
+          };
+        }
+
+        if (options?.filters?.eligibleForBulkRetry) {
+          return {
+            data: {
+              results: [],
+              total: requiresAttentionTotal,
+              feedsWithoutConnections: 0,
+            },
           };
         }
 
         return {
-          data: { results: [{ id: "workspace-feed" }], total: 1, feedsWithoutConnections: 0 },
+          data: {
+            results: [{ id: "workspace-feed" }],
+            total: 1,
+            feedsWithoutConnections: 0,
+          },
         };
       },
     );
@@ -1672,7 +1707,11 @@ describe("UserFeeds - bulk retry recovery presentation", () => {
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
               <FeedScopeProvider
-                value={{ workspaceId: "ws-1", workspaceSlug: "ws-1", maxFeeds: 70 }}
+                value={{
+                  workspaceId: "ws-1",
+                  workspaceSlug: "ws-1",
+                  maxFeeds: 70,
+                }}
               >
                 <UserFeeds />
               </FeedScopeProvider>
@@ -1683,9 +1722,7 @@ describe("UserFeeds - bulk retry recovery presentation", () => {
     );
 
     expect(screen.getByText("2 feeds require your attention!")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Retry all 2 failed feeds" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry all 2 failed feeds" })).toBeInTheDocument();
   });
 
   it("applies the Pending Retry filter only when the user follows the success-alert link", async () => {
@@ -1693,15 +1730,29 @@ describe("UserFeeds - bulk retry recovery presentation", () => {
       result: { retriedCount: 2, recoveryAlreadyActive: false },
     });
     mockUseUserFeedsReturn.mockImplementation(
-      (options?: { filters?: { disabledCodes?: unknown[]; computedStatuses?: unknown[] } }) => {
-        if (options?.filters?.disabledCodes || options?.filters?.computedStatuses) {
+      (options?: {
+        filters?: {
+          disabledCodes?: unknown[];
+          computedStatuses?: unknown[];
+          eligibleForBulkRetry?: boolean;
+        };
+      }) => {
+        if (
+          options?.filters?.disabledCodes ||
+          options?.filters?.computedStatuses ||
+          options?.filters?.eligibleForBulkRetry
+        ) {
           return {
             data: { results: [], total: 2, feedsWithoutConnections: 0 },
           };
         }
 
         return {
-          data: { results: [{ id: "workspace-feed" }], total: 1, feedsWithoutConnections: 0 },
+          data: {
+            results: [{ id: "workspace-feed" }],
+            total: 1,
+            feedsWithoutConnections: 0,
+          },
         };
       },
     );
@@ -1717,9 +1768,7 @@ describe("UserFeeds - bulk retry recovery presentation", () => {
     await user.click(screen.getByRole("button", { name: "Retry all 2 failed feeds" }));
 
     const dialog = screen.getByRole("alertdialog");
-    await user.click(
-      within(dialog).getByRole("button", { name: "Retry all failed feeds" }),
-    );
+    await user.click(within(dialog).getByRole("button", { name: "Retry all failed feeds" }));
 
     expect(await screen.findByText("Failed feeds queued for retry.")).toBeInTheDocument();
 
