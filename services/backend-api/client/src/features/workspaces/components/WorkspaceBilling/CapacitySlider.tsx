@@ -1,30 +1,45 @@
 import { Box, Stack, Text } from "@chakra-ui/react";
+import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CapacityPicker, formatWorkspaceFeedCount } from "@/shared/workspaceCapacity";
+import { WORKSPACE_DETENTS, formatWorkspaceFeedCount } from "@/shared/workspaceCapacity";
 
-// Coarse capacity detents drive the slider; the slider's domain is the detent
-// INDEX (0..n-1, step 1), not raw feed counts, so every arrow-key press lands on
-// a real, purchasable anchor and moves cleanly in both directions. The label
-// shows the feed count at each index; the top detent reads "N+" since it
-// represents that capacity and beyond.
-// The capacity slider, shared by the activation (buy) and change-capacity
-// (manage) surfaces so both express capacity the same way. Driven by detent
-// index; announces the mapped feed count as aria-valuetext so a screen-reader
-// user hears "140 feeds", not "2".
+const MAX_INDEX = WORKSPACE_DETENTS.length - 1;
+
+const MARKS = WORKSPACE_DETENTS.map((value, index) => ({
+  value: index,
+  label: `${value}`,
+}));
+
+export const detentIndexForFeeds = (feeds: number) => {
+  const idx = WORKSPACE_DETENTS.findIndex((d) => d >= feeds);
+
+  return idx === -1 ? MAX_INDEX : idx;
+};
+
+export const feedsForDetentIndex = (index: number) => WORKSPACE_DETENTS[index];
+
+export const WORKSPACE_SLIDER_LABEL = "How many feeds do you need?";
+
+// The change-capacity dialog's coarse detent slider. This is the one surface
+// still on a detent model — the buy surfaces (pricing dialog, activation) use
+// the exact-entry CapacityPicker — and the slice-2 picker rework of this dialog
+// retires the slider entirely. Detent index drives the slider so every
+// arrow-key press lands on a real stop; aria-valuetext announces the mapped
+// feed count so a screen-reader user hears "140 feeds", not "2". The last
+// detent is the workspace capacity ceiling (1,100), so even capacities above
+// the other detents can still be raised.
 export const CapacitySlider = ({
-  feeds,
+  index,
   onChange,
 }: {
-  feeds: number;
-  onChange: (feeds: number) => void;
+  index: number;
+  onChange: (index: number) => void;
 }) => (
   // Subtle, rounded surface frames the slider as a grouped control. A hairline
   // border carries the grouping even where bg.subtle sits close to the dialog
-  // surface (it reads as flat otherwise). The buy-flow slider gets matching
-  // tint/rounding from its enclosing accordion, so the inner padding here matches
-  // that accordion body (px7/pt2/pb7) and both read alike. Horizontal padding
-  // clears the end thumbs/labels (at 0% and 100% of the track) from the box edges;
-  // bottom padding seats the mark labels below the track.
+  // surface (it reads as flat otherwise). Horizontal padding clears the end
+  // thumbs/labels (at 0% and 100% of the track) from the box edges; bottom
+  // padding seats the mark labels below the track.
   <Box
     bg="bg.subtle"
     borderWidth="1px"
@@ -34,7 +49,16 @@ export const CapacitySlider = ({
     pt={2}
     pb={7}
   >
-    <CapacityPicker value={feeds} onChange={onChange} />
+    <Slider
+      label={WORKSPACE_SLIDER_LABEL}
+      min={0}
+      max={MAX_INDEX}
+      step={1}
+      value={[index]}
+      onValueChange={(d) => onChange(d.value[0])}
+      getAriaValueText={(d) => `${WORKSPACE_DETENTS[d.value]} feeds`}
+      marks={MARKS}
+    />
   </Box>
 );
 

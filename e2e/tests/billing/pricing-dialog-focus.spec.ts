@@ -26,7 +26,7 @@ test.describe("Pricing dialog focus management", () => {
     await expect(pricingHeading).toBeVisible();
   });
 
-  test("shows the two-region layout with a workspace capacity slider", async ({ page }) => {
+  test("shows the two-region layout with a workspace capacity picker", async ({ page }) => {
     // The workspace CTA + reassurance render only when workspaces are enabled
     // for the user; enable the feature so the full region is asserted.
     await page.goto("/feeds");
@@ -67,15 +67,18 @@ test.describe("Pricing dialog focus management", () => {
     await expect(
       forTeam.getByRole("button", { name: /^create your workspace$/i }),
     ).toBeVisible();
-    // Capacity is framed as a floor you grow from, not a count to size down.
-    await expect(forTeam.getByText(/starts at \d+ feeds\. add more anytime\./i)).toBeVisible();
+    // Capacity is framed as a floor you grow from with the full range stated,
+    // not a count to size down.
+    await expect(
+      forTeam.getByText(/starts at \d+ feeds and scales to 2,000\. add more anytime\./i),
+    ).toBeVisible();
     await expect(
       forTeam.getByText(/a workspace of one gives you all of this/i),
     ).toBeVisible();
 
     // The capacity sizer is collapsed by default (capacity is demoted under the
     // collaboration pitch). Opening it from Account Settings shows the trigger,
-    // not the slider; expanding "Add more feeds" reveals the slider.
+    // not the picker; expanding "Add more feeds" reveals the picker.
     const sizerTrigger = forTeam.getByRole("button", { name: /add more feeds/i });
     await expect(sizerTrigger).toBeVisible();
     await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeHidden();
@@ -83,6 +86,13 @@ test.describe("Pricing dialog focus management", () => {
     await expect(
       forTeam.getByRole("spinbutton", { name: /feed capacity/i }),
     ).toBeVisible();
+
+    const capacityGroup = forTeam.getByRole("radiogroup", { name: "Feed capacity" });
+    const baseCapacity = capacityGroup.getByRole("radio", { name: "70 feeds" });
+    await expect(baseCapacity).toBeChecked();
+    await baseCapacity.focus();
+    await baseCapacity.press("ArrowDown");
+    await expect(capacityGroup.getByRole("radio", { name: "140 feeds" })).toBeChecked();
 
     // The external-properties explainer is a keyboard-accessible disclosure: the
     // info button is reachable and named, Enter opens the popover (revealing the
@@ -100,7 +110,7 @@ test.describe("Pricing dialog focus management", () => {
     await expect(page.getByText(/fewer than 51 articles/i)).toBeHidden();
     await expect(infoButton).toBeFocused();
 
-    const picker = forTeam.getByRole("spinbutton", { name: /feed capacity/i });
+    const picker = forTeam.getByRole("spinbutton", { name: "Or enter an exact feed capacity" });
     await picker.fill("1100");
     await picker.blur();
     await expect(picker).toHaveAttribute("aria-valuetext", "1,100 feeds");
@@ -127,7 +137,7 @@ test.describe("Pricing dialog focus management", () => {
       dialog.getByRole("heading", { name: "Pricing", level: 1 }),
     ).toBeVisible({ timeout: 15000 });
 
-    // Both regions and the workspace slider/CTA still render at a phone width.
+    // Both regions and the workspace picker/CTA still render at a phone width.
     const forYou = dialog.getByRole("region", { name: /^for you$/i });
     const forTeam = dialog.getByRole("region", { name: /for your team/i });
     await expect(forYou.getByRole("heading", { name: /^Personal$/ })).toBeVisible();
@@ -135,7 +145,7 @@ test.describe("Pricing dialog focus management", () => {
       forTeam.getByRole("button", { name: /^create your workspace$/i }),
     ).toBeVisible();
 
-    // Expand the collapsed-by-default sizer to reveal the slider.
+    // Expand the collapsed-by-default sizer to reveal the picker.
     await forTeam.getByRole("button", { name: /add more feeds/i }).click();
     await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeVisible();
 

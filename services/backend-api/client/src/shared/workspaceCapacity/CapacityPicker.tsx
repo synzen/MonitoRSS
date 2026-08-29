@@ -1,6 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { Button, HStack, Input, Stack, Text } from "@chakra-ui/react";
-import { Field } from "@/components/ui/field";
+import { HStack, Input, RadioCard, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import {
   WORKSPACE_CAPACITY_QUICK_PICKS,
   WORKSPACE_MAX_FEEDS,
@@ -19,7 +18,10 @@ export const CapacityPicker = ({
 }) => {
   const [draft, setDraft] = useState(String(value));
   const [message, setMessage] = useState<string>();
+  const labelId = useId();
   const helperId = useId();
+  const exactInputId = useId();
+  const selectedValue = WORKSPACE_CAPACITY_QUICK_PICKS.includes(value) ? String(value) : null;
 
   useEffect(() => {
     setDraft(String(value));
@@ -42,17 +44,57 @@ export const CapacityPicker = ({
 
   return (
     <Stack gap={3}>
-      <Field
-        label="Feed capacity"
-        helperText={!message ? rangeMessage : undefined}
-        errorText={message}
-        invalid={!!message}
+      <Text id={labelId} fontWeight="medium">
+        Feed capacity
+      </Text>
+      <RadioCard.Root
+        name={labelId}
+        value={selectedValue}
+        variant="surface"
+        colorPalette="brand"
+        size="sm"
+        aria-labelledby={labelId}
+        onValueChange={(details) => {
+          if (!details.value) return;
+
+          const feeds = Number(details.value);
+          setMessage(undefined);
+          setDraft(String(feeds));
+          onChange(feeds);
+        }}
       >
+        <SimpleGrid columns={{ base: 2, sm: 3 }} gap={2}>
+          {WORKSPACE_CAPACITY_QUICK_PICKS.map((feeds) => {
+            return (
+              <RadioCard.Item key={feeds} value={String(feeds)}>
+                <RadioCard.ItemHiddenInput />
+                <RadioCard.ItemControl>
+                  <HStack gap={2} flex="1">
+                    <RadioCard.ItemIndicator />
+                    <RadioCard.ItemText fontWeight="medium">
+                    {formatWorkspaceFeedCount(feeds)}
+                    </RadioCard.ItemText>
+                  </HStack>
+                </RadioCard.ItemControl>
+              </RadioCard.Item>
+            );
+          })}
+        </SimpleGrid>
+      </RadioCard.Root>
+      <Stack gap={1} pt={1}>
+        <label htmlFor={exactInputId}>
+          <Text as="span" fontSize="sm" color="fg.muted">
+            Or enter an exact feed capacity
+          </Text>
+        </label>
         <Input
+          id={exactInputId}
+          size="sm"
           type="number"
           min={WORKSPACE_MIN_FEEDS}
           max={WORKSPACE_MAX_FEEDS}
           step={1}
+          appearance="textfield"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onBlur={commit}
@@ -60,35 +102,25 @@ export const CapacityPicker = ({
             if (event.key === "Enter") {
               event.currentTarget.blur();
             }
+
+            if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+              event.preventDefault();
+            }
           }}
           aria-valuetext={formatWorkspaceFeedCount(value)}
-          aria-describedby={helperId}
+          aria-describedby={message ? undefined : helperId}
+          aria-errormessage={message ? helperId : undefined}
+          aria-invalid={!!message}
+          css={{
+            "&::-webkit-inner-spin-button, &::-webkit-outer-spin-button": {
+              WebkitAppearance: "none",
+              margin: 0,
+            },
+          }}
         />
-      </Field>
-      <Stack gap={2}>
-        <Text fontSize="sm" fontWeight="medium">
-          Quick picks
-        </Text>
-        <HStack gap={2} flexWrap="wrap" aria-label="Quick feed capacity picks">
-          {WORKSPACE_CAPACITY_QUICK_PICKS.map((feeds) => (
-            <Button
-              key={feeds}
-              size="sm"
-              variant={value === feeds ? "solid" : "outline"}
-              aria-pressed={value === feeds}
-              onClick={() => {
-                setMessage(undefined);
-                setDraft(String(feeds));
-                onChange(feeds);
-              }}
-            >
-              {formatWorkspaceFeedCount(feeds)}
-            </Button>
-          ))}
-        </HStack>
       </Stack>
-      <Text id={helperId} srOnly>
-        Selected capacity: {formatWorkspaceFeedCount(value)}.
+      <Text id={helperId} color={message ? "text.error" : "fg.muted"} fontSize="sm">
+        {message ?? rangeMessage}
       </Text>
     </Stack>
   );

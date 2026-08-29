@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi } from "vitest";
 import { system } from "@/utils/theme";
@@ -25,9 +26,6 @@ const renderPanel = (props: Partial<React.ComponentProps<typeof WorkspacePanel>>
     </ChakraProvider>,
   );
 
-// The hidden price announcer is the only polite live region in the panel (the
-// visible hero price is deliberately not live). Reading it tells us exactly what
-// a screen reader would speak.
 const getAnnouncer = (container: HTMLElement) => {
   const node = container.querySelector('[aria-live="polite"]');
   if (!node) throw new Error("expected a polite live region for the price announcer");
@@ -36,15 +34,13 @@ const getAnnouncer = (container: HTMLElement) => {
 };
 
 describe("WorkspacePanel price announcer", () => {
-  it("does not announce on initial render (opening the panel)", () => {
+  it("does not announce on initial render", () => {
     const { container } = renderPanel();
 
-    // Mounting the panel must not queue an announcement; only an actual capacity
-    // change should speak.
     expect(getAnnouncer(container)).toHaveTextContent("");
   });
 
-  it("announces the new price when the capacity slider moves", async () => {
+  it("announces the new price when capacity changes", async () => {
     const { container } = renderPanel();
 
     const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
@@ -54,21 +50,13 @@ describe("WorkspacePanel price announcer", () => {
     await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$525 per month."));
   });
 
-  it("does NOT announce the price when only the billing interval changes", async () => {
-    // Reproduces the reported screen-reader bug: flipping Monthly/Yearly (a
-    // control in a different region of the dialog) must not make this panel speak
-    // its price, since the user never navigated here.
+  it("does not announce the price when only the billing interval changes", async () => {
     const { container, rerender } = renderPanel();
-
-    // Move the slider first so the announcer holds a real value, proving the next
-    // assertion is about the interval change and not just an empty initial state.
     const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
     fireEvent.change(input, { target: { value: "1100" } });
     fireEvent.blur(input);
     await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$525 per month."));
 
-    // The parent toggles the interval prop. The visible price updates, but the
-    // announcer must stay unchanged so nothing is spoken from this panel.
     rerender(
       <ChakraProvider value={system}>
         <WorkspacePanel
@@ -82,20 +70,14 @@ describe("WorkspacePanel price announcer", () => {
       </ChakraProvider>,
     );
 
-    // Visible hero price reflects the yearly interval...
     await screen.findByText(/^per year$/);
-    // ...but the announcer was not rewritten by the interval change.
     expect(getAnnouncer(container)).toHaveTextContent("$525 per month.");
   });
 
   it("the visible hero price is not itself a live region", () => {
-    // Guards against a regression to the old design where the visible price was
-    // aria-live and so re-announced on interval toggles.
     renderPanel();
 
     const heroPrice = screen.getByText("$10");
-    // Walk up from the visible price; no ancestor up to the card should be a live
-    // region. (The only live region in the panel is the hidden announcer.)
     let node: HTMLElement | null = heroPrice;
 
     while (node && node.getAttribute("role") !== "region") {
@@ -104,15 +86,33 @@ describe("WorkspacePanel price announcer", () => {
     }
   });
 
-  it("frames capacity as a floor to grow from, not a count to size down", () => {
-    // De-anchoring: the hero must not lead with a raw feed count (which invites
-    // the "I only need a few, so this is overpriced" reflex). It states the base
-    // as a starting floor with no-commitment growth instead.
+  it("states the capacity range on the card without presenting quick picks as plans", () => {
+    // The card must say Team starts at 70 and scales to 2,000 so a large-capacity
+    // buyer knows the picker reaches their range; the quick picks stay inside the
+    // picker (buttons, not plan cards).
     renderPanel();
 
-    expect(screen.getByText(/starts at 70 feeds\. add more anytime\./i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/starts at 70 feeds and scales to 2,000\. add more anytime\./i),
+    ).toBeInTheDocument();
     // The old "{n} feeds per month." hero line must be gone.
     expect(screen.queryByText(/70 feeds per month/i)).not.toBeInTheDocument();
+    // Capacity choices form a radio group, rather than reading as additional
+    // purchasable plans or competing primary actions.
+    expect(screen.getAllByRole("radio", { name: /^\d[\d,]* feeds$/ })).toHaveLength(6);
+    expect(screen.queryByRole("button", { name: /subscribe/i })).not.toBeInTheDocument();
+  });
+
+  it("applies a quick pick directly, updating the selected capacity and visible price", async () => {
+    const { container } = renderPanel();
+
+    // Choosing the 300-feed pick commits instantly (no blur needed) and the
+    // derived recurring price follows: 1000 + 230 * 50 = 12,500 minor units.
+    await userEvent.click(screen.getByRole("radio", { name: "300 feeds" }));
+
+    const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
+    await waitFor(() => expect(input).toHaveAttribute("aria-valuetext", "300 feeds"));
+    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$125 per month."));
   });
 
   it("the create CTA names the action, not a feed count", () => {
@@ -131,7 +131,7 @@ describe("WorkspacePanel price announcer", () => {
     expect(screen.queryByText(/size your plan/i)).not.toBeInTheDocument();
   });
 
-  it("reports a localized selected capacity without duplicating it in the price announcer", async () => {
+  it("reports a localized selected capacity", async () => {
     const { container } = renderPanel();
 
     const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
@@ -145,12 +145,12 @@ describe("WorkspacePanel price announcer", () => {
   it("offers the prescribed quick picks and clamps an out-of-range direct entry", async () => {
     renderPanel();
 
-    expect(screen.getByRole("button", { name: "1,100 feeds" })).toBeInTheDocument();
-    const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
-    fireEvent.change(input, { target: { value: "1200" } });
+    expect(screen.getByRole("radio", { name: "1,000 feeds" })).toBeInTheDocument();
+    const input = screen.getByRole("spinbutton", { name: /or enter an exact feed capacity/i });
+    fireEvent.change(input, { target: { value: "2100" } });
     fireEvent.blur(input);
 
-    await waitFor(() => expect(input).toHaveValue(1100));
-    expect(screen.getByText(/choose a whole number from 70 to 1,100 feeds/i)).toBeInTheDocument();
+    await waitFor(() => expect(input).toHaveValue(2000));
+    expect(screen.getByText(/choose a whole number from 70 to 2,000 feeds/i)).toBeInTheDocument();
   });
 });

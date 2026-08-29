@@ -367,7 +367,7 @@ test.describe("Paddle workspace roundtrip", () => {
     await expect(forTeam.getByRole("button", { name: /go to your workspace/i })).toHaveCount(0);
   });
 
-  test("purchases a 1,100-feed workspace and reflects the new limit in the UI", async ({
+  test("purchases a 2,000-feed workspace and reflects the new limit in the UI", async ({
     page,
   }) => {
     test.setTimeout(300_000);
@@ -375,19 +375,19 @@ test.describe("Paddle workspace roundtrip", () => {
     const { workspaceSlug } = await createTeamAndOpenBilling(page);
 
     await page.getByRole("button", { name: "Yearly" }).click();
-    const capacity = page.getByRole("spinbutton", { name: "Feed capacity" });
-    await capacity.fill("1100");
+    const capacity = page.getByRole("spinbutton", { name: "Or enter an exact feed capacity" });
+    await capacity.fill("2000");
     await capacity.blur();
-    await expect(capacity).toHaveAttribute("aria-valuetext", "1,100 feeds", { timeout: 5000 });
-    await page.getByRole("button", { name: /subscribe to team, 1,100 feeds total/i }).click();
+    await expect(capacity).toHaveAttribute("aria-valuetext", "2,000 feeds", { timeout: 5000 });
+    await page.getByRole("button", { name: /subscribe to team, 2,000 feeds total/i }).click();
     // completeInlineCheckout already waits out the activation webhook, so the page
     // is on the active current-plan view by the time it returns; these are instant
     // client renders. Short timeouts so a UI regression fails in seconds, not at
     // the test-level ceiling. Every capacity is base tier + per-feed add-ons, so
-    // 1,100 feeds is the 70-feed Team base item plus 1,030 additional feeds.
+    // 2,000 feeds is the 70-feed Team base item plus 1,930 additional feeds.
     await completeInlineCheckout(page);
     await expect(page.getByText("Current plan").first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("1,100 feeds (70 + 1,030 additional)")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("2,000 feeds (70 + 1,930 additional)")).toBeVisible({ timeout: 10000 });
 
     // Teardown: cancel the workspace's sandbox subscription, then delete it.
     await cancelAndDeleteWorkspace(page, workspaceSlug);

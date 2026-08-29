@@ -55,6 +55,7 @@ import {
   WORKSPACE_BASE_FEEDS,
   WORKSPACE_MAX_FEEDS,
   WORKSPACE_MIN_FEEDS,
+  CapacityPicker,
   formatWorkspaceFeedCount,
   formatWorkspaceFeedNumber,
   WorkspaceFeedPricing,
@@ -63,6 +64,8 @@ import {
   CapacitySlider,
   CapacitySummary,
   CapacityCompareColumn,
+  detentIndexForFeeds,
+  feedsForDetentIndex,
 } from "./CapacitySlider";
 import type { PricePreview } from "@/types/PricePreview";
 import { useCurrentWorkspace } from "../../contexts/CurrentWorkspaceContext";
@@ -378,12 +381,13 @@ const ChangeCapacityDialog = ({
   // (preview fires, Confirm enabled) with no user action and let a no-move
   // confirm silently raise capacity. So clamp the seeded count back to the
   // current capacity for the dirty check: an untouched dialog is never dirty.
-  const [nextFeeds, setNextFeeds] = useState(currentFeeds);
+  const seededIndex = detentIndexForFeeds(currentFeeds);
+  const [index, setIndex] = useState(seededIndex);
   // Re-seat whenever the dialog (re)opens or the current capacity changes.
   useEffect(() => {
     if (open) {
       closingForSuccessRef.current = false;
-      setNextFeeds(currentFeeds);
+      setIndex(detentIndexForFeeds(currentFeeds));
     }
   }, [open, currentFeeds]);
 
@@ -391,6 +395,8 @@ const ChangeCapacityDialog = ({
   // while the slider is still on its seeded position, where the real current
   // capacity (which may sit between detents) is the effective target so the
   // dialog opens clean.
+  const onSeededDetent = index === seededIndex;
+  const nextFeeds = onSeededDetent ? currentFeeds : feedsForDetentIndex(index);
   const dirty = nextFeeds !== currentFeeds;
   const prices = buildBasket(nextFeeds);
 
@@ -453,7 +459,7 @@ const ChangeCapacityDialog = ({
             <DialogDescription>
               You&apos;re currently on {formatWorkspaceFeedCount(currentFeeds)}. Pick a new capacity.
             </DialogDescription>
-            <CapacitySlider feeds={nextFeeds} onChange={setNextFeeds} />
+            <CapacitySlider index={index} onChange={setIndex} />
             {/* One always-mounted polite live region carries the before/after
                 summary so increases and decreases announce through the same node.
                 The slider sits above it so its own value announcements are not
@@ -600,10 +606,7 @@ export const WorkspaceBilling = () => {
   const [products, setProducts] = useState<PricePreview[]>();
   const [pricesError, setPricesError] = useState(false);
   const [interval, setInterval] = useState<BillingInterval>("month");
-  // The capacity the owner picks before activating, expressed as a detent index
-  // (see CapacitySlider). Seeded from the pricing dialog's "?feeds=N" hand-off so
-  // the capacity chosen on the buy-time slider carries into activation, seated on
-  // the next detent at or above the requested count.
+  // The selected activation capacity is preserved through the pricing dialog hand-off.
   const [searchParams] = useSearchParams();
   const requestedFeeds = Number(searchParams.get("feeds"));
   const [activationFeeds, setActivationFeeds] = useState(() =>
@@ -646,10 +649,10 @@ export const WorkspaceBilling = () => {
       refetch,
     });
 
-  // One price preview powers every capacity slider on this page: it carries the
+  // One price preview powers every capacity picker on this page: it carries the
   // Tier2 base and Tier3Feed per-feed unit prices for both intervals, from which
-  // the slider derives any detent's total locally. So this is the page's only
-  // pricing round-trip, no matter how the owner drags the slider or toggles the
+  // each picker derives any total locally. So this is the page's only
+  // pricing round-trip, no matter how the owner changes capacity or toggles the
   // interval. Owners are the only ones who can subscribe, so gate on ownership.
   useEffect(() => {
     if (!isConfigured || !isLoaded || !isOwner) {
@@ -666,12 +669,12 @@ export const WorkspaceBilling = () => {
       .catch(() => setPricesError(true));
   }, [isConfigured, isLoaded, isOwner]);
 
-  // The slider's pricing inputs for an interval, derived from that single preview.
+  // The picker pricing inputs for an interval, derived from that single preview.
   // The lookup is shared with the pricing dialog (ADR-009).
   const feedPricingFor = (forInterval: BillingInterval) =>
     workspaceFeedPricingFromProducts(products, forInterval);
 
-  // Live recurring price for the activation slider's chosen capacity. Hooks must
+  // Live recurring price for the activation picker's chosen capacity. Hooks must
   // run before the early return below, so this lives here even though it only
   // feeds the unsubscribed activation view.
   const { price: activationPrice } = useWorkspaceSliderPrice({
@@ -983,7 +986,7 @@ export const WorkspaceBilling = () => {
                   price={activationPrice}
                   interval={interval}
                 />
-                <CapacitySlider feeds={activationFeeds} onChange={setActivationFeeds} />
+                <CapacityPicker value={activationFeeds} onChange={setActivationFeeds} />
                 <Box>
                   <PrimaryActionButton
                     onClick={() => subscribeToCapacity(activationFeeds)}

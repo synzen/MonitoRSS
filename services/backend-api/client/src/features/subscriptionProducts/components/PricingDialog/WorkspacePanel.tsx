@@ -18,7 +18,9 @@ import {
 } from "@/components/ui/accordion";
 import {
   useWorkspaceSliderPrice,
+  formatWorkspaceFeedNumber,
   WORKSPACE_BASE_FEEDS,
+  WORKSPACE_MAX_FEEDS,
   CapacityPicker,
   WORKSPACE_FEATURES,
   WorkspaceFeatureRow,
@@ -61,22 +63,11 @@ const OWNER_REASSURANCE = "You already have a workspace. Pick your capacity and 
 // per-feed competitors). "Add more anytime" names that capacity is yours to grow
 // with no commitment, so the number reads as a starting point, not a quantity
 // you're overbuying.
-const WORKSPACE_CAPACITY_LINE = `Starts at ${WORKSPACE_BASE_FEEDS} feeds. Add more anytime.`;
-// The sizer is a collapsible "grow it when you need to" utility, so capacity
-// stays demoted under the collaboration pitch. Its label invites adding capacity
-// (consistent with the floor framing) rather than gatekeeping it; the trigger
-// shows the live price of the current detent so the cost is visible without the
-// slider open.
+const WORKSPACE_CAPACITY_LINE = `Starts at ${formatWorkspaceFeedNumber(
+  WORKSPACE_BASE_FEEDS,
+)} feeds and scales to ${formatWorkspaceFeedNumber(WORKSPACE_MAX_FEEDS)}. Add more anytime.`;
 const WORKSPACE_SIZER_TITLE = "Add more feeds";
 const WORKSPACE_SIZER_ACCORDION_VALUE = "sizer";
-// The slider domain is the detent INDEX (0..n-1), so each step is one detent and
-// every tick is a real, reachable stop. Labels show the feed count at each index;
-// the top detent reads "N+" since it represents that capacity and beyond.
-
-// The dominant Workspace panel: a capacity slider drives a live hero price (from
-// Paddle previews) and a CTA that names the chosen feed count. The slider always
-// buys the base workspace tier plus a per-feed add-on for the overage (see
-// useWorkspaceSliderPrice), so every value maps to a real purchasable item set.
 export const WorkspacePanel = ({
   interval,
   pricing,
@@ -87,13 +78,12 @@ export const WorkspacePanel = ({
 }: {
   interval: "month" | "year";
   // The base + per-feed unit prices from the page-level preview, for the current
-  // interval. Undefined while that preview is still loading. The slider derives
-  // every detent from these with no Paddle call of its own.
+  // interval. Undefined while that preview is still loading.
   pricing: WorkspaceFeedPricing | undefined;
   // Whether the capacity sizer starts expanded. Defaults to collapsed (capacity
   // is demoted under the collaboration pitch); the parent opens it when the
   // dialog is opened from the feed-limit wall, where capacity is the user's
-  // intent, so the slider they came for is in front of them without a click.
+  // intent, so the picker they came for is in front of them without a click.
   defaultSizerOpen?: boolean;
   // The viewer already owns a workspace that needs billing (never activated, or
   // cancelled), so the CTA reroutes to it to subscribe instead of offering to
@@ -103,25 +93,10 @@ export const WorkspacePanel = ({
   onCreateWorkspace: (feedCount: number) => void;
   onGoToWorkspace: (feedCount: number) => void;
 }) => {
-  // The slider is driven by detent INDEX (0..n-1, step 1), not raw feed counts.
-  // Indexing makes every arrow-key press land on a real detent and move cleanly
-  // in both directions, which a controlled slider snapping arbitrary feed counts
-  // cannot do (it desyncs from Chakra's step grid and traps the keyboard).
   const [feeds, setFeeds] = useState(WORKSPACE_BASE_FEEDS);
   const { price } = useWorkspaceSliderPrice({ feeds, pricing });
 
   const intervalSuffix = interval === "month" ? "per month" : "per year";
-
-  // Announcing the price when the slider moves is the goal, but the visible price
-  // can't be a live region: it also depends on the Monthly/Yearly switch (in a
-  // different region of the dialog), so making it live means toggling that switch
-  // announces the Team price even though the user never went near this panel. The
-  // slider thumb already announces the feed count via aria-valuetext, so the only
-  // thing left to speak on a capacity change is the price. Drive a dedicated
-  // hidden announcer off the feed count alone: it fires on slider moves and is
-  // immune to interval toggles (interval changes the price, never the feed count).
-  // Politeness stays fixed, which is what assistive tech expects. The first
-  // detent on mount is skipped so the panel doesn't announce on open.
   const [priceAnnouncement, setPriceAnnouncement] = useState("");
   const isFirstFeedsRender = useRef(true);
 
@@ -135,8 +110,6 @@ export const WorkspacePanel = ({
     if (price) {
       setPriceAnnouncement(`${price} ${intervalSuffix}.`);
     }
-    // Keyed on the feed count only: interval changes must not trigger an
-    // announcement, and the suffix is read from the latest render when they do.
   }, [feeds]);
 
   return (
@@ -154,12 +127,6 @@ export const WorkspacePanel = ({
       </Card.Header>
       <Card.Body>
         <Stack gap={6}>
-          {/* Hero price + capacity. The price and the feed/interval line update as
-              the slider moves (instantly, from the already-fetched preview). The
-              visible text is NOT a live region: it also tracks the Monthly/Yearly
-              switch, so making it live would announce this panel's price when the
-              user toggles that switch elsewhere. Slider-driven price changes are
-              spoken by the dedicated hidden announcer below instead. */}
           <Box>
             <Box aria-busy={!price}>
               <Text fontSize={{ base: "4xl", md: "6xl" }} fontWeight="bold" lineHeight="1">
@@ -170,13 +137,8 @@ export const WorkspacePanel = ({
               </Text>
             </Box>
             <Text color="fg.muted">{WORKSPACE_CAPACITY_LINE}</Text>
-            {/* Speaks only the price on a capacity change; the feed count is
-                already announced by the slider thumb's aria-valuetext. */}
             <VisuallyHidden aria-live="polite">{priceAnnouncement}</VisuallyHidden>
           </Box>
-          {/* The sizer is collapsible so capacity stays demoted under the
-              collaboration pitch. The trigger shows the live price of the
-              current detent, so the cost is visible without opening it. */}
           <AccordionRoot
             collapsible
             defaultValue={defaultSizerOpen ? [WORKSPACE_SIZER_ACCORDION_VALUE] : []}

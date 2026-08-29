@@ -1,9 +1,11 @@
-// The workspace capacity-slider model: the detents, the feed-count-to-basket
-// rule, and the live price hook. Shared between the buy moment
-// (subscriptionProducts' pricing dialog) and the manage moment (workspaces'
-// billing page) so both produce the identical purchase basket. See ADR-009.
+// The workspace capacity model: the supported range, quick picks, the
+// feed-count-to-basket rule, and the live price hook. Shared between the buy
+// moment (subscriptionProducts' pricing dialog) and the manage moment
+// (workspaces' billing page) so both produce the identical purchase basket.
+// See ADR-009.
 export {
   WORKSPACE_CAPACITY_QUICK_PICKS,
+  WORKSPACE_DETENTS,
   WORKSPACE_MAX_FEEDS,
   WORKSPACE_MIN_FEEDS,
   formatWorkspaceFeedNumber,

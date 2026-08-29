@@ -22,6 +22,11 @@ import {
 import { useUserFeedsInfinite } from "../../../feed/hooks/useUserFeedsInfinite";
 import { getUserFeeds } from "../../../feed/api";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
+import {
+  WORKSPACE_DETENTS,
+  WORKSPACE_MAX_FEEDS,
+  formatWorkspaceFeedNumber,
+} from "@/shared/workspaceCapacity";
 
 const h = vi.hoisted(() => ({
   openCheckout: vi.fn(),
@@ -376,16 +381,16 @@ describe("WorkspaceBilling", () => {
     // Base price before moving the slider (formatCurrency drops the ".00").
     expect(await screen.findByText("$10", { exact: false })).toBeInTheDocument();
 
-    // Enter 1,100 feeds, i.e. 1,030 add-on feeds above the base.
+    // Enter 2,000 feeds, i.e. 1,930 add-on feeds above the base.
     const picker = await screen.findByRole("spinbutton", { name: /feed capacity/i });
-    fireEvent.change(picker, { target: { value: "1100" } });
+    fireEvent.change(picker, { target: { value: "2000" } });
     fireEvent.blur(picker);
 
     // The headline reflects the combined recurring total derived from the single
-    // preview (base $10.00 + 1,030 add-on feeds * $0.50 = $525.00, rendered "$525" as
+    // preview (base $10.00 + 1,930 add-on feeds * $0.50 = $975.00, rendered "$975" as
     // formatCurrency drops the ".00"), with no per-detent round-trip: the whole
     // range is priced from that one preview.
-    const total = await screen.findByText("$525", { exact: false });
+    const total = await screen.findByText("$975", { exact: false });
 
     // The price summary is a polite live region that settles once resolved.
     const liveRegion = total.closest('[aria-live="polite"]');
@@ -393,13 +398,13 @@ describe("WorkspaceBilling", () => {
     await waitFor(() => expect(liveRegion).toHaveAttribute("aria-busy", "false"));
 
     // Subscribing buys exactly that capacity in one basket.
-    fireEvent.click(screen.getByRole("button", { name: /subscribe to team, 1,100 feeds total/i }));
+    fireEvent.click(screen.getByRole("button", { name: /subscribe to team, 2,000 feeds total/i }));
     await waitFor(() =>
       expect(h.openCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
           prices: [
             { priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 },
-            { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 1030 },
+            { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 1930 },
           ],
           customData: { workspaceId: "workspace-1" },
         }),
@@ -707,29 +712,39 @@ describe("WorkspaceBilling", () => {
     await waitFor(() => expect(status).toHaveTextContent(/your workspace is now active/i));
   });
 
-  it("seeds the activation slider from the pricing dialog's ?feeds hand-off", async () => {
-    mockPaddle();
-    mockWorkspace({ role: "owner", subscription: null });
+  it.each([250, WORKSPACE_MAX_FEEDS])(
+    "seeds the activation picker from the pricing dialog's ?feeds hand-off (%d)",
+    async (requestedFeeds) => {
+      mockPaddle();
+      mockWorkspace({ role: "owner", subscription: null });
 
-    // The buy-time pricing dialog hands the exact chosen capacity over as ?feeds=N.
-    render(
-      <QueryClientProvider
-        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-      >
-        <MemoryRouter initialEntries={["/?feeds=250"]}>
-          <ChakraProvider value={system}>
-            <WorkspaceBilling />
-          </ChakraProvider>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
+      // The buy-time pricing dialog hands the exact chosen capacity over as
+      // ?feeds=N — including the 1,100 ceiling, which must survive
+      // pricing → create workspace → Billing without clamping or loss.
+      render(
+        <QueryClientProvider
+          client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+        >
+          <MemoryRouter initialEntries={[`/?feeds=${requestedFeeds}`]}>
+            <ChakraProvider value={system}>
+              <WorkspaceBilling />
+            </ChakraProvider>
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
 
-    const picker = await screen.findByRole("spinbutton", { name: /feed capacity/i });
-    expect(picker).toHaveAttribute("aria-valuetext", "250 feeds");
-    expect(
-      screen.getByRole("button", { name: /subscribe to team, 250 feeds total/i }),
-    ).toBeInTheDocument();
-  });
+      const picker = await screen.findByRole("spinbutton", { name: /feed capacity/i });
+      expect(picker).toHaveAttribute("aria-valuetext", `${formatWorkspaceFeedNumber(requestedFeeds)} feeds`);
+      expect(
+        screen.getByRole(
+          "button",
+          {
+            name: `Subscribe to Team, ${formatWorkspaceFeedNumber(requestedFeeds)} feeds total`,
+          },
+        ),
+      ).toBeInTheDocument();
+    },
+  );
 
   it("keeps showing the subscription-confirmation state across a remount while the webhook is pending", async () => {
     mockPaddle();
@@ -1373,13 +1388,22 @@ describe("WorkspaceBilling", () => {
   const openChangeDialog = async () => {
     fireEvent.click(await screen.findByRole("button", { name: /change capacity/i }));
     // The dialog hosts the capacity slider.
-    await screen.findByRole("spinbutton", { name: /feed capacity/i });
+    await screen.findByRole("slider", { name: /how many feeds/i });
   };
 
   const setSliderToFeeds = async (targetFeeds: number) => {
-    const picker = await screen.findByRole("spinbutton", { name: /feed capacity/i });
-    fireEvent.change(picker, { target: { value: String(targetFeeds) } });
-    fireEvent.blur(picker);
+    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
+    const targetIndex = WORKSPACE_DETENTS.findIndex((d) => d >= targetFeeds);
+    const currentText = slider.getAttribute("aria-valuetext") ?? "";
+    const currentFeeds = parseInt(currentText.replace(/,/g, ""), 10);
+    const currentIndex = WORKSPACE_DETENTS.findIndex((d) => d >= currentFeeds);
+    const delta = targetIndex - currentIndex;
+    slider.focus();
+
+    for (let i = 0; i < Math.abs(delta); i += 1) {
+      // eslint-disable-next-line no-await-in-loop
+      await userEvent.keyboard(delta > 0 ? "{ArrowRight}" : "{ArrowLeft}");
+    }
   };
 
   it("shows a read-only current plan with a Change capacity button, not tier-switch cards", async () => {
@@ -1412,8 +1436,8 @@ describe("WorkspaceBilling", () => {
 
     // The manage slider opens at the current capacity (100), not at the base (70)
     // the way the buy-time slider does.
-    const picker = await screen.findByRole("spinbutton", { name: /feed capacity/i });
-    expect(picker).toHaveAttribute("aria-valuetext", "100 feeds");
+    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
+    expect(slider).toHaveAttribute("aria-valuetext", "100 feeds");
   });
 
   it("does not show a perpetual preview spinner when the dialog opens at the current capacity", async () => {
@@ -1437,9 +1461,10 @@ describe("WorkspaceBilling", () => {
   it("opens clean (not dirty) when the current capacity falls between detents", async () => {
     mockPaddle();
     // A Tier 3 base (140) plus 10 add-on feeds = 150 feeds, which is not a
-    // detent (detents are 70/100/140/200/300/500). Seeding rounds the slider up
-    // to the 200 detent, but the dialog must still open as a no-op: confirming
-    // without moving the slider must not silently raise capacity to 200.
+    // detent (detents are 70/100/140/200/300/500/1100). Seeding rounds the
+    // slider up to the 200 detent, but the dialog must still open as a no-op:
+    // confirming without moving the slider must not silently raise capacity
+    // to 200.
     mockWorkspace({
       role: "owner",
       subscription: activeSubscription({
@@ -1695,7 +1720,7 @@ describe("WorkspaceBilling", () => {
     trigger.focus();
     fireEvent.click(trigger);
 
-    await screen.findByRole("spinbutton", { name: /feed capacity/i });
+    await screen.findByRole("slider", { name: /how many feeds/i });
     fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
 
     // Cancelling changes nothing, so focus returns to the opener rather than
