@@ -47,14 +47,11 @@ describe("WorkspacePanel price announcer", () => {
   it("announces the new price when the capacity slider moves", async () => {
     const { container } = renderPanel();
 
-    const slider = screen.getByRole("slider", { name: /how many feeds/i });
-    slider.focus();
-    fireEvent.keyDown(slider, { key: "ArrowRight" });
+    const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
+    fireEvent.change(input, { target: { value: "1100" } });
+    fireEvent.blur(input);
 
-    // 70 -> 100 feeds = $10.00 + 30 * $0.50 = $25.00 ("$25"). The feed count is
-    // carried by the thumb's aria-valuetext, so the announcer speaks only the
-    // price + interval.
-    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$25 per month."));
+    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$525 per month."));
   });
 
   it("does NOT announce the price when only the billing interval changes", async () => {
@@ -65,10 +62,10 @@ describe("WorkspacePanel price announcer", () => {
 
     // Move the slider first so the announcer holds a real value, proving the next
     // assertion is about the interval change and not just an empty initial state.
-    const slider = screen.getByRole("slider", { name: /how many feeds/i });
-    slider.focus();
-    fireEvent.keyDown(slider, { key: "ArrowRight" });
-    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$25 per month."));
+    const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
+    fireEvent.change(input, { target: { value: "1100" } });
+    fireEvent.blur(input);
+    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$525 per month."));
 
     // The parent toggles the interval prop. The visible price updates, but the
     // announcer must stay unchanged so nothing is spoken from this panel.
@@ -88,7 +85,7 @@ describe("WorkspacePanel price announcer", () => {
     // Visible hero price reflects the yearly interval...
     await screen.findByText(/^per year$/);
     // ...but the announcer was not rewritten by the interval change.
-    expect(getAnnouncer(container)).toHaveTextContent("$25 per month.");
+    expect(getAnnouncer(container)).toHaveTextContent("$525 per month.");
   });
 
   it("the visible hero price is not itself a live region", () => {
@@ -134,16 +131,26 @@ describe("WorkspacePanel price announcer", () => {
     expect(screen.queryByText(/size your plan/i)).not.toBeInTheDocument();
   });
 
-  it("keeps using aria-valuetext for the feed count so it is not duplicated in the announcer", async () => {
+  it("reports a localized selected capacity without duplicating it in the price announcer", async () => {
     const { container } = renderPanel();
 
-    const slider = screen.getByRole("slider", { name: /how many feeds/i });
-    slider.focus();
-    fireEvent.keyDown(slider, { key: "ArrowRight" });
+    const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
+    fireEvent.change(input, { target: { value: "1100" } });
+    fireEvent.blur(input);
 
-    await waitFor(() => expect(slider).toHaveAttribute("aria-valuetext", "100 feeds"));
-    // The announcer speaks the price only, leaving the feed count to the thumb so
-    // a screen reader does not hear "100 feeds" twice.
+    await waitFor(() => expect(input).toHaveAttribute("aria-valuetext", "1,100 feeds"));
     expect(getAnnouncer(container)).not.toHaveTextContent(/feeds/);
+  });
+
+  it("offers the prescribed quick picks and clamps an out-of-range direct entry", async () => {
+    renderPanel();
+
+    expect(screen.getByRole("button", { name: "1,100 feeds" })).toBeInTheDocument();
+    const input = screen.getByRole("spinbutton", { name: /feed capacity/i });
+    fireEvent.change(input, { target: { value: "1200" } });
+    fireEvent.blur(input);
+
+    await waitFor(() => expect(input).toHaveValue(1100));
+    expect(screen.getByText(/choose a whole number from 70 to 1,100 feeds/i)).toBeInTheDocument();
   });
 });

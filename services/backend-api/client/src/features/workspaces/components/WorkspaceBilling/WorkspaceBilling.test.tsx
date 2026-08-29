@@ -302,10 +302,10 @@ describe("WorkspaceBilling", () => {
 
     // The capacity selector is one slider over the whole Team plan, not a grid of
     // Tier 2 / Tier 3 cards each with their own price and Subscribe button.
-    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
-    expect(slider).toBeInTheDocument();
+    const picker = await screen.findByRole("spinbutton", { name: /feed capacity/i });
+    expect(picker).toBeInTheDocument();
     // The slider starts at the base capacity and announces feeds, not an index.
-    expect(slider).toHaveAttribute("aria-valuetext", "70 feeds");
+    expect(picker).toHaveAttribute("aria-valuetext", "70 feeds");
 
     // One Subscribe action for the single plan, not one per tier.
     expect(screen.getAllByRole("button", { name: /subscribe/i })).toHaveLength(1);
@@ -376,16 +376,16 @@ describe("WorkspaceBilling", () => {
     // Base price before moving the slider (formatCurrency drops the ".00").
     expect(await screen.findByText("$10", { exact: false })).toBeInTheDocument();
 
-    // Slide one detent up: 70 -> 100 feeds, i.e. 30 add-on feeds above the base.
-    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
-    slider.focus();
-    await userEvent.keyboard("{ArrowRight}");
+    // Enter 1,100 feeds, i.e. 1,030 add-on feeds above the base.
+    const picker = await screen.findByRole("spinbutton", { name: /feed capacity/i });
+    fireEvent.change(picker, { target: { value: "1100" } });
+    fireEvent.blur(picker);
 
     // The headline reflects the combined recurring total derived from the single
-    // preview (base $10.00 + 30 add-on feeds * $0.50 = $25.00, rendered "$25" as
+    // preview (base $10.00 + 1,030 add-on feeds * $0.50 = $525.00, rendered "$525" as
     // formatCurrency drops the ".00"), with no per-detent round-trip: the whole
     // range is priced from that one preview.
-    const total = await screen.findByText("$25", { exact: false });
+    const total = await screen.findByText("$525", { exact: false });
 
     // The price summary is a polite live region that settles once resolved.
     const liveRegion = total.closest('[aria-live="polite"]');
@@ -393,13 +393,13 @@ describe("WorkspaceBilling", () => {
     await waitFor(() => expect(liveRegion).toHaveAttribute("aria-busy", "false"));
 
     // Subscribing buys exactly that capacity in one basket.
-    fireEvent.click(screen.getByRole("button", { name: /subscribe to team, 100 feeds total/i }));
+    fireEvent.click(screen.getByRole("button", { name: /subscribe to team, 1,100 feeds total/i }));
     await waitFor(() =>
       expect(h.openCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
           prices: [
             { priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 },
-            { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 30 },
+            { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 1030 },
           ],
           customData: { workspaceId: "workspace-1" },
         }),
@@ -711,9 +711,7 @@ describe("WorkspaceBilling", () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
 
-    // The buy-time pricing dialog hands the chosen capacity over as ?feeds=N. The
-    // activation slider seats it on the next detent at or above the request (250
-    // -> 300), never silently downgrading.
+    // The buy-time pricing dialog hands the exact chosen capacity over as ?feeds=N.
     render(
       <QueryClientProvider
         client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
@@ -726,10 +724,10 @@ describe("WorkspaceBilling", () => {
       </QueryClientProvider>,
     );
 
-    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
-    expect(slider).toHaveAttribute("aria-valuetext", "300 feeds");
+    const picker = await screen.findByRole("spinbutton", { name: /feed capacity/i });
+    expect(picker).toHaveAttribute("aria-valuetext", "250 feeds");
     expect(
-      screen.getByRole("button", { name: /subscribe to team, 300 feeds total/i }),
+      screen.getByRole("button", { name: /subscribe to team, 250 feeds total/i }),
     ).toBeInTheDocument();
   });
 
@@ -1375,25 +1373,13 @@ describe("WorkspaceBilling", () => {
   const openChangeDialog = async () => {
     fireEvent.click(await screen.findByRole("button", { name: /change capacity/i }));
     // The dialog hosts the capacity slider.
-    await screen.findByRole("slider", { name: /how many feeds/i });
+    await screen.findByRole("spinbutton", { name: /feed capacity/i });
   };
 
-  // Drag the change-dialog slider to a target detent by pressing arrow keys from
-  // the current position. The slider is index-driven, so each press is one detent.
   const setSliderToFeeds = async (targetFeeds: number) => {
-    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
-    const detents = [70, 100, 140, 200, 300, 500];
-    const targetIndex = detents.findIndex((d) => d >= targetFeeds);
-    const currentText = slider.getAttribute("aria-valuetext") ?? "";
-    const currentFeeds = parseInt(currentText, 10);
-    const currentIndex = detents.findIndex((d) => d >= currentFeeds);
-    const delta = targetIndex - currentIndex;
-    slider.focus();
-
-    for (let i = 0; i < Math.abs(delta); i += 1) {
-      // eslint-disable-next-line no-await-in-loop
-      await userEvent.keyboard(delta > 0 ? "{ArrowRight}" : "{ArrowLeft}");
-    }
+    const picker = await screen.findByRole("spinbutton", { name: /feed capacity/i });
+    fireEvent.change(picker, { target: { value: String(targetFeeds) } });
+    fireEvent.blur(picker);
   };
 
   it("shows a read-only current plan with a Change capacity button, not tier-switch cards", async () => {
@@ -1426,8 +1412,8 @@ describe("WorkspaceBilling", () => {
 
     // The manage slider opens at the current capacity (100), not at the base (70)
     // the way the buy-time slider does.
-    const slider = await screen.findByRole("slider", { name: /how many feeds/i });
-    expect(slider).toHaveAttribute("aria-valuetext", "100 feeds");
+    const picker = await screen.findByRole("spinbutton", { name: /feed capacity/i });
+    expect(picker).toHaveAttribute("aria-valuetext", "100 feeds");
   });
 
   it("does not show a perpetual preview spinner when the dialog opens at the current capacity", async () => {
@@ -1709,7 +1695,7 @@ describe("WorkspaceBilling", () => {
     trigger.focus();
     fireEvent.click(trigger);
 
-    await screen.findByRole("slider", { name: /how many feeds/i });
+    await screen.findByRole("spinbutton", { name: /feed capacity/i });
     fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
 
     // Cancelling changes nothing, so focus returns to the opener rather than

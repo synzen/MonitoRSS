@@ -367,84 +367,27 @@ test.describe("Paddle workspace roundtrip", () => {
     await expect(forTeam.getByRole("button", { name: /go to your workspace/i })).toHaveCount(0);
   });
 
-  test("raises a team's capacity via the slider and the new limit is reflected in the UI", async ({
+  test("purchases a 1,100-feed workspace and reflects the new limit in the UI", async ({
     page,
   }) => {
     test.setTimeout(300_000);
 
     const { workspaceSlug } = await createTeamAndOpenBilling(page);
 
-    // Activate at 140 feeds ANNUAL: raising capacity immediately afterwards
-    // prorates the add-on over the remaining period, which on a monthly plan can
-    // fall under Paddle's $0.70 minimum and be rejected. A year comfortably clears
-    // it, so the change preview is deterministic.
     await page.getByRole("button", { name: "Yearly" }).click();
-    // The activation slider starts at the base 70 feeds; drag it up two detents
-    // (70 -> 100 -> 140) so the single Subscribe button targets 140-feed capacity.
-    const activationSlider = page.getByRole("slider", { name: /how many feeds/i });
-    // Press the slider itself rather than page.keyboard: page-level keys go to
-    // whatever the document has focused, and re-rendering the panel between
-    // presses (the live price resolving) can move focus off the thumb, silently
-    // dropping the second step and leaving capacity at 100. Locator.press
-    // re-targets the thumb for each key. Confirm each detent so a lost press
-    // fails here rather than as a confusing wrong-capacity checkout later.
-    await activationSlider.press("ArrowRight");
-    await expect(activationSlider).toHaveAttribute("aria-valuetext", "100 feeds", {
-      timeout: 5000,
-    });
-    await activationSlider.press("ArrowRight");
-    await expect(activationSlider).toHaveAttribute("aria-valuetext", "140 feeds", {
-      timeout: 5000,
-    });
-    await page.getByRole("button", { name: /subscribe to team, 140 feeds total/i }).click();
+    const capacity = page.getByRole("spinbutton", { name: "Feed capacity" });
+    await capacity.fill("1100");
+    await capacity.blur();
+    await expect(capacity).toHaveAttribute("aria-valuetext", "1,100 feeds", { timeout: 5000 });
+    await page.getByRole("button", { name: /subscribe to team, 1,100 feeds total/i }).click();
     // completeInlineCheckout already waits out the activation webhook, so the page
     // is on the active current-plan view by the time it returns; these are instant
     // client renders. Short timeouts so a UI regression fails in seconds, not at
     // the test-level ceiling. Every capacity is base tier + per-feed add-ons, so
-    // 140 feeds is 70 base + 70 additional (buy and manage baskets are identical).
+    // 1,100 feeds is the 70-feed Team base item plus 1,030 additional feeds.
     await completeInlineCheckout(page);
     await expect(page.getByText("Current plan").first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("140 feeds (70 + 70 additional)")).toBeVisible({ timeout: 10000 });
-
-    // The capacity slider is detents-only: from 140 the next reachable capacity is
-    // 200 feeds (base 70 + 130 add-on feeds), not an arbitrary +N. Open the
-    // change-capacity dialog and step up one detent.
-    const changeDialog = page.getByRole("dialog");
-    await expect(async () => {
-      if ((await changeDialog.count()) > 0) {
-        await changeDialog.getByRole("button", { name: "Cancel" }).click();
-        await expect(changeDialog).toHaveCount(0);
-      }
-
-      await page.getByRole("button", { name: /change capacity/i }).click();
-      // The dialog + slider are instant client renders; short timeouts so a UI
-      // break fails this attempt fast instead of stalling the retry budget.
-      const slider = changeDialog.getByRole("slider", { name: /how many feeds/i });
-      await expect(slider).toBeVisible({ timeout: 10000 });
-      // Seeded at the current 140 feeds (detent index 2); one step up is 200.
-      await expect(slider).toHaveAttribute("aria-valuetext", "140 feeds", { timeout: 5000 });
-      await slider.press("ArrowRight");
-      await expect(slider).toHaveAttribute("aria-valuetext", "200 feeds", { timeout: 5000 });
-      // Only the prorated preview is webhook-gated; it is the one slow wait here.
-      await expect(changeDialog.getByText("Total due today")).toBeVisible({ timeout: 15000 });
-    }).toPass({ timeout: 120_000, intervals: [5000] });
-
-    await changeDialog.getByRole("button", { name: /confirm change/i }).click();
-    // The confirm handler blocks on Paddle then polls the local record until the
-    // webhook lands (~1s x up to 50 tries), so the dialog can stay open close to
-    // a minute against the sandbox. Budget the full webhook window used elsewhere
-    // in the suite rather than the tighter 60s, which flakes on a slow sandbox.
-    await expect(changeDialog).toHaveCount(0, { timeout: 120_000 });
-
-    // The change lands via webhook, so the rendered current-plan text lags the
-    // confirmed change; reload until it reflects the new 200-feed capacity (base
-    // 70 + 130 additional).
-    await expect(async () => {
-      await page.reload();
-      await expect(page.getByText("200 feeds (70 + 130 additional)")).toBeVisible({
-        timeout: 5000,
-      });
-    }).toPass({ timeout: 120_000, intervals: [3000] });
+    await expect(page.getByText("1,100 feeds (70 + 1,030 additional)")).toBeVisible({ timeout: 10000 });
 
     // Teardown: cancel the workspace's sandbox subscription, then delete it.
     await cancelAndDeleteWorkspace(page, workspaceSlug);

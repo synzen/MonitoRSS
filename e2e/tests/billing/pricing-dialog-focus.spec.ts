@@ -78,10 +78,10 @@ test.describe("Pricing dialog focus management", () => {
     // not the slider; expanding "Add more feeds" reveals the slider.
     const sizerTrigger = forTeam.getByRole("button", { name: /add more feeds/i });
     await expect(sizerTrigger).toBeVisible();
-    await expect(forTeam.getByRole("slider", { name: /how many feeds/i })).toBeHidden();
+    await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeHidden();
     await sizerTrigger.click();
     await expect(
-      forTeam.getByRole("slider", { name: /how many feeds/i }),
+      forTeam.getByRole("spinbutton", { name: /feed capacity/i }),
     ).toBeVisible();
 
     // The external-properties explainer is a keyboard-accessible disclosure: the
@@ -100,17 +100,10 @@ test.describe("Pricing dialog focus management", () => {
     await expect(page.getByText(/fewer than 51 articles/i)).toBeHidden();
     await expect(infoButton).toBeFocused();
 
-    // The slider must be operable in BOTH directions with the keyboard (a
-    // round-up-only snap would trap it at the 70-feed base). Climb a detent, then
-    // step back down, asserting the slider's announced feed count moves each way.
-    // (The CTA no longer carries the count, so the slider's aria-valuetext is the
-    // signal the capacity actually changed.)
-    const slider = forTeam.getByRole("slider", { name: /how many feeds/i });
-    await slider.focus();
-    await slider.press("ArrowRight");
-    await expect(slider).toHaveAttribute("aria-valuetext", "100 feeds");
-    await slider.press("ArrowLeft");
-    await expect(slider).toHaveAttribute("aria-valuetext", "70 feeds");
+    const picker = forTeam.getByRole("spinbutton", { name: /feed capacity/i });
+    await picker.fill("1100");
+    await picker.blur();
+    await expect(picker).toHaveAttribute("aria-valuetext", "1,100 feeds");
   });
 
   test("is mobile responsive: regions stack and content fits the viewport", async ({ page }) => {
@@ -144,7 +137,7 @@ test.describe("Pricing dialog focus management", () => {
 
     // Expand the collapsed-by-default sizer to reveal the slider.
     await forTeam.getByRole("button", { name: /add more feeds/i }).click();
-    await expect(forTeam.getByRole("slider", { name: /how many feeds/i })).toBeVisible();
+    await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeVisible();
 
     // The narrow-left region stacks ABOVE the dominant-right region (column
     // layout) rather than sitting beside it, and neither overflows the viewport.

@@ -10,7 +10,6 @@ import {
   VisuallyHidden,
 } from "@chakra-ui/react";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
-import { Slider } from "@/components/ui/slider";
 import {
   AccordionItem,
   AccordionItemContent,
@@ -19,8 +18,8 @@ import {
 } from "@/components/ui/accordion";
 import {
   useWorkspaceSliderPrice,
-  WORKSPACE_DETENTS,
   WORKSPACE_BASE_FEEDS,
+  CapacityPicker,
   WORKSPACE_FEATURES,
   WorkspaceFeatureRow,
   FeatureRow,
@@ -56,7 +55,6 @@ const CREATE_WORKSPACE_CTA = "Create your workspace";
 const OWNER_CTA_LABEL = "Go to your workspace";
 const OWNER_REASSURANCE = "You already have a workspace. Pick your capacity and subscribe there.";
 
-const WORKSPACE_SLIDER_LABEL = "How many feeds do you need?";
 // The capacity line frames the base feed count as a FLOOR you start at and add
 // to, not a ceiling you'll waste: leading with a raw count invites the
 // "I only need a few, so this is overpriced" reflex (the same one that sinks
@@ -74,11 +72,6 @@ const WORKSPACE_SIZER_ACCORDION_VALUE = "sizer";
 // The slider domain is the detent INDEX (0..n-1), so each step is one detent and
 // every tick is a real, reachable stop. Labels show the feed count at each index;
 // the top detent reads "N+" since it represents that capacity and beyond.
-const WORKSPACE_SLIDER_MAX_INDEX = WORKSPACE_DETENTS.length - 1;
-const WORKSPACE_SLIDER_MARKS = WORKSPACE_DETENTS.map((value, index) => ({
-  value: index,
-  label: index === WORKSPACE_SLIDER_MAX_INDEX ? `${value}+` : `${value}`,
-}));
 
 // The dominant Workspace panel: a capacity slider drives a live hero price (from
 // Paddle previews) and a CTA that names the chosen feed count. The slider always
@@ -114,8 +107,7 @@ export const WorkspacePanel = ({
   // Indexing makes every arrow-key press land on a real detent and move cleanly
   // in both directions, which a controlled slider snapping arbitrary feed counts
   // cannot do (it desyncs from Chakra's step grid and traps the keyboard).
-  const [detentIndex, setDetentIndex] = useState(0);
-  const feeds = WORKSPACE_DETENTS[detentIndex];
+  const [feeds, setFeeds] = useState(WORKSPACE_BASE_FEEDS);
   const { price } = useWorkspaceSliderPrice({ feeds, pricing });
 
   const intervalSuffix = interval === "month" ? "per month" : "per year";
@@ -213,19 +205,7 @@ export const WorkspacePanel = ({
                   already separates the two, so no top divider is needed. */}
               <AccordionItemContent px={0} pb={0}>
                 <Box px={7} pt={2} pb={7}>
-                  <Slider
-                    label={WORKSPACE_SLIDER_LABEL}
-                    min={0}
-                    max={WORKSPACE_SLIDER_MAX_INDEX}
-                    step={1}
-                    value={[detentIndex]}
-                    onValueChange={(d) => setDetentIndex(d.value[0])}
-                    // The thumb's raw value is a detent index; announce the feed
-                    // count it maps to so a screen-reader user hears "140 feeds",
-                    // not "2".
-                    getAriaValueText={(d) => `${WORKSPACE_DETENTS[d.value]} feeds`}
-                    marks={WORKSPACE_SLIDER_MARKS}
-                  />
+                  <CapacityPicker value={feeds} onChange={setFeeds} />
                 </Box>
               </AccordionItemContent>
             </AccordionItem>

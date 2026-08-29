@@ -53,14 +53,16 @@ import {
   feedCountToAddonQuantity,
   workspaceFeedPricingFromProducts,
   WORKSPACE_BASE_FEEDS,
+  WORKSPACE_MAX_FEEDS,
+  WORKSPACE_MIN_FEEDS,
+  formatWorkspaceFeedCount,
+  formatWorkspaceFeedNumber,
   WorkspaceFeedPricing,
 } from "@/shared/workspaceCapacity";
 import {
   CapacitySlider,
   CapacitySummary,
   CapacityCompareColumn,
-  detentIndexForFeeds,
-  feedsForDetentIndex,
 } from "./CapacitySlider";
 import type { PricePreview } from "@/types/PricePreview";
 import { useCurrentWorkspace } from "../../contexts/CurrentWorkspaceContext";
@@ -376,13 +378,12 @@ const ChangeCapacityDialog = ({
   // (preview fires, Confirm enabled) with no user action and let a no-move
   // confirm silently raise capacity. So clamp the seeded count back to the
   // current capacity for the dirty check: an untouched dialog is never dirty.
-  const seededIndex = detentIndexForFeeds(currentFeeds);
-  const [index, setIndex] = useState(seededIndex);
+  const [nextFeeds, setNextFeeds] = useState(currentFeeds);
   // Re-seat whenever the dialog (re)opens or the current capacity changes.
   useEffect(() => {
     if (open) {
       closingForSuccessRef.current = false;
-      setIndex(detentIndexForFeeds(currentFeeds));
+      setNextFeeds(currentFeeds);
     }
   }, [open, currentFeeds]);
 
@@ -390,8 +391,6 @@ const ChangeCapacityDialog = ({
   // while the slider is still on its seeded position, where the real current
   // capacity (which may sit between detents) is the effective target so the
   // dialog opens clean.
-  const onSeededDetent = index === seededIndex;
-  const nextFeeds = onSeededDetent ? currentFeeds : feedsForDetentIndex(index);
   const dirty = nextFeeds !== currentFeeds;
   const prices = buildBasket(nextFeeds);
 
@@ -420,8 +419,8 @@ const ChangeCapacityDialog = ({
     // "can now run up to" reads as an upgrade; for a decrease (which just
     // disabled feeds) state the new capacity plainly instead.
     const description = decreasing
-      ? `This workspace's capacity is now ${confirmedFeeds} feeds.`
-      : `This workspace can now run up to ${confirmedFeeds} feeds.`;
+      ? `This workspace's capacity is now ${formatWorkspaceFeedCount(confirmedFeeds)}.`
+      : `This workspace can now run up to ${formatWorkspaceFeedCount(confirmedFeeds)}.`;
     // The visible alert (role="alert", via the always-mounted page outlet) is
     // both the durable on-screen confirmation and the announcement. Defer it past
     // the close: while the modal is open it inerts the rest of the page including
@@ -452,9 +451,9 @@ const ChangeCapacityDialog = ({
         <DialogBody>
           <Stack gap={5}>
             <DialogDescription>
-              You&apos;re currently on {currentFeeds} feeds. Pick a new capacity.
+              You&apos;re currently on {formatWorkspaceFeedCount(currentFeeds)}. Pick a new capacity.
             </DialogDescription>
-            <CapacitySlider index={index} onChange={setIndex} />
+            <CapacitySlider feeds={nextFeeds} onChange={setNextFeeds} />
             {/* One always-mounted polite live region carries the before/after
                 summary so increases and decreases announce through the same node.
                 The slider sits above it so its own value announcements are not
@@ -464,7 +463,7 @@ const ChangeCapacityDialog = ({
                 decrease-specific. */}
             <Box aria-live="polite" aria-busy={!recurringPrice}>
               <VisuallyHidden>
-                Changing capacity from {currentFeeds} feeds to {nextFeeds} feeds,{" "}
+                Changing capacity from {formatWorkspaceFeedCount(currentFeeds)} to {formatWorkspaceFeedCount(nextFeeds)},{" "}
                 {recurringPrice ?? "updating price"} per {interval}.
               </VisuallyHidden>
               <HStack gap={4} alignItems="stretch" aria-hidden>
@@ -607,10 +606,10 @@ export const WorkspaceBilling = () => {
   // the next detent at or above the requested count.
   const [searchParams] = useSearchParams();
   const requestedFeeds = Number(searchParams.get("feeds"));
-  const [activationIndex, setActivationIndex] = useState(() =>
-    Number.isFinite(requestedFeeds) && requestedFeeds > WORKSPACE_BASE_FEEDS
-      ? detentIndexForFeeds(requestedFeeds)
-      : 0,
+  const [activationFeeds, setActivationFeeds] = useState(() =>
+    Number.isInteger(requestedFeeds)
+      ? Math.min(WORKSPACE_MAX_FEEDS, Math.max(WORKSPACE_MIN_FEEDS, requestedFeeds))
+      : WORKSPACE_BASE_FEEDS,
   );
   const [isConvertOpen, setIsConvertOpen] = useState(false);
   // The change-capacity dialog (subscribed owners). Focus returns to its trigger
@@ -675,7 +674,6 @@ export const WorkspaceBilling = () => {
   // Live recurring price for the activation slider's chosen capacity. Hooks must
   // run before the early return below, so this lives here even though it only
   // feeds the unsubscribed activation view.
-  const activationFeeds = feedsForDetentIndex(activationIndex);
   const { price: activationPrice } = useWorkspaceSliderPrice({
     feeds: activationFeeds,
     pricing: feedPricingFor(interval),
@@ -830,10 +828,8 @@ export const WorkspaceBilling = () => {
               {currentTier && (
                 <Text color="fg.muted">
                   {currentAddonQuantity > 0
-                    ? `${TIER_FEED_LIMITS[currentTier] + currentAddonQuantity} feeds (${
-                        TIER_FEED_LIMITS[currentTier]
-                      } + ${currentAddonQuantity} additional)`
-                    : `${TIER_FEED_LIMITS[currentTier]} feeds`}
+                    ? `${formatWorkspaceFeedCount(TIER_FEED_LIMITS[currentTier] + currentAddonQuantity)} (${formatWorkspaceFeedNumber(TIER_FEED_LIMITS[currentTier])} + ${formatWorkspaceFeedNumber(currentAddonQuantity)} additional)`
+                    : formatWorkspaceFeedCount(TIER_FEED_LIMITS[currentTier])}
                 </Text>
               )}
               {subscription.cancellationDate ? (
@@ -987,16 +983,16 @@ export const WorkspaceBilling = () => {
                   price={activationPrice}
                   interval={interval}
                 />
-                <CapacitySlider index={activationIndex} onChange={setActivationIndex} />
+                <CapacitySlider feeds={activationFeeds} onChange={setActivationFeeds} />
                 <Box>
                   <PrimaryActionButton
                     onClick={() => subscribeToCapacity(activationFeeds)}
                     aria-haspopup="dialog"
                     aria-label={`Subscribe to ${getPlanDisplayName(
                       ProductKey.Tier2,
-                    )}, ${activationFeeds} feeds total`}
+                    )}, ${formatWorkspaceFeedCount(activationFeeds)} total`}
                   >
-                    Subscribe for {activationFeeds} feeds
+                    Subscribe for {formatWorkspaceFeedCount(activationFeeds)}
                   </PrimaryActionButton>
                 </Box>
               </Stack>
