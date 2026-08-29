@@ -72,12 +72,14 @@ function parsePageSize(value: string | null): number {
 }
 
 function statusFiltersFromUrl(value: string | null): UserFeedComputedStatus[] {
-  const validStatuses = new Set(Object.values(UserFeedComputedStatus));
+  const validStatuses = new Set<UserFeedComputedStatus>(
+    Object.values(UserFeedComputedStatus),
+  );
 
   return (value || "")
     .split(",")
     .filter((status): status is UserFeedComputedStatus =>
-      validStatuses.has(status),
+      validStatuses.has(status as UserFeedComputedStatus),
     );
 }
 
