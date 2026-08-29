@@ -1,0 +1,66 @@
+import { test, expect } from "../../fixtures/test-fixtures";
+import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
+import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
+import {
+  deletePersonalFeedsByTitlePrefixInDb,
+  getUserMongoIdFromDiscordId,
+  seedPersonalFeedsInDb,
+} from "../../helpers/workspaces-db";
+
+test.describe("Feeds Table Pagination", () => {
+  test("opens a feed beyond the first 100 results and restores its page on return", async ({
+    page,
+  }) => {
+    await page.goto("/feeds");
+    await expect(
+      page.getByRole("button", { name: "Account settings" }),
+    ).toBeVisible({
+      timeout: 15000,
+    });
+
+    const discordUserId = await getDiscordUserIdFromPage(page);
+    const userId = await getUserMongoIdFromDiscordId(discordUserId);
+    const prefix = `Paged Feed ${Date.now()}`;
+    const targetTitle = `${prefix} 100`;
+
+    try {
+      await seedPersonalFeedsInDb({
+        userId,
+        discordUserId,
+        feeds: Array.from({ length: 101 }, (_, index) => ({
+          title: `${prefix} ${String(index).padStart(3, "0")}`,
+          url: MOCK_RSS_FEED_URL,
+        })),
+      });
+
+      await page.goto(`/feeds?search=${encodeURIComponent(prefix)}`);
+      await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
+      await expect(page.getByText("1–50 of 101 feeds")).toBeVisible();
+
+      await page.getByRole("button", { name: "Next" }).click();
+      await expect(page.getByText("51–100 of 101 feeds")).toBeVisible();
+      await page.getByRole("button", { name: "Next" }).click();
+      await expect(page.getByText("101–101 of 101 feeds")).toBeVisible();
+
+      const feedLink = page.getByRole("link", {
+        name: targetTitle,
+        exact: true,
+      });
+      await expect(feedLink).toBeVisible();
+      await feedLink.click();
+      await expect(
+        page.getByRole("heading", { name: targetTitle }),
+      ).toBeVisible({ timeout: 15000 });
+
+      await page.goBack();
+      await expect(page.getByText("101–101 of 101 feeds")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(
+        page.getByRole("row", { name: new RegExp(targetTitle) }),
+      ).toBeFocused();
+    } finally {
+      await deletePersonalFeedsByTitlePrefixInDb({ userId, prefix });
+    }
+  });
+});

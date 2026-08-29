@@ -1,5 +1,12 @@
 import { Box, Center, Stack, Table, Text } from "@chakra-ui/react";
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   OnChangeFn,
@@ -17,8 +24,15 @@ import {
   useSensors,
   DragEndEvent,
 } from "@dnd-kit/core";
-import { arrayMove, SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
-import { restrictToHorizontalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
+import {
+  arrayMove,
+  SortableContext,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import {
+  restrictToHorizontalAxis,
+  restrictToParentElement,
+} from "@dnd-kit/modifiers";
 import { Alert } from "@/components/ui/alert";
 import { Loading } from "@/components";
 import { Panel } from "@/components/Panel";
@@ -32,9 +46,40 @@ import {
   FilteredEmptyState,
   SortableTableHeader,
   TableToolbar,
-  LoadMoreSection,
+  PaginationSection,
 } from "./components";
 import { createTableColumns } from "./columns";
+import {
+  DEFAULT_PAGE_SIZE,
+  FEED_TABLE_FOCUS_KEY,
+  PAGE_SIZE_OPTIONS,
+} from "./constants";
+
+function parsePage(value: string | null): number {
+  const page = Number(value);
+
+  return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function parsePageSize(value: string | null): number {
+  const pageSize = Number(value);
+
+  return PAGE_SIZE_OPTIONS.includes(
+    pageSize as (typeof PAGE_SIZE_OPTIONS)[number],
+  )
+    ? pageSize
+    : DEFAULT_PAGE_SIZE;
+}
+
+function statusFiltersFromUrl(value: string | null): UserFeedComputedStatus[] {
+  const validStatuses = new Set(Object.values(UserFeedComputedStatus));
+
+  return (value || "")
+    .split(",")
+    .filter((status): status is UserFeedComputedStatus =>
+      validStatuses.has(status),
+    );
+}
 
 export const UserFeedsTable: React.FC = () => {
   const sensors = useSensors(
@@ -42,10 +87,17 @@ export const UserFeedsTable: React.FC = () => {
     useSensor(KeyboardSensor),
   );
 
-  const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
-  const { rowSelection, setRowSelection, setLoadedFeeds } = useMultiSelectUserFeedContext();
+  const { statusFilters, setStatusFilters } = useContext(
+    UserFeedStatusFilterContext,
+  );
+  const { rowSelection, setRowSelection, setLoadedFeeds } =
+    useMultiSelectUserFeedContext();
   const { workspaceSlug } = useFeedScope();
   const isWorkspaceScope = !!workspaceSlug;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parsePage(searchParams.get("page"));
+  const pageSize = parsePageSize(searchParams.get("pageSize"));
+  const urlSearch = searchParams.get("search") || "";
 
   // Preferences (sorting, column visibility, column order)
   const {
@@ -57,36 +109,80 @@ export const UserFeedsTable: React.FC = () => {
     setColumnOrder,
   } = useTablePreferences();
 
+  const urlStatusFilters = statusFiltersFromUrl(searchParams.get("status"));
+  const activeStatusFilters = searchParams.has("status")
+    ? urlStatusFilters
+    : statusFilters;
+  const urlSort = searchParams.get("sort");
+
+  useEffect(() => {
+    if (!urlSort) return;
+
+    const nextSorting = [
+      { id: urlSort.replace(/^-/, ""), desc: urlSort.startsWith("-") },
+    ];
+    if (
+      sorting.length !== 1 ||
+      sorting[0].id !== nextSorting[0].id ||
+      sorting[0].desc !== nextSorting[0].desc
+    ) {
+      setSorting(nextSorting);
+    }
+  }, [setSorting, sorting, urlSort]);
+
+  useEffect(() => {
+    if (urlSort || !sorting[0]) return;
+
+    setSearchParams((previous) => {
+      const params = new URLSearchParams(previous);
+      params.set("sort", `${sorting[0].desc ? "-" : ""}${sorting[0].id}`);
+
+      return params;
+    });
+  }, [setSearchParams, sorting, urlSort]);
+
+  useEffect(() => {
+    if (!searchParams.has("status")) return;
+
+    if (
+      urlStatusFilters.length !== statusFilters.length ||
+      urlStatusFilters.some((status, index) => status !== statusFilters[index])
+    ) {
+      setStatusFilters(urlStatusFilters);
+    }
+  }, [searchParams, statusFilters, setStatusFilters, urlStatusFilters]);
+
+  useEffect(() => {
+    if (searchParams.has("status") || statusFilters.length === 0) return;
+
+    setSearchParams((previous) => {
+      const params = new URLSearchParams(previous);
+      params.set("status", statusFilters.join(","));
+      params.delete("page");
+
+      return params;
+    });
+  }, [searchParams, setSearchParams, statusFilters]);
+
   // Data fetching
-  const {
-    data,
-    flatData,
-    total,
-    status,
-    error,
-    isFetching,
-    search,
-    setSearch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useFeedTableData({
+  const { data, rows, total, status, error, isFetching } = useFeedTableData({
     sorting,
-    statusFilters,
+    statusFilters: activeStatusFilters,
+    page,
+    pageSize,
+    search: urlSearch,
   });
 
   // Search state
   const {
     searchInput,
-    search: urlSearch,
+    search: tableSearch,
     setSearchInput,
     onSearchSubmit,
     onSearchClear,
   } = useTableSearch({
-    onSearchChange: useCallback((s: string) => setSearch(s), [setSearch]),
+    onSearchChange: useCallback(() => {}, []),
   });
-
-  const [, setSearchParams] = useSearchParams();
 
   const handleSearchForNewFeed = useCallback(
     (term: string) => {
@@ -105,15 +201,20 @@ export const UserFeedsTable: React.FC = () => {
   // shared with members), so it's omitted there.
   const columns = useMemo(
     () =>
-      createTableColumns(search, workspaceSlug ? { workspaceSlug } : undefined, {
-        excludeSharedWithMe: isWorkspaceScope,
-      }),
-    [search, workspaceSlug, isWorkspaceScope],
+      createTableColumns(
+        tableSearch,
+        workspaceSlug ? { workspaceSlug } : undefined,
+        {
+          excludeSharedWithMe: isWorkspaceScope,
+        },
+      ),
+    [tableSearch, workspaceSlug, isWorkspaceScope],
   );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
 
-  const hasActiveFilters = !!urlSearch || statusFilters.length > 0;
+  const hasActiveFilters = !!urlSearch || activeStatusFilters.length > 0;
 
   // Selection is owned by the multi-select context as a feed-id map (TanStack's
   // native RowSelectionState). The table is the controlled view of it: toggles
@@ -127,9 +228,15 @@ export const UserFeedsTable: React.FC = () => {
     (event: DragEndEvent) => {
       const { active, over } = event;
 
-      const isFixed = (id: string | number) => id === "select" || id === "configure";
+      const isFixed = (id: string | number) =>
+        id === "select" || id === "configure";
 
-      if (over && active.id !== over.id && !isFixed(active.id) && !isFixed(over.id)) {
+      if (
+        over &&
+        active.id !== over.id &&
+        !isFixed(active.id) &&
+        !isFixed(over.id)
+      ) {
         setColumnOrder((currentOrder) => {
           const oldIndex = currentOrder.indexOf(active.id as string);
           const newIndex = currentOrder.indexOf(over.id as string);
@@ -144,7 +251,7 @@ export const UserFeedsTable: React.FC = () => {
   // Table instance
   const tableInstance = useReactTable({
     columns,
-    data: flatData,
+    data: rows,
     manualSorting: true,
     getRowId: (row) => row.id,
     getCoreRowModel: getCoreRowModel(),
@@ -156,7 +263,20 @@ export const UserFeedsTable: React.FC = () => {
       columnVisibility,
       columnOrder,
     },
-    onSortingChange: setSorting,
+    onSortingChange: (updater) => {
+      const next = typeof updater === "function" ? updater(sorting) : updater;
+      const sort = next[0] ? `${next[0].desc ? "-" : ""}${next[0].id}` : "";
+
+      setSorting(next);
+      setSearchParams((previous) => {
+        const params = new URLSearchParams(previous);
+        if (sort) params.set("sort", sort);
+        else params.delete("sort");
+        params.delete("page");
+
+        return params;
+      });
+    },
     onColumnVisibilityChange: setColumnVisibility,
     onColumnOrderChange: setColumnOrder,
   });
@@ -167,27 +287,46 @@ export const UserFeedsTable: React.FC = () => {
   // (selected ids ∩ loaded feeds). When a bulk delete drops feeds from the list,
   // they fall out of the derived selection on the next render with no pruning.
   useEffect(() => {
-    setLoadedFeeds(flatData);
-  }, [flatData, setLoadedFeeds]);
+    setLoadedFeeds(rows);
+  }, [rows, setLoadedFeeds]);
+
+  useEffect(() => {
+    const feedId = sessionStorage.getItem(FEED_TABLE_FOCUS_KEY);
+    const row = feedId ? rowRefs.current.get(feedId) : undefined;
+
+    if (row) {
+      sessionStorage.removeItem(FEED_TABLE_FOCUS_KEY);
+      row.focus();
+    }
+  }, [rows]);
 
   // Status filter handler
   const onStatusSelect = useCallback(
     (statuses: UserFeedComputedStatus[]) => {
       setStatusFilters(statuses);
+      setSearchParams((previous) => {
+        const params = new URLSearchParams(previous);
+        if (statuses.length) params.set("status", statuses.join(","));
+        else params.delete("status");
+        params.delete("page");
+
+        return params;
+      });
     },
-    [setStatusFilters],
+    [setStatusFilters, setSearchParams],
   );
 
   const isInitiallyLoading = status === "loading" && !data;
 
-  const isFilteredEmpty = !isInitiallyLoading && flatData.length === 0 && hasActiveFilters;
+  const isFilteredEmpty =
+    !isInitiallyLoading && rows.length === 0 && hasActiveFilters;
 
   const [tableAnnouncement, setTableAnnouncement] = useState("");
   const pendingAnnouncement = useRef(true);
 
   useEffect(() => {
     pendingAnnouncement.current = true;
-  }, [urlSearch, statusFilters]);
+  }, [urlSearch, activeStatusFilters, page, pageSize, sorting]);
 
   useEffect(() => {
     if (isInitiallyLoading || isFetching) return;
@@ -198,11 +337,35 @@ export const UserFeedsTable: React.FC = () => {
     if (isFilteredEmpty) {
       setTableAnnouncement("No feeds match current filters");
     } else if (hasActiveFilters) {
-      setTableAnnouncement(`Showing ${flatData.length} of ${total} feeds`);
+      setTableAnnouncement(`Showing ${rows.length} of ${total} feeds`);
     } else {
-      setTableAnnouncement(`Loaded table with ${flatData.length} of ${total} feeds`);
+      setTableAnnouncement(`Showing ${rows.length} of ${total} feeds`);
     }
-  }, [isInitiallyLoading, isFetching, isFilteredEmpty, hasActiveFilters, flatData.length, total]);
+  }, [
+    isInitiallyLoading,
+    isFetching,
+    isFilteredEmpty,
+    hasActiveFilters,
+    rows.length,
+    total,
+  ]);
+
+  useEffect(() => {
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
+
+    if (!isFetching && page > pageCount) {
+      setSearchParams(
+        (previous) => {
+          const params = new URLSearchParams(previous);
+          if (pageCount === 1) params.delete("page");
+          else params.set("page", String(pageCount));
+
+          return params;
+        },
+        { replace: true },
+      );
+    }
+  }, [isFetching, page, pageSize, setSearchParams, total]);
 
   const handleClearAllFilters = useCallback(() => {
     onSearchClear();
@@ -228,7 +391,7 @@ export const UserFeedsTable: React.FC = () => {
           onSearchClear={onSearchClear}
           search={urlSearch}
           isFetching={isFetching}
-          statusFilters={statusFilters}
+          statusFilters={activeStatusFilters}
           onStatusSelect={onStatusSelect}
           columnVisibility={columnVisibility}
           onColumnVisibilityChange={setColumnVisibility}
@@ -239,7 +402,7 @@ export const UserFeedsTable: React.FC = () => {
         <ActiveFilterChips
           search={urlSearch}
           onSearchClear={onSearchClear}
-          statusFilters={statusFilters}
+          statusFilters={activeStatusFilters}
           onStatusFiltersClear={() => onStatusSelect([])}
           searchInputRef={searchInputRef}
         />
@@ -273,7 +436,10 @@ export const UserFeedsTable: React.FC = () => {
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
-                    modifiers={[restrictToHorizontalAxis, restrictToParentElement]}
+                    modifiers={[
+                      restrictToHorizontalAxis,
+                      restrictToParentElement,
+                    ]}
                   >
                     <SortableContext
                       items={headerGroup.headers.map((h) => h.id)}
@@ -293,7 +459,14 @@ export const UserFeedsTable: React.FC = () => {
             </Table.Header>
             <Table.Body>
               {getRowModel().rows.map((row) => (
-                <Table.Row key={row.id}>
+                <Table.Row
+                  key={row.id}
+                  tabIndex={-1}
+                  ref={(element) => {
+                    if (element) rowRefs.current.set(row.id, element);
+                    else rowRefs.current.delete(row.id);
+                  }}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <Table.Cell
                       paddingY={2}
@@ -303,7 +476,10 @@ export const UserFeedsTable: React.FC = () => {
                       overflow="hidden"
                       textOverflow="ellipsis"
                     >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </Table.Cell>
                   ))}
                 </Table.Row>
@@ -313,12 +489,29 @@ export const UserFeedsTable: React.FC = () => {
         </Panel>
       </Stack>
       {!isInitiallyLoading && !isFilteredEmpty && (
-        <LoadMoreSection
-          loadedCount={flatData.length}
+        <PaginationSection
+          page={page}
+          pageSize={pageSize}
           totalCount={total}
-          hasNextPage={hasNextPage ?? false}
-          isFetchingNextPage={isFetchingNextPage}
-          onLoadMore={fetchNextPage}
+          isFetching={isFetching}
+          onPageChange={(nextPage) => {
+            setSearchParams((previous) => {
+              const params = new URLSearchParams(previous);
+              if (nextPage <= 1) params.delete("page");
+              else params.set("page", String(nextPage));
+
+              return params;
+            });
+          }}
+          onPageSizeChange={(nextPageSize) => {
+            setSearchParams((previous) => {
+              const params = new URLSearchParams(previous);
+              params.set("pageSize", String(nextPageSize));
+              params.delete("page");
+
+              return params;
+            });
+          }}
         />
       )}
     </Stack>

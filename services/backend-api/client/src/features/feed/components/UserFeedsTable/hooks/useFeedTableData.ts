@@ -1,8 +1,6 @@
-import { useMemo } from "react";
 import { SortingState } from "@tanstack/react-table";
-import { useUserFeedsInfinite } from "../../../hooks/useUserFeedsInfinite";
+import { useUserFeeds } from "../../../hooks/useUserFeeds";
 import { UserFeedComputedStatus } from "../../../types";
-import { DEFAULT_MAX_PER_PAGE } from "../constants";
 
 function convertSortStateToSortKey(state: SortingState): string | undefined {
   if (!state[0]) {
@@ -15,47 +13,34 @@ function convertSortStateToSortKey(state: SortingState): string | undefined {
 interface UseFeedTableDataOptions {
   sorting: SortingState;
   statusFilters: UserFeedComputedStatus[];
-  limit?: number;
+  page: number;
+  pageSize: number;
+  search: string;
 }
 
 export function useFeedTableData({
   sorting,
   statusFilters,
-  limit = DEFAULT_MAX_PER_PAGE,
+  page,
+  pageSize,
+  search,
 }: UseFeedTableDataOptions) {
-  const {
-    data,
-    status,
-    error,
-    isFetching,
+  const { data, status, error, isFetching } = useUserFeeds({
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
     search,
-    setSearch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useUserFeedsInfinite({
-    limit,
     sort: convertSortStateToSortKey(sorting),
     filters: {
       computedStatuses: statusFilters,
     },
   });
 
-  const flatData = useMemo(() => data?.pages?.flatMap((page) => page.results) || [], [data]);
-
-  const total = data?.pages[0]?.total || 0;
-
   return {
     data,
-    flatData,
-    total,
+    rows: data?.results || [],
+    total: data?.total || 0,
     status,
     error,
     isFetching,
-    search,
-    setSearch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
   };
 }

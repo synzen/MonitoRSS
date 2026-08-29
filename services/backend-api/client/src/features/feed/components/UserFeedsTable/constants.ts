@@ -1,7 +1,9 @@
 import { VisibilityState } from "@tanstack/react-table";
 import { UserFeedComputedStatus } from "../../types";
 
-export const DEFAULT_MAX_PER_PAGE = 20;
+export const DEFAULT_PAGE_SIZE = 50;
+export const PAGE_SIZE_OPTIONS = [50, 100] as const;
+export const FEED_TABLE_FOCUS_KEY = "monitorss.feed-table-focus";
 
 /**
  * The "Shared with Me" column. It distinguishes feeds shared into a user's

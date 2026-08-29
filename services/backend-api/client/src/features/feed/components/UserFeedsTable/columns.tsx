@@ -1,7 +1,19 @@
-import { Button, Flex, Highlight, Link as ChakraLink, Stack, Text } from "@chakra-ui/react";
+import {
+  Button,
+  Flex,
+  Highlight,
+  Link as ChakraLink,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
 import { FaCheck, FaChevronRight } from "react-icons/fa6";
 import { Link as RouterLink } from "react-router-dom";
-import { CellContext, ColumnDef, HeaderContext, createColumnHelper } from "@tanstack/react-table";
+import {
+  CellContext,
+  ColumnDef,
+  HeaderContext,
+  createColumnHelper,
+} from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RowData } from "./types";
@@ -10,9 +22,13 @@ import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { DATE_FORMAT, pages } from "../../../../constants";
 import type { RouteScope } from "../../../../constants";
 import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
-import { SHARED_WITH_ME_COLUMN_ID } from "./constants";
+import { FEED_TABLE_FOCUS_KEY, SHARED_WITH_ME_COLUMN_ID } from "./constants";
 
 const columnHelper = createColumnHelper<RowData>();
+
+function rememberFeedForReturn(feedId: string) {
+  sessionStorage.setItem(FEED_TABLE_FOCUS_KEY, feedId);
+}
 
 interface ColumnConfig {
   id: string;
@@ -31,7 +47,9 @@ const columnConfigs: ColumnConfig[] = [
     id: "computedStatus",
     header: "Status",
     accessor: "computedStatus",
-    cell: (info) => <UserFeedStatusTag status={info.getValue() as UserFeedComputedStatus} />,
+    cell: (info) => (
+      <UserFeedStatusTag status={info.getValue() as UserFeedComputedStatus} />
+    ),
     sortable: true,
   },
   {
@@ -44,15 +62,27 @@ const columnConfigs: ColumnConfig[] = [
 
       if (!search) {
         return (
-          <ChakraLink asChild color="text.link" _hover={{ textDecoration: "underline" }}>
-            <RouterLink to={pages.userFeed(feedId, { scope })}>{value}</RouterLink>
+          <ChakraLink
+            asChild
+            color="text.link"
+            _hover={{ textDecoration: "underline" }}
+          >
+            <RouterLink
+              to={pages.userFeed(feedId, { scope })}
+              onClick={() => rememberFeedForReturn(feedId)}
+            >
+              {value}
+            </RouterLink>
           </ChakraLink>
         );
       }
 
       return (
         <ChakraLink asChild _hover={{ textDecoration: "underline" }}>
-          <RouterLink to={pages.userFeed(feedId, { scope })}>
+          <RouterLink
+            to={pages.userFeed(feedId, { scope })}
+            onClick={() => rememberFeedForReturn(feedId)}
+          >
             <Highlight query={search} styles={{ bg: "orange.100" }}>
               {value}
             </Highlight>
@@ -115,7 +145,12 @@ const columnConfigs: ColumnConfig[] = [
       }
 
       return (
-        <ChakraLink as="a" target="_blank" href={value} _hover={{ textDecoration: "underline" }}>
+        <ChakraLink
+          as="a"
+          target="_blank"
+          href={value}
+          _hover={{ textDecoration: "underline" }}
+        >
           <Highlight query={search} styles={{ bg: "orange.100" }}>
             {value}
           </Highlight>
@@ -169,7 +204,11 @@ function createSelectColumn(): ColumnDef<RowData> {
         <Checkbox
           alignItems="center"
           width="min-content"
-          checked={table.getIsSomeRowsSelected() ? "indeterminate" : table.getIsAllRowsSelected()}
+          checked={
+            table.getIsSomeRowsSelected()
+              ? "indeterminate"
+              : table.getIsAllRowsSelected()
+          }
           onCheckedChange={(details) => {
             table.toggleAllRowsSelected(!!details.checked);
           }}
@@ -180,11 +219,17 @@ function createSelectColumn(): ColumnDef<RowData> {
       </Flex>
     ),
     cell: ({ row }) => (
-      <Flex alignItems="center" justifyContent="center" onClick={(e) => e.stopPropagation()}>
+      <Flex
+        alignItems="center"
+        justifyContent="center"
+        onClick={(e) => e.stopPropagation()}
+      >
         <Checkbox
           display="flex"
           alignItems="center"
-          checked={row.getIsSomeSelected() ? "indeterminate" : row.getIsSelected()}
+          checked={
+            row.getIsSomeSelected() ? "indeterminate" : row.getIsSelected()
+          }
           aria-disabled={!row.getCanSelect()}
           onCheckedChange={(details) => {
             if (!row.getCanSelect()) return;
@@ -217,7 +262,10 @@ function createConfigureColumn(scope?: RouteScope): ColumnDef<RowData> {
         size="sm"
         aria-label={`Configure ${row.original.title}`}
       >
-        <RouterLink to={pages.userFeed(row.original.id, { scope })}>
+        <RouterLink
+          to={pages.userFeed(row.original.id, { scope })}
+          onClick={() => rememberFeedForReturn(row.original.id)}
+        >
           Configure
           <FaChevronRight aria-hidden="true" />
         </RouterLink>
@@ -243,14 +291,16 @@ export function createTableColumns(
       return columnHelper.accessor(config.accessor, {
         id: config.id,
         header: () => <span>{config.header}</span>,
-        cell: (info) => config.cell(info as CellContext<RowData, unknown>, search, scope),
+        cell: (info) =>
+          config.cell(info as CellContext<RowData, unknown>, search, scope),
       });
     }
 
     return columnHelper.accessor(config.accessor as keyof RowData, {
       id: config.id,
       header: () => <span>{config.header}</span>,
-      cell: (info) => config.cell(info as CellContext<RowData, unknown>, search, scope),
+      cell: (info) =>
+        config.cell(info as CellContext<RowData, unknown>, search, scope),
     });
   }) as ColumnDef<RowData>[];
 

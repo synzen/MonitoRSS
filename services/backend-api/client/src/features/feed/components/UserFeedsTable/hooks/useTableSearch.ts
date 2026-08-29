@@ -6,7 +6,9 @@ interface UseTableSearchOptions {
   onSearchChange: (search: string) => void;
 }
 
-export function useTableSearch({ onSearchChange }: UseTableSearchOptions): TableSearchState {
+export function useTableSearch({
+  onSearchChange,
+}: UseTableSearchOptions): TableSearchState {
   const [searchParams, setSearchParams] = useSearchParams();
   const searchParamsSearch = searchParams.get("search") || "";
   const [searchInput, setSearchInput] = useState(searchParamsSearch);
@@ -25,6 +27,7 @@ export function useTableSearch({ onSearchChange }: UseTableSearchOptions): Table
       } else {
         newParams.delete("search");
       }
+      newParams.delete("page");
 
       return newParams;
     });

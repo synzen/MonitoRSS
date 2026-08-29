@@ -264,6 +264,21 @@ export async function deletePersonalFeedInDb(input: {
   });
 }
 
+export async function deletePersonalFeedsByTitlePrefixInDb(input: {
+  userId: ObjectId;
+  prefix: string;
+}): Promise<void> {
+  await withDb(async (db) => {
+    await db.collection("userfeeds").deleteMany({
+      title: {
+        $regex: `^${input.prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+      },
+      "user.id": input.userId,
+      workspaceId: { $exists: false },
+    });
+  });
+}
+
 export async function changePersonalFeedOwnerInDb(input: {
   userId: ObjectId;
   title: string;

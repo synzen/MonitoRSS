@@ -1,5 +1,5 @@
 export { ActiveFilterChips } from "./ActiveFilterChips";
 export { SortableTableHeader } from "./SortableTableHeader";
 export { TableToolbar } from "./TableToolbar";
-export { LoadMoreSection } from "./LoadMoreSection";
+export { PaginationSection } from "./PaginationSection";
 export { FilteredEmptyState } from "./FilteredEmptyState";
