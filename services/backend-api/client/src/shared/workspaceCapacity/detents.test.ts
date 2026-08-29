@@ -1,20 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { WORKSPACE_DETENTS } from "./detents";
+import {
+  WORKSPACE_CAPACITY_QUICK_PICKS,
+  WORKSPACE_MAX_FEEDS,
+  WORKSPACE_MIN_FEEDS,
+  formatWorkspaceFeedCount,
+} from "./detents";
 
-describe("WORKSPACE_DETENTS", () => {
-  it("exposes the decided detent anchors in ascending order", () => {
-    expect(WORKSPACE_DETENTS).toEqual([70, 100, 140, 200, 300, 500]);
+describe("workspace capacity", () => {
+  it("supports the complete exact-capacity range and prescribed quick picks", () => {
+    expect(WORKSPACE_MIN_FEEDS).toBe(70);
+    expect(WORKSPACE_MAX_FEEDS).toBe(2000);
+    expect(WORKSPACE_CAPACITY_QUICK_PICKS).toEqual([70, 140, 300, 500, 1000, 2000]);
   });
 
-  // The slider domain is the index into this array, so the anchors must be
-  // strictly increasing for ArrowRight/ArrowLeft to mean "more/fewer feeds".
-  it("is strictly increasing so each index step changes capacity in one direction", () => {
-    for (let i = 1; i < WORKSPACE_DETENTS.length; i += 1) {
-      expect(WORKSPACE_DETENTS[i]).toBeGreaterThan(WORKSPACE_DETENTS[i - 1]);
-    }
-  });
-
-  it("starts at the base workspace tier's feed limit (70)", () => {
-    expect(WORKSPACE_DETENTS[0]).toBe(70);
+  it("formats large capacities for people rather than exposing raw digits", () => {
+    expect(formatWorkspaceFeedCount(2000)).toBe("2,000 feeds");
   });
 });

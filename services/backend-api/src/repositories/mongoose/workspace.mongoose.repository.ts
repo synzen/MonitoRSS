@@ -52,6 +52,13 @@ function isDuplicateKeyError(err: unknown): boolean {
   );
 }
 
+export interface PendingCapacityGrant {
+  feeds: number;
+  grantedAt: Date;
+  expiresAt: Date;
+  nextBillDate?: Date | null;
+}
+
 export interface IWorkspace {
   id: string;
   name: string;
@@ -72,6 +79,12 @@ export interface IWorkspace {
   // Cleared by the webhook that records the subscription; a TTL expires a stale
   // one so a dropped webhook can never exempt the workspace indefinitely.
   conversionInProgressAt?: Date | null;
+  // Low-value courtesy extension: when a prorated increase is below Paddle's
+  // charge limit, billing is deferred to renewal but capacity is granted
+  // immediately. While live, effective maxFeeds is max(subscription, grant).
+  // Cleared on successful renewal (webhook promotes), failed renewal/cancel,
+  // or expiry.
+  pendingCapacityGrant?: PendingCapacityGrant | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -179,6 +192,16 @@ const WorkspaceExternalCredentialSchema = new Schema(
   { timestamps: false },
 );
 
+const PendingCapacityGrantSchema = new Schema(
+  {
+    feeds: { type: Number, required: true },
+    grantedAt: { type: Date, required: true },
+    expiresAt: { type: Date, required: true },
+    nextBillDate: { type: Date },
+  },
+  { _id: false, timestamps: false },
+);
+
 const WorkspaceSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -188,6 +211,7 @@ const WorkspaceSchema = new Schema(
     paddleCustomer: { type: PaddleCustomerSchema },
     firstActivatedAt: { type: Date },
     conversionInProgressAt: { type: Date },
+    pendingCapacityGrant: { type: PendingCapacityGrantSchema },
     // Incremented transactionally to serialize writes that consume workspace
     // feed capacity across feed creation, cloning, and personal-feed moves.
     feedCapacityVersion: { type: Number, default: 0, select: false },
@@ -299,6 +323,7 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
       paddleCustomer: (doc.paddleCustomer ?? null) as IPaddleCustomer | null,
       firstActivatedAt: doc.firstActivatedAt ?? null,
       conversionInProgressAt: doc.conversionInProgressAt ?? null,
+      pendingCapacityGrant: (doc.pendingCapacityGrant ?? null) as IWorkspace["pendingCapacityGrant"],
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
@@ -451,6 +476,31 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     await this.workspaceModel.findByIdAndUpdate(
       this.stringToObjectId(workspaceId),
       { $unset: { conversionInProgressAt: "" } },
+    );
+  }
+
+  async setPendingCapacityGrant(
+    workspaceId: string,
+    grant: PendingCapacityGrant,
+  ): Promise<void> {
+    if (!Types.ObjectId.isValid(workspaceId)) {
+      return;
+    }
+
+    await this.workspaceModel.findByIdAndUpdate(
+      this.stringToObjectId(workspaceId),
+      { $set: { pendingCapacityGrant: grant } },
+    );
+  }
+
+  async clearPendingCapacityGrant(workspaceId: string): Promise<void> {
+    if (!Types.ObjectId.isValid(workspaceId)) {
+      return;
+    }
+
+    await this.workspaceModel.findByIdAndUpdate(
+      this.stringToObjectId(workspaceId),
+      { $unset: { pendingCapacityGrant: "" } },
     );
   }
 

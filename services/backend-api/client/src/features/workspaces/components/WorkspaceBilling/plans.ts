@@ -1,4 +1,5 @@
 import { getPlanDisplayName, ProductKey } from "@/constants";
+import { formatWorkspaceFeedCount } from "@/shared/workspaceCapacity";
 
 // The two workspace base tiers a subscription can be on. Retained as the key set
 // for the feed-limit map and the current-capacity derivation; the capacity model
@@ -19,4 +20,4 @@ export const TIER_FEED_LIMITS: Record<WorkspaceTier, number> = {
 // slider. The capacity model has a single plan name ("Team"); the feed count is
 // what the buyer is choosing, so it rides in the label.
 export const capacityPlanLabel = (feeds: number) =>
-  `${getPlanDisplayName(ProductKey.Tier2)} (${feeds} feeds)`;
+  `${getPlanDisplayName(ProductKey.Tier2)} (${formatWorkspaceFeedCount(feeds)})`;

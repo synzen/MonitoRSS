@@ -26,7 +26,7 @@ export const useUpdateWorkspaceBilling = () => {
   const invalidate = useInvalidateWorkspace();
 
   return useMutation<
-    void,
+    { deferred?: boolean; nextBillDate?: string | null } | void,
     ApiAdapterError,
     { workspaceSlug: string; prices: Array<{ priceId: string; quantity: number }> }
   >((input) => updateWorkspaceBilling(input), {

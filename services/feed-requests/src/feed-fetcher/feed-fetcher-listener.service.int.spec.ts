@@ -46,6 +46,7 @@ describe('FeedFetcherListenerService (Integration)', () => {
     const testDbUrl = new URL(config().FEED_REQUESTS_POSTGRES_URI);
     testDbUrl.pathname = '/feedrequests-test';
 
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { Client } = require('pg');
     const adminClient = new Client({
       connectionString: config().FEED_REQUESTS_POSTGRES_URI,
@@ -219,9 +220,7 @@ describe('FeedFetcherListenerService (Integration)', () => {
       timestamp: Date.now(),
       rateSeconds,
       data,
-    } as unknown as Parameters<
-      typeof service.onBrokerFetchRequestBatch
-    >[0]);
+    } as unknown as Parameters<typeof service.onBrokerFetchRequestBatch>[0]);
   };
 
   describe('onBrokerFetchRequestBatch', () => {
@@ -402,8 +401,8 @@ describe('FeedFetcherListenerService (Integration)', () => {
 
       // Once the backoff elapses, the next attempt proceeds and the backoff
       // grows exponentially (5 * 2^1 minutes for the second fresh failure).
-      await orm
-        .em.getConnection()
+      await orm.em
+        .getConnection()
         .execute(
           `UPDATE request_partitioned SET next_retry_date = NOW() - INTERVAL '1 second'`,
         );

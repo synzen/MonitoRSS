@@ -69,9 +69,7 @@ const defaultProps = {
   onRetryValidation: vi.fn(),
 };
 
-const renderComponent = (
-  props: Partial<React.ComponentProps<typeof UrlValidationResult>> = {},
-) => {
+const renderComponent = (props: Partial<React.ComponentProps<typeof UrlValidationResult>> = {}) => {
   const user = userEvent.setup();
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -173,9 +171,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      expect(
-        screen.getAllByText("blog.example.com").length,
-      ).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("blog.example.com").length).toBeGreaterThanOrEqual(1);
     });
 
     it("shows add button for resolved URL", () => {
@@ -190,9 +186,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      expect(
-        screen.getByRole("button", { name: /add example feed/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /add example feed/i })).toBeInTheDocument();
     });
 
     it("shows favicon using resolved URL domain", () => {
@@ -240,8 +234,7 @@ describe("UrlValidationResult", () => {
         validationStatus: "success",
         validationData: {
           result: {
-            resolvedToUrl:
-              "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
+            resolvedToUrl: "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
             feedTitle: "MKBHD",
           },
         },
@@ -271,16 +264,13 @@ describe("UrlValidationResult", () => {
         validationStatus: "success",
         validationData: {
           result: {
-            resolvedToUrl:
-              "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
+            resolvedToUrl: "https://www.youtube.com/feeds/videos.xml?channel_id=abc",
             feedTitle: "MKBHD",
           },
         },
       });
 
-      expect(
-        screen.getByRole("button", { name: /add mkbhd feed/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /add mkbhd feed/i })).toBeInTheDocument();
     });
 
     it("still shows 'Originally entered' for unknown domain with resolved URL", () => {
@@ -332,9 +322,7 @@ describe("UrlValidationResult", () => {
         onTrySearchByName,
       });
 
-      await user.click(
-        screen.getByRole("button", { name: /try searching by name instead/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /try searching by name instead/i }));
 
       expect(onTrySearchByName).toHaveBeenCalledTimes(1);
     });
@@ -347,9 +335,7 @@ describe("UrlValidationResult", () => {
         }),
       });
 
-      expect(
-        screen.getByRole("heading", { name: /tips for finding feeds/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /tips for finding feeds/i })).toBeInTheDocument();
     });
 
     it("tips list contains 3 items", () => {
@@ -375,9 +361,7 @@ describe("UrlValidationResult", () => {
         }),
       });
 
-      expect(
-        screen.queryByText("Tips for finding feeds"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText("Tips for finding feeds")).not.toBeInTheDocument();
     });
   });
 
@@ -406,10 +390,7 @@ describe("UrlValidationResult", () => {
       const cta = screen.getByTestId("fix-feed-requests-cta");
 
       expect(cta).toBeInTheDocument();
-      expect(cta).toHaveAttribute(
-        "data-url",
-        "https://www.reddit.com/r/gaming/.rss",
-      );
+      expect(cta).toHaveAttribute("data-url", "https://www.reddit.com/r/gaming/.rss");
     });
 
     it("FixFeedRequestsCTA not rendered for non-Reddit errors", () => {
@@ -421,9 +402,7 @@ describe("UrlValidationResult", () => {
         }),
       });
 
-      expect(
-        screen.queryByTestId("fix-feed-requests-cta"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByTestId("fix-feed-requests-cta")).not.toBeInTheDocument();
     });
   });
 
@@ -441,9 +420,7 @@ describe("UrlValidationResult", () => {
       const cta = screen.getByTestId("fix-feed-requests-cta");
       expect(cta).toBeInTheDocument();
       expect(cta).toHaveAttribute("data-variant", "required");
-      expect(
-        screen.queryByText("Failed to validate feed"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByText("Failed to validate feed")).not.toBeInTheDocument();
     });
 
     it("auto-retries validation when the connect prompt reports success", async () => {
@@ -458,9 +435,7 @@ describe("UrlValidationResult", () => {
         onRetryValidation,
       });
 
-      await user.click(
-        screen.getByRole("button", { name: /mock-connect-reddit/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /mock-connect-reddit/i }));
 
       expect(onRetryValidation).toHaveBeenCalledTimes(1);
     });
@@ -483,9 +458,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(
-        screen.getByRole("button", { name: /add gaming feed/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /add gaming feed/i }));
 
       const cta = screen.getByTestId("fix-feed-requests-cta");
       expect(cta).toBeInTheDocument();
@@ -510,12 +483,8 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(
-        screen.getByRole("button", { name: /add gaming feed/i }),
-      );
-      await user.click(
-        screen.getByRole("button", { name: /mock-connect-reddit/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /add gaming feed/i }));
+      await user.click(screen.getByRole("button", { name: /mock-connect-reddit/i }));
 
       expect(mockMutateAsync).toHaveBeenCalledTimes(2);
       expect(await screen.findByText("Added")).toBeInTheDocument();
@@ -533,9 +502,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(
-        screen.getByRole("button", { name: /add test feed feed/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /add test feed feed/i }));
 
       expect(mockMutateAsync).toHaveBeenCalledWith({
         details: { url: "https://example.com/feed.xml", title: "Test Feed" },
@@ -553,9 +520,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(
-        screen.getByRole("button", { name: /add blog\.example\.com feed/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /add blog\.example\.com feed/i }));
 
       expect(mockMutateAsync).toHaveBeenCalledWith({
         details: {
@@ -578,9 +543,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(
-        screen.getByRole("button", { name: /add example\.com feed/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /add example\.com feed/i }));
 
       expect(mockMutateAsync).toHaveBeenCalledWith({
         details: { url: "https://example.com/rss.xml", title: "example.com" },
@@ -597,14 +560,10 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(
-        screen.getByRole("button", { name: /add test feed feed/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /add test feed feed/i }));
 
       expect(screen.getByText("Added")).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /go to feed settings/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /go to feed settings/i })).toBeInTheDocument();
     });
 
     it("add failure: InlineErrorAlert below card, button stays enabled", async () => {
@@ -621,14 +580,10 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(
-        screen.getByRole("button", { name: /add test feed feed/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /add test feed feed/i }));
 
       expect(screen.getByText("Failed to add feed")).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /add test feed feed/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /add test feed feed/i })).toBeInTheDocument();
     });
 
     it('FEED_LIMIT_REACHED add error: "Limit reached" button, no inline alert', async () => {
@@ -645,9 +600,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      await user.click(
-        screen.getByRole("button", { name: /add test feed feed/i }),
-      );
+      await user.click(screen.getByRole("button", { name: /add test feed feed/i }));
 
       expect(screen.getByText("Limit reached")).toBeInTheDocument();
       expect(screen.queryByText("Failed to add feed")).not.toBeInTheDocument();

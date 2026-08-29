@@ -39,9 +39,7 @@ describe("RedditConnectionSetting", () => {
     expect(screen.getByText("Connected")).toBeInTheDocument();
     expect(screen.queryByText("Not Connected")).not.toBeInTheDocument();
     // Disconnect is offered for an active connection.
-    expect(
-      screen.getByRole("button", { name: /disconnect/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /disconnect/i })).toBeInTheDocument();
   });
 
   it("shows a Disconnected state (not Connected) when the reddit account is REVOKED", () => {

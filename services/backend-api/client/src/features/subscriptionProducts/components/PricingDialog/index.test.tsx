@@ -146,15 +146,17 @@ const renderDialog = (props: { target?: "workspace" } = {}) => {
   );
 };
 
-// The capacity slider sits inside the collapsed "Add more feeds" sizer, demoted
-// under the collaboration pitch. Open it so the slider is mounted before the
-// keyboard/CTA assertions run.
+// The capacity picker sits inside the collapsed "Add more feeds" sizer, demoted
+// under the collaboration pitch. Open it so the picker is mounted before the
+// entry/CTA assertions run. The exact input is nested under "Custom" (new
+// picker UX), so enter that mode before returning the spinbutton.
 const openSizer = async (forTeam: HTMLElement) => {
   // Ark's accordion toggles on a full pointer sequence, not a bare click event,
   // so drive it with userEvent.
   await userEvent.click(within(forTeam).getByRole("button", { name: /add more feeds/i }));
+  await userEvent.click(within(forTeam).getByRole("radio", { name: "Custom" }));
 
-  return within(forTeam).findByRole("slider", { name: /how many feeds/i });
+  return within(forTeam).findByRole("spinbutton", { name: /or enter an exact/i });
 };
 
 describe("PricingDialog two-region layout", () => {
@@ -352,7 +354,7 @@ describe("PricingDialog FAQ", () => {
   });
 });
 
-describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
+describe("PricingDialog workspace capacity picker + live price + dynamic CTA", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockPricingData();
@@ -367,18 +369,26 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     } as never);
   });
 
-  it("renders an accessible, keyboard-operable capacity slider in the workspace panel", async () => {
+  it("renders an accessible, keyboard-operable capacity picker in the workspace panel", async () => {
     renderDialog();
 
     const forTeam = await screen.findByRole("region", { name: /for your team/i });
-    const slider = await openSizer(forTeam);
-    expect(slider).toBeInTheDocument();
-    // The thumb announces the feed count it represents (not the raw detent index)
-    // so a screen-reader user hears "70 feeds" at the base anchor.
-    expect(slider).toHaveAttribute("aria-valuetext", "70 feeds");
+    const picker = await openSizer(forTeam);
+    expect(picker).toBeInTheDocument();
+    // The picker announces the selected feed count (not raw digits) so a
+    // screen-reader user hears "70 feeds" at the base capacity.
+    expect(picker).toHaveAttribute("aria-valuetext", "70 feeds");
+
+    // Keyboard operability: typing an exact count and committing with Enter
+    // selects it, and the announced value follows.
+    await userEvent.clear(picker);
+    await userEvent.type(picker, "1100");
+    await userEvent.keyboard("{Enter}");
+
+    await waitFor(() => expect(picker).toHaveAttribute("aria-valuetext", "1,100 feeds"));
   });
 
-  it("keeps the CTA number-free while the slider moves up", async () => {
+  it("keeps the CTA number-free while the capacity is raised", async () => {
     renderDialog();
 
     const forTeam = await screen.findByRole("region", { name: /for your team/i });
@@ -388,44 +398,38 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     expect(cta).toBeInTheDocument();
     expect(cta).not.toHaveTextContent(/\d+\s*feeds/i);
 
-    const slider = await openSizer(forTeam);
-    slider.focus();
-    // Each step is one detent, so ArrowRight from the 70 base lands on 100. The
-    // slider's announced value is the signal the capacity changed (the CTA stays
-    // the same).
-    fireEvent.keyDown(slider, { key: "ArrowRight" });
+    const picker = await openSizer(forTeam);
+    fireEvent.change(picker, { target: { value: "300" } });
+    fireEvent.blur(picker);
 
-    await waitFor(() => expect(slider).toHaveAttribute("aria-valuetext", "100 feeds"));
+    await waitFor(() => expect(picker).toHaveAttribute("aria-valuetext", "300 feeds"));
     expect(
       within(forTeam).getByRole("button", { name: /^create your workspace$/i }),
     ).not.toHaveTextContent(/\d+\s*feeds/i);
   });
 
-  it("decreases via the keyboard: ArrowLeft moves down to the previous detent", async () => {
+  it("accepts exact entry in both directions, including non-quick-pick counts", async () => {
     renderDialog();
 
     const forTeam = await screen.findByRole("region", { name: /for your team/i });
-    const slider = await openSizer(forTeam);
+    const picker = await openSizer(forTeam);
 
-    // Climb one detent: index 0 (70) -> index 1 (100).
-    slider.focus();
-    fireEvent.keyDown(slider, { key: "ArrowRight" });
-    await waitFor(() => expect(slider).toHaveAttribute("aria-valuetext", "100 feeds"));
+    // Raise from the 70 base to a count no quick pick or detent offers...
+    fireEvent.change(picker, { target: { value: "250" } });
+    fireEvent.blur(picker);
+    await waitFor(() => expect(picker).toHaveAttribute("aria-valuetext", "250 feeds"));
 
-    // ArrowLeft must move DOWN a detent, not stay put (the keyboard-trap
-    // regression where round-up snapping made the slider one-way). 100 -> 70.
-    // Re-focus first: in JSDOM the dialog's focus management can pull focus off
-    // the thumb between key presses; real keyboard operability is covered by the
-    // pricing-dialog E2E. The point under test here is the detent direction.
-    slider.focus();
-    fireEvent.keyDown(slider, { key: "ArrowLeft" });
-    await waitFor(() => expect(slider).toHaveAttribute("aria-valuetext", "70 feeds"));
+    // ...and back down to the base, so entry is not one-way (the keyboard-trap
+    // regression the detent slider had).
+    fireEvent.change(picker, { target: { value: "70" } });
+    fireEvent.blur(picker);
+    await waitFor(() => expect(picker).toHaveAttribute("aria-valuetext", "70 feeds"));
   });
 
   it("derives the hero price from the page preview when feeds are added above the base", async () => {
     // The Team hero is priced entirely from the page-level price preview (Tier2
-    // base + Tier3Feed per-feed unit), not a Paddle call of its own: moving the
-    // slider just re-derives the total locally.
+    // base + Tier3Feed per-feed unit), not a Paddle call of its own: changing the
+    // capacity just re-derives the total locally.
     renderDialog();
 
     const forTeam = await screen.findByRole("region", { name: /for your team/i });
@@ -433,9 +437,9 @@ describe("PricingDialog workspace slider + live price + dynamic CTA", () => {
     // "$10" as formatCurrency drops the ".00").
     expect(await within(forTeam).findByText("$10")).toBeInTheDocument();
 
-    const slider = await openSizer(forTeam);
-    slider.focus();
-    fireEvent.keyDown(slider, { key: "ArrowRight" });
+    const picker = await openSizer(forTeam);
+    fireEvent.change(picker, { target: { value: "100" } });
+    fireEvent.blur(picker);
 
     // 70 -> 100 feeds = base $10.00 + 30 * $0.50 = $25.00 ("$25"), derived from
     // the preview's authoritative per-feed unit price.

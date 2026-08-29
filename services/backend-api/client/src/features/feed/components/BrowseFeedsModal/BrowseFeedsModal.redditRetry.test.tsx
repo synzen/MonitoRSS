@@ -67,13 +67,9 @@ const redditError = new ApiAdapterError("Reddit connection required", {
 
 vi.mock("../../hooks/useCreateUserFeedUrlValidation", () => ({
   useCreateUserFeedUrlValidation: () => {
-    const [status, setStatus] = useState<
-      "idle" | "loading" | "success" | "error"
-    >("idle");
+    const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
     const [error, setError] = useState<ApiAdapterError | null>(null);
-    const [data, setData] = useState<
-      { result: { feedTitle?: string } } | undefined
-    >(undefined);
+    const [data, setData] = useState<{ result: { feedTitle?: string } } | undefined>(undefined);
 
     return {
       status,
@@ -187,20 +183,14 @@ describe("BrowseFeedsModal - Reddit connect retry", () => {
   it("renders the validated feed card after connecting Reddit, replacing the gate", async () => {
     const { user } = renderModal();
 
-    const input = await screen.findByLabelText(
-      "Search popular feeds or paste a URL",
-    );
+    const input = await screen.findByLabelText("Search popular feeds or paste a URL");
     await user.type(input, "https://www.reddit.com/r/HolyShitHistory");
     await user.click(screen.getByRole("button", { name: "Go", exact: true }));
 
     // The mandatory-connection gate is shown in place of a feed card.
-    expect(
-      await screen.findByText("Connect your Reddit account to continue"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("button", { name: "Connect Reddit in popup window" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Connect Reddit in popup window" }));
 
     // Simulate the OAuth popup completing: it posts "reddit" back, which the button listens for and
     // turns into a useUserMe refetch (now resolving to an ACTIVE connection).
@@ -213,14 +203,10 @@ describe("BrowseFeedsModal - Reddit connect retry", () => {
 
     // After connecting, the retry must re-validate and render the feed card with an Add button.
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Add HolyShitHistory feed" }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Add HolyShitHistory feed" })).toBeInTheDocument();
     });
 
     // The gate is gone.
-    expect(
-      screen.queryByText("Connect your Reddit account to continue"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Connect your Reddit account to continue")).not.toBeInTheDocument();
   });
 });

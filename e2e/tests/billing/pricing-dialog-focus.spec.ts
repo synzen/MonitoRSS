@@ -26,7 +26,7 @@ test.describe("Pricing dialog focus management", () => {
     await expect(pricingHeading).toBeVisible();
   });
 
-  test("shows the two-region layout with a workspace capacity slider", async ({ page }) => {
+  test("shows the two-region layout with a workspace capacity picker", async ({ page }) => {
     // The workspace CTA + reassurance render only when workspaces are enabled
     // for the user; enable the feature so the full region is asserted.
     await page.goto("/feeds");
@@ -67,22 +67,33 @@ test.describe("Pricing dialog focus management", () => {
     await expect(
       forTeam.getByRole("button", { name: /^create your workspace$/i }),
     ).toBeVisible();
-    // Capacity is framed as a floor you grow from, not a count to size down.
-    await expect(forTeam.getByText(/starts at \d+ feeds\. add more anytime\./i)).toBeVisible();
+    // Capacity is framed as a floor you grow from with the full range stated,
+    // not a count to size down.
+    await expect(
+      forTeam.getByText(/starts at \d+ feeds and scales to 2,000\. add more anytime\./i),
+    ).toBeVisible();
     await expect(
       forTeam.getByText(/a workspace of one gives you all of this/i),
     ).toBeVisible();
 
     // The capacity sizer is collapsed by default (capacity is demoted under the
     // collaboration pitch). Opening it from Account Settings shows the trigger,
-    // not the slider; expanding "Add more feeds" reveals the slider.
+    // not the picker; expanding "Add more feeds" reveals the picker. The exact
+    // number input is nested inside the Custom option, so it is hidden until
+    // Custom is selected.
     const sizerTrigger = forTeam.getByRole("button", { name: /add more feeds/i });
     await expect(sizerTrigger).toBeVisible();
-    await expect(forTeam.getByRole("slider", { name: /how many feeds/i })).toBeHidden();
+    await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeHidden();
     await sizerTrigger.click();
-    await expect(
-      forTeam.getByRole("slider", { name: /how many feeds/i }),
-    ).toBeVisible();
+    await expect(forTeam.getByRole("radiogroup", { name: "Feed capacity" })).toBeVisible();
+    await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeHidden();
+
+    const capacityGroup = forTeam.getByRole("radiogroup", { name: "Feed capacity" });
+    const baseCapacity = capacityGroup.getByRole("radio", { name: "70 feeds" });
+    await expect(baseCapacity).toBeChecked();
+    await baseCapacity.focus();
+    await baseCapacity.press("ArrowDown");
+    await expect(capacityGroup.getByRole("radio", { name: "140 feeds" })).toBeChecked();
 
     // The external-properties explainer is a keyboard-accessible disclosure: the
     // info button is reachable and named, Enter opens the popover (revealing the
@@ -100,17 +111,17 @@ test.describe("Pricing dialog focus management", () => {
     await expect(page.getByText(/fewer than 51 articles/i)).toBeHidden();
     await expect(infoButton).toBeFocused();
 
-    // The slider must be operable in BOTH directions with the keyboard (a
-    // round-up-only snap would trap it at the 70-feed base). Climb a detent, then
-    // step back down, asserting the slider's announced feed count moves each way.
-    // (The CTA no longer carries the count, so the slider's aria-valuetext is the
-    // signal the capacity actually changed.)
-    const slider = forTeam.getByRole("slider", { name: /how many feeds/i });
-    await slider.focus();
-    await slider.press("ArrowRight");
-    await expect(slider).toHaveAttribute("aria-valuetext", "100 feeds");
-    await slider.press("ArrowLeft");
-    await expect(slider).toHaveAttribute("aria-valuetext", "70 feeds");
+    // Chakra RadioCard renders the real <input type="radio"> as sr-only; the
+    // visible hit target is the card <label> that wraps "Custom". Clicking the
+    // hidden input with getByRole('radio') is intercepted by that label in
+    // Playwright (label intercepts pointer events). Target the visible label
+    // text instead, which is what a real user clicks.
+    await forTeam.getByText("Custom", { exact: true }).click();
+    const picker = forTeam.getByRole("spinbutton", { name: "Or enter an exact feed capacity" });
+    await expect(picker).toBeVisible();
+    await picker.fill("1100");
+    await picker.blur();
+    await expect(picker).toHaveAttribute("aria-valuetext", "1,100 feeds");
   });
 
   test("is mobile responsive: regions stack and content fits the viewport", async ({ page }) => {
@@ -134,7 +145,7 @@ test.describe("Pricing dialog focus management", () => {
       dialog.getByRole("heading", { name: "Pricing", level: 1 }),
     ).toBeVisible({ timeout: 15000 });
 
-    // Both regions and the workspace slider/CTA still render at a phone width.
+    // Both regions and the workspace picker/CTA still render at a phone width.
     const forYou = dialog.getByRole("region", { name: /^for you$/i });
     const forTeam = dialog.getByRole("region", { name: /for your team/i });
     await expect(forYou.getByRole("heading", { name: /^Personal$/ })).toBeVisible();
@@ -142,9 +153,16 @@ test.describe("Pricing dialog focus management", () => {
       forTeam.getByRole("button", { name: /^create your workspace$/i }),
     ).toBeVisible();
 
-    // Expand the collapsed-by-default sizer to reveal the slider.
+    // Expand the collapsed-by-default sizer to reveal the picker. The exact
+    // input is hidden until Custom is selected, so assert the radiogroup is
+    // visible and then open Custom to reveal the spinbutton. See note above
+    // about RadioCard label intercept — click the visible text, not the hidden
+    // radio input.
     await forTeam.getByRole("button", { name: /add more feeds/i }).click();
-    await expect(forTeam.getByRole("slider", { name: /how many feeds/i })).toBeVisible();
+    await expect(forTeam.getByRole("radiogroup", { name: "Feed capacity" })).toBeVisible();
+    await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeHidden();
+    await forTeam.getByText("Custom", { exact: true }).click();
+    await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeVisible();
 
     // The narrow-left region stacks ABOVE the dominant-right region (column
     // layout) rather than sitting beside it, and neither overflows the viewport.

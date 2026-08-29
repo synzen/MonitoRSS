@@ -85,7 +85,6 @@ describe("ScopeNavigationContainer", () => {
 
       expect(screen.getByTestId("scope-label")).toHaveTextContent("Feeds");
     });
-
   });
 
   describe("last-active scope recording", () => {

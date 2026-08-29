@@ -67,6 +67,7 @@ export interface PaddleSubscriptionPreviewResponse {
           tax: string;
           total: string;
           credit: string;
+          credit_to_balance?: string;
           grand_total: string;
           balance: string;
         };

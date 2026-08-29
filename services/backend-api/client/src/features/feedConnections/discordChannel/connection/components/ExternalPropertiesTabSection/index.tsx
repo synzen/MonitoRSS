@@ -190,6 +190,7 @@ const ExternalPropertyForm = ({
           helperText="Target the elements on the external page that contains the desired content. Sample CSS selectors are provided for common use cases, but you may also input your own."
         >
           <Flex justifyContent="space-between" alignItems="center" w="full">
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- react-select is not recognized as a control, but aria-labelledby links it */}
             <label
               id={`css-selector-label-${externalProperty.id}`}
               htmlFor={`css-selector-input-${externalProperty.id}`}

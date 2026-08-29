@@ -1,8 +1,5 @@
 import type { Config } from "../../config";
-import {
-  SubscriptionProductKey,
-  SubscriptionStatus,
-} from "../../repositories/shared/enums";
+import { SubscriptionStatus } from "../../repositories/shared/enums";
 import type {
   IWorkspace,
   WorkspaceMongooseRepository,
@@ -19,7 +16,10 @@ import {
   PersonalFeedMoveInvalidSelectionError,
   PersonalFeedMoveWorkspaceNotFoundError,
 } from "../../repositories/interfaces/user-feed.types";
-import { SubscriptionAlreadyCancelledException } from "../../shared/exceptions/paddle.exceptions";
+import {
+  SubscriptionAlreadyCancelledException,
+  TransactionBalanceTooLowException,
+} from "../../shared/exceptions/paddle.exceptions";
 import { WorkspaceNotSubscribedException } from "../../shared/exceptions/user-feeds.exceptions";
 import {
   ConversionAlreadyInProgressException,
@@ -65,19 +65,30 @@ export interface SubscriptionChangePreview {
     taxFormatted: string;
     credit: string;
     creditFormatted: string;
+    creditToBalance: string;
+    creditToBalanceFormatted: string;
     total: string;
     totalFormatted: string;
     grandTotal: string;
     grandTotalFormatted: string;
-  };
+  } | null;
+  deferred?: boolean;
+  nextBillDate?: string | null;
   // Projected effect of the change on the workspace's feeds. A downgrade that
   // drops below the workspace's current active feed count disables the overflow
   // (feeds are disabled, never deleted), so the confirmation screen can warn
-  // before the owner commits.
+  // before the owner commits. Includes enough identity data to render a reviewable
+  // affected-feeds list in oldest-first order.
   feedImpact: {
     newFeedLimit: number;
     currentFeedCount: number;
     willBeDisabledCount: number;
+    affectedFeeds: Array<{
+      id: string;
+      title: string;
+      url: string;
+      createdAt: string;
+    }>;
   };
 }
 
@@ -95,32 +106,45 @@ export class WorkspaceBillingService {
     const subscription = this.getSubscriptionOrThrow(workspace);
     const productKeyByPriceId = await this.assertWorkspacePrices(items);
 
-    // The Paddle proration preview and the feed-impact count are independent
-    // (feed impact needs only the resolved product keys, not the Paddle
-    // response), so run them concurrently rather than stacking their latency on
-    // this interactive path.
-    const [response, feedImpact] = await Promise.all([
-      this.deps.paddleService.updateSubscriptionItems<PaddleSubscriptionPreviewResponse>(
-        subscription.id,
-        { items, currencyCode: subscription.currencyCode, preview: true },
-      ),
-      this.computeFeedImpact(
-        workspace.id,
-        items.map((item) => ({
-          productKey: productKeyByPriceId.get(item.priceId) ?? "",
-          quantity: item.quantity,
-        })),
-      ),
-    ]);
+    const resolvedItems = items.map((item) => ({
+      productKey: productKeyByPriceId.get(item.priceId) ?? "",
+      quantity: item.quantity,
+    }));
 
-    const immediateTransaction = response.data.immediate_transaction;
+    const feedImpactPromise = this.computeFeedImpact(workspace.id, resolvedItems);
 
-    if (!immediateTransaction) {
-      throw new Error(
-        "Failed to get immediate transaction from workspace subscription preview response",
-      );
+    let response: PaddleSubscriptionPreviewResponse | null = null;
+    let deferred = false;
+
+    try {
+      response =
+        await this.deps.paddleService.updateSubscriptionItems<PaddleSubscriptionPreviewResponse>(
+          subscription.id,
+          { items, currencyCode: subscription.currencyCode, preview: true },
+        );
+    } catch (err) {
+      if (err instanceof TransactionBalanceTooLowException) {
+        deferred = true;
+      } else {
+        throw err;
+      }
     }
 
+    const feedImpact = await feedImpactPromise;
+
+    if (deferred || !response?.data.immediate_transaction) {
+      // Below Paddle's charge limit: billing deferred to renewal, capacity granted immediately via courtesy extension
+      return {
+        immediateTransaction: null,
+        deferred: true,
+        nextBillDate: subscription.nextBillDate
+          ? subscription.nextBillDate.toISOString()
+          : null,
+        feedImpact,
+      };
+    }
+
+    const immediateTransaction = response.data.immediate_transaction;
     const currencyCode = subscription.currencyCode;
 
     return {
@@ -144,6 +168,11 @@ export class WorkspaceBillingService {
           immediateTransaction.details.totals.credit,
           currencyCode,
         ),
+        creditToBalance: immediateTransaction.details.totals.credit_to_balance ?? "0",
+        creditToBalanceFormatted: formatCurrency(
+          immediateTransaction.details.totals.credit_to_balance ?? "0",
+          currencyCode,
+        ),
         total: immediateTransaction.details.totals.total,
         totalFormatted: formatCurrency(
           immediateTransaction.details.totals.total,
@@ -155,6 +184,10 @@ export class WorkspaceBillingService {
           currencyCode,
         ),
       },
+      deferred: false,
+      nextBillDate: subscription.nextBillDate
+        ? subscription.nextBillDate.toISOString()
+        : null,
       feedImpact,
     };
   }
@@ -163,16 +196,14 @@ export class WorkspaceBillingService {
   // over the new limit. The count uses the same slot-occupying exclusion set as
   // limit enforcement so an already over-limit workspace isn't double-counted,
   // and the projected limit comes from the shared resolver the webhook also
-  // uses, so the preview and the eventual activation agree.
+  // uses, so the preview and the eventual activation agree. Also returns the
+  // oldest-first list of affected feeds for the review view.
   private async computeFeedImpact(
     workspaceId: string,
     items: Array<{ productKey: string; quantity: number }>,
   ): Promise<SubscriptionChangePreview["feedImpact"]> {
     const newFeedLimit = resolveWorkspaceFeedLimit(items);
 
-    // null here means the validated base tier has no entry in the feed-limit
-    // table (the two constants drifted). Fail loudly rather than reporting a
-    // bogus "all feeds will be disabled" warning from a 0/NaN limit.
     if (newFeedLimit == null) {
       throw new Error(
         "Could not resolve a workspace feed limit for the previewed items; " +
@@ -186,24 +217,91 @@ export class WorkspaceBillingService {
         DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
       );
 
+    const willBeDisabledCount = Math.max(0, currentFeedCount - newFeedLimit);
+
+    let affectedFeeds: SubscriptionChangePreview["feedImpact"]["affectedFeeds"] = [];
+
+    if (willBeDisabledCount > 0) {
+      try {
+        const feeds = await this.deps.userFeedRepository.findOldestWorkspaceFeeds(
+          workspaceId,
+          willBeDisabledCount,
+          DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+        );
+
+        affectedFeeds = feeds.map((f) => ({
+          id: f.id,
+          title: f.title,
+          url: f.url,
+          createdAt: f.createdAt.toISOString(),
+        }));
+      } catch {
+        affectedFeeds = [];
+      }
+    }
+
     return {
       newFeedLimit,
       currentFeedCount,
-      willBeDisabledCount: Math.max(0, currentFeedCount - newFeedLimit),
+      willBeDisabledCount,
+      affectedFeeds,
     };
   }
 
   async changeSubscription(
     workspace: IWorkspace,
     items: Array<{ priceId: string; quantity: number }>,
-  ): Promise<void> {
+  ): Promise<{ deferred?: boolean; nextBillDate?: string | null }> {
     const subscription = this.getSubscriptionOrThrow(workspace);
-    await this.assertWorkspacePrices(items);
+    const productKeyByPriceId = await this.assertWorkspacePrices(items);
 
-    await this.deps.paddleService.updateSubscriptionItems(subscription.id, {
-      items,
-      currencyCode: subscription.currencyCode,
-    });
+    const resolvedLimit = resolveWorkspaceFeedLimit(
+      items.map((item) => ({
+        productKey: productKeyByPriceId.get(item.priceId) ?? "",
+        quantity: item.quantity,
+      })),
+    );
+
+    try {
+      await this.deps.paddleService.updateSubscriptionItems(subscription.id, {
+        items,
+        currencyCode: subscription.currencyCode,
+      });
+    } catch (err) {
+      if (err instanceof TransactionBalanceTooLowException) {
+        // Below Paddle's immediate charge limit: schedule for renewal and grant capacity immediately
+        await this.deps.paddleService.updateSubscriptionItems(subscription.id, {
+          items,
+          currencyCode: subscription.currencyCode,
+          prorationBillingMode: "prorated_next_billing_period",
+        });
+
+        if (resolvedLimit != null) {
+          // Grant expires at next bill date + 2 days grace (covers webhook latency)
+          const nextBill = subscription.nextBillDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          const expiresAt = new Date(nextBill.getTime() + 2 * 24 * 60 * 60 * 1000);
+
+          await this.deps.workspaceRepository.setPendingCapacityGrant(workspace.id, {
+            feeds: resolvedLimit,
+            grantedAt: new Date(),
+            expiresAt,
+            nextBillDate: subscription.nextBillDate ?? null,
+          });
+        }
+
+        return {
+          deferred: true,
+          nextBillDate: subscription.nextBillDate ? subscription.nextBillDate.toISOString() : null,
+        };
+      }
+
+      throw err;
+    }
+
+    // Clear any prior pending grant when an immediate charge succeeded — it is now authoritative
+    if (workspace.pendingCapacityGrant) {
+      await this.deps.workspaceRepository.clearPendingCapacityGrant(workspace.id);
+    }
 
     const currentUpdatedAt = subscription.updatedAt.getTime();
 
@@ -212,6 +310,8 @@ export class WorkspaceBillingService {
 
       return !!latestUpdatedAt && latestUpdatedAt.getTime() > currentUpdatedAt;
     });
+
+    return { deferred: false };
   }
 
   // Returns a Paddle update-payment-method transaction for the workspace's own

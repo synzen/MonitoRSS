@@ -10,19 +10,13 @@ interface Props {
   onClosed?: () => void;
 }
 
-export const DismissableAlert = ({
-  status,
-  description,
-  title,
-  focusOnMount,
-  onClosed,
-}: Props) => {
+export const DismissableAlert = ({ status, description, title, focusOnMount, onClosed }: Props) => {
   const [isOpen, setIsOpen] = useState(true);
   const alertRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!focusOnMount || !isOpen) {
-      return;
+      return undefined;
     }
 
     const frame = requestAnimationFrame(() => alertRef.current?.focus());

@@ -15,7 +15,9 @@ const CreateWorkspaceOutputSchema = object({
 
 export type CreateWorkspaceOutput = InferType<typeof CreateWorkspaceOutputSchema>;
 
-export const createWorkspace = async ({ details }: CreateWorkspaceInput): Promise<CreateWorkspaceOutput> => {
+export const createWorkspace = async ({
+  details,
+}: CreateWorkspaceInput): Promise<CreateWorkspaceOutput> => {
   const res = await fetchRest("/api/v1/workspaces", {
     validateSchema: CreateWorkspaceOutputSchema,
     requestOptions: {

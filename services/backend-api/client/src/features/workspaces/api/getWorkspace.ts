@@ -12,7 +12,9 @@ const GetWorkspaceOutputSchema = object({
 
 export type GetWorkspaceOutput = InferType<typeof GetWorkspaceOutputSchema>;
 
-export const getWorkspace = async ({ workspaceSlug }: GetWorkspaceInput): Promise<GetWorkspaceOutput> => {
+export const getWorkspace = async ({
+  workspaceSlug,
+}: GetWorkspaceInput): Promise<GetWorkspaceOutput> => {
   const res = await fetchRest(`/api/v1/workspaces/${workspaceSlug}`, {
     validateSchema: GetWorkspaceOutputSchema,
   });

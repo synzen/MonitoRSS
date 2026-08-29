@@ -19,7 +19,10 @@ export const useUserFeeds = (
 
   // In workspace scope, list/count this workspace's feeds; in personal scope, the user's.
   // Merged into the query key so the two scopes cache separately.
-  const scopedInput: GetUserFeedsInput = { ...input, workspaceId: input.workspaceId ?? workspaceId };
+  const scopedInput: GetUserFeedsInput = {
+    ...input,
+    workspaceId: input.workspaceId ?? workspaceId,
+  };
 
   const queryKey = [
     "user-feeds",

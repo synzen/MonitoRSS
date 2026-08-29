@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+/* eslint-disable max-lines -- Workspace billing composes capacity picker, preview, and review flows in one view; splitting would scatter coupled state. Tracked as tech debt */
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   Badge,
   Box,
@@ -12,6 +13,7 @@ import {
   Flex,
   Heading,
   HStack,
+  Input,
   Link,
   Spinner,
   Stack,
@@ -53,15 +55,14 @@ import {
   feedCountToAddonQuantity,
   workspaceFeedPricingFromProducts,
   WORKSPACE_BASE_FEEDS,
+  WORKSPACE_MAX_FEEDS,
+  WORKSPACE_MIN_FEEDS,
+  CapacityPicker,
+  formatWorkspaceFeedCount,
+  formatWorkspaceFeedNumber,
   WorkspaceFeedPricing,
 } from "@/shared/workspaceCapacity";
-import {
-  CapacitySlider,
-  CapacitySummary,
-  CapacityCompareColumn,
-  detentIndexForFeeds,
-  feedsForDetentIndex,
-} from "./CapacitySlider";
+import { CapacitySummary } from "./CapacitySlider";
 import type { PricePreview } from "@/types/PricePreview";
 import { useCurrentWorkspace } from "../../contexts/CurrentWorkspaceContext";
 import type { Workspace } from "../../types";
@@ -355,48 +356,35 @@ const ChangeCapacityDialog = ({
   currentFeeds: number;
   interval: BillingInterval;
   nextBillDate: string | null;
-  // Base + per-feed unit prices for the subscribed interval, from the page's
-  // single preview. Undefined while it loads. Drives the slider's derived totals.
   pricing: WorkspaceFeedPricing | undefined;
   buildBasket: (feeds: number) => Array<{ priceId: string; quantity: number }>;
-  // Cancel restores focus to the trigger (the button that opened the dialog).
   triggerRef: RefObject<HTMLButtonElement | null>;
-  // A successful change sends focus to the page heading instead: returning to the
-  // trigger would announce that button and its "Change capacity" group over the
-  // success alert, while the heading is a stable, brief target that does not.
   successFocusRef: RefObject<HTMLElement | null>;
 }) => {
-  // The trigger stays mounted, so Ark's default would restore focus to it on
-  // every close. A success close needs the heading instead; this ref, set just
-  // before the success-driven close, tells finalFocusEl which target to pick.
-  // Reset on (re)open so a later cancel restores to the trigger normally.
   const closingForSuccessRef = useRef(false);
-  // Seed at the current capacity. detentIndexForFeeds rounds a non-detent
-  // capacity UP to the next detent, which would open the dialog already "dirty"
-  // (preview fires, Confirm enabled) with no user action and let a no-move
-  // confirm silently raise capacity. So clamp the seeded count back to the
-  // current capacity for the dirty check: an untouched dialog is never dirty.
-  const seededIndex = detentIndexForFeeds(currentFeeds);
-  const [index, setIndex] = useState(seededIndex);
-  // Re-seat whenever the dialog (re)opens or the current capacity changes.
+  const [nextFeeds, setNextFeeds] = useState(currentFeeds);
+  const [showReview, setShowReview] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
+
   useEffect(() => {
     if (open) {
       closingForSuccessRef.current = false;
-      setIndex(detentIndexForFeeds(currentFeeds));
+      setNextFeeds(currentFeeds);
+      setShowReview(false);
+      setSearch("");
+      setPage(0);
     }
   }, [open, currentFeeds]);
 
-  // The detent the slider sits on; nextFeeds is that detent's feed count, except
-  // while the slider is still on its seeded position, where the real current
-  // capacity (which may sit between detents) is the effective target so the
-  // dialog opens clean.
-  const onSeededDetent = index === seededIndex;
-  const nextFeeds = onSeededDetent ? currentFeeds : feedsForDetentIndex(index);
   const dirty = nextFeeds !== currentFeeds;
   const prices = buildBasket(nextFeeds);
-
+  const { price: currentRecurringPrice } = useWorkspaceSliderPrice({
+    feeds: currentFeeds,
+    pricing,
+  });
   const { price: recurringPrice } = useWorkspaceSliderPrice({ feeds: nextFeeds, pricing });
-
   const { createSuccessAlert } = usePageAlertContext();
   const { preview, status, error } = useWorkspaceBillingChangePreview({
     workspaceSlug,
@@ -405,41 +393,81 @@ const ChangeCapacityDialog = ({
   });
   const updateMutation = useUpdateWorkspaceBilling();
 
-  const immediate = preview?.immediateTransaction;
+  const immediate = preview?.immediateTransaction as unknown as
+    | {
+        subtotalFormatted: string;
+        taxFormatted: string;
+        credit: string;
+        creditFormatted: string;
+        creditToBalance: string;
+        creditToBalanceFormatted: string;
+        grandTotalFormatted: string;
+      }
+    | undefined
+    | null;
+  const deferred = (preview as unknown as { deferred?: boolean })?.deferred;
+  const taxIsAdjustment = immediate?.taxFormatted.startsWith("-") ?? false;
+  const totalIsCredit = immediate?.grandTotalFormatted.startsWith("-") ?? false;
+  const createsAccountCredit = (immediate?.creditToBalance ?? "0") !== "0";
+  const nextBillIso = ((preview as unknown as { nextBillDate?: string | null })?.nextBillDate ??
+    nextBillDate) as string | null;
   const willBeDisabledCount = preview?.feedImpact?.willBeDisabledCount ?? 0;
   const newFeedLimit = preview?.feedImpact?.newFeedLimit;
+  const affectedFeeds =
+    (
+      preview?.feedImpact as unknown as {
+        affectedFeeds?: Array<{ id: string; title: string; url: string; createdAt: string }>;
+      }
+    )?.affectedFeeds ?? [];
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return affectedFeeds;
+    const q = search.toLowerCase();
+
+    return affectedFeeds.filter(
+      (f) => f.title.toLowerCase().includes(q) || f.url.toLowerCase().includes(q),
+    );
+  }, [affectedFeeds, search]);
+
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const paged = filtered.slice(page * pageSize, (page + 1) * pageSize);
+
+  useEffect(() => setPage(0), [search, filtered.length]);
 
   const onConfirm = async () => {
     const confirmedFeeds = nextFeeds;
     const decreasing = confirmedFeeds < currentFeeds;
-    await updateMutation.mutateAsync({ workspaceSlug, prices });
-    // Mark this as a success close so finalFocusEl sends focus to the heading
-    // (not the trigger, whose name/group would be announced over the alert).
+    const result = (await updateMutation.mutateAsync({ workspaceSlug, prices })) as unknown as
+      | { deferred?: boolean; nextBillDate?: string | null }
+      | undefined;
+    const isDeferred = result?.deferred ?? Boolean(deferred);
+    const billDate = result?.nextBillDate ?? nextBillIso;
     closingForSuccessRef.current = true;
     onClose();
-    // "can now run up to" reads as an upgrade; for a decrease (which just
-    // disabled feeds) state the new capacity plainly instead.
-    const description = decreasing
-      ? `This workspace's capacity is now ${confirmedFeeds} feeds.`
-      : `This workspace can now run up to ${confirmedFeeds} feeds.`;
-    // The visible alert (role="alert", via the always-mounted page outlet) is
-    // both the durable on-screen confirmation and the announcement. Defer it past
-    // the close: while the modal is open it inerts the rest of the page including
-    // the alert outlet, and an alert mounted into an inert subtree is not
-    // announced. After the close the node mounts into a live page and its
-    // insertion is what the screen reader speaks.
+    let description: string;
+
+    if (isDeferred) {
+      description = billDate
+        ? `Capacity is now ${formatWorkspaceFeedCount(confirmedFeeds)}. Available now, billed at renewal on ${dayjs(billDate).format("D MMMM YYYY")}.`
+        : `Capacity is now ${formatWorkspaceFeedCount(confirmedFeeds)}. Available now, billed at renewal.`;
+    } else {
+      description = decreasing
+        ? `This workspace's capacity is now ${formatWorkspaceFeedCount(confirmedFeeds)}.`
+        : `This workspace can now run up to ${formatWorkspaceFeedCount(confirmedFeeds)}.`;
+    }
+
     window.setTimeout(() => {
       createSuccessAlert({ title: "Capacity updated", description });
     }, 0);
   };
+
+  const decreasing = nextFeeds < currentFeeds;
 
   return (
     <DialogRoot
       open={open}
       onOpenChange={(e) => !e.open && onClose()}
       size="lg"
-      // Cancel restores focus to the trigger; a successful change sends focus to
-      // the page heading instead, so the trigger is not announced over the alert.
       finalFocusEl={() =>
         closingForSuccessRef.current ? successFocusRef.current : triggerRef.current
       }
@@ -451,54 +479,186 @@ const ChangeCapacityDialog = ({
         <DialogCloseTrigger />
         <DialogBody>
           <Stack gap={5}>
-            <DialogDescription>
-              You&apos;re currently on {currentFeeds} feeds. Pick a new capacity.
-            </DialogDescription>
-            <CapacitySlider index={index} onChange={setIndex} />
-            {/* One always-mounted polite live region carries the before/after
-                summary so increases and decreases announce through the same node.
-                The slider sits above it so its own value announcements are not
-                re-read and it never remounts across slider moves (thumb focus is
-                preserved). The "Now -> After" comparison renders the same way in
-                both directions; only the disabled-feed warning below is
-                decrease-specific. */}
-            <Box aria-live="polite" aria-busy={!recurringPrice}>
-              <VisuallyHidden>
-                Changing capacity from {currentFeeds} feeds to {nextFeeds} feeds,{" "}
-                {recurringPrice ?? "updating price"} per {interval}.
-              </VisuallyHidden>
-              <HStack gap={4} alignItems="stretch" aria-hidden>
-                <CapacityCompareColumn heading="Now" feeds={currentFeeds} />
-                <CapacityCompareColumn
-                  heading="After"
-                  feeds={nextFeeds}
-                  price={recurringPrice}
-                  interval={interval}
-                  emphasized
-                />
-              </HStack>
-            </Box>
-            {/* The consequence is the most important message in the flow, so it
-                gets its own polite live region: announced when it appears as the
-                owner crosses below the current capacity. */}
-            {willBeDisabledCount > 0 && (
-              <Box aria-live="polite">
-                <Text color="text.warning" fontSize="sm">
-                  {willBeDisabledCount} feed{willBeDisabledCount === 1 ? "" : "s"} over the new{" "}
-                  {newFeedLimit}-feed limit will be disabled (not deleted). They re-enable if you
-                  raise capacity again.
+            <DialogDescription>Choose a new capacity for this workspace.</DialogDescription>
+            <Stack gap={1}>
+              <Text
+                color="fg.muted"
+                fontSize="xs"
+                fontWeight="medium"
+                textTransform="uppercase"
+                letterSpacing="wide"
+              >
+                Current capacity
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold" lineHeight="1.1">
+                {formatWorkspaceFeedCount(currentFeeds)}
+              </Text>
+              <Text color="fg.muted">
+                {currentRecurringPrice ? `${currentRecurringPrice} / ${interval}` : "Current price"}
+              </Text>
+            </Stack>
+            <CapacityPicker value={nextFeeds} onChange={setNextFeeds} />
+            {!dirty ? (
+              <Box borderTopWidth="1px" borderColor="border.emphasized" pt={5}>
+                <Text color="fg.muted" fontSize="sm">
+                  Choose a different capacity to preview changes.
                 </Text>
               </Box>
+            ) : (
+              <Box
+                borderTopWidth="1px"
+                borderColor="border.emphasized"
+                pt={5}
+                aria-live="polite"
+                aria-busy={status === "loading"}
+              >
+                <VisuallyHidden>
+                  Changing capacity from {formatWorkspaceFeedCount(currentFeeds)} to{" "}
+                  {formatWorkspaceFeedCount(nextFeeds)}, {recurringPrice ?? "updating price"} per{" "}
+                  {interval}.
+                </VisuallyHidden>
+                <Stack gap={1}>
+                  <Text
+                    color="fg.muted"
+                    fontSize="xs"
+                    fontWeight="medium"
+                    textTransform="uppercase"
+                    letterSpacing="wide"
+                  >
+                    New capacity
+                  </Text>
+                  <Text fontSize="2xl" fontWeight="bold" lineHeight="1.1">
+                    {formatWorkspaceFeedCount(nextFeeds)}
+                  </Text>
+                  <Text color="fg.muted">Available immediately</Text>
+                </Stack>
+              </Box>
             )}
-            {/* One always-mounted polite region spans the loading -> loaded
-                transition for the prorated breakdown so the screen reader observes
-                the swap within a stable region. While loading it holds the place of
-                the "Due today" breakdown with skeleton rows the shape of AmountRow
-                so the dialog does not jump when figures arrive (skeletons
-                decorative). aria-busy holds the announcement until the preview
-                settles; the sr-only line then states the total once, so a
-                screen-reader user hears the cost without navigating the breakdown. */}
-            {(immediate || (dirty && status === "loading")) && (
+            {willBeDisabledCount > 0 && (
+              <Box
+                aria-live="polite"
+                bg="bg.subtle"
+                borderWidth="1px"
+                borderColor="border.emphasized"
+                borderLeftWidth="3px"
+                borderLeftColor="text.warning"
+                borderRadius="md"
+                p={3}
+              >
+                <Text color="text.warning" fontSize="sm" fontWeight="medium">
+                  {decreasing
+                    ? `Reducing to ${formatWorkspaceFeedCount(nextFeeds)} will disable ${willBeDisabledCount} feed${willBeDisabledCount === 1 ? "" : "s"}. Oldest feeds first.`
+                    : `${willBeDisabledCount} feed${willBeDisabledCount === 1 ? "" : "s"} over the new ${newFeedLimit}-feed limit will be disabled (not deleted).`}
+                </Text>
+                <Text color="fg.muted" fontSize="sm" mt={1}>
+                  Feeds are disabled in oldest-first order and re-enable if you raise capacity
+                  again. Review the affected feeds before confirming.
+                </Text>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  mt={2}
+                  onClick={() => setShowReview((v) => !v)}
+                  aria-expanded={showReview}
+                >
+                  {showReview
+                    ? "Hide affected feeds"
+                    : `Review affected feeds (${willBeDisabledCount})`}
+                </Button>
+                {showReview && (
+                  <Box
+                    mt={3}
+                    bg="bg.panel"
+                    borderWidth="1px"
+                    borderColor="border.emphasized"
+                    borderRadius="md"
+                    p={3}
+                  >
+                    <Input
+                      placeholder="Search affected feeds"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      aria-label="Search affected feeds"
+                      size="sm"
+                    />
+                    <Stack
+                      mt={3}
+                      gap={2}
+                      maxH="260px"
+                      overflowY="auto"
+                      role="list"
+                      aria-label="Affected feeds"
+                    >
+                      {paged.map((feed) => (
+                        <Box
+                          key={feed.id}
+                          p={2}
+                          borderWidth="1px"
+                          borderColor="border.emphasized"
+                          borderRadius="md"
+                          role="listitem"
+                        >
+                          <Text fontWeight="medium" fontSize="sm" truncate>
+                            {feed.title}
+                          </Text>
+                          <Text fontSize="sm" color="fg.muted" truncate>
+                            {feed.url}
+                          </Text>
+                          <Text fontSize="sm" color="fg.muted">
+                            Added {dayjs(feed.createdAt).format("D MMM YYYY")}
+                          </Text>
+                        </Box>
+                      ))}
+                      {filtered.length === 0 && (
+                        <Text fontSize="sm" color="fg.muted">
+                          No feeds match your search.
+                        </Text>
+                      )}
+                    </Stack>
+                    {pageCount > 1 && (
+                      <HStack justifyContent="space-between" mt={3} flexWrap="wrap" gap={2}>
+                        <Text fontSize="sm" color="fg.muted" aria-live="polite">
+                          {filtered.length === 0
+                            ? "0"
+                            : `${page * pageSize + 1}–${Math.min((page + 1) * pageSize, filtered.length)}`}{" "}
+                          of {filtered.length} feeds
+                        </Text>
+                        <HStack gap={2}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setPage((p) => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            aria-label="Previous page"
+                          >
+                            Previous
+                          </Button>
+                          <Text fontSize="sm" aria-live="polite">
+                            Page {page + 1} of {pageCount}
+                          </Text>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                            disabled={page === pageCount - 1}
+                            aria-label="Next page"
+                          >
+                            Next
+                          </Button>
+                        </HStack>
+                      </HStack>
+                    )}
+                    <Text fontSize="sm" color="fg.muted" mt={2}>
+                      Showing oldest first.{" "}
+                      {affectedFeeds.length < willBeDisabledCount
+                        ? `Showing ${affectedFeeds.length} of ${willBeDisabledCount}.`
+                        : ""}
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+            )}
+            {(immediate || deferred || (dirty && status === "loading")) && (
               <Box aria-live="polite" aria-busy={status === "loading"}>
                 {dirty && status === "loading" && (
                   <Stack gap={1} aria-label="Loading change preview">
@@ -508,50 +668,96 @@ const ChangeCapacityDialog = ({
                     <Skeleton height="5" width="full" />
                   </Stack>
                 )}
-                {immediate && (
+                {deferred && (
+                  <Stack gap={1}>
+                    <Text fontWeight="medium" fontSize="sm">
+                      Due today
+                    </Text>
+                    <Text fontSize="lg" fontWeight="semibold">
+                      $0.00
+                    </Text>
+                    <Text color="fg.muted" fontSize="sm">
+                      No charge today
+                    </Text>
+                    {recurringPrice && (
+                      <Text fontSize="sm">
+                        Then {recurringPrice} / {interval}
+                        {nextBillIso
+                          ? `, starting ${dayjs(nextBillIso).format("D MMMM YYYY")}`
+                          : ""}
+                        .
+                      </Text>
+                    )}
+                    <Text color="fg.muted" fontSize="sm">
+                      Renews automatically. Cancel anytime.
+                    </Text>
+                  </Stack>
+                )}
+                {immediate && !deferred && (
                   <Stack gap={3}>
                     <VisuallyHidden>
-                      Preview ready. You&apos;ll pay {immediate.grandTotalFormatted} now.
+                      {totalIsCredit
+                        ? `Preview ready. ${immediate.grandTotalFormatted.replace(/^-/, "")} credit will apply to your next renewal.`
+                        : `Preview ready. You'll pay ${immediate.grandTotalFormatted} now.`}
                     </VisuallyHidden>
-                    <Stack gap={1}>
-                      <Text fontWeight="medium" fontSize="sm">
-                        Due today
-                      </Text>
-                      <Stack as="dl" gap={1}>
-                        <AmountRow label="Subtotal" value={immediate.subtotalFormatted} />
-                        <AmountRow label="Tax" value={immediate.taxFormatted} />
-                        {immediate.credit !== "0" && (
-                          <AmountRow
-                            label="Account credit"
-                            value={`-${immediate.creditFormatted}`}
-                            valueColor="text.success"
-                          />
-                        )}
-                        <Box borderTopWidth="1px" borderColor="border.emphasized" pt={1}>
-                          <AmountRow
-                            label="Total due today"
-                            value={immediate.grandTotalFormatted}
-                            emphasized
-                          />
-                        </Box>
+                    {createsAccountCredit ? (
+                      <Stack gap={1}>
+                        <Text fontWeight="medium" fontSize="sm">Credit from this change</Text>
+                        <Text color="text.success" fontSize="lg" fontWeight="semibold">
+                          {immediate.creditToBalanceFormatted} added to account credit
+                        </Text>
+                        <Text color="fg.muted" fontSize="sm">
+                          Paddle will automatically apply it to a future charge.
+                        </Text>
                       </Stack>
-                      <Text color="fg.muted" fontSize="xs">
-                        Prorated for the current billing period.
-                      </Text>
-                    </Stack>
+                    ) : (
+                      <Stack gap={1}>
+                        <Text fontWeight="medium" fontSize="sm">Due today</Text>
+                        <Stack as="dl" gap={1}>
+                          <AmountRow label="Subtotal" value={immediate.subtotalFormatted} />
+                          <AmountRow
+                            label={taxIsAdjustment ? "Tax adjustment" : "Tax"}
+                            value={immediate.taxFormatted}
+                          />
+                          {immediate.credit !== "0" && (
+                            <AmountRow
+                              label="Account credit applied"
+                              value={`-${immediate.creditFormatted}`}
+                              valueColor="text.success"
+                            />
+                          )}
+                          <Box borderTopWidth="1px" borderColor="border.emphasized" pt={1}>
+                            <AmountRow
+                              label={
+                                totalIsCredit
+                                  ? "Credit applied to your next renewal"
+                                  : "Total due today"
+                              }
+                              value={
+                                totalIsCredit
+                                  ? `${immediate.grandTotalFormatted.replace(/^-/, "")} credit`
+                                  : immediate.grandTotalFormatted
+                              }
+                              emphasized
+                              valueColor={totalIsCredit ? "text.success" : undefined}
+                            />
+                          </Box>
+                        </Stack>
+                        <Text color="fg.muted" fontSize="sm">
+                          Prorated for the current billing period.
+                        </Text>
+                      </Stack>
+                    )}
                     {recurringPrice && (
                       <Stack gap={1}>
-                        <Text fontWeight="medium" fontSize="sm">
-                          Then
-                        </Text>
                         <Text fontSize="sm">
-                          {recurringPrice} / {interval}
-                          {nextBillDate
-                            ? `, starting ${dayjs(nextBillDate).format("D MMMM YYYY")}`
+                          Then {recurringPrice} / {interval}
+                          {nextBillIso
+                            ? `, starting ${dayjs(nextBillIso).format("D MMMM YYYY")}`
                             : ""}
                           .
                         </Text>
-                        <Text color="fg.muted" fontSize="xs">
+                        <Text color="fg.muted" fontSize="sm">
                           Renews automatically. Cancel anytime.
                         </Text>
                       </Stack>
@@ -601,16 +807,13 @@ export const WorkspaceBilling = () => {
   const [products, setProducts] = useState<PricePreview[]>();
   const [pricesError, setPricesError] = useState(false);
   const [interval, setInterval] = useState<BillingInterval>("month");
-  // The capacity the owner picks before activating, expressed as a detent index
-  // (see CapacitySlider). Seeded from the pricing dialog's "?feeds=N" hand-off so
-  // the capacity chosen on the buy-time slider carries into activation, seated on
-  // the next detent at or above the requested count.
+  // The selected activation capacity is preserved through the pricing dialog hand-off.
   const [searchParams] = useSearchParams();
   const requestedFeeds = Number(searchParams.get("feeds"));
-  const [activationIndex, setActivationIndex] = useState(() =>
-    Number.isFinite(requestedFeeds) && requestedFeeds > WORKSPACE_BASE_FEEDS
-      ? detentIndexForFeeds(requestedFeeds)
-      : 0,
+  const [activationFeeds, setActivationFeeds] = useState(() =>
+    Number.isInteger(requestedFeeds)
+      ? Math.min(WORKSPACE_MAX_FEEDS, Math.max(WORKSPACE_MIN_FEEDS, requestedFeeds))
+      : WORKSPACE_BASE_FEEDS,
   );
   const [isConvertOpen, setIsConvertOpen] = useState(false);
   // The change-capacity dialog (subscribed owners). Focus returns to its trigger
@@ -647,10 +850,10 @@ export const WorkspaceBilling = () => {
       refetch,
     });
 
-  // One price preview powers every capacity slider on this page: it carries the
+  // One price preview powers every capacity picker on this page: it carries the
   // Tier2 base and Tier3Feed per-feed unit prices for both intervals, from which
-  // the slider derives any detent's total locally. So this is the page's only
-  // pricing round-trip, no matter how the owner drags the slider or toggles the
+  // each picker derives any total locally. So this is the page's only
+  // pricing round-trip, no matter how the owner changes capacity or toggles the
   // interval. Owners are the only ones who can subscribe, so gate on ownership.
   useEffect(() => {
     if (!isConfigured || !isLoaded || !isOwner) {
@@ -667,15 +870,14 @@ export const WorkspaceBilling = () => {
       .catch(() => setPricesError(true));
   }, [isConfigured, isLoaded, isOwner]);
 
-  // The slider's pricing inputs for an interval, derived from that single preview.
+  // The picker pricing inputs for an interval, derived from that single preview.
   // The lookup is shared with the pricing dialog (ADR-009).
   const feedPricingFor = (forInterval: BillingInterval) =>
     workspaceFeedPricingFromProducts(products, forInterval);
 
-  // Live recurring price for the activation slider's chosen capacity. Hooks must
+  // Live recurring price for the activation picker's chosen capacity. Hooks must
   // run before the early return below, so this lives here even though it only
   // feeds the unsubscribed activation view.
-  const activationFeeds = feedsForDetentIndex(activationIndex);
   const { price: activationPrice } = useWorkspaceSliderPrice({
     feeds: activationFeeds,
     pricing: feedPricingFor(interval),
@@ -830,10 +1032,8 @@ export const WorkspaceBilling = () => {
               {currentTier && (
                 <Text color="fg.muted">
                   {currentAddonQuantity > 0
-                    ? `${TIER_FEED_LIMITS[currentTier] + currentAddonQuantity} feeds (${
-                        TIER_FEED_LIMITS[currentTier]
-                      } + ${currentAddonQuantity} additional)`
-                    : `${TIER_FEED_LIMITS[currentTier]} feeds`}
+                    ? `${formatWorkspaceFeedCount(TIER_FEED_LIMITS[currentTier] + currentAddonQuantity)} (${formatWorkspaceFeedNumber(TIER_FEED_LIMITS[currentTier])} + ${formatWorkspaceFeedNumber(currentAddonQuantity)} additional)`
+                    : formatWorkspaceFeedCount(TIER_FEED_LIMITS[currentTier])}
                 </Text>
               )}
               {subscription.cancellationDate ? (
@@ -987,16 +1187,16 @@ export const WorkspaceBilling = () => {
                   price={activationPrice}
                   interval={interval}
                 />
-                <CapacitySlider index={activationIndex} onChange={setActivationIndex} />
+                <CapacityPicker value={activationFeeds} onChange={setActivationFeeds} />
                 <Box>
                   <PrimaryActionButton
                     onClick={() => subscribeToCapacity(activationFeeds)}
                     aria-haspopup="dialog"
                     aria-label={`Subscribe to ${getPlanDisplayName(
                       ProductKey.Tier2,
-                    )}, ${activationFeeds} feeds total`}
+                    )}, ${formatWorkspaceFeedCount(activationFeeds)} total`}
                   >
-                    Subscribe for {activationFeeds} feeds
+                    Subscribe for {formatWorkspaceFeedCount(activationFeeds)}
                   </PrimaryActionButton>
                 </Box>
               </Stack>

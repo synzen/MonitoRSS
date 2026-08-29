@@ -29,6 +29,7 @@ export const SkeletonText = React.forwardRef<HTMLDivElement, SkeletonTextProps>(
     return (
       <Stack gap={gap} width="full" ref={ref}>
         {Array.from({ length: noOfLines }).map((_, index) => (
+          // eslint-disable-next-line react/no-array-index-key -- static skeleton placeholders have no stable id
           <ChakraSkeleton height="4" key={index} {...props} _last={{ maxW: "80%" }} {...rest} />
         ))}
       </Stack>

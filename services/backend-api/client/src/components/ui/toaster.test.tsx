@@ -6,7 +6,12 @@ import { system } from "@/utils/theme";
 import { notifyError } from "@/utils/notifyError";
 import { Toaster } from "./toaster";
 
-const renderToaster = () => render(<ChakraProvider value={system}>{<Toaster />}</ChakraProvider>);
+const renderToaster = () =>
+  render(
+    <ChakraProvider value={system}>
+      <Toaster />
+    </ChakraProvider>,
+  );
 
 describe("Toaster", () => {
   it("renders a dismissable close button on an error toast and removes it on click", async () => {

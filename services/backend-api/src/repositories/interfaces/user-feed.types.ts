@@ -589,6 +589,11 @@ export interface IUserFeedRepository {
     workspaceId: string,
     excludeDisabledCodes: UserFeedDisabledCode[],
   ): Promise<number>;
+  findOldestWorkspaceFeeds(
+    workspaceId: string,
+    limit: number,
+    excludeDisabledCodes: UserFeedDisabledCode[],
+  ): Promise<Array<{ id: string; title: string; url: string; createdAt: Date }>>;
   findByUrls(discordUserId: string, urls: string[]): Promise<{ url: string }[]>;
   findByIdAndOwnership(
     id: string,

@@ -439,6 +439,41 @@ const config = defineConfig({
         base: { root: { colorPalette: "brand" } },
         variants: { variant: { solid: { itemControl: { borderColor: "controlBorder" } } } },
       },
+      radioCard: {
+        slots: [
+          "root",
+          "label",
+          "item",
+          "itemText",
+          "itemDescription",
+          "itemControl",
+          "itemIndicator",
+          "itemAddon",
+          "itemContent",
+        ],
+        base: {
+          root: { colorPalette: "brand" },
+          item: {
+            _focusVisible: {
+              outline: "2px solid",
+              outlineColor: "brand.focusRing",
+              outlineOffset: "2px",
+            },
+          },
+        },
+        variants: {
+          variant: {
+            surface: {
+              item: {
+                _checked: {
+                  borderColor: "colorPalette.solid",
+                  boxShadow: "0 0 0 1px var(--chakra-colors-brand-solid)",
+                },
+              },
+            },
+          },
+        },
+      },
       // Switch is a CONTROL with the same off-state problem: the stock recipe paints the unchecked
       // track `bg.emphasized` (the chip token), so a switch sitting on any emphasized surface has its
       // off-track collapse into the background (1.2:1, measured invisible). Same Tier-1 move as the

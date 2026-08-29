@@ -1,10 +1,6 @@
 import { array, InferType, number, object } from "yup";
 import fetchRest from "../../../utils/fetchRest";
-import {
-  UserFeedComputedStatus,
-  UserFeedDisabledCode,
-  UserFeedSummarySchema,
-} from "../types";
+import { UserFeedComputedStatus, UserFeedDisabledCode, UserFeedSummarySchema } from "../types";
 
 export interface GetUserFeedsInput {
   limit?: number;
@@ -32,25 +28,17 @@ const GetUserFeedsOutputSchema = object({
 
 export type GetUserFeedsOutput = InferType<typeof GetUserFeedsOutputSchema>;
 
-export const getUserFeeds = async (
-  options: GetUserFeedsInput,
-): Promise<GetUserFeedsOutput> => {
+export const getUserFeeds = async (options: GetUserFeedsInput): Promise<GetUserFeedsOutput> => {
   const params = new URLSearchParams();
 
   params.append("limit", (options.limit || 10).toString());
   params.append("offset", (options.offset || 0).toString());
   params.append("search", options.search || "");
   params.append("sort", options.sort || "");
-  params.append(
-    `filters[computedStatuses]`,
-    options.filters?.computedStatuses?.join(",") || "",
-  );
+  params.append(`filters[computedStatuses]`, options.filters?.computedStatuses?.join(",") || "");
 
   if (options.filters?.disabledCodes) {
-    params.append(
-      `filters[disabledCodes]`,
-      options.filters.disabledCodes.join(","),
-    );
+    params.append(`filters[disabledCodes]`, options.filters.disabledCodes.join(","));
   }
 
   if (options.filters?.eligibleForBulkRetry) {
@@ -58,10 +46,7 @@ export const getUserFeeds = async (
   }
 
   if (options.filters?.hasConnections !== undefined) {
-    params.append(
-      `filters[hasConnections]`,
-      String(options.filters.hasConnections),
-    );
+    params.append(`filters[hasConnections]`, String(options.filters.hasConnections));
   }
 
   if (options.filters?.ownedByUser !== undefined) {

@@ -538,6 +538,7 @@ describe("Workspace billing API", { concurrency: true }, () => {
                   subtotal: "500",
                   tax: "50",
                   credit: "100",
+                  credit_to_balance: "25",
                   total: "450",
                   grand_total: "450",
                 },
@@ -566,6 +567,8 @@ describe("Workspace billing API", { concurrency: true }, () => {
           billingPeriod: { startsAt: string };
           grandTotal: string;
           grandTotalFormatted: string;
+          creditToBalance: string;
+          creditToBalanceFormatted: string;
         };
       };
     }>(res);
@@ -575,6 +578,8 @@ describe("Workspace billing API", { concurrency: true }, () => {
     );
     assert.strictEqual(body.data.immediateTransaction.grandTotal, "450");
     assert.ok(body.data.immediateTransaction.grandTotalFormatted);
+    assert.strictEqual(body.data.immediateTransaction.creditToBalance, "25");
+    assert.ok(body.data.immediateTransaction.creditToBalanceFormatted);
   });
 
   async function registerPreviewRoute(subscriptionId: string) {
@@ -660,6 +665,7 @@ describe("Workspace billing API", { concurrency: true }, () => {
           newFeedLimit: number;
           currentFeedCount: number;
           willBeDisabledCount: number;
+          affectedFeeds: Array<{ id: string; title: string; url: string; createdAt: string }>;
         };
       };
     }>(res);
@@ -667,6 +673,14 @@ describe("Workspace billing API", { concurrency: true }, () => {
     assert.strictEqual(body.data.feedImpact.newFeedLimit, 70);
     assert.strictEqual(body.data.feedImpact.currentFeedCount, 73);
     assert.strictEqual(body.data.feedImpact.willBeDisabledCount, 3);
+    assert.strictEqual(body.data.feedImpact.affectedFeeds.length, 3);
+    // Oldest-first: affected feeds are the earliest created, sorted ascending
+    const dates = body.data.feedImpact.affectedFeeds.map((f) => new Date(f.createdAt).getTime());
+    for (let i = 1; i < dates.length; i += 1) {
+      assert.ok(dates[i]! >= dates[i - 1]!, "affected feeds must be oldest-first");
+    }
+    assert.ok(body.data.feedImpact.affectedFeeds[0]!.id);
+    assert.ok(body.data.feedImpact.affectedFeeds[0]!.title);
   });
 
   it("reports zero feeds disabled for a within-limit change", async () => {

@@ -125,10 +125,12 @@ export class PaddleService {
       items,
       currencyCode,
       preview,
+      prorationBillingMode,
     }: {
       items: Array<{ priceId: string; quantity: number }>;
       currencyCode: string;
       preview?: boolean;
+      prorationBillingMode?: string;
     },
   ): Promise<T> {
     return this.executeApiCall<T>(
@@ -141,7 +143,8 @@ export class PaddleService {
             quantity: i.quantity,
           })),
           currency_code: currencyCode,
-          proration_billing_mode: "prorated_immediately",
+          proration_billing_mode:
+            prorationBillingMode ?? "prorated_immediately",
         }),
       },
     );
