@@ -65,6 +65,8 @@ export interface SubscriptionChangePreview {
     taxFormatted: string;
     credit: string;
     creditFormatted: string;
+    creditToBalance: string;
+    creditToBalanceFormatted: string;
     total: string;
     totalFormatted: string;
     grandTotal: string;
@@ -164,6 +166,11 @@ export class WorkspaceBillingService {
         credit: immediateTransaction.details.totals.credit,
         creditFormatted: formatCurrency(
           immediateTransaction.details.totals.credit,
+          currencyCode,
+        ),
+        creditToBalance: immediateTransaction.details.totals.credit_to_balance ?? "0",
+        creditToBalanceFormatted: formatCurrency(
+          immediateTransaction.details.totals.credit_to_balance ?? "0",
           currencyCode,
         ),
         total: immediateTransaction.details.totals.total,

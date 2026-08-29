@@ -1555,12 +1555,41 @@ describe("WorkspaceBilling", () => {
 
     expect(await screen.findByText(/Total due today/)).toBeInTheDocument();
     expect(screen.getByText("Subtotal")).toBeInTheDocument();
-    expect(screen.getByText("Account credit")).toBeInTheDocument();
-    expect(screen.getByText("Tax")).toBeInTheDocument();
+    expect(screen.getByText("Account credit applied")).toBeInTheDocument();
+    expect(screen.getByText("Tax adjustment")).toBeInTheDocument();
     // The negative tax renders with the sign outside the symbol, not "$-.82".
     expect(screen.getByText("-$0.82")).toBeInTheDocument();
     // Credit reduces the bill, so it must read as a deduction, not a charge.
     expect(screen.getByText("-$5.00")).toBeInTheDocument();
+  });
+
+  it("presents a negative prorated total as renewal credit, not money due today", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview({
+      immediateTransaction: {
+        billingPeriod: {
+          startsAt: "2027-02-01T00:00:00.000Z",
+          endsAt: "2027-02-28T00:00:00.000Z",
+        },
+        subtotalFormatted: "-$10.00",
+        taxFormatted: "-$1.00",
+        credit: "0",
+        creditFormatted: "$0",
+        creditToBalance: "1100",
+        creditToBalanceFormatted: "$11.00",
+        grandTotalFormatted: "-$11.00",
+      },
+    });
+
+    renderBilling();
+    await openChangeDialog();
+    await setSliderToFeeds(140);
+
+    expect(await screen.findByText("Credit from this change")).toBeInTheDocument();
+    expect(screen.getByText("$11.00 added to account credit")).toBeInTheDocument();
+    expect(screen.queryByText("Total due today")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tax adjustment")).not.toBeInTheDocument();
   });
 
   it("announces the settled total once the change preview loads", async () => {

@@ -538,6 +538,7 @@ describe("Workspace billing API", { concurrency: true }, () => {
                   subtotal: "500",
                   tax: "50",
                   credit: "100",
+                  credit_to_balance: "25",
                   total: "450",
                   grand_total: "450",
                 },
@@ -566,6 +567,8 @@ describe("Workspace billing API", { concurrency: true }, () => {
           billingPeriod: { startsAt: string };
           grandTotal: string;
           grandTotalFormatted: string;
+          creditToBalance: string;
+          creditToBalanceFormatted: string;
         };
       };
     }>(res);
@@ -575,6 +578,8 @@ describe("Workspace billing API", { concurrency: true }, () => {
     );
     assert.strictEqual(body.data.immediateTransaction.grandTotal, "450");
     assert.ok(body.data.immediateTransaction.grandTotalFormatted);
+    assert.strictEqual(body.data.immediateTransaction.creditToBalance, "25");
+    assert.ok(body.data.immediateTransaction.creditToBalanceFormatted);
   });
 
   async function registerPreviewRoute(subscriptionId: string) {

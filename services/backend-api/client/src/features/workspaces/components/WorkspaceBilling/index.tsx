@@ -399,11 +399,16 @@ const ChangeCapacityDialog = ({
         taxFormatted: string;
         credit: string;
         creditFormatted: string;
+        creditToBalance: string;
+        creditToBalanceFormatted: string;
         grandTotalFormatted: string;
       }
     | undefined
     | null;
   const deferred = (preview as unknown as { deferred?: boolean })?.deferred;
+  const taxIsAdjustment = immediate?.taxFormatted.startsWith("-") ?? false;
+  const totalIsCredit = immediate?.grandTotalFormatted.startsWith("-") ?? false;
+  const createsAccountCredit = (immediate?.creditToBalance ?? "0") !== "0";
   const nextBillIso = ((preview as unknown as { nextBillDate?: string | null })?.nextBillDate ??
     nextBillDate) as string | null;
   const willBeDisabledCount = preview?.feedImpact?.willBeDisabledCount ?? 0;
@@ -691,34 +696,58 @@ const ChangeCapacityDialog = ({
                 {immediate && !deferred && (
                   <Stack gap={3}>
                     <VisuallyHidden>
-                      Preview ready. You&apos;ll pay {immediate.grandTotalFormatted} now.
+                      {totalIsCredit
+                        ? `Preview ready. ${immediate.grandTotalFormatted.replace(/^-/, "")} credit will apply to your next renewal.`
+                        : `Preview ready. You'll pay ${immediate.grandTotalFormatted} now.`}
                     </VisuallyHidden>
-                    <Stack gap={1}>
-                      <Text fontWeight="medium" fontSize="sm">
-                        Due today
-                      </Text>
-                      <Stack as="dl" gap={1}>
-                        <AmountRow label="Subtotal" value={immediate.subtotalFormatted} />
-                        <AmountRow label="Tax" value={immediate.taxFormatted} />
-                        {immediate.credit !== "0" && (
-                          <AmountRow
-                            label="Account credit"
-                            value={`-${immediate.creditFormatted}`}
-                            valueColor="text.success"
-                          />
-                        )}
-                        <Box borderTopWidth="1px" borderColor="border.emphasized" pt={1}>
-                          <AmountRow
-                            label="Total due today"
-                            value={immediate.grandTotalFormatted}
-                            emphasized
-                          />
-                        </Box>
+                    {createsAccountCredit ? (
+                      <Stack gap={1}>
+                        <Text fontWeight="medium" fontSize="sm">Credit from this change</Text>
+                        <Text color="text.success" fontSize="lg" fontWeight="semibold">
+                          {immediate.creditToBalanceFormatted} added to account credit
+                        </Text>
+                        <Text color="fg.muted" fontSize="sm">
+                          Paddle will automatically apply it to a future charge.
+                        </Text>
                       </Stack>
-                      <Text color="fg.muted" fontSize="sm">
-                        Prorated for the current billing period.
-                      </Text>
-                    </Stack>
+                    ) : (
+                      <Stack gap={1}>
+                        <Text fontWeight="medium" fontSize="sm">Due today</Text>
+                        <Stack as="dl" gap={1}>
+                          <AmountRow label="Subtotal" value={immediate.subtotalFormatted} />
+                          <AmountRow
+                            label={taxIsAdjustment ? "Tax adjustment" : "Tax"}
+                            value={immediate.taxFormatted}
+                          />
+                          {immediate.credit !== "0" && (
+                            <AmountRow
+                              label="Account credit applied"
+                              value={`-${immediate.creditFormatted}`}
+                              valueColor="text.success"
+                            />
+                          )}
+                          <Box borderTopWidth="1px" borderColor="border.emphasized" pt={1}>
+                            <AmountRow
+                              label={
+                                totalIsCredit
+                                  ? "Credit applied to your next renewal"
+                                  : "Total due today"
+                              }
+                              value={
+                                totalIsCredit
+                                  ? `${immediate.grandTotalFormatted.replace(/^-/, "")} credit`
+                                  : immediate.grandTotalFormatted
+                              }
+                              emphasized
+                              valueColor={totalIsCredit ? "text.success" : undefined}
+                            />
+                          </Box>
+                        </Stack>
+                        <Text color="fg.muted" fontSize="sm">
+                          Prorated for the current billing period.
+                        </Text>
+                      </Stack>
+                    )}
                     {recurringPrice && (
                       <Stack gap={1}>
                         <Text fontSize="sm">
