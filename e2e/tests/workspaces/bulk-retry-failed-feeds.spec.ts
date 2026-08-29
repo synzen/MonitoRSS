@@ -150,13 +150,16 @@ test.describe("Bulk retry failed workspace feeds", () => {
       .click();
 
     await expect(
-      page.getByRole("link", { name: "Eligible request failure" }),
+      page.getByRole("link", {
+        name: "Eligible request failure",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
       page.getByLabel("Currently retrying after failed requests"),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Plan-disabled feed" }),
+      page.getByRole("link", { name: "Plan-disabled feed", exact: true }),
     ).toBeVisible();
     await expect(page.getByLabel("Feed limit exceeded")).toBeVisible();
   });
