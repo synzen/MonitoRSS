@@ -78,14 +78,15 @@ test.describe("Pricing dialog focus management", () => {
 
     // The capacity sizer is collapsed by default (capacity is demoted under the
     // collaboration pitch). Opening it from Account Settings shows the trigger,
-    // not the picker; expanding "Add more feeds" reveals the picker.
+    // not the picker; expanding "Add more feeds" reveals the picker. The exact
+    // number input is nested inside the Custom option, so it is hidden until
+    // Custom is selected.
     const sizerTrigger = forTeam.getByRole("button", { name: /add more feeds/i });
     await expect(sizerTrigger).toBeVisible();
     await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeHidden();
     await sizerTrigger.click();
-    await expect(
-      forTeam.getByRole("spinbutton", { name: /feed capacity/i }),
-    ).toBeVisible();
+    await expect(forTeam.getByRole("radiogroup", { name: "Feed capacity" })).toBeVisible();
+    await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeHidden();
 
     const capacityGroup = forTeam.getByRole("radiogroup", { name: "Feed capacity" });
     const baseCapacity = capacityGroup.getByRole("radio", { name: "70 feeds" });
@@ -110,7 +111,9 @@ test.describe("Pricing dialog focus management", () => {
     await expect(page.getByText(/fewer than 51 articles/i)).toBeHidden();
     await expect(infoButton).toBeFocused();
 
+    await forTeam.getByRole("radio", { name: "Custom" }).click();
     const picker = forTeam.getByRole("spinbutton", { name: "Or enter an exact feed capacity" });
+    await expect(picker).toBeVisible();
     await picker.fill("1100");
     await picker.blur();
     await expect(picker).toHaveAttribute("aria-valuetext", "1,100 feeds");
@@ -145,8 +148,13 @@ test.describe("Pricing dialog focus management", () => {
       forTeam.getByRole("button", { name: /^create your workspace$/i }),
     ).toBeVisible();
 
-    // Expand the collapsed-by-default sizer to reveal the picker.
+    // Expand the collapsed-by-default sizer to reveal the picker. The exact
+    // input is hidden until Custom is selected, so assert the radiogroup is
+    // visible and then open Custom to reveal the spinbutton.
     await forTeam.getByRole("button", { name: /add more feeds/i }).click();
+    await expect(forTeam.getByRole("radiogroup", { name: "Feed capacity" })).toBeVisible();
+    await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeHidden();
+    await forTeam.getByRole("radio", { name: "Custom" }).click();
     await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeVisible();
 
     // The narrow-left region stacks ABOVE the dominant-right region (column

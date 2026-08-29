@@ -215,15 +215,18 @@ test.describe("Paddle workspace roundtrip", () => {
 
       await page.getByRole("button", { name: /change capacity/i }).click();
       // Dialog + picker are instant client renders; short timeouts so a UI break
-      // fails this attempt fast instead of stalling the retry budget.
+      // fails this attempt fast instead of stalling the retry budget. The exact
+      // input is nested inside the Custom option.
+      await expect(changeDialog.getByRole("radiogroup", { name: "Feed capacity" })).toBeVisible({ timeout: 10000 });
+      await changeDialog.getByRole("radio", { name: "Custom" }).click();
       const capacityInput = changeDialog.getByRole("spinbutton", { name: /or enter an exact feed capacity/i });
       await expect(capacityInput).toBeVisible({ timeout: 10000 });
       // Seeded at the current 70 feeds; enter an exact higher capacity (140) via the picker.
       await capacityInput.fill("140");
       await capacityInput.blur();
       await expect(capacityInput).toHaveAttribute("aria-valuetext", "140 feeds", { timeout: 5000 });
-      // Also verify the preset radio reflects the exact value
-      await expect(changeDialog.getByRole("radio", { name: "140 feeds" })).toBeChecked({ timeout: 5000 });
+      // The picker keeps Custom selected even when the exact value matches a preset
+      await expect(changeDialog.getByRole("radio", { name: "Custom" })).toBeChecked({ timeout: 5000 });
       // Only the prorated preview is webhook-gated; it is the one slow wait here.
       // For very small prorations Paddle may defer billing to renewal, showing the
       // "Available now, billed at renewal" copy instead of "Total due today".
@@ -385,7 +388,9 @@ test.describe("Paddle workspace roundtrip", () => {
     const { workspaceSlug } = await createTeamAndOpenBilling(page);
 
     await page.getByRole("button", { name: "Yearly" }).click();
+    await page.getByRole("radio", { name: "Custom" }).click();
     const capacity = page.getByRole("spinbutton", { name: "Or enter an exact feed capacity" });
+    await expect(capacity).toBeVisible({ timeout: 10000 });
     await capacity.fill("2000");
     await capacity.blur();
     await expect(capacity).toHaveAttribute("aria-valuetext", "2,000 feeds", { timeout: 5000 });
