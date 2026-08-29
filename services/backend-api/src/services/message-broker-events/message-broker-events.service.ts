@@ -1,4 +1,8 @@
 import type { Connection, Consumer } from "rabbitmq-client";
+import {
+  UrlFetchCompletedSchema,
+  UrlFailedDisableFeedsSchema,
+} from "@monitorss/contracts";
 import type { Config } from "../../config";
 import logger from "../../infra/logger";
 import { createConsumer, MessageBrokerQueue } from "../../infra/rabbitmq";
@@ -72,18 +76,18 @@ export class MessageBrokerEventsService {
     );
 
     this.consumers.push(
-      createQueueConsumer(MessageBrokerQueue.UrlFetchCompleted, (msg) =>
-        this.handleUrlFetchCompletedEvent(
-          msg as {
-            data: {
-              url: string;
-              lookupKey?: string;
-              rateSeconds: number;
-              debug?: boolean;
-            };
-          },
-        ),
-      ),
+      createQueueConsumer(MessageBrokerQueue.UrlFetchCompleted, async (msg) => {
+        const parsed = UrlFetchCompletedSchema.safeParse(msg);
+
+        if (!parsed.success) {
+          logger.error("Received invalid url.fetch.completed event, skipping", {
+            issues: parsed.error.issues,
+          });
+          return;
+        }
+
+        return this.handleUrlFetchCompletedEvent(parsed.data);
+      }),
     );
 
     this.consumers.push(
@@ -93,10 +97,23 @@ export class MessageBrokerEventsService {
     );
 
     this.consumers.push(
-      createQueueConsumer(MessageBrokerQueue.UrlFailedDisableFeeds, (msg) =>
-        this.handleUrlRequestFailureEvent(
-          msg as { data: { url: string; lookupKey?: string } },
-        ),
+      createQueueConsumer(
+        MessageBrokerQueue.UrlFailedDisableFeeds,
+        async (msg) => {
+          const parsed = UrlFailedDisableFeedsSchema.safeParse(msg);
+
+          if (!parsed.success) {
+            logger.error(
+              "Received invalid url.failed.disable-feeds event, skipping",
+              {
+                issues: parsed.error.issues,
+              },
+            );
+            return;
+          }
+
+          return this.handleUrlRequestFailureEvent(parsed.data);
+        },
       ),
     );
 
@@ -152,13 +169,14 @@ export class MessageBrokerEventsService {
   }
 
   async handleUrlFetchCompletedEvent({
-    data: { url, lookupKey, rateSeconds, debug },
+    data: { url, lookupKey, rateSeconds, debug, recovery },
   }: {
     data: {
       url: string;
       lookupKey?: string;
       rateSeconds: number;
       debug?: boolean;
+      recovery?: { startedAt: number };
     };
   }): Promise<void> {
     if (debug) {
@@ -172,6 +190,15 @@ export class MessageBrokerEventsService {
     logger.debug("Got url fetched event", { lookupKey, url, rateSeconds });
 
     const filter = lookupKey ? { lookupKey } : { url };
+
+    if (recovery) {
+      await this.deps.userFeedRepository.clearDisabledCodeForRecoveredFeeds(
+        filter,
+        recovery.startedAt,
+      );
+      return;
+    }
+
     const healthStatusUpdateCount =
       await this.deps.userFeedRepository.countWithHealthStatusFilter(
         filter,
@@ -245,9 +272,9 @@ export class MessageBrokerEventsService {
   }
 
   async handleUrlRequestFailureEvent({
-    data: { url, lookupKey },
+    data: { url, lookupKey, recovery },
   }: {
-    data: { url: string; lookupKey?: string };
+    data: { url: string; lookupKey?: string; recovery?: { startedAt: number } };
   }): Promise<void> {
     logger.debug(`handling url request failure event for url ${url}`);
 
@@ -271,6 +298,16 @@ export class MessageBrokerEventsService {
           stack: (err as Error).stack,
         });
       }
+    }
+
+    // Feeds that were already disabled and in the bulk-recovery state have
+    // exhausted their fresh retry cycle: revert them to the terminal failed
+    // state so they stop being scheduled.
+    if (recovery) {
+      await this.deps.userFeedRepository.revertRecoveryFeedsToFailed(
+        filter,
+        recovery.startedAt,
+      );
     }
   }
 

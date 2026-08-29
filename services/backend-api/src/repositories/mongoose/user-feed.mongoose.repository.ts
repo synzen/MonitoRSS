@@ -35,6 +35,7 @@ import type {
   AddInviteToFeedInput,
   UpdateInviteRepoInput,
   UserFeedForPendingInvites,
+  ScheduledFeedUrl,
   ScheduledFeedWithLookupKey,
   FeedForSlotOffsetRecalculation,
   RefreshRateSyncInput,
@@ -195,6 +196,10 @@ const UserFeedSchema = new Schema(
     debug: { type: Boolean },
     feedRequestLookupKey: { type: String },
     lastManualRequestAt: { type: Date },
+    // Set when the feed enters the bulk-recovery state (disabledCode
+    // FAILED_REQUESTS + healthStatus FAILING). It epochs the active recovery
+    // cycle so the request worker can ignore failure history that predates it.
+    recoveryStartedAt: { type: Date },
   },
   { timestamps: true, autoIndex: true },
 );
@@ -214,6 +219,7 @@ UserFeedSchema.index({
 });
 UserFeedSchema.index({ userRefreshRateSeconds: 1, refreshRateSeconds: 1 });
 UserFeedSchema.index({ workspaceId: 1 });
+UserFeedSchema.index({ workspaceId: 1, disabledCode: 1, healthStatus: 1 });
 UserFeedSchema.index({
   refreshRateSeconds: 1,
   slotOffsetMs: 1,
@@ -284,6 +290,7 @@ export class UserFeedMongooseRepository
       blockingComparisons: doc.blockingComparisons,
       externalProperties: doc.externalProperties,
       healthStatus: doc.healthStatus,
+      recoveryStartedAt: doc.recoveryStartedAt,
       connections: {
         discordChannels:
           discordChannels?.map((conn) =>
@@ -699,7 +706,10 @@ export class UserFeedMongooseRepository
           },
           // Feed-level disabled states take precedence over connection problems:
           // a disabled feed delivers nothing, so connection issues are moot until
-          // it is re-enabled.
+          // it is re-enabled. Exception: a FAILED_REQUESTS feed whose health is
+          // FAILING is in the bulk-recovery state — it keeps its disable code but
+          // is being re-verified in the background, so it surfaces as "Pending
+          // Retry" rather than requiring attention.
           computedStatus: {
             $cond: {
               if: { $eq: ["$disabledCode", UserFeedDisabledCode.Manual] },
@@ -716,32 +726,58 @@ export class UserFeedMongooseRepository
                   else: {
                     $cond: {
                       if: {
-                        $or: [
-                          ...feedConnectionTypeKeys.map((key) => ({
-                            $anyElementTrue: {
-                              $map: {
-                                input: { $ifNull: [`$connections.${key}`, []] },
-                                as: "c",
-                                in: {
-                                  $in: [`$$c.disabledCode`, badConnectionCodes],
-                                },
-                              },
-                            },
-                          })),
-                          { $in: ["$disabledCode", badUserFeedCodes] },
-                        ],
-                      },
-                      then: UserFeedComputedStatus.RequiresAttention,
-                      else: {
-                        $cond: {
-                          if: {
+                        $and: [
+                          {
+                            $eq: [
+                              "$disabledCode",
+                              UserFeedDisabledCode.FailedRequests,
+                            ],
+                          },
+                          {
                             $eq: [
                               "$healthStatus",
                               UserFeedHealthStatus.Failing,
                             ],
                           },
-                          then: UserFeedComputedStatus.Retrying,
-                          else: UserFeedComputedStatus.Ok,
+                        ],
+                      },
+                      then: UserFeedComputedStatus.Retrying,
+                      else: {
+                        $cond: {
+                          if: {
+                            $or: [
+                              ...feedConnectionTypeKeys.map((key) => ({
+                                $anyElementTrue: {
+                                  $map: {
+                                    input: {
+                                      $ifNull: [`$connections.${key}`, []],
+                                    },
+                                    as: "c",
+                                    in: {
+                                      $in: [
+                                        `$$c.disabledCode`,
+                                        badConnectionCodes,
+                                      ],
+                                    },
+                                  },
+                                },
+                              })),
+                              { $in: ["$disabledCode", badUserFeedCodes] },
+                            ],
+                          },
+                          then: UserFeedComputedStatus.RequiresAttention,
+                          else: {
+                            $cond: {
+                              if: {
+                                $eq: [
+                                  "$healthStatus",
+                                  UserFeedHealthStatus.Failing,
+                                ],
+                              },
+                              then: UserFeedComputedStatus.Retrying,
+                              else: UserFeedComputedStatus.Ok,
+                            },
+                          },
                         },
                       },
                     },
@@ -762,6 +798,11 @@ export class UserFeedMongooseRepository
 
     if (filters?.computedStatuses?.length) {
       $match.computedStatus = { $in: filters.computedStatuses };
+    }
+
+    if (filters?.eligibleForBulkRetry) {
+      $match.disabledCode = UserFeedDisabledCode.FailedRequests;
+      $match.healthStatus = UserFeedHealthStatus.Failed;
     }
 
     if (search) {
@@ -2794,12 +2835,21 @@ export class UserFeedMongooseRepository
   async *iterateUrlsForRefreshRate(
     refreshRateSeconds: number,
     slotWindow: SlotWindow,
-  ): AsyncIterable<{ url: string }> {
+  ): AsyncIterable<ScheduledFeedUrl> {
     const pipeline = getCommonFeedAggregateStages({
       refreshRateSeconds,
       slotWindow,
+      includeRecoveryFeeds: true,
     });
-    pipeline.push({ $group: { _id: "$url" } });
+    pipeline.push({
+      $group: {
+        _id: "$url",
+        // The earliest active recovery epoch among feeds sharing this URL.
+        // Only feeds in the recovery state carry recoveryStartedAt, so a plain
+        // min is null for URLs without recovering feeds.
+        recoveryStartedAt: { $min: "$recoveryStartedAt" },
+      },
+    });
 
     const cursor = this.model
       .aggregate(pipeline, {
@@ -2809,7 +2859,12 @@ export class UserFeedMongooseRepository
 
     for await (const doc of cursor) {
       if (doc._id) {
-        yield { url: doc._id };
+        yield {
+          url: doc._id,
+          recoveryStartedAt: doc.recoveryStartedAt
+            ? new Date(doc.recoveryStartedAt).getTime()
+            : undefined,
+        };
       }
     }
   }
@@ -2822,6 +2877,7 @@ export class UserFeedMongooseRepository
       refreshRateSeconds,
       slotWindow,
       withLookupKeys: true,
+      includeRecoveryFeeds: true,
     });
     pipeline.push({
       $project: {
@@ -2830,6 +2886,7 @@ export class UserFeedMongooseRepository
         workspaceId: 1,
         users: 1,
         workspaces: 1,
+        recoveryStartedAt: 1,
       },
     });
 
@@ -2846,6 +2903,9 @@ export class UserFeedMongooseRepository
         workspaceId: doc.workspaceId?.toString(),
         users: doc.users || [],
         workspaces: doc.workspaces || [],
+        recoveryStartedAt: doc.recoveryStartedAt
+          ? new Date(doc.recoveryStartedAt).getTime()
+          : undefined,
       };
     }
   }
@@ -2881,6 +2941,90 @@ export class UserFeedMongooseRepository
     queryFilter.healthStatus = { $ne: excludeHealthStatus };
 
     return this.model.countDocuments(queryFilter);
+  }
+
+  async startBulkRetry(workspaceId: string): Promise<{
+    retriedCount: number;
+    recoveryAlreadyActive: boolean;
+  }> {
+    const recoveryAlreadyActive =
+      (await this.model.exists({
+        workspaceId: this.stringToObjectId(workspaceId),
+        disabledCode: UserFeedDisabledCode.FailedRequests,
+        healthStatus: UserFeedHealthStatus.Failing,
+      })) !== null;
+
+    if (recoveryAlreadyActive) {
+      return { retriedCount: 0, recoveryAlreadyActive: true };
+    }
+
+    const result = await this.model.updateMany(
+      {
+        workspaceId: this.stringToObjectId(workspaceId),
+        disabledCode: UserFeedDisabledCode.FailedRequests,
+        healthStatus: UserFeedHealthStatus.Failed,
+      },
+      {
+        $set: {
+          healthStatus: UserFeedHealthStatus.Failing,
+          recoveryStartedAt: new Date(),
+        },
+      },
+    );
+
+    return {
+      retriedCount: result.modifiedCount,
+      recoveryAlreadyActive: false,
+    };
+  }
+
+  async clearDisabledCodeForRecoveredFeeds(
+    filter: {
+      url?: string;
+      lookupKey?: string;
+    },
+    recoveryStartedAt: number,
+  ): Promise<number> {
+    const queryFilter: Record<string, unknown> = filter.lookupKey
+      ? { feedRequestLookupKey: filter.lookupKey }
+      : { url: filter.url };
+
+    // Only feeds still in the marked recovery state are restored; feeds that
+    // share the URL but were never marked (or already exhausted recovery) are
+    // left alone.
+    queryFilter.disabledCode = UserFeedDisabledCode.FailedRequests;
+    queryFilter.healthStatus = UserFeedHealthStatus.Failing;
+    queryFilter.recoveryStartedAt = new Date(recoveryStartedAt);
+
+    const result = await this.model.updateMany(queryFilter, {
+      $set: { healthStatus: UserFeedHealthStatus.Ok },
+      $unset: { disabledCode: 1, recoveryStartedAt: 1 },
+    });
+
+    return result.modifiedCount;
+  }
+
+  async revertRecoveryFeedsToFailed(
+    filter: {
+      url?: string;
+      lookupKey?: string;
+    },
+    recoveryStartedAt: number,
+  ): Promise<number> {
+    const queryFilter: Record<string, unknown> = filter.lookupKey
+      ? { feedRequestLookupKey: filter.lookupKey }
+      : { url: filter.url };
+
+    queryFilter.disabledCode = UserFeedDisabledCode.FailedRequests;
+    queryFilter.healthStatus = UserFeedHealthStatus.Failing;
+    queryFilter.recoveryStartedAt = new Date(recoveryStartedAt);
+
+    const result = await this.model.updateMany(queryFilter, {
+      $set: { healthStatus: UserFeedHealthStatus.Failed },
+      $unset: { recoveryStartedAt: 1 },
+    });
+
+    return result.modifiedCount;
   }
 
   async *iterateFeedsForDelivery(params: {

@@ -4,6 +4,10 @@ import {
   createScheduleHandlerHarness,
   generateEncryptionKey,
 } from "../helpers/schedule-handler.harness";
+import {
+  UserFeedDisabledCode,
+  UserFeedHealthStatus,
+} from "../../src/repositories/shared/enums";
 
 const DEFAULT_REFRESH_RATE_SECONDS = 600;
 const DEFAULT_MAX_DAILY_ARTICLES = 100;
@@ -506,6 +510,32 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       assert.ok(
         !collectedUrls.includes(disabledFeed.url),
         "Should exclude disabled feed",
+      );
+    });
+
+    it("schedules marked recovery feeds with their recovery epoch", async () => {
+      const ctx = harness.createContext();
+      const feed = await ctx.createFeedWithConnection({
+        url: `https://example.com/recovery-${ctx.generateId()}.xml`,
+        refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
+      });
+      const recoveryStartedAt = new Date(Date.now() - 1_000);
+      await ctx.setFields(feed.id, {
+        disabledCode: UserFeedDisabledCode.FailedRequests,
+        healthStatus: UserFeedHealthStatus.Failing,
+        recoveryStartedAt,
+      });
+
+      const scheduled: Array<{ url: string; recovery?: { startedAt: number } }> = [];
+      await ctx.service.handleRefreshRate(DEFAULT_REFRESH_RATE_SECONDS, {
+        urlsHandler: async (batch) => {
+          scheduled.push(...batch);
+        },
+      });
+
+      assert.deepStrictEqual(
+        scheduled.find((item) => item.url === feed.url)?.recovery,
+        { startedAt: recoveryStartedAt.getTime() },
       );
     });
 

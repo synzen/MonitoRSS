@@ -1,6 +1,6 @@
 {
   "name": "@monitorss/contracts",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Canonical RabbitMQ event names and Zod payload schemas for MonitoRSS services.",
   "main": "build/index.js",
   "types": "build/index.d.ts",

@@ -80,6 +80,35 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
   });
 
   describe("handleUrlFetchCompletedEvent", () => {
+    it("restores a recovery feed without delivering the recovery fetch articles", async () => {
+      const ctx = harness.createContext({
+        userFeedRepository: { countWithHealthStatusFilterResult: 1 },
+      });
+      const recoveryStartedAt = 123_456;
+
+      await ctx.service.handleUrlFetchCompletedEvent({
+        data: {
+          url: "https://example.com/feed.xml",
+          rateSeconds: 600,
+          recovery: { startedAt: recoveryStartedAt },
+        },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.clearDisabledCodeForRecoveredFeeds.mock.callCount(),
+        1,
+      );
+      assert.deepStrictEqual(
+        ctx.userFeedRepository.clearDisabledCodeForRecoveredFeeds.mock.calls[0]
+          ?.arguments,
+        [{ url: "https://example.com/feed.xml" }, recoveryStartedAt],
+      );
+      assert.strictEqual(
+        ctx.userFeedRepository.iterateFeedsForDelivery.mock.callCount(),
+        0,
+      );
+    });
+
     it("should update health status to Ok when feeds are not Ok", async () => {
       const ctx = harness.createContext({
         userFeedRepository: {
@@ -516,6 +545,24 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
       );
     });
 
+    it("reverts only the recovery cycle that exhausted its retries", async () => {
+      const ctx = harness.createContext();
+      const recoveryStartedAt = 123_456;
+
+      await ctx.service.handleUrlRequestFailureEvent({
+        data: {
+          url: "https://example.com/feed.xml",
+          recovery: { startedAt: recoveryStartedAt },
+        },
+      });
+
+      assert.deepStrictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.calls[0]
+          ?.arguments,
+        [{ url: "https://example.com/feed.xml" }, recoveryStartedAt],
+      );
+    });
+
     it("should send disabled feeds alert after disabling", async () => {
       const feedIds = ["feed-1", "feed-2"];
       const ctx = harness.createContext({
@@ -557,6 +604,72 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
       assert.strictEqual(
         ctx.notificationsService.sendDisabledFeedsAlert.mock.callCount(),
         0,
+      );
+    });
+
+    it("should revert recovery feeds to the terminal failed state by url", async () => {
+      const ctx = harness.createContext();
+      const recoveryStartedAt = 123_456;
+
+      await ctx.service.handleUrlRequestFailureEvent({
+        data: {
+          url: "https://example.com/feed.xml",
+          recovery: { startedAt: recoveryStartedAt },
+        },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.callCount(),
+        1,
+      );
+      assert.deepStrictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.calls[0]
+          ?.arguments,
+        [{ url: "https://example.com/feed.xml" }, recoveryStartedAt],
+      );
+    });
+
+    it("should revert recovery feeds to the terminal failed state by lookupKey", async () => {
+      const ctx = harness.createContext();
+      const recoveryStartedAt = 123_456;
+
+      await ctx.service.handleUrlRequestFailureEvent({
+        data: {
+          url: "https://example.com/feed.xml",
+          lookupKey: "lookup-1",
+          recovery: { startedAt: recoveryStartedAt },
+        },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.callCount(),
+        1,
+      );
+      assert.deepStrictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.calls[0]
+          ?.arguments,
+        [{ lookupKey: "lookup-1" }, recoveryStartedAt],
+      );
+    });
+
+    it("should revert recovery feeds even when no new feeds are disabled", async () => {
+      const ctx = harness.createContext({
+        userFeedRepository: {
+          findIdsWithoutDisabledCodeResult: [],
+        },
+      });
+      const recoveryStartedAt = 123_456;
+
+      await ctx.service.handleUrlRequestFailureEvent({
+        data: {
+          url: "https://example.com/feed.xml",
+          recovery: { startedAt: recoveryStartedAt },
+        },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.callCount(),
+        1,
       );
     });
   });

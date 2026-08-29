@@ -62,6 +62,8 @@ export interface MockUserFeedRepository {
   disableFeedsAndSetHealthStatus: ReturnType<typeof mock.fn>;
   disableFeedByIdIfNotDisabled: ReturnType<typeof mock.fn>;
   disableFeedsByFilterIfNotDisabled: ReturnType<typeof mock.fn>;
+  clearDisabledCodeForRecoveredFeeds: ReturnType<typeof mock.fn>;
+  revertRecoveryFeedsToFailed: ReturnType<typeof mock.fn>;
 }
 
 export interface MockSupportersService {
@@ -146,6 +148,8 @@ export function createMessageBrokerEventsHarness(): MessageBrokerEventsHarness {
               ?.disableFeedsByFilterIfNotDisabledResult ?? 1,
           ),
         ),
+        clearDisabledCodeForRecoveredFeeds: mock.fn(() => Promise.resolve(0)),
+        revertRecoveryFeedsToFailed: mock.fn(() => Promise.resolve(0)),
       };
 
       const getBenefitsOfDiscordUser = mock.fn((_discordUserId: string) =>

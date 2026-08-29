@@ -17,11 +17,13 @@ import { notifyInfo } from "../utils/notifyInfo";
 interface AlertProps {
   title?: ReactNode;
   description?: ReactNode;
+  focusOnMount?: boolean;
 }
 
 interface CreateAlertData {
   title?: ReactNode;
   description?: ReactNode;
+  focusOnMount?: boolean;
 }
 
 interface AlertState extends CreateAlertData {
@@ -173,6 +175,7 @@ export const PageAlertContextOutlet = ({ containerProps }: PageAlertContextOutle
             status={alert.status}
             description={alert.description}
             title={alert.title}
+            focusOnMount={alert.focusOnMount}
             onClosed={() => {
               onRemoved(alert.id);
             }}

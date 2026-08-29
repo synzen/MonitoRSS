@@ -10,6 +10,7 @@ export const UrlFetchCompletedSchema = z.object({
     lookupKey: z.string().optional(),
     rateSeconds: z.number().int().positive(),
     debug: z.boolean().optional(),
+    recovery: z.object({ startedAt: z.number().int().positive() }).optional(),
   }),
 });
 

@@ -28,6 +28,8 @@ describe("ConfirmModal", () => {
 
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toBeVisible();
+    expect(dialog).toHaveAccessibleName("Are you sure?");
+    expect(dialog).toHaveAccessibleDescription("This cannot be undone.");
 
     await userEvent.click(screen.getByRole("button", { name: "Yes" }));
 
@@ -288,10 +290,24 @@ describe("ConfirmModal", () => {
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
-  // By default focus lands on Cancel (the safe target for a yes/no). A
-  // content-rich dialog overrides this so focus starts at the top of the content
-  // and the user reads forward, instead of being dropped on Cancel at the end of
-  // the DOM with the task surface behind them.
+  it("focuses Cancel by default", async () => {
+    renderWithProvider(
+      <ConfirmModal
+        open
+        onOpenChange={vi.fn()}
+        title="Confirm deletion"
+        description="This cannot be undone."
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    const dialog = await screen.findByRole("alertdialog");
+    await waitFor(() => expect(screen.getByRole("button", { name: /cancel/i })).toHaveFocus());
+    expect(dialog).toHaveAccessibleName("Confirm deletion");
+    expect(dialog).toHaveAccessibleDescription("This cannot be undone.");
+  });
+
+  // A content-rich dialog can override the default so focus starts at the top of its content.
   it("focuses the initialFocusEl override on open instead of Cancel", async () => {
     const Harness = () => {
       const introRef = useRef<HTMLParagraphElement>(null);

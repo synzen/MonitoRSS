@@ -28,3 +28,4 @@ export * from "./useCuratedFeeds";
 export * from "./useCuratedFeedPreview";
 export * from "./useUnconfiguredFeeds";
 export * from "./useOwnedPersonalFeeds";
+export * from "./useRetryFailedFeeds";

@@ -8,7 +8,10 @@ import {
 } from "../../infra/error-handler";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import { UserFeedManagerStatus } from "../../repositories/shared/enums";
-import { ManualRequestTooSoonException } from "../../shared/exceptions/user-feeds.exceptions";
+import {
+  ManualRequestTooSoonException,
+  WorkspaceNotSubscribedException,
+} from "../../shared/exceptions/user-feeds.exceptions";
 import { formatDiscordChannelConnectionResponse } from "../feed-connections/feed-connections.handlers";
 import type {
   CloneUserFeedBody,
@@ -23,6 +26,7 @@ import type {
   GetFeedRequestsQuery,
   GetUserFeedParams,
   GetUserFeedsQuery,
+  RetryFailedFeedsBody,
   ValidateUrlBody,
   PreviewByUrlBody,
   UpdateUserFeedsBody,
@@ -714,6 +718,10 @@ function parseFilters(raw: unknown): GetUserFeedsInputFilters | undefined {
     });
   }
 
+  if (obj.eligibleForBulkRetry === "true") {
+    filters.eligibleForBulkRetry = true;
+  }
+
   if (typeof obj.connectionDisabledCodes === "string") {
     filters.connectionDisabledCodes = obj.connectionDisabledCodes
       .split(",")
@@ -748,12 +756,8 @@ export async function getUserFeedsHandler(
   request: FastifyRequest<{ Querystring: GetUserFeedsQuery }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedRepository,
-    usersService,
-    workspacesService,
-    config,
-  } = request.container;
+  const { userFeedRepository, usersService, workspacesService, config } =
+    request.container;
   const { discordUserId } = request;
   const { workspaceId } = request.query;
 
@@ -820,6 +824,37 @@ export async function getUserFeedsHandler(
     total: count,
     feedsWithoutConnections: feedsWithoutConnectionsCount,
   });
+}
+
+export async function retryFailedFeedsHandler(
+  request: FastifyRequest<{ Body: RetryFailedFeedsBody }>,
+  reply: FastifyReply,
+): Promise<void> {
+  const {
+    userFeedRepository,
+    usersService,
+    workspacesService,
+    supportersService,
+  } = request.container;
+  const { workspaceId } = request.body;
+  const user = await usersService.getOrCreateUserByDiscordId(
+    request.discordUserId,
+  );
+
+  await workspacesService.getWorkspaceForMember(workspaceId, user.id);
+  const benefits = await supportersService.resolveFeedBenefits({
+    workspaceId,
+    user: { discordUserId: request.discordUserId },
+  });
+  if (benefits.dormant) {
+    throw new WorkspaceNotSubscribedException(
+      `Workspace ${workspaceId} has no active subscription`,
+    );
+  }
+
+  const result = await userFeedRepository.startBulkRetry(workspaceId);
+
+  return reply.status(200).send({ result });
 }
 
 export async function copySettingsHandler(
