@@ -17,6 +17,8 @@ const WorkspaceBillingChangePreviewOutputSchema = object({
       taxFormatted: string().required(),
       credit: string().required(),
       creditFormatted: string().required(),
+      creditToBalance: string().required(),
+      creditToBalanceFormatted: string().required(),
       grandTotalFormatted: string().required(),
     })
       .nullable()

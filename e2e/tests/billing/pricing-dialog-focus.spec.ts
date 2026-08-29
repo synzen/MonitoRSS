@@ -111,7 +111,12 @@ test.describe("Pricing dialog focus management", () => {
     await expect(page.getByText(/fewer than 51 articles/i)).toBeHidden();
     await expect(infoButton).toBeFocused();
 
-    await forTeam.getByRole("radio", { name: "Custom" }).click();
+    // Chakra RadioCard renders the real <input type="radio"> as sr-only; the
+    // visible hit target is the card <label> that wraps "Custom". Clicking the
+    // hidden input with getByRole('radio') is intercepted by that label in
+    // Playwright (label intercepts pointer events). Target the visible label
+    // text instead, which is what a real user clicks.
+    await forTeam.getByText("Custom", { exact: true }).click();
     const picker = forTeam.getByRole("spinbutton", { name: "Or enter an exact feed capacity" });
     await expect(picker).toBeVisible();
     await picker.fill("1100");
@@ -150,11 +155,13 @@ test.describe("Pricing dialog focus management", () => {
 
     // Expand the collapsed-by-default sizer to reveal the picker. The exact
     // input is hidden until Custom is selected, so assert the radiogroup is
-    // visible and then open Custom to reveal the spinbutton.
+    // visible and then open Custom to reveal the spinbutton. See note above
+    // about RadioCard label intercept — click the visible text, not the hidden
+    // radio input.
     await forTeam.getByRole("button", { name: /add more feeds/i }).click();
     await expect(forTeam.getByRole("radiogroup", { name: "Feed capacity" })).toBeVisible();
     await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeHidden();
-    await forTeam.getByRole("radio", { name: "Custom" }).click();
+    await forTeam.getByText("Custom", { exact: true }).click();
     await expect(forTeam.getByRole("spinbutton", { name: /feed capacity/i })).toBeVisible();
 
     // The narrow-left region stacks ABOVE the dominant-right region (column

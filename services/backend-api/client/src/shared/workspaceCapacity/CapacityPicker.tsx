@@ -95,7 +95,7 @@ export const CapacityPicker = ({
               </RadioCard.Item>
             );
           })}
-          <RadioCard.Item value="custom">
+          <RadioCard.Item value="custom" data-testid="capacity-picker-custom-option">
             <RadioCard.ItemHiddenInput />
             <RadioCard.ItemControl>
               <HStack gap={2} flex="1">

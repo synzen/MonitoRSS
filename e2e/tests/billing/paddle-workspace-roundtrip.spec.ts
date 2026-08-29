@@ -216,9 +216,11 @@ test.describe("Paddle workspace roundtrip", () => {
       await page.getByRole("button", { name: /change capacity/i }).click();
       // Dialog + picker are instant client renders; short timeouts so a UI break
       // fails this attempt fast instead of stalling the retry budget. The exact
-      // input is nested inside the Custom option.
+      // input is nested inside the Custom option. Chakra RadioCard's hidden
+      // radio input is covered by its label (intercepts pointer events), so
+      // click the visible card text instead of the hidden input.
       await expect(changeDialog.getByRole("radiogroup", { name: "Feed capacity" })).toBeVisible({ timeout: 10000 });
-      await changeDialog.getByRole("radio", { name: "Custom" }).click();
+      await changeDialog.getByText("Custom", { exact: true }).click();
       const capacityInput = changeDialog.getByRole("spinbutton", { name: /or enter an exact feed capacity/i });
       await expect(capacityInput).toBeVisible({ timeout: 10000 });
       // Seeded at the current 70 feeds; enter an exact higher capacity (140) via the picker.
@@ -388,7 +390,7 @@ test.describe("Paddle workspace roundtrip", () => {
     const { workspaceSlug } = await createTeamAndOpenBilling(page);
 
     await page.getByRole("button", { name: "Yearly" }).click();
-    await page.getByRole("radio", { name: "Custom" }).click();
+    await page.getByTestId("capacity-picker-custom-option").click();
     const capacity = page.getByRole("spinbutton", { name: "Or enter an exact feed capacity" });
     await expect(capacity).toBeVisible({ timeout: 10000 });
     await capacity.fill("2000");
