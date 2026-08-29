@@ -44,12 +44,19 @@ export function getCommonFeedAggregateStages({
   includeRecoveryFeeds?: boolean;
 }): PipelineStage[] {
   const disabledCodeMatch: FilterQuery<unknown> = includeRecoveryFeeds
-    ? {
-        $or: [
-          { disabledCode: { $exists: false } },
+    ? // Wrapped in $and: the query's top-level $or (connection eligibility)
+      // is a separate operator key, and an object literal cannot carry two
+      // $or keys — the later spread would silently drop this one.
+      {
+        $and: [
           {
-            disabledCode: UserFeedDisabledCode.FailedRequests,
-            healthStatus: UserFeedHealthStatus.Failing,
+            $or: [
+              { disabledCode: { $exists: false } },
+              {
+                disabledCode: UserFeedDisabledCode.FailedRequests,
+                healthStatus: UserFeedHealthStatus.Failing,
+              },
+            ],
           },
         ],
       }

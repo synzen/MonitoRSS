@@ -290,6 +290,7 @@ export class UserFeedMongooseRepository
       blockingComparisons: doc.blockingComparisons,
       externalProperties: doc.externalProperties,
       healthStatus: doc.healthStatus,
+      recoveryStartedAt: doc.recoveryStartedAt,
       connections: {
         discordChannels:
           discordChannels?.map((conn) =>

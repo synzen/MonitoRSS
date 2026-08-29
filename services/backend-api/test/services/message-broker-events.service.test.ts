@@ -582,6 +582,59 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
         0,
       );
     });
+
+    it("should revert recovery feeds to the terminal failed state by url", async () => {
+      const ctx = harness.createContext();
+
+      await ctx.service.handleUrlRequestFailureEvent({
+        data: { url: "https://example.com/feed.xml" },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.callCount(),
+        1,
+      );
+      assert.deepStrictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.calls[0]
+          ?.arguments,
+        [{ url: "https://example.com/feed.xml" }],
+      );
+    });
+
+    it("should revert recovery feeds to the terminal failed state by lookupKey", async () => {
+      const ctx = harness.createContext();
+
+      await ctx.service.handleUrlRequestFailureEvent({
+        data: { url: "https://example.com/feed.xml", lookupKey: "lookup-1" },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.callCount(),
+        1,
+      );
+      assert.deepStrictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.calls[0]
+          ?.arguments,
+        [{ lookupKey: "lookup-1" }],
+      );
+    });
+
+    it("should revert recovery feeds even when no new feeds are disabled", async () => {
+      const ctx = harness.createContext({
+        userFeedRepository: {
+          findIdsWithoutDisabledCodeResult: [],
+        },
+      });
+
+      await ctx.service.handleUrlRequestFailureEvent({
+        data: { url: "https://example.com/feed.xml" },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.revertRecoveryFeedsToFailed.mock.callCount(),
+        1,
+      );
+    });
   });
 
   describe("handleFeedRejectedDisableFeed", () => {

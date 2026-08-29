@@ -8,8 +8,9 @@ import { useEffect } from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { system } from "@/utils/theme";
 import { CuratedFeed } from "../features/feed/types";
+import { UserFeedComputedStatus } from "../features/feed/types";
 import { PricingDialogContext } from "@/features/subscriptionProducts";
-import { FeedScopeProvider } from "../features/feed";
+import { FeedScopeProvider, UserFeedStatusFilterContext } from "../features/feed";
 import { JustConvertedWorkspaceProvider, useJustConvertedWorkspace } from "@/features/workspaces";
 import { UserFeeds } from "./UserFeeds";
 
@@ -1563,4 +1564,159 @@ describe("UserFeeds - scope-aware feed limit", () => {
     ).toBeInTheDocument();
   });
 
+});
+
+describe("UserFeeds - bulk retry recovery presentation", () => {
+  const tier2 = { productKey: "tier2" } as const;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUnconfiguredFeedsReturn.mockReturnValue({
+      data: undefined,
+      refetch: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    mockCurrentWorkspace.current = undefined;
+  });
+
+  const renderWorkspaceScope = ({
+    statusFiltersContext,
+  }: {
+    statusFiltersContext?: {
+      statusFilters: UserFeedComputedStatus[];
+      setStatusFilters: (statuses: UserFeedComputedStatus[]) => void;
+    };
+  } = {}) => {
+    mockCurrentWorkspace.current = {
+      id: "ws-1",
+      slug: "ws-1",
+      name: "Workspace One",
+      subscription: tier2,
+    };
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    const user = userEvent.setup();
+    const result = render(
+      <QueryClientProvider client={queryClient}>
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              {statusFiltersContext ? (
+                <UserFeedStatusFilterContext.Provider value={statusFiltersContext}>
+                  <FeedScopeProvider
+                    value={{ workspaceId: "ws-1", workspaceSlug: "ws-1", maxFeeds: 70 }}
+                  >
+                    <UserFeeds />
+                  </FeedScopeProvider>
+                </UserFeedStatusFilterContext.Provider>
+              ) : (
+                <FeedScopeProvider
+                  value={{ workspaceId: "ws-1", workspaceSlug: "ws-1", maxFeeds: 70 }}
+                >
+                  <UserFeeds />
+                </FeedScopeProvider>
+              )}
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>
+      </QueryClientProvider>,
+    );
+
+    return { user, ...result };
+  };
+
+  it("shows no failed-feed alert while feeds are recovering and the alert returns after exhaustion", () => {
+    // While a recovery cycle is active the feeds compute as RETRYING, so the
+    // requires-attention count is 0. Once the recovery cycle exhausts (fresh
+    // data after the failure threshold is reached), they compute as
+    // REQUIRES_ATTENTION again and the alert with the retry action returns.
+    let requiresAttentionTotal = 0;
+    mockUseUserFeedsReturn.mockImplementation(
+      (options?: { filters?: { computedStatuses?: unknown[] } }) => {
+        if (options?.filters?.computedStatuses) {
+          return {
+            data: { results: [], total: requiresAttentionTotal, feedsWithoutConnections: 0 },
+          };
+        }
+
+        return {
+          data: { results: [{ id: "workspace-feed" }], total: 1, feedsWithoutConnections: 0 },
+        };
+      },
+    );
+
+    const { rerender } = renderWorkspaceScope();
+
+    expect(screen.queryByText(/require your attention!/)).not.toBeInTheDocument();
+
+    requiresAttentionTotal = 2;
+    rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <FeedScopeProvider
+                value={{ workspaceId: "ws-1", workspaceSlug: "ws-1", maxFeeds: 70 }}
+              >
+                <UserFeeds />
+              </FeedScopeProvider>
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("2 feeds require your attention!")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Retry all 2 failed feeds" }),
+    ).toBeInTheDocument();
+  });
+
+  it("applies the Pending Retry filter only when the user follows the success-alert link", async () => {
+    mockRetryFailedFeeds.mockResolvedValue({
+      result: { retriedCount: 2, recoveryAlreadyActive: false },
+    });
+    mockUseUserFeedsReturn.mockImplementation(
+      (options?: { filters?: { disabledCodes?: unknown[]; computedStatuses?: unknown[] } }) => {
+        if (options?.filters?.disabledCodes || options?.filters?.computedStatuses) {
+          return {
+            data: { results: [], total: 2, feedsWithoutConnections: 0 },
+          };
+        }
+
+        return {
+          data: { results: [{ id: "workspace-feed" }], total: 1, feedsWithoutConnections: 0 },
+        };
+      },
+    );
+
+    const setStatusFilters = vi.fn();
+    const { user } = renderWorkspaceScope({
+      statusFiltersContext: {
+        statusFilters: [],
+        setStatusFilters,
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Retry all 2 failed feeds" }));
+
+    const dialog = screen.getByRole("alertdialog");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Retry all failed feeds" }),
+    );
+
+    expect(await screen.findByText("Failed feeds queued for retry.")).toBeInTheDocument();
+
+    expect(setStatusFilters).not.toHaveBeenCalled();
+
+    await user.click(screen.getByText("View pending retries."));
+
+    expect(setStatusFilters).toHaveBeenCalledWith([UserFeedComputedStatus.Retrying]);
+  });
 });

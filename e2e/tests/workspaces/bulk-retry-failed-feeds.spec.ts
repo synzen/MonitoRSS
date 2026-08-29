@@ -57,22 +57,44 @@ test.describe("Bulk retry failed workspace feeds", () => {
     await page.getByRole("menuitemradio", { name: workspaceName }).click();
     await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/feeds$`));
 
-    await page.getByRole("button", { name: "Retry all failed feeds" }).click();
+    // Before the bulk action the seeded feeds are terminally failed: the
+    // requires-attention alert (with the retry action) and the Requires
+    // attention status are both rendered.
+    const retryAllButton = page.getByRole("button", {
+      name: "Retry all 21 failed feeds",
+    });
+    await expect(retryAllButton).toBeVisible();
+    await expect(page.getByLabel("Requires attention").first()).toBeVisible();
+
+    await retryAllButton.click();
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toContainText("Retry 21 failed feeds?");
     await expect(dialog).toContainText("Requests will run in the background");
     await page.getByRole("button", { name: "Retry all failed feeds" }).last().click();
 
-    await expect(page.getByText("Pending Retry").first()).toBeVisible();
+    // The command queues the feeds and surfaces the success alert; the filter
+    // change is user-initiated via the alert's link, never auto-applied.
+    await expect(page.getByText("Failed feeds queued for retry.")).toBeVisible();
+    await page.getByText("View pending retries.").click();
+
+    // The applied filter renders as a chip, and the recovering feeds come
+    // through the rendered table under the Pending Retry status. Rows sort
+    // newest-first, so page one holds feeds 2 through 21; the setup checklist
+    // outside the table also lists feed titles, so scope lookups to the table.
+    await expect(page.getByText("Pending Retry")).toBeVisible();
+
+    const feedsTable = page.getByRole("table");
     await expect(
-      page.getByRole("link", { name: "Retry eligible 1", exact: true }),
+      feedsTable.getByRole("row", { name: /Retry eligible 21\b/ }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Retry eligible 2", exact: true }),
+      feedsTable.getByRole("row", { name: /Retry eligible 2\b/ }),
     ).toBeVisible();
     await expect(
       page.getByLabel("Currently retrying after failed requests"),
     ).toHaveCount(20);
-    await expect(page.getByText("Not eligible", { exact: true })).toHaveCount(0);
+    await expect(
+      feedsTable.getByText("Not eligible", { exact: true }),
+    ).toHaveCount(0);
   });
 });
