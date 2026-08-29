@@ -8,7 +8,10 @@ export const UrlFailedDisableFeedsSchema = z.object({
   data: z.object({
     url: z.string(),
     lookupKey: z.string().optional(),
+    recovery: z.object({ startedAt: z.number().int().positive() }).optional(),
   }),
 });
 
-export type UrlFailedDisableFeedsPayload = z.infer<typeof UrlFailedDisableFeedsSchema>;
+export type UrlFailedDisableFeedsPayload = z.infer<
+  typeof UrlFailedDisableFeedsSchema
+>;

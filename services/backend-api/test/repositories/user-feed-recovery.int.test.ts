@@ -1,9 +1,7 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert";
 import { UserFeedMongooseRepository } from "../../src/repositories/mongoose/user-feed.mongoose.repository";
-import {
-  UserFeedComputedStatus,
-} from "../../src/repositories/interfaces/user-feed.types";
+import { UserFeedComputedStatus } from "../../src/repositories/interfaces/user-feed.types";
 import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,
@@ -88,8 +86,9 @@ describe("UserFeedMongooseRepository bulk recovery state transitions", () => {
       limit: 100,
       offset: 0,
     });
-    const statusOf = listing.find((item) => item.id === feed.id)
-      ?.computedStatus;
+    const statusOf = listing.find(
+      (item) => item.id === feed.id,
+    )?.computedStatus;
 
     assert.strictEqual(statusOf, UserFeedComputedStatus.Retrying);
   });
@@ -151,7 +150,7 @@ describe("UserFeedMongooseRepository bulk recovery state transitions", () => {
 
     assert.strictEqual(scheduledUrls.length, 1);
     assert.strictEqual(
-      scheduledUrls[0].recoveryStartedAt,
+      scheduledUrls[0]!.recoveryStartedAt,
       recoveryStartedAt.getTime(),
     );
   });
@@ -159,13 +158,17 @@ describe("UserFeedMongooseRepository bulk recovery state transitions", () => {
   it("drops a recovery feed from scheduling once it reverts to the terminal state", async () => {
     const url = `https://example.com/recovery-revert-${generateTestId()}.xml`;
     const recoveryFeedId = await createFeed({ url, title: "Recovering feed" });
+    const recoveryStartedAt = new Date(Date.now() - 5_000);
     await setRawFields(recoveryFeedId, {
       disabledCode: UserFeedDisabledCode.FailedRequests,
       healthStatus: UserFeedHealthStatus.Failing,
-      recoveryStartedAt: new Date(Date.now() - 5_000),
+      recoveryStartedAt,
     });
 
-    await repository.revertRecoveryFeedsToFailed({ url });
+    await repository.revertRecoveryFeedsToFailed(
+      { url },
+      recoveryStartedAt.getTime(),
+    );
 
     const reverted = await repository.findById(recoveryFeedId);
 
@@ -192,35 +195,38 @@ describe("UserFeedMongooseRepository bulk recovery state transitions", () => {
   it("restores a recovered feed to delivery eligibility without stale recovery state", async () => {
     const lookupKey = `recovery-lookup-${generateTestId()}`;
     const url = `https://example.com/recovery-restored-${generateTestId()}.xml`;
-    const feedId = await repository.create({
-      title: "Recovering feed",
-      inputUrl: url,
-      url,
-      user: { id: generateTestId(), discordUserId: generateSnowflake() },
-      refreshRateSeconds: REFRESH_RATE_SECONDS,
-      slotOffsetMs: 0,
-      feedRequestLookupKey: lookupKey,
-    } as never).then(async (feed) => {
-      await repository.updateById(feed.id, {
-        $set: {
-          "connections.discordChannels": [
-            {
-              id: generateTestId(),
-              name: "Test Channel",
-              details: { embeds: [], formatter: {} },
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          ],
-        },
+    const recoveryStartedAt = new Date(Date.now() - 5_000);
+    const feedId = await repository
+      .create({
+        title: "Recovering feed",
+        inputUrl: url,
+        url,
+        user: { id: generateTestId(), discordUserId: generateSnowflake() },
+        refreshRateSeconds: REFRESH_RATE_SECONDS,
+        slotOffsetMs: 0,
+        feedRequestLookupKey: lookupKey,
+      } as never)
+      .then(async (feed) => {
+        await repository.updateById(feed.id, {
+          $set: {
+            "connections.discordChannels": [
+              {
+                id: generateTestId(),
+                name: "Test Channel",
+                details: { embeds: [], formatter: {} },
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
+            ],
+          },
+        });
+        return feed.id;
       });
-      return feed.id;
-    });
 
     await setRawFields(feedId, {
       disabledCode: UserFeedDisabledCode.FailedRequests,
       healthStatus: UserFeedHealthStatus.Failing,
-      recoveryStartedAt: new Date(Date.now() - 5_000),
+      recoveryStartedAt,
     });
 
     const deliveredBefore: string[] = [];
@@ -234,7 +240,10 @@ describe("UserFeedMongooseRepository bulk recovery state transitions", () => {
 
     assert.ok(!deliveredBefore.includes(feedId));
 
-    await repository.clearDisabledCodeForRecoveredFeeds({ lookupKey });
+    await repository.clearDisabledCodeForRecoveredFeeds(
+      { lookupKey },
+      recoveryStartedAt.getTime(),
+    );
 
     const restored = await repository.findById(feedId);
 

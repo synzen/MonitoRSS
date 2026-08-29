@@ -749,10 +749,15 @@ export class UserFeedMongooseRepository
                               ...feedConnectionTypeKeys.map((key) => ({
                                 $anyElementTrue: {
                                   $map: {
-                                    input: { $ifNull: [`$connections.${key}`, []] },
+                                    input: {
+                                      $ifNull: [`$connections.${key}`, []],
+                                    },
                                     as: "c",
                                     in: {
-                                      $in: [`$$c.disabledCode`, badConnectionCodes],
+                                      $in: [
+                                        `$$c.disabledCode`,
+                                        badConnectionCodes,
+                                      ],
                                     },
                                   },
                                 },
@@ -793,6 +798,11 @@ export class UserFeedMongooseRepository
 
     if (filters?.computedStatuses?.length) {
       $match.computedStatus = { $in: filters.computedStatuses };
+    }
+
+    if (filters?.eligibleForBulkRetry) {
+      $match.disabledCode = UserFeedDisabledCode.FailedRequests;
+      $match.healthStatus = UserFeedHealthStatus.Failed;
     }
 
     if (search) {
@@ -2934,11 +2944,13 @@ export class UserFeedMongooseRepository
   }
 
   async hasActiveBulkRetry(workspaceId: string): Promise<boolean> {
-    return (await this.model.exists({
-      workspaceId: this.stringToObjectId(workspaceId),
-      disabledCode: UserFeedDisabledCode.FailedRequests,
-      healthStatus: UserFeedHealthStatus.Failing,
-    })) !== null;
+    return (
+      (await this.model.exists({
+        workspaceId: this.stringToObjectId(workspaceId),
+        disabledCode: UserFeedDisabledCode.FailedRequests,
+        healthStatus: UserFeedHealthStatus.Failing,
+      })) !== null
+    );
   }
 
   async markFeedsForBulkRetry(workspaceId: string): Promise<number> {
@@ -2959,10 +2971,13 @@ export class UserFeedMongooseRepository
     return result.modifiedCount;
   }
 
-  async clearDisabledCodeForRecoveredFeeds(filter: {
-    url?: string;
-    lookupKey?: string;
-  }): Promise<number> {
+  async clearDisabledCodeForRecoveredFeeds(
+    filter: {
+      url?: string;
+      lookupKey?: string;
+    },
+    recoveryStartedAt: number,
+  ): Promise<number> {
     const queryFilter: Record<string, unknown> = filter.lookupKey
       ? { feedRequestLookupKey: filter.lookupKey }
       : { url: filter.url };
@@ -2972,6 +2987,7 @@ export class UserFeedMongooseRepository
     // left alone.
     queryFilter.disabledCode = UserFeedDisabledCode.FailedRequests;
     queryFilter.healthStatus = UserFeedHealthStatus.Failing;
+    queryFilter.recoveryStartedAt = new Date(recoveryStartedAt);
 
     const result = await this.model.updateMany(queryFilter, {
       $set: { healthStatus: UserFeedHealthStatus.Ok },
@@ -2981,16 +2997,20 @@ export class UserFeedMongooseRepository
     return result.modifiedCount;
   }
 
-  async revertRecoveryFeedsToFailed(filter: {
-    url?: string;
-    lookupKey?: string;
-  }): Promise<number> {
+  async revertRecoveryFeedsToFailed(
+    filter: {
+      url?: string;
+      lookupKey?: string;
+    },
+    recoveryStartedAt: number,
+  ): Promise<number> {
     const queryFilter: Record<string, unknown> = filter.lookupKey
       ? { feedRequestLookupKey: filter.lookupKey }
       : { url: filter.url };
 
     queryFilter.disabledCode = UserFeedDisabledCode.FailedRequests;
     queryFilter.healthStatus = UserFeedHealthStatus.Failing;
+    queryFilter.recoveryStartedAt = new Date(recoveryStartedAt);
 
     const result = await this.model.updateMany(queryFilter, {
       $set: { healthStatus: UserFeedHealthStatus.Failed },

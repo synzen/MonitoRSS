@@ -1529,8 +1529,18 @@ describe("UserFeeds - scope-aware feed limit", () => {
   });
 
   it("shows bulk retry as a contextual failed-feed alert", async () => {
-    mockUseUserFeedsReturn.mockImplementation((options?: { filters?: { disabledCodes?: unknown[] } }) => {
-      if (options?.filters?.disabledCodes || options?.filters?.computedStatuses) {
+    mockUseUserFeedsReturn.mockImplementation((options?: {
+      filters?: {
+        disabledCodes?: unknown[];
+        computedStatuses?: unknown[];
+        eligibleForBulkRetry?: boolean;
+      };
+    }) => {
+      if (
+        options?.filters?.disabledCodes ||
+        options?.filters?.computedStatuses ||
+        options?.filters?.eligibleForBulkRetry
+      ) {
         return {
           data: { results: [], total: 3, feedsWithoutConnections: 0 },
         };

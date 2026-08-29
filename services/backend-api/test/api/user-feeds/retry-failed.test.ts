@@ -131,13 +131,81 @@ describe("Bulk retry of failed workspace feeds", { concurrency: false }, () => {
 
     for (const id of eligibleIds) {
       const feed = await ctx.container.userFeedRepository.findById(id);
-      assert.strictEqual(feed?.disabledCode, UserFeedDisabledCode.FailedRequests);
+      assert.strictEqual(
+        feed?.disabledCode,
+        UserFeedDisabledCode.FailedRequests,
+      );
       assert.strictEqual(feed?.healthStatus, UserFeedHealthStatus.Failing);
       assert.ok(feed?.recoveryStartedAt);
     }
-    const excluded = await ctx.container.userFeedRepository.findById(excludedId);
-    assert.strictEqual(excluded?.disabledCode, UserFeedDisabledCode.ExceededFeedLimit);
+    const excluded =
+      await ctx.container.userFeedRepository.findById(excludedId);
+    assert.strictEqual(
+      excluded?.disabledCode,
+      UserFeedDisabledCode.ExceededFeedLimit,
+    );
     assert.strictEqual(excluded?.healthStatus, UserFeedHealthStatus.Failed);
+  });
+
+  it("lists only terminal request failures as eligible in the requested workspace", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(discordUserId);
+    const user = await ctx.asUser(discordUserId);
+    const workspaceId = await createWorkspace(user, `retry-${randomUUID()}`);
+    const otherWorkspaceId = await createWorkspace(
+      user,
+      `retry-${randomUUID()}`,
+    );
+
+    await seedFeed({
+      discordUserId,
+      workspaceId,
+      title: "Eligible",
+      disabledCode: UserFeedDisabledCode.FailedRequests,
+      healthStatus: UserFeedHealthStatus.Failed,
+    });
+    await seedFeed({
+      discordUserId,
+      workspaceId,
+      title: "Already recovering",
+      disabledCode: UserFeedDisabledCode.FailedRequests,
+      healthStatus: UserFeedHealthStatus.Failing,
+    });
+    await seedFeed({
+      discordUserId,
+      workspaceId,
+      title: "Manual",
+      disabledCode: UserFeedDisabledCode.Manual,
+      healthStatus: UserFeedHealthStatus.Failed,
+    });
+    await seedFeed({
+      discordUserId,
+      workspaceId,
+      title: "Plan limit",
+      disabledCode: UserFeedDisabledCode.ExceededFeedLimit,
+      healthStatus: UserFeedHealthStatus.Failed,
+    });
+    await seedFeed({
+      discordUserId,
+      workspaceId: otherWorkspaceId,
+      title: "Other workspace",
+      disabledCode: UserFeedDisabledCode.FailedRequests,
+      healthStatus: UserFeedHealthStatus.Failed,
+    });
+
+    const response = await user.fetch(
+      `/api/v1/user-feeds?limit=10&offset=0&workspaceId=${workspaceId}&filters[eligibleForBulkRetry]=true`,
+    );
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      total: number;
+      results: Array<{ title: string }>;
+    };
+    assert.strictEqual(body.total, 1);
+    assert.deepStrictEqual(
+      body.results.map((feed) => feed.title),
+      ["Eligible"],
+    );
   });
 
   it("is idempotent while a recovery cycle is active", async () => {

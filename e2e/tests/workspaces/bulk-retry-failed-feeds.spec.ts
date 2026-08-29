@@ -9,7 +9,9 @@ import {
 import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
 
 async function waitForAuthenticatedApp(page: Page): Promise<void> {
-  await expect(page.getByRole("button", { name: "Account settings" })).toBeVisible({
+  await expect(
+    page.getByRole("button", { name: "Account settings" }),
+  ).toBeVisible({
     timeout: 15000,
   });
 }
@@ -70,7 +72,10 @@ test.describe("Bulk retry failed workspace feeds", () => {
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toContainText("Retry 21 failed feeds?");
     await expect(dialog).toContainText("Requests will run in the background");
-    await page.getByRole("button", { name: "Retry all failed feeds" }).last().click();
+    await page
+      .getByRole("button", { name: "Retry all failed feeds" })
+      .last()
+      .click();
 
     // The command queues the feeds and surfaces the success alert; the filter
     // change is user-initiated via the alert's link, never auto-applied.
@@ -96,5 +101,63 @@ test.describe("Bulk retry failed workspace feeds", () => {
     await expect(
       feedsTable.getByText("Not eligible", { exact: true }),
     ).toHaveCount(0);
+  });
+
+  test("leaves excluded feeds in their rendered status while eligible feeds become pending", async ({
+    page,
+  }) => {
+    await page.goto("/feeds");
+    await waitForAuthenticatedApp(page);
+
+    const discordUserId = await getDiscordUserIdFromPage(page);
+    await enableWorkspacesFeatureInDb(discordUserId);
+    const userId = await getUserMongoIdFromDiscordId(discordUserId);
+    const workspaceName = `E2E Retry Eligibility ${Date.now()}`;
+    const { workspaceId, slug } = await seedWorkspaceWithMembershipsInDb({
+      workspaceName,
+      selfUserId: userId,
+      selfRole: "owner",
+    });
+    await seedWorkspaceFeedsInDb({
+      workspaceId,
+      userId,
+      discordUserId,
+      feeds: [
+        {
+          title: "Eligible request failure",
+          url: `${MOCK_RSS_FEED_URL}?eligible=${Date.now()}`,
+          disabledCode: "FAILED_REQUESTS",
+          healthStatus: "FAILED",
+        },
+        {
+          title: "Plan-disabled feed",
+          url: `${MOCK_RSS_FEED_URL}?plan-disabled=${Date.now()}`,
+          disabledCode: "EXCEEDED_FEED_LIMIT",
+          healthStatus: "FAILED",
+        },
+      ],
+    });
+
+    await page.reload();
+    await page.getByRole("button", { name: /Switch workspace/ }).click();
+    await page.getByRole("menuitemradio", { name: workspaceName }).click();
+    await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/feeds$`));
+
+    await page.getByRole("button", { name: "Retry all 1 failed feed" }).click();
+    await page
+      .getByRole("button", { name: "Retry all failed feeds" })
+      .last()
+      .click();
+
+    await expect(
+      page.getByRole("link", { name: "Eligible request failure" }),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel("Currently retrying after failed requests"),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Plan-disabled feed" }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Feed limit exceeded")).toBeVisible();
   });
 });

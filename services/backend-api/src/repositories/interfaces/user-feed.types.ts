@@ -193,6 +193,7 @@ export enum UserFeedComputedStatus {
 
 export interface UserFeedListingFilters {
   disabledCodes?: (UserFeedDisabledCode | null)[];
+  eligibleForBulkRetry?: boolean;
   connectionDisabledCodes?: (string | null)[];
   computedStatuses?: UserFeedComputedStatus[];
   ownedByUser?: boolean;
@@ -745,14 +746,20 @@ export interface IUserFeedRepository {
   // delivery.
   hasActiveBulkRetry(workspaceId: string): Promise<boolean>;
   markFeedsForBulkRetry(workspaceId: string): Promise<number>;
-  clearDisabledCodeForRecoveredFeeds(filter: {
-    url?: string;
-    lookupKey?: string;
-  }): Promise<number>;
-  revertRecoveryFeedsToFailed(filter: {
-    url?: string;
-    lookupKey?: string;
-  }): Promise<number>;
+  clearDisabledCodeForRecoveredFeeds(
+    filter: {
+      url?: string;
+      lookupKey?: string;
+    },
+    recoveryStartedAt: number,
+  ): Promise<number>;
+  revertRecoveryFeedsToFailed(
+    filter: {
+      url?: string;
+      lookupKey?: string;
+    },
+    recoveryStartedAt: number,
+  ): Promise<number>;
 
   // Message broker events methods
   updateHealthStatusByFilter(

@@ -123,6 +123,7 @@ export enum UserFeedComputedStatus {
 
 export interface GetUserFeedsInputFilters {
   disabledCodes?: (UserFeedDisabledCode | null)[];
+  eligibleForBulkRetry?: boolean;
   connectionDisabledCodes?: (string | null)[];
   computedStatuses?: UserFeedComputedStatus[];
   ownedByUser?: boolean;

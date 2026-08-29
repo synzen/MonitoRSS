@@ -24,6 +24,8 @@ import {
   type UrlFetchBatchPayload,
   UrlFetchCompletedSchema,
   type UrlFetchCompletedPayload,
+  UrlFailedDisableFeedsSchema,
+  type UrlFailedDisableFeedsPayload,
   MessageBrokerQueue,
 } from '@monitorss/contracts';
 
@@ -451,7 +453,7 @@ export class FeedFetcherListenerService {
         latestOkRequest.createdAt.getTime() < recoveryStartedAt);
     const failureCycleStart = shouldStartNewRecoveryCycle
       ? new Date(recoveryStartedAt)
-      : latestOkRequest?.createdAt ?? null;
+      : (latestOkRequest?.createdAt ?? null);
 
     const failedAttempts = await this.countFailedRequests({
       lookupKey: key,
@@ -467,7 +469,13 @@ export class FeedFetcherListenerService {
     }
 
     if (failedAttempts >= this.maxFailAttempts) {
-      this.emitFailedUrl({ lookupKey, url });
+      this.emitFailedUrl({
+        lookupKey,
+        url,
+        ...(recoveryStartedAt
+          ? { recovery: { startedAt: recoveryStartedAt } }
+          : {}),
+      });
 
       return {
         skip: true,
@@ -479,7 +487,7 @@ export class FeedFetcherListenerService {
       await this.partitionedRequestsStoreService.getLatestNextRetryDate(
         key,
         recoveryStartedAt !== undefined
-          ? failureCycleStart ?? undefined
+          ? (failureCycleStart ?? undefined)
           : undefined,
       );
 
@@ -543,20 +551,33 @@ export class FeedFetcherListenerService {
     }
   }
 
-  emitFailedUrl({ lookupKey, url }: { lookupKey?: string; url: string }) {
+  emitFailedUrl({
+    lookupKey,
+    url,
+    recovery,
+  }: {
+    lookupKey?: string;
+    url: string;
+    recovery?: { startedAt: number };
+  }) {
     try {
       contextLogger.info(
         `Disabling feeds with lookup key "${lookupKey}" and url ${url} due to failure threshold `,
       );
 
-      this.amqpConnection.publish<{
-        data: { lookupKey?: string; url: string };
-      }>('', 'url.failed.disable-feeds', {
+      const event: UrlFailedDisableFeedsPayload = {
         data: {
           lookupKey,
           url,
+          recovery,
         },
-      });
+      };
+      UrlFailedDisableFeedsSchema.parse(event);
+      this.amqpConnection.publish(
+        '',
+        MessageBrokerQueue.UrlFailedDisableFeeds,
+        event,
+      );
     } catch (err) {
       contextLogger.error(`Failed to publish failed url event: ${lookupKey}`, {
         stack: (err as Error).stack,
@@ -683,7 +704,7 @@ export class FeedFetcherListenerService {
   }): Promise<number> {
     const effectiveSince =
       since !== undefined
-        ? since ?? undefined
+        ? (since ?? undefined)
         : (
             await this.partitionedRequestsStoreService.getLatestRequestWithOkStatus(
               lookupKey || url,

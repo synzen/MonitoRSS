@@ -314,7 +314,11 @@ describe('FeedFetcherListenerService', () => {
       expect(amqpConnection.publish).toHaveBeenCalledWith(
         '',
         'url.failed.disable-feeds',
-        expect.anything(),
+        expect.objectContaining({
+          data: expect.objectContaining({
+            recovery: { startedAt: recoveryStartedAt },
+          }),
+        }),
       );
     });
 

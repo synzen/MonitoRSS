@@ -718,6 +718,10 @@ function parseFilters(raw: unknown): GetUserFeedsInputFilters | undefined {
     });
   }
 
+  if (obj.eligibleForBulkRetry === "true") {
+    filters.eligibleForBulkRetry = true;
+  }
+
   if (typeof obj.connectionDisabledCodes === "string") {
     filters.connectionDisabledCodes = obj.connectionDisabledCodes
       .split(",")
@@ -752,12 +756,8 @@ export async function getUserFeedsHandler(
   request: FastifyRequest<{ Querystring: GetUserFeedsQuery }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedRepository,
-    usersService,
-    workspacesService,
-    config,
-  } = request.container;
+  const { userFeedRepository, usersService, workspacesService, config } =
+    request.container;
   const { discordUserId } = request;
   const { workspaceId } = request.query;
 
@@ -830,8 +830,12 @@ export async function retryFailedFeedsHandler(
   request: FastifyRequest<{ Body: RetryFailedFeedsBody }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, usersService, workspacesService, supportersService } =
-    request.container;
+  const {
+    userFeedRepository,
+    usersService,
+    workspacesService,
+    supportersService,
+  } = request.container;
   const { workspaceId } = request.body;
   const user = await usersService.getOrCreateUserByDiscordId(
     request.discordUserId,
@@ -856,9 +860,8 @@ export async function retryFailedFeedsHandler(
     });
   }
 
-  const retriedCount = await userFeedRepository.markFeedsForBulkRetry(
-    workspaceId,
-  );
+  const retriedCount =
+    await userFeedRepository.markFeedsForBulkRetry(workspaceId);
 
   return reply.status(200).send({
     result: { retriedCount, recoveryAlreadyActive: false },
