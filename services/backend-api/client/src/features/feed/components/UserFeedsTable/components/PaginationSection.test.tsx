@@ -26,14 +26,15 @@ describe("PaginationSection", () => {
     );
 
     expect(screen.getByText("101–150 of 1,100 feeds")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Previous page" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Next page" })).toBeEnabled();
 
-    await user.selectOptions(screen.getByLabelText("Page"), "22");
+    await user.click(screen.getByRole("button", { name: "Page 22" }));
     await user.selectOptions(screen.getByLabelText("Feeds per page"), "100");
 
     expect(onPageChange).toHaveBeenCalledWith(22);
     expect(onPageSizeChange).toHaveBeenCalledWith(100);
+    expect(screen.getByRole("button", { name: "Page 3" })).toHaveAttribute("aria-current", "page");
   });
 
   it("disables navigation at the page boundaries", () => {
@@ -50,7 +51,7 @@ describe("PaginationSection", () => {
       </ChakraProvider>,
     );
 
-    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Previous page" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next page" })).toBeDisabled();
   });
 });
