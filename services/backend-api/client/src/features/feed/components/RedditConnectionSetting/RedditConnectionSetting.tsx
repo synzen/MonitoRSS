@@ -8,17 +8,12 @@ interface Props {
   onRemoveError?: (message: string) => void;
 }
 
-export const RedditConnectionSetting = ({
-  onRemoveSuccess,
-  onRemoveError,
-}: Props) => {
+export const RedditConnectionSetting = ({ onRemoveSuccess, onRemoveError }: Props) => {
   const { data } = useUserMe();
   const { mutateAsync: removeRedditLogin, status: removeRedditLoginStatus } =
     useRemoveRedditLogin();
 
-  const redditAccount = data?.result.externalAccounts?.find(
-    (a) => a.type === "reddit",
-  );
+  const redditAccount = data?.result.externalAccounts?.find((a) => a.type === "reddit");
   const isActive = redditAccount?.status === "ACTIVE";
   const isRevoked = !!redditAccount && !isActive;
 

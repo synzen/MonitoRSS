@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Workspace billing composes capacity picker, preview, and review flows in one view; splitting would scatter coupled state. Tracked as tech debt */
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   Badge,
@@ -475,7 +476,13 @@ const ChangeCapacityDialog = ({
           <Stack gap={5}>
             <DialogDescription>Choose a new capacity for this workspace.</DialogDescription>
             <Stack gap={1}>
-              <Text color="fg.muted" fontSize="xs" fontWeight="medium" textTransform="uppercase" letterSpacing="wide">
+              <Text
+                color="fg.muted"
+                fontSize="xs"
+                fontWeight="medium"
+                textTransform="uppercase"
+                letterSpacing="wide"
+              >
                 Current capacity
               </Text>
               <Text fontSize="2xl" fontWeight="bold" lineHeight="1.1">
@@ -493,12 +500,26 @@ const ChangeCapacityDialog = ({
                 </Text>
               </Box>
             ) : (
-              <Box borderTopWidth="1px" borderColor="border.emphasized" pt={5} aria-live="polite" aria-busy={status === "loading"}>
+              <Box
+                borderTopWidth="1px"
+                borderColor="border.emphasized"
+                pt={5}
+                aria-live="polite"
+                aria-busy={status === "loading"}
+              >
                 <VisuallyHidden>
-                  Changing capacity from {formatWorkspaceFeedCount(currentFeeds)} to {formatWorkspaceFeedCount(nextFeeds)}, {recurringPrice ?? "updating price"} per {interval}.
+                  Changing capacity from {formatWorkspaceFeedCount(currentFeeds)} to{" "}
+                  {formatWorkspaceFeedCount(nextFeeds)}, {recurringPrice ?? "updating price"} per{" "}
+                  {interval}.
                 </VisuallyHidden>
                 <Stack gap={1}>
-                  <Text color="fg.muted" fontSize="xs" fontWeight="medium" textTransform="uppercase" letterSpacing="wide">
+                  <Text
+                    color="fg.muted"
+                    fontSize="xs"
+                    fontWeight="medium"
+                    textTransform="uppercase"
+                    letterSpacing="wide"
+                  >
                     New capacity
                   </Text>
                   <Text fontSize="2xl" fontWeight="bold" lineHeight="1.1">
@@ -513,7 +534,9 @@ const ChangeCapacityDialog = ({
                 aria-live="polite"
                 bg="bg.subtle"
                 borderWidth="1px"
-                borderColor="orange.300"
+                borderColor="border.emphasized"
+                borderLeftWidth="3px"
+                borderLeftColor="text.warning"
                 borderRadius="md"
                 p={3}
               >
@@ -642,11 +665,27 @@ const ChangeCapacityDialog = ({
                 )}
                 {deferred && (
                   <Stack gap={1}>
-                    <Text fontWeight="medium" fontSize="sm">Due today</Text>
-                    <Text fontSize="lg" fontWeight="semibold">$0.00</Text>
-                    <Text color="fg.muted" fontSize="sm">No charge today</Text>
-                    {recurringPrice && <Text fontSize="sm">Then {recurringPrice} / {interval}{nextBillIso ? `, starting ${dayjs(nextBillIso).format("D MMMM YYYY")}` : ""}.</Text>}
-                    <Text color="fg.muted" fontSize="sm">Renews automatically. Cancel anytime.</Text>
+                    <Text fontWeight="medium" fontSize="sm">
+                      Due today
+                    </Text>
+                    <Text fontSize="lg" fontWeight="semibold">
+                      $0.00
+                    </Text>
+                    <Text color="fg.muted" fontSize="sm">
+                      No charge today
+                    </Text>
+                    {recurringPrice && (
+                      <Text fontSize="sm">
+                        Then {recurringPrice} / {interval}
+                        {nextBillIso
+                          ? `, starting ${dayjs(nextBillIso).format("D MMMM YYYY")}`
+                          : ""}
+                        .
+                      </Text>
+                    )}
+                    <Text color="fg.muted" fontSize="sm">
+                      Renews automatically. Cancel anytime.
+                    </Text>
                   </Stack>
                 )}
                 {immediate && !deferred && (

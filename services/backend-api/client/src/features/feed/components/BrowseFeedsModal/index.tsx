@@ -59,9 +59,7 @@ export const BrowseFeedsModal = ({
   onFeedAdded,
   onFeedRemoved,
 }: BrowseFeedsModalProps) => {
-  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
-    initialCategory,
-  );
+  const [selectedCategory, setSelectedCategory] = useState<string | undefined>(initialCategory);
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -80,10 +78,9 @@ export const BrowseFeedsModal = ({
     prevIsOpenRef.current = false;
   }
 
-  const { data, getHighlightFeeds, isFetching, error, refetch } =
-    useCuratedFeeds(
-      selectedCategory ? { category: selectedCategory } : undefined,
-    );
+  const { data, getHighlightFeeds, isFetching, error, refetch } = useCuratedFeeds(
+    selectedCategory ? { category: selectedCategory } : undefined,
+  );
 
   const handleSearchChange = useCallback((query: string) => {
     setIsSearchActive(query.length > 0);
@@ -168,16 +165,13 @@ export const BrowseFeedsModal = ({
   const totalFeeds = data?.feeds.length ?? 0;
   const hasMore = visibleCount < totalFeeds;
   const selectedCategoryLabel =
-    (data?.categories ?? []).find((c) => c.id === selectedCategory)?.label ||
-    selectedCategory;
+    (data?.categories ?? []).find((c) => c.id === selectedCategory)?.label || selectedCategory;
 
   const categoryAnnouncement = (() => {
     if (isSearchActive) return "";
 
     if (isFetching) {
-      return selectedCategoryLabel
-        ? `Loading ${selectedCategoryLabel} feeds`
-        : "Loading feeds";
+      return selectedCategoryLabel ? `Loading ${selectedCategoryLabel} feeds` : "Loading feeds";
     }
 
     if (error) return "Failed to load feeds";
@@ -210,8 +204,8 @@ export const BrowseFeedsModal = ({
             <FeedLimitBar />
             <FeedDiscoverySearchInput state={searchState} />
             <Text fontSize="sm" color="fg.muted">
-              Don&apos;t see what you&apos;re looking for? Try pasting a website
-              URL above - many sites have feeds we can detect.
+              Don&apos;t see what you&apos;re looking for? Try pasting a website URL above - many
+              sites have feeds we can detect.
             </Text>
             <Tabs.Root
               value={selectedCategory ?? ALL_TAB_VALUE}
@@ -240,11 +234,7 @@ export const BrowseFeedsModal = ({
               {!!error && !isFetching && (
                 <Alert status="error">
                   Failed to load feeds.{" "}
-                  <Button
-                    variant="plain"
-                    onClick={() => refetch()}
-                    colorPalette="brand"
-                  >
+                  <Button variant="plain" onClick={() => refetch()} colorPalette="brand">
                     Retry
                   </Button>
                 </Alert>
@@ -320,20 +310,14 @@ export const BrowseFeedsModal = ({
                                       feed={feed}
                                       state={cardProps.state}
                                       onAdd={() => onAdd(feed)}
-                                      onRemove={
-                                        onRemove
-                                          ? () => onRemove(feed.id)
-                                          : undefined
-                                      }
+                                      onRemove={onRemove ? () => onRemove(feed.id) : undefined}
                                       errorMessage={cardProps.errorMessage}
                                       errorCode={cardProps.errorCode}
                                       isCurated
                                       showPopularBadge={false}
                                       showDomain={false}
                                       hideActions
-                                      feedSettingsUrl={
-                                        cardProps.feedSettingsUrl
-                                      }
+                                      feedSettingsUrl={cardProps.feedSettingsUrl}
                                     />
                                   </Box>
                                 );
@@ -373,18 +357,12 @@ export const BrowseFeedsModal = ({
                           );
 
                           return (
-                            <Box
-                              as="li"
-                              key={feed.id}
-                              data-category-feed-index={index}
-                            >
+                            <Box as="li" key={feed.id} data-category-feed-index={index}>
                               <FeedCard
                                 feed={feed}
                                 state={cardProps.state}
                                 onAdd={() => onAdd(feed)}
-                                onRemove={
-                                  onRemove ? () => onRemove(feed.id) : undefined
-                                }
+                                onRemove={onRemove ? () => onRemove(feed.id) : undefined}
                                 errorMessage={cardProps.errorMessage}
                                 errorCode={cardProps.errorCode}
                                 isCurated
@@ -404,17 +382,11 @@ export const BrowseFeedsModal = ({
                           mt={3}
                           textAlign="center"
                         >
-                          Showing {Math.min(visibleCount, totalFeeds)} of{" "}
-                          {totalFeeds} feeds
+                          Showing {Math.min(visibleCount, totalFeeds)} of {totalFeeds} feeds
                         </Text>
                       )}
                       {hasMore && (
-                        <Button
-                          mt={3}
-                          onClick={handleShowMore}
-                          variant="outline"
-                          width="full"
-                        >
+                        <Button mt={3} onClick={handleShowMore} variant="outline" width="full">
                           Show more
                         </Button>
                       )}

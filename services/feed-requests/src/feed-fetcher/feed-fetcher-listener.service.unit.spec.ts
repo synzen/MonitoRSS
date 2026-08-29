@@ -254,6 +254,7 @@ describe('FeedFetcherListenerService', () => {
       );
     };
 
+    // eslint-disable-next-line max-len
     it('performs a fresh request despite old terminal failures and recent-request state', async () => {
       cacheStorageService.setNX.mockResolvedValue(true);
       partitionedRequestsStoreService.wasRequestedInPastSeconds.mockResolvedValue(

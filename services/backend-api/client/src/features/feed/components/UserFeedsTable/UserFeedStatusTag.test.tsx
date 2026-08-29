@@ -17,9 +17,7 @@ describe("UserFeedStatusTag", () => {
   it("labels a recovering feed as currently retrying", () => {
     renderStatusTag(UserFeedComputedStatus.Retrying);
 
-    expect(
-      screen.getByLabelText("Currently retrying after failed requests"),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Currently retrying after failed requests")).toBeInTheDocument();
   });
 
   it("labels an exhausted feed as requiring attention", () => {

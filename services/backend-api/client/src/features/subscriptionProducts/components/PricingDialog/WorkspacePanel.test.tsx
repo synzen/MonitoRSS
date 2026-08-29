@@ -113,7 +113,9 @@ describe("WorkspacePanel price announcer", () => {
     await userEvent.click(screen.getByRole("radio", { name: "300 feeds" }));
 
     await waitFor(() => expect(screen.getByRole("radio", { name: "300 feeds" })).toBeChecked());
-    expect(screen.queryByRole("spinbutton", { name: /or enter an exact/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("spinbutton", { name: /or enter an exact/i }),
+    ).not.toBeInTheDocument();
     await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$125 per month."));
   });
 

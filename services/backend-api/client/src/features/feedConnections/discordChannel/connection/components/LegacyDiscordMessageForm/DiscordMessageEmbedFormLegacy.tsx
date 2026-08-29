@@ -84,6 +84,7 @@ export const DiscordMessageEmbedFormLegacy = ({ index }: Props) => {
             gap={{ base: "1.5", md: "8" }}
             justify="space-between"
           >
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- Color picker is controlled via aria-label on the button, not a native input */}
             <label>Color</label>
             <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "3xl" }}>
               <Controller

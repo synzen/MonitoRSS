@@ -45,6 +45,7 @@ const SliderThumbs = (props: { value?: number[] }) => {
   return (
     <For each={value}>
       {(_, index) => (
+        // eslint-disable-next-line react/no-array-index-key -- thumb order is the only stable identity
         <ChakraSlider.Thumb key={index} index={index}>
           <ChakraSlider.HiddenInput />
         </ChakraSlider.Thumb>
@@ -73,6 +74,7 @@ const SliderMarks = React.forwardRef<HTMLDivElement, SliderMarksProps>(
           const label = typeof mark === "number" ? undefined : mark.label;
 
           return (
+            // eslint-disable-next-line react/no-array-index-key -- marks are positional, no id
             <ChakraSlider.Marker key={index} value={value}>
               <ChakraSlider.MarkerIndicator />
               {label}

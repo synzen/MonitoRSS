@@ -132,7 +132,9 @@ describe("WorkspaceSwitcher", () => {
     renderSwitcher();
     fireEvent.click(screen.getByRole("button", { name: /switch workspace/i }));
 
-    expect(await screen.findByRole("menuitem", { name: /create a workspace/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("menuitem", { name: /create a workspace/i }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: /settings/i })).not.toBeInTheDocument();
   });
 

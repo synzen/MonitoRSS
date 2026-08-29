@@ -321,6 +321,7 @@ export class FeedFetcherService {
           });
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const sizeOfTextInMb = Buffer.byteLength(text) / 1024 / 1024;
 
         // if (sizeOfTextInMb > 7) {

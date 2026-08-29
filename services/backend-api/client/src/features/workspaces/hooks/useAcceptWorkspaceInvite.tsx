@@ -9,16 +9,13 @@ export const useAcceptWorkspaceInvite = () => {
     AcceptWorkspaceInviteOutput,
     ApiAdapterError,
     string
-  >(
-    (inviteId) => acceptWorkspaceInvite(inviteId),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["workspaces"], exact: false });
-        queryClient.invalidateQueries({ queryKey: ["workspace-invites"], exact: false });
-        queryClient.invalidateQueries({ queryKey: ["workspace-invite"], exact: false });
-      },
+  >((inviteId) => acceptWorkspaceInvite(inviteId), {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspaces"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["workspace-invites"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["workspace-invite"], exact: false });
     },
-  );
+  });
 
   return {
     mutateAsync,

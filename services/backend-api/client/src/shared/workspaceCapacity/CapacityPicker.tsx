@@ -37,11 +37,16 @@ export const CapacityPicker = ({
     if (!draft.trim() || !Number.isInteger(parsed)) {
       setMessage(rangeMessage);
       setDraft(String(value));
+
       return;
     }
 
     const clamped = Math.min(WORKSPACE_MAX_FEEDS, Math.max(WORKSPACE_MIN_FEEDS, parsed));
-    setMessage(clamped === parsed ? undefined : `${rangeMessage} Using ${formatWorkspaceFeedCount(clamped)}.`);
+    setMessage(
+      clamped === parsed
+        ? undefined
+        : `${rangeMessage} Using ${formatWorkspaceFeedCount(clamped)}.`,
+    );
     setDraft(String(clamped));
     onChange(clamped);
   };
@@ -63,6 +68,7 @@ export const CapacityPicker = ({
 
           if (details.value === "custom") {
             setCustomOpen(true);
+
             return;
           }
 
@@ -111,6 +117,7 @@ export const CapacityPicker = ({
           p={3}
         >
           <Stack gap={1}>
+            {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- Chakra Input is a valid control, htmlFor correctly references id */}
             <label htmlFor={exactInputId}>
               <Text as="span" fontSize="sm" color="fg.muted">
                 Or enter an exact feed capacity

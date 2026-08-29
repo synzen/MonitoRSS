@@ -65,6 +65,27 @@ export const SelectableUserFeedList = ({
     }
   }, [isSelectedAll, totalCount, search]);
 
+  let searchEndElement: React.ReactNode;
+
+  if (search && !isFetching) {
+    searchEndElement = (
+      <IconButton
+        aria-label="Clear search"
+        size="sm"
+        variant="plain"
+        color="fg.muted"
+        onClick={() => {
+          setSearchInput("");
+          setSearch("");
+        }}
+      >
+        <FaXmark />
+      </IconButton>
+    );
+  } else if (search && isFetching) {
+    searchEndElement = <Spinner size="sm" />;
+  }
+
   return (
     <Stack gap={2}>
       <legend>
@@ -77,27 +98,7 @@ export const SelectableUserFeedList = ({
       </legend>
       <Stack gap={1} mt={1}>
         <HStack>
-          <InputGroup
-            startElement={<FaMagnifyingGlass />}
-            endElement={
-              search && !isFetching ? (
-                <IconButton
-                  aria-label="Clear search"
-                  size="sm"
-                  variant="plain"
-                  color="fg.muted"
-                  onClick={() => {
-                    setSearchInput("");
-                    setSearch("");
-                  }}
-                >
-                  <FaXmark />
-                </IconButton>
-              ) : search && isFetching ? (
-                <Spinner size="sm" />
-              ) : undefined
-            }
-          >
+          <InputGroup startElement={<FaMagnifyingGlass />} endElement={searchEndElement}>
             <Input
               placeholder="Search for target feeds"
               onChange={(e) => setSearchInput(e.target.value)}

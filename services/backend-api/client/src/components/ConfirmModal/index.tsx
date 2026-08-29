@@ -194,7 +194,9 @@ export const ConfirmModal = ({
         )}
         <DialogBody>
           <Stack gap={4}>
-            {description && !descriptionNode && <DialogDescription>{description}</DialogDescription>}
+            {description && !descriptionNode && (
+              <DialogDescription>{description}</DialogDescription>
+            )}
             {descriptionNode && !description && descriptionNode}
             {confirmationPhrase && (
               <Field label={`Type "${confirmationPhrase}" to confirm`} required>

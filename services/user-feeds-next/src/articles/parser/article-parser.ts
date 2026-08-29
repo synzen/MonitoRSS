@@ -103,7 +103,6 @@ export function flattenArticleLightweight(
       let dateVal;
 
       try {
-        // eslint-disable-next-line no-control-regex
         if (/[^\x00-\x7F]/.test(requestedTimezone)) {
           throw new Error("Invalid timezone");
         }

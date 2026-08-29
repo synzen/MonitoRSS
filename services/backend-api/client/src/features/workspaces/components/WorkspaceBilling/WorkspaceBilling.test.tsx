@@ -24,7 +24,6 @@ import { getUserFeeds } from "../../../feed/api";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
 import {
   WORKSPACE_CAPACITY_QUICK_PICKS,
-  WORKSPACE_DETENTS,
   WORKSPACE_MAX_FEEDS,
   formatWorkspaceFeedCount,
   formatWorkspaceFeedNumber,
@@ -312,7 +311,9 @@ describe("WorkspaceBilling", () => {
     const group = await screen.findByRole("radiogroup", { name: /feed capacity/i });
     expect(group).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "70 feeds" })).toBeChecked();
-    expect(screen.queryByRole("spinbutton", { name: /or enter an exact feed capacity/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("spinbutton", { name: /or enter an exact feed capacity/i }),
+    ).not.toBeInTheDocument();
 
     // One Subscribe action for the single plan, not one per tier.
     expect(screen.getAllByRole("button", { name: /subscribe/i })).toHaveLength(1);
@@ -734,20 +735,27 @@ describe("WorkspaceBilling", () => {
       );
 
       if (WORKSPACE_CAPACITY_QUICK_PICKS.includes(requestedFeeds)) {
-        expect(await screen.findByRole("radio", { name: formatWorkspaceFeedCount(requestedFeeds) })).toBeChecked();
-        expect(screen.queryByRole("spinbutton", { name: /or enter an exact feed capacity/i })).not.toBeInTheDocument();
+        expect(
+          await screen.findByRole("radio", { name: formatWorkspaceFeedCount(requestedFeeds) }),
+        ).toBeChecked();
+        expect(
+          screen.queryByRole("spinbutton", { name: /or enter an exact feed capacity/i }),
+        ).not.toBeInTheDocument();
       } else {
-        const picker = await screen.findByRole("spinbutton", { name: /or enter an exact feed capacity/i });
-        expect(picker).toHaveAttribute("aria-valuetext", `${formatWorkspaceFeedNumber(requestedFeeds)} feeds`);
+        const picker = await screen.findByRole("spinbutton", {
+          name: /or enter an exact feed capacity/i,
+        });
+        expect(picker).toHaveAttribute(
+          "aria-valuetext",
+          `${formatWorkspaceFeedNumber(requestedFeeds)} feeds`,
+        );
         expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
       }
+
       expect(
-        screen.getByRole(
-          "button",
-          {
-            name: `Subscribe to Team, ${formatWorkspaceFeedNumber(requestedFeeds)} feeds total`,
-          },
-        ),
+        screen.getByRole("button", {
+          name: `Subscribe to Team, ${formatWorkspaceFeedNumber(requestedFeeds)} feeds total`,
+        }),
       ).toBeInTheDocument();
     },
   );
@@ -1402,12 +1410,15 @@ describe("WorkspaceBilling", () => {
       await userEvent.click(
         await screen.findByRole("radio", { name: formatWorkspaceFeedCount(targetFeeds) }),
       );
+
       return;
     }
 
     // Non-preset values are entered via the nested Custom exact field.
     await userEvent.click(await screen.findByRole("radio", { name: /custom/i }));
-    const input = await screen.findByRole("spinbutton", { name: /or enter an exact feed capacity/i });
+    const input = await screen.findByRole("spinbutton", {
+      name: /or enter an exact feed capacity/i,
+    });
     await userEvent.clear(input);
     await userEvent.type(input, String(targetFeeds));
     await userEvent.keyboard("{Enter}");
@@ -1443,7 +1454,9 @@ describe("WorkspaceBilling", () => {
 
     // The manage picker opens at the current capacity (100), not at the base (70)
     // the way the buy-time picker does.
-    const input = await screen.findByRole("spinbutton", { name: /or enter an exact feed capacity/i });
+    const input = await screen.findByRole("spinbutton", {
+      name: /or enter an exact feed capacity/i,
+    });
     expect(input).toHaveAttribute("aria-valuetext", "100 feeds");
   });
 
@@ -1756,7 +1769,12 @@ describe("WorkspaceBilling", () => {
       immediateTransaction: null,
       deferred: true,
       nextBillDate: "2027-03-01T00:00:00.000Z",
-      feedImpact: { newFeedLimit: 140, currentFeedCount: 10, willBeDisabledCount: 0, affectedFeeds: [] },
+      feedImpact: {
+        newFeedLimit: 140,
+        currentFeedCount: 10,
+        willBeDisabledCount: 0,
+        affectedFeeds: [],
+      },
     });
 
     renderBilling();
@@ -1782,14 +1800,21 @@ describe("WorkspaceBilling", () => {
       createdAt: new Date(Date.now() - i * 1000).toISOString(),
     }));
     mockChangePreview({
-      feedImpact: { newFeedLimit: 70, currentFeedCount: 73, willBeDisabledCount: 12, affectedFeeds: affected },
+      feedImpact: {
+        newFeedLimit: 70,
+        currentFeedCount: 73,
+        willBeDisabledCount: 12,
+        affectedFeeds: affected,
+      },
     });
 
     renderBilling();
     await openChangeDialog();
     await setSliderToFeeds(70);
 
-    expect(await screen.findByText(/Reducing to 70 feeds will disable 12 feeds/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Reducing to 70 feeds will disable 12 feeds/i),
+    ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /Review affected feeds \(12\)/i }));
 
     const search = await screen.findByRole("textbox", { name: /Search affected feeds/i });
@@ -1816,10 +1841,15 @@ describe("WorkspaceBilling", () => {
     renderBilling();
     await openChangeDialog();
 
-    const input = await screen.findByRole("spinbutton", { name: /or enter an exact feed capacity/i });
+    const input = await screen.findByRole("spinbutton", {
+      name: /or enter an exact feed capacity/i,
+    });
     expect(input).toHaveAttribute("aria-valuetext", "837 feeds");
     expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
-    expect(screen.getByRole("button", { name: /confirm change/i })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("button", { name: /confirm change/i })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
 
   // Guard against client/backend drift: these MUST match the backend's

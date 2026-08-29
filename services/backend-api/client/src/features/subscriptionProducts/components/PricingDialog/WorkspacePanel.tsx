@@ -68,6 +68,7 @@ const WORKSPACE_CAPACITY_LINE = `Starts at ${formatWorkspaceFeedNumber(
 )} feeds and scales to ${formatWorkspaceFeedNumber(WORKSPACE_MAX_FEEDS)}. Add more anytime.`;
 const WORKSPACE_SIZER_TITLE = "Add more feeds";
 const WORKSPACE_SIZER_ACCORDION_VALUE = "sizer";
+
 export const WorkspacePanel = ({
   interval,
   pricing,

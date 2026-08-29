@@ -453,7 +453,7 @@ export class FeedFetcherListenerService {
         latestOkRequest.createdAt.getTime() < recoveryStartedAt);
     const failureCycleStart = shouldStartNewRecoveryCycle
       ? new Date(recoveryStartedAt)
-      : (latestOkRequest?.createdAt ?? null);
+      : latestOkRequest?.createdAt ?? null;
 
     const failedAttempts = await this.countFailedRequests({
       lookupKey: key,
@@ -487,7 +487,7 @@ export class FeedFetcherListenerService {
       await this.partitionedRequestsStoreService.getLatestNextRetryDate(
         key,
         recoveryStartedAt !== undefined
-          ? (failureCycleStart ?? undefined)
+          ? failureCycleStart ?? undefined
           : undefined,
       );
 
@@ -704,7 +704,7 @@ export class FeedFetcherListenerService {
   }): Promise<number> {
     const effectiveSince =
       since !== undefined
-        ? (since ?? undefined)
+        ? since ?? undefined
         : (
             await this.partitionedRequestsStoreService.getLatestRequestWithOkStatus(
               lookupKey || url,

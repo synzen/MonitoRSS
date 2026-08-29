@@ -21,9 +21,7 @@ const mockCategories: Array<CuratedCategory & { count: number }> = [
   { id: "entertainment", label: "Entertainment", count: 5 },
 ];
 
-function makeFeed(
-  overrides: Partial<CuratedFeed> & { id: string },
-): CuratedFeed {
+function makeFeed(overrides: Partial<CuratedFeed> & { id: string }): CuratedFeed {
   return {
     title: `Feed ${overrides.id}`,
     category: "gaming",
@@ -73,13 +71,10 @@ vi.mock("../../hooks", () => ({
 
     if (options?.category) {
       feeds =
-        overrideCategoryFeeds ||
-        allHighlightFeeds.filter((f) => f.category === options.category);
+        overrideCategoryFeeds || allHighlightFeeds.filter((f) => f.category === options.category);
     } else if (options?.search) {
       const q = options.search.toLowerCase();
-      feeds = allHighlightFeeds.filter((f) =>
-        f.title.toLowerCase().includes(q),
-      );
+      feeds = allHighlightFeeds.filter((f) => f.title.toLowerCase().includes(q));
     }
 
     return {
@@ -87,9 +82,7 @@ vi.mock("../../hooks", () => ({
       getHighlightFeeds: () =>
         mockCategories.map((cat) => ({
           category: cat,
-          feeds: allHighlightFeeds
-            .filter((f) => f.category === cat.id)
-            .slice(0, 3),
+          feeds: allHighlightFeeds.filter((f) => f.category === cat.id).slice(0, 3),
         })),
       getCategoryPreviewText: () => "",
       isLoading: false,
@@ -132,17 +125,12 @@ vi.mock("../../hooks/useCuratedFeedPreview", () => ({
 const defaultProps = {
   isOpen: true,
   onClose: vi.fn(),
-  feedActionStates: {} as Record<
-    string,
-    import("../../types/FeedActionState").FeedActionState
-  >,
+  feedActionStates: {} as Record<string, import("../../types/FeedActionState").FeedActionState>,
   isAtLimit: false,
   onAdd: vi.fn(),
 };
 
-const renderModal = (
-  props: Partial<React.ComponentProps<typeof BrowseFeedsModal>> = {},
-) => {
+const renderModal = (props: Partial<React.ComponentProps<typeof BrowseFeedsModal>> = {}) => {
   const user = userEvent.setup();
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -194,9 +182,7 @@ describe("BrowseFeedsModal", () => {
     it("renders category pills", () => {
       renderModal();
 
-      expect(
-        screen.getByRole("tablist", { name: "Feed categories" }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("tablist", { name: "Feed categories" })).toBeInTheDocument();
     });
   });
 
@@ -208,9 +194,7 @@ describe("BrowseFeedsModal", () => {
       expect(headings).toHaveLength(8);
 
       mockCategories.forEach((cat) => {
-        expect(
-          screen.getByRole("heading", { name: cat.label, level: 3 }),
-        ).toBeInTheDocument();
+        expect(screen.getByRole("heading", { name: cat.label, level: 3 })).toBeInTheDocument();
       });
     });
 
@@ -277,9 +261,7 @@ describe("BrowseFeedsModal", () => {
 
       await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
-      expect(
-        screen.queryByRole("heading", { level: 3 }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("heading", { level: 3 })).not.toBeInTheDocument();
       const list = screen.getByRole("list", { name: /Gaming feeds/ });
       expect(list).toBeInTheDocument();
     });
@@ -298,9 +280,7 @@ describe("BrowseFeedsModal", () => {
       await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       const list = screen.getByRole("list", { name: /Gaming feeds/ });
-      expect(within(list).getAllByText("example.com").length).toBeGreaterThan(
-        0,
-      );
+      expect(within(list).getAllByText("example.com").length).toBeGreaterThan(0);
     });
   });
 
@@ -319,9 +299,7 @@ describe("BrowseFeedsModal", () => {
       const list = screen.getByRole("list", { name: /Gaming feeds/ });
       const items = within(list).getAllByRole("listitem");
       expect(items).toHaveLength(20);
-      expect(
-        screen.getByRole("button", { name: /Show more/ }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Show more/ })).toBeInTheDocument();
     });
 
     it("Show more reveals next batch", async () => {
@@ -341,9 +319,7 @@ describe("BrowseFeedsModal", () => {
       await user.click(screen.getByRole("tab", { name: /Gaming/ }));
       await user.click(screen.getByRole("button", { name: /Show more/ }));
 
-      expect(
-        screen.queryByRole("button", { name: /Show more/ }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Show more/ })).not.toBeInTheDocument();
     });
 
     it("count text shows when total > 20", async () => {
@@ -373,12 +349,8 @@ describe("BrowseFeedsModal", () => {
       const list = screen.getByRole("list", { name: /Gaming feeds/ });
       const items = within(list).getAllByRole("listitem");
       expect(items).toHaveLength(3);
-      expect(
-        screen.queryByRole("button", { name: /Show more/ }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByText(/Showing .* of .* feeds/),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Show more/ })).not.toBeInTheDocument();
+      expect(screen.queryByText(/Showing .* of .* feeds/)).not.toBeInTheDocument();
     });
   });
 
@@ -389,73 +361,51 @@ describe("BrowseFeedsModal", () => {
       const techTab = screen.getByRole("tab", { name: /Tech/ });
       expect(techTab).toHaveAttribute("aria-selected", "true");
 
-      expect(
-        screen.queryByRole("heading", { level: 3 }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("heading", { level: 3 })).not.toBeInTheDocument();
     });
 
     it("re-opening with a different initialCategory selects the new category", async () => {
       const { rerender } = renderModal({ initialCategory: "tech" });
 
-      expect(screen.getByRole("tab", { name: /Tech/ })).toHaveAttribute(
+      expect(screen.getByRole("tab", { name: /Tech/ })).toHaveAttribute("aria-selected", "true");
+
+      rerender(
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <BrowseFeedsModal {...defaultProps} initialCategory="tech" isOpen={false} />
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>,
+      );
+
+      rerender(
+        <ChakraProvider value={system}>
+          <MemoryRouter>
+            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
+              <BrowseFeedsModal {...defaultProps} initialCategory="sports" isOpen />
+            </PricingDialogContext.Provider>
+          </MemoryRouter>
+        </ChakraProvider>,
+      );
+
+      expect(await screen.findByRole("tab", { name: /Sports/ })).toHaveAttribute(
         "aria-selected",
         "true",
       );
-
-      rerender(
-        <ChakraProvider value={system}>
-          <MemoryRouter>
-            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
-              <BrowseFeedsModal
-                {...defaultProps}
-                initialCategory="tech"
-                isOpen={false}
-              />
-            </PricingDialogContext.Provider>
-          </MemoryRouter>
-        </ChakraProvider>,
-      );
-
-      rerender(
-        <ChakraProvider value={system}>
-          <MemoryRouter>
-            <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
-              <BrowseFeedsModal
-                {...defaultProps}
-                initialCategory="sports"
-                isOpen
-              />
-            </PricingDialogContext.Provider>
-          </MemoryRouter>
-        </ChakraProvider>,
-      );
-
-      expect(
-        await screen.findByRole("tab", { name: /Sports/ }),
-      ).toHaveAttribute("aria-selected", "true");
-      expect(screen.getByRole("tab", { name: /Tech/ })).toHaveAttribute(
-        "aria-selected",
-        "false",
-      );
+      expect(screen.getByRole("tab", { name: /Tech/ })).toHaveAttribute("aria-selected", "false");
     });
 
     it("re-opening with no initialCategory shows highlights view", async () => {
       const { rerender } = renderModal({ initialCategory: "gaming" });
 
-      expect(screen.getByRole("tab", { name: /Gaming/ })).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
+      expect(screen.getByRole("tab", { name: /Gaming/ })).toHaveAttribute("aria-selected", "true");
 
       rerender(
         <ChakraProvider value={system}>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
-              <BrowseFeedsModal
-                {...defaultProps}
-                initialCategory="gaming"
-                isOpen={false}
-              />
+              <BrowseFeedsModal {...defaultProps} initialCategory="gaming" isOpen={false} />
             </PricingDialogContext.Provider>
           </MemoryRouter>
         </ChakraProvider>,
@@ -465,11 +415,7 @@ describe("BrowseFeedsModal", () => {
         <ChakraProvider value={system}>
           <MemoryRouter>
             <PricingDialogContext.Provider value={{ onOpen: vi.fn() }}>
-              <BrowseFeedsModal
-                {...defaultProps}
-                initialCategory={undefined}
-                isOpen
-              />
+              <BrowseFeedsModal {...defaultProps} initialCategory={undefined} isOpen />
             </PricingDialogContext.Provider>
           </MemoryRouter>
         </ChakraProvider>,
@@ -534,16 +480,12 @@ describe("BrowseFeedsModal", () => {
 
       const list = screen.getByRole("list", { name: /search results/i });
       expect(within(list).getAllByRole("listitem")).toHaveLength(20);
-      expect(
-        screen.getByRole("button", { name: /show more/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /show more/i })).toBeInTheDocument();
 
       await user.click(screen.getByRole("button", { name: /show more/i }));
 
       expect(within(list).getAllByRole("listitem")).toHaveLength(24);
-      expect(
-        screen.queryByRole("button", { name: /show more/i }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /show more/i })).not.toBeInTheDocument();
     });
 
     it("during search, previously selected pill retains aria-selected", async () => {
@@ -579,10 +521,8 @@ describe("BrowseFeedsModal", () => {
       expect(feedLimitText).toBeInTheDocument();
 
       const searchForm = screen.getByRole("search");
-      const feedLimitElement =
-        feedLimitText.closest('[role="status"]') || feedLimitText;
-      const modalBody =
-        searchForm.closest(".chakra-modal__body") || searchForm.parentElement;
+      const feedLimitElement = feedLimitText.closest('[role="status"]') || feedLimitText;
+      const modalBody = searchForm.closest(".chakra-modal__body") || searchForm.parentElement;
 
       if (modalBody) {
         const children = Array.from(modalBody.querySelectorAll("*"));
@@ -616,9 +556,7 @@ describe("BrowseFeedsModal", () => {
       await user.click(screen.getByRole("tab", { name: /Gaming/ }));
 
       const firstFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
-      await user.click(
-        screen.getByRole("button", { name: `Add ${firstFeed.title} feed` }),
-      );
+      await user.click(screen.getByRole("button", { name: `Add ${firstFeed.title} feed` }));
 
       expect(onAdd).toHaveBeenCalledTimes(1);
       expect(onAdd).toHaveBeenCalledWith(
@@ -670,12 +608,9 @@ describe("BrowseFeedsModal", () => {
         },
       });
 
-      const friendlyMessage =
-        "This feed can't be reached right now. Try again later.";
+      const friendlyMessage = "This feed can't be reached right now. Try again later.";
       expect(screen.getByText(friendlyMessage)).toBeInTheDocument();
-      expect(
-        screen.getByText(friendlyMessage).closest('[role="alert"]'),
-      ).toBeInTheDocument();
+      expect(screen.getByText(friendlyMessage).closest('[role="alert"]')).toBeInTheDocument();
 
       const retryButton = screen.getByRole("button", { name: /retry/i });
       await user.click(retryButton);
@@ -684,9 +619,7 @@ describe("BrowseFeedsModal", () => {
     });
 
     it("added feeds persist across category switches", async () => {
-      const gamingFeed = allHighlightFeeds.find(
-        (f) => f.category === "gaming",
-      )!;
+      const gamingFeed = allHighlightFeeds.find((f) => f.category === "gaming")!;
       const { user } = renderModal({
         feedActionStates: {
           [gamingFeed.id]: {

@@ -57,12 +57,18 @@ describe("CapacityPicker", () => {
     const user = userEvent.setup();
     renderPicker(70);
 
-    expect(screen.queryByRole("spinbutton", { name: "Or enter an exact feed capacity" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/choose a whole number from 70 to 2,000 feeds/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("spinbutton", { name: "Or enter an exact feed capacity" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/choose a whole number from 70 to 2,000 feeds/i),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("radio", { name: "Custom" }));
 
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/choose a whole number from 70 to 2,000 feeds/i)).toBeInTheDocument();
   });
 
@@ -78,7 +84,9 @@ describe("CapacityPicker", () => {
 
     expect(custom).toBeChecked();
     expect(custom).toHaveFocus();
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toBeVisible();
+    expect(
+      screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" }),
+    ).toBeVisible();
   });
 
   it("keeps Custom selected and expanded after moving from a preset", async () => {
@@ -90,12 +98,16 @@ describe("CapacityPicker", () => {
 
     const custom = screen.getByRole("radio", { name: "Custom" });
     expect(custom).toBeChecked();
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toBeVisible();
+    expect(
+      screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" }),
+    ).toBeVisible();
 
     await user.click(custom);
 
     expect(custom).toBeChecked();
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toBeVisible();
+    expect(
+      screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" }),
+    ).toBeVisible();
   });
 
   it("keeps Custom selected when an exact value matches a preset", async () => {
@@ -109,7 +121,9 @@ describe("CapacityPicker", () => {
     await user.keyboard("{Enter}");
 
     expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toBeVisible();
+    expect(
+      screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" }),
+    ).toBeVisible();
   });
 
   it("tabs forward after committing a preset-matching custom value", async () => {
@@ -124,7 +138,9 @@ describe("CapacityPicker", () => {
 
     expect(screen.getByRole("button", { name: "Continue" })).toHaveFocus();
     expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toBeVisible();
+    expect(
+      screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" }),
+    ).toBeVisible();
   });
 
   it("commits non-preset exact values without changing the preset radio focus", async () => {
@@ -137,10 +153,9 @@ describe("CapacityPicker", () => {
     await user.type(input, "837");
     await user.keyboard("{Enter}");
 
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toHaveAttribute(
-      "aria-valuetext",
-      "837 feeds",
-    );
+    expect(
+      screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" }),
+    ).toHaveAttribute("aria-valuetext", "837 feeds");
     expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
   });
 
@@ -157,7 +172,9 @@ describe("CapacityPicker", () => {
 
     expect(onChange).toHaveBeenLastCalledWith(2000);
     expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toHaveValue(2000);
+    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toHaveValue(
+      2000,
+    );
   });
 
   it("seeds a non-preset value without firing an update", () => {
@@ -165,7 +182,9 @@ describe("CapacityPicker", () => {
     renderPicker(837, onChange);
 
     expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toHaveValue(837);
+    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toHaveValue(
+      837,
+    );
     expect(onChange).not.toHaveBeenCalled();
   });
 
