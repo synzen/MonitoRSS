@@ -37,9 +37,28 @@ test.describe("Feeds Table Pagination", () => {
       await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
       await expect(page.getByText("1–50 of 101 feeds")).toBeVisible();
 
-      await page.getByRole("button", { name: "Next" }).click();
+      const viewMenuButton = page.getByRole("button", {
+        name: "Feed table view: Regular",
+      });
+      await viewMenuButton.click();
+      await page.getByRole("menuitemradio", { name: "Compact rows" }).click();
+      await page.waitForTimeout(600);
+      await page.reload();
+      await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
+      await expect(
+        page.getByRole("button", { name: "Feed table view: Compact" }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "Feed table view: Compact" }).click();
+      await page.getByRole("menuitemradio", { name: "Regular rows" }).click();
+      await page.waitForTimeout(600);
+
+      const topPagination = page.getByRole("navigation", {
+        name: "Feed table pagination (top)",
+      });
+
+      await topPagination.getByRole("button", { name: "Next" }).click();
       await expect(page.getByText("51–100 of 101 feeds")).toBeVisible();
-      await page.getByRole("button", { name: "Next" }).click();
+      await topPagination.getByRole("button", { name: "Next" }).click();
       await expect(page.getByText("101–101 of 101 feeds")).toBeVisible();
 
       const feedLink = page.getByRole("link", {

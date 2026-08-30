@@ -37,6 +37,7 @@ interface ColumnConfig {
     info: CellContext<RowData, unknown>,
     search: string,
     scope?: RouteScope,
+    isCompact?: boolean,
   ) => React.ReactNode;
   accessor?: keyof RowData | ((row: RowData) => unknown);
   sortable?: boolean;
@@ -47,8 +48,11 @@ const columnConfigs: ColumnConfig[] = [
     id: "computedStatus",
     header: "Status",
     accessor: "computedStatus",
-    cell: (info) => (
-      <UserFeedStatusTag status={info.getValue() as UserFeedComputedStatus} />
+    cell: (info, _search, _scope, isCompact) => (
+      <UserFeedStatusTag
+        status={info.getValue() as UserFeedComputedStatus}
+        isCompact={isCompact}
+      />
     ),
     sortable: true,
   },
@@ -96,7 +100,7 @@ const columnConfigs: ColumnConfig[] = [
     id: "url",
     header: "URL",
     accessor: "url",
-    cell: (info, search) => {
+    cell: (info, search, _scope, isCompact) => {
       const value = info.getValue() as string;
       const { inputUrl } = info.row.original;
       const urlIsDifferentFromInput = inputUrl !== value;
@@ -112,12 +116,12 @@ const columnConfigs: ColumnConfig[] = [
               color="text.link"
               title={inputUrl || value}
               onClick={(e) => e.stopPropagation()}
-              overflow="hidden"
-              textOverflow="ellipsis"
+              overflow={isCompact ? undefined : "hidden"}
+              textOverflow={isCompact ? undefined : "ellipsis"}
             >
               {inputUrl || value}
             </ChakraLink>
-            {urlIsDifferentFromInput && (
+            {!isCompact && urlIsDifferentFromInput && (
               <Text
                 color="fg.muted"
                 fontSize="sm"
@@ -187,16 +191,16 @@ const columnConfigs: ColumnConfig[] = [
     id: SHARED_WITH_ME_COLUMN_ID,
     header: "Shared with Me",
     accessor: "ownedByUser",
-    cell: (info) => {
+    cell: (info, _search, _scope, isCompact) => {
       const isOwnedByCurrentUser = info.getValue() as boolean;
 
-      return isOwnedByCurrentUser ? null : <FaCheck />;
+      return isOwnedByCurrentUser ? null : <FaCheck size={isCompact ? 12 : 16} />;
     },
     sortable: true,
   },
 ];
 
-function createSelectColumn(): ColumnDef<RowData> {
+function createSelectColumn(isCompact?: boolean): ColumnDef<RowData> {
   return columnHelper.display({
     id: "select",
     header: ({ table }: HeaderContext<RowData, unknown>) => (
@@ -235,7 +239,7 @@ function createSelectColumn(): ColumnDef<RowData> {
             if (!row.getCanSelect()) return;
             row.toggleSelected(!!details.checked);
           }}
-          padding={3.5}
+          padding={isCompact ? 2 : 3.5}
           cursor="pointer"
           css={{
             _hover: {
@@ -250,37 +254,61 @@ function createSelectColumn(): ColumnDef<RowData> {
   });
 }
 
-function createConfigureColumn(scope?: RouteScope): ColumnDef<RowData> {
+function createConfigureColumn(
+  scope?: RouteScope,
+  isCompact?: boolean,
+): ColumnDef<RowData> {
   return columnHelper.display({
     id: "configure",
     header: () => null,
-    cell: ({ row }) => (
-      <Button
-        asChild
-        role="link"
-        variant="ghost"
-        size="sm"
-        aria-label={`Configure ${row.original.title}`}
-      >
+    cell: ({ row }) => {
+      const configureLink = (
         <RouterLink
           to={pages.userFeed(row.original.id, { scope })}
           onClick={() => rememberFeedForReturn(row.original.id)}
         >
           Configure
-          <FaChevronRight aria-hidden="true" />
+          <FaChevronRight aria-hidden="true" size={isCompact ? 10 : undefined} />
         </RouterLink>
-      </Button>
-    ),
+      );
+
+      if (isCompact) {
+        return (
+          <ChakraLink
+            asChild
+            color="text.link"
+            fontSize="sm"
+            aria-label={`Configure ${row.original.title}`}
+            _hover={{ textDecoration: "underline" }}
+          >
+            {configureLink}
+          </ChakraLink>
+        );
+      }
+
+      return (
+        <Button
+          asChild
+          role="link"
+          variant="ghost"
+          size="sm"
+          color="text.link"
+          aria-label={`Configure ${row.original.title}`}
+        >
+          {configureLink}
+        </Button>
+      );
+    },
   });
 }
 
 export function createTableColumns(
   search: string,
   scope?: RouteScope,
-  options?: { excludeSharedWithMe?: boolean },
+  options?: { excludeSharedWithMe?: boolean; isCompact?: boolean },
 ): ColumnDef<RowData>[] {
-  const selectColumn = createSelectColumn();
-  const configureColumn = createConfigureColumn(scope);
+  const selectColumn = createSelectColumn(options?.isCompact);
+  const configureColumn = createConfigureColumn(scope, options?.isCompact);
 
   const visibleConfigs = options?.excludeSharedWithMe
     ? columnConfigs.filter((config) => config.id !== SHARED_WITH_ME_COLUMN_ID)
@@ -292,7 +320,12 @@ export function createTableColumns(
         id: config.id,
         header: () => <span>{config.header}</span>,
         cell: (info) =>
-          config.cell(info as CellContext<RowData, unknown>, search, scope),
+          config.cell(
+            info as CellContext<RowData, unknown>,
+            search,
+            scope,
+            options?.isCompact,
+          ),
       });
     }
 
@@ -300,7 +333,12 @@ export function createTableColumns(
       id: config.id,
       header: () => <span>{config.header}</span>,
       cell: (info) =>
-        config.cell(info as CellContext<RowData, unknown>, search, scope),
+        config.cell(
+          info as CellContext<RowData, unknown>,
+          search,
+          scope,
+          options?.isCompact,
+        ),
     });
   }) as ColumnDef<RowData>[];
 

@@ -27,6 +27,7 @@ export interface UpdateUserMeInput {
       feedListStatusFilters?: {
         statuses: string[];
       };
+      feedListCompactView?: boolean;
       lastActiveWorkspaceSlug?: string | null;
     };
   };

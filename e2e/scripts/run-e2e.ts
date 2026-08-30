@@ -565,6 +565,18 @@ async function main(): Promise<number> {
     `Playwright arguments: ${JSON.stringify(effectiveArgs)}\n`,
   );
 
+  // web-client is not bind-mounted (see docker-compose.e2e.yml) and Vite
+  // transforms per-request. A plain `up --build` can reuse a stale COPY
+  // layer and silently run old client code, which hides fixes like the
+  // keyboard coordinateGetter. Force a no-cache build for web-client so
+  // e2e always runs the current source.
+  await runProcess(
+    "docker",
+    composeArgs(context, ["build", "--no-cache", "web-client"]),
+    { env: context.env, logPath: context.runnerLog },
+  );
+  throwIfInterrupted();
+
   const upCode = await runProcess(
     "docker",
     composeArgs(context, ["up", "-d", "--build", "--wait"]),
@@ -616,8 +628,11 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 main()
   .then(async (code) => {
     await cleanup();
-    if (interrupted) process.exitCode = 130;
-    else process.exitCode = cleanupFailed && code === 0 ? 1 : code;
+    const exitCode = interrupted ? 130 : cleanupFailed && code === 0 ? 1 : code;
+    // Force exit to avoid hanging on lingering handles (docker log follower,
+    // un-closed streams). Node's `process.exitCode` alone relies on the
+    // event loop draining, which can keep the runner alive after teardown.
+    process.exit(exitCode);
   })
   .catch(async (error) => {
     if (!(error instanceof RunInterruptedError)) {
@@ -629,5 +644,5 @@ main()
         `${error instanceof Error ? error.stack : String(error)}\n`,
       );
     await cleanup();
-    process.exitCode = interrupted ? 130 : 1;
+    process.exit(interrupted ? 130 : 1);
   });

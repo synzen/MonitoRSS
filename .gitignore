@@ -143,6 +143,8 @@ dist
 auth*.json
 **/test-results/*
 **/playwright-report/
+e2e-*-report/
+e2e-web-report-*/
 _bmad
 _bmad-output
 skills-lock.json

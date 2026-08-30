@@ -34,6 +34,7 @@ export interface IUserPreferences {
   feedListColumnVisibility?: IUserFeedListColumnVisibility;
   feedListColumnOrder?: IUserFeedListColumnOrder;
   feedListStatusFilters?: IUserFeedListStatusFilters;
+  feedListCompactView?: boolean;
   lastActiveWorkspaceSlug?: string;
 }
 
@@ -79,6 +80,7 @@ export interface UpdateUserPreferencesInput {
   feedListColumnVisibility?: IUserFeedListColumnVisibility | null;
   feedListColumnOrder?: IUserFeedListColumnOrder | null;
   feedListStatusFilters?: IUserFeedListStatusFilters | null;
+  feedListCompactView?: boolean | null;
   lastActiveWorkspaceSlug?: string | null;
 }
 

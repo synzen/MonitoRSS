@@ -8,12 +8,14 @@ export interface TablePreferences {
   sorting: SortingState;
   columnVisibility: VisibilityState;
   columnOrder: string[];
+  isCompact: boolean;
 }
 
 export interface TablePreferencesHandlers {
   setSorting: Dispatch<SetStateAction<SortingState>>;
   setColumnVisibility: Dispatch<SetStateAction<VisibilityState>>;
   setColumnOrder: Dispatch<SetStateAction<string[]>>;
+  setIsCompact: Dispatch<SetStateAction<boolean>>;
 }
 
 export interface TableSearchState {

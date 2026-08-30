@@ -17,6 +17,7 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
   const savedSortPreference = userMe?.result?.preferences?.feedListSort;
   const savedColumnVisibility = userMe?.result?.preferences?.feedListColumnVisibility;
   const savedColumnOrder = userMe?.result?.preferences?.feedListColumnOrder?.columns;
+  const savedCompactView = userMe?.result?.preferences?.feedListCompactView;
 
   // Initialization refs to prevent re-initialization after mount
   const hasInitializedSorting = useRef(false);
@@ -47,6 +48,10 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
 
     return DEFAULT_COLUMN_ORDER;
   });
+
+  const [isCompact, setIsCompact] = useState(Boolean(savedCompactView));
+  const [hasLoadedCompactPreference, setHasLoadedCompactPreference] =
+    useState(false);
 
   // Initialize sorting from saved preference (only on first load)
   useEffect(() => {
@@ -138,6 +143,31 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
     }
   }, [savedColumnOrder]);
 
+  useEffect(() => {
+    if (!userMe || hasLoadedCompactPreference) return;
+
+    setIsCompact(Boolean(savedCompactView));
+    setHasLoadedCompactPreference(true);
+  }, [hasLoadedCompactPreference, savedCompactView, userMe]);
+
+  useEffect(() => {
+    if (!hasLoadedCompactPreference || isCompact === Boolean(savedCompactView)) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      updateUser({
+        details: {
+          preferences: {
+            feedListCompactView: isCompact,
+          },
+        },
+      });
+    }, PREFERENCE_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [hasLoadedCompactPreference, isCompact, savedCompactView, updateUser]);
+
   // Save column order preference when it changes (debounced)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -173,5 +203,7 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
     setColumnVisibility,
     columnOrder,
     setColumnOrder,
+    isCompact,
+    setIsCompact,
   };
 }

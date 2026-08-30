@@ -10,6 +10,8 @@ interface PaginationSectionProps {
   isFetching: boolean;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
+  ariaLabel?: string;
+  marginBottom?: number;
 }
 
 type PageItem = number | `ellipsis-before-${number}`;
@@ -40,6 +42,8 @@ export const PaginationSection: React.FC<PaginationSectionProps> = ({
   isFetching,
   onPageChange,
   onPageSizeChange,
+  ariaLabel = "Feed table pagination",
+  marginBottom = 20,
 }) => {
   const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
   const firstResult = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -47,7 +51,7 @@ export const PaginationSection: React.FC<PaginationSectionProps> = ({
   const pageItems = getVisiblePageItems(page, pageCount);
 
   return (
-    <Box as="nav" aria-label="Feed table pagination" mb={20}>
+    <Box as="nav" aria-label={ariaLabel} mb={marginBottom}>
       <Flex
         align="center"
         direction={{ base: "column", md: "row" }}
