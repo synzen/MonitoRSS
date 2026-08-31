@@ -1,10 +1,9 @@
 import { InferType, array, bool, object, string } from "yup";
 import fetchRest from "@/utils/fetchRest";
+import type { BulkFeedFilter } from "../types/BulkFeedFilter";
 
 export interface DeleteUserFeedsInput {
-  data: {
-    feeds: Array<{ id: string }>;
-  };
+  data: { feeds: Array<{ id: string }> } | BulkFeedFilter;
 }
 
 const GetUserFeedsOutputSchema = object({

@@ -65,6 +65,7 @@ dayjs.extend(timezone);
 type NextRetryReason = "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF";
 
 const MESSAGE_BROKER_QUEUE_FEED_DELETED = "feed-deleted";
+const BULK_DELETE_PUBLISH_CONCURRENCY = 10;
 
 // The only disable states a successful manual request proves recovery from.
 // Other codes (Manual, ExceededFeedLimit, ExcessivelyActive, FeedTooLarge)
@@ -173,7 +174,10 @@ export class UserFeedsService {
     // future workspace Paddle subscription later) — never the creator's personal
     // supporter perks. Membership is verified before creation.
     if (workspaceId) {
-      await this.deps.workspacesService.getWorkspaceForMember(workspaceId, userId);
+      await this.deps.workspacesService.getWorkspaceForMember(
+        workspaceId,
+        userId,
+      );
     }
 
     const myWorkspaceIds = workspaceId ? [workspaceId] : [];
@@ -533,9 +537,8 @@ export class UserFeedsService {
         feed.user.discordUserId,
       ));
 
-    const lookupDetails = await this.deps.feedCredentialsService.getLookupDetails(
-      { feed, user },
-    );
+    const lookupDetails =
+      await this.deps.feedCredentialsService.getLookupDetails({ feed, user });
 
     const response = (await this.deps.feedFetcherApiService.getRequests({
       query,
@@ -985,9 +988,8 @@ export class UserFeedsService {
     await this.deps.feedCredentialsService.syncLookupKeys({
       feedIds: [feed.id],
     });
-    const lookupDetails = await this.deps.feedCredentialsService.getLookupDetails(
-      { feed, user },
-    );
+    const lookupDetails =
+      await this.deps.feedCredentialsService.getLookupDetails({ feed, user });
 
     const res = await this.deps.feedFetcherApiService.fetchAndSave(
       lookupDetails?.url || feed.url,
@@ -1213,9 +1215,7 @@ export class UserFeedsService {
     ];
     const workspaceIds = [
       ...new Set(
-        feeds
-          .map((f) => f.workspaceId)
-          .filter((id): id is string => !!id),
+        feeds.map((f) => f.workspaceId).filter((id): id is string => !!id),
       ),
     ];
 
@@ -1234,10 +1234,20 @@ export class UserFeedsService {
       });
     }
 
-    for (const feed of feeds) {
-      await this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
-        data: { feed: { id: feed.id } },
-      });
+    for (
+      let index = 0;
+      index < feeds.length;
+      index += BULK_DELETE_PUBLISH_CONCURRENCY
+    ) {
+      await Promise.all(
+        feeds
+          .slice(index, index + BULK_DELETE_PUBLISH_CONCURRENCY)
+          .map((feed) =>
+            this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
+              data: { feed: { id: feed.id } },
+            }),
+          ),
+      );
     }
 
     return feedIds.map((id) => ({
@@ -1396,12 +1406,11 @@ export class UserFeedsService {
       );
     }
 
-    const lookupDetails = await this.deps.feedCredentialsService.getLookupDetails(
-      {
+    const lookupDetails =
+      await this.deps.feedCredentialsService.getLookupDetails({
         feed: { url, feedRequestLookupKey: randomUUID(), workspaceId },
         user,
-      },
-    );
+      });
 
     const getArticlesResponse = await this.deps.feedHandlerService.getArticles(
       {
@@ -1688,9 +1697,10 @@ export class UserFeedsService {
     // A fresh conversion guard suppresses disabling on the sweep too; an
     // expired guard is reconciled normally (the sweep is the guard's backstop).
     // Resolved in one query rather than a per-workspace read.
-    const guarded = await this.deps.workspacesService.conversionInProgressWorkspaceIds(
-      results.map((r) => r.workspaceId),
-    );
+    const guarded =
+      await this.deps.workspacesService.conversionInProgressWorkspaceIds(
+        results.map((r) => r.workspaceId),
+      );
 
     await this.applyWorkspaceLimitResults(
       results.map((r) =>
@@ -1804,9 +1814,8 @@ export class UserFeedsService {
       this.deps.supportersService.resolveFeedBenefits(feed),
     ]);
 
-    const lookupDetails = await this.deps.feedCredentialsService.getLookupDetails(
-      { feed, user },
-    );
+    const lookupDetails =
+      await this.deps.feedCredentialsService.getLookupDetails({ feed, user });
 
     const mediums = this.mapConnectionsToMediums(feed);
 

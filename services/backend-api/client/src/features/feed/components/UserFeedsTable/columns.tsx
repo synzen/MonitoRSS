@@ -8,6 +8,7 @@ import {
 } from "@chakra-ui/react";
 import { FaCheck, FaChevronRight } from "react-icons/fa6";
 import { Link as RouterLink } from "react-router-dom";
+import type { RefObject } from "react";
 import {
   CellContext,
   ColumnDef,
@@ -194,63 +195,86 @@ const columnConfigs: ColumnConfig[] = [
     cell: (info, _search, _scope, isCompact) => {
       const isOwnedByCurrentUser = info.getValue() as boolean;
 
-      return isOwnedByCurrentUser ? null : <FaCheck size={isCompact ? 12 : 16} />;
+      return isOwnedByCurrentUser ? null : (
+        <FaCheck size={isCompact ? 12 : 16} />
+      );
     },
     sortable: true,
   },
 ];
 
-function createSelectColumn(isCompact?: boolean): ColumnDef<RowData> {
+function createSelectColumn(
+  isCompact?: boolean,
+  selectAllMatching?: boolean,
+  onExitMatching?: () => void,
+  headerCheckboxRef?: RefObject<HTMLInputElement>,
+): ColumnDef<RowData> {
   return columnHelper.display({
     id: "select",
-    header: ({ table }: HeaderContext<RowData, unknown>) => (
-      <Flex justifyContent="center" alignItems="center" width="100%">
-        <Checkbox
+    header: ({ table }: HeaderContext<RowData, unknown>) => {
+      let checked: boolean | "indeterminate" = table.getIsAllRowsSelected();
+      if (table.getIsSomeRowsSelected()) checked = "indeterminate";
+      if (selectAllMatching) checked = true;
+
+      return (
+        <Flex justifyContent="center" alignItems="center" width="100%">
+          <Checkbox
+            ref={headerCheckboxRef}
+            alignItems="center"
+            width="min-content"
+            checked={checked}
+            onCheckedChange={(details) => {
+              if (selectAllMatching && !details.checked) {
+                onExitMatching?.();
+              }
+
+              table.toggleAllRowsSelected(!!details.checked);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            cursor="pointer"
+            aria-label="Check all currently loaded feeds for bulk actions"
+          />
+        </Flex>
+      );
+    },
+    cell: ({ row }) => {
+      let checked: boolean | "indeterminate" = row.getIsSelected();
+      if (row.getIsSomeSelected()) checked = "indeterminate";
+      if (selectAllMatching) checked = true;
+
+      return (
+        <Flex
           alignItems="center"
-          width="min-content"
-          checked={
-            table.getIsSomeRowsSelected()
-              ? "indeterminate"
-              : table.getIsAllRowsSelected()
-          }
-          onCheckedChange={(details) => {
-            table.toggleAllRowsSelected(!!details.checked);
-          }}
+          justifyContent="center"
           onClick={(e) => e.stopPropagation()}
-          cursor="pointer"
-          aria-label="Check all currently loaded feeds for bulk actions"
-        />
-      </Flex>
-    ),
-    cell: ({ row }) => (
-      <Flex
-        alignItems="center"
-        justifyContent="center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Checkbox
-          display="flex"
-          alignItems="center"
-          checked={
-            row.getIsSomeSelected() ? "indeterminate" : row.getIsSelected()
-          }
-          aria-disabled={!row.getCanSelect()}
-          onCheckedChange={(details) => {
-            if (!row.getCanSelect()) return;
-            row.toggleSelected(!!details.checked);
-          }}
-          padding={isCompact ? 2 : 3.5}
-          cursor="pointer"
-          css={{
-            _hover: {
-              background: "whiteAlpha.300",
-              borderRadius: "full",
-            },
-          }}
-          aria-label={`Check feed ${row.original.title} for bulk actions`}
-        />
-      </Flex>
-    ),
+        >
+          <Checkbox
+            display="flex"
+            alignItems="center"
+            checked={checked}
+            aria-disabled={!row.getCanSelect()}
+            onCheckedChange={(details) => {
+              if (!row.getCanSelect()) return;
+
+              if (selectAllMatching && !details.checked) {
+                onExitMatching?.();
+              }
+
+              row.toggleSelected(!!details.checked);
+            }}
+            padding={isCompact ? 2 : 3.5}
+            cursor="pointer"
+            css={{
+              _hover: {
+                background: "whiteAlpha.300",
+                borderRadius: "full",
+              },
+            }}
+            aria-label={`Check feed ${row.original.title} for bulk actions`}
+          />
+        </Flex>
+      );
+    },
   });
 }
 
@@ -268,7 +292,10 @@ function createConfigureColumn(
           onClick={() => rememberFeedForReturn(row.original.id)}
         >
           Configure
-          <FaChevronRight aria-hidden="true" size={isCompact ? 10 : undefined} />
+          <FaChevronRight
+            aria-hidden="true"
+            size={isCompact ? 10 : undefined}
+          />
         </RouterLink>
       );
 
@@ -305,9 +332,20 @@ function createConfigureColumn(
 export function createTableColumns(
   search: string,
   scope?: RouteScope,
-  options?: { excludeSharedWithMe?: boolean; isCompact?: boolean },
+  options?: {
+    excludeSharedWithMe?: boolean;
+    isCompact?: boolean;
+    selectAllMatching?: boolean;
+    onExitMatching?: () => void;
+    headerCheckboxRef?: RefObject<HTMLInputElement>;
+  },
 ): ColumnDef<RowData>[] {
-  const selectColumn = createSelectColumn(options?.isCompact);
+  const selectColumn = createSelectColumn(
+    options?.isCompact,
+    options?.selectAllMatching,
+    options?.onExitMatching,
+    options?.headerCheckboxRef,
+  );
   const configureColumn = createConfigureColumn(scope, options?.isCompact);
 
   const visibleConfigs = options?.excludeSharedWithMe

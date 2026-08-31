@@ -1,59 +1,128 @@
-import { ReactNode, createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { RowSelectionState } from "@tanstack/react-table";
 import { UserFeedSummary } from "../types/UserFeedSummary";
+import type { BulkFeedFilter } from "../types/BulkFeedFilter";
 
 type ContextProps = {
-  /**
-   * The selected feeds, as objects. Derived from the selected ids intersected
-   * with the feeds currently loaded in the table, so a feed that leaves the list
-   * (e.g. after a bulk delete) drops out of the selection automatically — there
-   * is nothing to manually prune and no window where the selection references
-   * rows that no longer exist.
-   */
+  /** The selected feeds, including rows selected on earlier pages. */
   selectedFeeds: UserFeedSummary[];
+  /** The selected feed ids, including rows selected on earlier pages. */
+  selectedFeedIds: string[];
   /** The selection identity (feed id -> selected), owned here as the source of truth. */
   rowSelection: RowSelectionState;
   setRowSelection: (
-    updater: RowSelectionState | ((prev: RowSelectionState) => RowSelectionState),
+    updater:
+      | RowSelectionState
+      | ((prev: RowSelectionState) => RowSelectionState),
   ) => void;
-  /** The table publishes its currently-loaded feeds so selectedFeeds can be derived. */
+  /** The table publishes its currently-loaded feeds to retain selected row details. */
   setLoadedFeeds: (feeds: UserFeedSummary[]) => void;
   clearSelection: () => void;
+  selectAllMatching: boolean;
+  setSelectAllMatching: (value: boolean) => void;
+  matchingTotal: number;
+  setMatchingTotal: (total: number) => void;
+  matchingFilters: BulkFeedFilter | null;
+  setMatchingFilters: (filters: BulkFeedFilter | null) => void;
 };
 
 export const MultiSelectUserFeedContext = createContext<ContextProps>({
   selectedFeeds: [],
+  selectedFeedIds: [],
   rowSelection: {},
   setRowSelection: () => {},
   setLoadedFeeds: () => {},
   clearSelection: () => {},
+  selectAllMatching: false,
+  setSelectAllMatching: () => {},
+  matchingTotal: 0,
+  setMatchingTotal: () => {},
+  matchingFilters: null,
+  setMatchingFilters: () => {},
 });
 
-export const MultiSelectUserFeedProvider = ({ children }: { children: ReactNode }) => {
+export const MultiSelectUserFeedProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [loadedFeeds, setLoadedFeeds] = useState<UserFeedSummary[]>([]);
+  const [selectedFeedDetails, setSelectedFeedDetails] = useState<
+    Record<string, UserFeedSummary>
+  >({});
+  const [selectAllMatching, setSelectAllMatching] = useState(false);
+  const [matchingTotal, setMatchingTotal] = useState(0);
+  const [matchingFilters, setMatchingFilters] = useState<BulkFeedFilter | null>(
+    null,
+  );
 
   const clearSelection = useCallback(() => {
     setRowSelection({});
+    setSelectedFeedDetails({});
+    setSelectAllMatching(false);
+    setMatchingFilters(null);
   }, []);
 
-  // Single source of truth (rowSelection ids) intersected with live data. Both
-  // inputs are independent, so a toggle never has to read the loaded data and a
-  // data refetch never has to rewrite the selection.
+  useEffect(() => {
+    setSelectedFeedDetails((previous) => {
+      const next = Object.fromEntries(
+        Object.entries(previous).filter(([id]) => rowSelection[id]),
+      ) as Record<string, UserFeedSummary>;
+
+      for (const feed of loadedFeeds) {
+        if (rowSelection[feed.id]) next[feed.id] = feed;
+      }
+
+      return next;
+    });
+  }, [loadedFeeds, rowSelection]);
+
+  const selectedFeedIds = useMemo(
+    () => Object.keys(rowSelection).filter((id) => rowSelection[id]),
+    [rowSelection],
+  );
+
   const selectedFeeds = useMemo(
-    () => loadedFeeds.filter((feed) => rowSelection[feed.id]),
-    [loadedFeeds, rowSelection],
+    () =>
+      selectedFeedIds.flatMap((id) =>
+        selectedFeedDetails[id] ? [selectedFeedDetails[id]] : [],
+      ),
+    [selectedFeedDetails, selectedFeedIds],
   );
 
   const value: ContextProps = useMemo(
     () => ({
       selectedFeeds,
+      selectedFeedIds,
       rowSelection,
       setRowSelection,
       setLoadedFeeds,
       clearSelection,
+      selectAllMatching,
+      setSelectAllMatching,
+      matchingTotal,
+      setMatchingTotal,
+      matchingFilters,
+      setMatchingFilters,
     }),
-    [selectedFeeds, rowSelection, clearSelection],
+    [
+      selectedFeeds,
+      selectedFeedIds,
+      rowSelection,
+      clearSelection,
+      selectAllMatching,
+      matchingTotal,
+      matchingFilters,
+    ],
   );
 
   return (

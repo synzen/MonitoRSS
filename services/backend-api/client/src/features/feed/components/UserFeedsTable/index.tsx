@@ -1,5 +1,20 @@
-import { Box, Center, Stack, Table, Text } from "@chakra-ui/react";
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Box,
+  Button,
+  Center,
+  HStack,
+  Stack,
+  Table,
+  Text,
+} from "@chakra-ui/react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   OnChangeFn,
@@ -20,7 +35,11 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { arrayMove, horizontalListSortingStrategy, SortableContext } from "@dnd-kit/sortable";
+import {
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+} from "@dnd-kit/sortable";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { Alert } from "@/components/ui/alert";
 import { Loading } from "@/components";
@@ -38,7 +57,11 @@ import {
   PaginationSection,
 } from "./components";
 import { createTableColumns } from "./columns";
-import { DEFAULT_PAGE_SIZE, FEED_TABLE_FOCUS_KEY, PAGE_SIZE_OPTIONS } from "./constants";
+import {
+  DEFAULT_PAGE_SIZE,
+  FEED_TABLE_FOCUS_KEY,
+  PAGE_SIZE_OPTIONS,
+} from "./constants";
 
 function parsePage(value: string | null): number {
   const page = Number(value);
@@ -49,13 +72,17 @@ function parsePage(value: string | null): number {
 function parsePageSize(value: string | null): number {
   const pageSize = Number(value);
 
-  return PAGE_SIZE_OPTIONS.includes(pageSize as (typeof PAGE_SIZE_OPTIONS)[number])
+  return PAGE_SIZE_OPTIONS.includes(
+    pageSize as (typeof PAGE_SIZE_OPTIONS)[number],
+  )
     ? pageSize
     : DEFAULT_PAGE_SIZE;
 }
 
 function statusFiltersFromUrl(value: string | null): UserFeedComputedStatus[] {
-  const validStatuses = new Set<UserFeedComputedStatus>(Object.values(UserFeedComputedStatus));
+  const validStatuses = new Set<UserFeedComputedStatus>(
+    Object.values(UserFeedComputedStatus),
+  );
 
   return (value || "")
     .split(",")
@@ -71,55 +98,61 @@ function statusFiltersFromUrl(value: string | null): UserFeedComputedStatus[] {
 // `closestCenter` picks the next column, so a 4-right/4-left round-trip ends
 // one column off. For `horizontalListSortingStrategy` on `th` we want
 // left-edge alignment in both directions - one press = one column.
-const tableKeyboardCoordinates: import("@dnd-kit/core").KeyboardCoordinateGetter = (
-  event,
-  { context },
-) => {
-  if (event.code !== KeyboardCode.Right && event.code !== KeyboardCode.Left) {
+const tableKeyboardCoordinates: import("@dnd-kit/core").KeyboardCoordinateGetter =
+  (event, { context }) => {
+    if (event.code !== KeyboardCode.Right && event.code !== KeyboardCode.Left) {
+      return undefined;
+    }
+
+    event.preventDefault();
+    if (!context.active || !context.collisionRect) return undefined;
+
+    const filtered: never[] = [];
+
+    for (const entry of context.droppableContainers.getEnabled()) {
+      if (!entry || (entry as { disabled?: boolean }).disabled) continue;
+      const rect = context.droppableRects.get(entry.id);
+      if (!rect) continue;
+
+      if (
+        event.code === KeyboardCode.Right &&
+        context.collisionRect.left < rect.left
+      ) {
+        (filtered as unknown[]).push(entry as never);
+      } else if (
+        event.code === KeyboardCode.Left &&
+        context.collisionRect.left > rect.left
+      ) {
+        (filtered as unknown[]).push(entry as never);
+      }
+    }
+
+    const collisions = closestCorners({
+      active: context.active,
+      collisionRect: context.collisionRect,
+      droppableRects: context.droppableRects,
+      droppableContainers: filtered as never,
+      pointerCoordinates: null,
+    });
+    let closestId = getFirstCollision(collisions, "id");
+
+    if (closestId === context.over?.id && collisions.length > 1) {
+      closestId = collisions[1].id;
+    }
+
+    if (closestId != null) {
+      const newDroppable = context.droppableContainers.get(closestId);
+      const newRect = newDroppable
+        ? context.droppableRects.get(newDroppable.id)
+        : null;
+
+      if (newDroppable && newRect) {
+        return { x: newRect.left, y: newRect.top };
+      }
+    }
+
     return undefined;
-  }
-
-  event.preventDefault();
-  if (!context.active || !context.collisionRect) return undefined;
-
-  const filtered: never[] = [];
-
-  for (const entry of context.droppableContainers.getEnabled()) {
-    if (!entry || (entry as { disabled?: boolean }).disabled) continue;
-    const rect = context.droppableRects.get(entry.id);
-    if (!rect) continue;
-
-    if (event.code === KeyboardCode.Right && context.collisionRect.left < rect.left) {
-      (filtered as unknown[]).push(entry as never);
-    } else if (event.code === KeyboardCode.Left && context.collisionRect.left > rect.left) {
-      (filtered as unknown[]).push(entry as never);
-    }
-  }
-
-  const collisions = closestCorners({
-    active: context.active,
-    collisionRect: context.collisionRect,
-    droppableRects: context.droppableRects,
-    droppableContainers: filtered as never,
-    pointerCoordinates: null,
-  });
-  let closestId = getFirstCollision(collisions, "id");
-
-  if (closestId === context.over?.id && collisions.length > 1) {
-    closestId = collisions[1].id;
-  }
-
-  if (closestId != null) {
-    const newDroppable = context.droppableContainers.get(closestId);
-    const newRect = newDroppable ? context.droppableRects.get(newDroppable.id) : null;
-
-    if (newDroppable && newRect) {
-      return { x: newRect.left, y: newRect.top };
-    }
-  }
-
-  return undefined;
-};
+  };
 
 export const UserFeedsTable: React.FC = () => {
   const sensors = useSensors(
@@ -129,9 +162,20 @@ export const UserFeedsTable: React.FC = () => {
     }),
   );
 
-  const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
-  const { rowSelection, setRowSelection, setLoadedFeeds } = useMultiSelectUserFeedContext();
-  const { workspaceSlug } = useFeedScope();
+  const { statusFilters, setStatusFilters } = useContext(
+    UserFeedStatusFilterContext,
+  );
+  const {
+    rowSelection,
+    setRowSelection,
+    setLoadedFeeds,
+    clearSelection,
+    selectAllMatching,
+    setSelectAllMatching,
+    setMatchingTotal,
+    setMatchingFilters,
+  } = useMultiSelectUserFeedContext();
+  const { workspaceSlug, workspaceId } = useFeedScope();
   const isWorkspaceScope = !!workspaceSlug;
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parsePage(searchParams.get("page"));
@@ -151,13 +195,17 @@ export const UserFeedsTable: React.FC = () => {
   } = useTablePreferences();
 
   const urlStatusFilters = statusFiltersFromUrl(searchParams.get("status"));
-  const activeStatusFilters = searchParams.has("status") ? urlStatusFilters : statusFilters;
+  const activeStatusFilters = searchParams.has("status")
+    ? urlStatusFilters
+    : statusFilters;
   const urlSort = searchParams.get("sort");
 
   useEffect(() => {
     if (!urlSort) return;
 
-    const nextSorting = [{ id: urlSort.replace(/^-/, ""), desc: urlSort.startsWith("-") }];
+    const nextSorting = [
+      { id: urlSort.replace(/^-/, ""), desc: urlSort.startsWith("-") },
+    ];
 
     if (
       sorting.length !== 1 ||
@@ -211,6 +259,25 @@ export const UserFeedsTable: React.FC = () => {
     search: urlSearch,
   });
 
+  useEffect(() => {
+    setMatchingTotal(total);
+  }, [total, setMatchingTotal]);
+
+  const urlSortKey = searchParams.get("sort") || "";
+
+  useEffect(() => {
+    if (selectAllMatching) {
+      setSelectAllMatching(false);
+      setMatchingFilters(null);
+    }
+
+    // Changing the query should also drop any lingering page selection that no
+    // longer corresponds to the filtered result set.
+    if (Object.keys(rowSelection).length > 0) {
+      setRowSelection({});
+    }
+  }, [urlSearch, activeStatusFilters.join(","), workspaceId, urlSortKey]);
+
   // Search state
   const {
     searchInput,
@@ -234,20 +301,62 @@ export const UserFeedsTable: React.FC = () => {
     [setSearchParams],
   );
 
+  const handleExitMatching = useCallback(() => {
+    setSelectAllMatching(false);
+    setMatchingFilters(null);
+  }, [setSelectAllMatching, setMatchingFilters]);
+
+  const handleSelectAllMatching = useCallback(() => {
+    setSelectAllMatching(true);
+    setMatchingFilters({
+      search: urlSearch || undefined,
+      filters: activeStatusFilters.length
+        ? { computedStatuses: activeStatusFilters as unknown as string[] }
+        : undefined,
+      workspaceId: workspaceId || undefined,
+    });
+  }, [
+    activeStatusFilters,
+    setMatchingFilters,
+    setSelectAllMatching,
+    urlSearch,
+    workspaceId,
+  ]);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
+  const pageSelectionCheckboxRef = useRef<HTMLInputElement>(null);
+  const clearSelectionButtonRef = useRef<HTMLButtonElement>(null);
+  const pendingFocusTarget = useRef<
+    "clear-selection" | "page-selection" | null
+  >(null);
+
   // Columns with search highlighting; links stay in the current (workspace) scope.
   // The "Shared with Me" column is meaningless in a workspace (all feeds are
   // shared with members), so it's omitted there.
   const columns = useMemo(
     () =>
-      createTableColumns(tableSearch, workspaceSlug ? { workspaceSlug } : undefined, {
-        excludeSharedWithMe: isWorkspaceScope,
-        isCompact,
-      }),
-    [tableSearch, workspaceSlug, isWorkspaceScope, isCompact],
+      createTableColumns(
+        tableSearch,
+        workspaceSlug ? { workspaceSlug } : undefined,
+        {
+          excludeSharedWithMe: isWorkspaceScope,
+          isCompact,
+          selectAllMatching,
+          onExitMatching: handleExitMatching,
+          headerCheckboxRef: pageSelectionCheckboxRef,
+        },
+      ),
+    [
+      tableSearch,
+      workspaceSlug,
+      isWorkspaceScope,
+      isCompact,
+      selectAllMatching,
+      handleExitMatching,
+      pageSelectionCheckboxRef,
+    ],
   );
-
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
 
   const hasActiveFilters = !!urlSearch || activeStatusFilters.length > 0;
 
@@ -263,9 +372,15 @@ export const UserFeedsTable: React.FC = () => {
     (event: DragEndEvent) => {
       const { active, over } = event;
 
-      const isFixed = (id: string | number) => id === "select" || id === "configure";
+      const isFixed = (id: string | number) =>
+        id === "select" || id === "configure";
 
-      if (over && active.id !== over.id && !isFixed(active.id) && !isFixed(over.id)) {
+      if (
+        over &&
+        active.id !== over.id &&
+        !isFixed(active.id) &&
+        !isFixed(over.id)
+      ) {
         setColumnOrder((currentOrder) => {
           const oldIndex = currentOrder.indexOf(active.id as string);
           const newIndex = currentOrder.indexOf(over.id as string);
@@ -319,6 +434,9 @@ export const UserFeedsTable: React.FC = () => {
     setLoadedFeeds(rows);
   }, [rows, setLoadedFeeds]);
 
+  const isAllPageSelected =
+    rows.length > 0 && rows.every((r) => rowSelection[r.id]);
+
   useEffect(() => {
     const feedId = sessionStorage.getItem(FEED_TABLE_FOCUS_KEY);
     const row = feedId ? rowRefs.current.get(feedId) : undefined;
@@ -347,7 +465,43 @@ export const UserFeedsTable: React.FC = () => {
 
   const isInitiallyLoading = status === "loading" && !data;
 
-  const isFilteredEmpty = !isInitiallyLoading && rows.length === 0 && hasActiveFilters;
+  const isFilteredEmpty =
+    !isInitiallyLoading && rows.length === 0 && hasActiveFilters;
+
+  const shouldOfferSelectAllMatching =
+    !isInitiallyLoading &&
+    !isFilteredEmpty &&
+    !selectAllMatching &&
+    isAllPageSelected &&
+    total > rows.length;
+  const selectionAnnouncement = selectAllMatching
+    ? `Selection now includes all ${total.toLocaleString()} matching feeds. Focus moved to Clear selection.`
+    : shouldOfferSelectAllMatching
+      ? `All ${rows.length.toLocaleString()} feeds on this page selected. Press Tab through the table header controls to reach Select all ${total.toLocaleString()} matching feeds.`
+      : "";
+
+  const handleSelectAllMatchingWithFocus = useCallback(() => {
+    pendingFocusTarget.current = "clear-selection";
+    handleSelectAllMatching();
+  }, [handleSelectAllMatching]);
+
+  const handleClearSelectionWithFocus = useCallback(() => {
+    pendingFocusTarget.current = "page-selection";
+    clearSelection();
+  }, [clearSelection]);
+
+  useEffect(() => {
+    if (pendingFocusTarget.current === "clear-selection" && selectAllMatching) {
+      clearSelectionButtonRef.current?.focus();
+      pendingFocusTarget.current = null;
+    } else if (
+      pendingFocusTarget.current === "page-selection" &&
+      !selectAllMatching
+    ) {
+      pageSelectionCheckboxRef.current?.focus();
+      pendingFocusTarget.current = null;
+    }
+  }, [selectAllMatching]);
 
   const [tableAnnouncement, setTableAnnouncement] = useState("");
   const pendingAnnouncement = useRef(true);
@@ -369,7 +523,14 @@ export const UserFeedsTable: React.FC = () => {
     } else {
       setTableAnnouncement(`Showing ${rows.length} of ${total} feeds`);
     }
-  }, [isInitiallyLoading, isFetching, isFilteredEmpty, hasActiveFilters, rows.length, total]);
+  }, [
+    isInitiallyLoading,
+    isFetching,
+    isFilteredEmpty,
+    hasActiveFilters,
+    rows.length,
+    total,
+  ]);
 
   useEffect(() => {
     const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -389,10 +550,18 @@ export const UserFeedsTable: React.FC = () => {
   }, [isFetching, page, pageSize, setSearchParams, total]);
 
   const handleClearAllFilters = useCallback(() => {
-    onSearchClear();
-    onStatusSelect([]);
+    setSearchInput("");
+    setStatusFilters([]);
+    setSearchParams((previous) => {
+      const params = new URLSearchParams(previous);
+      params.delete("search");
+      params.delete("status");
+      params.delete("page");
+
+      return params;
+    });
     searchInputRef.current?.focus();
-  }, [onSearchClear, onStatusSelect]);
+  }, [setSearchInput, setSearchParams, setStatusFilters]);
 
   if (status === "error") {
     return <Alert status="error" title={error?.message} />;
@@ -402,6 +571,7 @@ export const UserFeedsTable: React.FC = () => {
     <Stack gap={4}>
       <Box srOnly aria-live="polite">
         <Text>{tableAnnouncement}</Text>
+        <Text>{selectionAnnouncement}</Text>
       </Box>
       {!isInitiallyLoading && (
         <TableToolbar
@@ -504,6 +674,48 @@ export const UserFeedsTable: React.FC = () => {
                   </DndContext>
                 </Table.Row>
               ))}
+              {(shouldOfferSelectAllMatching || selectAllMatching) && (
+                <Table.Row bg="bg.muted">
+                  <Table.Cell
+                    colSpan={getHeaderGroups()[0]?.headers.length ?? 1}
+                    paddingY={isCompact ? 1 : 2}
+                    paddingX={isCompact ? 3 : "24px"}
+                  >
+                    <HStack justify="space-between" flexWrap="wrap" gap={2}>
+                      {selectAllMatching ? (
+                        <>
+                          <Text fontSize="sm" fontWeight="medium">
+                            All {total.toLocaleString()} matching feeds
+                            selected.
+                          </Text>
+                          <Button
+                            ref={clearSelectionButtonRef}
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleClearSelectionWithFocus}
+                          >
+                            Clear selection
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Text fontSize="sm">
+                            All {rows.length.toLocaleString()} feeds on this
+                            page selected.
+                          </Text>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleSelectAllMatchingWithFocus}
+                          >
+                            Select all {total.toLocaleString()} matching feeds
+                          </Button>
+                        </>
+                      )}
+                    </HStack>
+                  </Table.Cell>
+                </Table.Row>
+              )}
             </Table.Header>
             <Table.Body>
               {getRowModel().rows.map((row) => (
@@ -516,7 +728,8 @@ export const UserFeedsTable: React.FC = () => {
                   }}
                 >
                   {row.getVisibleCells().map((cell) => {
-                    const isCompactUrlCell = isCompact && cell.column.id === "url";
+                    const isCompactUrlCell =
+                      isCompact && cell.column.id === "url";
 
                     return (
                       <Table.Cell
@@ -527,7 +740,10 @@ export const UserFeedsTable: React.FC = () => {
                         overflow={isCompactUrlCell ? undefined : "hidden"}
                         textOverflow={isCompactUrlCell ? undefined : "ellipsis"}
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
                       </Table.Cell>
                     );
                   })}

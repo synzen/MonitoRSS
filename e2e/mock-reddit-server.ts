@@ -189,7 +189,7 @@ const server = createServer((req, res) => {
   });
 });
 
-server.listen(MOCK_REDDIT_SERVER_PORT, () =>
+server.listen(MOCK_REDDIT_SERVER_PORT, "0.0.0.0", () =>
   console.log(
     `Mock Reddit server on http://localhost:${MOCK_REDDIT_SERVER_PORT}`,
   ),

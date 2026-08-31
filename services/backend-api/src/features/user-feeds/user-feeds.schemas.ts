@@ -3,6 +3,7 @@ import { GetFeedArticlesFilterReturnType } from "../../services/feed-handler/typ
 import {
   GetUserFeedsInputSortKey,
   UserFeedCopyableSetting,
+  UserFeedComputedStatus,
 } from "../../services/user-feeds/types";
 import { UserFeedTargetFeedSelectionType } from "../../services/feed-connections-discord-channels/types";
 import {
@@ -79,12 +80,32 @@ export const UpdateUserFeedsBodySchema = Type.Object(
     op: Type.Enum(UpdateUserFeedsOp),
     data: Type.Object(
       {
-        feeds: Type.Array(
+        feeds: Type.Optional(
+          Type.Array(
+            Type.Object(
+              { id: Type.String({ minLength: 1 }) },
+              { additionalProperties: false },
+            ),
+          ),
+        ),
+        search: Type.Optional(Type.String()),
+        filters: Type.Optional(
           Type.Object(
-            { id: Type.String({ minLength: 1 }) },
+            {
+              computedStatuses: Type.Optional(
+                Type.Array(
+                  Type.Union(
+                    Object.values(UserFeedComputedStatus).map((v) =>
+                      Type.Literal(v),
+                    ) as [ReturnType<typeof Type.Literal>, ...ReturnType<typeof Type.Literal>[]],
+                  ),
+                ),
+              ),
+            },
             { additionalProperties: false },
           ),
         ),
+        workspaceId: Type.Optional(Type.String({ minLength: 1 })),
       },
       { additionalProperties: false },
     ),

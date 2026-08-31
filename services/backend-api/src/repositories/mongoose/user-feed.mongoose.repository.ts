@@ -992,6 +992,17 @@ export class UserFeedMongooseRepository
     return results[0]?.count || 0;
   }
 
+  async findFeedIdsByFilters(input: UserFeedListingInput): Promise<string[]> {
+    const pipeline = this.buildListingPipeline(input);
+    pipeline.push({ $project: { _id: 1 } });
+
+    const results = await this.model.aggregate<{ _id: Types.ObjectId }>(
+      pipeline,
+    );
+
+    return results.map((r) => r._id.toString());
+  }
+
   async countByOwnership(discordUserId: string): Promise<number> {
     // Personal feed count only — workspace feeds (workspaceId set) count against the
     // workspace's limit, not the user's.

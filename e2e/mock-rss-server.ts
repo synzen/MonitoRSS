@@ -87,6 +87,6 @@ const server = createServer((req, res) => {
   }
 });
 
-server.listen(MOCK_RSS_SERVER_PORT, () =>
+server.listen(MOCK_RSS_SERVER_PORT, "0.0.0.0", () =>
   console.log(`Mock RSS server on http://localhost:${MOCK_RSS_SERVER_PORT}`),
 );
