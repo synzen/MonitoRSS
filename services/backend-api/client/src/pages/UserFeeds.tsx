@@ -112,6 +112,9 @@ export const UserFeeds = () => {
 
 type BulkAction = "enable" | "disable" | "delete";
 
+const formatFeedCount = (count: number) =>
+  `${count} feed${count === 1 ? "" : "s"}`;
+
 const DISCOVERY_BROWSE_HINT =
   "Browse popular feeds to get started, or paste a URL to check any website.";
 
@@ -648,7 +651,7 @@ const UserFeedsInner: React.FC = () => {
         title:
           skipped > 0
             ? `Enabled ${affected} of ${affected + skipped} feeds (${skipped} skipped).`
-            : `Successfully enabled ${affected} feeds.`,
+            : `Successfully enabled ${formatFeedCount(affected)}.`,
       });
     } catch (err) {
       createErrorAlert({
@@ -673,7 +676,7 @@ const UserFeedsInner: React.FC = () => {
         title:
           skipped > 0
             ? `Disabled ${affected} of ${affected + skipped} feeds (${skipped} skipped).`
-            : `Successfully disabled ${affected} feeds.`,
+            : `Successfully disabled ${formatFeedCount(affected)}.`,
       });
     } catch (err) {
       createErrorAlert({
@@ -693,7 +696,7 @@ const UserFeedsInner: React.FC = () => {
 
       clearSelection();
       createSuccessAlert({
-        title: `Successfully deleted ${affected} feeds.`,
+        title: `Successfully deleted ${formatFeedCount(affected)}.`,
       });
     } catch (err) {
       createErrorAlert({

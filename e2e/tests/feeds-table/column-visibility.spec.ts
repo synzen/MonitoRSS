@@ -85,18 +85,13 @@ test.describe("Column Visibility", () => {
       .locator(`[role="menuitemcheckbox"]:has-text("${columnLabel}")`)
       .first();
     await checkbox.waitFor({ state: "visible", timeout: 10000 });
-    // Toggle via Ark's own keyboard navigation rather than a pointer click.
-    // Under parallel load the open menu keeps animating/repositioning, so a
-    // pointer click lands on a moving target and the Ark checkbox item never
-    // registers the toggle. ArrowDown highlights items through Ark's focus
-    // manager (position-independent); Enter then toggles the highlighted item.
-    const index = COLUMNS.findIndex((c) => c.label === columnLabel);
-    for (let i = 0; i <= index; i += 1) {
-      await page.keyboard.press("ArrowDown");
-      await page.waitForTimeout(50);
-    }
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(500);
+    const wasChecked = await isColumnCheckedInMenu(page, columnLabel);
+    await checkbox.click();
+    await expect(checkbox).toHaveAttribute(
+      "aria-checked",
+      wasChecked ? "false" : "true",
+    );
+    await page.waitForTimeout(550);
   }
 
   function columnHeader(page: Page, columnLabel: string) {
@@ -251,15 +246,15 @@ test.describe("Column Visibility", () => {
       await page.reload();
       await page.waitForSelector("table tbody tr", { timeout: 15000 });
 
-      await expectColumnHidden(page, "URL");
-      await expectColumnHidden(page, "Refresh Rate");
-      await expectColumnVisible(page, "Status");
-
       await openColumnsMenu(page);
       expect(await isColumnCheckedInMenu(page, "URL")).toBe(false);
       expect(await isColumnCheckedInMenu(page, "Refresh Rate")).toBe(false);
       expect(await isColumnCheckedInMenu(page, "Status")).toBe(true);
       await closeColumnsMenu(page);
+
+      await expectColumnHidden(page, "URL");
+      await expectColumnHidden(page, "Refresh Rate");
+      await expectColumnVisible(page, "Status");
     } finally {
       await deleteFeed(page, feed.id).catch(() => {});
     }

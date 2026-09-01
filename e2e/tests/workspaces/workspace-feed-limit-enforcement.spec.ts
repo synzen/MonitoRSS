@@ -171,7 +171,9 @@ test.describe("Workspace feed limit enforcement", () => {
     await confirmDialog.getByRole("button", { name: "Confirm", exact: true }).click();
 
     await expect(
-      page.getByRole("alert").filter({ hasText: "Successfully enabled feeds" }),
+      page
+        .getByRole("alert")
+        .filter({ hasText: "Successfully enabled 1 feed." }),
     ).toBeVisible({ timeout: 30000 });
 
     await expect(feedRow(page, "Paused Feed").getByLabel("Ok")).toBeVisible({ timeout: 10000 });

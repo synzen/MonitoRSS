@@ -70,7 +70,7 @@ test.describe("Bulk Enable/Disable Feeds", () => {
       await expect(
         page
           .getByRole("alert")
-          .filter({ hasText: "Successfully disabled feeds" }),
+          .filter({ hasText: "Successfully disabled 2 feeds." }),
       ).toBeVisible({ timeout: 30000 });
 
       // The two selected feeds now render the manually-disabled status; the
@@ -135,7 +135,7 @@ test.describe("Bulk Enable/Disable Feeds", () => {
       await expect(
         page
           .getByRole("alert")
-          .filter({ hasText: "Successfully enabled feeds" }),
+          .filter({ hasText: "Successfully enabled 2 feeds." }),
       ).toBeVisible({ timeout: 30000 });
 
       // Both feeds are back to the OK status.
@@ -220,7 +220,7 @@ test.describe("Bulk Enable/Disable Feeds", () => {
       await expect(
         page
           .getByRole("alert")
-          .filter({ hasText: "Successfully disabled feeds" }),
+          .filter({ hasText: "Successfully disabled 1 feed." }),
       ).toBeVisible({ timeout: 30000 });
 
       // The selected feed is disabled; the unselected one is untouched.

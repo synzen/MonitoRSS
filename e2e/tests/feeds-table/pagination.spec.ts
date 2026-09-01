@@ -8,7 +8,7 @@ import {
 } from "../../helpers/workspaces-db";
 
 test.describe("Feeds Table Pagination", () => {
-  test("opens a feed beyond the first 100 results and restores its page on return", async ({
+  test("opens a feed beyond the first page and restores its page on return", async ({
     page,
   }) => {
     await page.goto("/feeds");
@@ -21,7 +21,7 @@ test.describe("Feeds Table Pagination", () => {
     const discordUserId = await getDiscordUserIdFromPage(page);
     const userId = await getUserMongoIdFromDiscordId(discordUserId);
     const prefix = `Paged Feed ${Date.now()}`;
-    const targetTitle = `${prefix} 100`;
+    const targetTitle = `${prefix} 000`;
 
     try {
       await seedPersonalFeedsInDb({
@@ -35,7 +35,10 @@ test.describe("Feeds Table Pagination", () => {
 
       await page.goto(`/feeds?search=${encodeURIComponent(prefix)}`);
       await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
-      await expect(page.getByText("1–50 of 101 feeds")).toBeVisible();
+      const topPagination = page.getByRole("navigation", {
+        name: "Feed table pagination (top)",
+      });
+      await expect(topPagination.getByText("1–50 of 101 feeds")).toBeVisible();
 
       const viewMenuButton = page.getByRole("button", {
         name: "Feed table view: Regular",
@@ -52,14 +55,10 @@ test.describe("Feeds Table Pagination", () => {
       await page.getByRole("menuitemradio", { name: "Regular rows" }).click();
       await page.waitForTimeout(600);
 
-      const topPagination = page.getByRole("navigation", {
-        name: "Feed table pagination (top)",
-      });
-
       await topPagination.getByRole("button", { name: "Next" }).click();
-      await expect(page.getByText("51–100 of 101 feeds")).toBeVisible();
+      await expect(topPagination.getByText("51–100 of 101 feeds")).toBeVisible();
       await topPagination.getByRole("button", { name: "Next" }).click();
-      await expect(page.getByText("101–101 of 101 feeds")).toBeVisible();
+      await expect(topPagination.getByText("101–101 of 101 feeds")).toBeVisible();
 
       const feedLink = page.getByRole("link", {
         name: targetTitle,
@@ -72,7 +71,7 @@ test.describe("Feeds Table Pagination", () => {
       ).toBeVisible({ timeout: 15000 });
 
       await page.goBack();
-      await expect(page.getByText("101–101 of 101 feeds")).toBeVisible({
+      await expect(topPagination.getByText("101–101 of 101 feeds")).toBeVisible({
         timeout: 15000,
       });
       await expect(

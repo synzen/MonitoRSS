@@ -84,7 +84,7 @@ test.describe("Bulk retry failed workspace feeds", () => {
 
     // The applied filter renders as a chip, and the recovering feeds come
     // through the rendered table under the Pending Retry status. Rows sort
-    // newest-first, so page one holds feeds 2 through 21; the setup checklist
+    // newest-first, so page one holds all 21 feeds; the setup checklist
     // outside the table also lists feed titles, so scope lookups to the table.
     await expect(page.getByText("Pending Retry")).toBeVisible();
 
@@ -97,7 +97,7 @@ test.describe("Bulk retry failed workspace feeds", () => {
     ).toBeVisible();
     await expect(
       page.getByLabel("Currently retrying after failed requests"),
-    ).toHaveCount(20);
+    ).toHaveCount(21);
     await expect(
       feedsTable.getByText("Not eligible", { exact: true }),
     ).toHaveCount(0);
