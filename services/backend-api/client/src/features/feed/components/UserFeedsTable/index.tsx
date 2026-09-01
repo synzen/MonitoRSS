@@ -57,26 +57,12 @@ import {
   PaginationSection,
 } from "./components";
 import { createTableColumns } from "./columns";
-import {
-  DEFAULT_PAGE_SIZE,
-  FEED_TABLE_FOCUS_KEY,
-  PAGE_SIZE_OPTIONS,
-} from "./constants";
+import { FEED_TABLE_FOCUS_KEY } from "./constants";
 
 function parsePage(value: string | null): number {
   const page = Number(value);
 
   return Number.isInteger(page) && page > 0 ? page : 1;
-}
-
-function parsePageSize(value: string | null): number {
-  const pageSize = Number(value);
-
-  return PAGE_SIZE_OPTIONS.includes(
-    pageSize as (typeof PAGE_SIZE_OPTIONS)[number],
-  )
-    ? pageSize
-    : DEFAULT_PAGE_SIZE;
 }
 
 function statusFiltersFromUrl(value: string | null): UserFeedComputedStatus[] {
@@ -179,7 +165,6 @@ export const UserFeedsTable: React.FC = () => {
   const isWorkspaceScope = !!workspaceSlug;
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parsePage(searchParams.get("page"));
-  const pageSize = parsePageSize(searchParams.get("pageSize"));
   const urlSearch = searchParams.get("search") || "";
 
   // Preferences (sorting, column visibility, column order, row density)
@@ -192,40 +177,36 @@ export const UserFeedsTable: React.FC = () => {
     setColumnOrder,
     isCompact,
     setIsCompact,
+    pageSize,
+    setPageSize,
   } = useTablePreferences();
 
   const urlStatusFilters = statusFiltersFromUrl(searchParams.get("status"));
   const activeStatusFilters = searchParams.has("status")
     ? urlStatusFilters
     : statusFilters;
-  const urlSort = searchParams.get("sort");
 
   useEffect(() => {
-    if (!urlSort) return;
-
-    const nextSorting = [
-      { id: urlSort.replace(/^-/, ""), desc: urlSort.startsWith("-") },
-    ];
-
     if (
-      sorting.length !== 1 ||
-      sorting[0].id !== nextSorting[0].id ||
-      sorting[0].desc !== nextSorting[0].desc
+      !searchParams.has("pageSize") &&
+      !searchParams.has("sort") &&
+      !searchParams.has("view")
     ) {
-      setSorting(nextSorting);
+      return;
     }
-  }, [setSorting, sorting, urlSort]);
 
-  useEffect(() => {
-    if (urlSort || !sorting[0]) return;
+    setSearchParams(
+      (previous) => {
+        const params = new URLSearchParams(previous);
+        params.delete("pageSize");
+        params.delete("sort");
+        params.delete("view");
 
-    setSearchParams((previous) => {
-      const params = new URLSearchParams(previous);
-      params.set("sort", `${sorting[0].desc ? "-" : ""}${sorting[0].id}`);
-
-      return params;
-    });
-  }, [setSearchParams, sorting, urlSort]);
+        return params;
+      },
+      { replace: true },
+    );
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!searchParams.has("status")) return;
@@ -263,8 +244,6 @@ export const UserFeedsTable: React.FC = () => {
     setMatchingTotal(total);
   }, [total, setMatchingTotal]);
 
-  const urlSortKey = searchParams.get("sort") || "";
-
   useEffect(() => {
     if (selectAllMatching) {
       setSelectAllMatching(false);
@@ -276,7 +255,7 @@ export const UserFeedsTable: React.FC = () => {
     if (Object.keys(rowSelection).length > 0) {
       setRowSelection({});
     }
-  }, [urlSearch, activeStatusFilters.join(","), workspaceId, urlSortKey]);
+  }, [urlSearch, activeStatusFilters.join(","), workspaceId, sorting]);
 
   // Search state
   const {
@@ -409,17 +388,7 @@ export const UserFeedsTable: React.FC = () => {
     },
     onSortingChange: (updater) => {
       const next = typeof updater === "function" ? updater(sorting) : updater;
-      const sort = next[0] ? `${next[0].desc ? "-" : ""}${next[0].id}` : "";
-
       setSorting(next);
-      setSearchParams((previous) => {
-        const params = new URLSearchParams(previous);
-        if (sort) params.set("sort", sort);
-        else params.delete("sort");
-        params.delete("page");
-
-        return params;
-      });
     },
     onColumnVisibilityChange: setColumnVisibility,
     onColumnOrderChange: setColumnOrder,
@@ -631,9 +600,10 @@ export const UserFeedsTable: React.FC = () => {
             });
           }}
           onPageSizeChange={(nextPageSize) => {
+            setPageSize(nextPageSize);
             setSearchParams((previous) => {
               const params = new URLSearchParams(previous);
-              params.set("pageSize", String(nextPageSize));
+              params.delete("pageSize");
               params.delete("page");
 
               return params;
@@ -770,9 +740,10 @@ export const UserFeedsTable: React.FC = () => {
             });
           }}
           onPageSizeChange={(nextPageSize) => {
+            setPageSize(nextPageSize);
             setSearchParams((previous) => {
               const params = new URLSearchParams(previous);
-              params.set("pageSize", String(nextPageSize));
+              params.delete("pageSize");
               params.delete("page");
 
               return params;

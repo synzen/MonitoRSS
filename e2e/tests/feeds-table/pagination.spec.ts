@@ -33,8 +33,11 @@ test.describe("Feeds Table Pagination", () => {
         })),
       });
 
-      await page.goto(`/feeds?search=${encodeURIComponent(prefix)}`);
+      await page.goto(
+        `/feeds?search=${encodeURIComponent(prefix)}&sort=title&view=compact&pageSize=100`,
+      );
       await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
+      await expect(page).not.toHaveURL(/sort=|view=|pageSize=/);
       const topPagination = page.getByRole("navigation", {
         name: "Feed table pagination (top)",
       });
@@ -55,8 +58,15 @@ test.describe("Feeds Table Pagination", () => {
       await page.getByRole("menuitemradio", { name: "Regular rows" }).click();
       await page.waitForTimeout(600);
 
-      await topPagination.getByRole("button", { name: "Next" }).click();
-      await expect(topPagination.getByText("51–100 of 101 feeds")).toBeVisible();
+      await topPagination.getByLabel("Feeds per page").selectOption("100");
+      await page.waitForTimeout(600);
+      await expect(topPagination.getByText("1–100 of 101 feeds")).toBeVisible();
+      await expect(page).not.toHaveURL(/view=|pageSize=/);
+      await page.reload();
+      await expect(topPagination.getByText("1–100 of 101 feeds")).toBeVisible({
+        timeout: 15000,
+      });
+
       await topPagination.getByRole("button", { name: "Next" }).click();
       await expect(topPagination.getByText("101–101 of 101 feeds")).toBeVisible();
 

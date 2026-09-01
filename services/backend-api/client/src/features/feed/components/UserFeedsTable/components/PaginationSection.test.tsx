@@ -26,6 +26,7 @@ describe("PaginationSection", () => {
     );
 
     expect(screen.getByText("101–150 of 1,100 feeds")).toBeInTheDocument();
+    expect(screen.getByText("Page 3 of 22")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Previous page" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Next page" })).toBeEnabled();
 
@@ -34,7 +35,10 @@ describe("PaginationSection", () => {
 
     expect(onPageChange).toHaveBeenCalledWith(22);
     expect(onPageSizeChange).toHaveBeenCalledWith(100);
-    expect(screen.getByRole("button", { name: "Page 3" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Page 3" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("disables navigation at the page boundaries", () => {
@@ -51,7 +55,9 @@ describe("PaginationSection", () => {
       </ChakraProvider>,
     );
 
-    expect(screen.getByRole("button", { name: "Previous page" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Previous page" }),
+    ).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next page" })).toBeDisabled();
   });
 });

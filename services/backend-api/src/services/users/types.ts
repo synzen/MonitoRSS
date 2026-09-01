@@ -70,6 +70,7 @@ export interface UpdateUserPreferencesInput {
   feedListColumnOrder?: IUserPreferences["feedListColumnOrder"] | null;
   feedListStatusFilters?: IUserPreferences["feedListStatusFilters"] | null;
   feedListCompactView?: boolean | null;
+  feedListPageSize?: 50 | 100 | null;
   lastActiveWorkspaceSlug?: string | null;
 }
 

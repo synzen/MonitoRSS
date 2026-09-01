@@ -9,6 +9,7 @@ export interface TablePreferences {
   columnVisibility: VisibilityState;
   columnOrder: string[];
   isCompact: boolean;
+  pageSize: number;
 }
 
 export interface TablePreferencesHandlers {
@@ -16,6 +17,7 @@ export interface TablePreferencesHandlers {
   setColumnVisibility: Dispatch<SetStateAction<VisibilityState>>;
   setColumnOrder: Dispatch<SetStateAction<string[]>>;
   setIsCompact: Dispatch<SetStateAction<boolean>>;
+  setPageSize: Dispatch<SetStateAction<number>>;
 }
 
 export interface TableSearchState {

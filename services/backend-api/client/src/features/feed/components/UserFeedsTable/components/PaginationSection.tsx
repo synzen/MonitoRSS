@@ -1,6 +1,16 @@
-import { Box, Button, Flex, HStack, Text, VisuallyHidden } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Grid,
+  HStack,
+  Text,
+  VisuallyHidden,
+} from "@chakra-ui/react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa6";
-import { NativeSelectField, NativeSelectRoot } from "@/components/ui/native-select";
+import {
+  NativeSelectField,
+  NativeSelectRoot,
+} from "@/components/ui/native-select";
 import { PAGE_SIZE_OPTIONS } from "../constants";
 
 interface PaginationSectionProps {
@@ -17,9 +27,9 @@ interface PaginationSectionProps {
 type PageItem = number | `ellipsis-before-${number}`;
 
 function getVisiblePageItems(page: number, pageCount: number): PageItem[] {
-  const pageNumbers = Array.from(new Set([1, page - 1, page, page + 1, pageCount])).filter(
-    (pageNumber) => pageNumber >= 1 && pageNumber <= pageCount,
-  );
+  const pageNumbers = Array.from(
+    new Set([1, page - 1, page, page + 1, pageCount]),
+  ).filter((pageNumber) => pageNumber >= 1 && pageNumber <= pageCount);
   const items: PageItem[] = [];
 
   pageNumbers
@@ -52,87 +62,112 @@ export const PaginationSection: React.FC<PaginationSectionProps> = ({
 
   return (
     <Box as="nav" aria-label={ariaLabel} mb={marginBottom}>
-      <Flex
-        align="center"
-        direction={{ base: "column", md: "row" }}
-        gap={4}
-        justify="space-between"
+      <Grid
+        alignItems="center"
+        gap={{ base: 3, md: 4 }}
+        gridTemplateAreas={{
+          base: '"summary rows" "pager pager"',
+          md: '"summary pager rows"',
+        }}
+        gridTemplateColumns={{
+          base: "minmax(0, 1fr) auto",
+          md: "auto minmax(0, 1fr) auto",
+        }}
       >
-        <Box>
+        <Box gridArea="summary">
           <VisuallyHidden aria-live="polite">
-            Showing feeds {firstResult.toLocaleString()} through {lastResult.toLocaleString()} of{" "}
-            {totalCount.toLocaleString()}.
+            Showing feeds {firstResult.toLocaleString()} through{" "}
+            {lastResult.toLocaleString()} of {totalCount.toLocaleString()}.
           </VisuallyHidden>
-          <Text>
+          <Text color="fg.muted" fontSize="sm">
             {firstResult.toLocaleString()}–{lastResult.toLocaleString()} of{" "}
             {totalCount.toLocaleString()} feeds
           </Text>
         </Box>
-        <HStack flexWrap="wrap" justify={{ base: "flex-start", md: "flex-end" }}>
-          <HStack as="ul" listStyleType="none">
-            <Box as="li">
-              <Button
-                aria-label="Previous page"
-                onClick={() => onPageChange(page - 1)}
-                disabled={page <= 1 || isFetching}
-                size="sm"
-                variant="outline"
+        <HStack
+          as="ul"
+          gap={1}
+          gridArea="pager"
+          justify={{ base: "space-between", md: "flex-end" }}
+          listStyleType="none"
+          width={{ base: "100%", md: "auto" }}
+        >
+          <Box as="li" flexShrink={0}>
+            <Button
+              aria-label="Previous page"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1 || isFetching}
+              size="sm"
+              variant="ghost"
+            >
+              <FaChevronLeft aria-hidden="true" />
+              Previous
+            </Button>
+          </Box>
+          <Box as="li" display={{ base: "block", sm: "none" }}>
+            <Text color="fg.muted" fontSize="sm" whiteSpace="nowrap">
+              Page {page} of {pageCount}
+            </Text>
+          </Box>
+          {pageItems.map((item) =>
+            typeof item === "string" ? (
+              <Box
+                as="li"
+                display={{ base: "none", sm: "block" }}
+                key={item}
+                aria-label="More pages"
+                px={1}
               >
-                <FaChevronLeft aria-hidden="true" />
-                Previous
-              </Button>
-            </Box>
-            {pageItems.map((item) =>
-              typeof item === "string" ? (
-                <Box as="li" key={item} aria-label="More pages">
-                  <Text>…</Text>
-                </Box>
-              ) : (
-                <Box as="li" key={item}>
-                  <Button
-                    aria-current={item === page ? "page" : undefined}
-                    aria-label={`Page ${item}`}
-                    disabled={isFetching}
-                    onClick={() => onPageChange(item)}
-                    size="sm"
-                    variant={item === page ? "solid" : "outline"}
-                  >
-                    {item}
-                  </Button>
-                </Box>
-              ),
-            )}
-            <Box as="li">
-              <Button
-                aria-label="Next page"
-                onClick={() => onPageChange(page + 1)}
-                disabled={page >= pageCount || isFetching}
-                size="sm"
-                variant="outline"
-              >
-                Next
-                <FaChevronRight aria-hidden="true" />
-              </Button>
-            </Box>
-          </HStack>
-          <HStack>
-            <Text>Rows</Text>
-            <NativeSelectRoot size="sm" width="auto">
-              <NativeSelectField
-                aria-label="Feeds per page"
-                value={String(pageSize)}
-                onChange={(event) => onPageSizeChange(Number(event.target.value))}
-              >
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </NativeSelectField>
-            </NativeSelectRoot>
-          </HStack>
+                <Text color="fg.muted">…</Text>
+              </Box>
+            ) : (
+              <Box as="li" display={{ base: "none", sm: "block" }} key={item}>
+                <Button
+                  aria-current={item === page ? "page" : undefined}
+                  aria-label={`Page ${item}`}
+                  disabled={isFetching}
+                  onClick={() => onPageChange(item)}
+                  size="sm"
+                  variant={item === page ? "subtle" : "ghost"}
+                  colorPalette={item === page ? "brand" : undefined}
+                >
+                  {item}
+                </Button>
+              </Box>
+            ),
+          )}
+          <Box as="li" flexShrink={0}>
+            <Button
+              aria-label="Next page"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= pageCount || isFetching}
+              size="sm"
+              variant="ghost"
+            >
+              Next
+              <FaChevronRight aria-hidden="true" />
+            </Button>
+          </Box>
         </HStack>
-      </Flex>
+        <HStack gap={2} gridArea="rows">
+          <Text color="fg.muted" fontSize="sm">
+            Rows
+          </Text>
+          <NativeSelectRoot size="sm" width="auto">
+            <NativeSelectField
+              aria-label="Feeds per page"
+              value={String(pageSize)}
+              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+            >
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </NativeSelectField>
+          </NativeSelectRoot>
+        </HStack>
+      </Grid>
     </Box>
   );
 };
