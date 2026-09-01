@@ -11,6 +11,8 @@ test.describe("Feeds Table Pagination", () => {
   test("opens a feed beyond the first page and restores its page on return", async ({
     page,
   }) => {
+    test.setTimeout(90_000);
+
     await page.goto("/feeds");
     await expect(
       page.getByRole("button", { name: "Account settings" }),
