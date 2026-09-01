@@ -15,6 +15,7 @@ import {
   FaXmark,
   FaMagnifyingGlass,
   FaFilter,
+  FaList,
   FaTableColumns,
 } from "react-icons/fa6";
 import { useTranslation } from "react-i18next";
@@ -22,7 +23,14 @@ import { VisibilityState } from "@tanstack/react-table";
 import { UserFeedComputedStatus } from "../../../types";
 import { UserFeedStatusTag } from "../UserFeedStatusTag";
 import { SHARED_WITH_ME_COLUMN_ID, STATUS_FILTERS, TOGGLEABLE_COLUMNS } from "../constants";
-import { MenuRoot, MenuTrigger, MenuContent, MenuCheckboxItem } from "@/components/ui/menu";
+import {
+  MenuRoot,
+  MenuTrigger,
+  MenuContent,
+  MenuCheckboxItem,
+  MenuRadioItem,
+  MenuRadioItemGroup,
+} from "@/components/ui/menu";
 
 interface TableToolbarProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
@@ -38,6 +46,8 @@ interface TableToolbarProps {
   onColumnVisibilityChange: (
     visibility: VisibilityState | ((prev: VisibilityState) => VisibilityState),
   ) => void;
+  isCompact: boolean;
+  onCompactChange: (isCompact: boolean) => void;
   /** Drop the "Shared with Me" column toggle (it has no meaning in workspace scope). */
   excludeSharedWithMe?: boolean;
 }
@@ -54,6 +64,8 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   onStatusSelect,
   columnVisibility,
   onColumnVisibilityChange,
+  isCompact,
+  onCompactChange,
   excludeSharedWithMe,
 }) => {
   const { t } = useTranslation();
@@ -130,6 +142,26 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             <FaMagnifyingGlass />
             Search
           </Button>
+        </Flex>
+        <Flex>
+          <MenuRoot>
+            <MenuTrigger asChild>
+              <Button aria-label={`Feed table view: ${isCompact ? "Compact" : "Regular"}`}>
+                <FaList />
+                {`View: ${isCompact ? "Compact" : "Regular"}`}
+                <FaChevronDown />
+              </Button>
+            </MenuTrigger>
+            <MenuContent>
+              <MenuRadioItemGroup
+                value={isCompact ? "compact" : "regular"}
+                onValueChange={(event) => onCompactChange(event.value === "compact")}
+              >
+                <MenuRadioItem value="regular">Regular rows</MenuRadioItem>
+                <MenuRadioItem value="compact">Compact rows</MenuRadioItem>
+              </MenuRadioItemGroup>
+            </MenuContent>
+          </MenuRoot>
         </Flex>
         <Flex>
           <MenuRoot closeOnSelect={false}>

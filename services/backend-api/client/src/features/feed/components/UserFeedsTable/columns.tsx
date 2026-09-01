@@ -1,7 +1,20 @@
-import { Button, Flex, Highlight, Link as ChakraLink, Stack, Text } from "@chakra-ui/react";
+import {
+  Button,
+  Flex,
+  Highlight,
+  Link as ChakraLink,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
 import { FaCheck, FaChevronRight } from "react-icons/fa6";
 import { Link as RouterLink } from "react-router-dom";
-import { CellContext, ColumnDef, HeaderContext, createColumnHelper } from "@tanstack/react-table";
+import type { RefObject } from "react";
+import {
+  CellContext,
+  ColumnDef,
+  HeaderContext,
+  createColumnHelper,
+} from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RowData } from "./types";
@@ -10,9 +23,13 @@ import { UserFeedStatusTag } from "./UserFeedStatusTag";
 import { DATE_FORMAT, pages } from "../../../../constants";
 import type { RouteScope } from "../../../../constants";
 import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
-import { SHARED_WITH_ME_COLUMN_ID } from "./constants";
+import { FEED_TABLE_FOCUS_KEY, SHARED_WITH_ME_COLUMN_ID } from "./constants";
 
 const columnHelper = createColumnHelper<RowData>();
+
+function rememberFeedForReturn(feedId: string) {
+  sessionStorage.setItem(FEED_TABLE_FOCUS_KEY, feedId);
+}
 
 interface ColumnConfig {
   id: string;
@@ -21,6 +38,7 @@ interface ColumnConfig {
     info: CellContext<RowData, unknown>,
     search: string,
     scope?: RouteScope,
+    isCompact?: boolean,
   ) => React.ReactNode;
   accessor?: keyof RowData | ((row: RowData) => unknown);
   sortable?: boolean;
@@ -31,7 +49,12 @@ const columnConfigs: ColumnConfig[] = [
     id: "computedStatus",
     header: "Status",
     accessor: "computedStatus",
-    cell: (info) => <UserFeedStatusTag status={info.getValue() as UserFeedComputedStatus} />,
+    cell: (info, _search, _scope, isCompact) => (
+      <UserFeedStatusTag
+        status={info.getValue() as UserFeedComputedStatus}
+        isCompact={isCompact}
+      />
+    ),
     sortable: true,
   },
   {
@@ -44,15 +67,27 @@ const columnConfigs: ColumnConfig[] = [
 
       if (!search) {
         return (
-          <ChakraLink asChild color="text.link" _hover={{ textDecoration: "underline" }}>
-            <RouterLink to={pages.userFeed(feedId, { scope })}>{value}</RouterLink>
+          <ChakraLink
+            asChild
+            color="text.link"
+            _hover={{ textDecoration: "underline" }}
+          >
+            <RouterLink
+              to={pages.userFeed(feedId, { scope })}
+              onClick={() => rememberFeedForReturn(feedId)}
+            >
+              {value}
+            </RouterLink>
           </ChakraLink>
         );
       }
 
       return (
         <ChakraLink asChild _hover={{ textDecoration: "underline" }}>
-          <RouterLink to={pages.userFeed(feedId, { scope })}>
+          <RouterLink
+            to={pages.userFeed(feedId, { scope })}
+            onClick={() => rememberFeedForReturn(feedId)}
+          >
             <Highlight query={search} styles={{ bg: "orange.100" }}>
               {value}
             </Highlight>
@@ -66,7 +101,7 @@ const columnConfigs: ColumnConfig[] = [
     id: "url",
     header: "URL",
     accessor: "url",
-    cell: (info, search) => {
+    cell: (info, search, _scope, isCompact) => {
       const value = info.getValue() as string;
       const { inputUrl } = info.row.original;
       const urlIsDifferentFromInput = inputUrl !== value;
@@ -82,12 +117,12 @@ const columnConfigs: ColumnConfig[] = [
               color="text.link"
               title={inputUrl || value}
               onClick={(e) => e.stopPropagation()}
-              overflow="hidden"
-              textOverflow="ellipsis"
+              overflow={isCompact ? undefined : "hidden"}
+              textOverflow={isCompact ? undefined : "ellipsis"}
             >
               {inputUrl || value}
             </ChakraLink>
-            {urlIsDifferentFromInput && (
+            {!isCompact && urlIsDifferentFromInput && (
               <Text
                 color="fg.muted"
                 fontSize="sm"
@@ -115,7 +150,12 @@ const columnConfigs: ColumnConfig[] = [
       }
 
       return (
-        <ChakraLink as="a" target="_blank" href={value} _hover={{ textDecoration: "underline" }}>
+        <ChakraLink
+          as="a"
+          target="_blank"
+          href={value}
+          _hover={{ textDecoration: "underline" }}
+        >
           <Highlight query={search} styles={{ bg: "orange.100" }}>
             {value}
           </Highlight>
@@ -152,87 +192,161 @@ const columnConfigs: ColumnConfig[] = [
     id: SHARED_WITH_ME_COLUMN_ID,
     header: "Shared with Me",
     accessor: "ownedByUser",
-    cell: (info) => {
+    cell: (info, _search, _scope, isCompact) => {
       const isOwnedByCurrentUser = info.getValue() as boolean;
 
-      return isOwnedByCurrentUser ? null : <FaCheck />;
+      return isOwnedByCurrentUser ? null : (
+        <FaCheck size={isCompact ? 12 : 16} />
+      );
     },
     sortable: true,
   },
 ];
 
-function createSelectColumn(): ColumnDef<RowData> {
+function createSelectColumn(
+  isCompact?: boolean,
+  selectAllMatching?: boolean,
+  onExitMatching?: () => void,
+  headerCheckboxRef?: RefObject<HTMLInputElement>,
+): ColumnDef<RowData> {
   return columnHelper.display({
     id: "select",
-    header: ({ table }: HeaderContext<RowData, unknown>) => (
-      <Flex justifyContent="center" alignItems="center" width="100%">
-        <Checkbox
+    header: ({ table }: HeaderContext<RowData, unknown>) => {
+      let checked: boolean | "indeterminate" = table.getIsAllRowsSelected();
+      if (table.getIsSomeRowsSelected()) checked = "indeterminate";
+      if (selectAllMatching) checked = true;
+
+      return (
+        <Flex justifyContent="center" alignItems="center" width="100%">
+          <Checkbox
+            ref={headerCheckboxRef}
+            alignItems="center"
+            width="min-content"
+            checked={checked}
+            onCheckedChange={(details) => {
+              if (selectAllMatching && !details.checked) {
+                onExitMatching?.();
+              }
+
+              table.toggleAllRowsSelected(!!details.checked);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            cursor="pointer"
+            aria-label="Check all currently loaded feeds for bulk actions"
+          />
+        </Flex>
+      );
+    },
+    cell: ({ row }) => {
+      let checked: boolean | "indeterminate" = row.getIsSelected();
+      if (row.getIsSomeSelected()) checked = "indeterminate";
+      if (selectAllMatching) checked = true;
+
+      return (
+        <Flex
           alignItems="center"
-          width="min-content"
-          checked={table.getIsSomeRowsSelected() ? "indeterminate" : table.getIsAllRowsSelected()}
-          onCheckedChange={(details) => {
-            table.toggleAllRowsSelected(!!details.checked);
-          }}
+          justifyContent="center"
           onClick={(e) => e.stopPropagation()}
-          cursor="pointer"
-          aria-label="Check all currently loaded feeds for bulk actions"
-        />
-      </Flex>
-    ),
-    cell: ({ row }) => (
-      <Flex alignItems="center" justifyContent="center" onClick={(e) => e.stopPropagation()}>
-        <Checkbox
-          display="flex"
-          alignItems="center"
-          checked={row.getIsSomeSelected() ? "indeterminate" : row.getIsSelected()}
-          aria-disabled={!row.getCanSelect()}
-          onCheckedChange={(details) => {
-            if (!row.getCanSelect()) return;
-            row.toggleSelected(!!details.checked);
-          }}
-          padding={3.5}
-          cursor="pointer"
-          css={{
-            _hover: {
-              background: "whiteAlpha.300",
-              borderRadius: "full",
-            },
-          }}
-          aria-label={`Check feed ${row.original.title} for bulk actions`}
-        />
-      </Flex>
-    ),
+        >
+          <Checkbox
+            display="flex"
+            alignItems="center"
+            checked={checked}
+            aria-disabled={!row.getCanSelect()}
+            onCheckedChange={(details) => {
+              if (!row.getCanSelect()) return;
+
+              if (selectAllMatching && !details.checked) {
+                onExitMatching?.();
+              }
+
+              row.toggleSelected(!!details.checked);
+            }}
+            padding={isCompact ? 2 : 3.5}
+            cursor="pointer"
+            css={{
+              _hover: {
+                background: "whiteAlpha.300",
+                borderRadius: "full",
+              },
+            }}
+            aria-label={`Check feed ${row.original.title} for bulk actions`}
+          />
+        </Flex>
+      );
+    },
   });
 }
 
-function createConfigureColumn(scope?: RouteScope): ColumnDef<RowData> {
+function createConfigureColumn(
+  scope?: RouteScope,
+  isCompact?: boolean,
+): ColumnDef<RowData> {
   return columnHelper.display({
     id: "configure",
     header: () => null,
-    cell: ({ row }) => (
-      <Button
-        asChild
-        role="link"
-        variant="ghost"
-        size="sm"
-        aria-label={`Configure ${row.original.title}`}
-      >
-        <RouterLink to={pages.userFeed(row.original.id, { scope })}>
+    cell: ({ row }) => {
+      const configureLink = (
+        <RouterLink
+          to={pages.userFeed(row.original.id, { scope })}
+          onClick={() => rememberFeedForReturn(row.original.id)}
+        >
           Configure
-          <FaChevronRight aria-hidden="true" />
+          <FaChevronRight
+            aria-hidden="true"
+            size={isCompact ? 10 : undefined}
+          />
         </RouterLink>
-      </Button>
-    ),
+      );
+
+      if (isCompact) {
+        return (
+          <ChakraLink
+            asChild
+            color="text.link"
+            fontSize="sm"
+            aria-label={`Configure ${row.original.title}`}
+            _hover={{ textDecoration: "underline" }}
+          >
+            {configureLink}
+          </ChakraLink>
+        );
+      }
+
+      return (
+        <Button
+          asChild
+          role="link"
+          variant="ghost"
+          size="sm"
+          color="text.link"
+          aria-label={`Configure ${row.original.title}`}
+        >
+          {configureLink}
+        </Button>
+      );
+    },
   });
 }
 
 export function createTableColumns(
   search: string,
   scope?: RouteScope,
-  options?: { excludeSharedWithMe?: boolean },
+  options?: {
+    excludeSharedWithMe?: boolean;
+    isCompact?: boolean;
+    selectAllMatching?: boolean;
+    onExitMatching?: () => void;
+    headerCheckboxRef?: RefObject<HTMLInputElement>;
+  },
 ): ColumnDef<RowData>[] {
-  const selectColumn = createSelectColumn();
-  const configureColumn = createConfigureColumn(scope);
+  const selectColumn = createSelectColumn(
+    options?.isCompact,
+    options?.selectAllMatching,
+    options?.onExitMatching,
+    options?.headerCheckboxRef,
+  );
+  const configureColumn = createConfigureColumn(scope, options?.isCompact);
 
   const visibleConfigs = options?.excludeSharedWithMe
     ? columnConfigs.filter((config) => config.id !== SHARED_WITH_ME_COLUMN_ID)
@@ -243,14 +357,26 @@ export function createTableColumns(
       return columnHelper.accessor(config.accessor, {
         id: config.id,
         header: () => <span>{config.header}</span>,
-        cell: (info) => config.cell(info as CellContext<RowData, unknown>, search, scope),
+        cell: (info) =>
+          config.cell(
+            info as CellContext<RowData, unknown>,
+            search,
+            scope,
+            options?.isCompact,
+          ),
       });
     }
 
     return columnHelper.accessor(config.accessor as keyof RowData, {
       id: config.id,
       header: () => <span>{config.header}</span>,
-      cell: (info) => config.cell(info as CellContext<RowData, unknown>, search, scope),
+      cell: (info) =>
+        config.cell(
+          info as CellContext<RowData, unknown>,
+          search,
+          scope,
+          options?.isCompact,
+        ),
     });
   }) as ColumnDef<RowData>[];
 

@@ -6,17 +6,24 @@ import {
   DEFAULT_COLUMN_VISIBILITY,
   FIXED_COLUMNS,
   PREFERENCE_DEBOUNCE_MS,
+  DEFAULT_PAGE_SIZE,
+  PAGE_SIZE_OPTIONS,
   TOGGLEABLE_COLUMNS,
 } from "../constants";
 import { TablePreferences, TablePreferencesHandlers } from "../types";
 
-export function useTablePreferences(): TablePreferences & TablePreferencesHandlers {
+export function useTablePreferences(): TablePreferences &
+  TablePreferencesHandlers {
   const { data: userMe } = useUserMe();
   const { mutateAsync: updateUser } = useUpdateUserMe();
 
   const savedSortPreference = userMe?.result?.preferences?.feedListSort;
-  const savedColumnVisibility = userMe?.result?.preferences?.feedListColumnVisibility;
-  const savedColumnOrder = userMe?.result?.preferences?.feedListColumnOrder?.columns;
+  const savedColumnVisibility =
+    userMe?.result?.preferences?.feedListColumnVisibility;
+  const savedColumnOrder =
+    userMe?.result?.preferences?.feedListColumnOrder?.columns;
+  const savedCompactView = userMe?.result?.preferences?.feedListCompactView;
+  const savedPageSize = userMe?.result?.preferences?.feedListPageSize;
 
   // Initialization refs to prevent re-initialization after mount
   const hasInitializedSorting = useRef(false);
@@ -26,15 +33,21 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
   // Sorting state
   const [sorting, setSorting] = useState<SortingState>(() => {
     if (savedSortPreference) {
-      return [{ id: savedSortPreference.key, desc: savedSortPreference.direction === "desc" }];
+      return [
+        {
+          id: savedSortPreference.key,
+          desc: savedSortPreference.direction === "desc",
+        },
+      ];
     }
 
     return [];
   });
 
   // Column visibility state
-  const [columnVisibility, setColumnVisibility] =
-    useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    DEFAULT_COLUMN_VISIBILITY,
+  );
 
   // Column order state
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
@@ -42,17 +55,33 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
       const isFixed = (col: string) =>
         FIXED_COLUMNS.includes(col as (typeof FIXED_COLUMNS)[number]);
 
-      return ["select", ...savedColumnOrder.filter((col) => !isFixed(col)), "configure"];
+      return [
+        "select",
+        ...savedColumnOrder.filter((col) => !isFixed(col)),
+        "configure",
+      ];
     }
 
     return DEFAULT_COLUMN_ORDER;
   });
 
+  const [isCompact, setIsCompact] = useState(Boolean(savedCompactView));
+  const [hasLoadedCompactPreference, setHasLoadedCompactPreference] =
+    useState(false);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [hasLoadedPageSizePreference, setHasLoadedPageSizePreference] =
+    useState(false);
+
   // Initialize sorting from saved preference (only on first load)
   useEffect(() => {
     if (savedSortPreference && !hasInitializedSorting.current) {
       hasInitializedSorting.current = true;
-      setSorting([{ id: savedSortPreference.key, desc: savedSortPreference.direction === "desc" }]);
+      setSorting([
+        {
+          id: savedSortPreference.key,
+          desc: savedSortPreference.direction === "desc",
+        },
+      ]);
     }
   }, [savedSortPreference?.key, savedSortPreference?.direction]);
 
@@ -60,7 +89,10 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       const newPreference = sorting[0]
-        ? { key: sorting[0].id, direction: (sorting[0].desc ? "desc" : "asc") as "asc" | "desc" }
+        ? {
+            key: sorting[0].id,
+            direction: (sorting[0].desc ? "desc" : "asc") as "asc" | "desc",
+          }
         : null;
 
       const currentKey = savedSortPreference?.key;
@@ -96,7 +128,9 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
   // Save column visibility preference when it changes (debounced)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      const visibleCount = TOGGLEABLE_COLUMNS.filter(({ id }) => columnVisibility[id]).length;
+      const visibleCount = TOGGLEABLE_COLUMNS.filter(
+        ({ id }) => columnVisibility[id],
+      ).length;
 
       if (visibleCount === 0) {
         return;
@@ -104,7 +138,8 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
 
       const hasChanges = TOGGLEABLE_COLUMNS.some(
         ({ id }) =>
-          columnVisibility[id] !== (savedColumnVisibility?.[id] ?? DEFAULT_COLUMN_VISIBILITY[id]),
+          columnVisibility[id] !==
+          (savedColumnVisibility?.[id] ?? DEFAULT_COLUMN_VISIBILITY[id]),
       );
 
       if (hasChanges) {
@@ -129,14 +164,84 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
 
   // Initialize column order from saved preference (only on first load)
   useEffect(() => {
-    if (savedColumnOrder && savedColumnOrder.length > 0 && !hasInitializedColumnOrder.current) {
+    if (
+      savedColumnOrder &&
+      savedColumnOrder.length > 0 &&
+      !hasInitializedColumnOrder.current
+    ) {
       hasInitializedColumnOrder.current = true;
       const isFixed = (col: string) =>
         FIXED_COLUMNS.includes(col as (typeof FIXED_COLUMNS)[number]);
 
-      setColumnOrder(["select", ...savedColumnOrder.filter((col) => !isFixed(col)), "configure"]);
+      setColumnOrder([
+        "select",
+        ...savedColumnOrder.filter((col) => !isFixed(col)),
+        "configure",
+      ]);
     }
   }, [savedColumnOrder]);
+
+  useEffect(() => {
+    if (!userMe || hasLoadedCompactPreference) return;
+
+    setIsCompact(Boolean(savedCompactView));
+    setHasLoadedCompactPreference(true);
+  }, [hasLoadedCompactPreference, savedCompactView, userMe]);
+
+  useEffect(() => {
+    if (
+      !hasLoadedCompactPreference ||
+      isCompact === Boolean(savedCompactView)
+    ) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      updateUser({
+        details: {
+          preferences: {
+            feedListCompactView: isCompact,
+          },
+        },
+      });
+    }, PREFERENCE_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [hasLoadedCompactPreference, isCompact, savedCompactView, updateUser]);
+
+  useEffect(() => {
+    if (!userMe || hasLoadedPageSizePreference) return;
+
+    setPageSize(
+      PAGE_SIZE_OPTIONS.includes(
+        savedPageSize as (typeof PAGE_SIZE_OPTIONS)[number],
+      )
+        ? (savedPageSize as (typeof PAGE_SIZE_OPTIONS)[number])
+        : DEFAULT_PAGE_SIZE,
+    );
+    setHasLoadedPageSizePreference(true);
+  }, [hasLoadedPageSizePreference, savedPageSize, userMe]);
+
+  useEffect(() => {
+    if (
+      !hasLoadedPageSizePreference ||
+      pageSize === (savedPageSize ?? DEFAULT_PAGE_SIZE)
+    ) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      updateUser({
+        details: {
+          preferences: {
+            feedListPageSize: pageSize as (typeof PAGE_SIZE_OPTIONS)[number],
+          },
+        },
+      });
+    }, PREFERENCE_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [hasLoadedPageSizePreference, pageSize, savedPageSize, updateUser]);
 
   // Save column order preference when it changes (debounced)
   useEffect(() => {
@@ -173,5 +278,9 @@ export function useTablePreferences(): TablePreferences & TablePreferencesHandle
     setColumnVisibility,
     columnOrder,
     setColumnOrder,
+    isCompact,
+    setIsCompact,
+    pageSize,
+    setPageSize,
   };
 }

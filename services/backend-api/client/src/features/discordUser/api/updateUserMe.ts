@@ -27,6 +27,8 @@ export interface UpdateUserMeInput {
       feedListStatusFilters?: {
         statuses: string[];
       };
+      feedListCompactView?: boolean;
+      feedListPageSize?: 50 | 100;
       lastActiveWorkspaceSlug?: string | null;
     };
   };
@@ -38,7 +40,9 @@ const UpdateUserMeOutputSchema = object({
 
 export type UpdateUserMeOutput = InferType<typeof UpdateUserMeOutputSchema>;
 
-export const updateUserMe = async ({ details }: UpdateUserMeInput): Promise<UpdateUserMeOutput> => {
+export const updateUserMe = async ({
+  details,
+}: UpdateUserMeInput): Promise<UpdateUserMeOutput> => {
   const res = await fetchRest("/api/v1/users/@me", {
     requestOptions: {
       method: "PATCH",

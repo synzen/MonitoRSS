@@ -158,9 +158,12 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       },
     });
 
-    const response = await owner.fetch("/api/v1/user-feeds?limit=100&offset=0", {
-      method: "GET",
-    });
+    const response = await owner.fetch(
+      "/api/v1/user-feeds?limit=100&offset=0",
+      {
+        method: "GET",
+      },
+    );
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as GetUserFeedsResponse;
@@ -190,9 +193,12 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       },
     });
 
-    const response = await owner.fetch("/api/v1/user-feeds?limit=100&offset=0", {
-      method: "GET",
-    });
+    const response = await owner.fetch(
+      "/api/v1/user-feeds?limit=100&offset=0",
+      {
+        method: "GET",
+      },
+    );
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as GetUserFeedsResponse;
@@ -231,7 +237,9 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       },
     });
 
-    const createdFeed = await ctx.container.userFeedRepository.findById(feed.id);
+    const createdFeed = await ctx.container.userFeedRepository.findById(
+      feed.id,
+    );
     const [firstConnection, secondConnection] =
       createdFeed!.connections.discordChannels;
 
@@ -262,9 +270,12 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       },
     );
 
-    const response = await owner.fetch("/api/v1/user-feeds?limit=100&offset=0", {
-      method: "GET",
-    });
+    const response = await owner.fetch(
+      "/api/v1/user-feeds?limit=100&offset=0",
+      {
+        method: "GET",
+      },
+    );
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as GetUserFeedsResponse;
@@ -358,6 +369,48 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
     const body = (await response.json()) as GetUserFeedsResponse;
     assert.strictEqual(body.results.length, 1);
     assert.ok(body.total >= 3);
+  });
+
+  it("keeps offset pages stable for a collection larger than 1,000 feeds", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const userId = generateTestId();
+    const prefix = `High Capacity ${generateSnowflake()}`;
+
+    const feeds = await Promise.all(
+      Array.from({ length: 1100 }, (_, index) =>
+        ctx.container.userFeedRepository.create({
+          title: `${prefix} ${String(index).padStart(4, "0")}`,
+          url: `https://example.com/get-user-feeds-high-capacity-${generateSnowflake()}-${index}.xml`,
+          user: { id: userId, discordUserId },
+        }),
+      ),
+    );
+    await Promise.all(
+      feeds.map((feed) =>
+        ctx.container.userFeedRepository.findOneAndUpdate(
+          { _id: feed.id },
+          { $set: { disabledCode: UserFeedDisabledCode.Manual } },
+        ),
+      ),
+    );
+
+    const response = await user.fetch(
+      `/api/v1/user-feeds?limit=100&offset=1000&sort=title&search=${encodeURIComponent(prefix)}&filters[computedStatuses]=MANUALLY_DISABLED`,
+      { method: "GET" },
+    );
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as GetUserFeedsResponse;
+    assert.strictEqual(body.total, 1100);
+    assert.strictEqual(body.results.length, 100);
+    assert.deepStrictEqual(
+      body.results.map((feed) => feed.title),
+      Array.from(
+        { length: 100 },
+        (_, index) => `${prefix} ${String(index + 1000).padStart(4, "0")}`,
+      ),
+    );
   });
 
   it("filters by search parameter", async () => {
@@ -497,10 +550,9 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
       { $set: { healthStatus: UserFeedHealthStatus.Failing } },
     );
 
-    const response = await user.fetch(
-      "/api/v1/user-feeds?limit=100&offset=0",
-      { method: "GET" },
-    );
+    const response = await user.fetch("/api/v1/user-feeds?limit=100&offset=0", {
+      method: "GET",
+    });
 
     assert.strictEqual(response.status, 200);
     const body = (await response.json()) as GetUserFeedsResponse;

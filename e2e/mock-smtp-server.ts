@@ -216,7 +216,7 @@ const smtpServer = createTcpServer((socket: Socket) => {
   });
 });
 
-smtpServer.listen(MOCK_SMTP_SERVER_PORT, () => {
+smtpServer.listen(MOCK_SMTP_SERVER_PORT, "0.0.0.0", () => {
   // eslint-disable-next-line no-console
   console.log(`[mock-smtp] SMTP listening on ${MOCK_SMTP_SERVER_PORT}`);
 });
@@ -275,7 +275,7 @@ const httpServer = createHttpServer((req, res) => {
   res.end(JSON.stringify({ status: "ok" }));
 });
 
-httpServer.listen(MOCK_SMTP_HTTP_PORT, () => {
+httpServer.listen(MOCK_SMTP_HTTP_PORT, "0.0.0.0", () => {
   // eslint-disable-next-line no-console
   console.log(`[mock-smtp] HTTP control on ${MOCK_SMTP_HTTP_PORT}`);
 });

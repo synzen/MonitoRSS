@@ -38,7 +38,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
 );
 
 describe("MultiSelectUserFeedContext", () => {
-  it("derives selectedFeeds as the selected ids intersected with the loaded feeds", () => {
+  it("retains selected feeds after paging to a different loaded page", () => {
     const pageOne = [feed("a"), feed("b"), feed("c")];
 
     const { result } = renderHook(() => useMultiSelectUserFeedContext(), {
@@ -48,14 +48,23 @@ describe("MultiSelectUserFeedContext", () => {
     act(() => result.current.setLoadedFeeds(pageOne));
     act(() => result.current.setRowSelection(selectAll(pageOne)));
 
-    expect(result.current.selectedFeeds.map((f) => f.id)).toEqual(["a", "b", "c"]);
+    expect(result.current.selectedFeeds.map((f) => f.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
+
+    act(() => result.current.setLoadedFeeds([feed("x"), feed("y")]));
+
+    expect(result.current.selectedFeedIds).toEqual(["a", "b", "c"]);
+    expect(result.current.selectedFeeds.map((f) => f.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
   });
 
-  it("drops feeds that leave the loaded list without clearing the rest of the selection", () => {
-    // Models a bulk delete: the whole loaded page is selected, then the list
-    // refetches to a DISJOINT page (the survivors that shifted up into offset 0).
-    // The previous selection ids no longer match any loaded feed, so the derived
-    // selection is empty — but no stale references linger.
+  it("retains a selection while a later page is loaded", () => {
     const deletedPage = [feed("a"), feed("b"), feed("c")];
     const survivorPage = [feed("x"), feed("y")];
 
@@ -69,7 +78,12 @@ describe("MultiSelectUserFeedContext", () => {
 
     act(() => result.current.setLoadedFeeds(survivorPage));
 
-    expect(result.current.selectedFeeds).toHaveLength(0);
+    expect(result.current.selectedFeedIds).toEqual(["a", "b", "c"]);
+    expect(result.current.selectedFeeds.map((f) => f.id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
   });
 
   it("selects the new page when the user re-selects after the list changed (regression)", () => {
@@ -89,12 +103,24 @@ describe("MultiSelectUserFeedContext", () => {
 
     // The list refetches to the survivors.
     act(() => result.current.setLoadedFeeds(survivorPage));
-    expect(result.current.selectedFeeds).toHaveLength(0);
+    expect(result.current.selectedFeedIds).toEqual(["a", "b", "c"]);
 
-    // The user selects all again on the survivors.
-    act(() => result.current.setRowSelection(selectAll(survivorPage)));
+    // The user adds the next page to the existing selection.
+    act(() =>
+      result.current.setRowSelection((previous) => ({
+        ...previous,
+        ...selectAll(survivorPage),
+      })),
+    );
 
-    expect(result.current.selectedFeeds.map((f) => f.id)).toEqual(["x", "y"]);
+    expect(result.current.selectedFeedIds).toEqual(["a", "b", "c", "x", "y"]);
+    expect(result.current.selectedFeeds.map((f) => f.id)).toEqual([
+      "a",
+      "b",
+      "c",
+      "x",
+      "y",
+    ]);
   });
 
   it("clearSelection empties the selection", () => {
@@ -111,5 +137,62 @@ describe("MultiSelectUserFeedContext", () => {
     act(() => result.current.clearSelection());
 
     expect(result.current.selectedFeeds).toHaveLength(0);
+  });
+
+  it("supports all-matching selection with matchingFilters and matchingTotal", () => {
+    const { result } = renderHook(() => useMultiSelectUserFeedContext(), {
+      wrapper,
+    });
+
+    act(() => result.current.setSelectAllMatching(true));
+    act(() =>
+      result.current.setMatchingFilters({
+        search: "Alpha",
+        filters: { computedStatuses: ["OK"] },
+        workspaceId: "ws1",
+      }),
+    );
+    act(() => result.current.setMatchingTotal(842));
+
+    expect(result.current.selectAllMatching).toBe(true);
+    expect(result.current.matchingFilters).toEqual({
+      search: "Alpha",
+      filters: { computedStatuses: ["OK"] },
+      workspaceId: "ws1",
+    });
+    expect(result.current.matchingTotal).toBe(842);
+  });
+
+  it("clearSelection also clears all-matching state", () => {
+    const { result } = renderHook(() => useMultiSelectUserFeedContext(), {
+      wrapper,
+    });
+
+    act(() => result.current.setSelectAllMatching(true));
+    act(() =>
+      result.current.setMatchingFilters({
+        search: "Alpha",
+        workspaceId: "ws1",
+      }),
+    );
+    act(() => result.current.setRowSelection({ a: true }));
+    expect(result.current.selectAllMatching).toBe(true);
+
+    act(() => result.current.clearSelection());
+
+    expect(result.current.selectAllMatching).toBe(false);
+    expect(result.current.matchingFilters).toBeNull();
+    expect(result.current.rowSelection).toEqual({});
+  });
+
+  it("announces all-matching selection via matchingTotal", () => {
+    const { result } = renderHook(() => useMultiSelectUserFeedContext(), {
+      wrapper,
+    });
+
+    act(() => result.current.setMatchingTotal(1100));
+    act(() => result.current.setSelectAllMatching(true));
+
+    expect(result.current.matchingTotal.toLocaleString()).toBe("1,100");
   });
 });

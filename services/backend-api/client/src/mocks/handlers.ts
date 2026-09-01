@@ -500,7 +500,10 @@ const handlers = [
 
   http.post("/api/v1/user-feed-management-invites", async ({ request }) => {
     const body = await request.json();
-    const { feedId, discordUserId } = body as { feedId: string; discordUserId: string };
+    const { feedId, discordUserId } = body as {
+      feedId: string;
+      discordUserId: string;
+    };
 
     const feed = mockUserFeeds.find((f) => f.id === feedId);
 
@@ -678,7 +681,10 @@ const handlers = [
 
     if (body.op === "bulk-delete") {
       const castedBody = body.data as DeleteUserFeedsInput["data"];
-      const feedIdsToDelete = castedBody.feeds.map((f) => f.id);
+      const feedIdsToDelete =
+        "feeds" in castedBody && castedBody.feeds
+          ? castedBody.feeds.map((f: { id: string }) => f.id)
+          : [];
 
       for (let i = mockUserFeeds.length - 1; i >= 0; i -= 1) {
         if (feedIdsToDelete.includes(mockUserFeeds[i].id)) {
@@ -955,7 +961,12 @@ const handlers = [
 
       return HttpResponse.json<GetUserFeedArticlesOutput>({
         result: {
-          articles: [article as Record<string, string> & { id: string; idHash: string }],
+          articles: [
+            article as Record<string, string> & {
+              id: string;
+              idHash: string;
+            },
+          ],
           totalArticles: 1,
           requestStatus: UserFeedArticleRequestStatus.Success,
           response: { statusCode: 200 },
@@ -1007,7 +1018,9 @@ const handlers = [
         response: {
           statusCode: 200,
         },
-        filterStatuses: mockUserFeedArticles.map((_, index) => ({ passed: index % 2 === 0 })),
+        filterStatuses: mockUserFeedArticles.map((_, index) => ({
+          passed: index % 2 === 0,
+        })),
         selectedProperties: ["id", "title"],
       },
     });

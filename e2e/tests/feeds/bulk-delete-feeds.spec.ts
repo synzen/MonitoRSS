@@ -89,7 +89,7 @@ test.describe("Bulk Delete Feeds", () => {
       await expect(
         page
           .getByRole("alert")
-          .filter({ hasText: "Successfully deleted feeds" }),
+          .filter({ hasText: "Successfully deleted 2 feeds." }),
       ).toBeVisible({ timeout: 30000 });
 
       // Deleted feeds are gone from the table; the untouched feed remains.
@@ -122,7 +122,7 @@ test.describe("Bulk Delete Feeds", () => {
     // (but visually gone) dialog's buttons. The dialog must close immediately on
     // confirm; the outcome is reported via a page alert.
     //
-    // 25 feeds (page size is 20) so a second page auto-loads after the first is
+    // 51 feeds (page size is 50) so a second page auto-loads after the first is
     // deleted, exercising the heavy post-delete refetch that made the lag
     // visible. The personal API limit is 5, so feeds are seeded directly in the
     // DB (limits only gate creation, not display or deletion).
@@ -136,7 +136,7 @@ test.describe("Bulk Delete Feeds", () => {
 
     const stamp = Date.now();
     const titles = Array.from(
-      { length: 25 },
+      { length: 51 },
       (_, i) => `Bulk Page ${stamp} ${String(i).padStart(2, "0")}`,
     );
 
@@ -171,6 +171,12 @@ test.describe("Bulk Delete Feeds", () => {
 
       const dialog = page.getByRole("alertdialog");
       await expect(dialog).toBeVisible({ timeout: 10000 });
+      const deleteResponse = page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/v1/user-feeds") &&
+          response.request().method() === "PATCH" &&
+          response.status() === 200,
+      );
       await dialog.getByRole("button", { name: "Delete", exact: true }).click();
 
       // The dialog and its backdrop must disappear immediately on confirm — well
@@ -181,19 +187,20 @@ test.describe("Bulk Delete Feeds", () => {
         timeout: 1500,
       });
 
+      await deleteResponse;
       await page.unroute("**/api/v1/user-feeds");
 
       await expect(
         page
           .getByRole("alert")
-          .filter({ hasText: "Successfully deleted feeds" }),
+          .filter({ hasText: "Successfully deleted 50 feeds." }),
       ).toBeVisible({ timeout: 30000 });
 
-      // The remaining 5 feeds auto-load into offset 0.
+      // The remaining feed auto-loads into offset 0.
       const survivorRows = page.getByRole("link", {
         name: new RegExp(`^Bulk Page ${stamp} \\d\\d$`),
       });
-      await expect(survivorRows).toHaveCount(5, { timeout: 10000 });
+      await expect(survivorRows).toHaveCount(1, { timeout: 10000 });
 
       // The Feed Actions trigger is reachable, not buried under a backdrop:
       // selecting a feed and opening the menu with NON-force clicks succeeds

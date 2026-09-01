@@ -829,6 +829,40 @@ describe("PATCH /api/v1/users/@me", { concurrency: true }, () => {
       assert.deepStrictEqual(filters.statuses, ["OK", "REQUIRES_ATTENTION"]);
     });
 
+    it("updates feedListCompactView preference", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+
+      const response = await user.fetch("/api/v1/users/@me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          preferences: { feedListCompactView: true },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as UserResponse;
+      assert.strictEqual(body.result.preferences.feedListCompactView, true);
+    });
+
+    it("updates feedListPageSize preference", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+
+      const response = await user.fetch("/api/v1/users/@me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          preferences: { feedListPageSize: 100 },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      assert.strictEqual(response.status, 200);
+      const body = (await response.json()) as UserResponse;
+      assert.strictEqual(body.result.preferences.feedListPageSize, 100);
+    });
+
     it("updates multiple preferences at once", async () => {
       const discordUserId = generateSnowflake();
       const user = await ctx.asUser(discordUserId);

@@ -141,8 +141,14 @@ describe("PATCH /api/v1/user-feeds", () => {
     assert.strictEqual(body.results[0]!.deleted, true);
   });
 
-  it("bulk-delete returns 404 for non-existent feeds", async () => {
-    const user = await ctx.asUser(generateSnowflake());
+  it("bulk-delete returns a stale-selection error when a requested feed is missing", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const existingFeed = await ctx.container.userFeedRepository.create({
+      title: "Existing Feed",
+      url: "https://example.com/existing-feed.xml",
+      user: { id: generateTestId(), discordUserId },
+    });
 
     const nonExistentId = generateTestId();
 
@@ -150,11 +156,17 @@ describe("PATCH /api/v1/user-feeds", () => {
       method: "PATCH",
       body: JSON.stringify({
         op: "bulk-delete",
-        data: { feeds: [{ id: nonExistentId }] },
+        data: { feeds: [{ id: existingFeed.id }, { id: nonExistentId }] },
       }),
     });
 
     assert.strictEqual(response.status, 404);
+    const body = (await response.json()) as { code: string };
+    assert.strictEqual(body.code, "USER_FEEDS_NOT_FOUND");
+    assert.ok(
+      await ctx.container.userFeedRepository.findById(existingFeed.id),
+      "existing feeds should not be changed when the selection is stale",
+    );
   });
 
   it("bulk-disable returns 200 with disabled results", async () => {

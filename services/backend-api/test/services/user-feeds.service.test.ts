@@ -197,6 +197,29 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.ok(result.find((r) => r.id === feed2.id)?.deleted);
       assert.ok(!result.find((r) => r.id === fakeId)?.deleted);
     });
+
+    it("publishes deleted-feed events with bounded concurrency", async () => {
+      let activePublishes = 0;
+      let peakPublishes = 0;
+      const ctx = harness.createContext({
+        publishMessage: async () => {
+          activePublishes += 1;
+          peakPublishes = Math.max(peakPublishes, activePublishes);
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          activePublishes -= 1;
+        },
+      });
+      const feeds = await Promise.all(
+        Array.from({ length: 11 }, (_, index) =>
+          ctx.createFeed({ title: `Feed ${index}` }),
+        ),
+      );
+
+      await ctx.service.bulkDelete(feeds.map((feed) => feed.id));
+
+      assert.ok(peakPublishes > 1);
+      assert.ok(peakPublishes <= 10);
+    });
   });
 
   describe("bulkDisable", () => {

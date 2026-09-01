@@ -131,7 +131,7 @@ test.describe("Workspace navigation", () => {
       releaseWorkspaceRequest();
     }
 
-    await expect(page.getByRole("heading", { name: workspaceName })).toBeVisible({
+    await expect(page.getByRole("heading", { name: workspaceName, exact: true })).toBeVisible({
       timeout: 15000,
     });
   });
@@ -146,7 +146,7 @@ test.describe("Workspace navigation", () => {
     const workspaceName = `E2E Nav Settings ${Date.now()}`;
     const slug = await createWorkspace(page, workspaceName);
 
-    await expect(page.getByRole("heading", { name: workspaceName })).toBeVisible();
+    await expect(page.getByRole("heading", { name: workspaceName, exact: true })).toBeVisible();
 
     // The logo is scope-relative: "home" inside a workspace is the workspace's feeds.
     await page.getByRole("link", { name: "MonitoRSS Home" }).click();

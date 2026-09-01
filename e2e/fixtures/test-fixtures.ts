@@ -58,11 +58,25 @@ async function createMockSessionCookies(
   token.access_token = `mock-token-${userId}`;
   token.discord.email = `e2e-${userId}@example.com`;
 
-  const response = await fetch(`${BACKEND_URL}/__test__/set-session`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ accessToken: token }),
-  });
+  let response: globalThis.Response;
+  try {
+    response = await fetch(`${BACKEND_URL}/__test__/set-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessToken: token }),
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch (error) {
+    throw new Error(`Timed out creating E2E session through ${BACKEND_URL}`, {
+      cause: error,
+    });
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to create E2E session through ${BACKEND_URL}: HTTP ${response.status}`,
+    );
+  }
 
   const setCookie = response.headers.get("set-cookie");
   if (!setCookie) throw new Error("No Set-Cookie from /__test__/set-session");

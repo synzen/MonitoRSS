@@ -6,8 +6,10 @@ import {
   NotFoundError,
   ApiErrorCode,
 } from "../../infra/error-handler";
+import { Types } from "mongoose";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import { UserFeedManagerStatus } from "../../repositories/shared/enums";
+import { UserFeedComputedStatus } from "../../repositories/interfaces/user-feed.types";
 import {
   ManualRequestTooSoonException,
   WorkspaceNotSubscribedException,
@@ -222,33 +224,111 @@ export async function updateUserFeedsHandler(
   request: FastifyRequest<{ Body: UpdateUserFeedsBody }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, userFeedRepository, usersService, config } =
-    request.container;
+  const {
+    userFeedsService,
+    userFeedRepository,
+    usersService,
+    config,
+    workspacesService,
+  } = request.container;
   const { discordUserId } = request;
   const { op, data } = request.body;
-  const requestedFeedIds = [...new Set(data.feeds.map((f) => f.id))];
 
-  if (!userFeedRepository.areAllValidIds(requestedFeedIds)) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
+  const hasFeeds = !!data.feeds && data.feeds.length > 0;
+  const hasFilters =
+    !!data.search ||
+    !!data.workspaceId ||
+    !!(data.filters && Object.keys(data.filters).length > 0);
+
+  if (!hasFeeds && !hasFilters) {
+    throw new BadRequestError(
+      ApiErrorCode.INVALID_REQUEST,
+      "Provide feeds or filters",
+    );
   }
 
-  const existingCount = await userFeedRepository.countByIds(requestedFeedIds);
-
-  if (existingCount !== requestedFeedIds.length) {
-    throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
+  if (hasFeeds && hasFilters) {
+    throw new BadRequestError(
+      ApiErrorCode.INVALID_REQUEST,
+      "Provide either feeds or filters, not both",
+    );
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
   const isAdmin = isAdminUser(config, user);
   const myWorkspaceIds = await getRequesterWorkspaceIds(request, user);
 
-  const authorizedFeedIds = isAdmin
-    ? requestedFeedIds
-    : await userFeedRepository.filterFeedIdsByOwnership(
-        requestedFeedIds,
+  let authorizedFeedIds: string[];
+
+  if (hasFeeds) {
+    const requestedFeedIds = [...new Set(data.feeds!.map((f) => f.id))];
+
+    if (!userFeedRepository.areAllValidIds(requestedFeedIds)) {
+      throw new NotFoundError(ApiErrorCode.USER_FEEDS_NOT_FOUND);
+    }
+
+    const existingCount = await userFeedRepository.countByIds(requestedFeedIds);
+
+    if (existingCount !== requestedFeedIds.length) {
+      throw new NotFoundError(ApiErrorCode.USER_FEEDS_NOT_FOUND);
+    }
+
+    authorizedFeedIds = isAdmin
+      ? requestedFeedIds
+      : await userFeedRepository.filterFeedIdsByOwnership(
+          requestedFeedIds,
+          discordUserId,
+          myWorkspaceIds,
+        );
+  } else {
+    const workspaceId = data.workspaceId;
+
+    if (workspaceId) {
+      if (!Types.ObjectId.isValid(workspaceId)) {
+        throw new NotFoundError(ApiErrorCode.USER_FEED_NOT_FOUND);
+      }
+
+      if (!isAdmin) {
+        await workspacesService.assertWorkspaceReadableByViewer(
+          workspaceId,
+          user.id,
+          { asAdmin: false },
+        );
+      }
+    }
+
+    const listingFilters: Record<string, unknown> = {};
+
+    if (data.filters?.computedStatuses?.length) {
+      listingFilters.computedStatuses = data.filters.computedStatuses;
+    }
+
+    const input = {
+      discordUserId,
+      workspaceId,
+      search: data.search || undefined,
+      filters:
+        Object.keys(listingFilters).length > 0
+          ? (listingFilters as never)
+          : undefined,
+    };
+
+    const matchedIds = await userFeedRepository.findFeedIdsByFilters(
+      input as never,
+    );
+
+    if (matchedIds.length === 0) {
+      authorizedFeedIds = [];
+    } else if (isAdmin) {
+      authorizedFeedIds = matchedIds;
+    } else {
+      authorizedFeedIds = await userFeedRepository.filterFeedIdsByOwnership(
+        matchedIds,
         discordUserId,
         myWorkspaceIds,
       );
+    }
+  }
 
   if (op === UpdateUserFeedsOp.BulkDelete) {
     const results = await userFeedsService.bulkDelete(authorizedFeedIds);

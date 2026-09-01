@@ -34,6 +34,8 @@ export interface IUserPreferences {
   feedListColumnVisibility?: IUserFeedListColumnVisibility;
   feedListColumnOrder?: IUserFeedListColumnOrder;
   feedListStatusFilters?: IUserFeedListStatusFilters;
+  feedListCompactView?: boolean;
+  feedListPageSize?: 50 | 100;
   lastActiveWorkspaceSlug?: string;
 }
 
@@ -79,6 +81,8 @@ export interface UpdateUserPreferencesInput {
   feedListColumnVisibility?: IUserFeedListColumnVisibility | null;
   feedListColumnOrder?: IUserFeedListColumnOrder | null;
   feedListStatusFilters?: IUserFeedListStatusFilters | null;
+  feedListCompactView?: boolean | null;
+  feedListPageSize?: 50 | 100 | null;
   lastActiveWorkspaceSlug?: string | null;
 }
 
@@ -112,7 +116,10 @@ export interface IUserRepository {
     discordUserId: string,
     email: string,
   ): Promise<IUser | null>;
-  setVerifiedEmail(userId: string, email: string): Promise<SetVerifiedEmailResult>;
+  setVerifiedEmail(
+    userId: string,
+    email: string,
+  ): Promise<SetVerifiedEmailResult>;
   revertVerifiedEmail(
     userId: string,
     expectedCurrent: string,

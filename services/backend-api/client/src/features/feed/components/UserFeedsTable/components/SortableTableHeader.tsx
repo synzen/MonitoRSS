@@ -4,6 +4,7 @@ import { FaChevronDown, FaChevronUp } from "react-icons/fa6";
 import { Header, flexRender } from "@tanstack/react-table";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useDndContext } from "@dnd-kit/core";
 import { RowData } from "../types";
 
 interface SortableTableHeaderProps {
@@ -18,6 +19,9 @@ export const SortableTableHeader: React.FC<SortableTableHeaderProps> = ({ header
     id: header.id,
     disabled: isFixedColumn,
   });
+
+  const { active } = useDndContext();
+  const isActiveDrag = active?.id === header.id;
 
   const style: CSSProperties = {
     transform: CSS.Translate.toString(transform),
@@ -38,14 +42,39 @@ export const SortableTableHeader: React.FC<SortableTableHeaderProps> = ({ header
     cursor = "pointer";
   }
 
+  const handleKeyDown: React.KeyboardEventHandler<HTMLTableCellElement> = (event) => {
+    (listeners as { onKeyDown?: (e: React.KeyboardEvent) => void })?.onKeyDown?.(event as never);
+
+    if (
+      event.code === "Enter" &&
+      !isFixedColumn &&
+      !isDragging &&
+      !isActiveDrag &&
+      header.column.getCanSort()
+    ) {
+      header.column.getToggleSortingHandler()?.(event as unknown as never);
+    }
+  };
+
+  const handleClick: React.MouseEventHandler<HTMLTableCellElement> = (event) => {
+    // `detail === 0` is a keyboard-generated click (Space/Enter on a button).
+    // Sorting via keyboard is handled in `handleKeyDown` (Enter only) to avoid
+    // colliding with the dnd-kit Space-to-pick-up gesture.
+    if (event.detail === 0) return;
+    if (isDragging || isActiveDrag) return;
+
+    header.column.getToggleSortingHandler()?.(event as unknown as never);
+  };
+
   return (
     <Table.ColumnHeader
       ref={setNodeRef}
       style={style}
       {...(isFixedColumn ? {} : attributes)}
       {...(isFixedColumn ? {} : listeners)}
+      onKeyDown={handleKeyDown}
       cursor={cursor}
-      onClick={!isDragging ? header.column.getToggleSortingHandler() : undefined}
+      onClick={handleClick}
       userSelect="none"
     >
       <HStack alignItems="center">

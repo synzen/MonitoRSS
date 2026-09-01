@@ -570,6 +570,9 @@ export interface IUserFeedRepository {
   getUserFeedsCount(
     input: Omit<UserFeedListingInput, "limit" | "offset" | "sort">,
   ): Promise<number>;
+  findFeedIdsByFilters(
+    input: UserFeedListingInput,
+  ): Promise<string[]>;
 
   // CRUD methods for UserFeedsService
   countByOwnership(discordUserId: string): Promise<number>;

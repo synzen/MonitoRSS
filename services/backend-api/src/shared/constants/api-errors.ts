@@ -30,6 +30,7 @@ export enum ApiErrorCode {
   FEED_LIMIT_REACHED = "FEED_LIMIT_REACHED",
   FEED_NOT_FOUND = "FEED_NOT_FOUND",
   USER_FEED_NOT_FOUND = "USER_FEED_NOT_FOUND",
+  USER_FEEDS_NOT_FOUND = "USER_FEEDS_NOT_FOUND",
   CURATED_FEED_NOT_FOUND = "CURATED_FEED_NOT_FOUND",
   FEED_TOO_LARGE = "FEED_TOO_LARGE",
   ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND = "ADD_FEED_WITH_SOURCE_FEED_NOT_FOUND",
@@ -152,6 +153,8 @@ export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
     "Feed does not exist or is not accessible. You may confirm by directly going to the feed link and checking that the feed is valid and publicly accessible.",
   USER_FEED_NOT_FOUND:
     "This feed no longer exists. It may have already been removed.",
+  USER_FEEDS_NOT_FOUND:
+    "Some selected feeds are no longer available. Refresh and try again.",
   CURATED_FEED_NOT_FOUND: "Curated feed does not exist.",
   FEED_TOO_LARGE: "Feed is too large to be processed",
   FEED_INVALID_FILTER_EXPRESSION: "Invalid filter expression",

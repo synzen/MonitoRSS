@@ -8,6 +8,7 @@ import {
 } from "mongoose";
 import type {
   IUser,
+  IUserPreferences,
   IUserRepository,
   CreateUserInput,
   UpdateUserPreferencesInput,
@@ -77,6 +78,8 @@ const UserPreferencesSchema = new Schema(
     feedListColumnVisibility: { type: UserFeedListColumnVisibilitySchema },
     feedListColumnOrder: { type: UserFeedListColumnOrderSchema },
     feedListStatusFilters: { type: UserFeedListStatusFiltersSchema },
+    feedListCompactView: { type: Boolean },
+    feedListPageSize: { type: Number, enum: [50, 100] },
     lastActiveWorkspaceSlug: { type: String },
   },
   { _id: false, timestamps: false },
@@ -159,7 +162,7 @@ export class UserMongooseRepository
       verifiedEmail: doc.verifiedEmail,
       verifiedEmailVerifiedAt: doc.verifiedEmailVerifiedAt,
       sessionEpoch: doc.sessionEpoch ?? undefined,
-      preferences: doc.preferences,
+      preferences: doc.preferences as IUserPreferences,
       featureFlags: doc.featureFlags,
       enableBilling: doc.enableBilling,
       externalCredentials: doc.externalCredentials?.map((cred) => {
@@ -446,62 +449,58 @@ export class UserMongooseRepository
     userIds?: string[];
     feedIds?: string[];
   }): AsyncIterable<{ feedId: string }> {
-    const cursor = this.connection
-      .collection("userfeeds")
-      .aggregate([
-        {
-          $match: {
-            feedRequestLookupKey: { $exists: true },
-            url: REDDIT_URL_REGEX,
-            // Workspace feeds' lookup keys are synced against workspace
-            // credentials, not the creator's.
-            workspaceId: { $exists: false },
-            ...(options?.feedIds?.length && {
-              _id: {
-                $in: options.feedIds.map((id) => this.stringToObjectId(id)),
-              },
-            }),
-          },
+    const cursor = this.connection.collection("userfeeds").aggregate([
+      {
+        $match: {
+          feedRequestLookupKey: { $exists: true },
+          url: REDDIT_URL_REGEX,
+          // Workspace feeds' lookup keys are synced against workspace
+          // credentials, not the creator's.
+          workspaceId: { $exists: false },
+          ...(options?.feedIds?.length && {
+            _id: {
+              $in: options.feedIds.map((id) => this.stringToObjectId(id)),
+            },
+          }),
         },
-        {
-          $lookup: {
-            from: "users",
-            localField: "user.discordUserId",
-            foreignField: "discordUserId",
-            as: "owner",
-          },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user.discordUserId",
+          foreignField: "discordUserId",
+          as: "owner",
         },
-        {
-          $set: {
-            owner: { $arrayElemAt: ["$owner", 0] },
-          },
+      },
+      {
+        $set: {
+          owner: { $arrayElemAt: ["$owner", 0] },
         },
-        ...(options?.userIds?.length
-          ? [
-              {
-                $match: {
-                  "owner._id": {
-                    $in: options.userIds.map((id) =>
-                      this.stringToObjectId(id),
-                    ),
-                  },
+      },
+      ...(options?.userIds?.length
+        ? [
+            {
+              $match: {
+                "owner._id": {
+                  $in: options.userIds.map((id) => this.stringToObjectId(id)),
                 },
               },
-            ]
-          : []),
-        {
-          $match: {
-            owner: { $ne: null },
-            $or: expiredOrRevokedRedditCredentialConditions("owner"),
-          },
+            },
+          ]
+        : []),
+      {
+        $match: {
+          owner: { $ne: null },
+          $or: expiredOrRevokedRedditCredentialConditions("owner"),
         },
-        {
-          $project: {
-            feedId: "$_id",
-            _id: 0,
-          },
+      },
+      {
+        $project: {
+          feedId: "$_id",
+          _id: 0,
         },
-      ]);
+      },
+    ]);
 
     for await (const doc of cursor) {
       yield {

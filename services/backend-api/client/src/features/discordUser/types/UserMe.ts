@@ -30,6 +30,8 @@ export const UserMeSchema = object({
     feedListStatusFilters: object({
       statuses: array(string().required()).required(),
     }).optional(),
+    feedListCompactView: bool().optional(),
+    feedListPageSize: number().oneOf([50, 100]).optional(),
     lastActiveWorkspaceSlug: string().nullable().optional(),
   }).default({}),
   subscription: object({
@@ -46,7 +48,9 @@ export const UserMeSchema = object({
     )
       .optional()
       .nullable(),
-    status: string().oneOf(["ACTIVE", "CANCELLED", "PAST_DUE", "PAUSED"]).required(),
+    status: string()
+      .oneOf(["ACTIVE", "CANCELLED", "PAST_DUE", "PAUSED"])
+      .required(),
     nextBillDate: string().nullable(),
     cancellationDate: string().nullable(),
     billingInterval: string().oneOf(["month", "year"]).nullable(),
