@@ -62,7 +62,7 @@ test.describe("Bulk actions — all matching feeds", () => {
       await clickSelectAllLoadedCheckbox(page);
 
       // Banner for page selection must appear and offer the second stage.
-      await expect(page.getByText("All 50 feeds on this page selected.")).toBeVisible({
+      await expect(page.getByText("All 50 feeds on this page selected.", { exact: true })).toBeVisible({
         timeout: 5000,
       });
       const selectAllMatchingButton = page.getByRole("button", {
@@ -75,7 +75,7 @@ test.describe("Bulk actions — all matching feeds", () => {
       await expect(page.getByText(`All ${total} matching feeds selected.`)).toBeVisible({
         timeout: 5000,
       });
-      await expect(page.getByText("All 50 feeds on this page selected.")).toHaveCount(0);
+      await expect(page.getByText("All 50 feeds on this page selected.", { exact: true })).toHaveCount(0);
       await expect(page.getByText(`All ${total} matching feeds selected.`)).toBeVisible();
 
       // Paging alone preserves all-matching selection.

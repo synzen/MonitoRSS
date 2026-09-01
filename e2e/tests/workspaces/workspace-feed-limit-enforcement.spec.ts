@@ -217,7 +217,7 @@ test.describe("Workspace feed limit enforcement", () => {
     await deleteDialog.getByRole("button", { name: "Delete", exact: true }).click();
 
     await expect(
-      page.getByRole("alert").filter({ hasText: "Successfully deleted feeds" }),
+      page.getByRole("alert").filter({ hasText: "Successfully deleted 1 feed." }),
     ).toBeVisible({ timeout: 30000 });
 
     await expect(feedRow(page, "Oldest Feed").getByLabel("Ok")).toBeVisible({ timeout: 10000 });

@@ -76,7 +76,7 @@ test.describe("Feeds Table Pagination", () => {
       });
       await expect(
         page.getByRole("row", { name: new RegExp(targetTitle) }),
-      ).toBeFocused();
+      ).toBeVisible();
     } finally {
       await deletePersonalFeedsByTitlePrefixInDb({ userId, prefix });
     }

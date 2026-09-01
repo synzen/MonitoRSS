@@ -1,8 +1,8 @@
 import { MOCK_SMTP_HTTP_PORT } from "./constants";
 
 // The mock mailer runs on the host (like the mock RSS/Discord servers), so its
-// HTTP control surface is reachable on localhost from the Playwright process.
-const SMTP_HTTP_URL = `http://localhost:${MOCK_SMTP_HTTP_PORT}`;
+// HTTP control surface is reachable over the IPv4 loopback from Playwright.
+const SMTP_HTTP_URL = `http://127.0.0.1:${MOCK_SMTP_HTTP_PORT}`;
 
 /**
  * Poll the mock mailer for the latest verification code captured for `email`.
