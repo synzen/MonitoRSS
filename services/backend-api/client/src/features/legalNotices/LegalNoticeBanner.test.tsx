@@ -41,6 +41,9 @@ describe("LegalNoticeBanner", () => {
     renderBanner();
 
     expect(screen.getByRole("status", { name: /legal notice/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(/updates to our terms and privacy policy/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/updated our legal documents/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /terms and conditions/i })).toHaveAttribute(
       "href",

@@ -32,7 +32,7 @@ export const LegalNoticeBanner = () => {
     <Alert.Root status="info" role="status" aria-label="Legal notice" borderRadius={0}>
       <Alert.Indicator />
       <Alert.Content>
-        <Alert.Title>Legal document update</Alert.Title>
+        <Alert.Title>Updates to our Terms and Privacy Policy</Alert.Title>
         <Alert.Description>
           <Wrap gapX={1} gapY={0} align="baseline">
             <span>{notice.summary}</span>
