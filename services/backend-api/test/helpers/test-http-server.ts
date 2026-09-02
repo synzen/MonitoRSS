@@ -260,6 +260,7 @@ function createTestConfig(
     BACKEND_API_SMTP_FROM_DOMAIN: undefined,
     BACKEND_API_SMTP_PORT: undefined,
     BACKEND_API_SMTP_SECURE: true,
+    BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW: false,
     BACKEND_API_PADDLE_KEY: undefined,
     BACKEND_API_PADDLE_URL: undefined,
     BACKEND_API_PADDLE_WEBHOOK_SECRET: undefined,

@@ -91,6 +91,21 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     assert.equal(response.statusCode, 404);
     ctx.container.config.NODE_ENV = Environment.Production;
   });
+
+  it("exposes the notice for an explicitly enabled localhost preview", async () => {
+    ctx.container.config.NODE_ENV = Environment.Local;
+    ctx.container.config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW = true;
+
+    const response = await getApplicableNotice(
+      ctx,
+      generateSnowflake(),
+      "localhost",
+    );
+
+    assert.deepEqual(response.body, { result: null });
+    ctx.container.config.NODE_ENV = Environment.Production;
+    ctx.container.config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW = false;
+  });
 });
 
 async function getApplicableNotice(

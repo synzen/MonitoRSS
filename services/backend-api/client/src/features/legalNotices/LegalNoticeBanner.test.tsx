@@ -63,4 +63,17 @@ describe("LegalNoticeBanner", () => {
 
     expect(container).toBeEmptyDOMElement();
   });
+
+  it("requests a notice when the localhost preview query flag is present", () => {
+    window.history.replaceState({}, "", "/feeds?legalNoticePreview");
+    vi.mocked(useDiscordAuthStatus).mockReturnValue({
+      data: { authenticated: true },
+    } as never);
+    vi.mocked(useApplicableLegalNotice).mockReturnValue({ data: { result: null } } as never);
+
+    renderBanner();
+
+    expect(useApplicableLegalNotice).toHaveBeenCalledWith({ enabled: true });
+    window.history.replaceState({}, "", "/feeds");
+  });
 });

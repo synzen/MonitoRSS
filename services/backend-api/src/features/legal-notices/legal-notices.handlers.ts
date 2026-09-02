@@ -8,11 +8,15 @@ export async function getApplicableLegalNoticeHandler(
   reply: FastifyReply,
 ): Promise<void> {
   const { config, userRepository } = request.container;
+  const isProductionDashboard =
+    config.NODE_ENV === Environment.Production &&
+    request.hostname.toLowerCase() === PRODUCTION_DASHBOARD_HOSTNAME;
+  const isLocalPreview =
+    config.NODE_ENV === Environment.Local &&
+    config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW &&
+    request.hostname.toLowerCase() === "localhost";
 
-  if (
-    config.NODE_ENV !== Environment.Production ||
-    request.hostname.toLowerCase() !== PRODUCTION_DASHBOARD_HOSTNAME
-  ) {
+  if (!isProductionDashboard && !isLocalPreview) {
     reply.code(404).send({ result: null });
     return;
   }

@@ -1,6 +1,7 @@
 import { Alert, Link, Wrap } from "@chakra-ui/react";
 import { useDiscordAuthStatus } from "@/features/discordUser";
 import {
+  isLocalLegalNoticePreviewRequested,
   isProductionDashboardHostname,
   useApplicableLegalNotice,
 } from "./hooks";
@@ -13,7 +14,9 @@ const DOCUMENT_LABELS = {
 export const LegalNoticeBanner = () => {
   const { data: authStatus } = useDiscordAuthStatus();
   const shouldRequest =
-    !!authStatus?.authenticated && isProductionDashboardHostname(window.location.hostname);
+    !!authStatus?.authenticated &&
+    (isProductionDashboardHostname(window.location.hostname) ||
+      isLocalLegalNoticePreviewRequested());
   const { data } = useApplicableLegalNotice({ enabled: shouldRequest });
   const notice = data?.result;
 

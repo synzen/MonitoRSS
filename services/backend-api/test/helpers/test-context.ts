@@ -132,6 +132,7 @@ function createTestConfig(overrides?: Partial<Config>): Config {
     BACKEND_API_EMAIL_PRIVACY_POLICY_URL: undefined,
     BACKEND_API_EMAIL_FOOTER_ADDRESS: undefined,
     BACKEND_API_LEGAL_NOTICE: undefined,
+    BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW: false,
 
     BACKEND_API_PADDLE_KEY: undefined,
     BACKEND_API_PADDLE_URL: undefined,

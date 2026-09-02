@@ -123,6 +123,10 @@ const configSchema = z.object({
     },
     LegalNoticeSchema.optional(),
   ),
+  BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW: z
+    .string()
+    .transform((val) => val === "true")
+    .default("false"),
 
   // Paddle
   BACKEND_API_PADDLE_KEY: z.string().optional(),
