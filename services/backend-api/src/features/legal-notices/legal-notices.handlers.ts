@@ -11,12 +11,13 @@ export async function getApplicableLegalNoticeHandler(
   const isProductionDashboard =
     config.NODE_ENV === Environment.Production &&
     request.hostname.toLowerCase() === PRODUCTION_DASHBOARD_HOSTNAME;
-  const isLocalPreview =
-    config.NODE_ENV === Environment.Local &&
-    config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW &&
-    request.headers["x-monitorss-legal-notice-preview"] === "true";
 
-  if (!isProductionDashboard && !isLocalPreview) {
+  if (config.NODE_ENV === Environment.Local) {
+    if (!config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW) {
+      reply.send({ result: null });
+      return;
+    }
+  } else if (!isProductionDashboard) {
     reply.code(404).send({ result: null });
     return;
   }

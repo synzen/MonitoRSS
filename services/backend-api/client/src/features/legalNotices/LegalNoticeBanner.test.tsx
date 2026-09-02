@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { system } from "@/utils/theme";
 import { useDiscordAuthStatus } from "@/features/discordUser";
 import { LegalNoticeBanner } from "./LegalNoticeBanner";
-import { useApplicableLegalNotice } from "./hooks";
+import { isLocalDashboardHostname, useApplicableLegalNotice } from "./hooks";
 
 vi.mock("@/features/discordUser", () => ({ useDiscordAuthStatus: vi.fn() }));
 vi.mock("./hooks", async (importOriginal) => ({
@@ -53,10 +53,7 @@ describe("LegalNoticeBanner", () => {
       "target",
       "_blank",
     );
-    expect(useApplicableLegalNotice).toHaveBeenCalledWith({
-      enabled: false,
-      localPreview: false,
-    });
+    expect(useApplicableLegalNotice).toHaveBeenCalledWith({ enabled: true });
   });
 
   it("renders nothing when the API has no applicable notice", () => {
@@ -70,19 +67,7 @@ describe("LegalNoticeBanner", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("requests a notice when the localhost preview query flag is present", () => {
-    window.history.replaceState({}, "", "/feeds?legalNoticePreview");
-    vi.mocked(useDiscordAuthStatus).mockReturnValue({
-      data: { authenticated: true },
-    } as never);
-    vi.mocked(useApplicableLegalNotice).mockReturnValue({ data: { result: null } } as never);
-
-    renderBanner();
-
-    expect(useApplicableLegalNotice).toHaveBeenCalledWith({
-      enabled: true,
-      localPreview: true,
-    });
-    window.history.replaceState({}, "", "/feeds");
+  it("recognizes only localhost as the local dashboard host", () => {
+    expect(isLocalDashboardHostname("selfhost.example")).toBe(false);
   });
 });

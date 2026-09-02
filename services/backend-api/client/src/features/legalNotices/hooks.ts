@@ -10,20 +10,13 @@ export const PRODUCTION_DASHBOARD_HOSTNAME = "my.monitorss.xyz";
 export const isProductionDashboardHostname = (hostname: string) =>
   hostname.toLowerCase() === PRODUCTION_DASHBOARD_HOSTNAME;
 
-export const isLocalLegalNoticePreviewRequested = () =>
-  window.location.hostname === "localhost" &&
-  new URLSearchParams(window.location.search).has("legalNoticePreview");
+export const isLocalDashboardHostname = (hostname: string) =>
+  hostname.toLowerCase() === "localhost";
 
-export const useApplicableLegalNotice = ({
-  enabled,
-  localPreview,
-}: {
-  enabled: boolean;
-  localPreview: boolean;
-}) => {
+export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
   const query = useQuery<GetApplicableLegalNoticeOutput, ApiAdapterError>(
-    ["applicable-legal-notice", localPreview],
-    () => getApplicableLegalNotice({ localPreview }),
+    ["applicable-legal-notice"],
+    () => getApplicableLegalNotice(),
     { enabled, retry: false },
   );
 
