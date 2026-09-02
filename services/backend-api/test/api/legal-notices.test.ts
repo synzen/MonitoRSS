@@ -96,12 +96,19 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     ctx.container.config.NODE_ENV = Environment.Local;
     ctx.container.config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW = true;
 
+    const withoutPreviewHeader = await getApplicableNotice(
+      ctx,
+      generateSnowflake(),
+      "web-api",
+    );
     const response = await getApplicableNotice(
       ctx,
       generateSnowflake(),
-      "localhost",
+      "web-api",
+      { "x-monitorss-legal-notice-preview": "true" },
     );
 
+    assert.equal(withoutPreviewHeader.statusCode, 404);
     assert.deepEqual(response.body, { result: null });
     ctx.container.config.NODE_ENV = Environment.Production;
     ctx.container.config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW = false;
@@ -112,6 +119,7 @@ async function getApplicableNotice(
   ctx: AppTestContext,
   discordUserId: string,
   hostname = "my.monitorss.xyz",
+  headers: Record<string, string> = {},
 ) {
   let statusCode = 200;
   let body: unknown;
@@ -126,7 +134,7 @@ async function getApplicableNotice(
   };
 
   await getApplicableLegalNoticeHandler(
-    { container: ctx.container, discordUserId, hostname } as never,
+    { container: ctx.container, discordUserId, hostname, headers } as never,
     reply as never,
   );
 

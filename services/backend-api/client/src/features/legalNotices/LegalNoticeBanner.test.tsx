@@ -50,7 +50,10 @@ describe("LegalNoticeBanner", () => {
       "target",
       "_blank",
     );
-    expect(useApplicableLegalNotice).toHaveBeenCalledWith({ enabled: false });
+    expect(useApplicableLegalNotice).toHaveBeenCalledWith({
+      enabled: false,
+      localPreview: false,
+    });
   });
 
   it("renders nothing when the API has no applicable notice", () => {
@@ -73,7 +76,10 @@ describe("LegalNoticeBanner", () => {
 
     renderBanner();
 
-    expect(useApplicableLegalNotice).toHaveBeenCalledWith({ enabled: true });
+    expect(useApplicableLegalNotice).toHaveBeenCalledWith({
+      enabled: true,
+      localPreview: true,
+    });
     window.history.replaceState({}, "", "/feeds");
   });
 });

@@ -14,7 +14,7 @@ export async function getApplicableLegalNoticeHandler(
   const isLocalPreview =
     config.NODE_ENV === Environment.Local &&
     config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW &&
-    request.hostname.toLowerCase() === "localhost";
+    request.headers["x-monitorss-legal-notice-preview"] === "true";
 
   if (!isProductionDashboard && !isLocalPreview) {
     reply.code(404).send({ result: null });

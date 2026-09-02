@@ -14,10 +14,16 @@ export const isLocalLegalNoticePreviewRequested = () =>
   window.location.hostname === "localhost" &&
   new URLSearchParams(window.location.search).has("legalNoticePreview");
 
-export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
+export const useApplicableLegalNotice = ({
+  enabled,
+  localPreview,
+}: {
+  enabled: boolean;
+  localPreview: boolean;
+}) => {
   const query = useQuery<GetApplicableLegalNoticeOutput, ApiAdapterError>(
-    ["applicable-legal-notice"],
-    () => getApplicableLegalNotice(),
+    ["applicable-legal-notice", localPreview],
+    () => getApplicableLegalNotice({ localPreview }),
     { enabled, retry: false },
   );
 

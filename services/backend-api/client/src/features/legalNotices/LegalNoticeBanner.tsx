@@ -13,11 +13,15 @@ const DOCUMENT_LABELS = {
 
 export const LegalNoticeBanner = () => {
   const { data: authStatus } = useDiscordAuthStatus();
+  const localPreview = isLocalLegalNoticePreviewRequested();
   const shouldRequest =
     !!authStatus?.authenticated &&
     (isProductionDashboardHostname(window.location.hostname) ||
-      isLocalLegalNoticePreviewRequested());
-  const { data } = useApplicableLegalNotice({ enabled: shouldRequest });
+      localPreview);
+  const { data } = useApplicableLegalNotice({
+    enabled: shouldRequest,
+    localPreview,
+  });
   const notice = data?.result;
 
   if (!notice) {
