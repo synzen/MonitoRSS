@@ -1,5 +1,6 @@
 import { z } from "zod";
 import dotenv from "dotenv";
+import { LegalNoticeSchema } from "./features/legal-notices/legal-notices.schemas";
 
 dotenv.config();
 
@@ -105,6 +106,23 @@ const configSchema = z.object({
   // to render a privacy link and the operator's identity/postal address.
   BACKEND_API_EMAIL_PRIVACY_POLICY_URL: z.string().optional(),
   BACKEND_API_EMAIL_FOOTER_ADDRESS: z.string().optional(),
+
+  // Hosted-only, versioned legal update notice. Leaving this unset keeps the
+  // feature inactive, which is the safe default for self-hosted installations.
+  BACKEND_API_LEGAL_NOTICE: z.preprocess(
+    (value) => {
+      if (typeof value !== "string" || !value) {
+        return undefined;
+      }
+
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    },
+    LegalNoticeSchema.optional(),
+  ),
 
   // Paddle
   BACKEND_API_PADDLE_KEY: z.string().optional(),
