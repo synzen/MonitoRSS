@@ -45,11 +45,16 @@ describe("LegalNoticeBanner", () => {
       screen.getByText(/updates to our terms and privacy policy/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/updated our legal documents/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /terms and conditions/i })).toHaveAttribute(
+    expect(screen.getByText("Review:")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Terms and Conditions (opens in a new tab)" }),
+    ).toHaveAttribute(
       "href",
       "https://monitorss.xyz/terms",
     );
-    expect(screen.getByRole("link", { name: /privacy policy/i })).toHaveAttribute(
+    expect(
+      screen.getByRole("link", { name: "Privacy Policy (opens in a new tab)" }),
+    ).toHaveAttribute(
       "target",
       "_blank",
     );
