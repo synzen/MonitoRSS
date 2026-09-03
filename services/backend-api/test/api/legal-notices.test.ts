@@ -73,22 +73,22 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     assert.deepEqual(response.body, { result: null });
   });
 
-  it("does not expose the notice on non-production hosts", async () => {
+  it("returns no notice on non-production hosts", async () => {
     const response = await getApplicableNotice(
       ctx,
       generateSnowflake(),
       "my.monitorss.xyz.evil.example",
     );
 
-    assert.equal(response.statusCode, 404);
+    assert.deepEqual(response.body, { result: null });
   });
 
-  it("does not expose the notice outside production", async () => {
+  it("returns no notice outside production", async () => {
     ctx.container.config.NODE_ENV = Environment.Test;
 
     const response = await getApplicableNotice(ctx, generateSnowflake());
 
-    assert.equal(response.statusCode, 404);
+    assert.deepEqual(response.body, { result: null });
     ctx.container.config.NODE_ENV = Environment.Production;
   });
 

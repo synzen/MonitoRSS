@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { system } from "@/utils/theme";
 import { useDiscordAuthStatus } from "@/features/discordUser";
 import { LegalNoticeBanner } from "./LegalNoticeBanner";
-import { isLocalDashboardHostname, useApplicableLegalNotice } from "./hooks";
+import { useApplicableLegalNotice } from "./hooks";
 
 vi.mock("@/features/discordUser", () => ({ useDiscordAuthStatus: vi.fn() }));
 vi.mock("./hooks", async (importOriginal) => ({
@@ -67,7 +67,14 @@ describe("LegalNoticeBanner", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("recognizes only localhost as the local dashboard host", () => {
-    expect(isLocalDashboardHostname("selfhost.example")).toBe(false);
+  it("does not request a notice before authentication is confirmed", () => {
+    vi.mocked(useDiscordAuthStatus).mockReturnValue({
+      data: { authenticated: false },
+    } as never);
+    vi.mocked(useApplicableLegalNotice).mockReturnValue({ data: { result: null } } as never);
+
+    renderBanner();
+
+    expect(useApplicableLegalNotice).toHaveBeenCalledWith({ enabled: false });
   });
 });
