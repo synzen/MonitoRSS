@@ -1,4 +1,5 @@
-import { Alert, Link, List, VisuallyHidden } from "@chakra-ui/react";
+import { Alert, Link, VisuallyHidden } from "@chakra-ui/react";
+import { Fragment } from "react";
 import { useDiscordAuthStatus } from "@/features/discordUser";
 import { useApplicableLegalNotice } from "./hooks";
 
@@ -25,10 +26,11 @@ export const LegalNoticeBanner = () => {
         <Alert.Title>Updates to our Terms and Privacy Policy</Alert.Title>
         <Alert.Description>
           <span>{notice.summary}</span>
-          <List.Root listStyleType="none" margin={0} display="flex" gap={1} flexWrap="wrap">
-            <List.Item>Review:</List.Item>
-            {notice.documents.map((document) => (
-              <List.Item key={document.type}>
+          <span>
+            {" Please review our "}
+            {notice.documents.map((document, index) => (
+              <Fragment key={document.type}>
+                {index > 0 && (index === notice.documents.length - 1 ? " and " : ", ")}
                 <Link
                   href={document.url}
                   target="_blank"
@@ -39,9 +41,10 @@ export const LegalNoticeBanner = () => {
                   {DOCUMENT_LABELS[document.type]}
                   <VisuallyHidden> (opens in a new tab)</VisuallyHidden>
                 </Link>
-              </List.Item>
+              </Fragment>
             ))}
-          </List.Root>
+            .
+          </span>
         </Alert.Description>
       </Alert.Content>
     </Alert.Root>
