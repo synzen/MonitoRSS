@@ -38,6 +38,7 @@ import { redditAuthRoutes } from "./features/reddit-auth/reddit-auth.routes";
 import { errorReportsRoutes } from "./features/error-reports/error-reports.routes";
 import { curatedFeedsRoutes } from "./features/curated-feeds/curated-feeds.routes";
 import { discoverySearchEventsRoutes } from "./features/discovery-search-events/discovery-search-events.routes";
+import { legalNoticesRoutes } from "./features/legal-notices/legal-notices.routes";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -260,6 +261,8 @@ export async function createApp(
       await instance.register(discoverySearchEventsRoutes, {
         prefix: "/discovery-search-events",
       });
+
+      await instance.register(legalNoticesRoutes, { prefix: "/legal-notices" });
     },
     { prefix: "/api/v1" },
   );
