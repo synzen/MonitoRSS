@@ -86,6 +86,14 @@ interface FetchResponse {
   text: () => Promise<string>;
 }
 
+interface FetchError extends Error {
+  code?: string;
+  cause?: {
+    code?: string;
+    message?: string;
+  };
+}
+
 @Injectable()
 export class FeedFetcherService {
   defaultUserAgent: string;
@@ -429,23 +437,22 @@ export class FeedFetcherService {
         responseText: text,
       };
     } catch (err) {
+      const fetchError = err as FetchError;
+      const errorCode = fetchError.code || fetchError.cause?.code;
+
       contextLogger.debug(`Failed to fetch url ${url}`, {
-        stack: (err as Error).stack,
+        stack: fetchError.stack,
       });
 
       if (
-        (err instanceof TypeError &&
-          err['cause']?.['code'] === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') ||
-        (err as Error).message?.includes(
-          'unable to get local issuer certificate',
-        )
+        errorCode === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' ||
+        fetchError.message?.includes('unable to get local issuer certificate')
       ) {
         request.status = RequestStatus.INVALID_SSL_CERTIFICATE;
-        request.errorMessage =
-          err?.['cause']?.['message'] || (err as Error).message;
+        request.errorMessage = fetchError.cause?.message || fetchError.message;
       } else if (
-        (err as Error).name === 'AbortError' ||
-        (err as Error).message.includes('Connect Timeout Error')
+        fetchError.name === 'AbortError' ||
+        fetchError.message.includes('Connect Timeout Error')
       ) {
         request.status = RequestStatus.FETCH_TIMEOUT;
         request.errorMessage =
@@ -453,9 +460,7 @@ export class FeedFetcherService {
           ` ${this.feedRequestTimeoutMs}ms to complete`;
       } else {
         request.status = RequestStatus.FETCH_ERROR;
-        request.errorMessage = `${(err as Error).message} | cause: ${
-          (err as Error)['cause']?.['message']
-        }`;
+        request.errorMessage = `${fetchError.message} | cause: ${fetchError.cause?.message}`;
       }
 
       const partitionedRequest: PartitionedRequestInsert = {
@@ -515,7 +520,7 @@ export class FeedFetcherService {
       headers: useOptions.headers,
       signal: useOptions.signal,
       maxRedirections: 10,
-    });
+    }).finally(() => clearTimeout(timer));
 
     const contentTypes =
       typeof r.headers['content-type'] === 'string'
@@ -532,8 +537,6 @@ export class FeedFetcherService {
       },
       new Map<string, string>(),
     );
-
-    clearTimeout(timer);
 
     const headers: FetchResponse['headers'] = new Map();
 
