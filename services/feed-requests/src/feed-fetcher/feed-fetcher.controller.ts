@@ -77,6 +77,7 @@ export class FeedFetcherController {
           url: r.url,
           status: r.status,
           headers: r.fetchOptions?.headers,
+          nextRetryAtIso: r.nextRetryDate ? dayjs(r.nextRetryDate).toISOString() : null,
           response: {
             statusCode: r.response?.statusCode,
             headers: r.response?.headers,
