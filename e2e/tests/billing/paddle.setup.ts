@@ -11,7 +11,7 @@ import { instanceSuffix } from "../../helpers/instance";
 const REQUIRED_ENV_VARS = [
   "BACKEND_API_PADDLE_KEY",
   "BACKEND_API_PADDLE_URL",
-  "E2E_PADDLE_NOTIFICATION_SETTING_ID",
+  "E2E_PADDLE_NOTIFICATION_SETTING_IDS",
 ] as const;
 
 const BACKEND_PORT = parseInt(
@@ -36,10 +36,22 @@ setup("start tunnel and configure Paddle", async () => {
   }
 
   const tunnelUrl = await startTunnel(BACKEND_PORT);
-  await updateNotificationUrl(`${tunnelUrl}${WEBHOOK_PATH}`);
-  // Deliver simulation webhooks (not just live platform traffic) for the whole
-  // run, so parallel tests don't each have to toggle this shared global.
-  await setNotificationTrafficSource("all");
+  const settingIds = JSON.parse(
+    process.env.E2E_PADDLE_NOTIFICATION_SETTING_IDS!,
+  ) as string[];
+  await Promise.all(
+    settingIds.map((_, workerIndex) =>
+      updateNotificationUrl(
+        `${tunnelUrl}${WEBHOOK_PATH}?worker=${workerIndex}`,
+        workerIndex,
+      ),
+    ),
+  );
+  await Promise.all(
+    settingIds.map((_, workerIndex) =>
+      setNotificationTrafficSource("all", workerIndex),
+    ),
+  );
 
   writeFileSync(
     PADDLE_STATE_PATH,

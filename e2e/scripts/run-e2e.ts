@@ -64,7 +64,7 @@ let logFollower: ChildProcess | undefined;
 let logFollowerStream: ReturnType<typeof createWriteStream> | undefined;
 let cleanupPromise: Promise<void> | undefined;
 let context: RunContext | undefined;
-let ephemeralPaddleSettingId: string | undefined;
+let ephemeralPaddleSettingIds: string[] = [];
 let interrupted = false;
 let cleanupFailed = false;
 
@@ -445,18 +445,16 @@ async function cleanup(): Promise<void> {
   cleanupPromise = (async () => {
     if (!context) return;
 
-    if (ephemeralPaddleSettingId) {
+    for (const settingId of ephemeralPaddleSettingIds) {
       console.log(
-        `Deleting ephemeral Paddle notification setting: ${ephemeralPaddleSettingId}`,
+        `Deleting ephemeral Paddle notification setting: ${settingId}`,
       );
-      await deleteNotificationSetting(ephemeralPaddleSettingId).catch(
-        (error) => {
-          appendLog(
-            context!.runnerLog,
-            `Paddle setting cleanup failed: ${String(error)}\n`,
-          );
-        },
-      );
+      await deleteNotificationSetting(settingId).catch((error) => {
+        appendLog(
+          context!.runnerLog,
+          `Paddle setting cleanup failed: ${String(error)}\n`,
+        );
+      });
     }
 
     console.log("Tearing down E2E Docker stack...");
@@ -520,6 +518,7 @@ async function main(): Promise<number> {
       "BACKEND_API_PADDLE_KEY",
       "BACKEND_API_PADDLE_URL",
       "BACKEND_API_PADDLE_WEBHOOK_SECRET",
+      "BACKEND_API_PADDLE_WEBHOOK_SECRETS",
       "VITE_PADDLE_CLIENT_TOKEN",
     ]) {
       context.env[key] = "";
@@ -538,7 +537,10 @@ async function main(): Promise<number> {
 
   if (billing && !context.env.E2E_PADDLE_NOTIFICATION_SETTING_ID) {
     throwIfInterrupted();
-    console.log("Creating ephemeral Paddle notification setting...");
+    const paddleWorkerCount = 4;
+    console.log(
+      `Creating ${paddleWorkerCount} ephemeral Paddle notification settings...`,
+    );
     await deleteStaleEphemeralNotificationSettings().catch((error) => {
       appendLog(
         context!.runnerLog,
@@ -546,12 +548,29 @@ async function main(): Promise<number> {
       );
     });
     throwIfInterrupted();
-    const setting = await createNotificationSetting();
-    ephemeralPaddleSettingId = setting.id;
-    context.env.E2E_PADDLE_NOTIFICATION_SETTING_ID = setting.id;
-    context.env.BACKEND_API_PADDLE_WEBHOOK_SECRET = setting.secret;
-    console.log(`Created Paddle notification setting: ${setting.id}`);
+    const settings = await Promise.all(
+      Array.from({ length: paddleWorkerCount }, () =>
+        createNotificationSetting(),
+      ),
+    );
+    ephemeralPaddleSettingIds = settings.map((setting) => setting.id);
+    context.env.E2E_PADDLE_NOTIFICATION_SETTING_IDS = JSON.stringify(
+      ephemeralPaddleSettingIds,
+    );
+    context.env.BACKEND_API_PADDLE_WEBHOOK_SECRETS = JSON.stringify(
+      settings.map((setting) => setting.secret),
+    );
+    context.env.BACKEND_API_PADDLE_WEBHOOK_SECRET = "";
+    context.env.E2E_PADDLE_WORKERS = String(paddleWorkerCount);
+    console.log(
+      `Created Paddle notification settings: ${ephemeralPaddleSettingIds.join(", ")}`,
+    );
     throwIfInterrupted();
+  } else if (billing) {
+    context.env.E2E_PADDLE_NOTIFICATION_SETTING_IDS = JSON.stringify([
+      context.env.E2E_PADDLE_NOTIFICATION_SETTING_ID,
+    ]);
+    context.env.E2E_PADDLE_WORKERS = "1";
   }
 
   console.log(
