@@ -4,6 +4,7 @@ interface Request {
   id: number;
   status: RequestStatus;
   createdAt: number;
+  nextRetryAtIso: string | null;
 }
 
 interface Result {

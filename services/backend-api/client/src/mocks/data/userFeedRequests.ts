@@ -18,10 +18,11 @@ export const mockUserFeedRequests: UserFeedRequest[] = [
   {
     id: "2",
     status: UserFeedRequestStatus.INTERNAL_ERROR,
-    createdAt: Math.floor(new Date(2021).getTime() / 1000),
-    createdAtIso: new Date(2020).toISOString(),
-    finishedAtIso: new Date(2020).toISOString(),
+    createdAt: Math.floor(Date.now() / 1000) - 300,
+    createdAtIso: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    finishedAtIso: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
     freshnessLifetimeMs: 0,
+    nextRetryAtIso: new Date(Date.now() + 3600 * 1000).toISOString(),
     url: "https://example.com",
     headers: {},
     response: {

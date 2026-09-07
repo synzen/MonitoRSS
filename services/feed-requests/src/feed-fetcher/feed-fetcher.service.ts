@@ -3,6 +3,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import contextLogger from '../shared/utils/log-context';
 import { RequestStatus } from './constants';
+import { resolveUserAgentForUrl } from './constants/custom-user-agent-tweaks.constants';
 import { Request, Response } from './entities';
 import { deflate, inflate, gunzip } from 'zlib';
 import { promisify } from 'util';
@@ -266,11 +267,23 @@ export class FeedFetcherService {
     request: PartitionedRequestInsert;
     responseText?: string | null;
   }> {
+    const restHeaders: Record<string, string> = {};
+    let explicitUserAgent: string | undefined;
+
+    for (const [key, val] of Object.entries(options?.headers || {})) {
+      if (key.toLowerCase() === 'user-agent') {
+        explicitUserAgent = val as string;
+      } else {
+        restHeaders[key] = val as string;
+      }
+    }
+
+    const resolvedUserAgent =
+      explicitUserAgent || resolveUserAgentForUrl(url, this.defaultUserAgent);
+
     const fetchOptions: FetchOptions = {
       headers: {
-        'user-agent':
-          this.configService.get<string>('feedUserAgent') ||
-          this.defaultUserAgent,
+        'user-agent': resolvedUserAgent,
         accept: 'text/html,text/xml,application/xml,application/rss+xml',
         'accept-encoding': 'gzip',
         /**
@@ -279,7 +292,7 @@ export class FeedFetcherService {
          */
         'Sec-Fetch-Mode': 'navigate',
         'sec-fetch-site': 'none',
-        ...options?.headers,
+        ...restHeaders,
       },
     };
     const request = new Request();

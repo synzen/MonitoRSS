@@ -276,7 +276,7 @@ export default class PartitionedRequestsStoreService {
       id: number;
       url: string;
       created_at: Date;
-      next_retry_date: Date;
+      next_retry_date: Date | null;
       status: RequestStatus;
       response_status_code: number | null;
       fetch_options: Record<string, string> | null;
