@@ -59,6 +59,9 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: paddle-sandbox
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
