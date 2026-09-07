@@ -10,7 +10,7 @@ import { instanceSuffix } from "./instance";
 const lockPath = (name: string) =>
   join(tmpdir(), `monitorss-e2e-${name}${instanceSuffix}.lock`);
 
-const STALE_LOCK_MS = 120_000;
+const STALE_LOCK_MS = 180_000;
 const RETRY_INTERVAL_MS = 250;
 
 const sleep = (ms: number) =>
@@ -22,8 +22,8 @@ const sleep = (ms: number) =>
 //
 // The lock is advisory and self-healing: a worker killed mid-section would
 // otherwise wedge the whole run, so a lock held past STALE_LOCK_MS is forcibly
-// reclaimed. That bound is well above how long a guarded section takes and below
-// the per-test timeouts that would fail the run anyway.
+// reclaimed. That bound exceeds the 150-second Paddle webhook confirmation wait
+// while remaining below the 200-second Paddle fixture timeout.
 export async function withCrossWorkerLock<T>(
   name: string,
   fn: () => Promise<T>,
