@@ -1,8 +1,8 @@
 import { captureException } from "@sentry/react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import ApiAdapterError from "@/utils/ApiAdapterError";
-import { getApplicableLegalNotice } from "./api";
+import { acknowledgeLegalNotice, getApplicableLegalNotice } from "./api";
 import type { GetApplicableLegalNoticeOutput } from "./types";
 
 export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
@@ -19,4 +19,25 @@ export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
   }, [query.error]);
 
   return query;
+};
+
+export const useAcknowledgeLegalNotice = () => {
+  const queryClient = useQueryClient();
+  const mutation = useMutation<void, ApiAdapterError, string>(
+    (version) => acknowledgeLegalNotice(version),
+    {
+      onSuccess: () =>
+        queryClient.invalidateQueries({
+          queryKey: ["applicable-legal-notice"],
+        }),
+    },
+  );
+
+  useEffect(() => {
+    if (mutation.error) {
+      captureException(mutation.error);
+    }
+  }, [mutation.error]);
+
+  return mutation;
 };

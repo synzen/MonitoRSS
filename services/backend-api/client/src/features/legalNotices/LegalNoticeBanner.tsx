@@ -1,7 +1,8 @@
 import { Alert, Link, VisuallyHidden } from "@chakra-ui/react";
 import { Fragment } from "react";
+import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { useDiscordAuthStatus } from "@/features/discordUser";
-import { useApplicableLegalNotice } from "./hooks";
+import { useAcknowledgeLegalNotice, useApplicableLegalNotice } from "./hooks";
 
 const DOCUMENT_LABELS = {
   terms: "Terms and Conditions",
@@ -13,6 +14,7 @@ export const LegalNoticeBanner = () => {
   const { data } = useApplicableLegalNotice({
     enabled: !!authStatus?.authenticated,
   });
+  const acknowledgement = useAcknowledgeLegalNotice();
   const notice = data?.result;
 
   if (!notice) {
@@ -46,6 +48,16 @@ export const LegalNoticeBanner = () => {
             .
           </span>
         </Alert.Description>
+        <SafeLoadingButton
+          alignSelf="flex-start"
+          mt={2}
+          size="sm"
+          aria-label="Acknowledge and dismiss legal notice"
+          loading={acknowledgement.status === "loading"}
+          onClick={() => acknowledgement.mutate(notice.version)}
+        >
+          Got it
+        </SafeLoadingButton>
       </Alert.Content>
     </Alert.Root>
   );

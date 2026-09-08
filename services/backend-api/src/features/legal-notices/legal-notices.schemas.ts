@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Type, type Static } from "@sinclair/typebox";
 
 export const LEGAL_DOCUMENT_TYPES = ["terms", "privacy-policy"] as const;
 
@@ -14,9 +15,17 @@ const LegalDocumentSchema = z.object({
 
 export const LegalNoticeSchema = z
   .object({
-    version: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Version must use YYYY-MM-DD"),
-    displayAt: z.string().datetime({ offset: true }).transform((value) => new Date(value)),
-    effectiveAt: z.string().datetime({ offset: true }).transform((value) => new Date(value)),
+    version: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Version must use YYYY-MM-DD"),
+    displayAt: z
+      .string()
+      .datetime({ offset: true })
+      .transform((value) => new Date(value)),
+    effectiveAt: z
+      .string()
+      .datetime({ offset: true })
+      .transform((value) => new Date(value)),
     summary: z.string().trim().min(1).max(1_000),
     documents: z.array(LegalDocumentSchema).min(1),
   })
@@ -44,3 +53,14 @@ export const LegalNoticeSchema = z
   });
 
 export type LegalNotice = z.infer<typeof LegalNoticeSchema>;
+
+export const CreateLegalNoticeAcknowledgementBodySchema = Type.Object(
+  {
+    version: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }),
+  },
+  { additionalProperties: false },
+);
+
+export type CreateLegalNoticeAcknowledgementBody = Static<
+  typeof CreateLegalNoticeAcknowledgementBodySchema
+>;

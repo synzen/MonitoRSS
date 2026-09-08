@@ -25,6 +25,11 @@ export interface IUserFeedListStatusFilters {
   statuses: string[];
 }
 
+export interface ILegalNoticeAcknowledgement {
+  version: string;
+  acknowledgedAt: Date;
+}
+
 export interface IUserPreferences {
   alertOnDisabledFeeds?: boolean;
   dateFormat?: string;
@@ -37,6 +42,7 @@ export interface IUserPreferences {
   feedListCompactView?: boolean;
   feedListPageSize?: 50 | 100;
   lastActiveWorkspaceSlug?: string;
+  legalNoticeAcknowledgement?: ILegalNoticeAcknowledgement;
 }
 
 export interface IUserFeatureFlags {
@@ -84,6 +90,7 @@ export interface UpdateUserPreferencesInput {
   feedListCompactView?: boolean | null;
   feedListPageSize?: 50 | 100 | null;
   lastActiveWorkspaceSlug?: string | null;
+  legalNoticeAcknowledgement?: ILegalNoticeAcknowledgement | null;
 }
 
 export interface SetVerifiedEmailResult {

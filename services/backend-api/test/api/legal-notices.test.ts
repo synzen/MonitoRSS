@@ -1,7 +1,10 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Environment } from "../../src/config";
-import { getApplicableLegalNoticeHandler } from "../../src/features/legal-notices/legal-notices.handlers";
+import {
+  createLegalNoticeAcknowledgementHandler,
+  getApplicableLegalNoticeHandler,
+} from "../../src/features/legal-notices/legal-notices.handlers";
 import {
   createAppTestContext,
   type AppTestContext,
@@ -40,13 +43,28 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     assert.equal(response.status, 401);
   });
 
+  it("requires authentication to acknowledge a notice", async () => {
+    const response = await ctx.fetch("/api/v1/legal-notices/acknowledgements", {
+      method: "POST",
+      headers: {
+        host: "my.monitorss.xyz",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ version: notice.version }),
+    });
+
+    assert.equal(response.status, 401);
+  });
+
   it("returns the notice for an account created before it takes effect", async () => {
     const discordUserId = generateSnowflake();
     await ctx.container.userRepository.create({ discordUserId });
-    await ctx.connection.collection("users").updateOne(
-      { discordUserId },
-      { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
-    );
+    await ctx.connection
+      .collection("users")
+      .updateOne(
+        { discordUserId },
+        { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
+      );
 
     const response = await getApplicableNotice(ctx, discordUserId);
 
@@ -63,14 +81,70 @@ describe("GET /api/v1/legal-notices/applicable", () => {
   it("does not return a historical notice for a new account", async () => {
     const discordUserId = generateSnowflake();
     await ctx.container.userRepository.create({ discordUserId });
-    await ctx.connection.collection("users").updateOne(
-      { discordUserId },
-      { $set: { createdAt: notice.effectiveAt } },
-    );
+    await ctx.connection
+      .collection("users")
+      .updateOne(
+        { discordUserId },
+        { $set: { createdAt: notice.effectiveAt } },
+      );
 
     const response = await getApplicableNotice(ctx, discordUserId);
 
     assert.deepEqual(response.body, { result: null });
+  });
+
+  it("records an acknowledgement and hides that notice version", async () => {
+    const discordUserId = generateSnowflake();
+    await ctx.container.userRepository.create({ discordUserId });
+    await ctx.connection
+      .collection("users")
+      .updateOne(
+        { discordUserId },
+        { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
+      );
+
+    const response = await acknowledgeNotice(
+      ctx,
+      discordUserId,
+      notice.version,
+    );
+    const user =
+      await ctx.container.userRepository.findByDiscordId(discordUserId);
+
+    assert.equal(response.statusCode, 204);
+    assert.equal(
+      user?.preferences?.legalNoticeAcknowledgement?.version,
+      notice.version,
+    );
+    assert.ok(
+      user?.preferences?.legalNoticeAcknowledgement?.acknowledgedAt instanceof
+        Date,
+    );
+    assert.deepEqual((await getApplicableNotice(ctx, discordUserId)).body, {
+      result: null,
+    });
+  });
+
+  it("does not let an acknowledgement hide a later notice version", async () => {
+    const discordUserId = generateSnowflake();
+    await ctx.container.userRepository.create({ discordUserId });
+    await acknowledgeNotice(ctx, discordUserId, notice.version);
+
+    ctx.container.config.BACKEND_API_LEGAL_NOTICE = {
+      ...notice,
+      version: "2026-10-01",
+    };
+
+    const response = await getApplicableNotice(ctx, discordUserId);
+
+    assert.deepEqual(response.body, {
+      result: {
+        version: "2026-10-01",
+        summary: notice.summary,
+        documents: notice.documents,
+      },
+    });
+    ctx.container.config.BACKEND_API_LEGAL_NOTICE = notice;
   });
 
   it("returns no notice on non-production hosts", async () => {
@@ -96,7 +170,11 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     ctx.container.config.NODE_ENV = Environment.Local;
     ctx.container.config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW = true;
 
-    const response = await getApplicableNotice(ctx, generateSnowflake(), "web-api");
+    const response = await getApplicableNotice(
+      ctx,
+      generateSnowflake(),
+      "web-api",
+    );
 
     assert.deepEqual(response.body, { result: null });
     ctx.container.config.NODE_ENV = Environment.Production;
@@ -127,4 +205,32 @@ async function getApplicableNotice(
   );
 
   return { statusCode, body };
+}
+
+async function acknowledgeNotice(
+  ctx: AppTestContext,
+  discordUserId: string,
+  version: string,
+  hostname = "my.monitorss.xyz",
+) {
+  let statusCode = 200;
+  const reply = {
+    code(code: number) {
+      statusCode = code;
+      return this;
+    },
+    send() {},
+  };
+
+  await createLegalNoticeAcknowledgementHandler(
+    {
+      container: ctx.container,
+      discordUserId,
+      hostname,
+      body: { version },
+    } as never,
+    reply as never,
+  );
+
+  return { statusCode };
 }
