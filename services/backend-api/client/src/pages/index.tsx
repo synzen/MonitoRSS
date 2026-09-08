@@ -14,7 +14,6 @@ import { NotFound } from "./NotFound";
 import { RevertVerifiedEmail } from "./RevertVerifiedEmail";
 import { ScopeAwareLanding } from "./ScopeAwareLanding";
 import { SuspenseErrorBoundary } from "../components/SuspenseErrorBoundary";
-import { AlertButtonColorPreview } from "../mocks/AlertButtonColorPreview";
 
 import { lazyWithRetries } from "../utils/lazyImportWithRetry";
 
@@ -55,11 +54,9 @@ const WorkspaceBillingPage = lazyWithRetries(() =>
 );
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
-const isMockApi = import.meta.env.MODE === "development-mockapi";
 
 const Pages: React.FC = () => (
   <SentryRoutes>
-    {isMockApi && <Route path="/mock-alert-actions" element={<AlertButtonColorPreview />} />}
     <Route path={pages.notFound()} element={<NotFound />} />
     <Route
       path="/"
