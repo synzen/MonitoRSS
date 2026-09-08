@@ -107,8 +107,7 @@ const configSchema = z.object({
   BACKEND_API_EMAIL_PRIVACY_POLICY_URL: z.string().optional(),
   BACKEND_API_EMAIL_FOOTER_ADDRESS: z.string().optional(),
 
-  // Hosted-only, versioned legal update notice. Leaving this unset keeps the
-  // feature inactive, which is the safe default for self-hosted installations.
+  // Versioned legal update notice. Leaving this unset keeps the feature inactive.
   BACKEND_API_LEGAL_NOTICE: z.preprocess(
     (value) => {
       if (typeof value !== "string" || !value) {
@@ -123,11 +122,6 @@ const configSchema = z.object({
     },
     LegalNoticeSchema.optional(),
   ),
-  BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW: z
-    .string()
-    .transform((val) => val === "true")
-    .default("false"),
-
   // Paddle
   BACKEND_API_PADDLE_KEY: z.string().optional(),
   BACKEND_API_PADDLE_URL: z.string().optional(),

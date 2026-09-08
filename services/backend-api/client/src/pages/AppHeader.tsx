@@ -6,6 +6,7 @@ import { MenuItem } from "@/components/ui/menu";
 import { LogoutButton } from "@/features/auth";
 import { useDiscordBot, useDiscordUserMe } from "@/features/discordUser";
 import { SearchFeedsModal, useFeedScope } from "@/features/feed";
+import { LegalNoticeBanner } from "@/features/legalNotices";
 import {
   CreateWorkspaceDialog,
   WorkspaceDormantBanner,
@@ -61,6 +62,7 @@ export const AppHeader = ({ invertBackground }: Props) => {
           />
         }
       />
+      <LegalNoticeBanner />
       {/* Workspace-level (account-scope) banner sits below the global header, above page
           content — it self-gates via useCurrentWorkspace(), which is null outside a
           workspace scope, so personal routes render nothing here. */}

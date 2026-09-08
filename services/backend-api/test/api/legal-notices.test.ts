@@ -166,19 +166,27 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     ctx.container.config.NODE_ENV = Environment.Production;
   });
 
-  it("exposes the notice when the local preview is enabled", async () => {
+  it("exposes a configured notice locally", async () => {
     ctx.container.config.NODE_ENV = Environment.Local;
-    ctx.container.config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW = true;
+    const discordUserId = generateSnowflake();
+    await ctx.container.userRepository.create({ discordUserId });
+    await ctx.connection
+      .collection("users")
+      .updateOne(
+        { discordUserId },
+        { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
+      );
 
-    const response = await getApplicableNotice(
-      ctx,
-      generateSnowflake(),
-      "web-api",
-    );
+    const response = await getApplicableNotice(ctx, discordUserId, "web-api");
 
-    assert.deepEqual(response.body, { result: null });
+    assert.deepEqual(response.body, {
+      result: {
+        version: notice.version,
+        summary: notice.summary,
+        documents: notice.documents,
+      },
+    });
     ctx.container.config.NODE_ENV = Environment.Production;
-    ctx.container.config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW = false;
   });
 });
 

@@ -12,7 +12,6 @@ import { SendTestArticleProvider } from "./features/feedConnections/discordChann
 import Pages from "./pages";
 import { ScopeNavigationContainer } from "./pages/ScopeNavigationContainer";
 import { AccessibleNavigationAnnouncer } from "./components/AccessibleNavigationAnnouncer";
-import { LegalNoticeBanner } from "./features/legalNotices";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -24,7 +23,6 @@ const App: React.FC = () => {
   return (
     <Box display="flex" flexDir="column" height="100dvh">
       <AccessibleNavigationAnnouncer />
-      <LegalNoticeBanner />
       <Box display="flex" flexDir="column" flex="1" minH="0">
         <SendTestArticleProvider>
           <ScopeNavigationContainer>

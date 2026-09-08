@@ -10,7 +10,7 @@ export const LegalNoticeSchema = object({
         url: string().url().required(),
       }).required(),
     ).required(),
-  }).nullable().required(),
+  }).nullable().defined(),
 });
 
 export type GetApplicableLegalNoticeOutput = InferType<typeof LegalNoticeSchema>;

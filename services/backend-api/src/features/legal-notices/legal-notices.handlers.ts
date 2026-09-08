@@ -13,11 +13,7 @@ function getActiveLegalNotice(request: FastifyRequest): LegalNotice | null {
     config.NODE_ENV === Environment.Production &&
     request.hostname.toLowerCase() === PRODUCTION_DASHBOARD_HOSTNAME;
 
-  if (
-    (config.NODE_ENV === Environment.Local &&
-      !config.BACKEND_API_ENABLE_LEGAL_NOTICE_PREVIEW) ||
-    (config.NODE_ENV !== Environment.Local && !isProductionDashboard)
-  ) {
+  if (config.NODE_ENV !== Environment.Local && !isProductionDashboard) {
     return null;
   }
 
