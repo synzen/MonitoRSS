@@ -1,4 +1,4 @@
-import { after, before, describe, it } from "node:test";
+import { after, afterEach, before, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
 import { Environment } from "../../src/config";
 import {
@@ -26,13 +26,76 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     ctx = await createAppTestContext({
       configOverrides: {
         NODE_ENV: Environment.Production,
-        BACKEND_API_LEGAL_NOTICE: notice,
+        BACKEND_API_LEGAL_NOTICE: [notice],
       },
     });
   });
 
   after(async () => {
     await ctx.teardown();
+  });
+
+  afterEach(() => {
+    mock.timers.reset();
+    ctx.container.config.BACKEND_API_LEGAL_NOTICE = [notice];
+    ctx.container.config.NODE_ENV = Environment.Production;
+  });
+
+  it("uses controlled server time for activation, phase changes, and the next refresh", async () => {
+    mock.timers.enable({ apis: ["Date"], now: new Date("2026-08-31T23:59:59.000Z") });
+    const hidden = await getRawApplicableNotice(ctx, generateSnowflake());
+    assert.deepEqual(hidden.body, {
+      result: null,
+      serverTime: "2026-08-31T23:59:59.000Z",
+      nextTransitionAt: "2026-09-01T00:00:00.000Z",
+    });
+
+    mock.timers.reset();
+    mock.timers.enable({ apis: ["Date"], now: new Date("2026-09-01T00:00:00.000Z") });
+    const discordUserId = generateSnowflake();
+    await ctx.container.userRepository.create({ discordUserId });
+    await ctx.connection.collection("users").updateOne(
+      { discordUserId },
+      { $set: { createdAt: new Date("2026-08-01T00:00:00.000Z") } },
+    );
+    const upcoming = await getRawApplicableNotice(ctx, discordUserId);
+    assert.deepEqual(upcoming.body, {
+      result: {
+        version: notice.version,
+        phase: "upcoming",
+        summary: notice.summary,
+        documents: notice.documents,
+      },
+      serverTime: "2026-09-01T00:00:00.000Z",
+      nextTransitionAt: "2026-09-15T00:00:00.000Z",
+    });
+
+    mock.timers.reset();
+    mock.timers.enable({ apis: ["Date"], now: new Date("2026-09-15T00:00:00.000Z") });
+    const updated = await getRawApplicableNotice(ctx, discordUserId);
+    assert.equal((updated.body as { result: { phase: string } }).result.phase, "updated");
+  });
+
+  it("supersedes older displayed notices with the newest schedule", async () => {
+    mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-02T00:00:00.000Z") });
+    ctx.container.config.BACKEND_API_LEGAL_NOTICE = [
+      notice,
+      {
+        ...notice,
+        version: "2026-10-01",
+        displayAt: new Date("2026-10-01T00:00:00.000Z"),
+        effectiveAt: new Date("2026-10-15T00:00:00.000Z"),
+      },
+    ];
+    const discordUserId = generateSnowflake();
+    await ctx.container.userRepository.create({ discordUserId });
+    await ctx.connection.collection("users").updateOne(
+      { discordUserId },
+      { $set: { createdAt: new Date("2026-08-01T00:00:00.000Z") } },
+    );
+
+    const response = await getRawApplicableNotice(ctx, discordUserId);
+    assert.equal((response.body as { result: { version: string } }).result.version, "2026-10-01");
   });
 
   it("requires authentication", async () => {
@@ -130,10 +193,10 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     await ctx.container.userRepository.create({ discordUserId });
     await acknowledgeNotice(ctx, discordUserId, notice.version);
 
-    ctx.container.config.BACKEND_API_LEGAL_NOTICE = {
+    ctx.container.config.BACKEND_API_LEGAL_NOTICE = [{
       ...notice,
       version: "2026-10-01",
-    };
+    }];
 
     const response = await getApplicableNotice(ctx, discordUserId);
 
@@ -144,7 +207,7 @@ describe("GET /api/v1/legal-notices/applicable", () => {
         documents: notice.documents,
       },
     });
-    ctx.container.config.BACKEND_API_LEGAL_NOTICE = notice;
+    ctx.container.config.BACKEND_API_LEGAL_NOTICE = [notice];
   });
 
   it("returns no notice on non-production hosts", async () => {
@@ -191,6 +254,31 @@ describe("GET /api/v1/legal-notices/applicable", () => {
 });
 
 async function getApplicableNotice(
+  ctx: AppTestContext,
+  discordUserId: string,
+  hostname = "my.monitorss.xyz",
+) {
+  const response = await getRawApplicableNotice(ctx, discordUserId, hostname);
+
+  return {
+    statusCode: response.statusCode,
+    body: {
+      result: withoutPhase((response.body as { result: unknown }).result),
+    },
+  };
+}
+
+function withoutPhase(result: unknown): unknown {
+  if (!result) {
+    return result;
+  }
+
+  const { phase: _phase, ...notice } = result as { phase: string } & Record<string, unknown>;
+
+  return notice;
+}
+
+async function getRawApplicableNotice(
   ctx: AppTestContext,
   discordUserId: string,
   hostname = "my.monitorss.xyz",

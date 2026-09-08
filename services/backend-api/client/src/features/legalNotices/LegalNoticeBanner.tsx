@@ -25,7 +25,11 @@ export const LegalNoticeBanner = () => {
     <Alert.Root status="info" role="status" aria-label="Legal notice" borderRadius={0}>
       <Alert.Indicator />
       <Alert.Content>
-        <Alert.Title>Updates to our Terms and Privacy Policy</Alert.Title>
+        <Alert.Title>
+          {notice.phase === "upcoming"
+            ? "Upcoming updates to our Terms and Privacy Policy"
+            : "Updates to our Terms and Privacy Policy"}
+        </Alert.Title>
         <Alert.Description>
           <span>{notice.summary}</span>
           <span>

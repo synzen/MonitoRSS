@@ -1,6 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { LegalNoticeSchema } from "../../../src/features/legal-notices/legal-notices.schemas";
+import {
+  LegalNoticeSchema,
+  LegalNoticesSchema,
+} from "../../../src/features/legal-notices/legal-notices.schemas";
 
 const validNotice = {
   version: "2026-09-01",
@@ -32,4 +35,28 @@ describe("LegalNoticeSchema", () => {
       assert.equal(LegalNoticeSchema.safeParse(notice).success, false);
     });
   }
+});
+
+describe("LegalNoticesSchema", () => {
+  it("rejects duplicate versions and overlapping schedules", () => {
+    assert.equal(
+      LegalNoticesSchema.safeParse([
+        validNotice,
+        { ...validNotice, version: "2026-09-02" },
+      ]).success,
+      false,
+    );
+    assert.equal(
+      LegalNoticesSchema.safeParse([
+        validNotice,
+        {
+          ...validNotice,
+          version: "2026-09-16",
+          displayAt: "2026-09-14T00:00:00.000Z",
+          effectiveAt: "2026-09-30T00:00:00.000Z",
+        },
+      ]).success,
+      false,
+    );
+  });
 });

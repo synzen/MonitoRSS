@@ -3,27 +3,73 @@ import { Environment } from "../../config";
 import type {
   CreateLegalNoticeAcknowledgementBody,
   LegalNotice,
+  LegalNotices,
 } from "./legal-notices.schemas";
 
 export const PRODUCTION_DASHBOARD_HOSTNAME = "my.monitorss.xyz";
 
-function getActiveLegalNotice(request: FastifyRequest): LegalNotice | null {
+type LegalNoticePhase = "upcoming" | "updated";
+
+interface ApplicableLegalNoticeResponse {
+  result: {
+    version: string;
+    phase: LegalNoticePhase;
+    summary: string;
+    documents: LegalNotice["documents"];
+  } | null;
+  serverTime: string;
+  nextTransitionAt: string | null;
+}
+
+function getApplicableConfiguredNotice(
+  notices: LegalNotices | undefined,
+  now: Date,
+): LegalNotice | null {
+  if (!notices) {
+    return null;
+  }
+
+  return (
+    notices
+      .filter((notice) => notice.displayAt <= now)
+      .sort((left, right) => right.displayAt.getTime() - left.displayAt.getTime())[0] ??
+    null
+  );
+}
+
+function getNextTransitionAt(
+  notices: LegalNotices | undefined,
+  notice: LegalNotice | null,
+  now: Date,
+): Date | null {
+  const nextDisplayAt = notices
+    ?.filter((candidate) => candidate.displayAt > now)
+    .sort((left, right) => left.displayAt.getTime() - right.displayAt.getTime())[0]
+    ?.displayAt;
+  const effectiveAt = notice && notice.effectiveAt > now ? notice.effectiveAt : null;
+
+  if (!nextDisplayAt) {
+    return effectiveAt;
+  }
+
+  return !effectiveAt || nextDisplayAt < effectiveAt ? nextDisplayAt : effectiveAt;
+}
+
+function canExposeLegalNotices(request: FastifyRequest): boolean {
   const { config } = request.container;
   const isProductionDashboard =
     config.NODE_ENV === Environment.Production &&
     request.hostname.toLowerCase() === PRODUCTION_DASHBOARD_HOSTNAME;
 
-  if (config.NODE_ENV !== Environment.Local && !isProductionDashboard) {
+  return config.NODE_ENV === Environment.Local || isProductionDashboard;
+}
+
+function getActiveLegalNotice(request: FastifyRequest, now: Date): LegalNotice | null {
+  if (!canExposeLegalNotices(request)) {
     return null;
   }
 
-  const notice = config.BACKEND_API_LEGAL_NOTICE;
-
-  if (!notice || notice.displayAt > new Date()) {
-    return null;
-  }
-
-  return notice;
+  return getApplicableConfiguredNotice(request.container.config.BACKEND_API_LEGAL_NOTICE, now);
 }
 
 export async function getApplicableLegalNoticeHandler(
@@ -31,10 +77,19 @@ export async function getApplicableLegalNoticeHandler(
   reply: FastifyReply,
 ): Promise<void> {
   const { userRepository } = request.container;
-  const notice = getActiveLegalNotice(request);
+  const now = new Date();
+  const notice = getActiveLegalNotice(request, now);
+  const nextTransitionAt = canExposeLegalNotices(request)
+    ? getNextTransitionAt(request.container.config.BACKEND_API_LEGAL_NOTICE, notice, now)
+    : null;
+  const response: ApplicableLegalNoticeResponse = {
+    result: null,
+    serverTime: now.toISOString(),
+    nextTransitionAt: nextTransitionAt?.toISOString() ?? null,
+  };
 
   if (!notice) {
-    reply.send({ result: null });
+    reply.send(response);
     return;
   }
 
@@ -45,17 +100,17 @@ export async function getApplicableLegalNoticeHandler(
     user.createdAt >= notice.effectiveAt ||
     user.preferences?.legalNoticeAcknowledgement?.version === notice.version
   ) {
-    reply.send({ result: null });
+    reply.send(response);
     return;
   }
 
-  reply.send({
-    result: {
-      version: notice.version,
-      summary: notice.summary,
-      documents: notice.documents,
-    },
-  });
+  response.result = {
+    version: notice.version,
+    phase: now < notice.effectiveAt ? "upcoming" : "updated",
+    summary: notice.summary,
+    documents: notice.documents,
+  };
+  reply.send(response);
 }
 
 export async function createLegalNoticeAcknowledgementHandler(
@@ -63,7 +118,7 @@ export async function createLegalNoticeAcknowledgementHandler(
   reply: FastifyReply,
 ): Promise<void> {
   const { userRepository } = request.container;
-  const notice = getActiveLegalNotice(request);
+  const notice = getActiveLegalNotice(request, new Date());
 
   if (!notice || notice.version !== request.body.version) {
     reply.code(204).send();

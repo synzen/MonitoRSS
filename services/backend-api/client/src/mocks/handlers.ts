@@ -402,6 +402,7 @@ const handlers = [
         ? null
         : {
             version: MOCK_LEGAL_NOTICE_VERSION,
+            phase: "upcoming",
             summary:
               "We are updating our legal terms and privacy practices. These changes take effect on October 1, 2026.",
             documents: [
@@ -412,6 +413,8 @@ const handlers = [
               },
             ],
           },
+      serverTime: "2026-09-01T00:00:00.000Z",
+      nextTransitionAt: "2026-10-01T00:00:00.000Z",
     }),
   ),
 

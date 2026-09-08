@@ -54,6 +54,35 @@ export const LegalNoticeSchema = z
 
 export type LegalNotice = z.infer<typeof LegalNoticeSchema>;
 
+export const LegalNoticesSchema = z
+  .array(LegalNoticeSchema)
+  .superRefine((notices, ctx) => {
+    const scheduledNotices = [...notices].sort(
+      (left, right) => left.displayAt.getTime() - right.displayAt.getTime(),
+    );
+    const versions = new Set<string>();
+
+    for (const [index, notice] of scheduledNotices.entries()) {
+      if (versions.has(notice.version)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Notice versions must be unique",
+        });
+      }
+      versions.add(notice.version);
+
+      const previousNotice = scheduledNotices[index - 1];
+      if (previousNotice && previousNotice.effectiveAt >= notice.displayAt) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Legal notice schedules must not overlap",
+        });
+      }
+    }
+  });
+
+export type LegalNotices = z.infer<typeof LegalNoticesSchema>;
+
 export const CreateLegalNoticeAcknowledgementBodySchema = Type.Object(
   {
     version: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }),

@@ -1,6 +1,9 @@
 import { z } from "zod";
 import dotenv from "dotenv";
-import { LegalNoticeSchema } from "./features/legal-notices/legal-notices.schemas";
+import {
+  LegalNoticeSchema,
+  LegalNoticesSchema,
+} from "./features/legal-notices/legal-notices.schemas";
 
 dotenv.config();
 
@@ -120,7 +123,10 @@ const configSchema = z.object({
         return value;
       }
     },
-    LegalNoticeSchema.optional(),
+    z
+      .union([LegalNoticeSchema, LegalNoticesSchema])
+      .transform((value) => (Array.isArray(value) ? value : [value]))
+      .optional(),
   ),
   // Paddle
   BACKEND_API_PADDLE_KEY: z.string().optional(),

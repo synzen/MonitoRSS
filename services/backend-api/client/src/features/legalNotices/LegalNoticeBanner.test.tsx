@@ -95,6 +95,26 @@ describe("LegalNoticeBanner", () => {
     expect(acknowledgeNotice).toHaveBeenCalledWith("2026-09-01");
   });
 
+  it("identifies a notice as upcoming before it becomes effective", () => {
+    vi.mocked(useDiscordAuthStatus).mockReturnValue({
+      data: { authenticated: true },
+    } as never);
+    vi.mocked(useApplicableLegalNotice).mockReturnValue({
+      data: {
+        result: {
+          version: "2026-09-01",
+          phase: "upcoming",
+          summary: "An update is planned.",
+          documents: [{ type: "terms", url: "https://monitorss.xyz/terms" }],
+        },
+      },
+    } as never);
+
+    renderBanner();
+
+    expect(screen.getByText(/upcoming updates to our terms/i)).toBeInTheDocument();
+  });
+
   it("renders nothing when the API has no applicable notice", () => {
     vi.mocked(useDiscordAuthStatus).mockReturnValue({
       data: { authenticated: true },

@@ -9,8 +9,39 @@ export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
   const query = useQuery<GetApplicableLegalNoticeOutput, ApiAdapterError>(
     ["applicable-legal-notice"],
     () => getApplicableLegalNotice(),
-    { enabled, retry: false },
+    { enabled, retry: false, refetchOnWindowFocus: false },
   );
+
+  useEffect(() => {
+    const nextTransitionAt = query.data?.nextTransitionAt;
+    const serverTime = query.data?.serverTime;
+
+    if (!nextTransitionAt || !serverTime) {
+      return undefined;
+    }
+
+    const delay = Date.parse(nextTransitionAt) - Date.parse(serverTime);
+
+    if (delay <= 0) {
+      return undefined;
+    }
+
+    const timeout = window.setTimeout(() => query.refetch(), delay);
+
+    return () => window.clearTimeout(timeout);
+  }, [query.data?.nextTransitionAt, query.data?.serverTime, query.refetch]);
+
+  useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
+    const refresh = () => query.refetch();
+
+    window.addEventListener("focus", refresh);
+
+    return () => window.removeEventListener("focus", refresh);
+  }, [enabled, query.refetch]);
 
   useEffect(() => {
     if (query.error) {
