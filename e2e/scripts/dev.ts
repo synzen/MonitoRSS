@@ -18,6 +18,13 @@ import { readFileSync } from "fs";
 import { join, resolve } from "path";
 import { startTunnel, stopTunnel } from "../helpers/tunnel";
 import { updateNotificationUrl } from "../helpers/paddle-api";
+import {
+  DEV_PROJECT_NAME,
+  assertPortAvailable,
+  clearStaleComposeLock,
+  parseComposeLockPid,
+  runCompose,
+} from "./dev-utils";
 
 const REPO_ROOT = resolve(__dirname, "..", "..");
 const COMPOSE_FILE = join(REPO_ROOT, "docker-compose.dev.yml");
@@ -69,26 +76,69 @@ function resolveNotificationSettingId(): string {
 
 // Bring the stack up detached so its container logs don't flood the terminal.
 async function composeUp(): Promise<void> {
-  await new Promise<void>((resolveUp, rejectUp) => {
-    const up = spawn("docker", ["compose", "-f", COMPOSE_FILE, "up", "-d"], {
-      cwd: REPO_ROOT,
-      stdio: "inherit",
-    });
-    up.on("error", rejectUp);
-    up.on("exit", (code) =>
-      code === 0
-        ? resolveUp()
-        : rejectUp(new Error(`docker compose up exited with code ${code}`)),
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const { code, output } = await runCompose(
+      ["compose", "-f", COMPOSE_FILE, "up", "-d"],
+      REPO_ROOT,
     );
-  });
+    if (code === 0) return;
+    const pid = parseComposeLockPid(output);
+    if (pid !== null && attempt === 0) {
+      const cleared = clearStaleComposeLock(DEV_PROJECT_NAME);
+      if (cleared.cleared) continue;
+      throw new Error(
+        `Another dev session holds the compose lock (PID ${pid}). Stop it, then run npm run dev again.`,
+      );
+    }
+    throw new Error(`docker compose up exited with code ${code}`);
+  }
+}
+
+// Stale pidfiles survive Ctrl+C on Windows and block every later run, so take
+// over leftover containers before checking ports or starting watch.
+async function takeOverPreviousStack(): Promise<void> {
+  const cleared = clearStaleComposeLock(DEV_PROJECT_NAME);
+  if (cleared.cleared) {
+    console.log(`Cleared stale compose lock (${cleared.reason}).`);
+  }
+  console.log("Stopping any previous dev stack...");
+  const { code, output } = await runCompose(
+    ["compose", "-f", COMPOSE_FILE, "down", "--remove-orphans"],
+    REPO_ROOT,
+  );
+  if (code !== 0 && parseComposeLockPid(output) !== null) {
+    const retry = clearStaleComposeLock(DEV_PROJECT_NAME);
+    if (retry.cleared) {
+      await runCompose(
+        ["compose", "-f", COMPOSE_FILE, "down", "--remove-orphans"],
+        REPO_ROOT,
+      );
+      return;
+    }
+    const pid = parseComposeLockPid(output);
+    throw new Error(
+      `Another dev session holds the compose lock (PID ${pid}). Stop it, then run npm run dev again.`,
+    );
+  }
 }
 
 // Run `docker compose watch` in the foreground for just the sync/rebuild
 // output. The returned process owns the session lifecycle.
-function startWatch(): ChildProcess {
+function startWatch(): { proc: ChildProcess; output: () => string } {
+  let output = "";
   const proc = spawn("docker", ["compose", "-f", COMPOSE_FILE, "watch"], {
     cwd: REPO_ROOT,
-    stdio: "inherit",
+    stdio: ["inherit", "pipe", "pipe"],
+    windowsHide: true,
+  });
+
+  proc.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+    process.stdout.write(chunk);
+  });
+  proc.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString();
+    process.stderr.write(chunk);
   });
 
   proc.on("error", (err) => {
@@ -96,18 +146,73 @@ function startWatch(): ChildProcess {
     process.exit(1);
   });
 
-  return proc;
+  return { proc, output: () => output };
+}
+
+async function awaitWatchHealthy(
+  watch: { proc: ChildProcess; output: () => string },
+  graceMs = 3000,
+): Promise<void> {
+  const { proc } = watch;
+  const failFast = (): void => {
+    if (proc.exitCode !== null && proc.exitCode !== 0) {
+      throw new Error(`docker compose watch exited with code ${proc.exitCode}`);
+    }
+  };
+  failFast();
+  if (proc.exitCode !== null) return;
+  await new Promise<void>((resolveWait) => {
+    const timer = setTimeout(() => {
+      proc.off("exit", onExit);
+      resolveWait();
+    }, graceMs);
+    const onExit = () => {
+      clearTimeout(timer);
+      resolveWait();
+    };
+    proc.once("exit", onExit);
+  });
+  failFast();
+}
+
+async function startHealthyWatch(): Promise<{
+  proc: ChildProcess;
+  output: () => string;
+}> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const watch = startWatch();
+    try {
+      await awaitWatchHealthy(watch);
+      return watch;
+    } catch (error) {
+      const pid = parseComposeLockPid(watch.output());
+      if (pid !== null && attempt === 0) {
+        const cleared = clearStaleComposeLock(DEV_PROJECT_NAME);
+        if (cleared.cleared) {
+          console.log(
+            `Watch hit a stale lock (${cleared.reason}), retrying...`,
+          );
+          continue;
+        }
+        throw new Error(
+          `Another dev session holds the compose lock (PID ${pid}). Stop it, then run npm run dev again.`,
+        );
+      }
+      throw error;
+    }
+  }
+  throw new Error("docker compose watch failed to start");
 }
 
 async function stopCompose(): Promise<void> {
-  await new Promise<void>((resolveDown) => {
-    const down = spawn("docker", ["compose", "-f", COMPOSE_FILE, "down"], {
-      cwd: REPO_ROOT,
-      stdio: "inherit",
-    });
-    down.on("exit", () => resolveDown());
-    down.on("error", () => resolveDown());
-  });
+  try {
+    await runCompose(
+      ["compose", "-f", COMPOSE_FILE, "down", "--remove-orphans"],
+      REPO_ROOT,
+    );
+  } catch {
+    // teardown is best-effort during shutdown
+  }
 }
 
 // Billing is on only when the supporter program is enabled AND Paddle is
@@ -135,8 +240,12 @@ async function main() {
   }
 
   let shuttingDown = false;
+  await takeOverPreviousStack();
+  await assertPortAvailable(3000, "web client");
+  await assertPortAvailable(port, "web api");
   await composeUp();
-  const compose = startWatch();
+  const watch = await startHealthyWatch();
+  const compose = watch.proc;
 
   async function shutdown(code: number) {
     if (shuttingDown) return;
