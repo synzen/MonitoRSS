@@ -96,11 +96,7 @@ import { WorkspaceFeedDiscoveryEmptyState } from "./WorkspaceFeedDiscoveryEmptyS
 
 export const UserFeeds = () => {
   return (
-    <BoxConstrained.Wrapper
-      justifyContent="flex-start"
-      height="100%"
-      overflow="visible"
-    >
+    <BoxConstrained.Wrapper justifyContent="flex-start" overflow="visible">
       <BoxConstrained.Container gap={6} height="100%">
         <PageAlertProvider>
           <UserFeedsInner />
