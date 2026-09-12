@@ -68,6 +68,14 @@ const UserFeedListStatusFiltersSchema = new Schema(
   { _id: false, timestamps: false },
 );
 
+const LegalNoticeDismissalSchema = new Schema(
+  {
+    version: { type: String, required: true },
+    dismissedAt: { type: Date, required: true },
+  },
+  { _id: false, timestamps: false },
+);
+
 const UserPreferencesSchema = new Schema(
   {
     alertOnDisabledFeeds: { type: Boolean },
@@ -81,6 +89,7 @@ const UserPreferencesSchema = new Schema(
     feedListCompactView: { type: Boolean },
     feedListPageSize: { type: Number, enum: [50, 100] },
     lastActiveWorkspaceSlug: { type: String },
+    legalNoticeDismissal: { type: LegalNoticeDismissalSchema },
   },
   { _id: false, timestamps: false },
 );

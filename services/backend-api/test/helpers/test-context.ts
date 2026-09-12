@@ -129,6 +129,9 @@ function createTestConfig(overrides?: Partial<Config>): Config {
     BACKEND_API_SMTP_FROM_DOMAIN: undefined,
     BACKEND_API_SMTP_PORT: undefined,
     BACKEND_API_SMTP_SECURE: true,
+    BACKEND_API_EMAIL_PRIVACY_POLICY_URL: undefined,
+    BACKEND_API_EMAIL_FOOTER_ADDRESS: undefined,
+    BACKEND_API_LEGAL_NOTICE: undefined,
 
     BACKEND_API_PADDLE_KEY: undefined,
     BACKEND_API_PADDLE_URL: undefined,

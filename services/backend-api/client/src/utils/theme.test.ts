@@ -18,7 +18,29 @@ describe("theme system", () => {
     const recipe = system.getRecipe("button");
 
     expect(recipe.defaultVariants?.variant).toBe("outline");
-    expect(recipe.variants?.variant?.outline?.borderColor).toBe("controlBorder");
+    expect(recipe.variants?.variant?.outline?.borderColor).toContain(
+      "--chakra-colors-control-border",
+    );
+  });
+
+  it("resolves the info action border token", () => {
+    expect(system.token("colors.blue.actionBorder")).toBe("#60a5fa");
+  });
+
+  it("coordinates neutral outline buttons with tinted alert surfaces", () => {
+    const button = system.getRecipe("button");
+    const alert = system.getSlotRecipe("alert");
+
+    expect(button.variants?.variant?.outline?.borderColor).toContain("--status-action-border");
+    expect(button.variants?.variant?.outline?.color).toContain("--status-action-fg");
+    expect(alert.compoundVariants).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ status: "info", variant: ["subtle", "surface"] }),
+        expect.objectContaining({ status: "warning", variant: ["subtle", "surface"] }),
+        expect.objectContaining({ status: "error", variant: ["subtle", "surface"] }),
+        expect.objectContaining({ status: "success", variant: ["subtle", "surface"] }),
+      ]),
+    );
   });
 
   it("points recipe-driven control outlines at controlBorder", () => {

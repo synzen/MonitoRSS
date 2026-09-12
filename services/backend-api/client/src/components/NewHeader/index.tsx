@@ -4,6 +4,10 @@ import { FaGear, FaCircleInfo } from "react-icons/fa6";
 
 import { pages } from "../../constants";
 import { Loading } from "../Loading";
+import {
+  BOX_CONSTRAINED_MAX_WIDTH,
+  BOX_CONSTRAINED_PADDING_X,
+} from "../BoxConstrainedWidth";
 import { Alert } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
@@ -47,8 +51,8 @@ export const NewHeader = ({
         <Flex
           width="100%"
           justifyContent="space-between"
-          maxWidth="1400px"
-          paddingX={{ base: 4, lg: 12 }}
+          maxWidth={BOX_CONSTRAINED_MAX_WIDTH}
+          paddingX={BOX_CONSTRAINED_PADDING_X}
         >
           <HStack gap={8}>
             {/* Logo and scope switcher read as one path (brand / scope), so they share

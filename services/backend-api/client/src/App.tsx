@@ -12,6 +12,7 @@ import { SendTestArticleProvider } from "./features/feedConnections/discordChann
 import Pages from "./pages";
 import { ScopeNavigationContainer } from "./pages/ScopeNavigationContainer";
 import { AccessibleNavigationAnnouncer } from "./components/AccessibleNavigationAnnouncer";
+import { AppLegalFooter } from "./components/AppLegalFooter";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -21,13 +22,23 @@ dayjs.extend(relativeTime);
 
 const App: React.FC = () => {
   return (
-    <Box display="flex" flexDir="column" height="100vh">
+    <Box display="flex" flexDir="column" height="100dvh">
       <AccessibleNavigationAnnouncer />
-      <SendTestArticleProvider>
-        <ScopeNavigationContainer>
-          <Pages />
-        </ScopeNavigationContainer>
-      </SendTestArticleProvider>
+      {/* Block-level scroll root: page content must never flex-shrink inside it.
+          position:relative keeps positioned page content (e.g. Chakra tables) inside
+          this clip — otherwise it escapes to <body> and inflates document scroll. */}
+      <Box flex="1" minH="0" overflowY="auto" position="relative">
+        <SendTestArticleProvider>
+          <ScopeNavigationContainer>
+            {/* minHeight (not height) lets the footer pin to the viewport bottom on
+                short pages via mt=auto while still flowing after long content. */}
+            <Box display="flex" flexDir="column" minHeight="100%">
+              <Pages />
+              <AppLegalFooter />
+            </Box>
+          </ScopeNavigationContainer>
+        </SendTestArticleProvider>
+      </Box>
     </Box>
   );
 };

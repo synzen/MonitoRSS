@@ -1,5 +1,9 @@
 import { z } from "zod";
 import dotenv from "dotenv";
+import {
+  LegalNoticeSchema,
+  LegalNoticesSchema,
+} from "./features/legal-notices/legal-notices.schemas";
 
 dotenv.config();
 
@@ -106,6 +110,24 @@ const configSchema = z.object({
   BACKEND_API_EMAIL_PRIVACY_POLICY_URL: z.string().optional(),
   BACKEND_API_EMAIL_FOOTER_ADDRESS: z.string().optional(),
 
+  // Versioned legal update notice. Leaving this unset keeps the feature inactive.
+  BACKEND_API_LEGAL_NOTICE: z.preprocess(
+    (value) => {
+      if (typeof value !== "string" || !value) {
+        return undefined;
+      }
+
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    },
+    z
+      .union([LegalNoticeSchema, LegalNoticesSchema])
+      .transform((value) => (Array.isArray(value) ? value : [value]))
+      .optional(),
+  ),
   // Paddle
   BACKEND_API_PADDLE_KEY: z.string().optional(),
   BACKEND_API_PADDLE_URL: z.string().optional(),
