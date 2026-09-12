@@ -6,16 +6,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { system } from "@/utils/theme";
 import { useDiscordAuthStatus } from "@/features/discordUser";
 import { LegalNoticeBanner } from "./LegalNoticeBanner";
-import { useAcknowledgeLegalNotice, useApplicableLegalNotice } from "./hooks";
+import { useApplicableLegalNotice, useDismissLegalNotice } from "./hooks";
 
 vi.mock("@/features/discordUser", () => ({ useDiscordAuthStatus: vi.fn() }));
 vi.mock("./hooks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./hooks")>()),
   useApplicableLegalNotice: vi.fn(),
-  useAcknowledgeLegalNotice: vi.fn(),
+  useDismissLegalNotice: vi.fn(),
 }));
 
-const acknowledgeNotice = vi.fn();
+const dismissNotice = vi.fn();
 
 const renderBanner = () =>
   render(
@@ -26,9 +26,9 @@ const renderBanner = () =>
 
 describe("LegalNoticeBanner", () => {
   beforeEach(() => {
-    acknowledgeNotice.mockReset();
-    vi.mocked(useAcknowledgeLegalNotice).mockReturnValue({
-      mutate: acknowledgeNotice,
+    dismissNotice.mockReset();
+    vi.mocked(useDismissLegalNotice).mockReturnValue({
+      mutate: dismissNotice,
       status: "idle",
     } as never);
   });
@@ -70,7 +70,7 @@ describe("LegalNoticeBanner", () => {
     expect(useApplicableLegalNotice).toHaveBeenCalledWith({ enabled: true });
   });
 
-  it("acknowledges the displayed notice before dismissing it", async () => {
+  it("dismisses the displayed notice", async () => {
     const user = userEvent.setup();
     vi.mocked(useDiscordAuthStatus).mockReturnValue({
       data: { authenticated: true },
@@ -88,11 +88,81 @@ describe("LegalNoticeBanner", () => {
     renderBanner();
     await user.click(
       screen.getByRole("button", {
-        name: /acknowledge and dismiss legal notice/i,
+        name: /dismiss legal notice/i,
       }),
     );
 
-    expect(acknowledgeNotice).toHaveBeenCalledWith("2026-09-01");
+    expect(dismissNotice).toHaveBeenCalledWith("2026-09-01");
+  });
+
+  it("does not record dismissal when opening a document link", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useDiscordAuthStatus).mockReturnValue({
+      data: { authenticated: true },
+    } as never);
+    vi.mocked(useApplicableLegalNotice).mockReturnValue({
+      data: {
+        result: {
+          version: "2026-09-01",
+          summary: "We updated our legal documents.",
+          documents: [
+            { type: "terms", url: "https://monitorss.xyz/terms" },
+            {
+              type: "privacy-policy",
+              url: "https://monitorss.xyz/privacy-policy",
+            },
+          ],
+        },
+      },
+    } as never);
+
+    renderBanner();
+
+    // Block default anchor navigation so the test env never fetches the
+    // external URL; React click handlers still run.
+    const suppressNavigation = (event: MouseEvent) => event.preventDefault();
+    window.addEventListener("click", suppressNavigation, { capture: true });
+
+    try {
+      await user.click(
+        screen.getByRole("link", {
+          name: "Terms and Conditions (opens in a new tab)",
+        }),
+      );
+      await user.click(
+        screen.getByRole("link", { name: "Privacy Policy (opens in a new tab)" }),
+      );
+    } finally {
+      window.removeEventListener("click", suppressNavigation, { capture: true });
+    }
+
+    expect(dismissNotice).not.toHaveBeenCalled();
+    expect(screen.getByRole("status", { name: /legal notice/i })).toBeInTheDocument();
+  });
+
+  it("keeps the banner visible when saving dismissal fails", () => {
+    vi.mocked(useDiscordAuthStatus).mockReturnValue({
+      data: { authenticated: true },
+    } as never);
+    vi.mocked(useApplicableLegalNotice).mockReturnValue({
+      data: {
+        result: {
+          version: "2026-09-01",
+          summary: "We updated our legal documents.",
+          documents: [{ type: "terms", url: "https://monitorss.xyz/terms" }],
+        },
+      },
+    } as never);
+    vi.mocked(useDismissLegalNotice).mockReturnValue({
+      mutate: dismissNotice,
+      status: "error",
+      error: new Error("Network error"),
+    } as never);
+
+    renderBanner();
+
+    expect(screen.getByRole("status", { name: /legal notice/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /dismiss legal notice/i })).toBeInTheDocument();
   });
 
   it("identifies a notice as upcoming before it becomes effective", () => {

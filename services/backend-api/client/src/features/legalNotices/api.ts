@@ -9,8 +9,8 @@ export const getApplicableLegalNotice = async (): Promise<GetApplicableLegalNoti
   return response as GetApplicableLegalNoticeOutput;
 };
 
-export const acknowledgeLegalNotice = async (version: string): Promise<void> => {
-  await fetchRest("/api/v1/legal-notices/acknowledgements", {
+export const dismissLegalNotice = async (version: string): Promise<void> => {
+  await fetchRest("/api/v1/legal-notices/dismissals", {
     requestOptions: {
       method: "POST",
       body: JSON.stringify({ version }),

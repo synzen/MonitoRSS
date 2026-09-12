@@ -25,9 +25,9 @@ export interface IUserFeedListStatusFilters {
   statuses: string[];
 }
 
-export interface ILegalNoticeAcknowledgement {
+export interface ILegalNoticeDismissal {
   version: string;
-  acknowledgedAt: Date;
+  dismissedAt: Date;
 }
 
 export interface IUserPreferences {
@@ -42,7 +42,7 @@ export interface IUserPreferences {
   feedListCompactView?: boolean;
   feedListPageSize?: 50 | 100;
   lastActiveWorkspaceSlug?: string;
-  legalNoticeAcknowledgement?: ILegalNoticeAcknowledgement;
+  legalNoticeDismissal?: ILegalNoticeDismissal;
 }
 
 export interface IUserFeatureFlags {
@@ -90,7 +90,7 @@ export interface UpdateUserPreferencesInput {
   feedListCompactView?: boolean | null;
   feedListPageSize?: 50 | 100 | null;
   lastActiveWorkspaceSlug?: string | null;
-  legalNoticeAcknowledgement?: ILegalNoticeAcknowledgement | null;
+  legalNoticeDismissal?: ILegalNoticeDismissal | null;
 }
 
 export interface SetVerifiedEmailResult {

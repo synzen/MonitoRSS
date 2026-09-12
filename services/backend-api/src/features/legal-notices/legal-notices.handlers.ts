@@ -1,7 +1,8 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { Environment } from "../../config";
+import type { IUser } from "../../repositories/interfaces/user.types";
 import type {
-  CreateLegalNoticeAcknowledgementBody,
+  CreateLegalNoticeDismissalBody,
   LegalNotice,
   LegalNotices,
 } from "./legal-notices.schemas";
@@ -55,6 +56,16 @@ function getNextTransitionAt(
   return !effectiveAt || nextDisplayAt < effectiveAt ? nextDisplayAt : effectiveAt;
 }
 
+function isNoticeHiddenForUser(
+  user: Pick<IUser, "createdAt" | "preferences"> | null,
+  notice: LegalNotice,
+): boolean {
+  return (
+    !user ||
+    user.createdAt >= notice.effectiveAt ||
+    user.preferences?.legalNoticeDismissal?.version === notice.version
+  );
+}
 function canExposeLegalNotices(request: FastifyRequest): boolean {
   const { config } = request.container;
   const isProductionDashboard =
@@ -95,11 +106,7 @@ export async function getApplicableLegalNoticeHandler(
 
   const user = await userRepository.findByDiscordId(request.discordUserId);
 
-  if (
-    !user ||
-    user.createdAt >= notice.effectiveAt ||
-    user.preferences?.legalNoticeAcknowledgement?.version === notice.version
-  ) {
+  if (isNoticeHiddenForUser(user, notice)) {
     reply.send(response);
     return;
   }
@@ -113,8 +120,8 @@ export async function getApplicableLegalNoticeHandler(
   reply.send(response);
 }
 
-export async function createLegalNoticeAcknowledgementHandler(
-  request: FastifyRequest<{ Body: CreateLegalNoticeAcknowledgementBody }>,
+export async function createLegalNoticeDismissalHandler(
+  request: FastifyRequest<{ Body: CreateLegalNoticeDismissalBody }>,
   reply: FastifyReply,
 ): Promise<void> {
   const { userRepository } = request.container;
@@ -127,19 +134,15 @@ export async function createLegalNoticeAcknowledgementHandler(
 
   const user = await userRepository.findByDiscordId(request.discordUserId);
 
-  if (
-    !user ||
-    user.createdAt >= notice.effectiveAt ||
-    user.preferences?.legalNoticeAcknowledgement?.version === notice.version
-  ) {
+  if (isNoticeHiddenForUser(user, notice)) {
     reply.code(204).send();
     return;
   }
 
   await userRepository.updatePreferencesByDiscordId(request.discordUserId, {
-    legalNoticeAcknowledgement: {
+    legalNoticeDismissal: {
       version: notice.version,
-      acknowledgedAt: new Date(),
+      dismissedAt: new Date(),
     },
   });
 

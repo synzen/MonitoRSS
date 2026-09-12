@@ -2,7 +2,8 @@ import { captureException } from "@sentry/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import ApiAdapterError from "@/utils/ApiAdapterError";
-import { acknowledgeLegalNotice, getApplicableLegalNotice } from "./api";
+import { notifyError } from "@/utils/notifyError";
+import { dismissLegalNotice, getApplicableLegalNotice } from "./api";
 import type { GetApplicableLegalNoticeOutput } from "./types";
 
 export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
@@ -52,10 +53,10 @@ export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
   return query;
 };
 
-export const useAcknowledgeLegalNotice = () => {
+export const useDismissLegalNotice = () => {
   const queryClient = useQueryClient();
   const mutation = useMutation<void, ApiAdapterError, string>(
-    (version) => acknowledgeLegalNotice(version),
+    (version) => dismissLegalNotice(version),
     {
       onSuccess: () =>
         queryClient.invalidateQueries({
@@ -67,6 +68,7 @@ export const useAcknowledgeLegalNotice = () => {
   useEffect(() => {
     if (mutation.error) {
       captureException(mutation.error);
+      notifyError("Couldn't save dismissal. Try again.", mutation.error);
     }
   }, [mutation.error]);
 

@@ -1,11 +1,19 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { captureException } from "@sentry/react";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getApplicableLegalNotice } from "./api";
-import { useApplicableLegalNotice } from "./hooks";
+import ApiAdapterError from "@/utils/ApiAdapterError";
+import { notifyError } from "@/utils/notifyError";
+import { dismissLegalNotice, getApplicableLegalNotice } from "./api";
+import { useApplicableLegalNotice, useDismissLegalNotice } from "./hooks";
 
-vi.mock("./api", () => ({ getApplicableLegalNotice: vi.fn() }));
+vi.mock("./api", () => ({
+  getApplicableLegalNotice: vi.fn(),
+  dismissLegalNotice: vi.fn(),
+}));
+vi.mock("@/utils/notifyError", () => ({ notifyError: vi.fn() }));
+vi.mock("@sentry/react", () => ({ captureException: vi.fn() }));
 
 const noticeResponse = {
   result: null,
@@ -15,13 +23,13 @@ const noticeResponse = {
 
 const withQueryClient = () => {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 
-  return { wrapper };
+  return { wrapper, queryClient };
 };
 
 describe("useApplicableLegalNotice", () => {
@@ -54,7 +62,7 @@ describe("useApplicableLegalNotice", () => {
     act(() => window.dispatchEvent(new Event("focus")));
 
     await waitFor(() =>
-      expect(getApplicableLegalNotice.mock.calls.length).toBeGreaterThan(requestsBeforeFocus),
+      expect(vi.mocked(getApplicableLegalNotice).mock.calls.length).toBeGreaterThan(requestsBeforeFocus),
     );
   });
 
@@ -70,5 +78,47 @@ describe("useApplicableLegalNotice", () => {
     await waitFor(() => expect(result.current.data?.nextTransitionAt).toBeNull());
 
     expect(setTimeoutSpy.mock.calls.some(([, delay]) => delay === 60_000)).toBe(false);
+  });
+});
+
+describe("useDismissLegalNotice", () => {
+  beforeEach(() => {
+    vi.mocked(dismissLegalNotice).mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("dismisses the notice and refreshes the applicable notice", async () => {
+    const { wrapper, queryClient } = withQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const { result } = renderHook(() => useDismissLegalNotice(), { wrapper });
+
+    await act(async () => result.current.mutate("2026-09-01"));
+
+    await waitFor(() => expect(dismissLegalNotice).toHaveBeenCalledWith("2026-09-01"));
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["applicable-legal-notice"],
+    });
+    expect(notifyError).not.toHaveBeenCalled();
+  });
+
+  it("keeps the banner query and notifies when saving dismissal fails", async () => {
+    const failure = new ApiAdapterError("Network error");
+    vi.mocked(dismissLegalNotice).mockRejectedValue(failure);
+    const { wrapper, queryClient } = withQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+    const { result } = renderHook(() => useDismissLegalNotice(), { wrapper });
+
+    await act(async () => result.current.mutate("2026-09-01"));
+
+    await waitFor(() => expect(result.current.error).toBe(failure));
+    expect(captureException).toHaveBeenCalledWith(failure);
+    expect(notifyError).toHaveBeenCalledWith(
+      expect.stringMatching(/dismissal/i),
+      failure,
+    );
+    expect(invalidateSpy).not.toHaveBeenCalled();
   });
 });

@@ -2,7 +2,7 @@ import { after, afterEach, before, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
 import { Environment } from "../../src/config";
 import {
-  createLegalNoticeAcknowledgementHandler,
+  createLegalNoticeDismissalHandler,
   getApplicableLegalNoticeHandler,
 } from "../../src/features/legal-notices/legal-notices.handlers";
 import {
@@ -106,8 +106,8 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     assert.equal(response.status, 401);
   });
 
-  it("requires authentication to acknowledge a notice", async () => {
-    const response = await ctx.fetch("/api/v1/legal-notices/acknowledgements", {
+  it("requires authentication to dismiss a notice", async () => {
+    const response = await ctx.fetch("/api/v1/legal-notices/dismissals", {
       method: "POST",
       headers: {
         host: "my.monitorss.xyz",
@@ -156,7 +156,7 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     assert.deepEqual(response.body, { result: null });
   });
 
-  it("records an acknowledgement and hides that notice version", async () => {
+  it("records a dismissal and hides that notice version", async () => {
     const discordUserId = generateSnowflake();
     await ctx.container.userRepository.create({ discordUserId });
     await ctx.connection
@@ -166,32 +166,206 @@ describe("GET /api/v1/legal-notices/applicable", () => {
         { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
       );
 
-    const response = await acknowledgeNotice(
+    const before = Date.now();
+    const response = await dismissNotice(
       ctx,
       discordUserId,
       notice.version,
     );
+    const after = Date.now();
     const user =
       await ctx.container.userRepository.findByDiscordId(discordUserId);
 
     assert.equal(response.statusCode, 204);
     assert.equal(
-      user?.preferences?.legalNoticeAcknowledgement?.version,
+      user?.preferences?.legalNoticeDismissal?.version,
       notice.version,
     );
-    assert.ok(
-      user?.preferences?.legalNoticeAcknowledgement?.acknowledgedAt instanceof
-        Date,
-    );
+    const dismissedAt = user?.preferences?.legalNoticeDismissal?.dismissedAt;
+    assert.ok(dismissedAt instanceof Date);
+    assert.ok(dismissedAt.getTime() >= before && dismissedAt.getTime() <= after);
     assert.deepEqual((await getApplicableNotice(ctx, discordUserId)).body, {
       result: null,
     });
   });
 
-  it("does not let an acknowledgement hide a later notice version", async () => {
+  it("stores only the user identifier, version, and server timestamp", async () => {
     const discordUserId = generateSnowflake();
     await ctx.container.userRepository.create({ discordUserId });
-    await acknowledgeNotice(ctx, discordUserId, notice.version);
+    await ctx.connection.collection("users").updateOne(
+      { discordUserId },
+      { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
+    );
+
+    await dismissNotice(ctx, discordUserId, notice.version);
+
+    const raw = await ctx.connection
+      .collection("users")
+      .findOne({ discordUserId });
+    const dismissal = (raw?.preferences as Record<string, unknown> | undefined)
+      ?.legalNoticeDismissal as Record<string, unknown> | undefined;
+
+    assert.ok(dismissal);
+    assert.deepEqual(Object.keys(dismissal).sort(), ["dismissedAt", "version"]);
+    assert.equal(dismissal["version"], notice.version);
+    assert.ok(dismissal["dismissedAt"] instanceof Date);
+  });
+
+  it("is idempotent across repeated dismissal requests", async () => {
+    const discordUserId = generateSnowflake();
+    await ctx.container.userRepository.create({ discordUserId });
+    await ctx.connection.collection("users").updateOne(
+      { discordUserId },
+      { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
+    );
+
+    const first = await dismissNotice(ctx, discordUserId, notice.version);
+    const storedAfterFirst = (
+      await ctx.container.userRepository.findByDiscordId(discordUserId)
+    )?.preferences?.legalNoticeDismissal;
+
+    const second = await dismissNotice(ctx, discordUserId, notice.version);
+    const storedAfterSecond = (
+      await ctx.container.userRepository.findByDiscordId(discordUserId)
+    )?.preferences?.legalNoticeDismissal;
+
+    assert.equal(first.statusCode, 204);
+    assert.equal(second.statusCode, 204);
+    assert.deepEqual(storedAfterSecond, storedAfterFirst);
+    assert.deepEqual((await getApplicableNotice(ctx, discordUserId)).body, {
+      result: null,
+    });
+  });
+
+  it("isolates dismissal to the dismissing account", async () => {
+    const firstDiscordUserId = generateSnowflake();
+    const secondDiscordUserId = generateSnowflake();
+    for (const discordUserId of [firstDiscordUserId, secondDiscordUserId]) {
+      await ctx.container.userRepository.create({ discordUserId });
+      await ctx.connection.collection("users").updateOne(
+        { discordUserId },
+        { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
+      );
+    }
+
+    await dismissNotice(ctx, firstDiscordUserId, notice.version);
+
+    assert.deepEqual(
+      (await getApplicableNotice(ctx, firstDiscordUserId)).body,
+      { result: null },
+    );
+    const stillApplicable = await getApplicableNotice(ctx, secondDiscordUserId);
+    assert.equal(
+      (stillApplicable.body as { result: { version: string } }).result.version,
+      notice.version,
+    );
+    const secondUser = await ctx.container.userRepository.findByDiscordId(
+      secondDiscordUserId,
+    );
+    assert.equal(secondUser?.preferences?.legalNoticeDismissal, undefined);
+  });
+
+  it("rejects dismissal of a future notice version", async () => {
+    const discordUserId = generateSnowflake();
+    await ctx.container.userRepository.create({ discordUserId });
+    await ctx.connection.collection("users").updateOne(
+      { discordUserId },
+      { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
+    );
+
+    const response = await dismissNotice(ctx, discordUserId, "2026-10-01");
+    const user =
+      await ctx.container.userRepository.findByDiscordId(discordUserId);
+
+    assert.equal(response.statusCode, 204);
+    assert.equal(user?.preferences?.legalNoticeDismissal, undefined);
+    const stillApplicable = await getApplicableNotice(ctx, discordUserId);
+    assert.equal(
+      (stillApplicable.body as { result: { version: string } }).result.version,
+      notice.version,
+    );
+  });
+
+  it("keeps dismissal hidden across a fresh authenticated session", async () => {
+    // The shared context runs as Production, where the test session helper
+    // is unavailable, so this flow uses its own Local context over real HTTP:
+    // dismiss in one session, read back in a freshly minted session.
+    const sessionCtx = await createAppTestContext({
+      configOverrides: {
+        NODE_ENV: Environment.Local,
+        BACKEND_API_LEGAL_NOTICE: [notice],
+      },
+    });
+
+    try {
+      const discordUserId = generateSnowflake();
+      const firstSession = await sessionCtx.asUser(discordUserId);
+      await sessionCtx.connection.collection("users").updateOne(
+        { discordUserId },
+        { $set: { createdAt: new Date("2026-08-01T00:00:00.000Z") } },
+      );
+
+      const beforeDismiss = await firstSession.fetch(
+        "/api/v1/legal-notices/applicable",
+      );
+      assert.equal(
+        (
+          (await beforeDismiss.json()) as {
+            result: { version: string };
+          }
+        ).result.version,
+        notice.version,
+      );
+
+      const dismissal = await firstSession.fetch(
+        "/api/v1/legal-notices/dismissals",
+        {
+          method: "POST",
+          body: JSON.stringify({ version: notice.version }),
+        },
+      );
+      assert.equal(dismissal.status, 204);
+
+      const freshSession = await sessionCtx.asUser(discordUserId);
+      const afterDismiss = await freshSession.fetch(
+        "/api/v1/legal-notices/applicable",
+      );
+      const afterBody = (await afterDismiss.json()) as {
+        result: unknown;
+        serverTime: string;
+      };
+      assert.equal(afterBody.result, null);
+      assert.equal(typeof afterBody.serverTime, "string");
+    } finally {
+      await sessionCtx.teardown();
+    }
+  });
+
+  it("removes dismissal records when the account is deleted", async () => {
+    const discordUserId = generateSnowflake();
+    const created =
+      await ctx.container.userRepository.create({ discordUserId });
+    await ctx.connection.collection("users").updateOne(
+      { discordUserId },
+      { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
+    );
+    await dismissNotice(ctx, discordUserId, notice.version);
+
+    await ctx.container.userRepository.deleteById(created.id);
+
+    const user =
+      await ctx.container.userRepository.findByDiscordId(discordUserId);
+    const raw = await ctx.connection
+      .collection("users")
+      .findOne({ discordUserId });
+    assert.equal(user, null);
+    assert.equal(raw, null);
+  });
+
+  it("does not let a dismissal hide a later notice version", async () => {
+    const discordUserId = generateSnowflake();
+    await ctx.container.userRepository.create({ discordUserId });
+    await dismissNotice(ctx, discordUserId, notice.version);
 
     ctx.container.config.BACKEND_API_LEGAL_NOTICE = [{
       ...notice,
@@ -303,7 +477,7 @@ async function getRawApplicableNotice(
   return { statusCode, body };
 }
 
-async function acknowledgeNotice(
+async function dismissNotice(
   ctx: AppTestContext,
   discordUserId: string,
   version: string,
@@ -318,7 +492,7 @@ async function acknowledgeNotice(
     send() {},
   };
 
-  await createLegalNoticeAcknowledgementHandler(
+  await createLegalNoticeDismissalHandler(
     {
       container: ctx.container,
       discordUserId,

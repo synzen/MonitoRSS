@@ -1,10 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { requireAuthHook } from "../../infra/auth";
 import {
-  createLegalNoticeAcknowledgementHandler,
+  createLegalNoticeDismissalHandler,
   getApplicableLegalNoticeHandler,
 } from "./legal-notices.handlers";
-import { CreateLegalNoticeAcknowledgementBodySchema } from "./legal-notices.schemas";
+import { CreateLegalNoticeDismissalBodySchema } from "./legal-notices.schemas";
 
 export async function legalNoticesRoutes(app: FastifyInstance): Promise<void> {
   app.get("/applicable", {
@@ -12,9 +12,9 @@ export async function legalNoticesRoutes(app: FastifyInstance): Promise<void> {
     handler: getApplicableLegalNoticeHandler,
   });
 
-  app.post("/acknowledgements", {
+  app.post("/dismissals", {
     preHandler: [requireAuthHook],
-    schema: { body: CreateLegalNoticeAcknowledgementBodySchema },
-    handler: createLegalNoticeAcknowledgementHandler,
+    schema: { body: CreateLegalNoticeDismissalBodySchema },
+    handler: createLegalNoticeDismissalHandler,
   });
 }

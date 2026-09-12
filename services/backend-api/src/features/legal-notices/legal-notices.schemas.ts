@@ -83,13 +83,13 @@ export const LegalNoticesSchema = z
 
 export type LegalNotices = z.infer<typeof LegalNoticesSchema>;
 
-export const CreateLegalNoticeAcknowledgementBodySchema = Type.Object(
+export const CreateLegalNoticeDismissalBodySchema = Type.Object(
   {
     version: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }),
   },
   { additionalProperties: false },
 );
 
-export type CreateLegalNoticeAcknowledgementBody = Static<
-  typeof CreateLegalNoticeAcknowledgementBodySchema
+export type CreateLegalNoticeDismissalBody = Static<
+  typeof CreateLegalNoticeDismissalBodySchema
 >;
