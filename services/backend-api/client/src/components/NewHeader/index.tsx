@@ -4,10 +4,7 @@ import { FaGear, FaCircleInfo } from "react-icons/fa6";
 
 import { pages } from "../../constants";
 import { Loading } from "../Loading";
-import {
-  BOX_CONSTRAINED_MAX_WIDTH,
-  BOX_CONSTRAINED_PADDING_X,
-} from "../BoxConstrainedWidth";
+import { BOX_CONSTRAINED_MAX_WIDTH, BOX_CONSTRAINED_PADDING_X } from "../BoxConstrainedWidth";
 import { Alert } from "@/components/ui/alert";
 import { Avatar } from "@/components/ui/avatar";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";

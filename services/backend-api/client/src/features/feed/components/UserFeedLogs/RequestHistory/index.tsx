@@ -16,6 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { FaCircleQuestion, FaMagnifyingGlass } from "react-icons/fa6";
 import { forwardRef, useEffect, useState } from "react";
 import { useUserFeedRequestsWithPagination } from "../../../hooks";
@@ -35,6 +36,8 @@ import {
   PopoverRoot,
   PopoverTrigger,
 } from "../../../../../components/ui/popover";
+
+dayjs.extend(duration);
 
 const QuestionOutlineComponent = forwardRef<any>((props, ref) => (
   <span ref={ref} style={{ display: "inline-flex" }} {...props}>
@@ -294,9 +297,25 @@ export const RequestHistory = () => {
                         </Table.Cell>
                         <Table.Cell>
                           <Skeleton loading={fetchStatus !== "idle"}>
-                            {createStatusLabel(req.status, {
-                              statusCode: req.response.statusCode,
-                            })}
+                            <Stack gap={1} alignItems="flex-start">
+                              {createStatusLabel(req.status, {
+                                statusCode: req.response.statusCode,
+                              })}
+                              {req.nextRetryAtIso && (
+                                <Text fontSize="xs" color="fg.muted">
+                                  Retry{" "}
+                                  {dayjs
+                                    .duration(
+                                      Math.max(
+                                        0,
+                                        dayjs(req.nextRetryAtIso).diff(dayjs(req.createdAtIso)),
+                                      ),
+                                    )
+                                    .humanize()}{" "}
+                                  after attempt
+                                </Text>
+                              )}
+                            </Stack>
                           </Skeleton>
                         </Table.Cell>
                         <Table.Cell>

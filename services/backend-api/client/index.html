@@ -5,9 +5,33 @@
     <link rel="icon" type="image/x-icon" href="/src/images/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MonitoRSS | Control Panel</title>
+    <script type="text/javascript">
+      window.TERMLY_CUSTOM_BLOCKING_MAP = {
+        "monitorss.xyz": "essential",
+      };
+    </script>
+    <script
+      type="text/javascript"
+      src="https://app.termly.io/resource-blocker/a9387433-94cb-42b0-9e4a-61a8af50e5f3?autoBlock=on&masterConsentsOrigin=https://monitorss.xyz"
+    ></script>
   </head>
   <body>
     <div id="root"></div>
+    <button
+      id="termly-pref-trigger"
+      type="button"
+      class="termly-display-preferences"
+      style="display: none"
+      aria-hidden="true"
+      tabindex="-1"
+    >
+      Consent Preferences
+    </button>
+    <iframe
+      src="https://monitorss.xyz/termly-consent-sync.html"
+      style="display: none"
+      title="Consent sync"
+    ></iframe>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

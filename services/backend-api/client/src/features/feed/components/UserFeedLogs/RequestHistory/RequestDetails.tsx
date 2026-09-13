@@ -2,6 +2,7 @@ import { Heading, HStack, Icon, Link, Stack, Table, Text } from "@chakra-ui/reac
 import { useState } from "react";
 import { FaUpRightFromSquare } from "react-icons/fa6";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { UserFeedRequest } from "../../../types";
 import {
@@ -14,6 +15,8 @@ import {
   DialogTrigger,
   DialogCloseTrigger,
 } from "@/components/ui/dialog";
+
+dayjs.extend(duration);
 
 interface Props {
   request: UserFeedRequest;
@@ -155,6 +158,34 @@ export const RequestDetails = ({ request, trigger }: Props) => {
                   </Table.Root>
                 </Table.ScrollArea>
               )}
+            </Stack>
+            <Stack gap={2}>
+              <Heading size="md" as="h2">
+                Next attempt
+              </Heading>
+              {request.nextRetryAtIso ? (
+                <Text>
+                  <time dateTime={request.nextRetryAtIso}>
+                    {dayjs(request.nextRetryAtIso).format("DD MMM YYYY, HH:mm:ss")}
+                  </time>{" "}
+                  (
+                  {dayjs
+                    .duration(
+                      Math.max(
+                        0,
+                        dayjs(request.nextRetryAtIso).diff(dayjs(request.createdAtIso)),
+                      ),
+                    )
+                    .humanize()}{" "}
+                  after attempt)
+                </Text>
+              ) : (
+                <Text color="fg.muted">N/A</Text>
+              )}
+              <Text color="fg.muted" fontSize="sm">
+                Only failed attempts schedule a retry. A past date means no new attempts have been
+                recorded since.
+              </Text>
             </Stack>
           </Stack>
         </DialogBody>

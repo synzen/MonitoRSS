@@ -1,3 +1,5 @@
+import { randomUUID } from "crypto";
+
 const PADDLE_SANDBOX_URL = "https://sandbox-api.paddle.com";
 
 function getPaddleKey(): string {
@@ -118,7 +120,7 @@ export async function createNotificationSetting(): Promise<{
     body: JSON.stringify({
       description: `${EPHEMERAL_DESCRIPTION_PREFIX} created=${Date.now()}`,
       type: "url",
-      destination: "https://placeholder.invalid/paddle-webhook",
+      destination: `https://placeholder.invalid/paddle-webhook/${randomUUID()}`,
       subscribed_events: E2E_SUBSCRIBED_EVENTS,
     }),
   });

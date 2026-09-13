@@ -24,6 +24,7 @@ export const UserFeedRequestSchema = object({
     headers: object().nullable(),
   }).required(),
   freshnessLifetimeMs: number().nullable().optional(),
+  nextRetryAtIso: string().nullable().optional(),
 });
 
 export type UserFeedRequest = InferType<typeof UserFeedRequestSchema>;

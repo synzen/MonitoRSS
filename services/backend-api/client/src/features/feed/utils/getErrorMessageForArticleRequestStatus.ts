@@ -35,6 +35,15 @@ export const getErrorMessageForArticleRequestStatus = (
   }
 
   if (
+    status === UserFeedArticleRequestStatus.InvalidSslCert ||
+    status === UserFeedUrlRequestStatus.InvalidSslCertificate
+  ) {
+    return {
+      ref: "common.apiErrors.feedInvalidSslCertificate",
+    };
+  }
+
+  if (
     status === UserFeedArticleRequestStatus.BadStatusCode ||
     status === UserFeedUrlRequestStatus.BadStatusCode
   ) {

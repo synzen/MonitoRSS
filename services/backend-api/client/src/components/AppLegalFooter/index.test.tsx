@@ -9,6 +9,7 @@ import { AppLegalFooter } from "./index";
 
 vi.mock("./constants", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./constants")>();
+
   return {
     ...actual,
     isOfficialMonitoRSSHost: vi.fn(),
@@ -62,6 +63,27 @@ describe("AppLegalFooter", () => {
     }
   });
 
+  it("renders the current documents without the owner identity before the effective date", () => {
+    vi.setSystemTime(new Date(LEGAL_IDENTITY_EFFECTIVE_AT.getTime() - 1));
+
+    renderFooter();
+
+    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
+    expect(screen.getByText("MonitoRSS")).toBeInTheDocument();
+    expect(
+      screen.queryByText(`© ${new Date().getFullYear()} Relayvale LLC`),
+    ).not.toBeInTheDocument();
+
+    for (const [label, href] of [
+      ["Terms", "https://monitorss.xyz/terms"],
+      ["Privacy", "https://monitorss.xyz/privacy-policy"],
+      ["Cookie Policy", "https://monitorss.xyz/cookie-policy"],
+      ["Support", "https://discord.gg/pudv7Rx"],
+    ]) {
+      expect(screen.getByRole("link", { name: label })).toHaveAttribute("href", href);
+    }
+  });
+
   it("does not render on the full-screen message builder", () => {
     renderFooter("/feeds/123/discord-channel-connections/456/message-builder");
 
@@ -70,14 +92,6 @@ describe("AppLegalFooter", () => {
 
   it("does not render on self-hosted instances", () => {
     mockIsOfficialHost.mockReturnValue(false);
-    renderFooter();
-
-    expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
-  });
-
-  it("does not render before the updated documents take effect", () => {
-    vi.setSystemTime(new Date(LEGAL_IDENTITY_EFFECTIVE_AT.getTime() - 1));
-
     renderFooter();
 
     expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();

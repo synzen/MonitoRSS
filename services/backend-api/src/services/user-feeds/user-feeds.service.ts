@@ -550,6 +550,7 @@ export class UserFeedsService {
           createdAt: number;
           status: string;
           freshnessLifetimeMs?: number | null;
+          nextRetryAtIso?: string | null;
         }>;
         nextRetryTimestamp?: number | null;
         nextRetryAtIso?: string | null;

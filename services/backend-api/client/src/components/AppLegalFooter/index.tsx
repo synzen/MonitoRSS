@@ -1,12 +1,17 @@
-import { Box, Flex, Link, Text } from "@chakra-ui/react";
+import { Box, Flex, Link, Text, chakra } from "@chakra-ui/react";
 import { useLocation } from "react-router-dom";
-import {
-  BOX_CONSTRAINED_MAX_WIDTH,
-  BOX_CONSTRAINED_PADDING_X,
-} from "../BoxConstrainedWidth";
+import { BOX_CONSTRAINED_MAX_WIDTH, BOX_CONSTRAINED_PADDING_X } from "../BoxConstrainedWidth";
 import { isOfficialMonitoRSSHost, LEGAL_IDENTITY_EFFECTIVE_AT } from "./constants";
+import { openConsentPreferences } from "../../utils/consentPreferences";
 
-const links = [
+const currentLinks = [
+  { label: "Terms", href: "https://monitorss.xyz/terms" },
+  { label: "Privacy", href: "https://monitorss.xyz/privacy-policy" },
+  { label: "Cookie Policy", href: "https://monitorss.xyz/cookie-policy" },
+  { label: "Support", href: "https://discord.gg/pudv7Rx" },
+];
+
+const updatedLinks = [
   { label: "Terms", href: "https://monitorss.xyz/legal/terms" },
   { label: "Privacy", href: "https://monitorss.xyz/legal/privacy" },
   { label: "Cookie Policy", href: "https://monitorss.xyz/legal/cookie" },
@@ -23,14 +28,19 @@ export const AppLegalFooter = () => {
   }
 
   // Hosted legal boilerplate only applies to the official hosts; a self-hosted
-  // instance's users are bound by its operator's terms, not ours.
-  if (!isOfficialMonitoRSSHost(window.location.hostname)) {
+  // instance's users are bound by its operator's terms, not ours. Local dev
+  // servers bypass for preview.
+  const isDevPreview =
+    import.meta.env.MODE === "development" || import.meta.env.MODE === "development-mockapi";
+
+  if (!isOfficialMonitoRSSHost(window.location.hostname) && !isDevPreview) {
     return null;
   }
 
-  if (Date.now() < LEGAL_IDENTITY_EFFECTIVE_AT.getTime()) {
-    return null;
-  }
+  // Only the Relayvale identity is effective-dated. Consent machinery and
+  // current-doc links ship immediately since replay runs today.
+  const relayvaleEffective = Date.now() >= LEGAL_IDENTITY_EFFECTIVE_AT.getTime();
+  const links = relayvaleEffective ? updatedLinks : currentLinks;
 
   return (
     <Box
@@ -55,11 +65,13 @@ export const AppLegalFooter = () => {
           <Text fontSize="sm" color="fg.muted">
             MonitoRSS
           </Text>
-          <Text fontSize="sm" color="fg.muted">
-            © {currentYear} Relayvale LLC
-          </Text>
+          {relayvaleEffective ? (
+            <Text fontSize="sm" color="fg.muted">
+              © {currentYear} Relayvale LLC
+            </Text>
+          ) : null}
         </Box>
-        <Flex as="nav" aria-label="Legal" gap="3" flexWrap="wrap">
+        <Flex as="nav" aria-label="Legal" gap="3" flexWrap="wrap" align="center">
           {links.map(({ label, href }) => (
             <Link
               key={label}
@@ -73,6 +85,16 @@ export const AppLegalFooter = () => {
               {label}
             </Link>
           ))}
+          <chakra.button
+            type="button"
+            onClick={openConsentPreferences}
+            fontSize="sm"
+            color="fg.muted"
+            cursor="pointer"
+            _hover={{ textDecoration: "underline" }}
+          >
+            Consent Preferences
+          </chakra.button>
         </Flex>
       </Flex>
     </Box>

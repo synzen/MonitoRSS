@@ -3,6 +3,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import contextLogger from '../shared/utils/log-context';
 import { RequestStatus } from './constants';
+import { resolveUserAgentForUrl } from './constants/custom-user-agent-tweaks.constants';
 import { Request, Response } from './entities';
 import { deflate, inflate, gunzip } from 'zlib';
 import { promisify } from 'util';
@@ -84,6 +85,14 @@ interface FetchResponse {
   status: number;
   headers: Map<string, string>;
   text: () => Promise<string>;
+}
+
+interface FetchError extends Error {
+  code?: string;
+  cause?: {
+    code?: string;
+    message?: string;
+  };
 }
 
 @Injectable()
@@ -258,11 +267,23 @@ export class FeedFetcherService {
     request: PartitionedRequestInsert;
     responseText?: string | null;
   }> {
+    const restHeaders: Record<string, string> = {};
+    let explicitUserAgent: string | undefined;
+
+    for (const [key, val] of Object.entries(options?.headers || {})) {
+      if (key.toLowerCase() === 'user-agent') {
+        explicitUserAgent = val as string;
+      } else {
+        restHeaders[key] = val as string;
+      }
+    }
+
+    const resolvedUserAgent =
+      explicitUserAgent || resolveUserAgentForUrl(url, this.defaultUserAgent);
+
     const fetchOptions: FetchOptions = {
       headers: {
-        'user-agent':
-          this.configService.get<string>('feedUserAgent') ||
-          this.defaultUserAgent,
+        'user-agent': resolvedUserAgent,
         accept: 'text/html,text/xml,application/xml,application/rss+xml',
         'accept-encoding': 'gzip',
         /**
@@ -271,7 +292,7 @@ export class FeedFetcherService {
          */
         'Sec-Fetch-Mode': 'navigate',
         'sec-fetch-site': 'none',
-        ...options?.headers,
+        ...restHeaders,
       },
     };
     const request = new Request();
@@ -429,23 +450,22 @@ export class FeedFetcherService {
         responseText: text,
       };
     } catch (err) {
+      const fetchError = err as FetchError;
+      const errorCode = fetchError.code || fetchError.cause?.code;
+
       contextLogger.debug(`Failed to fetch url ${url}`, {
-        stack: (err as Error).stack,
+        stack: fetchError.stack,
       });
 
       if (
-        (err instanceof TypeError &&
-          err['cause']?.['code'] === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') ||
-        (err as Error).message?.includes(
-          'unable to get local issuer certificate',
-        )
+        errorCode === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' ||
+        fetchError.message?.includes('unable to get local issuer certificate')
       ) {
         request.status = RequestStatus.INVALID_SSL_CERTIFICATE;
-        request.errorMessage =
-          err?.['cause']?.['message'] || (err as Error).message;
+        request.errorMessage = fetchError.cause?.message || fetchError.message;
       } else if (
-        (err as Error).name === 'AbortError' ||
-        (err as Error).message.includes('Connect Timeout Error')
+        fetchError.name === 'AbortError' ||
+        fetchError.message.includes('Connect Timeout Error')
       ) {
         request.status = RequestStatus.FETCH_TIMEOUT;
         request.errorMessage =
@@ -453,9 +473,7 @@ export class FeedFetcherService {
           ` ${this.feedRequestTimeoutMs}ms to complete`;
       } else {
         request.status = RequestStatus.FETCH_ERROR;
-        request.errorMessage = `${(err as Error).message} | cause: ${
-          (err as Error)['cause']?.['message']
-        }`;
+        request.errorMessage = `${fetchError.message} | cause: ${fetchError.cause?.message}`;
       }
 
       const partitionedRequest: PartitionedRequestInsert = {
@@ -515,7 +533,7 @@ export class FeedFetcherService {
       headers: useOptions.headers,
       signal: useOptions.signal,
       maxRedirections: 10,
-    });
+    }).finally(() => clearTimeout(timer));
 
     const contentTypes =
       typeof r.headers['content-type'] === 'string'
@@ -532,8 +550,6 @@ export class FeedFetcherService {
       },
       new Map<string, string>(),
     );
-
-    clearTimeout(timer);
 
     const headers: FetchResponse['headers'] = new Map();
 
