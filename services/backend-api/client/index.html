@@ -5,9 +5,69 @@
     <link rel="icon" type="image/x-icon" href="/src/images/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MonitoRSS | Control Panel</title>
+    <script type="text/javascript">
+      // Consent tooling only applies on official hosts; self-hosted instances
+      // are bound by their operator's terms. Keep in sync with
+      // src/components/AppLegalFooter/constants.ts.
+      (function () {
+        var hostname = window.location.hostname;
+        var isOfficial =
+          hostname === "monitorss.xyz" || hostname.slice(-14) === ".monitorss.xyz";
+        window.__MONITORSS_OFFICIAL_HOST__ = isOfficial;
+
+        if (!isOfficial) {
+          return;
+        }
+
+        window.TERMLY_CUSTOM_BLOCKING_MAP = {
+          "monitorss.xyz": "essential",
+        };
+
+        var termlyScript = document.createElement("script");
+        termlyScript.type = "text/javascript";
+        termlyScript.async = false;
+        termlyScript.src =
+          "https://app.termly.io/resource-blocker/a9387433-94cb-42b0-9e4a-61a8af50e5f3?autoBlock=on&masterConsentsOrigin=https://monitorss.xyz";
+        document.head.appendChild(termlyScript);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <script type="text/javascript">
+      // Creates the Termly trigger and consent-sync frame only on official
+      // hosts. Runs synchronously at body parse so the blocker (still
+      // fetching) sees the trigger when it executes.
+      (function () {
+        var isOfficial = window.__MONITORSS_OFFICIAL_HOST__;
+
+        if (typeof isOfficial !== "boolean") {
+          var hostname = window.location.hostname;
+          isOfficial =
+            hostname === "monitorss.xyz" || hostname.slice(-14) === ".monitorss.xyz";
+        }
+
+        if (!isOfficial) {
+          return;
+        }
+
+        var trigger = document.createElement("button");
+        trigger.id = "termly-pref-trigger";
+        trigger.type = "button";
+        trigger.className = "termly-display-preferences";
+        trigger.style.display = "none";
+        trigger.setAttribute("aria-hidden", "true");
+        trigger.tabIndex = -1;
+        trigger.textContent = "Consent Preferences";
+        document.body.appendChild(trigger);
+
+        var syncFrame = document.createElement("iframe");
+        syncFrame.src = "https://monitorss.xyz/termly-consent-sync.html";
+        syncFrame.style.display = "none";
+        syncFrame.title = "Consent sync";
+        document.body.appendChild(syncFrame);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

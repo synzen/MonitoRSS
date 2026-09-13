@@ -16,6 +16,7 @@ import { Provider } from "./components/ui/provider";
 import { Toaster } from "./components/ui/toaster";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import App from "./App";
+import { isOfficialMonitoRSSHost } from "./components/AppLegalFooter/constants";
 import { PricingDialogProvider, PaddleContextProvider } from "@/features/subscriptionProducts";
 
 /**
@@ -71,6 +72,81 @@ function catchGoogleTranslateErrors() {
   }
 }
 
+declare global {
+  interface Window {
+    Termly?: {
+      getConsentState?: () => Record<string, boolean> | undefined;
+      on?: (event: string, callback: () => void) => void;
+    };
+  }
+}
+
+// Maximum time to wait for the Termly banner script before initializing
+// Sentry without replay. Short on purpose: the app must not hang on a
+// blocked or slow CMP.
+const REPLAY_CONSENT_TIMEOUT_MS = 3000;
+
+function readReplayConsent(): boolean {
+  try {
+    return window.Termly?.getConsentState?.()?.performance === true;
+  } catch {
+    return false;
+  }
+}
+
+function waitForReplayConsent(): Promise<boolean> {
+  if (readReplayConsent()) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise((resolve) => {
+    const start = Date.now();
+
+    const tick = () => {
+      if (readReplayConsent()) {
+        resolve(true);
+
+        return;
+      }
+
+      if (
+        typeof window.Termly?.getConsentState === "function" ||
+        Date.now() - start >= REPLAY_CONSENT_TIMEOUT_MS
+      ) {
+        resolve(readReplayConsent());
+
+        return;
+      }
+
+      window.setTimeout(tick, 100);
+    };
+
+    tick();
+  });
+}
+
+// Re-init cleanly when the user flips Performance consent after load: drop
+// any pre-change replay session id, then reload so Sentry starts from the
+// matching configuration. No-op when the decision is unchanged, so the
+// initial banner accept/decline cannot loop.
+function watchReplayConsent(initializedWithReplay: boolean): void {
+  try {
+    window.Termly?.on?.("consent", () => {
+      if (readReplayConsent() !== initializedWithReplay) {
+        try {
+          window.sessionStorage.removeItem("sentryReplaySession");
+        } catch {
+          // Storage may be unavailable; reload still resets the SDK state.
+        }
+
+        window.location.reload();
+      }
+    });
+  } catch {
+    // Consent watching is best-effort; recording already gated at init.
+  }
+}
+
 async function prepare() {
   if (["development-mockapi"].includes(import.meta.env.MODE)) {
     await setupMockBrowserWorker().then((worker) => worker.start());
@@ -78,6 +154,14 @@ async function prepare() {
     const DSN = import.meta.env.VITE_SENTRY_DSN;
 
     if (DSN) {
+      // Session Replay runs only with Performance consent (Termly category
+      // holding sentryReplaySession). Fail closed: no banner decision, no
+      // Termly script, or timeout all mean no replay. Error/tracing stays on,
+      // minimized with sendDefaultPii: false and no user association.
+      // Termly only loads on official hosts (see index.html), so skip the
+      // wait elsewhere to avoid delaying Sentry init by the full timeout.
+      const isOfficialHost = isOfficialMonitoRSSHost(window.location.hostname);
+      const replayAllowed = isOfficialHost ? await waitForReplayConsent() : false;
       Sentry.init({
         dsn: DSN,
         tunnel: "/api/v1/sentry-tunnel",
@@ -90,18 +174,26 @@ async function prepare() {
             createRoutesFromChildren,
             matchRoutes,
           }),
-          Sentry.replayIntegration({
-            maskAllText: true,
-            blockAllMedia: true,
-            maskAllInputs: true,
-          }),
+          ...(replayAllowed
+            ? [
+                Sentry.replayIntegration({
+                  maskAllText: true,
+                  blockAllMedia: true,
+                  maskAllInputs: true,
+                }),
+              ]
+            : []),
         ],
         sendDefaultPii: false,
         tracesSampleRate: 0.2,
         // Session Replay
-        replaysSessionSampleRate: 0.5, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
-        replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
+        replaysSessionSampleRate: 0.5, // 50% of ordinary sessions, only when Performance consent is granted.
+        replaysOnErrorSampleRate: 1.0, // 100% of error sessions, only when Performance consent is granted.
       });
+
+      if (isOfficialHost) {
+        watchReplayConsent(replayAllowed);
+      }
     }
   }
 

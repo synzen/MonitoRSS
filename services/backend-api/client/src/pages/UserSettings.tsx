@@ -31,6 +31,8 @@ import {
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { useLogin } from "../hooks";
+import { openConsentPreferences } from "../utils/consentPreferences";
+import { isOfficialMonitoRSSHost } from "../components/AppLegalFooter/constants";
 import { useCreateSubscriptionResume } from "../features/subscriptionProducts/hooks/useCreateSubscriptionResume";
 import { getPlanDisplayName, ProductKey } from "../constants";
 
@@ -219,6 +221,12 @@ const UserSettingsInner = () => {
   }, [hasLoaded]);
 
   const hasEmailAvailable = !!data?.result?.email;
+
+  // Hosted legal boilerplate only applies to the official hosts, matching the
+  // footer and Termly loading in index.html. Local dev previews for layout.
+  const isDevPreview =
+    import.meta.env.MODE === "development" || import.meta.env.MODE === "development-mockapi";
+  const showPrivacySection = isDevPreview || isOfficialMonitoRSSHost(window.location.hostname);
 
   const onClickGrantEmailAccess = () => {
     redirectToLogin({
@@ -721,6 +729,37 @@ const UserSettingsInner = () => {
         </form>
       </FormProvider>
       <Separator />
+      {showPrivacySection && (
+        <>
+          <SettingsSection
+            title="Privacy"
+            headingId="privacy"
+            description="How your data is handled and what tracking you allow."
+          >
+            <Stack gap={6}>
+              <Flex
+                as="div"
+                justifyContent="space-between"
+                flexWrap="wrap"
+                gap={4}
+                alignItems="center"
+              >
+                <Box>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="termly-display-preferences"
+                    onClick={openConsentPreferences}
+                  >
+                    Consent Preferences
+                  </Button>
+                </Box>
+              </Flex>
+            </Stack>
+          </SettingsSection>
+          <Separator />
+        </>
+      )}
       <DeleteAccountSection />
     </Stack>
   );
