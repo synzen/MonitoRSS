@@ -4,23 +4,31 @@ import {
   BOX_CONSTRAINED_MAX_WIDTH,
   BOX_CONSTRAINED_PADDING_X,
 } from "../BoxConstrainedWidth";
+import { isOfficialMonitoRSSHost, LEGAL_IDENTITY_EFFECTIVE_AT } from "./constants";
 
 const links = [
-  { label: "Terms", href: "https://monitorss.xyz/terms" },
-  { label: "Privacy", href: "https://monitorss.xyz/privacy-policy" },
-  { label: "Cookie Policy", href: "https://monitorss.xyz/cookie-policy" },
+  { label: "Terms", href: "https://monitorss.xyz/legal/terms" },
+  { label: "Privacy", href: "https://monitorss.xyz/legal/privacy" },
+  { label: "Cookie Policy", href: "https://monitorss.xyz/legal/cookie" },
   { label: "Support", href: "https://discord.gg/pudv7Rx" },
 ];
 
-// TODO(legal-footer): re-add the isOfficialMonitoRSSHost gate from
-// ./constants before merge so self-hosted instances don't link to the hosted
-// legal docs. Gating is disabled for now for local testing.
 export const AppLegalFooter = () => {
   const { pathname } = useLocation();
   const currentYear = new Date().getFullYear();
 
   // The message builder is intentionally full-screen and chrome-free.
   if (pathname.endsWith("/message-builder")) {
+    return null;
+  }
+
+  // Hosted legal boilerplate only applies to the official hosts; a self-hosted
+  // instance's users are bound by its operator's terms, not ours.
+  if (!isOfficialMonitoRSSHost(window.location.hostname)) {
+    return null;
+  }
+
+  if (Date.now() < LEGAL_IDENTITY_EFFECTIVE_AT.getTime()) {
     return null;
   }
 
