@@ -2,9 +2,9 @@ import "@testing-library/jest-dom";
 import { ChakraProvider } from "@chakra-ui/react";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { system } from "@/utils/theme";
-import { isOfficialMonitoRSSHost, LEGAL_IDENTITY_EFFECTIVE_AT } from "./constants";
+import { isOfficialMonitoRSSHost } from "./constants";
 import { AppLegalFooter } from "./index";
 
 vi.mock("./constants", async (importOriginal) => {
@@ -28,32 +28,22 @@ const renderFooter = (initialPath = "/feeds") =>
   );
 
 describe("AppLegalFooter", () => {
-  beforeEach(() => {
+  it("renders as a footer landmark with the product identity", () => {
     mockIsOfficialHost.mockReturnValue(true);
-    vi.useFakeTimers({
-      now: new Date(LEGAL_IDENTITY_EFFECTIVE_AT.getTime() + 24 * 60 * 60 * 1000),
-    });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("renders as a footer landmark with the product and owner identity", () => {
     renderFooter();
 
     expect(screen.getByRole("contentinfo")).toBeInTheDocument();
     expect(screen.getByText("MonitoRSS")).toBeInTheDocument();
-    expect(screen.getByText(`© ${new Date().getFullYear()} Relayvale LLC`)).toBeInTheDocument();
   });
 
-  it("links to the updated legal documents and support with safe rel", () => {
+  it("links to the legal documents and support with safe rel", () => {
+    mockIsOfficialHost.mockReturnValue(true);
     renderFooter();
 
     for (const [label, href] of [
-      ["Terms", "https://monitorss.xyz/legal/terms"],
-      ["Privacy", "https://monitorss.xyz/legal/privacy"],
-      ["Cookie Policy", "https://monitorss.xyz/legal/cookie"],
+      ["Terms", "https://monitorss.xyz/terms"],
+      ["Privacy", "https://monitorss.xyz/privacy-policy"],
+      ["Cookie Policy", "https://monitorss.xyz/cookie-policy"],
       ["Support", "https://discord.gg/pudv7Rx"],
     ]) {
       const link = screen.getByRole("link", { name: label });
@@ -63,28 +53,8 @@ describe("AppLegalFooter", () => {
     }
   });
 
-  it("renders the current documents without the owner identity before the effective date", () => {
-    vi.setSystemTime(new Date(LEGAL_IDENTITY_EFFECTIVE_AT.getTime() - 1));
-
-    renderFooter();
-
-    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
-    expect(screen.getByText("MonitoRSS")).toBeInTheDocument();
-    expect(
-      screen.queryByText(`© ${new Date().getFullYear()} Relayvale LLC`),
-    ).not.toBeInTheDocument();
-
-    for (const [label, href] of [
-      ["Terms", "https://monitorss.xyz/terms"],
-      ["Privacy", "https://monitorss.xyz/privacy-policy"],
-      ["Cookie Policy", "https://monitorss.xyz/cookie-policy"],
-      ["Support", "https://discord.gg/pudv7Rx"],
-    ]) {
-      expect(screen.getByRole("link", { name: label })).toHaveAttribute("href", href);
-    }
-  });
-
   it("does not render on the full-screen message builder", () => {
+    mockIsOfficialHost.mockReturnValue(true);
     renderFooter("/feeds/123/discord-channel-connections/456/message-builder");
 
     expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();

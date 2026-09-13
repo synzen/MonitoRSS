@@ -16,6 +16,7 @@ import { Provider } from "./components/ui/provider";
 import { Toaster } from "./components/ui/toaster";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import App from "./App";
+import { isOfficialMonitoRSSHost } from "./components/AppLegalFooter/constants";
 import { PricingDialogProvider, PaddleContextProvider } from "@/features/subscriptionProducts";
 
 /**
@@ -157,7 +158,10 @@ async function prepare() {
       // holding sentryReplaySession). Fail closed: no banner decision, no
       // Termly script, or timeout all mean no replay. Error/tracing stays on,
       // minimized with sendDefaultPii: false and no user association.
-      const replayAllowed = await waitForReplayConsent();
+      // Termly only loads on official hosts (see index.html), so skip the
+      // wait elsewhere to avoid delaying Sentry init by the full timeout.
+      const isOfficialHost = isOfficialMonitoRSSHost(window.location.hostname);
+      const replayAllowed = isOfficialHost ? await waitForReplayConsent() : false;
       Sentry.init({
         dsn: DSN,
         tunnel: "/api/v1/sentry-tunnel",
@@ -186,7 +190,10 @@ async function prepare() {
         replaysSessionSampleRate: 0.5, // 50% of ordinary sessions, only when Performance consent is granted.
         replaysOnErrorSampleRate: 1.0, // 100% of error sessions, only when Performance consent is granted.
       });
-      watchReplayConsent(replayAllowed);
+
+      if (isOfficialHost) {
+        watchReplayConsent(replayAllowed);
+      }
     }
   }
 
