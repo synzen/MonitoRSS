@@ -745,35 +745,6 @@ const UserSettingsInner = () => {
                 alignItems="center"
               >
                 <Box>
-                  <Field label="Legal documents" helperText="The rules that govern your account." />
-                </Box>
-                <Text>
-                  <Link
-                    href="https://monitorss.xyz/privacy-policy"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Privacy Policy
-                  </Link>
-                  {", "}
-                  <Link href="https://monitorss.xyz/cookie-policy" target="_blank" rel="noreferrer">
-                    Cookie Policy
-                  </Link>
-                  {" and "}
-                  <Link href="https://monitorss.xyz/terms" target="_blank" rel="noreferrer">
-                    Terms and Conditions
-                  </Link>
-                  .
-                </Text>
-              </Flex>
-              <Flex
-                as="div"
-                justifyContent="space-between"
-                flexWrap="wrap"
-                gap={4}
-                alignItems="center"
-              >
-                <Box>
                   <Button
                     type="button"
                     variant="outline"
