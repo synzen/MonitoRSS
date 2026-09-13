@@ -76,11 +76,14 @@ import { SupporterSubscriptionsService } from "./services/supporter-subscription
 import { LegacyFeedConversionService } from "./services/legacy-feed-conversion/legacy-feed-conversion.service";
 import { ScheduleHandlerService } from "./services/schedule-handler/schedule-handler.service";
 import { MessageBrokerEventsService } from "./services/message-broker-events/message-broker-events.service";
+import { LEGAL_NOTICES } from "./features/legal-notices/legal-notices.data";
+import type { LegalNotices } from "./features/legal-notices/legal-notices.schemas";
 
 export interface Container {
   config: Config;
   mongoConnection: MongoConnection;
   rabbitmq: RabbitConnection;
+  legalNotices: LegalNotices;
   authService: AuthService;
   publishMessage: (
     queue: string,
@@ -450,6 +453,7 @@ export function createContainer(deps: {
     config: deps.config,
     mongoConnection: deps.mongoConnection,
     rabbitmq: deps.rabbitmq,
+    legalNotices: LEGAL_NOTICES,
     authService,
     publishMessage,
 

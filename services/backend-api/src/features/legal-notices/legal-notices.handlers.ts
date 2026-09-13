@@ -80,7 +80,7 @@ function getActiveLegalNotice(request: FastifyRequest, now: Date): LegalNotice |
     return null;
   }
 
-  return getApplicableConfiguredNotice(request.container.config.BACKEND_API_LEGAL_NOTICE, now);
+  return getApplicableConfiguredNotice(request.container.legalNotices, now);
 }
 
 export async function getApplicableLegalNoticeHandler(
@@ -91,7 +91,7 @@ export async function getApplicableLegalNoticeHandler(
   const now = new Date();
   const notice = getActiveLegalNotice(request, now);
   const nextTransitionAt = canExposeLegalNotices(request)
-    ? getNextTransitionAt(request.container.config.BACKEND_API_LEGAL_NOTICE, notice, now)
+    ? getNextTransitionAt(request.container.legalNotices, notice, now)
     : null;
   const response: ApplicableLegalNoticeResponse = {
     result: null,

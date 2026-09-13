@@ -26,9 +26,9 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     ctx = await createAppTestContext({
       configOverrides: {
         NODE_ENV: Environment.Production,
-        BACKEND_API_LEGAL_NOTICE: [notice],
       },
     });
+    ctx.container.legalNotices = [notice];
   });
 
   after(async () => {
@@ -37,7 +37,7 @@ describe("GET /api/v1/legal-notices/applicable", () => {
 
   afterEach(() => {
     mock.timers.reset();
-    ctx.container.config.BACKEND_API_LEGAL_NOTICE = [notice];
+    ctx.container.legalNotices = [notice];
     ctx.container.config.NODE_ENV = Environment.Production;
   });
 
@@ -78,7 +78,7 @@ describe("GET /api/v1/legal-notices/applicable", () => {
 
   it("supersedes older displayed notices with the newest schedule", async () => {
     mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-02T00:00:00.000Z") });
-    ctx.container.config.BACKEND_API_LEGAL_NOTICE = [
+    ctx.container.legalNotices = [
       notice,
       {
         ...notice,
@@ -293,9 +293,9 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     const sessionCtx = await createAppTestContext({
       configOverrides: {
         NODE_ENV: Environment.Local,
-        BACKEND_API_LEGAL_NOTICE: [notice],
       },
     });
+    sessionCtx.container.legalNotices = [notice];
 
     try {
       const discordUserId = generateSnowflake();
@@ -367,7 +367,7 @@ describe("GET /api/v1/legal-notices/applicable", () => {
     await ctx.container.userRepository.create({ discordUserId });
     await dismissNotice(ctx, discordUserId, notice.version);
 
-    ctx.container.config.BACKEND_API_LEGAL_NOTICE = [{
+    ctx.container.legalNotices = [{
       ...notice,
       version: "2026-10-01",
     }];
@@ -381,7 +381,7 @@ describe("GET /api/v1/legal-notices/applicable", () => {
         documents: notice.documents,
       },
     });
-    ctx.container.config.BACKEND_API_LEGAL_NOTICE = [notice];
+    ctx.container.legalNotices = [notice];
   });
 
   it("returns no notice on non-production hosts", async () => {
