@@ -12,6 +12,7 @@ import localizedFormat from "dayjs/plugin/localizedFormat";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { getChannelIcon } from "../../../utils/getChannelIcon";
 import Emoji from "@/constants/emojis";
+import { TERMLY_ESSENTIAL_IMAGE_PROPS } from "@/utils/termly";
 
 dayjs.extend(localizedFormat);
 dayjs.extend(relativeTime);
@@ -429,6 +430,7 @@ const baseRules = {
           src={node.src}
           key={state.key}
           style={{ display: "inline-block" }}
+          {...TERMLY_ESSENTIAL_IMAGE_PROPS}
         />
       ) : (
         <span key={state.key}>{node.surrogate}</span>
@@ -617,6 +619,7 @@ const baseRules = {
           title={node.name}
           src={node.src}
           key={state.key}
+          {...TERMLY_ESSENTIAL_IMAGE_PROPS}
         />
       );
     },

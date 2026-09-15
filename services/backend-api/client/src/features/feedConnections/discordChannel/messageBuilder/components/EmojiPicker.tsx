@@ -14,6 +14,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { FaXmark } from "react-icons/fa6";
+import { TERMLY_ESSENTIAL_IMAGE_PROPS } from "@/utils/termly";
 import { PopoverBody, PopoverContent, PopoverRoot, PopoverTrigger } from "@/components/ui/popover";
 import { useDiscordServerEmojis } from "@/features/discordServers";
 import { InlineErrorAlert } from "@/components/InlineErrorAlert";
@@ -132,6 +133,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ value, onChange, guild
                     }`}
                     boxSize="18px"
                     alt={value.name}
+                    {...TERMLY_ESSENTIAL_IMAGE_PROPS}
                   />
                 ) : (
                   <Text as="span" fontSize="16px">
@@ -425,6 +427,7 @@ const ServerEmojiTab: React.FC<ServerEmojiTabProps> = ({
               src={emoji.animated ? emoji.imageUrl.replace(".gif", ".png") : emoji.imageUrl}
               boxSize="32px"
               alt={emoji.name}
+              {...TERMLY_ESSENTIAL_IMAGE_PROPS}
               onMouseEnter={(e) => {
                 if (emoji.animated) {
                   (e.target as HTMLImageElement).src = emoji.imageUrl;
