@@ -90,6 +90,11 @@ sweep is wrong because two cases look identical in source but differ in meaning:
 > stays an explicit `<Button variant="solid" colorPalette="red">` (solid sets its own fill, no outline
 > border to clash). A fitness function (below) bans the broken outline/bare-status `<Button>` form.
 
+Neutral outline buttons inside tinted `subtle` and `surface` Alerts automatically inherit the
+Alert's status treatment for their label, border, hover, and focus colors. The button recipe reads
+status-action custom properties supplied by the Alert recipe, with the normal neutral roles as its
+fallback. Solid, destructive, neutral-Alert, and non-Alert buttons are unaffected.
+
 > **Why the global default is NOT flipped to `brand`.** Reaching zero `colorPalette` props by setting
 > the global default to blue/brand is tempting and wrong: the global default is `gray`, and many
 > controls (ghost buttons, focus rings, subtle badges) rely on that neutral default. Flipping it

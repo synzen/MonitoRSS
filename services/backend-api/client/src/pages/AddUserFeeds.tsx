@@ -841,7 +841,7 @@ const AddUserFeeds = () => {
   return (
     <SourceFeedProvider>
       <Box>
-        <BoxConstrained.Wrapper justifyContent="flex-start" height="100%" overflow="visible">
+        <BoxConstrained.Wrapper justifyContent="flex-start" overflow="visible">
           <BoxConstrained.Container paddingTop={6} gap={6} height="100%" mb={12}>
             {urls.length === 0 && <AddFormView onSubmitted={setUrls} />}
             {urls.length > 0 && (
