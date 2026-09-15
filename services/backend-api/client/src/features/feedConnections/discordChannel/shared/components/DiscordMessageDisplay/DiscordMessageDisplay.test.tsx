@@ -385,4 +385,14 @@ describe("DiscordMessageDisplay", () => {
       expect(container).not.toHaveTextContent(/^0$/);
     });
   });
+
+  // Placed last for the same id-stability reason as above.
+  describe("Regression: Termly auto-blocker exemption", () => {
+    it("marks preview images as essential so the blocker leaves src intact", () => {
+      renderWithChakra(<DiscordMessageDisplay messages={[mockV2WithMediaGallery]} />);
+
+      expect(screen.getByAltText("Image 1")).toHaveAttribute("data-categories", "essential");
+      expect(screen.getByAltText("Image 2")).toHaveAttribute("data-categories", "essential");
+    });
+  });
 });

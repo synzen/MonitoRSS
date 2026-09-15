@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, VStack, HStack, Text, Badge, Icon } from "@chakra-ui/react";
 import { FaCircleCheck, FaCircleInfo, FaEye } from "react-icons/fa6";
+import { TERMLY_ESSENTIAL_IMAGE_PROPS } from "@/utils/termly";
 import { Template } from "../../types";
 
 const FIELD_EXPLANATIONS: Record<string, string> = {
@@ -43,6 +44,7 @@ const getThumbnailContent = (template: Template) => {
         src={template.thumbnail}
         alt=""
         style={{ maxHeight: "100%", maxWidth: "100%", objectFit: "contain" }}
+        {...TERMLY_ESSENTIAL_IMAGE_PROPS}
       />
     );
   }

@@ -28,6 +28,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for MediaGall
         <img
           alt="MonitoRSS"
           class="chakra-avatar__image css-1odw0y2"
+          data-categories="essential"
           data-part="image"
           data-scope="avatar"
           data-state="hidden"
@@ -83,6 +84,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for MediaGall
                       <img
                         alt="Image 1"
                         class="chakra-image css-6ta4dw"
+                        data-categories="essential"
                         src="https://example.com/img1.jpg"
                       />
                     </div>
@@ -96,6 +98,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for MediaGall
                       <img
                         alt="Image 2"
                         class="chakra-image css-6ta4dw"
+                        data-categories="essential"
                         src="https://example.com/img2.jpg"
                       />
                     </div>
@@ -139,6 +142,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 messag
         <img
           alt="MonitoRSS"
           class="chakra-avatar__image css-1odw0y2"
+          data-categories="essential"
           data-part="image"
           data-scope="avatar"
           data-state="hidden"
@@ -224,6 +228,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 messag
                         <img
                           alt="Thumbnail image"
                           class="chakra-image css-1c578vb"
+                          data-categories="essential"
                           src="https://example.com/thumb.jpg"
                         />
                       </div>
@@ -311,6 +316,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for empty sta
         <img
           alt="MonitoRSS"
           class="chakra-avatar__image css-1odw0y2"
+          data-categories="essential"
           data-part="image"
           data-scope="avatar"
           data-state="hidden"
@@ -383,6 +389,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for loading s
         <img
           alt="MonitoRSS"
           class="chakra-avatar__image css-1odw0y2"
+          data-categories="essential"
           data-part="image"
           data-scope="avatar"
           data-state="hidden"

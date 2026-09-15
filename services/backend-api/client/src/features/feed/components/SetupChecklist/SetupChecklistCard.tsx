@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Box, HStack, Stack, Text, Button } from "@chakra-ui/react";
 import { FaPlus, FaCheck, FaTriangleExclamation } from "react-icons/fa6";
 import { getAvatarColor } from "@/utils/getAvatarColor";
+import { TERMLY_ESSENTIAL_IMAGE_PROPS } from "@/utils/termly";
 import { Panel } from "@/components/Panel";
 
 interface SetupChecklistCardProps {
@@ -102,6 +103,7 @@ export const SetupChecklistCard = ({ feed, onAddConnection }: SetupChecklistCard
                   width={28}
                   height={28}
                   onError={() => setImgError(true)}
+                  {...TERMLY_ESSENTIAL_IMAGE_PROPS}
                 />
               </Box>
             )}

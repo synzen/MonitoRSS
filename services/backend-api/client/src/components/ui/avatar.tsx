@@ -1,5 +1,6 @@
 import { Avatar as ChakraAvatar, AvatarGroup as ChakraAvatarGroup } from "@chakra-ui/react";
 import * as React from "react";
+import { TERMLY_ESSENTIAL_IMAGE_PROPS } from "@/utils/termly";
 
 type ImageProps = React.ImgHTMLAttributes<HTMLImageElement>;
 
@@ -18,7 +19,13 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(function Ava
   return (
     <ChakraAvatar.Root ref={ref} {...rest}>
       <ChakraAvatar.Fallback name={name}>{icon || fallback}</ChakraAvatar.Fallback>
-      <ChakraAvatar.Image src={src} srcSet={srcSet} loading={loading} alt={name} />
+      <ChakraAvatar.Image
+        src={src}
+        srcSet={srcSet}
+        loading={loading}
+        alt={name}
+        {...TERMLY_ESSENTIAL_IMAGE_PROPS}
+      />
       {children}
     </ChakraAvatar.Root>
   );
