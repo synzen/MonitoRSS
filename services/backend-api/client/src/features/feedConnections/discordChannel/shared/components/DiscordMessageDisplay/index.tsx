@@ -21,6 +21,7 @@ import DiscordView from "../DiscordView";
 import { parseAllowLinks, jumboify } from "../DiscordView/utils/markdown";
 import { DiscordApiComponent } from "@/types/discord/DiscordApiPayload";
 import { MentionResolvers } from "../../contexts/MentionDataContext";
+import { TERMLY_ESSENTIAL_IMAGE_PROPS } from "@/utils/termly";
 
 // eslint-disable-next-line no-bitwise
 const DISCORD_COMPONENTS_V2_FLAG = 1 << 15;
@@ -171,6 +172,7 @@ const renderButtonElement = (
         verticalAlign="middle"
         mr={btn.label ? 1 : 0}
         alt={btn.emoji.name}
+        {...TERMLY_ESSENTIAL_IMAGE_PROPS}
       />
     );
   } else if (btn.emoji) {
@@ -264,6 +266,7 @@ const renderApiAccessory = (
           fit="cover"
           w="80px"
           h="80px"
+          {...TERMLY_ESSENTIAL_IMAGE_PROPS}
         />
       </Box>
     );
@@ -386,6 +389,7 @@ const renderApiComponent = (
           height={height || "auto"}
           minHeight="60px"
           maxHeight={height ? undefined : "200px"}
+          {...TERMLY_ESSENTIAL_IMAGE_PROPS}
         />
       </Box>
     );

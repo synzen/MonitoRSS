@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import { parseAllowLinks, parseEmbedTitle } from "./utils/markdown";
 import extractRGBFromInt from "../../utils/extractRgbFromInt";
 import { DiscordViewEmbed } from "@/types/discord/DiscordViewEmbed";
+import { TERMLY_ESSENTIAL_IMAGE_PROPS } from "@/utils/termly";
 
 const Link = ({ children, ...props }: React.HTMLProps<HTMLAnchorElement>) => {
   return (
@@ -85,7 +86,13 @@ const EmbedAuthor = ({
   }
 
   const authorIcon = icon_url ? (
-    <img src={icon_url} role="presentation" className="embed-author-icon" alt="" />
+    <img
+      src={icon_url}
+      role="presentation"
+      className="embed-author-icon"
+      alt=""
+      {...TERMLY_ESSENTIAL_IMAGE_PROPS}
+    />
   ) : null;
 
   return (
@@ -136,6 +143,7 @@ const EmbedThumbnail = ({ url }: { url?: string | null }) => {
       className="embed-rich-thumb"
       style={{ maxWidth: 80, maxHeight: 80 }}
       alt=""
+      {...TERMLY_ESSENTIAL_IMAGE_PROPS}
     />
   );
 };
@@ -150,7 +158,13 @@ const EmbedImage = ({ url }: { url?: string | null }) => {
   return (
     // eslint-disable-next-line jsx-a11y/anchor-is-valid
     <a className="embed-thumbnail embed-thumbnail-rich">
-      <img className="image" role="presentation" src={url} alt="" />
+      <img
+        className="image"
+        role="presentation"
+        src={url}
+        alt=""
+        {...TERMLY_ESSENTIAL_IMAGE_PROPS}
+      />
     </a>
   );
 };
@@ -178,6 +192,7 @@ const EmbedFooter = ({
         width="20"
         height="20"
         alt=""
+        {...TERMLY_ESSENTIAL_IMAGE_PROPS}
       />
     ) : null;
 

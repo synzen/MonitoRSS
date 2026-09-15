@@ -30,6 +30,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { getAvatarColor } from "@/utils/getAvatarColor";
 import { getCuratedFeedErrorMessage } from "./getCuratedFeedErrorMessage";
+import { TERMLY_ESSENTIAL_IMAGE_PROPS } from "@/utils/termly";
 import { getPreviewErrorMessage } from "./getPreviewErrorMessage";
 import { useCuratedFeedPreview } from "../../hooks/useCuratedFeedPreview";
 import type { GetCuratedFeedPreviewOutput } from "../../api/getCuratedFeedPreview";
@@ -265,6 +266,7 @@ export const FeedCard = ({
                 width={28}
                 height={28}
                 onError={() => setImgError(true)}
+                {...TERMLY_ESSENTIAL_IMAGE_PROPS}
               />
             </Box>
           )}
