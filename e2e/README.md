@@ -94,17 +94,17 @@ The Paddle checkout E2E tests (`14-paddle-checkout.spec.ts`, `15-paddle-branding
    ```
 2. **`BACKEND_API_PADDLE_KEY`** environment variable set in `e2e/.env` (or `.env.local` at the repo root). This is the Paddle sandbox API key used to create the notification setting, manage notification URLs, and cancel subscriptions.
 
-> **Your local dev notification setting is never touched.** Earlier this suite repointed a _shared_ notification setting's `destination` at the tunnel, which hijacked local dev's webhook delivery. The runner now **creates an ephemeral notification setting per run** (via the Paddle API), exports its signing secret as `BACKEND_API_PADDLE_WEBHOOK_SECRET` **before the backend boots** (so HMAC verification matches), and **deletes the setting on teardown**. By default, do not set `BACKEND_API_PADDLE_WEBHOOK_SECRET` in `e2e/.env` — the runner provides it.
+> **Your local dev notification setting is never touched.** The runner creates one ephemeral notification setting per Paddle test worker, exports all signing secrets before the backend boots, and deletes the settings on teardown. Each worker routes its simulations through its own destination, so they do not contend for webhook delivery. By default, do not set `BACKEND_API_PADDLE_WEBHOOK_SECRET` in `e2e/.env` — the runner provides the E2E secrets.
 >
-> **Bring your own setting (optional).** If you'd rather use a notification setting you manage, set `E2E_PADDLE_NOTIFICATION_SETTING_ID` in `e2e/.env` along with that setting's own `BACKEND_API_PADDLE_WEBHOOK_SECRET`. The runner then skips create/delete and leaves your setting in place, only repointing its `destination` at the tunnel during setup. (Use a setting dedicated to E2E, not your local dev one — setup will overwrite its destination.)
+> **Bring your own setting (optional).** If you'd rather use a notification setting you manage, set `E2E_PADDLE_NOTIFICATION_SETTING_ID` in `e2e/.env` along with that setting's own `BACKEND_API_PADDLE_WEBHOOK_SECRET`. The runner then uses one worker, skips create/delete, and leaves your setting in place, only repointing its destination at the tunnel during setup. (Use a setting dedicated to E2E, not your local dev one — setup will overwrite its destination.)
 
 ### How It Works
 
-1. **Before stack boot**: if `E2E_PADDLE_NOTIFICATION_SETTING_ID` is already set, it's used as-is; otherwise, the runner creates an ephemeral Paddle notification setting, exports its secret as `BACKEND_API_PADDLE_WEBHOOK_SECRET` and its id as `E2E_PADDLE_NOTIFICATION_SETTING_ID`, then brings up the stack so the backend boots already knowing the secret. Cleanup deletes only a setting the runner itself created.
+1. **Before stack boot**: unless a managed setting is supplied, the runner creates four worker-scoped notification settings and exports their ids and signing secrets before bringing up the stack. Cleanup deletes only settings the runner created.
 
 2. **Setup** (`tests/paddle.setup.ts`):
    - Starts a Cloudflare Tunnel to expose the backend with a public URL
-   - Points the ephemeral E2E notification setting's `destination` at the tunnel URL
+   - Points each worker's notification setting at a distinct tunnel URL
 
 3. **Tests**: Navigate to checkout pages, fill Paddle iframes with test card credentials (`4242 4242 4242 4242`), and submit. Wait for webhook processing and benefit provisioning.
 

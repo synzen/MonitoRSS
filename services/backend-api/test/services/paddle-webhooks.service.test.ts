@@ -1,5 +1,6 @@
 import { describe, it, before, after, mock } from "node:test";
 import assert from "node:assert";
+import { createHmac } from "node:crypto";
 import dayjs from "dayjs";
 import {
   SubscriptionProductKey,
@@ -105,6 +106,33 @@ describe("PaddleWebhooksService", { concurrency: true }, () => {
       const ctx = harness.createContext();
       const requestBody = '{"test": true}';
       const signature = ctx.createWebhookSignature(requestBody);
+
+      const result = await ctx.service.isVerifiedWebhookEvent({
+        signature,
+        requestBody,
+      });
+
+      assert.strictEqual(result, true);
+    });
+
+    it("returns true when HMAC matches an additional configured secret", async () => {
+      const additionalSecret = "additional-webhook-secret";
+      const ctx = harness.createContext({
+        config: {
+          BACKEND_API_PADDLE_WEBHOOK_SECRET: undefined,
+          BACKEND_API_PADDLE_WEBHOOK_SECRETS: JSON.stringify([
+            additionalSecret,
+          ]),
+        },
+      });
+      const requestBody = '{"test": true}';
+      const timestamp = "12345";
+      const signature = `ts=${timestamp};h1=${createHmac(
+        "sha256",
+        additionalSecret,
+      )
+        .update(`${timestamp}:${requestBody}`)
+        .digest("hex")}`;
 
       const result = await ctx.service.isVerifiedWebhookEvent({
         signature,

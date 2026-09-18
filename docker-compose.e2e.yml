@@ -303,6 +303,7 @@ services:
       - BACKEND_API_PADDLE_KEY=${BACKEND_API_PADDLE_KEY:-}
       - BACKEND_API_PADDLE_URL=${BACKEND_API_PADDLE_URL:-}
       - BACKEND_API_PADDLE_WEBHOOK_SECRET=${BACKEND_API_PADDLE_WEBHOOK_SECRET:-}
+      - BACKEND_API_PADDLE_WEBHOOK_SECRETS=${BACKEND_API_PADDLE_WEBHOOK_SECRETS:-}
       # Reddit OAuth + authenticated feed fetches are served by the host-side mock
       # reddit server (e2e/mock-reddit-server.ts), reached via host.docker.internal
       # by both the backend (token exchange) and the browser popup (authorize).

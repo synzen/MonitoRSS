@@ -46,7 +46,17 @@ interface PaddleListResponse<T> {
   meta: { pagination?: { next?: string } };
 }
 
-function getNotificationSettingId(): string {
+function getNotificationSettingId(workerIndex = 0): string {
+  const settingIds = process.env.E2E_PADDLE_NOTIFICATION_SETTING_IDS;
+  if (settingIds) {
+    const ids = JSON.parse(settingIds) as string[];
+    const id = ids[workerIndex];
+    if (id) return id;
+    throw new Error(
+      `No Paddle notification setting is configured for worker ${workerIndex}.`,
+    );
+  }
+
   const id = process.env.E2E_PADDLE_NOTIFICATION_SETTING_ID;
   if (!id) {
     throw new Error(
@@ -58,13 +68,19 @@ function getNotificationSettingId(): string {
   return id;
 }
 
-export async function updateNotificationUrl(webhookUrl: string): Promise<void> {
-  await paddleRequest(`/notification-settings/${getNotificationSettingId()}`, {
-    method: "PATCH",
-    body: JSON.stringify({
-      destination: webhookUrl,
-    }),
-  });
+export async function updateNotificationUrl(
+  webhookUrl: string,
+  workerIndex = 0,
+): Promise<void> {
+  await paddleRequest(
+    `/notification-settings/${getNotificationSettingId(workerIndex)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        destination: webhookUrl,
+      }),
+    },
+  );
   console.log("Paddle notification URL updated");
 }
 
@@ -196,11 +212,15 @@ interface PaddleSimulationRun {
 
 export async function setNotificationTrafficSource(
   trafficSource: "platform" | "all",
+  workerIndex = 0,
 ): Promise<void> {
-  await paddleRequest(`/notification-settings/${getNotificationSettingId()}`, {
-    method: "PATCH",
-    body: JSON.stringify({ traffic_source: trafficSource }),
-  });
+  await paddleRequest(
+    `/notification-settings/${getNotificationSettingId(workerIndex)}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ traffic_source: trafficSource }),
+    },
+  );
 }
 
 export async function createPaddleCustomer(email: string): Promise<string> {
@@ -222,16 +242,18 @@ export async function createPaddleCustomer(email: string): Promise<string> {
 export async function simulateSubscriptionCreation({
   customerId,
   priceId,
+  workerIndex,
 }: {
   customerId: string;
   priceId: string;
+  workerIndex: number;
 }): Promise<void> {
   const simulation = await paddleRequest<{ data: PaddleSimulation }>(
     "/simulations",
     {
       method: "POST",
       body: JSON.stringify({
-        notification_setting_id: getNotificationSettingId(),
+        notification_setting_id: getNotificationSettingId(workerIndex),
         name: `e2e-sub-creation-${Date.now()}`,
         type: "subscription_creation",
         config: {
