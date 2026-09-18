@@ -32,6 +32,15 @@ describe("SetupChecklistCard", () => {
     expect(screen.getByText("example.com")).toBeInTheDocument();
   });
 
+  // Regression: Termly Auto Blocker (official hosts only) rewrites third-party <img src>
+  // until consent; the checklist site icon must stay pre-categorized as essential.
+  it("marks the site icon as essential so the Termly auto-blocker leaves src intact", () => {
+    renderWithChakra(<SetupChecklistCard feed={baseFeed} onAddConnection={vi.fn()} />);
+
+    const img = screen.getByRole("img", { hidden: true });
+    expect(img).toHaveAttribute("data-categories", "essential");
+  });
+
   it("shows 'No connection — not delivering' when connectionCount is 0", () => {
     renderWithChakra(
       <SetupChecklistCard feed={{ ...baseFeed, connectionCount: 0 }} onAddConnection={vi.fn()} />,
