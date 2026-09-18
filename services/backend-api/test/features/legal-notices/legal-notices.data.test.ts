@@ -9,7 +9,7 @@ describe("LEGAL_NOTICES", () => {
     const notice = LEGAL_NOTICES[0];
     assert.ok(notice);
     assert.equal(notice.version, "2026-10-19");
-    assert.equal(notice.displayAt.toISOString(), "2026-09-19T04:00:00.000Z");
+    assert.equal(notice.displayAt.toISOString(), "2026-09-18T04:00:00.000Z");
     assert.equal(notice.effectiveAt.toISOString(), "2026-10-19T04:00:00.000Z");
     assert.deepEqual(
       notice.documents.map((document) => document.url),

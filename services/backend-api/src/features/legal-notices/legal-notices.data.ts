@@ -7,7 +7,7 @@ import { LegalNoticesSchema, type LegalNotices } from "./legal-notices.schemas";
 export const LEGAL_NOTICES: LegalNotices = LegalNoticesSchema.parse([
   {
     version: "2026-10-19",
-    displayAt: "2026-09-19T00:00:00-04:00",
+    displayAt: "2026-09-18T00:00:00-04:00",
     effectiveAt: "2026-10-19T00:00:00-04:00",
     summary:
       "We've updated our Terms and Conditions and Privacy Policy, effective October 19, 2026. The updated documents reflect that Relayvale LLC operates MonitoRSS, and clarify how your data is handled, your privacy rights, subscriptions and payments, and how disputes are resolved. Continued use of MonitoRSS on or after October 19, 2026 means you accept the updated documents.",
