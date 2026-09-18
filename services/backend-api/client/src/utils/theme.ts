@@ -45,6 +45,7 @@ interface InfoRamp {
   emphasized: string;
   solid: string;
   fg: string;
+  actionBorder: string;
   focusRing: string;
 }
 // `palette: "blue"` keeps v3's native blue-slot mechanic (no recipe override → byte-identical for a
@@ -125,6 +126,7 @@ const SCHEMES = {
       emphasized: "#3f5a7d",
       solid: "#3f5a7d",
       fg: "#9db4d4", // 6.66:1 on alert bg / 8.26:1 on panel
+      actionBorder: "#7d9bc4", // 4.94:1 on the info surface
       focusRing: "#7d9bc4",
     },
   },
@@ -168,6 +170,7 @@ const SCHEMES = {
       // info-only (alert border + subtle bg, never a solid button), so the 3.82:1 white-on-solid is fine.
       solid: "#349088",
       fg: "#7fcfc8", // teal info text on dark
+      actionBorder: "#4aa6a0", // 4.88:1 on the info surface
       focusRing: "#4aa6a0",
       contrast: "#ffffff",
     },
@@ -204,6 +207,7 @@ const SCHEMES = {
       emphasized: "#456ea6",
       solid: "#456ea6", // info-blue; alert banner edge 3.43:1 on page, white 5.21:1
       fg: "#8fb4e0",
+      actionBorder: "#5a82c0", // 3.91:1 on the info surface
       focusRing: "#5a82c0",
     },
   },
@@ -244,6 +248,7 @@ const SCHEMES = {
       emphasized: "#2563eb",
       solid: "#2563eb",
       fg: "#a3cfff",
+      actionBorder: "#60a5fa", // 6.19:1 on the info surface
       focusRing: "#3b82f6",
     },
   },
@@ -267,8 +272,32 @@ const infoSlots = {
   emphasized: { value: { _dark: S.info.emphasized } },
   solid: { value: { _dark: S.info.solid } },
   fg: { value: { _dark: S.info.fg } },
+  actionBorder: { value: { _dark: S.info.actionBorder } },
   focusRing: { value: { _dark: S.info.focusRing } },
 };
+
+// Tinted Alert recipes supply these inherited values; outline buttons fall back to neutral roles.
+const STATUS_ACTION_BORDER_VAR = "--status-action-border";
+const STATUS_ACTION_FG_VAR = "--status-action-fg";
+const STATUS_ACTION_HOVER_VAR = "--status-action-hover";
+const STATUS_ACTION_FOCUS_RING_VAR = "--status-action-focus-ring";
+
+const statusActionContext = ({
+  border,
+  fg,
+  hover,
+  focusRing,
+}: {
+  border: string;
+  fg: string;
+  hover: string;
+  focusRing: string;
+}) => ({
+  [STATUS_ACTION_BORDER_VAR]: border,
+  [STATUS_ACTION_FG_VAR]: fg,
+  [STATUS_ACTION_HOVER_VAR]: hover,
+  [STATUS_ACTION_FOCUS_RING_VAR]: focusRing,
+});
 
 const defaultButtonRecipe = defaultConfig.theme!.recipes!.button;
 const buttonRecipe = {
@@ -287,7 +316,17 @@ const buttonRecipe = {
       ...defaultButtonRecipe.variants?.variant,
       outline: {
         ...defaultButtonRecipe.variants?.variant?.outline,
-        borderColor: "controlBorder",
+        borderColor: `var(${STATUS_ACTION_BORDER_VAR}, var(--chakra-colors-control-border))`,
+        color: `var(${STATUS_ACTION_FG_VAR}, var(--chakra-colors-color-palette-fg))`,
+        _hover: {
+          bg: `var(${STATUS_ACTION_HOVER_VAR}, var(--chakra-colors-color-palette-subtle))`,
+        },
+        _expanded: {
+          bg: `var(${STATUS_ACTION_HOVER_VAR}, var(--chakra-colors-color-palette-subtle))`,
+        },
+        _focusVisible: {
+          outlineColor: `var(${STATUS_ACTION_FOCUS_RING_VAR}, var(--chakra-colors-color-palette-focus-ring))`,
+        },
       },
     },
   },
@@ -373,6 +412,7 @@ const config = defineConfig({
                 emphasized: { value: { _dark: S.info.emphasized } },
                 solid: { value: { _dark: S.info.solid } },
                 fg: { value: { _dark: S.info.fg } },
+                actionBorder: { value: { _dark: S.info.actionBorder } },
                 contrast: { value: { _dark: S.info.contrast } },
                 focusRing: { value: { _dark: S.info.focusRing } },
               },
@@ -504,6 +544,56 @@ const config = defineConfig({
       alert: {
         slots: ["root", "title", "description", "indicator", "content"],
         base: { title: { fontWeight: "semibold" } },
+        compoundVariants: [
+          {
+            status: "info",
+            variant: ["subtle", "surface"],
+            css: {
+              root: statusActionContext({
+                border: S.info.actionBorder,
+                fg: S.info.fg,
+                hover: S.info.muted,
+                focusRing: S.info.focusRing,
+              }),
+            },
+          },
+          {
+            status: "warning",
+            variant: ["subtle", "surface"],
+            css: {
+              root: statusActionContext({
+                border: "#fb923c",
+                fg: "#fdba74",
+                hover: "#6c2710",
+                focusRing: "#f97316",
+              }),
+            },
+          },
+          {
+            status: "error",
+            variant: ["subtle", "surface"],
+            css: {
+              root: statusActionContext({
+                border: "#f87171",
+                fg: "#fca5a5",
+                hover: "#511111",
+                focusRing: "#ef4444",
+              }),
+            },
+          },
+          {
+            status: "success",
+            variant: ["subtle", "surface"],
+            css: {
+              root: statusActionContext({
+                border: "#4ade80",
+                fg: "#86efac",
+                hover: "#124a28",
+                focusRing: "#22c55e",
+              }),
+            },
+          },
+        ],
         variants: {
           variant: {
             subtle: { root: { borderWidth: "1px", borderColor: "colorPalette.solid" } },

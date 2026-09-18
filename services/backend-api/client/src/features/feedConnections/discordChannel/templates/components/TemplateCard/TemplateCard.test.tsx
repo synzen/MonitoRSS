@@ -99,6 +99,14 @@ describe("TemplateCard", () => {
       const img = screen.getByRole("img", { hidden: true });
       expect(img).toHaveAttribute("src", "https://example.com/thumbnail.png");
     });
+
+    // Regression: Termly Auto Blocker (official hosts only) rewrites third-party <img src>
+    // until consent; the template thumbnail must stay pre-categorized as essential.
+    it("marks the thumbnail as essential so the Termly auto-blocker leaves src intact", () => {
+      render(<TestWrapper templates={[mockTemplateWithThumbnail]} />);
+      const img = screen.getByRole("img", { hidden: true });
+      expect(img).toHaveAttribute("data-categories", "essential");
+    });
   });
 
   describe("radio input behavior", () => {

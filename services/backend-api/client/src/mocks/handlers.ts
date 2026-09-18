@@ -97,6 +97,8 @@ import mockWorkspaces from "./data/workspaces";
 
 const CURATED_FEEDS_MAX_LIMIT = 25;
 const CURATED_FEEDS_MIN_SEARCH_LENGTH = 3;
+const MOCK_LEGAL_NOTICE_VERSION = "2026-09-01";
+let hasDismissedLegalNotice = false;
 
 // In-memory workspaces store so the mock create flow reflects in the chooser/list.
 const workspacesStore: Workspace[] = [...mockWorkspaces];
@@ -393,6 +395,38 @@ const handlers = [
       authenticated: true,
     }),
   ),
+
+  http.get("/api/v1/legal-notices/applicable", () =>
+    HttpResponse.json({
+      result: hasDismissedLegalNotice
+        ? null
+        : {
+            version: MOCK_LEGAL_NOTICE_VERSION,
+            phase: "upcoming",
+            summary:
+              "We are updating our legal terms and privacy practices. These changes take effect on October 1, 2026.",
+            documents: [
+              { type: "terms", url: "https://monitorss.xyz/terms" },
+              {
+                type: "privacy-policy",
+                url: "https://monitorss.xyz/privacy-policy",
+              },
+            ],
+          },
+      serverTime: "2026-09-01T00:00:00.000Z",
+      nextTransitionAt: "2026-10-01T00:00:00.000Z",
+    }),
+  ),
+
+  http.post("/api/v1/legal-notices/dismissals", async ({ request }) => {
+    const body = (await request.json()) as { version: string };
+
+    if (body.version === MOCK_LEGAL_NOTICE_VERSION) {
+      hasDismissedLegalNotice = true;
+    }
+
+    return new HttpResponse(null, { status: 204 });
+  }),
 
   http.patch(
     "/api/v1/discord-users/@me/supporter",

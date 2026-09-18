@@ -16,6 +16,7 @@ import WORKSPACE_OWNERSHIP_TRANSFERRED_TEMPLATE from "../src/features/workspaces
 import WORKSPACE_REDDIT_CONNECTION_LOST_TEMPLATE from "../src/features/workspaces/workspace-reddit-connection-lost.template";
 import DISABLED_FEED_TEMPLATE from "../src/services/notifications/disabled-feed.template";
 import WORKSPACE_FEEDS_DISABLED_DIGEST_TEMPLATE from "../src/services/notifications/workspace-feeds-disabled-digest.template";
+import LEGAL_POLICY_UPDATE_TEMPLATE from "../src/features/legal-notices/legal-policy-update.template";
 
 // Configure the footer so the preview shows the compliant (hosted) variant.
 const config = {
@@ -25,6 +26,14 @@ const config = {
 
 const renderEmail = createEmailRenderer(config);
 const compile = (tpl: string) => Handlebars.compile(tpl);
+
+// The legal notice renders with the Relayvale-era disclosures a manual send
+// must present, rather than the shared MonitoRSS-era footer above.
+const legalNoticeRenderEmail = createEmailRenderer({
+  BACKEND_API_EMAIL_PRIVACY_POLICY_URL: "https://monitorss.xyz/legal/privacy",
+  BACKEND_API_EMAIL_FOOTER_ADDRESS:
+    "Relayvale LLC, 418 Broadway, STE N, Albany, NY 12207",
+} as Config);
 
 const emails: Array<{ name: string; html: string }> = [
   {
@@ -116,6 +125,10 @@ const emails: Array<{ name: string; html: string }> = [
         { name: "Ars Technica", urlDisplay: "arstechnica.com/feed", urlLink: "https://arstechnica.com/feed/" },
       ],
     }),
+  },
+  {
+    name: "08-legal-policy-update",
+    html: legalNoticeRenderEmail(compile(LEGAL_POLICY_UPDATE_TEMPLATE)),
   },
 ];
 
