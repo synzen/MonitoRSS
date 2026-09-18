@@ -365,6 +365,12 @@ describe("GET /api/v1/legal-notices/applicable", () => {
   it("does not let a dismissal hide a later notice version", async () => {
     const discordUserId = generateSnowflake();
     await ctx.container.userRepository.create({ discordUserId });
+    await ctx.connection
+      .collection("users")
+      .updateOne(
+        { discordUserId },
+        { $set: { createdAt: new Date("2026-09-14T23:59:59.000Z") } },
+      );
     await dismissNotice(ctx, discordUserId, notice.version);
 
     ctx.container.legalNotices = [{
