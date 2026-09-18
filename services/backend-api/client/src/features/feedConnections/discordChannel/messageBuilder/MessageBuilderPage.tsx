@@ -58,6 +58,7 @@ import {
 } from "@/features/feed";
 import { LogoutButton } from "@/features/auth";
 import { useDiscordBot, useDiscordUserMe } from "@/features/discordUser";
+import { LegalNoticeBanner } from "@/features/legalNotices";
 import { FeedConnectionType, FeedDiscordChannelConnection } from "@/types";
 import {
   useUpdateDiscordChannelConnection,
@@ -522,6 +523,7 @@ const MessageBuilderContent: React.FC = () => {
                   </Flex>
                 </Flex>
               </Box>
+              <LegalNoticeBanner />
               {/* Navigation */}
               <Box bg="bg" px={4} py={3}>
                 <BreadcrumbRoot>
