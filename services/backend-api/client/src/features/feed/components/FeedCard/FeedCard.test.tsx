@@ -64,6 +64,15 @@ describe("FeedCard", () => {
       expect(img.src).toContain("https://www.google.com/s2/favicons?sz=32&domain=ign.com");
     });
 
+    // Regression: Termly Auto Blocker (official hosts only) rewrites third-party <img src>
+    // until consent; the discovery modal site icon must stay pre-categorized as essential.
+    it("marks the site icon as essential so the Termly auto-blocker leaves src intact", () => {
+      renderCard();
+
+      const img = screen.getByRole("img", { hidden: true });
+      expect(img).toHaveAttribute("data-categories", "essential");
+    });
+
     it("falls back to letter avatar on image error", () => {
       renderCard();
 

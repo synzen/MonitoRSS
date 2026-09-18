@@ -44,4 +44,4 @@ services:
     volumes:
       - ./src:/app/src
       - ./test:/app/test
-    command: bash -c "shopt -s globstar; ${TEST_COMMAND:-node --import tsx --test --test-concurrency=1 test/**/*.api.test.ts}"
+    command: bash -c "shopt -s globstar; ${TEST_COMMAND:-node --import tsx --test --test-concurrency=1 test/api/**/*.test.ts}"

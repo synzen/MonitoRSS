@@ -270,7 +270,6 @@ services:
     ports:
       - "${E2E_BACKEND_PORT:-8100}:8100"
     environment:
-      - BACKEND_API_NODE_ENV=local
       - BACKEND_API_PORT=8100
       - BACKEND_API_DISCORD_API_BASE_URL=http://host.docker.internal:${E2E_MOCK_DISCORD_PORT:-3002}/api/v9
       - BACKEND_API_DISCORD_BOT_TOKEN=fake-bot-token
@@ -319,7 +318,11 @@ services:
       # most a couple of feeds per workspace.
       - BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS=5
       - LOG_LEVEL=debug
-      - NODE_ENV=local
+      # Development, not Local: legal notices are only exposed in Local (dev
+      # preview) or on the production dashboard host, and a live banner
+      # collides with specs that were written without one (strict-mode
+      # locators, click interception). Sessions only need non-production.
+      - NODE_ENV=development
     command: npm run dev
     networks:
       - e2e-default
