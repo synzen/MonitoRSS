@@ -17,7 +17,7 @@ import { BrowseFeedsModal } from "./index";
 //
 // Uses the REAL RedditLoginButton + FixFeedRequestsCTA so the actual connect -> onConnected ->
 // retry wiring is exercised (the bug lived in that wiring + the modal's remounting results key).
-// Only the leaf useUserMe hook and the OAuth popup are mocked.
+// Only the leaf useUserMe hook and the OAuth navigation are mocked.
 
 const mockCategories = [{ id: "gaming", label: "Gaming", count: 0 }];
 
@@ -103,11 +103,17 @@ vi.mock("../../hooks/useCreateUserFeedUrlValidation", () => ({
   },
 }));
 
-// Leaf useUserMe mock: starts with no Reddit account (gate shows). refetch() flips the account to
-// ACTIVE and re-renders, mirroring the real popup -> postMessage -> refetch flow. The real
-// RedditLoginButton's effect then fires onConnected (the retry trigger).
+// Leaf useUserMe mock: starts with no Reddit account (gate shows). flipRedditAccountActive()
+// flips the account to ACTIVE and re-renders, mirroring the page reload after the OAuth round
+// trip: the query first resolves without data, then to an ACTIVE connection, so the real
+// RedditLoginButton's effect fires onConnected (the retry trigger).
 let redditAccount: { type: string; status: string } | undefined;
 const userMeListeners = new Set<() => void>();
+
+const flipRedditAccountActive = () => {
+  redditAccount = { type: "reddit", status: "ACTIVE" };
+  userMeListeners.forEach((notify) => notify());
+};
 
 vi.mock("@/features/discordUser/hooks/useUserMe", () => ({
   useUserMe: () => {
@@ -124,8 +130,7 @@ vi.mock("@/features/discordUser/hooks/useUserMe", () => ({
       status: "success",
       fetchStatus: "idle",
       refetch: async () => {
-        redditAccount = { type: "reddit", status: "ACTIVE" };
-        userMeListeners.forEach((notify) => notify());
+        flipRedditAccountActive();
 
         return { data: undefined };
       },
@@ -190,12 +195,12 @@ describe("BrowseFeedsModal - Reddit connect retry", () => {
     // The mandatory-connection gate is shown in place of a feed card.
     expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Connect Reddit in popup window" }));
+    await user.click(screen.getByRole("button", { name: "Connect Reddit" }));
 
-    // Simulate the OAuth popup completing: it posts "reddit" back, which the button listens for and
-    // turns into a useUserMe refetch (now resolving to an ACTIVE connection).
+    // Simulate the OAuth round trip completing: the same tab reloads with an ACTIVE
+    // connection, so useUserMe flips to connected and the button's effect fires the retry.
     await act(async () => {
-      window.postMessage("reddit", "*");
+      flipRedditAccountActive();
       await new Promise((resolve) => {
         setTimeout(resolve, 0);
       });

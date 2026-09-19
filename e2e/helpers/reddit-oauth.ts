@@ -13,27 +13,13 @@ export function uniqueSubreddit(): { url: string; title: string } {
 }
 
 /**
- * Complete the Reddit OAuth popup as a real user: click the connect button, then let the
- * popup run /api/v1/reddit/login -> the mock reddit authorize endpoint (no consent screen)
- * -> the backend callback (state validation + token exchange). The callback posts back to
- * the opener and closes the popup, so the popup's self-close is the completion signal.
+ * Complete the Reddit OAuth round trip as a real user, in the SAME tab: the click
+ * navigates /api/v1/reddit/login -> the mock reddit authorize endpoint (no consent
+ * screen) -> the backend callback (state validation + token exchange) -> a redirect back
+ * into the app. The whole chain is server-side redirects behind one navigation, which
+ * Playwright's click awaits; the load-state wait is belt-and-braces for slow CI.
  */
-export async function connectRedditViaPopup(page: Page, connectButton: Locator): Promise<void> {
-  const popupPromise = page.waitForEvent("popup");
-  await connectButton.click();
-  const popup = await popupPromise;
-
-  try {
-    // Generous timeout: the redirect chain spans the backend container and the
-    // host-side mock reddit server, which is slow under parallel-worker CI load.
-    await popup.waitForEvent("close", { timeout: 45000 });
-  } catch (err) {
-    // The popup can finish its redirect chain and close before the listener attaches.
-    if (!popup.isClosed()) {
-      throw new Error(
-        `Reddit OAuth popup never closed (stuck on ${popup.url()})`,
-        { cause: err },
-      );
-    }
-  }
+export async function connectReddit(page: Page, connectButton: Locator): Promise<void> {
+  await connectButton.click({ timeout: 45000 });
+  await page.waitForLoadState("load", { timeout: 45000 });
 }

@@ -16,7 +16,7 @@ interface Props {
  * possible set of people can fix it with their own account.
  */
 export const WorkspaceRedditConnectionSetting = ({ workspaceSlug }: Props) => {
-  const { workspace, refetch } = useWorkspace({ workspaceSlug });
+  const { workspace } = useWorkspace({ workspaceSlug });
   const { data: userMe } = useUserMe();
   const {
     mutateAsync: disconnect,
@@ -77,7 +77,6 @@ export const WorkspaceRedditConnectionSetting = ({ workspaceSlug }: Props) => {
             workspace={{
               id: workspace.id,
               connectionStatus: (connection?.status as "ACTIVE" | "REVOKED") ?? null,
-              refresh: refetch,
             }}
           />
           {connection && (

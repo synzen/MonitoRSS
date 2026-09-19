@@ -88,35 +88,13 @@ describe("Reddit Auth API", { concurrency: true }, () => {
       assert.strictEqual(response.status, 401);
     });
 
-    it("returns HTML that closes window when error parameter is present", async () => {
-      const user = await ctx.asUser("user-callback-error");
-      const response = await user.fetch(
-        "/api/v1/reddit/callback?error=access_denied",
-      );
-
-      assert.strictEqual(response.status, 200);
-      const contentType = response.headers.get("content-type");
-      assert.ok(
-        contentType?.startsWith("text/html"),
-        "Should return text/html",
-      );
-      const body = await response.text();
-      assert.ok(body.includes("window.close()"));
-    });
-
-    it("returns 'No code available' when code is missing", async () => {
-      const user = await ctx.asUser("user-callback-no-code");
-      const response = await user.fetch("/api/v1/reddit/callback");
-
-      assert.strictEqual(response.status, 200);
-      const body = await response.text();
-      assert.strictEqual(body, "No code available");
-    });
-
     it("sets Cache-Control: no-store header", async () => {
       const user = await ctx.asUser("user-callback-cache");
-      const response = await user.fetch("/api/v1/reddit/callback");
+      const response = await user.fetch("/api/v1/reddit/callback", {
+        redirect: "manual",
+      });
 
+      assert.strictEqual(response.status, 303);
       assert.strictEqual(response.headers.get("cache-control"), "no-store");
     });
 
@@ -125,8 +103,9 @@ describe("Reddit Auth API", { concurrency: true }, () => {
     // also rewrites the session cookie, so the callback uses the UPDATED cookie.
     async function startLogin(
       user: Awaited<ReturnType<AppTestContext["asUser"]>>,
+      query = "",
     ): Promise<{ state: string; cookie: string }> {
-      const res = await user.fetch("/api/v1/reddit/login", {
+      const res = await user.fetch(`/api/v1/reddit/login${query}`, {
         redirect: "manual",
       });
       assert.strictEqual(res.status, 303);
@@ -143,9 +122,7 @@ describe("Reddit Auth API", { concurrency: true }, () => {
       return { state, cookie };
     }
 
-    it("exchanges code for tokens and returns HTML with postMessage on success", async () => {
-      const user = await ctx.asUser("user-callback-success");
-
+    const mockTokenExchange = (ctx: AppTestContext) => {
       const mockGetAccessToken = mock.method(
         ctx.container.redditApiService,
         "getAccessToken",
@@ -158,25 +135,28 @@ describe("Reddit Auth API", { concurrency: true }, () => {
         }),
       );
 
-      const { state, cookie } = await startLogin(user);
+      return mockGetAccessToken;
+    };
+
+    it("redirects back to the session's returnTo on success", async () => {
+      const user = await ctx.asUser("user-callback-success");
+
+      const mockGetAccessToken = mockTokenExchange(ctx);
+
+      const { state, cookie } = await startLogin(
+        user,
+        `?returnTo=${encodeURIComponent("/feeds?addFeed=https://reddit.com/r/news")}`,
+      );
       const response = await ctx.fetch(
         `/api/v1/reddit/callback?code=valid-auth-code&state=${state}`,
-        { headers: { cookie } },
+        { headers: { cookie }, redirect: "manual" },
       );
 
-      assert.strictEqual(response.status, 200);
-      const contentType = response.headers.get("content-type");
-      assert.ok(
-        contentType?.startsWith("text/html"),
-        "Should return text/html",
+      assert.strictEqual(response.status, 303);
+      assert.strictEqual(
+        response.headers.get("location"),
+        "http://localhost:3000/feeds?addFeed=https://reddit.com/r/news",
       );
-
-      const body = await response.text();
-      assert.ok(
-        body.includes("window.opener.postMessage('reddit', '*')"),
-        "Should post message to opener",
-      );
-      assert.ok(body.includes("window.close()"), "Should close window");
 
       assert.strictEqual(mockGetAccessToken.mock.calls.length, 1);
       const firstCall = mockGetAccessToken.mock.calls[0];
@@ -186,30 +166,127 @@ describe("Reddit Auth API", { concurrency: true }, () => {
       mockGetAccessToken.mock.restore();
     });
 
+    it("redirects to the app root when no returnTo was stashed", async () => {
+      const user = await ctx.asUser("user-callback-no-returnto");
+
+      const mockGetAccessToken = mockTokenExchange(ctx);
+
+      const { state, cookie } = await startLogin(user);
+      const response = await ctx.fetch(
+        `/api/v1/reddit/callback?code=valid-auth-code&state=${state}`,
+        { headers: { cookie }, redirect: "manual" },
+      );
+
+      assert.strictEqual(response.status, 303);
+      assert.strictEqual(
+        response.headers.get("location"),
+        "http://localhost:3000/",
+      );
+
+      mockGetAccessToken.mock.restore();
+    });
+
+    it("redirects to the app root when the login returnTo is not a safe in-app path", async () => {
+      const user = await ctx.asUser("user-callback-unsafe-returnto");
+
+      const mockGetAccessToken = mockTokenExchange(ctx);
+
+      const unsafePaths = [
+        "https://evil.example.com",
+        "//evil.example.com",
+        "/\\evil.example.com",
+      ];
+
+      for (const unsafePath of unsafePaths) {
+        const { state, cookie } = await startLogin(
+          user,
+          `?returnTo=${encodeURIComponent(unsafePath)}`,
+        );
+        const response = await ctx.fetch(
+          `/api/v1/reddit/callback?code=valid-auth-code&state=${state}`,
+          { headers: { cookie }, redirect: "manual" },
+        );
+
+        assert.strictEqual(response.status, 303, unsafePath);
+        assert.strictEqual(
+          response.headers.get("location"),
+          "http://localhost:3000/",
+          `${unsafePath} must not be used as redirect target`,
+        );
+      }
+
+      mockGetAccessToken.mock.restore();
+    });
+
+    it("redirects back without exchanging the code when the error parameter is present", async () => {
+      const user = await ctx.asUser("user-callback-error");
+
+      const mockGetAccessToken = mockTokenExchange(ctx);
+
+      const { cookie } = await startLogin(
+        user,
+        `?returnTo=${encodeURIComponent("/settings")}`,
+      );
+      const response = await ctx.fetch(
+        "/api/v1/reddit/callback?error=access_denied",
+        { headers: { cookie }, redirect: "manual" },
+      );
+
+      assert.strictEqual(response.status, 303);
+      assert.strictEqual(
+        response.headers.get("location"),
+        "http://localhost:3000/settings",
+      );
+      assert.strictEqual(
+        mockGetAccessToken.mock.calls.length,
+        0,
+        "must not exchange the code",
+      );
+
+      mockGetAccessToken.mock.restore();
+    });
+
+    it("redirects back without exchanging the code when code is missing", async () => {
+      const user = await ctx.asUser("user-callback-no-code");
+
+      const mockGetAccessToken = mockTokenExchange(ctx);
+
+      const { cookie } = await startLogin(user);
+      const response = await ctx.fetch("/api/v1/reddit/callback", {
+        headers: { cookie },
+        redirect: "manual",
+      });
+
+      assert.strictEqual(response.status, 303);
+      assert.strictEqual(
+        response.headers.get("location"),
+        "http://localhost:3000/",
+      );
+      assert.strictEqual(
+        mockGetAccessToken.mock.calls.length,
+        0,
+        "must not exchange the code",
+      );
+
+      mockGetAccessToken.mock.restore();
+    });
+
     it("discards the code when state does not match the session nonce", async () => {
       const user = await ctx.asUser("user-callback-state-mismatch");
 
-      const mockGetAccessToken = mock.method(
-        ctx.container.redditApiService,
-        "getAccessToken",
-        async () => ({
-          access_token: "mock-access-token",
-          refresh_token: "mock-refresh-token",
-          expires_in: 3600,
-          token_type: "bearer" as const,
-          scope: "read",
-        }),
-      );
+      const mockGetAccessToken = mockTokenExchange(ctx);
 
       const { cookie } = await startLogin(user);
       const response = await ctx.fetch(
         "/api/v1/reddit/callback?code=valid-auth-code&state=tampered",
-        { headers: { cookie } },
+        { headers: { cookie }, redirect: "manual" },
       );
 
-      assert.strictEqual(response.status, 200);
-      const body = await response.text();
-      assert.ok(!body.includes("postMessage"), "must not signal success");
+      assert.strictEqual(response.status, 303);
+      assert.strictEqual(
+        response.headers.get("location"),
+        "http://localhost:3000/",
+      );
       assert.strictEqual(
         mockGetAccessToken.mock.calls.length,
         0,

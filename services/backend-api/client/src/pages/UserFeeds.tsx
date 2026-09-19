@@ -17,22 +17,8 @@ import {
 } from "@chakra-ui/react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  FaPlus,
-  FaCircleCheck,
-  FaChevronDown,
-  FaGear,
-  FaTrash,
-  FaCopy,
-} from "react-icons/fa6";
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { FaPlus, FaCircleCheck, FaChevronDown, FaGear, FaTrash, FaCopy } from "react-icons/fa6";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { FaPause, FaPlay } from "react-icons/fa";
 import { IoDuplicate } from "react-icons/io5";
 import { useUserMe, useDiscordUserMe } from "../features/discordUser";
@@ -65,10 +51,7 @@ import { pages } from "../constants";
 import { BoxConstrained, ConfirmModal, Panel } from "../components";
 import { DismissableAlert } from "../components/DismissableAlert";
 import { PrimaryActionButton } from "@/components/PrimaryActionButton";
-import {
-  UserFeedStatusFilterContext,
-  useMultiSelectUserFeedContext,
-} from "@/features/feed";
+import { UserFeedStatusFilterContext, useMultiSelectUserFeedContext } from "@/features/feed";
 
 import {
   PageAlertContextOutlet,
@@ -85,13 +68,7 @@ import {
   MovePersonalFeedsAction,
   WorkspaceActivationEmptyState,
 } from "@/features/workspaces";
-import {
-  MenuRoot,
-  MenuTrigger,
-  MenuContent,
-  MenuItem,
-  MenuSeparator,
-} from "@/components/ui/menu";
+import { MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@/components/ui/menu";
 import { WorkspaceFeedDiscoveryEmptyState } from "./WorkspaceFeedDiscoveryEmptyState";
 
 export const UserFeeds = () => {
@@ -108,8 +85,7 @@ export const UserFeeds = () => {
 
 type BulkAction = "enable" | "disable" | "delete";
 
-const formatFeedCount = (count: number) =>
-  `${count} feed${count === 1 ? "" : "s"}`;
+const formatFeedCount = (count: number) => `${count} feed${count === 1 ? "" : "s"}`;
 
 const DISCOVERY_BROWSE_HINT =
   "Browse popular feeds to get started, or paste a URL to check any website.";
@@ -125,10 +101,7 @@ const UserFeedsInner: React.FC = () => {
     maxFeeds: workspaceMaxFeeds,
     redditConnection,
   } = useFeedScope();
-  const scope = useMemo(
-    () => (workspaceSlug ? { workspaceSlug } : undefined),
-    [workspaceSlug],
-  );
+  const scope = useMemo(() => (workspaceSlug ? { workspaceSlug } : undefined), [workspaceSlug]);
   const currentWorkspace = useCurrentWorkspace();
   const { data: userMeData } = useUserMe();
   const { data: userFeedsRequireAttentionResults } = useUserFeeds({
@@ -147,9 +120,7 @@ const UserFeedsInner: React.FC = () => {
     limit: 1,
     offset: 0,
   });
-  const { statusFilters, setStatusFilters } = useContext(
-    UserFeedStatusFilterContext,
-  );
+  const { statusFilters, setStatusFilters } = useContext(UserFeedStatusFilterContext);
   const {
     selectedFeeds,
     selectedFeedIds,
@@ -161,8 +132,7 @@ const UserFeedsInner: React.FC = () => {
   const { mutateAsync: enableUserFeeds } = useEnableUserFeeds();
   const { mutateAsync: disableUserFeeds } = useDisableUserFeeds();
   const { mutateAsync: deleteUserFeeds } = useDeleteUserFeeds();
-  const { createSuccessAlert, createErrorAlert, createInfoAlert } =
-    usePageAlertContext();
+  const { createSuccessAlert, createErrorAlert, createInfoAlert } = usePageAlertContext();
   const { data: discordUserMe } = useDiscordUserMe();
   const { mutateAsync: createUserFeed } = useCreateUserFeed();
   const { mutateAsync: deleteUserFeed } = useDeleteUserFeed();
@@ -197,42 +167,47 @@ const UserFeedsInner: React.FC = () => {
   // session opened in the previous (empty) scope cannot be read as active under the new
   // scope and flash discovery over a populated feeds table.
   const scopeKey = workspaceSlug ?? "personal";
-  const [addingSessionScope, setAddingSessionScope] = useState<string | null>(
-    null,
-  );
+  const [addingSessionScope, setAddingSessionScope] = useState<string | null>(null);
   const isAddingSession = addingSessionScope === scopeKey;
-  const [feedActionStates, setFeedActionStates] = useState<
-    Record<string, FeedActionState>
-  >({});
+  const [feedActionStates, setFeedActionStates] = useState<Record<string, FeedActionState>>({});
   const [isBrowseModalOpen, setIsBrowseModalOpen] = useState(false);
   const [browseModalInitialCategory, setBrowseModalInitialCategory] = useState<
     string | undefined
   >();
-  const [browseModalInitialSearchQuery, setBrowseModalInitialSearchQuery] =
-    useState<string | undefined>();
+  const [browseModalInitialSearchQuery, setBrowseModalInitialSearchQuery] = useState<
+    string | undefined
+  >();
+  // Set together with browseModalInitialSearchQuery when the OAuth round trip returns to
+  // `?addFeed=<url>&addFeedAuto=1`: the restored search auto-attempts the add the user had
+  // already tried before being gated on the Reddit connection.
+  const [browseModalAutoAdd, setBrowseModalAutoAdd] = useState(false);
+  // The `?addFeed=` returnTo restores into the INLINE discovery when the page is (or will
+  // be) in discovery mode — that is where the gated search rendered — and into the browse
+  // modal otherwise (populated scope, where the gate is only reachable via "Add Feed").
+  const [inlineDiscoveryRestore, setInlineDiscoveryRestore] = useState<
+    | {
+        query: string;
+        autoAdd: boolean;
+      }
+    | undefined
+  >();
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [pendingBulkAction, setPendingBulkAction] = useState<BulkAction | null>(
-    null,
-  );
-  const [isRetryFailedFeedsDialogOpen, setIsRetryFailedFeedsDialogOpen] =
-    useState(false);
+  const [pendingBulkAction, setPendingBulkAction] = useState<BulkAction | null>(null);
+  const [isRetryFailedFeedsDialogOpen, setIsRetryFailedFeedsDialogOpen] = useState(false);
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
   const [copySettingsOpen, setCopySettingsOpen] = useState(false);
   const [modalSessionAddCount, setModalSessionAddCount] = useState(0);
   const [failedFeedsAnnouncement, setFailedFeedsAnnouncement] = useState("");
   const limitAlertShownRef = useRef(false);
   const addFeedParamConsumed = useRef(false);
-  const previousFailedFeedsAnnouncementRef = useRef<string | undefined>(
-    undefined,
-  );
+  const previousFailedFeedsAnnouncementRef = useRef<string | undefined>(undefined);
 
   const totalFeedCount = userFeedsResults?.total;
   const remainingWorkspaceFeedCapacity =
     workspaceMaxFeeds === undefined || totalFeedCount === undefined
       ? 0
       : Math.max(0, workspaceMaxFeeds - totalFeedCount);
-  const feedsWithoutConnections =
-    userFeedsResults?.feedsWithoutConnections ?? 0;
+  const feedsWithoutConnections = userFeedsResults?.feedsWithoutConnections ?? 0;
   const [setupDismissed, setSetupDismissed] = useState(false);
   const hadUnconfiguredFeeds = useRef(false);
 
@@ -240,12 +215,9 @@ const UserFeedsInner: React.FC = () => {
     hadUnconfiguredFeeds.current = true;
   }
 
-  const { data: unconfiguredFeedsData, refetch: refetchUnconfiguredFeeds } =
-    useUnconfiguredFeeds({
-      enabled:
-        feedsWithoutConnections > 0 ||
-        (hadUnconfiguredFeeds.current && !setupDismissed),
-    });
+  const { data: unconfiguredFeedsData, refetch: refetchUnconfiguredFeeds } = useUnconfiguredFeeds({
+    enabled: feedsWithoutConnections > 0 || (hadUnconfiguredFeeds.current && !setupDismissed),
+  });
 
   const hasCompletedSetup =
     !setupDismissed &&
@@ -254,8 +226,7 @@ const UserFeedsInner: React.FC = () => {
     unconfiguredFeedsData.results.length === 0;
   const unconfiguredFeedsLoaded = unconfiguredFeedsData !== undefined;
   const showSetupChecklist =
-    (feedsWithoutConnections > 0 && unconfiguredFeedsLoaded) ||
-    hasCompletedSetup;
+    (feedsWithoutConnections > 0 && unconfiguredFeedsLoaded) || hasCompletedSetup;
   const navigatedAlertTitle = state?.alertTitle;
   const navigatedAlertDescription = state?.alertDescription;
 
@@ -283,28 +254,6 @@ const UserFeedsInner: React.FC = () => {
       });
     }
   }, [navigatedAlertTitle, navigatedAlertDescription]);
-
-  useEffect(() => {
-    const addFeedQuery = searchParams.get("addFeed");
-
-    if (addFeedQuery && !addFeedParamConsumed.current) {
-      addFeedParamConsumed.current = true;
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.delete("addFeed");
-
-          return next;
-        },
-        { replace: true },
-      );
-      setBrowseModalInitialSearchQuery(addFeedQuery);
-      setModalSessionAddCount(0);
-      setIsBrowseModalOpen(true);
-    } else if (!addFeedQuery) {
-      addFeedParamConsumed.current = false;
-    }
-  }, [searchParams]);
 
   // Per-scope session state. Switching to an already-visited workspace does NOT remount
   // this component (its workspace query is cached, so the scope layout shows no loading
@@ -379,9 +328,7 @@ const UserFeedsInner: React.FC = () => {
     const isSubscribed = !!currentWorkspace?.subscription;
 
     if (isSubscribed && !wasWorkspaceSubscribedRef.current) {
-      setAddingSessionScope((current) =>
-        current === scopeKey ? null : current,
-      );
+      setAddingSessionScope((current) => (current === scopeKey ? null : current));
     }
 
     wasWorkspaceSubscribedRef.current = isSubscribed;
@@ -392,18 +339,14 @@ const UserFeedsInner: React.FC = () => {
   // unsure the move worked or which scope they are now viewing. Set when the owner
   // confirms the move; read here once the workspace has activated and the table
   // (this active return) renders.
-  const {
-    justConverted: showConvertedBanner,
-    clearConverted: dismissConvertedBanner,
-  } = useJustConvertedWorkspace();
+  const { justConverted: showConvertedBanner, clearConverted: dismissConvertedBanner } =
+    useJustConvertedWorkspace();
 
   // The feed limit is scope-specific: in workspace scope the cap is the
   // workspace's (subscription-derived), in personal scope it's the user's. Using
   // the personal maxUserFeeds in workspace scope wrongly gated feed discovery on
   // the owner's personal limit, showing "Limit reached" despite workspace headroom.
-  const scopedMaxFeeds = workspaceId
-    ? workspaceMaxFeeds
-    : discordUserMe?.maxUserFeeds;
+  const scopedMaxFeeds = workspaceId ? workspaceMaxFeeds : discordUserMe?.maxUserFeeds;
   const isAtLimit = !!(
     userFeedsResults &&
     scopedMaxFeeds !== undefined &&
@@ -427,6 +370,42 @@ const UserFeedsInner: React.FC = () => {
     !userFeedsResults || userFeedsResultsAreStale
       ? null
       : userFeedsResults.total === 0 || isAddingSession;
+
+  useEffect(() => {
+    const addFeedQuery = searchParams.get("addFeed");
+
+    // Discovery mode needs the feed count, which resolves after mount — wait for it before
+    // deciding which surface (inline discovery vs browse modal) the search restores into.
+    if (!addFeedQuery || addFeedParamConsumed.current || isInDiscoveryMode === null) {
+      if (!addFeedQuery) {
+        addFeedParamConsumed.current = false;
+      }
+
+      return;
+    }
+
+    addFeedParamConsumed.current = true;
+    const autoAdd = searchParams.get("addFeedAuto") === "1";
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("addFeed");
+        next.delete("addFeedAuto");
+
+        return next;
+      },
+      { replace: true },
+    );
+
+    if (isInDiscoveryMode) {
+      setInlineDiscoveryRestore({ query: addFeedQuery, autoAdd });
+    } else {
+      setBrowseModalInitialSearchQuery(addFeedQuery);
+      setBrowseModalAutoAdd(autoAdd);
+      setModalSessionAddCount(0);
+      setIsBrowseModalOpen(true);
+    }
+  }, [searchParams, isInDiscoveryMode]);
 
   const discoveryIntro = currentWorkspace
     ? {
@@ -501,8 +480,7 @@ const UserFeedsInner: React.FC = () => {
 
       if (
         !currentState ||
-        (currentState.status !== "added" &&
-          currentState.status !== "remove-error")
+        (currentState.status !== "added" && currentState.status !== "remove-error")
       ) {
         return;
       }
@@ -606,6 +584,7 @@ const UserFeedsInner: React.FC = () => {
   const handleOpenBrowseModal = useCallback((categoryId?: string) => {
     setBrowseModalInitialCategory(categoryId);
     setBrowseModalInitialSearchQuery(undefined);
+    setBrowseModalAutoAdd(false);
     setModalSessionAddCount(0);
     setIsBrowseModalOpen(true);
   }, []);
@@ -629,8 +608,7 @@ const UserFeedsInner: React.FC = () => {
   const hasFailedFeedAlertsDisabled =
     userMeData && !userMeData.result?.preferences?.alertOnDisabledFeeds;
 
-  const allMatchingSelectionData =
-    selectAllMatching && matchingFilters ? matchingFilters : null;
+  const allMatchingSelectionData = selectAllMatching && matchingFilters ? matchingFilters : null;
 
   const onEnableSelectedFeeds = async () => {
     try {
@@ -713,14 +691,11 @@ const UserFeedsInner: React.FC = () => {
         title: "Failed feeds queued for retry.",
         description: (
           <>
-            Requests run in the background. Each feed remains disabled until its
-            request succeeds.{" "}
+            Requests run in the background. Each feed remains disabled until its request succeeds.{" "}
             <ChakraLink
               as="button"
               color="text.link"
-              onClick={() =>
-                setStatusFilters([UserFeedComputedStatus.Retrying])
-              }
+              onClick={() => setStatusFilters([UserFeedComputedStatus.Retrying])}
             >
               View pending retries.
             </ChakraLink>
@@ -737,21 +712,14 @@ const UserFeedsInner: React.FC = () => {
     }
   };
 
-  const totalFeedsRequiringAttention =
-    userFeedsRequireAttentionResults?.total || 0;
+  const totalFeedsRequiringAttention = userFeedsRequireAttentionResults?.total || 0;
   const totalManagementInvites = managementInvitesCount?.total || 0;
 
   // In-scope settings affordance: once inside a workspace, its name, a one-line
   // description, and its settings are shown on-page rather than buried in the header
   // switcher menu. Shared between the dormant and active returns so the two stay in sync.
   const workspaceHeader = currentWorkspace && (
-    <Flex
-      alignItems="center"
-      justifyContent="space-between"
-      gap={4}
-      flexWrap="wrap"
-      mt={4}
-    >
+    <Flex alignItems="center" justifyContent="space-between" gap={4} flexWrap="wrap" mt={4}>
       <Stack gap={0}>
         <Heading as="h1" size="lg" tabIndex={-1}>
           {currentWorkspace.name}
@@ -804,65 +772,57 @@ const UserFeedsInner: React.FC = () => {
             }}
           />
           <ReducedLimitAlert />
-          {totalFeedsRequiringAttention !== undefined &&
-            totalFeedsRequiringAttention > 0 && (
-              <Alert.Root
-                status="warning"
-                mt={2}
-                justifyContent="space-between"
-                alignItems="center"
-                flexWrap="wrap"
-                gap={4}
-              >
-                <HStack
-                  alignItems="flex-start"
-                  flex={1}
-                  minW={{ base: "100%", md: 0 }}
+          {totalFeedsRequiringAttention !== undefined && totalFeedsRequiringAttention > 0 && (
+            <Alert.Root
+              status="warning"
+              mt={2}
+              justifyContent="space-between"
+              alignItems="center"
+              flexWrap="wrap"
+              gap={4}
+            >
+              <HStack alignItems="flex-start" flex={1} minW={{ base: "100%", md: 0 }}>
+                <Alert.Indicator />
+                <Box flex={1}>
+                  <Alert.Title>
+                    {totalFeedsRequiringAttention} feed
+                    {totalFeedsRequiringAttention > 1 ? "s" : ""} require
+                    {totalFeedsRequiringAttention > 1 ? "" : "s"} your attention!
+                  </Alert.Title>
+                  <Alert.Description>
+                    Article delivery may be fully or partially paused.{" "}
+                    <ChakraLink
+                      textAlign="left"
+                      as="button"
+                      color="text.link"
+                      onClick={onApplyRequiresAttentionFilters}
+                    >
+                      Click here to apply filters and see which ones they are.
+                    </ChakraLink>
+                    {hasFailedFeedAlertsDisabled && (
+                      <>
+                        {" "}
+                        You can also{" "}
+                        <ChakraLink asChild color="text.link">
+                          <Link to={pages.userSettings()}>get notified when failures occur</Link>
+                        </ChakraLink>
+                        .
+                      </>
+                    )}
+                  </Alert.Description>
+                </Box>
+              </HStack>
+              {workspaceId && retryFailedFeedsResults?.total ? (
+                <PrimaryActionButton
+                  width={{ base: "100%", md: "auto" }}
+                  onClick={() => setIsRetryFailedFeedsDialogOpen(true)}
                 >
-                  <Alert.Indicator />
-                  <Box flex={1}>
-                    <Alert.Title>
-                      {totalFeedsRequiringAttention} feed
-                      {totalFeedsRequiringAttention > 1 ? "s" : ""} require
-                      {totalFeedsRequiringAttention > 1 ? "" : "s"} your
-                      attention!
-                    </Alert.Title>
-                    <Alert.Description>
-                      Article delivery may be fully or partially paused.{" "}
-                      <ChakraLink
-                        textAlign="left"
-                        as="button"
-                        color="text.link"
-                        onClick={onApplyRequiresAttentionFilters}
-                      >
-                        Click here to apply filters and see which ones they are.
-                      </ChakraLink>
-                      {hasFailedFeedAlertsDisabled && (
-                        <>
-                          {" "}
-                          You can also{" "}
-                          <ChakraLink asChild color="text.link">
-                            <Link to={pages.userSettings()}>
-                              get notified when failures occur
-                            </Link>
-                          </ChakraLink>
-                          .
-                        </>
-                      )}
-                    </Alert.Description>
-                  </Box>
-                </HStack>
-                {workspaceId && retryFailedFeedsResults?.total ? (
-                  <PrimaryActionButton
-                    width={{ base: "100%", md: "auto" }}
-                    onClick={() => setIsRetryFailedFeedsDialogOpen(true)}
-                  >
-                    Retry all {retryFailedFeedsResults.total} failed feed
-                    {retryFailedFeedsResults.total === 1 ? "" : "s"}
-                  </PrimaryActionButton>
-                ) : null}
-              </Alert.Root>
-            )}
+                  Retry all {retryFailedFeedsResults.total} failed feed
+                  {retryFailedFeedsResults.total === 1 ? "" : "s"}
+                </PrimaryActionButton>
+              ) : null}
+            </Alert.Root>
+          )}
           {workspaceId && retryFailedFeedsResults?.total ? (
             <ConfirmModal
               open={isRetryFailedFeedsDialogOpen}
@@ -887,15 +847,10 @@ const UserFeedsInner: React.FC = () => {
             flexWrap="wrap"
             gap={4}
           >
-            <HStack
-              alignItems="flex-start"
-              flex={1}
-              minW={{ base: "100%", md: 0 }}
-            >
+            <HStack alignItems="flex-start" flex={1} minW={{ base: "100%", md: 0 }}>
               <Alert.Indicator />
               <Alert.Title flex={1}>
-                You have {totalManagementInvites} pending feed management
-                invites
+                You have {totalManagementInvites} pending feed management invites
               </Alert.Title>
             </HStack>
             <FeedManagementInvitesDialog
@@ -921,18 +876,9 @@ const UserFeedsInner: React.FC = () => {
         </Stack>
         {isInDiscoveryMode === false && (
           <>
-            <Flex
-              alignItems="center"
-              justifyContent="space-between"
-              gap="4"
-              flexWrap="wrap"
-            >
+            <Flex alignItems="center" justifyContent="space-between" gap="4" flexWrap="wrap">
               <Flex alignItems="center" gap={4}>
-                <Heading
-                  as={currentWorkspace ? "h2" : "h1"}
-                  size="lg"
-                  tabIndex={-1}
-                >
+                <Heading as={currentWorkspace ? "h2" : "h1"} size="lg" tabIndex={-1}>
                   {t("pages.userFeeds.title")}{" "}
                   <span>
                     {totalFeedCount !== undefined &&
@@ -961,13 +907,9 @@ const UserFeedsInner: React.FC = () => {
                   <MenuTrigger asChild>
                     <Button
                       variant="outline"
-                      aria-disabled={
-                        !selectAllMatching && selectedFeedIds.length === 0
-                      }
+                      aria-disabled={!selectAllMatching && selectedFeedIds.length === 0}
                       data-disabled={
-                        !selectAllMatching && selectedFeedIds.length === 0
-                          ? ""
-                          : undefined
+                        !selectAllMatching && selectedFeedIds.length === 0 ? "" : undefined
                       }
                     >
                       Feed Actions
@@ -981,8 +923,7 @@ const UserFeedsInner: React.FC = () => {
                           ? matchingTotal === 0
                           : !selectedFeedIds.length ||
                             !selectedFeeds.some(
-                              (f) =>
-                                f.disabledCode === UserFeedDisabledCode.Manual,
+                              (f) => f.disabledCode === UserFeedDisabledCode.Manual,
                             )
                       }
                       value="enable"
@@ -999,8 +940,7 @@ const UserFeedsInner: React.FC = () => {
                             selectedFeeds.every(
                               (r) =>
                                 !!r.disabledCode &&
-                                r.disabledCode !==
-                                  UserFeedDisabledCode.ExceededFeedLimit,
+                                r.disabledCode !== UserFeedDisabledCode.ExceededFeedLimit,
                             )
                       }
                       value="disable"
@@ -1010,10 +950,7 @@ const UserFeedsInner: React.FC = () => {
                       Disable
                     </MenuItem>
                     <MenuItem
-                      disabled={
-                        selectedFeedIds.length !== 1 ||
-                        selectedFeeds.length !== 1
-                      }
+                      disabled={selectedFeedIds.length !== 1 || selectedFeeds.length !== 1}
                       value="clone"
                       onClick={() => setCloneDialogOpen(true)}
                     >
@@ -1021,10 +958,7 @@ const UserFeedsInner: React.FC = () => {
                       Clone
                     </MenuItem>
                     <MenuItem
-                      disabled={
-                        selectedFeedIds.length !== 1 ||
-                        selectedFeeds.length !== 1
-                      }
+                      disabled={selectedFeedIds.length !== 1 || selectedFeeds.length !== 1}
                       value="copy-settings"
                       onClick={() => setCopySettingsOpen(true)}
                     >
@@ -1034,11 +968,7 @@ const UserFeedsInner: React.FC = () => {
                     <MenuSeparator />
                     <MenuItem
                       value="delete"
-                      disabled={
-                        selectAllMatching
-                          ? matchingTotal === 0
-                          : !selectedFeedIds.length
-                      }
+                      disabled={selectAllMatching ? matchingTotal === 0 : !selectedFeedIds.length}
                       onClick={() => setPendingBulkAction("delete")}
                     >
                       <FaTrash color="text.error" />
@@ -1056,11 +986,7 @@ const UserFeedsInner: React.FC = () => {
                   }}
                 />
                 <CopyUserFeedSettingsDialog
-                  feedId={
-                    selectedFeeds.length === 1
-                      ? selectedFeeds[0]?.id
-                      : undefined
-                  }
+                  feedId={selectedFeeds.length === 1 ? selectedFeeds[0]?.id : undefined}
                   isOpen={copySettingsOpen}
                   onClose={() => setCopySettingsOpen(false)}
                   onSuccess={clearSelection}
@@ -1143,9 +1069,7 @@ const UserFeedsInner: React.FC = () => {
                             workspaceName={currentWorkspace.name}
                             workspaceSlug={currentWorkspace.slug}
                             allowance={remainingWorkspaceFeedCapacity}
-                            workspaceHasActiveRedditGrant={
-                              redditConnection?.status === "ACTIVE"
-                            }
+                            workspaceHasActiveRedditGrant={redditConnection?.status === "ACTIVE"}
                             workspaceRole={currentWorkspace.myRole}
                             presentation="menu"
                             onMoved={handlePersonalFeedsMoved}
@@ -1158,18 +1082,15 @@ const UserFeedsInner: React.FC = () => {
             </Flex>
             <HStack gap={6}>
               <Text>
-                Every feed represents a news source that you can subscribe to.
-                After adding a feed, you may then specify where you want
-                articles for that feed to be sent to.
+                Every feed represents a news source that you can subscribe to. After adding a feed,
+                you may then specify where you want articles for that feed to be sent to.
               </Text>
             </HStack>
           </>
         )}
       </Stack>
       {isInDiscoveryMode &&
-        (currentWorkspace &&
-        userFeedsResults?.total === 0 &&
-        addedFeedKeys.length === 0 ? (
+        (currentWorkspace && userFeedsResults?.total === 0 && addedFeedKeys.length === 0 ? (
           <Box>
             <WorkspaceFeedDiscoveryEmptyState
               workspaceName={currentWorkspace.name}
@@ -1178,9 +1099,7 @@ const UserFeedsInner: React.FC = () => {
                   workspaceName={currentWorkspace.name}
                   workspaceSlug={currentWorkspace.slug}
                   allowance={remainingWorkspaceFeedCapacity}
-                  workspaceHasActiveRedditGrant={
-                    redditConnection?.status === "ACTIVE"
-                  }
+                  workspaceHasActiveRedditGrant={redditConnection?.status === "ACTIVE"}
                   workspaceRole={currentWorkspace.myRole}
                   onMoved={handlePersonalFeedsMoved}
                 />
@@ -1196,11 +1115,14 @@ const UserFeedsInner: React.FC = () => {
                     onSearchChange={handleSearchChange}
                     onFeedAdded={handleUrlFeedAdded}
                     onFeedRemoved={handleUrlFeedRemoved}
+                    initialQuery={inlineDiscoveryRestore?.query}
+                    initialAutoAdd={inlineDiscoveryRestore?.autoAdd}
+                    onInitialQueryConsumed={() => setInlineDiscoveryRestore(undefined)}
+                    focusOnRestore
                   />
                   {!isSearchActive && (
                     <Text color="fg.muted" fontSize="sm" textAlign="center">
-                      Try a YouTube channel, subreddit, blog, news site, or any
-                      feed URL
+                      Try a YouTube channel, subreddit, blog, news site, or any feed URL
                     </Text>
                   )}
                   <FeedLimitBar showOnlyWhenConstrained />
@@ -1262,25 +1184,16 @@ const UserFeedsInner: React.FC = () => {
                     p={6}
                     alignItems="center"
                   >
-                    <Icon
-                      as={FaCircleCheck}
-                      color="text.success"
-                      boxSize={8}
-                      aria-hidden="true"
-                    />
+                    <Icon as={FaCircleCheck} color="text.success" boxSize={8} aria-hidden="true" />
                     <Heading as="h2" size="lg">
                       {addedFeedKeys.length} feed
                       {addedFeedKeys.length !== 1 ? "s" : ""} added!
                     </Heading>
                     <Text color="fg.muted">
-                      Add more feeds below, or view your feeds to set up
-                      delivery.
+                      Add more feeds below, or view your feeds to set up delivery.
                     </Text>
                     <Box>
-                      <PrimaryActionButton
-                        size="sm"
-                        onClick={handleExitDiscovery}
-                      >
+                      <PrimaryActionButton size="sm" onClick={handleExitDiscovery}>
                         View your feeds{" "}
                         <Box as="span" aria-hidden="true">
                           &rarr;
@@ -1311,11 +1224,15 @@ const UserFeedsInner: React.FC = () => {
                   onSearchChange={handleSearchChange}
                   onFeedAdded={handleUrlFeedAdded}
                   onFeedRemoved={handleUrlFeedRemoved}
+                  initialQuery={inlineDiscoveryRestore?.query}
+                  initialAutoAdd={inlineDiscoveryRestore?.autoAdd}
+                  onInitialQueryConsumed={() => setInlineDiscoveryRestore(undefined)}
+                  focusOnRestore
                 />
                 {!isSearchActive && (
                   <Text color="fg.muted" fontSize="sm" textAlign="center">
-                    Many websites support feeds - try pasting a YouTube channel,
-                    subreddit, blog, or news site URL
+                    Many websites support feeds - try pasting a YouTube channel, subreddit, blog, or
+                    news site URL
                   </Text>
                 )}
                 <FeedLimitBar showOnlyWhenConstrained />
@@ -1368,6 +1285,7 @@ const UserFeedsInner: React.FC = () => {
         onClose={handleBrowseModalClose}
         initialCategory={browseModalInitialCategory}
         initialSearchQuery={browseModalInitialSearchQuery}
+        autoAddOnRestore={browseModalAutoAdd}
         feedActionStates={feedActionStates}
         isAtLimit={isAtLimit}
         onAdd={handleCuratedFeedAdd}

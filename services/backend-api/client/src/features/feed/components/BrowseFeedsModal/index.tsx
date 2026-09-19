@@ -37,6 +37,8 @@ interface BrowseFeedsModalProps {
   onClose: () => void;
   initialCategory?: string;
   initialSearchQuery?: string;
+  /** When restoring via initialSearchQuery, attempt the add automatically once validation succeeds. */
+  autoAddOnRestore?: boolean;
   feedActionStates: Record<string, FeedActionState>;
   isAtLimit: boolean;
   onAdd: (feed: CuratedFeed) => void;
@@ -52,6 +54,7 @@ export const BrowseFeedsModal = ({
   onClose,
   initialCategory,
   initialSearchQuery,
+  autoAddOnRestore,
   feedActionStates,
   isAtLimit,
   onAdd,
@@ -100,7 +103,9 @@ export const BrowseFeedsModal = ({
   useEffect(() => {
     if (isOpen) {
       if (initialSearchQuery) {
-        searchState.initializeWithQuery(initialSearchQuery);
+        searchState.initializeWithQuery(initialSearchQuery, {
+          autoAdd: autoAddOnRestore,
+        });
       } else {
         searchState.handleClear();
       }

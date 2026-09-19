@@ -8,16 +8,20 @@ declare module "@fastify/secure-session" {
     // Pending reddit OAuth attempt: the nonce is echoed back as the OAuth
     // `state` (CSRF protection); the optional workspaceId scopes the grant to a
     // workspace connection instead of the user's personal one. Kept server-side
-    // so neither can be tampered with via the callback URL.
+    // so neither can be tampered with via the callback URL. returnTo is the
+    // in-app path the callback redirects back to (the flow navigates the same
+    // tab, so this is how the user lands where they started).
     redditAuthState: {
       nonce: string;
       workspaceId?: string;
+      returnTo?: string;
     };
   }
 }
 
 interface LoginQuery {
   workspaceId?: string;
+  returnTo?: string;
 }
 
 interface CallbackQuery {
@@ -26,17 +30,36 @@ interface CallbackQuery {
   state?: string;
 }
 
-const CLOSE_WINDOW_HTML = `<script>window.close();</script>`;
+// Only in-app relative paths are safe to redirect to; anything else (absolute
+// URLs, protocol-relative, backslash tricks) would turn the callback into an
+// open redirector.
+const getSafeReturnTo = (value: unknown): string => {
+  if (
+    typeof value !== "string" ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.startsWith("/\\") ||
+    value.length > 2048
+  ) {
+    return "/";
+  }
+
+  return value;
+};
 
 export async function loginHandler(
   request: FastifyRequest<{ Querystring: LoginQuery }>,
   reply: FastifyReply,
 ): Promise<void> {
   const { redditApiService } = request.container;
-  const { workspaceId } = request.query;
+  const { workspaceId, returnTo } = request.query;
 
   const nonce = randomUUID();
-  request.session.set("redditAuthState", { nonce, workspaceId });
+  request.session.set("redditAuthState", {
+    nonce,
+    workspaceId,
+    returnTo: getSafeReturnTo(returnTo),
+  });
 
   const authorizationUrl = redditApiService.getAuthorizeUrl("read", nonce);
 
@@ -81,7 +104,7 @@ export async function callbackHandler(
   reply: FastifyReply,
 ): Promise<void> {
   const { code, error, state } = request.query;
-  const { usersService, workspacesService, redditApiService } =
+  const { usersService, workspacesService, redditApiService, config } =
     request.container;
   const discordUserId = request.discordUserId;
 
@@ -89,13 +112,17 @@ export async function callbackHandler(
 
   const pendingAuth = request.session.get("redditAuthState");
   request.session.set("redditAuthState", undefined);
+  // returnTo is a validated relative path; the app origin comes from config because the
+  // client and API can be served from different origins (vite dev server, e2e stack).
+  const appUrl = config.BACKEND_API_LOGIN_REDIRECT_URI.replace(/\/+$/, "");
+  const returnTo = `${appUrl}${getSafeReturnTo(pendingAuth?.returnTo)}`;
 
   if (error) {
-    return reply.type("text/html").send(CLOSE_WINDOW_HTML);
+    return reply.redirect(returnTo, 303);
   }
 
   if (!code) {
-    return reply.send("No code available");
+    return reply.redirect(returnTo, 303);
   }
 
   if (!pendingAuth || !state || state !== pendingAuth.nonce) {
@@ -103,7 +130,7 @@ export async function callbackHandler(
       discordUserId,
     });
 
-    return reply.type("text/html").send(CLOSE_WINDOW_HTML);
+    return reply.redirect(returnTo, 303);
   }
 
   const user = await usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -142,9 +169,5 @@ export async function callbackHandler(
     await usersService.syncLookupKeys({ userIds: [user.id] });
   }
 
-  return reply.type("text/html").send(`
-    <script>
-      window.opener.postMessage('reddit', '*');
-      window.close();
-    </script>`);
+  return reply.redirect(returnTo, 303);
 }

@@ -1,7 +1,7 @@
 import { test, expect } from "../../fixtures/test-fixtures";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
 import { seedRevokedRedditCredentialInDb } from "../../helpers/reddit-db";
-import { connectRedditViaPopup, uniqueSubreddit } from "../../helpers/reddit-oauth";
+import { connectReddit, uniqueSubreddit } from "../../helpers/reddit-oauth";
 
 // Personal-scope Reddit OAuth through the real (mocked) popup flow: the connect button
 // opens /api/v1/reddit/login, which round-trips the mock reddit server's authorize
@@ -32,9 +32,9 @@ test.describe("Reddit OAuth (personal)", () => {
       timeout: 30000,
     });
 
-    await connectRedditViaPopup(
+    await connectReddit(
       page,
-      page.getByRole("button", { name: "Connect Reddit in popup window" }),
+      page.getByRole("button", { name: "Connect Reddit" }),
     );
 
     // The popup's completion auto-retries the blocked validation with the new grant:
@@ -88,9 +88,9 @@ test.describe("Reddit OAuth (personal)", () => {
     });
     await expect(page.getByText(/no longer active/i)).toBeVisible();
 
-    await connectRedditViaPopup(
+    await connectReddit(
       page,
-      page.getByRole("button", { name: "Reconnect Reddit in popup window" }),
+      page.getByRole("button", { name: "Reconnect Reddit" }),
     );
 
     const addButton = page.getByRole("button", { name: /^Add .+ feed$/i }).first();
@@ -109,7 +109,7 @@ test.describe("Reddit OAuth (personal)", () => {
     ).toBeVisible();
   });
 
-  test("connecting from the edit-feed dialog auto-retries the blocked save", async ({
+  test("connecting after a gated feed-URL edit returns to the feed and the save goes through", async ({
     page,
     testFeed,
   }) => {
@@ -134,14 +134,29 @@ test.describe("Reddit OAuth (personal)", () => {
       timeout: 30000,
     });
 
-    await connectRedditViaPopup(
+    await connectReddit(
       page,
-      page.getByRole("button", { name: "Connect Reddit in popup window" }),
+      page.getByRole("button", { name: "Connect Reddit" }),
     );
 
-    // The dialog owns the retry on the connected edge: the blocked save re-runs with the
-    // new grant and the dialog closes itself on success.
+    // The OAuth round trip navigates the same tab, so the app reloads and the dialog (with
+    // its in-memory form state) is gone. The user reopens the editor, retypes the URL, and
+    // the save now passes the satisfied gate.
     await expect(editDialog).not.toBeVisible({ timeout: 30000 });
+    await expect(
+      page.getByText("Connect your Reddit account to continue"),
+    ).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Feed Actions" }).click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
+    const reopenedDialog = page.getByRole("dialog");
+    const reopenedInput = reopenedDialog.getByLabel("RSS Feed Link");
+    await expect(reopenedInput).toBeVisible({ timeout: 10000 });
+    await reopenedInput.fill(url);
+    await reopenedDialog.getByRole("button", { name: "Save" }).click();
+
+    // The save went through with the new grant: the dialog closed itself on success.
+    await expect(reopenedDialog).not.toBeVisible({ timeout: 30000 });
 
     // The URL change stuck: reopening the editor shows the subreddit URL.
     await page.getByRole("button", { name: "Feed Actions" }).click();

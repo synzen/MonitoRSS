@@ -48,7 +48,6 @@ export const WorkspaceRedditConnectionAlert = () => {
                       ? {
                           id: workspaceId,
                           connectionStatus: redditConnection?.status ?? null,
-                          refresh: () => refreshRedditConnection?.(),
                         }
                       : undefined
                   }

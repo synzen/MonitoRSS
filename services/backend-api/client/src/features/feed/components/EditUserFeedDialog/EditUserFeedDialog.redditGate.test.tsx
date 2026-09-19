@@ -15,7 +15,7 @@ import { EditUserFeedDialog } from "./index";
 // REDDIT_CONNECTION_REQUIRED response on update showed a bare error instead of the connect CTA.
 // This exercises the real FixFeedRequestsCTA + RedditLoginButton wiring:
 // changing the URL to a subreddit shows the gate; after connecting, the retry must succeed and close.
-// Only the leaf useUserMe hook, the validation hook, and the OAuth popup are mocked.
+// Only the leaf useUserMe hook, the validation hook, and the OAuth navigation are mocked.
 
 const redditError = new ApiAdapterError("Reddit connection required", {
   errorCode: ApiErrorCode.REDDIT_CONNECTION_REQUIRED,
@@ -62,6 +62,11 @@ vi.mock("../../hooks/useCreateUserFeedUrlValidation", () => ({
 let redditAccount: { type: string; status: string } | undefined;
 const userMeListeners = new Set<() => void>();
 
+const flipRedditAccountActive = () => {
+  redditAccount = { type: "reddit", status: "ACTIVE" };
+  userMeListeners.forEach((notify) => notify());
+};
+
 vi.mock("@/features/discordUser/hooks/useUserMe", () => ({
   useUserMe: () => {
     const [, forceRender] = useState(0);
@@ -77,8 +82,7 @@ vi.mock("@/features/discordUser/hooks/useUserMe", () => ({
       status: "success",
       fetchStatus: "idle",
       refetch: async () => {
-        redditAccount = { type: "reddit", status: "ACTIVE" };
-        userMeListeners.forEach((notify) => notify());
+        flipRedditAccountActive();
 
         return { data: undefined };
       },
@@ -240,10 +244,12 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
 
     expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Connect Reddit in popup window" }));
+    await user.click(screen.getByRole("button", { name: "Connect Reddit" }));
 
+    // Simulate the OAuth round trip completing: the same tab reloads with an ACTIVE
+    // connection, so useUserMe flips to connected and the dialog retries the save.
     await act(async () => {
-      window.postMessage("reddit", "*");
+      flipRedditAccountActive();
       await new Promise((resolve) => {
         setTimeout(resolve, 0);
       });
@@ -289,10 +295,12 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
 
     expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Connect Reddit in popup window" }));
+    await user.click(screen.getByRole("button", { name: "Connect Reddit" }));
 
+    // Simulate the OAuth round trip completing: the same tab reloads with an ACTIVE
+    // connection, so useUserMe flips to connected and the dialog retries the save.
     await act(async () => {
-      window.postMessage("reddit", "*");
+      flipRedditAccountActive();
       await new Promise((resolve) => {
         setTimeout(resolve, 0);
       });
