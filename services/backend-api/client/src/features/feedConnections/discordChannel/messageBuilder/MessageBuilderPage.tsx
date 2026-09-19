@@ -952,7 +952,7 @@ export const MessageBuilder: React.FC = () => {
     <UserFeedProvider
       feedId={feedId}
       loadingComponent={
-        <Stack alignItems="center" justifyContent="center" height="100%" gap="2rem">
+        <Stack alignItems="center" justifyContent="center" height="100%" flexGrow={1} gap="2rem">
           <Loading size="xl" />
           <Heading>Loading Feed...</Heading>
         </Stack>

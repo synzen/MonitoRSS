@@ -159,7 +159,13 @@ const Pages: React.FC = () => (
           <SuspenseErrorBoundary>
             <Suspense
               fallback={
-                <Stack alignItems="center" justifyContent="center" height="100%" gap="2rem">
+                <Stack
+                  alignItems="center"
+                  justifyContent="center"
+                  height="100%"
+                  flexGrow={1}
+                  gap="2rem"
+                >
                   <Loading size="xl" />
                   <Heading>Loading Message Builder...</Heading>
                 </Stack>
@@ -236,7 +242,13 @@ const Pages: React.FC = () => (
             <SuspenseErrorBoundary>
               <Suspense
                 fallback={
-                  <Stack alignItems="center" justifyContent="center" height="100%" gap="2rem">
+                  <Stack
+                    alignItems="center"
+                    justifyContent="center"
+                    height="100%"
+                    flexGrow={1}
+                    gap="2rem"
+                  >
                     <Loading size="xl" />
                     <Heading>Loading Message Builder...</Heading>
                   </Stack>

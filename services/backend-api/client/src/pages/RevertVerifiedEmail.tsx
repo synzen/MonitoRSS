@@ -102,6 +102,7 @@ const CenteredMessage = ({
     alignItems="center"
     justifyContent="center"
     height="100%"
+    flexGrow={1}
     paddingBottom="10rem"
     textAlign="center"
     paddingX="12"

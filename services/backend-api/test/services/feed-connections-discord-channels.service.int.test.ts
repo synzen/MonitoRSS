@@ -1445,6 +1445,37 @@ describe(
 
         assert.strictEqual(updatedFeed?.connections.discordChannels.length, 0);
       });
+
+      it("deletes a legacy connection without details instead of crashing on webhook cleanup", async () => {
+        const connectionIdToUse = objectId();
+        const createdFeed = await createFeed(ctx);
+
+        // `details` is schema-required only on validated writes; connections
+        // written before the field existed materialize as undefined on reads.
+        // Raw insert mirrors that legacy shape.
+        await ctx.connection
+          .collection("userfeeds")
+          .updateOne(
+            { _id: new Types.ObjectId(createdFeed.id) },
+            {
+              $push: {
+                "connections.discordChannels": {
+                  id: new Types.ObjectId(connectionIdToUse),
+                  name: "legacy connection",
+                },
+              },
+            },
+          );
+
+        await ctx.container.feedConnectionsDiscordChannelsService.deleteConnection(
+          createdFeed.id,
+          connectionIdToUse,
+        );
+
+        const updatedFeed = await getFeed(ctx, createdFeed.id);
+
+        assert.strictEqual(updatedFeed?.connections.discordChannels.length, 0);
+      });
     });
 
     describe("sendTestArticle", { concurrency: false }, () => {

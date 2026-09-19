@@ -599,12 +599,14 @@ export class FeedConnectionsDiscordChannelsService {
     });
 
     try {
-      if (connection.details.webhook?.isApplicationOwned) {
+      // `details` may be absent on legacy connections; reading through it must
+      // not throw here or the account-erasure cascade aborts on this feed.
+      if (connection.details?.webhook?.isApplicationOwned) {
         await this.cleanupWebhook(connection.details.webhook.id);
       }
     } catch (err) {
       logger.error(
-        `Failed to cleanup application webhook ${connection.details.webhook?.id} on feed ${feedId}, discord channel connection ${connectionId} after connection deletion`,
+        `Failed to cleanup application webhook ${connection.details?.webhook?.id} on feed ${feedId}, discord channel connection ${connectionId} after connection deletion`,
         { stack: (err as Error).stack },
       );
     }

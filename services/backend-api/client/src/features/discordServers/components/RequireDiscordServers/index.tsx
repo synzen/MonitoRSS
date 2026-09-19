@@ -14,7 +14,7 @@ export const RequireDiscordServers = ({ children }: Props) => {
 
   if (status === "loading") {
     return (
-      <Stack alignItems="center" justifyContent="center" height="100%" gap="2rem">
+      <Stack alignItems="center" justifyContent="center" height="100%" flexGrow={1} gap="2rem">
         <Loading size="xl" />
         <Heading>{t("pages.loadingServers.title")}</Heading>
       </Stack>
@@ -23,7 +23,7 @@ export const RequireDiscordServers = ({ children }: Props) => {
 
   if (status === "error") {
     return (
-      <Center height="100%">
+      <Center height="100%" flexGrow={1}>
         <ErrorAlert description={error?.message} />
       </Center>
     );
