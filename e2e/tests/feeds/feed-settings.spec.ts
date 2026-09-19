@@ -942,7 +942,7 @@ test.describe("Feed Settings", () => {
         page.getByText("Connect your Reddit account to continue"),
       ).toBeVisible({ timeout: 30000 });
       await expect(
-        page.getByRole("button", { name: "Connect Reddit in popup window" }),
+        page.getByRole("button", { name: "Connect Reddit" }),
       ).toBeVisible();
 
       // It must NOT fall back to the generic save-failure alert.

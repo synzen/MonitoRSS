@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -36,10 +36,12 @@ vi.mock("../FixFeedRequestsCTA", () => ({
     url,
     variant,
     onCorrected,
+    returnTo,
   }: {
     url: string;
     variant?: string;
     onCorrected?: () => void;
+    returnTo?: string;
   }) => {
     const isReddit = /^http(s?):\/\/(www.)?(\w+\.)?reddit\.com\//i.test(url);
 
@@ -50,6 +52,7 @@ vi.mock("../FixFeedRequestsCTA", () => ({
         data-testid="fix-feed-requests-cta"
         data-url={url}
         data-variant={variant ?? "rate-limited"}
+        data-return-to={returnTo}
       >
         <button type="button" onClick={() => onCorrected?.()}>
           mock-connect-reddit
@@ -98,6 +101,16 @@ describe("UrlValidationResult", () => {
       renderComponent({ validationStatus: "loading" });
 
       expect(screen.getByText("Checking URL...")).toBeInTheDocument();
+    });
+
+    it("shows Reddit-connected restore copy when isRestoredSearch is set", () => {
+      renderComponent({ validationStatus: "loading", isRestoredSearch: true });
+
+      expect(
+        screen.getByText("Reddit connected. Checking the feed at this address..."),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Continuing where you left off")).toBeInTheDocument();
+      expect(screen.queryByText("Checking URL...")).not.toBeInTheDocument();
     });
   });
 
@@ -616,6 +629,114 @@ describe("UrlValidationResult", () => {
       });
 
       expect(screen.getByText("Limit reached")).toBeInTheDocument();
+    });
+  });
+
+  describe("Reddit OAuth restore", () => {
+    const redditUrl = "https://www.reddit.com/r/gaming";
+
+    it("auto-attempts the add once validation succeeds when autoAddUrl matches", async () => {
+      renderComponent({
+        url: redditUrl,
+        autoAddUrl: redditUrl,
+        validationStatus: "success",
+        validationData: {
+          result: { feedTitle: "r/gaming" },
+        },
+      });
+
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      });
+      expect(mockMutateAsync).toHaveBeenCalledWith({
+        details: { url: redditUrl, title: "r/gaming" },
+      });
+    });
+
+    it("does NOT auto-add when autoAddUrl does not match the validated url", async () => {
+      renderComponent({
+        url: redditUrl,
+        autoAddUrl: "https://www.reddit.com/r/other",
+        validationStatus: "success",
+        validationData: {
+          result: { feedTitle: "r/gaming" },
+        },
+      });
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(mockMutateAsync).not.toHaveBeenCalled();
+    });
+
+    it("does NOT auto-add without the restore signal", async () => {
+      renderComponent({
+        url: redditUrl,
+        validationStatus: "success",
+        validationData: {
+          result: { feedTitle: "r/gaming" },
+        },
+      });
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(mockMutateAsync).not.toHaveBeenCalled();
+    });
+
+    it("auto-adds only once: a failed add surfaces the error instead of retrying in a loop", async () => {
+      mockMutateAsync.mockRejectedValue(
+        new ApiAdapterError("Add failed", {
+          errorCode: ApiErrorCode.FEED_LIMIT_REACHED,
+        }),
+      );
+
+      renderComponent({
+        url: redditUrl,
+        autoAddUrl: redditUrl,
+        validationStatus: "success",
+        validationData: {
+          result: { feedTitle: "r/gaming" },
+        },
+      });
+
+      await waitFor(() => {
+        expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      });
+
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+
+      expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+    });
+
+    it("passes an addFeed deep link with autoAdd when the restored add hits the gate again", async () => {
+      // The auto-add resumes, but the connection is no longer usable (e.g. revoked
+      // between the redirect and the add): the gate must re-appear and point back at
+      // the same restore path so the round trip can repeat.
+      mockMutateAsync.mockRejectedValueOnce(
+        new ApiAdapterError("Reddit connection required", {
+          errorCode: ApiErrorCode.REDDIT_CONNECTION_REQUIRED,
+        }),
+      );
+
+      renderComponent({
+        url: redditUrl,
+        autoAddUrl: redditUrl,
+        validationStatus: "success",
+        validationData: {
+          result: { feedTitle: "r/gaming" },
+        },
+      });
+
+      const cta = await screen.findByTestId("fix-feed-requests-cta");
+
+      expect(cta.getAttribute("data-return-to")).toContain("addFeed=");
+      expect(cta.getAttribute("data-return-to")).toContain("addFeedAuto=1");
+      expect(mockMutateAsync).toHaveBeenCalledTimes(1);
     });
   });
 });

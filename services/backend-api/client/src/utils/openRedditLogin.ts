@@ -1,9 +1,18 @@
 import { pages } from "../constants";
 
-export const openRedditLogin = (workspaceId?: string) => {
-  const url = workspaceId
-    ? `${pages.loginReddit()}?workspaceId=${encodeURIComponent(workspaceId)}`
-    : pages.loginReddit();
+/**
+ * Navigates the current tab through the Reddit OAuth round trip. The callback
+ * redirects back to `returnTo` (defaults to the current location), so any
+ * in-app page the flow was started from is restored as a fresh load.
+ */
+export const openRedditLogin = (workspaceId?: string, returnTo?: string) => {
+  const params = new URLSearchParams();
 
-  window.open(url, "_blank", `popup=true,width=600,height=600`);
+  if (workspaceId) {
+    params.set("workspaceId", workspaceId);
+  }
+
+  params.set("returnTo", returnTo ?? `${window.location.pathname}${window.location.search}`);
+
+  window.location.replace(`${pages.loginReddit()}?${params.toString()}`);
 };

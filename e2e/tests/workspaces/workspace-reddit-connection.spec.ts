@@ -7,14 +7,14 @@ import {
   seedWorkspaceWithMembershipsInDb,
   setVerifiedEmailInDb,
 } from "../../helpers/workspaces-db";
-import { connectRedditViaPopup, uniqueSubreddit } from "../../helpers/reddit-oauth";
+import { connectReddit, uniqueSubreddit } from "../../helpers/reddit-oauth";
 
 // Workspace Reddit connections: workspace feeds resolve the WORKSPACE's Reddit
 // connection (one member's grant backing the whole workspace), never anyone's
 // personal connection. The reddit gate in workspace scope therefore prompts for a
 // workspace connection, and the workspace settings page exposes the connection
-// with attribution and any-member connect/disconnect. The OAuth popup runs the
-// real flow against the mock reddit server (authorize -> callback -> token
+// with attribution and any-member connect/disconnect. The OAuth round trip runs
+// same-tab flow against the mock reddit server (authorize -> callback -> token
 // exchange), and feed adds prove the stored grant authenticates fetches.
 
 async function waitForAuthenticatedApp(page: Page): Promise<void> {
@@ -120,12 +120,13 @@ test.describe("Workspace Reddit connection", () => {
     // Gate short-circuits before any fetch: no Add button appears.
     await expect(page.getByRole("button", { name: /^Add .+ feed$/i })).toHaveCount(0);
 
-    await connectRedditViaPopup(
+    await connectReddit(
       page,
-      page.getByRole("button", { name: "Connect Reddit in popup window" }),
+      page.getByRole("button", { name: "Connect Reddit" }),
     );
 
-    // The popup's completion refreshes the workspace connection and auto-retries the
+    // Back from the OAuth round trip, the `?addFeed=` deep link restores the gated search and
+    // re-validates it with the new grant: the feed card appears and the add goes through.
     // blocked validation: the feed card appears and the add goes through.
     const addButton = page.getByRole("button", { name: /^Add .+ feed$/i }).first();
     await expect(addButton).toBeVisible({ timeout: 30000 });
@@ -166,9 +167,9 @@ test.describe("Workspace Reddit connection", () => {
       page.getByText(/One member connects their Reddit account on behalf of the whole workspace/),
     ).toBeVisible();
 
-    await connectRedditViaPopup(
+    await connectReddit(
       page,
-      page.getByRole("button", { name: "Connect Reddit in popup window" }),
+      page.getByRole("button", { name: "Connect Reddit" }),
     );
 
     // Connected, attributed to the member who connected it. (The members list also
@@ -234,9 +235,9 @@ test.describe("Workspace Reddit connection", () => {
     await expect(page.getByText("Connect your Reddit account to continue")).toBeVisible({
       timeout: 30000,
     });
-    await connectRedditViaPopup(
+    await connectReddit(
       page,
-      page.getByRole("button", { name: "Connect Reddit in popup window" }),
+      page.getByRole("button", { name: "Connect Reddit" }),
     );
     await expect(page.getByRole("button", { name: /^Add .+ feed$/i }).first()).toBeVisible({
       timeout: 30000,
@@ -290,9 +291,9 @@ test.describe("Workspace Reddit connection", () => {
       await expect(pageB).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
       await gotoWorkspaceSettingsViaSwitcher(pageB, workspaceName);
 
-      await connectRedditViaPopup(
+      await connectReddit(
         pageB,
-        pageB.getByRole("button", { name: "Connect Reddit in popup window" }),
+        pageB.getByRole("button", { name: "Connect Reddit" }),
       );
       await expect(pageB.getByText("Connected", { exact: true })).toBeVisible({
         timeout: 20000,
@@ -332,9 +333,9 @@ test.describe("Workspace Reddit connection", () => {
     await expect(page.getByText(/no longer active/i)).toBeVisible();
 
     // The remaining member revives it with their OWN account.
-    await connectRedditViaPopup(
+    await connectReddit(
       page,
-      page.getByRole("button", { name: "Reconnect Reddit in popup window" }),
+      page.getByRole("button", { name: "Reconnect Reddit" }),
     );
     await expect(page.getByText("Connected", { exact: true })).toBeVisible({ timeout: 20000 });
     await expect(page.getByText(/Connected by .*\(you\)/)).toBeVisible();

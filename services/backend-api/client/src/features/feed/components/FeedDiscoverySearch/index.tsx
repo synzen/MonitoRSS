@@ -49,6 +49,21 @@ interface FeedDiscoverySearchProps {
   onSearchChange?: (query: string) => void;
   onFeedAdded?: (feedId: string, feedUrl: string) => void;
   onFeedRemoved?: (feedUrl: string) => void;
+  /**
+   * One-shot restore: initialize (and for URLs, validate) this query on mount. Used by the
+   * OAuth returnTo round trip to put the user back into the search they were gated in.
+   */
+  initialQuery?: string;
+  /** With initialQuery: attempt the add automatically once validation succeeds. */
+  initialAutoAdd?: boolean;
+  /** Fired once the initialQuery restore has been applied, so the caller can clear it. */
+  onInitialQueryConsumed?: () => void;
+  /**
+   * With initialQuery: move focus to this search's region once the restore is applied, so
+   * keyboard/screen-reader users land on the resumed search instead of the top of the page.
+   * The browse-modal restore path omits this — the dialog already takes focus on open.
+   */
+  focusOnRestore?: boolean;
 }
 /* eslint-enable react/no-unused-prop-types */
 
@@ -67,6 +82,13 @@ export function useFeedDiscoverySearchState({
   const [inputValue, setInputValue] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  // Set only by initializeWithQuery (the OAuth-restore entry point) for the restored URL:
+  // once validation of that URL succeeds, UrlValidationResult auto-attempts the add the
+  // user had already tried before being gated. Manual searches always clear it.
+  const [autoAddUrl, setAutoAddUrl] = useState<string | undefined>(undefined);
+  // True while the current validation was started by the OAuth-restore path, so the loading
+  // state can announce that the redirect returned to a resumed search ("Reddit connected...").
+  const [isRestoredQuery, setIsRestoredQuery] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const {
@@ -146,6 +168,8 @@ export function useFeedDiscoverySearchState({
     setActiveQuery(trimmed);
     setVisibleCount(BATCH_SIZE);
     onSearchChange?.(trimmed);
+    setAutoAddUrl(undefined);
+    setIsRestoredQuery(false);
 
     const { isUrl, url } = parseSearchInputAsUrl(trimmed);
 
@@ -166,6 +190,8 @@ export function useFeedDiscoverySearchState({
     setVisibleCount(BATCH_SIZE);
     resetValidation();
     onSearchChange?.("");
+    setAutoAddUrl(undefined);
+    setIsRestoredQuery(false);
     inputRef.current?.focus();
   };
 
@@ -174,6 +200,8 @@ export function useFeedDiscoverySearchState({
     setActiveQuery("");
     resetValidation();
     onSearchChange?.("");
+    setAutoAddUrl(undefined);
+    setIsRestoredQuery(false);
     inputRef.current?.focus();
   };
 
@@ -201,7 +229,7 @@ export function useFeedDiscoverySearchState({
   };
 
   const initializeWithQuery = useCallback(
-    async (query: string) => {
+    async (query: string, opts?: { autoAdd?: boolean }) => {
       const trimmed = query.trim();
       if (!trimmed) return;
 
@@ -209,10 +237,12 @@ export function useFeedDiscoverySearchState({
       setActiveQuery(trimmed);
       setVisibleCount(BATCH_SIZE);
       onSearchChange?.(trimmed);
+      setIsRestoredQuery(true);
 
       const { isUrl, url } = parseSearchInputAsUrl(trimmed);
 
       if (isUrl) {
+        setAutoAddUrl(opts?.autoAdd ? url : undefined);
         resetValidation();
 
         try {
@@ -220,6 +250,8 @@ export function useFeedDiscoverySearchState({
         } catch {
           // Error state handled by hook
         }
+      } else {
+        setAutoAddUrl(undefined);
       }
     },
     [onSearchChange, resetValidation, validateUrl],
@@ -249,6 +281,9 @@ export function useFeedDiscoverySearchState({
     validationStatus,
     validationError,
     validationData,
+    autoAddUrl,
+    isRestoredQuery,
+    inputRef,
     feedActionStates,
     isAtLimit,
     onAdd,
@@ -401,6 +436,8 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
             onRetryValidation={state.handleRetryValidation}
             onFeedAdded={state.onFeedAdded}
             onFeedRemoved={state.onFeedRemoved}
+            autoAddUrl={state.autoAddUrl}
+            isRestoredSearch={state.isRestoredQuery}
           />
         )}
         {!state.isUrlInput && state.totalResults === 0 && (
@@ -423,6 +460,24 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
 
 export const FeedDiscoverySearch = (props: FeedDiscoverySearchProps) => {
   const state = useFeedDiscoverySearchState(props);
+  const { initialQuery, initialAutoAdd, onInitialQueryConsumed, focusOnRestore } = props;
+  const initialQueryConsumedRef = useRef(false);
+
+  useEffect(() => {
+    if (!initialQuery || initialQueryConsumedRef.current) return;
+
+    initialQueryConsumedRef.current = true;
+    state.initializeWithQuery(initialQuery, { autoAdd: initialAutoAdd });
+
+    if (focusOnRestore) {
+      // Matches the browse-modal restore path, where the dialog's initialFocusEl is the
+      // search input. Programmatic focus at page load does not pop mobile keyboards.
+      state.inputRef.current?.focus();
+    }
+
+    onInitialQueryConsumed?.();
+    // One-shot restore: run only when a pending restore first appears.
+  }, [initialQuery]);
 
   return (
     <Box>

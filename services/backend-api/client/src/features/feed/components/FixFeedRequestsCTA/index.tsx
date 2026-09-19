@@ -9,11 +9,18 @@ interface Props {
   url: string;
   variant?: Variant;
   onCorrected?: () => void;
+  /** In-app path the OAuth round trip returns to. Defaults to the current location. */
+  returnTo?: string;
 }
 
-export const FixFeedRequestsCTA = ({ url, variant = "rate-limited", onCorrected }: Props) => {
+export const FixFeedRequestsCTA = ({
+  url,
+  variant = "rate-limited",
+  onCorrected,
+  returnTo,
+}: Props) => {
   const { data } = useUserMe();
-  const { workspaceId, redditConnection, refreshRedditConnection } = useFeedScope();
+  const { workspaceId, redditConnection } = useFeedScope();
   const isReddit = isRedditFeedUrl(url);
   const isWorkspaceScope = !!workspaceId;
 
@@ -80,19 +87,20 @@ export const FixFeedRequestsCTA = ({ url, variant = "rate-limited", onCorrected 
                     emphasis={variant === "required" ? "primary" : undefined}
                     colorPalette={variant === "required" ? undefined : "green"}
                     onConnected={onCorrected}
+                    returnTo={returnTo}
                     workspace={
                       isWorkspaceScope
                         ? {
                             id: workspaceId,
                             connectionStatus: redditConnection?.status ?? null,
-                            refresh: () => refreshRedditConnection?.(),
                           }
                         : undefined
                     }
                   />
                 </Box>
                 <Text color="fg.muted" fontSize="sm">
-                  A window will pop up prompting for authorization.
+                  You&apos;ll be redirected to Reddit to authorize, then brought back here to pick
+                  up where you left off.
                 </Text>
               </Stack>
             </Stack>

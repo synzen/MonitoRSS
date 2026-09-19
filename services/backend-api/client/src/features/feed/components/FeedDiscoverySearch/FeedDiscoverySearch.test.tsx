@@ -696,4 +696,29 @@ describe("FeedDiscoverySearch", () => {
       expect(mockCreateDiscoverySearchEvent).not.toHaveBeenCalled();
     });
   });
+
+  describe("focusOnRestore", () => {
+    it("moves focus to the search input when the restore is applied", () => {
+      renderSearch({
+        initialQuery: "https://www.reddit.com/r/example/.rss",
+        focusOnRestore: true,
+        onInitialQueryConsumed: vi.fn(),
+      });
+
+      expect(mockValidateUrl).toHaveBeenCalled();
+      expect(document.activeElement).toBe(
+        screen.getByLabelText("Search popular feeds or paste a URL"),
+      );
+    });
+
+    it("does not move focus when focusOnRestore is omitted", () => {
+      renderSearch({
+        initialQuery: "https://www.reddit.com/r/example/.rss",
+        onInitialQueryConsumed: vi.fn(),
+      });
+
+      expect(mockValidateUrl).toHaveBeenCalled();
+      expect(document.activeElement).toBe(document.body);
+    });
+  });
 });

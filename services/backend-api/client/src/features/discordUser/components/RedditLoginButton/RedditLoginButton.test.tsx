@@ -7,12 +7,10 @@ import { openRedditLogin } from "@/utils/openRedditLogin";
 import { RedditLoginButton } from "./RedditLoginButton";
 
 let mockExternalAccounts: Array<{ type: string; status: string }> | undefined;
-const mockRefetch = vi.fn();
 
 vi.mock("../../hooks", () => ({
   useUserMe: () => ({
     data: { result: { externalAccounts: mockExternalAccounts } },
-    refetch: mockRefetch,
     fetchStatus: "idle",
   }),
 }));
@@ -31,7 +29,7 @@ const renderButton = (onConnected?: () => void) =>
 describe("RedditLoginButton", () => {
   beforeEach(() => {
     mockExternalAccounts = undefined;
-    mockRefetch.mockReset();
+    vi.mocked(openRedditLogin).mockReset();
   });
 
   describe("onConnected callback", () => {
@@ -68,20 +66,39 @@ describe("RedditLoginButton", () => {
       mockExternalAccounts = [{ type: "reddit", status: "REVOKED" }];
       renderButton();
 
-      expect(
-        screen.getByRole("button", {
-          name: "Reconnect Reddit in popup window",
-        }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Reconnect Reddit" })).toBeInTheDocument();
     });
 
     it("shows Connect when there is no reddit account", () => {
       mockExternalAccounts = undefined;
       renderButton();
 
-      expect(
-        screen.getByRole("button", { name: "Connect Reddit in popup window" }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Connect Reddit" })).toBeInTheDocument();
+    });
+  });
+
+  describe("opening the OAuth flow", () => {
+    it("passes the current location resolution to openRedditLogin in personal mode", () => {
+      renderButton();
+
+      fireEvent.click(screen.getByRole("button", { name: "Connect Reddit" }));
+
+      expect(openRedditLogin).toHaveBeenCalledWith(undefined, undefined);
+    });
+
+    it("passes an explicit returnTo when one is provided", () => {
+      render(
+        <ChakraProvider value={system}>
+          <RedditLoginButton returnTo="/feeds?addFeed=https://reddit.com/r/news" />
+        </ChakraProvider>,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Connect Reddit" }));
+
+      expect(openRedditLogin).toHaveBeenCalledWith(
+        undefined,
+        "/feeds?addFeed=https://reddit.com/r/news",
+      );
     });
   });
 
@@ -89,17 +106,18 @@ describe("RedditLoginButton", () => {
     const renderWorkspaceButton = ({
       connectionStatus,
       onConnected,
-      refresh = vi.fn(),
+      returnTo,
     }: {
       connectionStatus: "ACTIVE" | "REVOKED" | null;
       onConnected?: () => void;
-      refresh?: () => void;
+      returnTo?: string;
     }) =>
       render(
         <ChakraProvider value={system}>
           <RedditLoginButton
             onConnected={onConnected}
-            workspace={{ id: "workspace-1", connectionStatus, refresh }}
+            workspace={{ id: "workspace-1", connectionStatus }}
+            returnTo={returnTo}
           />
         </ChakraProvider>,
       );
@@ -111,9 +129,7 @@ describe("RedditLoginButton", () => {
       const onConnected = vi.fn();
       renderWorkspaceButton({ connectionStatus: null, onConnected });
 
-      expect(
-        screen.getByRole("button", { name: "Connect Reddit in popup window" }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Connect Reddit" })).toBeInTheDocument();
       expect(onConnected).not.toHaveBeenCalled();
     });
 
@@ -128,29 +144,21 @@ describe("RedditLoginButton", () => {
     it("shows Reconnect when the workspace connection is REVOKED", () => {
       renderWorkspaceButton({ connectionStatus: "REVOKED" });
 
-      expect(
-        screen.getByRole("button", {
-          name: "Reconnect Reddit in popup window",
-        }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Reconnect Reddit" })).toBeInTheDocument();
     });
 
-    it("opens the login popup scoped to the workspace", () => {
-      renderWorkspaceButton({ connectionStatus: null });
+    it("scopes the OAuth flow to the workspace and the restore path", () => {
+      renderWorkspaceButton({
+        connectionStatus: null,
+        returnTo: "/workspaces/w/feeds?addFeed=https://reddit.com/r/news",
+      });
 
-      fireEvent.click(screen.getByRole("button", { name: "Connect Reddit in popup window" }));
+      fireEvent.click(screen.getByRole("button", { name: "Connect Reddit" }));
 
-      expect(openRedditLogin).toHaveBeenCalledWith("workspace-1");
-    });
-
-    it("refreshes the workspace connection (not the personal account) when the popup completes", () => {
-      const refresh = vi.fn();
-      renderWorkspaceButton({ connectionStatus: null, refresh });
-
-      fireEvent(window, new MessageEvent("message", { data: "reddit" }));
-
-      expect(refresh).toHaveBeenCalledTimes(1);
-      expect(mockRefetch).not.toHaveBeenCalled();
+      expect(openRedditLogin).toHaveBeenCalledWith(
+        "workspace-1",
+        "/workspaces/w/feeds?addFeed=https://reddit.com/r/news",
+      );
     });
   });
 });
