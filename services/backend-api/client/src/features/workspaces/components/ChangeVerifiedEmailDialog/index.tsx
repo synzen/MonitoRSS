@@ -66,10 +66,17 @@ export const ChangeVerifiedEmailDialog = ({ isOpen, onClose, currentEmail, onCha
                 onClose();
               }}
               intro={
-                <>
-                  Your current verified email is <strong>{currentEmail}</strong>. Enter a new
-                  address to verify. We&apos;ll send a one-time code to confirm you own it.
-                </>
+                currentEmail ? (
+                  <>
+                    Your current verified email is <strong>{currentEmail}</strong>. Enter a new
+                    address to verify. We&apos;ll send a one-time code to confirm you own it.
+                  </>
+                ) : (
+                  <>
+                    Enter an email address you own to verify. We&apos;ll send a one-time code to
+                    confirm you own it.
+                  </>
+                )
               }
             />
           </DialogBody>

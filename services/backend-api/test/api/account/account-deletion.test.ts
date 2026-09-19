@@ -108,6 +108,24 @@ describe("Account deletion API", () => {
     return { discordUserId, internalId: internalId as string, verifiedEmail };
   }
 
+  // A user who has never verified an email: no mailbox is wired to the account.
+  async function seedUserWithoutVerifiedEmail(): Promise<{
+    discordUserId: string;
+    internalId: string;
+  }> {
+    const discordUserId = randomUUID();
+
+    await ctx.container.userRepository.create({
+      discordUserId,
+      email: `${discordUserId}@example.com`,
+    });
+
+    const internalId =
+      await ctx.container.userRepository.findIdByDiscordId(discordUserId);
+
+    return { discordUserId, internalId: internalId as string };
+  }
+
   async function seedWorkspace(
     ownerUserId: string,
   ): Promise<{ id: string; slug: string }> {
@@ -291,6 +309,59 @@ describe("Account deletion API", () => {
     assert.strictEqual(res.status, 403);
     const body = await readJson<ErrorResult>(res);
     assert.strictEqual(body.code, "EMAIL_NOT_VERIFIED");
+  });
+
+  it("deletes the account without a code when no verified email exists", async () => {
+    const user = await seedUserWithoutVerifiedEmail();
+
+    await ctx.connection.collection("userfeeds").insertOne({
+      title: "My feed",
+      url: "https://example.com/feed.xml",
+      user: { discordUserId: user.discordUserId },
+      healthStatus: "ok",
+      connections: {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const authed = await ctx.asUser(user.discordUserId);
+    const res = await authed.fetch("/api/v1/account/@me", {
+      method: "DELETE",
+      body: JSON.stringify({}),
+    });
+
+    assert.strictEqual(res.status, 204, await res.text());
+
+    const userGone = await ctx.container.userRepository.findByDiscordId(
+      user.discordUserId,
+    );
+    assert.strictEqual(userGone, null, "User document should be deleted");
+
+    const feedGone = await ctx.connection
+      .collection("userfeeds")
+      .findOne({ "user.discordUserId": user.discordUserId });
+    assert.strictEqual(feedGone, null, "Personal feed should be deleted");
+
+    assert.strictEqual(sent.length, 0, "No email can be sent — no mailbox exists");
+  });
+
+  it("still requires the code when a verified email exists, even if the request omits it", async () => {
+    const user = await seedUser();
+
+    const authed = await ctx.asUser(user.discordUserId);
+    const res = await authed.fetch("/api/v1/account/@me", {
+      method: "DELETE",
+      body: JSON.stringify({}),
+    });
+
+    assert.strictEqual(res.status, 400);
+    const body = await readJson<ErrorResult>(res);
+    assert.strictEqual(body.code, "EMAIL_VERIFICATION_INVALID_CODE");
+
+    const stillThere = await ctx.container.userRepository.findByDiscordId(
+      user.discordUserId,
+    );
+    assert.ok(stillThere, "A codeless request must not delete the account");
   });
 
   it("performs the full erasure cascade on a valid code", async () => {

@@ -1,9 +1,10 @@
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
+import ApiAdapterError from "@/utils/ApiAdapterError";
 import { WorkspaceScopeLayout } from "./index";
 import { useWorkspace } from "../../hooks";
 
@@ -69,13 +70,33 @@ describe("WorkspaceScopeLayout", () => {
     vi.mocked(useWorkspace).mockReturnValue({
       status: "error",
       workspace: undefined,
-      error: { message: "Workspace not found" },
+      error: new ApiAdapterError("Workspace not found", { statusCode: 404 }),
     } as never);
 
     renderLayout();
 
     expect(screen.getByText("NOT FOUND PAGE")).toBeInTheDocument();
     expect(screen.queryByText("SCOPED CONTENT")).not.toBeInTheDocument();
+  });
+
+  it("shows a retryable error screen for non-404 failures instead of not-found", () => {
+    const refetch = vi.fn();
+    vi.mocked(useWorkspace).mockReturnValue({
+      status: "error",
+      workspace: undefined,
+      error: new ApiAdapterError("Internal server error", { statusCode: 500 }),
+      refetch,
+    } as never);
+
+    renderLayout();
+
+    expect(screen.queryByText("NOT FOUND PAGE")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("Internal server error")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(refetch).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the header mounted and announces loading while the workspace is loading", () => {

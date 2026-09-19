@@ -2,7 +2,8 @@ import fetchRest from "@/utils/fetchRest";
 
 export interface DeleteMyAccountInput {
   details: {
-    code: string;
+    // Only sent when the account has a verified email to confirm against.
+    code?: string;
   };
 }
 
