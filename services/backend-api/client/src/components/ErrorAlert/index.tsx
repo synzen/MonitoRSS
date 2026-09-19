@@ -4,9 +4,10 @@ import { useTranslation } from "react-i18next";
 
 interface Props {
   description?: string;
+  children?: React.ReactNode;
 }
 
-export const ErrorAlert: React.FC<Props> = ({ description }) => {
+export const ErrorAlert: React.FC<Props> = ({ description, children }) => {
   const { t } = useTranslation();
 
   const isGoogleTranslateUsed = !!document.getElementById("goog-gt-tt");
@@ -18,6 +19,7 @@ export const ErrorAlert: React.FC<Props> = ({ description }) => {
       alignItems="center"
       justifyContent="center"
       height="100%"
+      flexGrow={1}
       paddingBottom="10rem"
       textAlign="center"
       paddingX="12"
@@ -49,6 +51,7 @@ export const ErrorAlert: React.FC<Props> = ({ description }) => {
           </Stack>
         </>
       )}
+      {children}
     </Stack>
   );
 };

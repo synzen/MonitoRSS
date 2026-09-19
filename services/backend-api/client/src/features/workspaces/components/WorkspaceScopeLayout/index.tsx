@@ -1,10 +1,12 @@
 import { ReactNode, Suspense } from "react";
-import { Center, Spinner, VisuallyHidden } from "@chakra-ui/react";
+import { Button, Center, Spinner, VisuallyHidden } from "@chakra-ui/react";
 import { Navigate, Outlet, useParams } from "react-router-dom";
 import { pages } from "@/constants";
 import { FeedScopeProvider } from "@/features/feed";
 import RouteParams from "@/types/RouteParams";
 import { usePaddleContext } from "@/features/subscriptionProducts";
+import ApiAdapterError from "@/utils/ApiAdapterError";
+import { ErrorAlert } from "@/components/ErrorAlert";
 import { CurrentWorkspaceProvider, JustConvertedWorkspaceProvider } from "../../contexts";
 import { useRefetchFeedsOnWorkspaceActivation, useWorkspace } from "../../hooks";
 
@@ -68,7 +70,20 @@ export const WorkspaceScopeLayout = ({ header }: { header?: ReactNode }) => {
             <Spinner aria-hidden="true" />
           </Center>
         )}
-        {error && <Navigate to={pages.notFound()} replace />}
+        {/* A 404 means the slug is unknown or the viewer is not a member (the
+            API intentionally does not distinguish the two), so the not-found
+            page is accurate. Any other failure is a transient/server error —
+            the workspace may well exist, so show a retryable error instead. */}
+        {error &&
+          (error instanceof ApiAdapterError && error.statusCode === 404 ? (
+            <Navigate to={pages.notFound()} replace />
+          ) : (
+            <Center height="100%" flexGrow={1}>
+              <ErrorAlert description={error.message}>
+                <Button onClick={() => refetch()}>Try again</Button>
+              </ErrorAlert>
+            </Center>
+          ))}
         {workspaceStatus !== "loading" && !error && !workspace && (
           <Navigate to={pages.notFound()} replace />
         )}

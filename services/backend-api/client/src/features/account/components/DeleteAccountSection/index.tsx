@@ -58,10 +58,13 @@ type Stage = "consequences" | "code" | "deleted";
 
 /**
  * GDPR right-to-erasure entry point: a danger section that opens a staged
- * confirmation dialog. Stage 1 spells out what erasure destroys and sends a
- * one-time code to the verified email; stage 2 consumes the code with the
- * final destructive confirm; stage 3 confirms success and routes every exit
- * through logout, since the session now points at an erased user.
+ * confirmation dialog. Stage 1 spells out what erasure destroys and either
+ * sends a one-time code to the verified email or, when the account has none,
+ * offers the final destructive confirm directly (there is no mailbox wired to
+ * the account to receive a code, so one cannot be required); stage 2 consumes
+ * the code with the final destructive confirm; stage 3 confirms success and
+ * routes every exit through logout, since the session now points at an erased
+ * user.
  */
 export const DeleteAccountSection = () => {
   const { data } = useUserMe();
@@ -70,8 +73,8 @@ export const DeleteAccountSection = () => {
   const user = data?.result;
   const verifiedEmail = user?.verifiedEmail;
   // Mirrors the server-side ACCOUNT_DELETE_ACTIVE_SUBSCRIPTION guard so the
-  // common blockers are explained up front instead of as a failed request. A
-  // guardrail only — the server re-checks at send and delete time.
+  // blocker is explained up front instead of as a failed request. A guardrail
+  // only — the server re-checks at send and delete time.
   const hasBlockingSubscription =
     !!user?.enableBilling &&
     user.subscription.product.key !== ProductKey.Free &&
@@ -143,7 +146,7 @@ const DeleteAccountDialog = ({
   const isSending = sendStatus === "loading";
   const isDeleting = deleteStatus === "loading";
   const inCooldown = cooldownRemaining > 0;
-  const blocked = !verifiedEmail || hasBlockingSubscription;
+  const blocked = hasBlockingSubscription;
 
   useEffect(() => {
     if (cooldownRemaining <= 0) {
@@ -213,6 +216,21 @@ const DeleteAccountDialog = ({
     }
   };
 
+  // The no-verified-email path: no mailbox exists to confirm against, so the
+  // final destructive confirm runs straight from the consequences stage.
+  const handleDeleteWithoutEmail = async () => {
+    if (isDeleting) {
+      return;
+    }
+
+    try {
+      await deleteAccount({ details: {} });
+      setStage("deleted");
+    } catch {
+      // Surfaced via deleteError below
+    }
+  };
+
   let body: React.ReactNode;
   let footer: React.ReactNode;
 
@@ -236,28 +254,31 @@ const DeleteAccountDialog = ({
             avoid further charges.
           </Alert>
         )}
-        {!verifiedEmail && (
-          <Alert status="warning" role={undefined} title="Verified email required">
-            Deleting your account requires confirming a code sent to your verified email. Verify an
-            email in the Email section of this page, then return here.
-          </Alert>
-        )}
-        {verifiedEmail && hasBlockingSubscription && (
+        {hasBlockingSubscription && (
           <Alert status="warning" role={undefined} title="Active subscription">
             You have an active subscription. Cancel it in the Billing section of this page; once it
             is cancelled, you can delete your account.
           </Alert>
         )}
-        {!blocked && (
-          <Text>
-            To continue, we&apos;ll send a one-time confirmation code to{" "}
-            <chakra.strong>{verifiedEmail}</chakra.strong>.
-          </Text>
-        )}
+        {!blocked &&
+          (verifiedEmail ? (
+            <Text>
+              To continue, we&apos;ll send a one-time confirmation code to{" "}
+              <chakra.strong>{verifiedEmail}</chakra.strong>.
+            </Text>
+          ) : (
+            <Text>To continue, confirm the permanent deletion below.</Text>
+          ))}
         {sendError && (
           <InlineErrorAlert
             title="Failed to send code"
             description={resolveErrorMessage(sendError)}
+          />
+        )}
+        {deleteError && (
+          <InlineErrorAlert
+            title="Failed to delete account"
+            description={resolveErrorMessage(deleteError)}
           />
         )}
       </Stack>
@@ -267,15 +288,26 @@ const DeleteAccountDialog = ({
         <Button variant="ghost" onClick={onClose}>
           Cancel
         </Button>
-        {!blocked && (
-          <PrimaryActionButton
-            loading={isSending}
-            loadingText="Sending..."
-            onClick={handleSendCode}
-          >
-            Send confirmation code
-          </PrimaryActionButton>
-        )}
+        {!blocked &&
+          (verifiedEmail ? (
+            <PrimaryActionButton
+              loading={isSending}
+              loadingText="Sending..."
+              onClick={handleSendCode}
+            >
+              Send confirmation code
+            </PrimaryActionButton>
+          ) : (
+            <Button
+              variant="solid"
+              colorPalette="red"
+              loading={isDeleting}
+              loadingText="Deleting..."
+              onClick={handleDeleteWithoutEmail}
+            >
+              Permanently delete account
+            </Button>
+          ))}
       </>
     );
   } else if (stage === "code") {

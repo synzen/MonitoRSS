@@ -88,15 +88,34 @@ describe("DeleteAccountSection", () => {
     expect(screen.getByRole("button", { name: /send confirmation code/i })).toBeInTheDocument();
   });
 
-  it("explains the verified-email requirement instead of offering to send a code", () => {
+  it("offers the final destructive confirm directly when no verified email is set", () => {
     h.user = buildUser({ verifiedEmail: undefined });
     renderSection();
     openDialog();
 
-    expect(screen.getByText(/verified email required/i)).toBeInTheDocument();
+    expect(screen.queryByText(/verified email required/i)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /send confirmation code/i }),
     ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /permanently delete account/i })).toBeInTheDocument();
+  });
+
+  it("does not offer the destructive confirm to a no-email user blocked by a subscription", () => {
+    h.user = buildUser({
+      verifiedEmail: undefined,
+      subscription: {
+        product: { key: ProductKey.Tier2 },
+        status: "ACTIVE",
+        cancellationDate: null,
+      },
+    });
+    renderSection();
+    openDialog();
+
+    expect(
+      screen.queryByRole("button", { name: /permanently delete account/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/cancel it in the billing section/i)).toBeInTheDocument();
   });
 
   it("explains the active-subscription blocker instead of offering to send a code", () => {
@@ -168,6 +187,21 @@ describe("DeleteAccountSection", () => {
     await waitFor(() =>
       expect(h.deleteAccount).toHaveBeenCalledWith({ details: { code: "123456" } }),
     );
+    expect(
+      await screen.findByText(/your account and its data have been deleted/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /return to homepage/i })).toBeInTheDocument();
+  });
+
+  it("deletes without a code from the first stage when no verified email is set", async () => {
+    h.user = buildUser({ verifiedEmail: undefined });
+    renderSection();
+    openDialog();
+
+    fireEvent.click(screen.getByRole("button", { name: /permanently delete account/i }));
+
+    await waitFor(() => expect(h.deleteAccount).toHaveBeenCalledWith({ details: {} }));
+    expect(h.sendCode).not.toHaveBeenCalled();
     expect(
       await screen.findByText(/your account and its data have been deleted/i),
     ).toBeInTheDocument();

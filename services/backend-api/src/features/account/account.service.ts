@@ -1,5 +1,6 @@
 import {
   ApiErrorCode,
+  BadRequestError,
   ConflictError,
   ForbiddenError,
   NotFoundError,
@@ -65,19 +66,19 @@ export class AccountService {
     );
   }
 
-  // Confirms identity with the OTP, then runs the full erasure cascade.
+  // Confirms identity with the OTP when the user has a verified email, then
+  // runs the full erasure cascade. Users with no verified email have no mailbox
+  // wired to the account — the code would be sent to an address chosen by
+  // whoever holds the session, proving nothing — so they delete on the session
+  // alone, and the staged confirmation dialog is the deliberate-pause safeguard.
   async deleteAccountWithVerification(
     discordUserId: string,
-    code: string,
+    code: string | undefined,
   ): Promise<void> {
     const user = await this.deps.userRepository.findByDiscordId(discordUserId);
 
     if (!user) {
       throw new NotFoundError(ApiErrorCode.USER_NOT_FOUND);
-    }
-
-    if (!user.verifiedEmail) {
-      throw new ForbiddenError(ApiErrorCode.EMAIL_NOT_VERIFIED);
     }
 
     // Blockers run before the OTP is consumed so a blocked user can resolve
@@ -86,12 +87,18 @@ export class AccountService {
     await this.deps.workspacesService.assertNotSoleWorkspaceOwner(user.id);
     await this.assertNoActiveSubscription(user.discordUserId);
 
-    await this.deps.emailVerificationService.verifyCodeOnly(
-      user.id,
-      user.verifiedEmail,
-      code,
-      "account-deletion",
-    );
+    if (user.verifiedEmail) {
+      if (!code) {
+        throw new BadRequestError(ApiErrorCode.EMAIL_VERIFICATION_INVALID_CODE);
+      }
+
+      await this.deps.emailVerificationService.verifyCodeOnly(
+        user.id,
+        user.verifiedEmail,
+        code,
+        "account-deletion",
+      );
+    }
 
     await this.deleteAccount(discordUserId);
   }
