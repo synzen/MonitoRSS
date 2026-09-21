@@ -73,6 +73,15 @@ describe("FixFeedRequestsCTA", () => {
 
       expect(container).toBeEmptyDOMElement();
     });
+
+    it("advises that the interrupted flow resumes after the redirect", () => {
+      mockExternalAccounts = undefined;
+      renderCTA({ variant: "required" });
+
+      expect(
+        screen.getByText(/brought back here to pick up where you left off/),
+      ).toBeInTheDocument();
+    });
   });
 
   describe("variant=rate-limited (default)", () => {

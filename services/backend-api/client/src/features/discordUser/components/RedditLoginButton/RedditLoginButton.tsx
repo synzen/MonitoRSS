@@ -16,15 +16,19 @@ interface Props {
   /**
    * Connect on behalf of a workspace instead of the caller's personal account. The grant is
    * stored on the workspace, so the connected/reconnect state comes from the workspace's
-   * connection (passed in by the caller — this component cannot read workspace state itself),
-   * and `refresh` re-fetches it after the popup completes.
+   * connection (passed in by the caller — this component cannot read workspace state itself).
    */
   workspace?: {
     id: string;
     /** null = the workspace has no connection record. */
     connectionStatus: "ACTIVE" | "REVOKED" | null;
-    refresh: () => void;
   };
+  /**
+   * In-app path the OAuth round trip redirects back to. Defaults to the current location;
+   * flows whose restore target differs from the current URL (e.g. re-opening the add-feed
+   * modal from a deep link) pass it explicitly.
+   */
+  returnTo?: string;
 }
 
 export const RedditLoginButton = ({
@@ -33,8 +37,9 @@ export const RedditLoginButton = ({
   emphasis,
   onConnected,
   workspace,
+  returnTo,
 }: Props) => {
-  const { data, refetch, fetchStatus } = useUserMe();
+  const { data, fetchStatus } = useUserMe();
 
   const redditAccount = data?.result.externalAccounts?.find((e) => e.type === "reddit");
   // A revoked/expired account record still exists, so "is there a record" is the wrong signal for a
@@ -44,24 +49,6 @@ export const RedditLoginButton = ({
   const isRedditActive = workspace
     ? workspace.connectionStatus === "ACTIVE"
     : redditAccount?.status === "ACTIVE";
-
-  useEffect(() => {
-    const messageListener = (e: MessageEvent) => {
-      if (e.data === "reddit") {
-        if (workspace) {
-          workspace.refresh();
-        } else {
-          refetch();
-        }
-      }
-    };
-
-    window.addEventListener("message", messageListener);
-
-    return () => {
-      window.removeEventListener("message", messageListener);
-    };
-  }, [workspace?.id]);
 
   useEffect(() => {
     if (isRedditActive) {
@@ -79,12 +66,10 @@ export const RedditLoginButton = ({
           return;
         }
 
-        openRedditLogin(workspace?.id);
+        openRedditLogin(workspace?.id, returnTo);
       }}
       colorPalette={emphasis === "primary" ? "brand" : colorPalette}
-      aria-label={
-        hasConnectionRecord ? "Reconnect Reddit in popup window" : "Connect Reddit in popup window"
-      }
+      aria-label={hasConnectionRecord ? "Reconnect Reddit" : "Connect Reddit"}
     >
       {hasConnectionRecord ? "Reconnect" : "Connect"}
       <Icon as={FaUpRightFromSquare} />

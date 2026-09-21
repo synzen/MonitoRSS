@@ -134,8 +134,11 @@ async function completeRedditCallback(
   cookie: string,
   { code = "valid-auth-code", state }: { code?: string; state: string },
 ) {
+  // The callback 303s to the dashboard origin (same-tab redirect flow). Never follow it —
+  // nothing listens on the dashboard origin inside the test run.
   return ctx.fetch(`/api/v1/reddit/callback?code=${code}&state=${state}`, {
     headers: { cookie },
+    redirect: "manual",
   });
 }
 
@@ -187,9 +190,9 @@ describe("Workspace Reddit connection", { concurrency: false }, () => {
       const { state, cookie } = await startRedditLogin(user, workspaceId);
       const res = await completeRedditCallback(cookie, { state });
 
-      assert.strictEqual(res.status, 200);
-      const body = await res.text();
-      assert.ok(body.includes("window.opener.postMessage('reddit', '*')"));
+      // Same-tab redirect flow: the callback stores the grant and 303s to the dashboard.
+      assert.strictEqual(res.status, 303);
+      assert.strictEqual(res.headers.get("location"), "http://localhost:3000/");
 
       // Attribution surfaces on the workspace detail endpoint.
       const after = await getWorkspaceResponse(user, slug);
@@ -224,9 +227,10 @@ describe("Workspace Reddit connection", { concurrency: false }, () => {
       const { cookie } = await startRedditLogin(user, workspaceId);
       const res = await completeRedditCallback(cookie, { state: "tampered-state" });
 
-      assert.strictEqual(res.status, 200);
-      const body = await res.text();
-      assert.ok(!body.includes("postMessage"), "must not signal success");
+      // Even on a state mismatch the callback 303s back to the dashboard — without
+      // exchanging the code or storing a grant.
+      assert.strictEqual(res.status, 303);
+      assert.strictEqual(res.headers.get("location"), "http://localhost:3000/");
       assert.strictEqual(tokenMock.mock.calls.length, 0, "must not exchange the code");
 
       const after = await getWorkspaceResponse(user, slug);

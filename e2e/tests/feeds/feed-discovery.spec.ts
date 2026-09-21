@@ -1153,7 +1153,7 @@ test.describe("Feed Discovery", () => {
         page.getByText("Connect your Reddit account to continue"),
       ).toBeVisible({ timeout: 30000 });
       await expect(
-        page.getByRole("button", { name: "Connect Reddit in popup window" }),
+        page.getByRole("button", { name: "Connect Reddit" }),
       ).toBeVisible();
 
       // Gate short-circuits before any fetch: no feed card / Add button, and no

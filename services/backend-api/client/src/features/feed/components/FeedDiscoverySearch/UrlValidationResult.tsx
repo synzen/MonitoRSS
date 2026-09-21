@@ -11,6 +11,7 @@ import { useCreateUserFeed } from "../../hooks";
 import { useDeleteUserFeed } from "../../hooks/useDeleteUserFeed";
 import { useUserMe } from "@/features/discordUser";
 import { useFeedScope } from "../../contexts/FeedScopeContext";
+import { getAddFeedRestorePath } from "../../utils/getAddFeedRestorePath";
 import { FeedCard } from "../FeedCard";
 import { isExpectedResolutionUrl } from "./PlatformHint";
 
@@ -31,6 +32,16 @@ interface UrlValidationResultProps {
   onRetryValidation: () => void;
   onFeedAdded?: (feedId: string, feedUrl: string) => void;
   onFeedRemoved?: (feedUrl: string) => void;
+  /**
+   * When set to the currently validated URL, the add is attempted automatically once
+   * validation succeeds. Used to resume an add that was gated on the Reddit connection —
+   * the user had already clicked Add before being redirected away. Scoped to the URL so
+   * later manual searches in the same session never auto-add.
+   */
+  autoAddUrl?: string;
+  /** True when the validation was started by the OAuth-restore path, so loading copy
+   * orients the user ("Reddit connected...") instead of assuming a search they just typed. */
+  isRestoredSearch?: boolean;
 }
 
 export const UrlValidationResult = ({
@@ -43,6 +54,8 @@ export const UrlValidationResult = ({
   onRetryValidation,
   onFeedAdded,
   onFeedRemoved,
+  autoAddUrl,
+  isRestoredSearch,
 }: UrlValidationResultProps) => {
   const { mutateAsync: createFeed } = useCreateUserFeed();
   const { mutateAsync: deleteFeed } = useDeleteUserFeed();
@@ -132,6 +145,23 @@ export const UrlValidationResult = ({
     }
   }, [hasRedditConnected]);
 
+  // Resume an add that was gated on the Reddit connection: the OAuth round trip navigated
+  // the same tab, so this component remounts with restored state (the modal re-opens from
+  // the `?addFeed=` deep link and re-validates). Once validation of the gated URL succeeds,
+  // fire the add the user had already attempted. Consumed once so failures surface
+  // normally instead of retrying in a loop.
+  const autoAddConsumedRef = useRef(false);
+
+  useEffect(() => {
+    if (!autoAddUrl || autoAddConsumedRef.current) return;
+    if (autoAddUrl !== url) return;
+    if (validationStatus !== "success" || !validationData) return;
+    if (addedFeedId || isAdding) return;
+
+    autoAddConsumedRef.current = true;
+    handleAdd(validationData.result.feedTitle);
+  }, [autoAddUrl, url, validationStatus, validationData, addedFeedId, isAdding]);
+
   const getButtonState = ():
     | "default"
     | "limit"
@@ -155,10 +185,16 @@ export const UrlValidationResult = ({
       <Box aria-live="polite" mt={3}>
         <HStack gap={2}>
           <Spinner size="sm" />
-          <Text>Checking URL...</Text>
+          <Text>
+            {isRestoredSearch
+              ? "Reddit connected. Checking the feed at this address..."
+              : "Checking URL..."}
+          </Text>
         </HStack>
         <Text fontSize="sm" color="fg.muted">
-          Verifying the feed at this address
+          {isRestoredSearch
+            ? "Continuing where you left off"
+            : "Verifying the feed at this address"}
         </Text>
       </Box>
     );
@@ -212,6 +248,9 @@ export const UrlValidationResult = ({
             <FixFeedRequestsCTA
               url={feedUrl}
               variant="required"
+              returnTo={getAddFeedRestorePath(feedUrl, feedScope.workspaceSlug, {
+                autoAdd: true,
+              })}
               onCorrected={() => {
                 setAddError(null);
                 handleAdd(displayTitle);
@@ -232,7 +271,12 @@ export const UrlValidationResult = ({
     if (validationError.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED) {
       return (
         <Box mt={3}>
-          <FixFeedRequestsCTA url={url} variant="required" onCorrected={onRetryValidation} />
+          <FixFeedRequestsCTA
+            url={url}
+            variant="required"
+            returnTo={getAddFeedRestorePath(url, feedScope.workspaceSlug)}
+            onCorrected={onRetryValidation}
+          />
         </Box>
       );
     }
