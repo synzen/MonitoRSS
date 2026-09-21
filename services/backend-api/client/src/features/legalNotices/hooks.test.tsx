@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { notifyError } from "@/utils/notifyError";
 import { dismissLegalNotice, getApplicableLegalNotice } from "./api";
-import { useApplicableLegalNotice, useDismissLegalNotice } from "./hooks";
+import { MAX_REFRESH_DELAY_MS, useApplicableLegalNotice, useDismissLegalNotice } from "./hooks";
 
 vi.mock("./api", () => ({
   getApplicableLegalNotice: vi.fn(),
@@ -51,6 +51,31 @@ describe("useApplicableLegalNotice", () => {
     await act(async () => (scheduledRefresh as () => void)());
 
     expect(getApplicableLegalNotice).toHaveBeenCalledTimes(2);
+  });
+
+  it("clamps the scheduled refresh when the transition is beyond the setTimeout limit", async () => {
+    const serverTime = "2026-09-01T00:00:00.000Z";
+    const nextTransitionAt = "2026-10-19T04:00:00.000Z";
+    vi.mocked(getApplicableLegalNotice).mockResolvedValue({
+      ...noticeResponse,
+      serverTime,
+      nextTransitionAt,
+    });
+    const setTimeoutSpy = vi.spyOn(window, "setTimeout");
+    const { wrapper } = withQueryClient();
+    const { result } = renderHook(() => useApplicableLegalNotice({ enabled: true }), { wrapper });
+
+    await waitFor(() => expect(result.current.data?.nextTransitionAt).toBe(nextTransitionAt));
+
+    const rawDelay = Date.parse(nextTransitionAt) - Date.parse(serverTime);
+    expect(rawDelay).toBeGreaterThan(2_147_483_647);
+
+    // Node clamps oversized delays to 1ms (browsers overflow them into an
+    // immediate fire), so the timer may run during this test. The scheduled
+    // value is the regression guard, not the fetch count.
+    const scheduledDelays = setTimeoutSpy.mock.calls.map(([, delay]) => delay as number);
+    expect(scheduledDelays).toContain(Math.min(rawDelay, MAX_REFRESH_DELAY_MS));
+    expect(scheduledDelays.every((delay) => delay <= MAX_REFRESH_DELAY_MS)).toBe(true);
   });
 
   it("refreshes stale notice state when the window regains focus", async () => {

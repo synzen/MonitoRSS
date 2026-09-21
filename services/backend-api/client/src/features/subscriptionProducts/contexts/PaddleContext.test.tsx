@@ -3,8 +3,14 @@ import { render, screen, act, waitFor } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useContext } from "react";
+import { initializePaddle } from "@paddle/paddle-js";
+import { captureException } from "@sentry/react";
 import { system } from "@/utils/theme";
 import { useUserMe } from "@/features/discordUser";
+
+vi.mock("@sentry/react", () => ({
+  captureException: vi.fn(),
+}));
 
 const h = vi.hoisted(() => {
   // The provider reads the client token at module load; without it the Paddle
@@ -102,6 +108,28 @@ const CheckoutLoadedProbe = () => {
 
   return <span data-testid="has-loaded-data">{String(!!checkoutLoadedData)}</span>;
 };
+
+const LoadFailedProbe = () => {
+  const { hasLoadFailed } = useContext(PaddleContext);
+
+  return <span data-testid="has-load-failed">{String(hasLoadFailed)}</span>;
+};
+
+describe("PaddleContextProvider initialization failure", () => {
+  beforeEach(() => {
+    h.eventCallback = undefined;
+    vi.clearAllMocks();
+  });
+
+  it("surfaces the failure and reports it when Paddle.js fails to initialize", async () => {
+    const loadError = new Error("Failed to load Paddle.js - v1");
+    vi.mocked(initializePaddle).mockRejectedValueOnce(loadError);
+    renderProvider(<LoadFailedProbe />);
+
+    await waitFor(() => expect(screen.getByTestId("has-load-failed")).toHaveTextContent("true"));
+    expect(vi.mocked(captureException)).toHaveBeenCalledWith(loadError);
+  });
+});
 
 describe("PaddleContextProvider isConfigured", () => {
   beforeEach(() => {

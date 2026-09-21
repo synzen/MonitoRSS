@@ -83,6 +83,8 @@ interface ContextProps {
   }) => void;
   resetCheckoutData: () => void;
   isLoaded?: boolean;
+  /** Whether Paddle.js definitively failed to initialize (as opposed to still loading). */
+  hasLoadFailed: boolean;
   /** Whether Paddle is configured for this instance (client token present). */
   isConfigured: boolean;
   openCheckout: (p: {
@@ -118,6 +120,7 @@ export const PaddleContext = createContext<ContextProps>({
   checkoutLoadedData: undefined,
   isLoaded: false,
   isConfigured: false,
+  hasLoadFailed: false,
   openCheckout: () => {},
   getPricePreview: async () => [],
   resetCheckoutData: () => {},
@@ -132,6 +135,7 @@ export const PaddleContext = createContext<ContextProps>({
 
 export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
   const [paddle, setPaddle] = useState<Paddle | undefined>();
+  const [hasLoadFailed, setHasLoadFailed] = useState(false);
   const [checkForSubscriptionCreated, setCheckForSubscriptionCreated] = useState(false);
   const [isSubscriptionCreated, setIsSubscriptionCreated] = useState(false);
   // Holds the current checkout's "closed without completing" callback. The Paddle event callback is
@@ -264,12 +268,31 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
           });
         }
       },
-    }).then((paddleInstance: Paddle | undefined) => {
-      if (paddleInstance) {
-        paddleInstanceRef.current = paddleInstance;
-        setPaddle(paddleInstance);
-      }
-    });
+    })
+      .then((paddleInstance: Paddle | undefined) => {
+        if (paddleInstance) {
+          paddleInstanceRef.current = paddleInstance;
+          setPaddle(paddleInstance);
+        }
+      })
+      .catch((error: unknown) => {
+        setHasLoadFailed(true);
+
+        // captureException keeps the failure visible in Sentry (it previously
+        // only surfaced as an unhandled rejection); the error-reports POST
+        // surfaces it in Datadog, like checkout.error reports.
+        captureException(error);
+        fetch("/api/v1/error-reports", {
+          method: "POST",
+          body: JSON.stringify({
+            message: "Paddle.js failed to initialize",
+            error: error instanceof Error ? error.message : String(error),
+          }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+      });
   }, []);
 
   const getChargePreview = useCallback(
@@ -578,6 +601,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       updatePaymentMethod,
       updateCheckout,
       isLoaded: !!paddle,
+      hasLoadFailed,
       // Billing is usable only when the instance has it enabled (the backend's
       // master switch: supporters enabled and Paddle configured) AND a Paddle
       // client token is present to render checkout. A leftover client token
@@ -593,6 +617,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
     [
       JSON.stringify(checkoutLoadedData),
       !!paddle,
+      hasLoadFailed,
       !!user?.result.enableBilling,
       updateCheckout,
       updatePaymentMethod,

@@ -16,7 +16,12 @@ interface UsePricingDataOptions {
 }
 
 export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
-  const { getPricePreview, getChargePreview, isLoaded: isPaddleLoaded } = usePaddleContext();
+  const {
+    getPricePreview,
+    getChargePreview,
+    isLoaded: isPaddleLoaded,
+    hasLoadFailed: hasPaddleLoadFailed,
+  } = usePaddleContext();
   const { status: userStatus, error: userError, data: userData } = useUserMe();
 
   const [products, setProducts] = useState<PricePreview[]>();
@@ -108,7 +113,19 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
 
   // Fetch all price data when dialog opens
   useEffect(() => {
-    if (!isOpen || !userData || !isPaddleLoaded) {
+    if (!isOpen || !userData) {
+      return;
+    }
+
+    // Paddle initializes asynchronously at app mount, so a not-yet-loaded
+    // Paddle keeps the spinner. A definitive load failure must resolve into
+    // the error alert instead of spinning forever.
+    if (!isPaddleLoaded) {
+      if (hasPaddleLoadFailed) {
+        setIsLoading(false);
+        setHasError(true);
+      }
+
       return;
     }
 
@@ -182,7 +199,7 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
     };
 
     fetchPrices();
-  }, [!!userData, isOpen, isPaddleLoaded]);
+  }, [!!userData, isOpen, isPaddleLoaded, hasPaddleLoadFailed]);
 
   const getProductPrice = useCallback(
     (productId: ProductKey) => {

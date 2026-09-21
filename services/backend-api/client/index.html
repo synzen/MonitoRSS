@@ -19,8 +19,16 @@
           return;
         }
 
+        // Payment scripts must load regardless of consent state: the Auto-Blocker
+        // blocks dynamically injected scripts it cannot categorize, which left
+        // the pricing dialog spinning forever (Sentry JAVASCRIPT-REACT-15W).
+        // A rule matches its domain and every subdomain (there is no wildcard
+        // syntax), so parent domains cover all Paddle hosts. Keep in sync with
+        // the dashboard's Domain Rules.
         window.TERMLY_CUSTOM_BLOCKING_MAP = {
           "monitorss.xyz": "essential",
+          "paddle.com": "essential",
+          "profitwell.com": "essential",
         };
 
         var termlyScript = document.createElement("script");

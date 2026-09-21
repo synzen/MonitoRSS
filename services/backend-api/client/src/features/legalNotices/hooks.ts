@@ -6,6 +6,12 @@ import { notifyError } from "@/utils/notifyError";
 import { dismissLegalNotice, getApplicableLegalNotice } from "./api";
 import type { GetApplicableLegalNoticeOutput } from "./types";
 
+// Browsers store setTimeout delays as 32-bit signed ints, so anything larger
+// overflows and fires immediately, turning the scheduled refresh into a
+// request loop. Each clamped refresh re-runs this effect with the remaining
+// delay, so the chain still converges on the actual transition.
+export const MAX_REFRESH_DELAY_MS = 2_147_000_000;
+
 export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
   const query = useQuery<GetApplicableLegalNoticeOutput, ApiAdapterError>(
     ["applicable-legal-notice"],
@@ -27,7 +33,7 @@ export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
       return undefined;
     }
 
-    const timeout = window.setTimeout(() => query.refetch(), delay);
+    const timeout = window.setTimeout(() => query.refetch(), Math.min(delay, MAX_REFRESH_DELAY_MS));
 
     return () => window.clearTimeout(timeout);
   }, [query.data?.nextTransitionAt, query.data?.serverTime, query.refetch]);
