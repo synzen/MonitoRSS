@@ -57,6 +57,8 @@ async function openConcurrentMoveDialog(page: Page, label: string) {
     name: `Move personal feeds to ${workspaceName}`,
   });
   const checkbox = dialog.getByRole("checkbox", { name: movingTitle });
+  await expect(checkbox).not.toBeChecked({ timeout: 15_000 });
+  await checkbox.click();
   await expect(checkbox).toBeChecked({ timeout: 15_000 });
 
   return { checkbox, dialog, movingTitle, userId, workspaceId };
@@ -109,11 +111,14 @@ test("moves personal feeds from an active empty team and refreshes both rendered
   await expect(moveDialog).toBeVisible({ timeout: 15_000 });
 
   for (const title of feedTitles) {
-    await expect(moveDialog.getByRole("checkbox", { name: title })).toBeChecked(
-      {
-        timeout: 15_000,
-      },
-    );
+    const checkbox = moveDialog.getByRole("checkbox", { name: title });
+    await expect(checkbox).not.toBeChecked({
+      timeout: 15_000,
+    });
+    await checkbox.click();
+    await expect(checkbox).toBeChecked({
+      timeout: 15_000,
+    });
   }
 
   await moveDialog.getByRole("button", { name: "Move feeds" }).click();
@@ -356,6 +361,8 @@ test("keeps the selection visible and refreshes capacity after a concurrent work
     name: `Move personal feeds to ${workspaceName}`,
   });
   const movingCheckbox = dialog.getByRole("checkbox", { name: movingTitle });
+  await expect(movingCheckbox).not.toBeChecked({ timeout: 15_000 });
+  await movingCheckbox.click();
   await expect(movingCheckbox).toBeChecked({ timeout: 15_000 });
 
   await seedWorkspaceFeedsInDb({

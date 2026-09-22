@@ -634,10 +634,16 @@ describe("UserFeeds - active empty workspace personal feed move", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Move personal feeds to Workspace One",
     });
-    const firstFeed = await within(dialog).findByRole("checkbox", {
-      name: "First personal feed",
-    });
-    await waitFor(() => expect(firstFeed).toBeChecked());
+    await user.click(
+      await within(dialog).findByRole("checkbox", {
+        name: "First personal feed",
+      }),
+    );
+    await user.click(
+      await within(dialog).findByRole("checkbox", {
+        name: "Second personal feed",
+      }),
+    );
     await user.click(within(dialog).getByRole("button", { name: "Move feeds" }));
 
     expect(await screen.findByText("2 personal feeds moved")).toBeInTheDocument();

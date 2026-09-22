@@ -107,20 +107,20 @@ describe("OwnedPersonalFeedPicker behavior", () => {
     getByAge.mockReset();
   });
 
-  it("selects every feed by default, loading lazy pages so none is left unchecked", async () => {
-    // 30 feeds spans two pages (25 + 5), under a 70-feed limit: the default is
-    // bring everything, which must cover the second page even though it loads
-    // lazily.
+  it("starts empty when fitting, so the owner explicitly chooses (no bulk default)", async () => {
+    // 30 feeds spans two pages (25 + 5), under a 70-feed limit: nothing is
+    // pre-selected. Auto-selecting all caused accidental bulk moves, so every
+    // check is the owner's own choice. No auto-loading of lazy pages either.
     installPaginatedFeeds(makeFeeds(30));
 
     render(<Harness feedLimit={70} />);
 
-    // The second-page feed is reachable only after auto-loading, and must end
-    // up checked like the rest.
-    const lastFeed = await screen.findByRole("checkbox", { name: /^Feed 30$/ });
-    await waitFor(() => expect(lastFeed).toBeChecked());
-    expect(screen.getByRole("checkbox", { name: /^Feed 1$/ })).toBeChecked();
-    expect(screen.getByText("30 of 30 feeds selected")).toBeVisible();
+    const firstFeed = await screen.findByRole("checkbox", { name: /^Feed 1$/ });
+    expect(firstFeed).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /^Feed 2$/ })).not.toBeChecked();
+    expect(screen.getByText("0 of 30 feeds selected")).toBeVisible();
+    // Second page stays unloaded until the owner asks for it.
+    expect(screen.queryByRole("checkbox", { name: /^Feed 30$/ })).not.toBeInTheDocument();
   });
 
   it("starts empty when over capacity, so the owner chooses (no invisible default)", async () => {
@@ -442,8 +442,8 @@ describe("OwnedPersonalFeedPicker behavior", () => {
   });
 
   it("warns on a selected shared feed and reports its co-manager up to the dialog", async () => {
-    // Two feeds under the limit (both selected by default). One is shared, so its
-    // row carries a warning chip and the rolled-up sharing info names the manager.
+    // Two feeds start unselected. Selecting the shared one shows its warning
+    // chip and rolls up the sharing info naming the manager.
     installPaginatedFeeds([
       {
         id: "feed-1",
@@ -456,8 +456,9 @@ describe("OwnedPersonalFeedPicker behavior", () => {
 
     render(<Harness feedLimit={70} onSharingChange={onSharingChange} />);
 
-    // Both feeds selected by default; the shared one shows the loses-access chip.
-    await screen.findByRole("checkbox", { name: /^Shared Feed$/ });
+    // Select the shared feed; it shows the loses-access chip.
+    const sharedCheckbox = await screen.findByRole("checkbox", { name: /^Shared Feed$/ });
+    await userEvent.click(sharedCheckbox);
     // The visible chip (the screen-reader equivalent is a separate, hidden
     // description tied to the checkbox via aria-describedby).
     await waitFor(() => expect(screen.getByText("Shared. Co-managers lose access")).toBeVisible());
@@ -499,7 +500,7 @@ describe("OwnedPersonalFeedPicker behavior", () => {
 
     render(<Harness feedLimit={70} onSharingChange={onSharingChange} />);
 
-    await screen.findByRole("checkbox", { name: /^Scoped Feed$/ });
+    await userEvent.click(await screen.findByRole("checkbox", { name: /^Scoped Feed$/ }));
     await waitFor(() =>
       expect(screen.getByText("Shared. Per-connection access dropped")).toBeVisible(),
     );
@@ -514,9 +515,8 @@ describe("OwnedPersonalFeedPicker behavior", () => {
   });
 
   it("reports the count of selected Reddit feeds up to the dialog", async () => {
-    // Two reddit feeds + one non-reddit, all selected by default under the
-    // limit. Reddit feeds are detected from their url. The roll-up reports how
-    // many reddit feeds are being moved; the dialog decides whether to warn
+    // Two reddit feeds + one non-reddit, all starting unselected. Selecting
+    // both reddit feeds rolls up the count; the dialog decides whether to warn
     // (based on whether the workspace already has a grant).
     installPaginatedFeeds([
       { id: "feed-1", title: "Reddit One", url: REDDIT_URL },
@@ -527,7 +527,8 @@ describe("OwnedPersonalFeedPicker behavior", () => {
 
     render(<Harness feedLimit={70} onRedditChange={onRedditChange} />);
 
-    await screen.findByRole("checkbox", { name: /^Reddit One$/ });
+    await userEvent.click(await screen.findByRole("checkbox", { name: /^Reddit One$/ }));
+    await userEvent.click(await screen.findByRole("checkbox", { name: /^Reddit Two$/ }));
     await waitFor(() =>
       expect(onRedditChange).toHaveBeenLastCalledWith({
         redditSelectedCount: 2,
@@ -544,6 +545,7 @@ describe("OwnedPersonalFeedPicker behavior", () => {
     const checkbox = await screen.findByRole("checkbox", {
       name: /^Reddit One$/,
     });
+    await userEvent.click(checkbox);
     await waitFor(() =>
       expect(onRedditChange).toHaveBeenLastCalledWith({
         redditSelectedCount: 1,
@@ -563,7 +565,7 @@ describe("OwnedPersonalFeedPicker behavior", () => {
 
     render(<Harness feedLimit={70} />);
 
-    await screen.findByRole("checkbox", { name: /^Reddit One$/ });
+    await userEvent.click(await screen.findByRole("checkbox", { name: /^Reddit One$/ }));
     expect(screen.getByText(/Reddit. Will pause until connected/i)).toBeVisible();
   });
 
@@ -572,10 +574,9 @@ describe("OwnedPersonalFeedPicker behavior", () => {
 
     render(<Harness feedLimit={70} />);
 
-    const checkbox = await screen.findByRole("checkbox", {
+    await screen.findByRole("checkbox", {
       name: /^Reddit One$/,
     });
-    await userEvent.click(checkbox);
     expect(screen.getByText(/Reddit. Remains personal, connection kept/i)).toBeVisible();
   });
 
@@ -591,10 +592,11 @@ describe("OwnedPersonalFeedPicker behavior", () => {
 
     render(<Harness feedLimit={70} onSharingChange={onSharingChange} />);
 
-    // Selected by default -> warned.
+    // Select -> warned.
     const checkbox = await screen.findByRole("checkbox", {
       name: /^Shared Feed$/,
     });
+    await userEvent.click(checkbox);
     await waitFor(() =>
       expect(onSharingChange).toHaveBeenLastCalledWith(
         expect.objectContaining({ sharedSelectedCount: 1 }),

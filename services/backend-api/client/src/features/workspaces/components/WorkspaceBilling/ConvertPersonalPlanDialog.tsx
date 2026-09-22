@@ -27,11 +27,10 @@ const planConversionPickerCopy: Partial<OwnedPersonalFeedPickerCopy> = {
 };
 
 // The feed-move dialog for activating a workspace by moving a personal plan
-// onto it. The common case (more slots than feeds) is a one-click "bring
-// everything"; the feed list is tucked behind a disclosure. Only when the owner
-// has more feeds than the plan's limit does the list open up front, pre-seeded
-// with the feeds that fit, so the dialog opens in a valid state. Unselected
-// feeds stay on the now-free personal account and are disabled there.
+// onto it. Nothing is pre-selected: the owner explicitly chooses which feeds
+// to bring. The feed list is tucked behind a disclosure under the limit and
+// shown up front over the limit. Unselected feeds stay on the now-free
+// personal account and are disabled there.
 export const ConvertPersonalPlanDialog = ({
   open,
   onClose,

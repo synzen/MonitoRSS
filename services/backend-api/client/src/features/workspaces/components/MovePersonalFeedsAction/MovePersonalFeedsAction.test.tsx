@@ -89,7 +89,7 @@ describe("MovePersonalFeedsAction", () => {
     vi.unstubAllGlobals();
   });
 
-  it("opens a team-named confirmation with every fitting feed selected", async () => {
+  it("opens a team-named confirmation with nothing selected by default", async () => {
     const { user } = renderAction();
 
     await user.click(await screen.findByRole("button", { name: "Move personal feeds" }));
@@ -107,10 +107,13 @@ describe("MovePersonalFeedsAction", () => {
     const secondFeed = await within(dialog).findByRole("checkbox", {
       name: "Second personal feed",
     });
-    await waitFor(() => {
-      expect(firstFeed).toBeChecked();
-      expect(secondFeed).toBeChecked();
-    });
+    expect(firstFeed).not.toBeChecked();
+    expect(secondFeed).not.toBeChecked();
+    expect(within(dialog).getByText("0 of 2 feeds selected")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Move feeds" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
     expect(within(dialog).queryByText(/type.*workspace-one.*to confirm/i)).not.toBeInTheDocument();
   });
 
@@ -133,14 +136,18 @@ describe("MovePersonalFeedsAction", () => {
       name: "Move personal feeds to Workspace One",
     });
 
+    await user.click(await within(dialog).findByRole("checkbox", { name: "Shared Reddit feed" }));
+
     expect(await within(dialog).findByText("Manager Alice")).toBeInTheDocument();
     expect(
-      within(dialog).getByText(/feed sharing does not move into a workspace/i),
-    ).toBeInTheDocument();
-    expect(within(dialog).getByText(/access to only specific connections/i)).toBeInTheDocument();
+      within(dialog).getAllByText(/feed sharing does not move into a workspace/i).length,
+    ).toBeGreaterThanOrEqual(1);
     expect(
-      within(dialog).getByText(/these feeds will pause until you connect Reddit/i),
-    ).toBeInTheDocument();
+      within(dialog).getAllByText(/access to only specific connections/i).length,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      within(dialog).getAllByText(/these feeds will pause until you connect Reddit/i).length,
+    ).toBeGreaterThanOrEqual(1);
     expect(
       within(dialog).getByRole("link", {
         name: "Connect Reddit to this workspace (opens in a new tab)",
@@ -164,10 +171,16 @@ describe("MovePersonalFeedsAction", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Move personal feeds to Workspace One",
     });
-    const firstFeed = await within(dialog).findByRole("checkbox", {
-      name: "First personal feed",
-    });
-    await waitFor(() => expect(firstFeed).toBeChecked());
+    await user.click(
+      await within(dialog).findByRole("checkbox", {
+        name: "First personal feed",
+      }),
+    );
+    await user.click(
+      await within(dialog).findByRole("checkbox", {
+        name: "Second personal feed",
+      }),
+    );
     await user.click(within(dialog).getByRole("button", { name: "Move feeds" }));
 
     await waitFor(() => expect(onMoved).toHaveBeenCalledWith(2));
@@ -332,6 +345,7 @@ describe("MovePersonalFeedsAction", () => {
     const firstFeed = await within(dialog).findByRole("checkbox", {
       name: "First personal feed",
     });
+    await user.click(firstFeed);
     await waitFor(() => expect(firstFeed).toBeChecked());
     await user.click(within(dialog).getByRole("button", { name: "Move feeds" }));
 
@@ -411,11 +425,8 @@ describe("MovePersonalFeedsAction", () => {
     const firstFeed = await within(dialog).findByRole("checkbox", {
       name: "First personal feed",
     });
-    const secondFeed = await within(dialog).findByRole("checkbox", {
-      name: "Second personal feed",
-    });
+    await user.click(firstFeed);
     await waitFor(() => expect(firstFeed).toBeChecked());
-    await user.click(secondFeed);
     await user.click(within(dialog).getByRole("button", { name: "Move feeds" }));
 
     expect(await within(dialog).findByText(message)).toBeInTheDocument();

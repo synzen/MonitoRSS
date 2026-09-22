@@ -1040,7 +1040,7 @@ describe("WorkspaceBilling", () => {
     fireEvent.click(await screen.findByText(/choose which feeds to bring/i));
   };
 
-  it("defaults to bringing every feed with a live capacity counter", async () => {
+  it("starts empty with a live capacity counter, so the owner explicitly chooses", async () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
@@ -1055,8 +1055,8 @@ describe("WorkspaceBilling", () => {
     renderBilling();
     await openConvertDialog();
 
-    // Safe default: every feed selected → 2 of 70 feeds.
-    expect(await screen.findByText(/2 of 70 feeds selected/)).toBeInTheDocument();
+    // Safe default: nothing selected → 0 of 70 feeds.
+    expect(await screen.findByText(/0 of 70 feeds selected/)).toBeInTheDocument();
 
     await expandFeedList();
     expect(await screen.findByText("Alpha Feed")).toBeInTheDocument();
@@ -1078,7 +1078,10 @@ describe("WorkspaceBilling", () => {
 
     const checkbox = await screen.findByRole("checkbox", { name: /alpha feed/i });
     const marker = screen.getByText(/^stays personal$/i);
-    // Selected by default: the consequence marker is present but hidden.
+    // Nothing selected by default: the stays-personal marker is visible.
+    expect(marker).toBeVisible();
+
+    await userEvent.click(checkbox);
     expect(marker).not.toBeVisible();
 
     await userEvent.click(checkbox);
@@ -1102,8 +1105,8 @@ describe("WorkspaceBilling", () => {
     await openConvertDialog();
     await expandFeedList();
 
-    // Leave Beta behind.
-    await userEvent.click(await screen.findByRole("checkbox", { name: /beta feed/i }));
+    // Select Alpha, leave Beta behind.
+    await userEvent.click(await screen.findByRole("checkbox", { name: /alpha feed/i }));
 
     const confirmButton = screen.getByRole("button", { name: /^move plan$/i });
     // SafeLoadingButton expresses "disabled" via aria-disabled (it never drops
@@ -1297,6 +1300,8 @@ describe("WorkspaceBilling", () => {
 
     renderBilling();
     await openConvertDialog();
+    await expandFeedList();
+    await userEvent.click(await screen.findByRole("checkbox", { name: /alpha feed/i }));
 
     fireEvent.change(await screen.findByLabelText(/type "my-team" to confirm/i), {
       target: { value: "my-team" },
@@ -1327,11 +1332,12 @@ describe("WorkspaceBilling", () => {
     const alpha = await screen.findByRole("checkbox", { name: /alpha feed/i });
     // The marker is always in the DOM (its space is reserved so toggling never
     // reflows the list); selection toggles its visibility, not its presence.
+    // Nothing is selected by default, so the marker starts visible.
     const alphaRow = alpha.closest("li") as HTMLElement;
     const alphaMarker = within(alphaRow).getByText(/^stays personal$/i);
-    expect(alphaMarker).not.toBeVisible();
+    expect(alphaMarker).toBeVisible();
 
-    await userEvent.click(alpha);
+    await userEvent.click(await screen.findByRole("checkbox", { name: /beta feed/i }));
     expect(await screen.findByText(/1 of 70 feeds selected/)).toBeInTheDocument();
     expect(alphaMarker).toBeVisible();
 

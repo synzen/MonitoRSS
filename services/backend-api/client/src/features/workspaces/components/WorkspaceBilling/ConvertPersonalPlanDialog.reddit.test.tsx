@@ -77,6 +77,13 @@ describe("ConvertPersonalPlanDialog reddit warning", () => {
 
     renderDialog({ workspaceHasActiveRedditGrant: false });
 
+    // Nothing is selected by default; open the disclosure and select the
+    // Reddit feed to trigger the warning.
+    await userEvent.click(
+      await screen.findByRole("button", { name: /choose which feeds to bring/i }),
+    );
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Reddit One" }));
+
     // The warning prose appears both in the visible alert (its text aria-hidden)
     // and the live region, so it renders at least once.
     await waitFor(() =>
@@ -107,6 +114,11 @@ describe("ConvertPersonalPlanDialog reddit warning", () => {
 
     renderDialog({ workspaceHasActiveRedditGrant: false });
 
+    await userEvent.click(
+      await screen.findByRole("button", { name: /choose which feeds to bring/i }),
+    );
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Reddit One" }));
+
     const connectLink = await screen.findByRole("link", {
       name: /connect reddit to (this )?workspace/i,
     });
@@ -118,6 +130,12 @@ describe("ConvertPersonalPlanDialog reddit warning", () => {
     installFeeds([{ id: "feed-1", title: "Reddit One", url: REDDIT_URL }]);
 
     renderDialog({ workspaceHasActiveRedditGrant: false });
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /choose which feeds to bring/i }),
+    );
+    const checkbox = await screen.findByRole("checkbox", { name: "Reddit One" });
+    await userEvent.click(checkbox);
 
     await waitFor(() =>
       expect(screen.getAllByText(/uses your Reddit connection/i).length).toBeGreaterThanOrEqual(1),

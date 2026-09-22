@@ -231,8 +231,12 @@ export const OwnedPersonalFeedPicker = ({
     }
   });
 
-  // Under the allowance, every eligible id must be loaded before seeding the
-  // controlled selection. Oversized collections start empty so the user chooses.
+  // No default selection: the owner explicitly checks every feed to move.
+  // Auto-selecting all under the allowance caused accidental bulk moves (the
+  // owner missed "N of N feeds selected" and moved everything into a
+  // workspace they did not own). Starting empty is safe for both fitting and
+  // oversized collections; bulk choice stays available via explicit actions
+  // (auto-pick when over the cap, manual checks otherwise).
   const seededRef = useRef(false);
   const announcedLoadRef = useRef(false);
 
@@ -246,23 +250,8 @@ export const OwnedPersonalFeedPicker = ({
       onLoaded?.({ total: totalCount, overLimit });
     }
 
-    if (overLimit) {
-      // No default selection; the owner chooses. Seed is considered done.
-      seededRef.current = true;
-
-      return;
-    }
-
-    // Under the limit: pull every page, then select all of them once.
-    if (hasNextPage) {
-      fetchNextPage();
-
-      return;
-    }
-
     seededRef.current = true;
-    onSelectedIdsChange(new Set(browseFeeds.map((f) => f.id)));
-  }, [status, totalCount, overLimit, hasNextPage, fetchedSoFarCount, search]);
+  }, [status, totalCount, overLimit, search]);
 
   // Roll up sharing across the SELECTED feeds for the dialog's warning. Keyed on
   // the selection and the accumulated sharing map, so unselecting a shared feed
