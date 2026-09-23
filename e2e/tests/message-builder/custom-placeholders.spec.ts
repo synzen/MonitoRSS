@@ -526,14 +526,19 @@ test.describe("Custom Placeholders", () => {
         page.getByRole("textbox", { name: "Text Content" }),
       ).toHaveValue("{{custom::mytitle}}", { timeout: 5000 });
 
-      // Wait for preview to load and verify uppercased title in the preview
+      // Wait for preview to load and verify uppercased title in the preview.
+      // The loading bar may not have appeared yet when first checked (the
+      // preview refreshes on a 500ms debounce), so that absence check can pass
+      // before the refetch even starts — the resolved content below is the real
+      // synchronization point, with headroom for a slow refetch under parallel
+      // CI load.
       const previewLoadingBar = page.getByLabel("Updating message preview");
       await expect(previewLoadingBar).not.toBeVisible({ timeout: 30000 });
       await expect(page.getByText("Failed to load preview.")).not.toBeVisible();
 
       await expect(
         page.getByRole("paragraph").filter({ hasText: /^TEST ARTICLE 1$/ }),
-      ).toBeVisible({ timeout: 15000 });
+      ).toBeVisible({ timeout: 30000 });
     });
   });
 

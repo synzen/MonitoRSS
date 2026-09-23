@@ -57,7 +57,12 @@ vi.mock("../../hooks", () => ({
     error: null,
     reset: vi.fn(),
   }),
-  useConfirmEmailVerification: () => ({ mutateAsync: vi.fn(), status: "idle", error: null }),
+  useConfirmEmailVerification: () => ({
+    mutateAsync: vi.fn(),
+    status: "idle",
+    error: null,
+    reset: vi.fn(),
+  }),
 }));
 
 vi.mock("react-router-dom", () => ({

@@ -58,7 +58,11 @@ async function openConcurrentMoveDialog(page: Page, label: string) {
   });
   const checkbox = dialog.getByRole("checkbox", { name: movingTitle });
   await expect(checkbox).not.toBeChecked({ timeout: 15_000 });
-  await checkbox.click();
+  // Chakra v3 renders a visual control element over the checkbox input that
+  // intercepts pointer events, so a plain click lands on the wrong layer.
+  // scrollIntoView + force is the established idiom (see bulk-delete-feeds.spec.ts).
+  await checkbox.scrollIntoViewIfNeeded();
+  await checkbox.click({ force: true });
   await expect(checkbox).toBeChecked({ timeout: 15_000 });
 
   return { checkbox, dialog, movingTitle, userId, workspaceId };
@@ -115,7 +119,10 @@ test("moves personal feeds from an active empty team and refreshes both rendered
     await expect(checkbox).not.toBeChecked({
       timeout: 15_000,
     });
-    await checkbox.click();
+    // Chakra v3 renders a visual control element over the checkbox input that
+    // intercepts pointer events — force-click (see bulk-delete-feeds.spec.ts).
+    await checkbox.scrollIntoViewIfNeeded();
+    await checkbox.click({ force: true });
     await expect(checkbox).toBeChecked({
       timeout: 15_000,
     });
@@ -362,7 +369,10 @@ test("keeps the selection visible and refreshes capacity after a concurrent work
   });
   const movingCheckbox = dialog.getByRole("checkbox", { name: movingTitle });
   await expect(movingCheckbox).not.toBeChecked({ timeout: 15_000 });
-  await movingCheckbox.click();
+  // Chakra v3 renders a visual control element over the checkbox input that
+  // intercepts pointer events — force-click (see bulk-delete-feeds.spec.ts).
+  await movingCheckbox.scrollIntoViewIfNeeded();
+  await movingCheckbox.click({ force: true });
   await expect(movingCheckbox).toBeChecked({ timeout: 15_000 });
 
   await seedWorkspaceFeedsInDb({

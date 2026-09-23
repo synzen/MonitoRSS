@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   sendCode: vi.fn(),
   confirmCode: vi.fn(),
   resetSend: vi.fn(),
+  resetConfirm: vi.fn(),
   // The confirm error IS read off the hook (react-query owns it); the send error
   // is now owned by the component and captured from the thrown rejection, so the
   // send mock drives failures by rejecting rather than via a hook `error` field.
@@ -25,6 +26,7 @@ vi.mock("../../hooks", () => ({
     mutateAsync: h.confirmCode,
     status: "idle",
     error: h.confirmError,
+    reset: h.resetConfirm,
   }),
 }));
 
@@ -167,6 +169,35 @@ describe("VerifyEmailStep", () => {
     expect(await screen.findByText(/failed to verify/i)).toBeInTheDocument();
     expect(screen.getByText(/invalid or incorrect verification code/i)).toBeInTheDocument();
     expect(screen.queryByText(/raw server detail/i)).not.toBeInTheDocument();
+  });
+
+  it("clears a stale confirm error when changing email, resending, or retrying verify", async () => {
+    h.confirmError = { message: "raw server detail", errorCode: "EMAIL_ALREADY_IN_USE" };
+    await reachCodeSentView();
+    expect(await screen.findByText(/failed to verify/i)).toBeInTheDocument();
+
+    // Back to the email step clears the confirm mutation.
+    fireEvent.click(screen.getByRole("button", { name: /change email/i }));
+    expect(h.resetConfirm).toHaveBeenCalled();
+
+    // A new send also clears it, so the next code view does not show the old error.
+    h.resetConfirm.mockClear();
+    h.sendCode.mockResolvedValue(undefined);
+    fireEvent.change(screen.getByLabelText(/email address/i), {
+      target: { value: "other@example.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^send code$/i }));
+    await screen.findByRole("button", { name: "Resend code" });
+    expect(h.resetConfirm).toHaveBeenCalled();
+
+    // A new verify attempt clears the previous failure first.
+    h.resetConfirm.mockClear();
+    h.confirmCode.mockResolvedValue(undefined);
+    fireEvent.change(screen.getByLabelText(/verification code/i), {
+      target: { value: "123456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^verify$/i }));
+    await waitFor(() => expect(h.resetConfirm).toHaveBeenCalled());
   });
 
   it("tells the user how long the verification code is valid", async () => {

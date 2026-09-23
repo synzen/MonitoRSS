@@ -9,6 +9,7 @@ const h = vi.hoisted(() => ({
   sendCode: vi.fn(),
   confirmCode: vi.fn(),
   resetSend: vi.fn(),
+  resetConfirm: vi.fn(),
   workspaces: [] as Array<{ role: string }>,
 }));
 
@@ -22,6 +23,7 @@ vi.mock("../../hooks", () => ({
     mutateAsync: h.confirmCode,
     status: "idle",
     error: null,
+    reset: h.resetConfirm,
   }),
   useWorkspaces: () => ({ workspaces: h.workspaces }),
   findOwnedWorkspace: (workspaces?: Array<{ role: string }>) =>

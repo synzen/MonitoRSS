@@ -132,6 +132,7 @@ export const VerifyEmailStep = ({
     mutateAsync: confirmCode,
     status: confirmStatus,
     error: confirmError,
+    reset: resetConfirm,
   } = useConfirmEmailVerification();
 
   const trimmedEmail = email.trim();
@@ -172,6 +173,7 @@ export const VerifyEmailStep = ({
 
     setGuardError(undefined);
     setSendError(undefined);
+    resetConfirm();
     setIsSending(true);
 
     try {
@@ -207,6 +209,8 @@ export const VerifyEmailStep = ({
       return;
     }
 
+    resetConfirm();
+
     try {
       await confirmCode({
         details: { email: trimmedEmail, code: trimmedCode },
@@ -224,6 +228,7 @@ export const VerifyEmailStep = ({
     setConfirmAttempted(false);
     setGuardError(undefined);
     setSendError(undefined);
+    resetConfirm();
     setCooldownRemaining(0);
     resetSend();
   };
