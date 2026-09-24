@@ -520,9 +520,11 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
       checkoutCompletedCallbackRef.current = onCompleted;
       lastCheckoutWasOverlayRef.current = displayMode === "overlay";
 
-      // A workspace checkout is billed to the owner's verified email, a personal
-      // checkout to the Discord email; either is blocked when its address is
-      // missing, so route the user to set it before opening Paddle.
+      // A new workspace checkout is seeded from the owner's verified email, a
+      // personal checkout from the Discord email; either is blocked when its
+      // address is missing, so route the user to set it before opening Paddle.
+      // The workspace billing email is per-workspace and editable afterwards
+      // from the billing area.
       const customer = resolveCheckoutCustomerEmail({
         customData,
         discordEmail: user?.result.email,
@@ -533,7 +535,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
         if (customer.blocked === "verifiedEmailRequired") {
           notifyError(
             "Verify an email to subscribe",
-            "Workspace billing uses your verified email. Add one in settings to continue.",
+            "Workspace checkout starts from your verified email. Add one in settings to continue.",
           );
         }
 

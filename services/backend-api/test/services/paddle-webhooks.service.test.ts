@@ -310,6 +310,124 @@ describe("PaddleWebhooksService", { concurrency: true }, () => {
       );
     });
 
+    it("carries the personal billing address over unchanged on conversion", async () => {
+      const ctx = harness.createContext({
+        paddleService: {
+          getProduct: async () => ({
+            paddleProductId: "prod-tier2",
+            id: SubscriptionProductKey.Tier2,
+          }),
+          getCustomer: async () => ({
+            email: "personal-billing@example.com",
+          }),
+        },
+      });
+      const owner = await ctx.createUser({
+        verifiedEmail: "owner-verified@example.com",
+      });
+      const workspace = await ctx.createWorkspaceWithOwner({
+        ownerUserId: owner.id,
+      });
+      const now = new Date();
+      const subscriptionId = `sub_convert_${Date.now()}`;
+
+      await ctx.createSupporter({
+        paddleCustomer: {
+          customerId: "ctm_personal",
+          email: "personal-billing@example.com",
+          lastCurrencyCodeUsed: "USD",
+          createdAt: now,
+          updatedAt: now,
+          subscription: {
+            productKey: SubscriptionProductKey.Tier2,
+            id: subscriptionId,
+            status: SubscriptionStatus.Active,
+            currencyCode: "USD",
+            billingPeriodStart: now,
+            billingPeriodEnd: now,
+            billingInterval: "month",
+            benefits: {
+              maxUserFeeds: 70,
+              allowWebhooks: true,
+              dailyArticleLimit: 1000,
+              refreshRateSeconds: 120,
+            },
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
+      });
+
+      const event = ctx.createSubscriptionUpdatedEvent({
+        id: subscriptionId,
+        custom_data: { workspaceId: workspace.id },
+        current_billing_period: {
+          starts_at: now.toISOString(),
+          ends_at: now.toISOString(),
+        },
+      });
+
+      await ctx.service.handleSubscriptionUpdatedEvent(event);
+
+      const updated = await ctx.workspaceRepository.findById(workspace.id);
+      assert.ok(updated?.paddleCustomer);
+      assert.strictEqual(
+        updated.paddleCustomer.email,
+        "personal-billing@example.com",
+      );
+    });
+
+    it("keeps the workspace billing email stable across later webhook events", async () => {
+      const ctx = harness.createContext({
+        paddleService: {
+          getProduct: async () => ({
+            paddleProductId: "prod-tier2",
+            id: SubscriptionProductKey.Tier2,
+          }),
+          getCustomer: async () => ({ email: "owner-verified@example.com" }),
+        },
+      });
+      const owner = await ctx.createUser({
+        verifiedEmail: "owner-verified@example.com",
+      });
+      const workspace = await ctx.createWorkspaceWithOwner({
+        ownerUserId: owner.id,
+      });
+      const now = new Date();
+
+      const first = ctx.createSubscriptionUpdatedEvent({
+        custom_data: { workspaceId: workspace.id },
+        current_billing_period: {
+          starts_at: now.toISOString(),
+          ends_at: now.toISOString(),
+        },
+      });
+
+      await ctx.service.handleSubscriptionUpdatedEvent(first);
+
+      await ctx.workspaceRepository.updatePaddleCustomerEmail(
+        workspace.id,
+        "edited-billing@example.com",
+      );
+
+      const second = ctx.createSubscriptionUpdatedEvent({
+        custom_data: { workspaceId: workspace.id },
+        current_billing_period: {
+          starts_at: now.toISOString(),
+          ends_at: now.toISOString(),
+        },
+      });
+
+      await ctx.service.handleSubscriptionUpdatedEvent(second);
+
+      const updated = await ctx.workspaceRepository.findById(workspace.id);
+      assert.ok(updated?.paddleCustomer);
+      assert.strictEqual(
+        updated.paddleCustomer.email,
+        "edited-billing@example.com",
+      );
+    });
+
     it("throws when a workspace's owner has no verified email", async () => {
       const ctx = harness.createContext({
         paddleService: {

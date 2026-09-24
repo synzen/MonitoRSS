@@ -40,6 +40,7 @@ const PADDLE_CHECKOUT_TESTS = [
   "**/billing/pricing-dialog-focus.spec.ts",
   "**/billing/paddle-workspace-slug-reuse-regression.spec.ts",
   "**/billing/paddle-workspace-feed-discovery-limit-regression.spec.ts",
+  "**/billing/billing-email.spec.ts",
 ];
 
 export default defineConfig({

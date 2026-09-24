@@ -536,3 +536,29 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
     return { workspaceId: workspaceId.toHexString(), slug };
   });
 }
+
+/**
+ * Point a seeded workspace's billing record at a REAL Paddle customer so the
+ * billing-email edit flow hits the sandbox API for real. The workspace keeps
+ * its seeded (fake) active subscription so the Billing page renders the
+ * current-plan view with the "Billed to" line; only the customer id and email
+ * are swapped to the real ones. Used by the billing-email E2E to exercise the
+ * owner edit round-trip without paying for a full checkout.
+ */
+export async function setWorkspaceBillingCustomerInDb(input: {
+  workspaceId: string;
+  customerId: string;
+  email: string;
+}): Promise<void> {
+  await withDb(async (db) => {
+    await db.collection("workspaces").updateOne(
+      { _id: new ObjectId(input.workspaceId) },
+      {
+        $set: {
+          "paddleCustomer.customerId": input.customerId,
+          "paddleCustomer.email": input.email.trim().toLowerCase(),
+        },
+      },
+    );
+  });
+}

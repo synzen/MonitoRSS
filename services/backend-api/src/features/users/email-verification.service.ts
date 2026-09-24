@@ -6,8 +6,6 @@ import { createFromFormatter } from "../../infra/email-from";
 import { createEmailRenderer, type RenderEmail } from "../../infra/email-render";
 import type { IUserRepository } from "../../repositories/interfaces/user.types";
 import type { EmailVerificationMongooseRepository } from "../../repositories/mongoose/email-verification.mongoose.repository";
-import type { WorkspaceMongooseRepository } from "../../repositories/mongoose/workspace.mongoose.repository";
-import type { PaddleService } from "../../services/paddle/paddle.service";
 import {
   ApiErrorCode,
   BadRequestError,
@@ -71,8 +69,6 @@ export interface EmailVerificationServiceDeps {
   smtpTransport: SmtpTransport;
   emailVerificationRepository: EmailVerificationMongooseRepository;
   userRepository: IUserRepository;
-  workspaceRepository: WorkspaceMongooseRepository;
-  paddleService: PaddleService;
 }
 
 export class EmailVerificationService {

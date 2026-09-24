@@ -866,10 +866,11 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     });
   }
 
-  // The verified email of any one owner, the billing identity a workspace's
-  // Paddle customer is keyed on. Returns null when no owner has a verified email
-  // (a workspace cannot be created without a verified owner email, so this is a
-  // guard against a since-cleared address, not a normal state).
+  // The verified email of any one owner, used only to seed a workspace's
+  // billing email on first checkout. Billing is per-workspace and owner-editable
+  // afterwards, so later verified-email changes never propagate here. Returns
+  // null when no owner has a verified email (a workspace cannot be created
+  // without one, so this guards a since-cleared address, not a normal state).
   async getOwnerVerifiedEmail(workspaceId: string): Promise<string | null> {
     if (!Types.ObjectId.isValid(workspaceId)) {
       return null;
@@ -899,47 +900,6 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     ]);
 
     return results[0]?.user.verifiedEmail ?? null;
-  }
-
-  // Paddle customer ids of the workspaces this user owns that carry an active
-  // subscription. The billing identity of those workspaces is the owner's
-  // verified email, so a verified-email change must propagate to each.
-  async listOwnedActivePaddleCustomerIds(userId: string): Promise<string[]> {
-    const results = await this.membershipModel.aggregate<{
-      workspace: { paddleCustomer?: { customerId?: string } };
-    }>([
-      {
-        $match: {
-          userId: this.stringToObjectId(userId),
-          role: "owner",
-        },
-      },
-      {
-        $lookup: {
-          from: this.workspaceModel.collection.name,
-          localField: "workspaceId",
-          foreignField: "_id",
-          as: "workspace",
-        },
-      },
-      { $unwind: "$workspace" },
-      {
-        $match: {
-          "workspace.paddleCustomer.customerId": { $type: "string" },
-          "workspace.paddleCustomer.subscription.status":
-            SubscriptionStatus.Active,
-        },
-      },
-      {
-        $project: {
-          workspace: { paddleCustomer: { customerId: 1 } },
-        },
-      },
-    ]);
-
-    return results
-      .map((r) => r.workspace.paddleCustomer?.customerId)
-      .filter((id): id is string => typeof id === "string");
   }
 
   // The members of a workspace with their roles, joined with the minimal user

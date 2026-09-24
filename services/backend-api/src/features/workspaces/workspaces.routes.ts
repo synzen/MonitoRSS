@@ -218,8 +218,9 @@ export async function workspacesRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Transfers the owner role to an existing admin member (owner only). A pure
-  // role swap; the workspace's billing subscription is unchanged, so the new
-  // owner updates the payment method separately if they want to pay.
+  // role swap; the workspace keeps its billing email and subscription, and the
+  // new owner can edit the billing email and payment method from the billing
+  // area immediately.
   app.post("/:workspaceSlug/members/:userId/transfer-ownership", {
     preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
     schema: { params: WorkspaceMemberParamsSchema },

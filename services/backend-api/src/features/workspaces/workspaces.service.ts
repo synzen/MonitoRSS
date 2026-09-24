@@ -956,8 +956,10 @@ export class WorkspacesService {
   // Transfers the owner role to an existing admin member. Owner-only
   // (can('transferOwnership')); the actor-vs-target identity decision lives
   // here, keeping can() a pure (action, role) function. The target must be a
-  // current admin member with a verified email — the owner is the billing
-  // payer, so proven mailbox control is required, mirroring the invite gate.
+  // current admin member with a verified email — proven mailbox control is
+  // required for ownership, mirroring the invite gate. Billing is per-workspace:
+  // the workspace keeps its billing email and subscription, and the new owner
+  // can edit the billing email from the billing area immediately.
   // The role swap itself is transactional in the repository so the workspace is
   // never momentarily ownerless or two-owned.
   async transferOwnership(
@@ -1022,8 +1024,8 @@ export class WorkspacesService {
   // Best-effort notification to the new owner. A send failure (or absent SMTP)
   // must never fail a transfer that has already committed, so this swallows and
   // logs. The billing-tail note appears only when the workspace has a live
-  // subscription — it is still billed to the previous owner until the new owner
-  // updates the payment method.
+  // subscription — billing stays with the workspace, and the new owner can
+  // update the billing email and payment method from the billing area.
   private async notifyOwnershipTransferred(
     workspace: IWorkspace,
     newOwnerEmail: string,

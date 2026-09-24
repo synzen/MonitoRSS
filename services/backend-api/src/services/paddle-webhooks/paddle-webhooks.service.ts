@@ -272,25 +272,47 @@ export class PaddleWebhooksService {
         return;
       }
 
-      // A workspace is billed to its owner's verified email, never the
-      // Discord-derived email Paddle echoes back (which a member could also
-      // have edited in the checkout overlay). The verified address is the
-      // workspace's billing identity. A workspace cannot be created without a
-      // verified owner email, so its absence on a live workspace means the
-      // address was cleared after the fact; fail loudly (Paddle retries, the
-      // error is logged) rather than persist a stale or wrong billing email.
-      const ownerVerifiedEmail =
-        await this.deps.workspaceRepository.getOwnerVerifiedEmail(workspaceId);
+      // Billing-email seeding and stability: the workspace's billing email is a
+      // per-workspace value, seeded once and then stable. New checkouts seed it
+      // from the owner's current verified email (the checkout overlay is
+      // pre-filled with it, so purchase needs no extra step). A
+      // personal-to-workspace conversion carries the personal billing address
+      // over unchanged (the Paddle customer email, which is the personal
+      // record's address). Later events must not clobber an owner edit back to
+      // the verified address, and ownership transfer keeps the workspace's
+      // address (the new owner edits it from the billing area).
+      let workspaceBillingEmail: string;
+      const existingBillingEmail = existingWorkspace.paddleCustomer?.email;
 
-      if (!ownerVerifiedEmail) {
-        throw new Error(
-          `Could not resolve owner verified email when billing workspace ${workspaceId} (customer ${event.data.customer_id})`,
-        );
+      if (existingBillingEmail) {
+        workspaceBillingEmail = existingBillingEmail;
+      } else {
+        const conversionSource =
+          await this.deps.supporterRepository.findBySubscriptionId(
+            event.data.id,
+          );
+
+        if (conversionSource?.paddleCustomer?.email) {
+          workspaceBillingEmail = billingEmail;
+        } else {
+          const ownerVerifiedEmail =
+            await this.deps.workspaceRepository.getOwnerVerifiedEmail(
+              workspaceId,
+            );
+
+          if (!ownerVerifiedEmail) {
+            throw new Error(
+              `Could not resolve owner verified email when billing workspace ${workspaceId} (customer ${event.data.customer_id})`,
+            );
+          }
+
+          workspaceBillingEmail = ownerVerifiedEmail;
+        }
       }
 
       const workspace = await this.deps.workspaceRepository.upsertPaddleCustomer(
         workspaceId,
-        { ...paddleCustomer, email: ownerVerifiedEmail },
+        { ...paddleCustomer, email: workspaceBillingEmail },
       );
 
       if (!workspace) {
