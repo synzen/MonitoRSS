@@ -1,5 +1,6 @@
 import type { Config } from "../../config";
 import { SubscriptionStatus } from "../../repositories/shared/enums";
+import { ApiErrorCode, NotFoundError } from "../../infra/error-handler";
 import type {
   IWorkspace,
   WorkspaceMongooseRepository,
@@ -40,6 +41,7 @@ import {
 } from "../../shared/utils/billing";
 import { pollUntil, PollTimeoutException } from "../../shared/utils/poll-until";
 import { formatCurrency } from "../../shared/utils/format-currency";
+import { normalizeEmail } from "../../shared/utils/normalizeEmail";
 
 export interface WorkspaceBillingServiceDeps {
   config: Config;
@@ -326,6 +328,48 @@ export class WorkspaceBillingService {
     return this.deps.paddleService.getUpdatePaymentMethodTransaction(
       subscription.id,
     );
+  }
+
+  // Owner-editable billing email for exactly one workspace. The provider is
+  // updated first; the local paddleCustomer.email follows only on success, so
+  // a provider failure performs no local write and the old address stays
+  // displayed. Touches only this workspace id, leaving sibling workspaces
+  // untouched.
+  async updateBillingEmail(
+    workspace: IWorkspace,
+    rawEmail: string,
+  ): Promise<{ billingEmail: string }> {
+    if (!isBillingEnabled(this.deps.config)) {
+      throw new WorkspaceBillingNotConfiguredException(
+        "Workspace billing requires Paddle to be configured",
+      );
+    }
+
+    const customerId = workspace.paddleCustomer?.customerId;
+
+    if (!customerId) {
+      throw new WorkspaceNotSubscribedException(
+        `No billing customer found for workspace ${workspace.id}`,
+      );
+    }
+
+    const email = normalizeEmail(rawEmail);
+
+    await this.deps.paddleService.updateCustomer(customerId, { email });
+
+    // The workspace was resolved moments ago, so a null here means it was
+    // deleted concurrently: surface it instead of reporting a success whose
+    // local write never landed (a reload would still show the stale address).
+    const updated = await this.deps.workspaceRepository.updatePaddleCustomerEmail(
+      workspace.id,
+      email,
+    );
+
+    if (!updated) {
+      throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
+    }
+
+    return { billingEmail: email };
   }
 
   async cancelSubscription(workspace: IWorkspace): Promise<void> {

@@ -7,6 +7,7 @@ import {
   previewWorkspaceBillingChange,
   resumeWorkspaceBilling,
   updateWorkspaceBilling,
+  updateWorkspaceBillingEmail,
   type WorkspaceBillingChangePreviewOutput,
   type WorkspaceUpdatePaymentMethodOutput,
 } from "../api/workspaceBilling";
@@ -73,6 +74,18 @@ export const useConvertWorkspaceBilling = () => {
       },
     },
   );
+};
+
+export const useUpdateWorkspaceBillingEmail = () => {
+  const invalidate = useInvalidateWorkspace();
+
+  return useMutation<
+    { data: { billingEmail: string } },
+    ApiAdapterError,
+    { workspaceSlug: string; email: string }
+  >((input) => updateWorkspaceBillingEmail(input), {
+    onSuccess: invalidate,
+  });
 };
 
 // Lazily fetched on the owner's click: minting a Paddle transaction has a

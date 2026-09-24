@@ -4,6 +4,7 @@ import type { IWorkspace } from "../../repositories/mongoose/workspace.mongoose.
 import type { WorkspaceSlugParams } from "./workspaces.schemas";
 import type {
   WorkspaceBillingConvertBody,
+  WorkspaceBillingEmailBody,
   WorkspaceBillingUpdateBody,
 } from "./workspaces.schemas";
 
@@ -127,4 +128,21 @@ export async function convertWorkspaceBillingHandler(
   );
 
   return reply.status(204).send();
+}
+
+export async function updateWorkspaceBillingEmailHandler(
+  request: FastifyRequest<{
+    Params: WorkspaceSlugParams;
+    Body: WorkspaceBillingEmailBody;
+  }>,
+): Promise<{ data: { billingEmail: string } }> {
+  const workspace = await resolveWorkspaceForBilling(request);
+  const { workspaceBillingService } = request.container;
+
+  const result = await workspaceBillingService.updateBillingEmail(
+    workspace,
+    request.body.email,
+  );
+
+  return { data: result };
 }

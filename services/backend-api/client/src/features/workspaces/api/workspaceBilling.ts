@@ -141,3 +141,29 @@ export const convertWorkspaceBilling = async ({
     skipJsonParse: true,
   });
 };
+
+const WorkspaceBillingEmailOutputSchema = object({
+  data: object({
+    billingEmail: string().required(),
+  }).required(),
+}).required();
+
+export type WorkspaceBillingEmailOutput = InferType<typeof WorkspaceBillingEmailOutputSchema>;
+
+export const updateWorkspaceBillingEmail = async ({
+  workspaceSlug,
+  email,
+}: {
+  workspaceSlug: string;
+  email: string;
+}): Promise<WorkspaceBillingEmailOutput> => {
+  const res = await fetchRest(`/api/v1/workspaces/${workspaceSlug}/billing/email`, {
+    validateSchema: WorkspaceBillingEmailOutputSchema,
+    requestOptions: {
+      method: "PATCH",
+      body: JSON.stringify({ email }),
+    },
+  });
+
+  return res as WorkspaceBillingEmailOutput;
+};

@@ -22,6 +22,7 @@ import {
   CreateWorkspaceInviteBodySchema,
   UpdateWorkspaceBodySchema,
   WorkspaceBillingConvertBodySchema,
+  WorkspaceBillingEmailBodySchema,
   WorkspaceBillingUpdateBodySchema,
   WorkspaceInviteParamsSchema,
   WorkspaceMemberParamsSchema,
@@ -31,6 +32,7 @@ import {
 import { withExceptionFilter } from "../../shared/filters/exception-filter";
 import {
   previewWorkspaceBillingChangeHandler,
+  updateWorkspaceBillingEmailHandler,
   updateWorkspaceBillingHandler,
   updateWorkspacePaymentMethodHandler,
   cancelWorkspaceBillingHandler,
@@ -190,6 +192,20 @@ export async function workspacesRoutes(app: FastifyInstance): Promise<void> {
     handler: withExceptionFilter(
       WORKSPACE_BILLING_EXCEPTION_ERROR_CODES,
       convertWorkspaceBillingHandler,
+    ),
+  });
+
+  // Owner-editable billing email for exactly one workspace. The service updates
+  // the provider first and the local record only on success.
+  app.patch("/:workspaceSlug/billing/email", {
+    preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
+    schema: {
+      params: WorkspaceSlugParamsSchema,
+      body: WorkspaceBillingEmailBodySchema,
+    },
+    handler: withExceptionFilter(
+      WORKSPACE_BILLING_EXCEPTION_ERROR_CODES,
+      updateWorkspaceBillingEmailHandler,
     ),
   });
 

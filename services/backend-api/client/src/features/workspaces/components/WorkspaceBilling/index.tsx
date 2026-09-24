@@ -76,6 +76,7 @@ import {
   useWorkspaceActivationPolling,
 } from "../../hooks";
 import { ConvertPersonalPlanDialog } from "./ConvertPersonalPlanDialog";
+import { WorkspaceBillingEmail } from "./WorkspaceBillingEmail";
 import { TIER_FEED_LIMITS, capacityPlanLabel, type WorkspaceTier } from "./plans";
 
 type BillingInterval = "month" | "year";
@@ -1049,7 +1050,13 @@ export const WorkspaceBilling = () => {
                   </Text>
                 )
               )}
-              {subscription.billingEmail && (
+              {subscription.billingEmail && isOwner && (
+                <WorkspaceBillingEmail
+                  workspaceSlug={workspaceSlug}
+                  currentEmail={subscription.billingEmail}
+                />
+              )}
+              {subscription.billingEmail && !isOwner && (
                 <Text color="fg.muted">
                   Billed to{" "}
                   <Text as="span" color="fg">

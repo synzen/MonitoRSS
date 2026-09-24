@@ -540,6 +540,30 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
       : null;
   }
 
+  // Owner-edited billing email: touches only this workspace's
+  // paddleCustomer.email, leaving sibling workspaces untouched. Callers must
+  // have updated the provider first; this is the local follow-on write.
+  async updatePaddleCustomerEmail(
+    workspaceId: string,
+    email: string,
+  ): Promise<IWorkspace | null> {
+    if (!Types.ObjectId.isValid(workspaceId)) {
+      return null;
+    }
+
+    const doc = await this.workspaceModel
+      .findByIdAndUpdate(
+        this.stringToObjectId(workspaceId),
+        { $set: { "paddleCustomer.email": email } },
+        { new: true },
+      )
+      .lean();
+
+    return doc
+      ? this.toEntity(doc as WorkspaceDoc & { _id: Types.ObjectId })
+      : null;
+  }
+
   async createWorkspaceWithOwner(input: {
     name: string;
     slug: string;
