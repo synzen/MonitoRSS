@@ -39,18 +39,19 @@ describe("VerifiedEmailSettingsRow", () => {
     h.workspaces = [];
   });
 
-  it("mentions billing in the helper text when the user owns a workspace", () => {
+  it("uses identity-only helper text for owners and non-owners alike", () => {
     h.workspaces = [{ role: "owner" }];
-    renderRow();
+    const { unmount } = renderRow();
 
-    expect(screen.getByText(/billing/i)).toBeInTheDocument();
-  });
+    expect(screen.queryByText(/billing/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/workspace invitations and member notices/i)).toBeInTheDocument();
+    unmount();
 
-  it("does not mention billing in the helper text when the user owns no workspace", () => {
     h.workspaces = [{ role: "admin" }];
     renderRow();
 
     expect(screen.queryByText(/billing/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/workspace invitations and member notices/i)).toBeInTheDocument();
   });
 
   it("renders the verified email and a change action", () => {

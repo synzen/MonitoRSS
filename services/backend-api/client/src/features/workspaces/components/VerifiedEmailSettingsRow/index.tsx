@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button, HStack, Input } from "@chakra-ui/react";
 import { Field } from "@/components/ui/field";
 import { useUserMe } from "@/features/discordUser";
-import { findOwnedWorkspace, useWorkspaces } from "../../hooks";
 import { ChangeVerifiedEmailDialog } from "../ChangeVerifiedEmailDialog";
 
 interface Props {
@@ -13,14 +12,11 @@ interface Props {
 // settings page does not need to own the dialog open state.
 export const VerifiedEmailSettingsRow = ({ onChanged }: Props) => {
   const { data } = useUserMe();
-  const { workspaces } = useWorkspaces();
   const [isOpen, setIsOpen] = useState(false);
 
   const verifiedEmail = data?.result.verifiedEmail;
-  const ownsWorkspace = !!findOwnedWorkspace(workspaces);
-  const helperText = ownsWorkspace
-    ? "Used for workspace invitations, member notices, and billing for the workspaces you own. Change it to verify a different address you own."
-    : "Used for workspace invitations and member notices. Change it to verify a different address you own.";
+  const helperText =
+    "Used for workspace invitations and member notices. Change it to verify a different address you own.";
 
   return (
     <>

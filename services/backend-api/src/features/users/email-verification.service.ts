@@ -8,7 +8,6 @@ import type { IUserRepository } from "../../repositories/interfaces/user.types";
 import type { EmailVerificationMongooseRepository } from "../../repositories/mongoose/email-verification.mongoose.repository";
 import type { WorkspaceMongooseRepository } from "../../repositories/mongoose/workspace.mongoose.repository";
 import type { PaddleService } from "../../services/paddle/paddle.service";
-import { isBillingEnabled } from "../../shared/utils/billing";
 import {
   ApiErrorCode,
   BadRequestError,
@@ -275,11 +274,8 @@ export class EmailVerificationService {
       hadPreviousVerifiedEmail: previousVerifiedEmail !== null,
     });
 
-    // The verified email is the billing identity of every workspace this user
-    // owns, so move their Paddle customers to the new address. Best-effort: a
-    // failure here must not roll back the verified-email change that committed.
-    await this.syncOwnedWorkspaceBillingEmail(userId, email);
-
+    // Identity-only change: owned workspaces keep their existing billing
+    // emails. Billing is edited separately per workspace from the billing area.
     // Notify the previous address that the verified email moved. Suppressed on
     // first-time verification (no previous address) and on idempotent
     // same-address re-verify (nothing changed). Best-effort: a send failure must
@@ -423,9 +419,8 @@ export class EmailVerificationService {
       );
     }
 
-    // Move the billing identity back to the restored address, mirroring the
-    // forward sync in confirm(). Best-effort: a failure must not undo the revert.
-    await this.syncOwnedWorkspaceBillingEmail(userId, oldEmail);
+    // Identity-only revert: owned workspaces keep their existing billing
+    // emails.
 
     // Notify the restored address (the person who clicked revert) that the change
     // was undone. The displaced address is deliberately not notified: in a
@@ -455,33 +450,6 @@ export class EmailVerificationService {
 
   private signRevertBody(body: string): string {
     return this.signWith(this.revertKey, body);
-  }
-
-  private async syncOwnedWorkspaceBillingEmail(
-    userId: string,
-    newEmail: string,
-  ): Promise<void> {
-    if (!isBillingEnabled(this.deps.config)) {
-      return;
-    }
-
-    try {
-      const customerIds =
-        await this.deps.workspaceRepository.listOwnedActivePaddleCustomerIds(
-          userId,
-        );
-
-      await Promise.all(
-        customerIds.map((id) =>
-          this.deps.paddleService.updateCustomer(id, { email: newEmail }),
-        ),
-      );
-    } catch (err) {
-      logger.error(
-        "Failed to sync verified-email change to owned workspace Paddle customers",
-        { stack: (err as Error).stack, userId },
-      );
-    }
   }
 
   private async notifyVerifiedEmailChanged(

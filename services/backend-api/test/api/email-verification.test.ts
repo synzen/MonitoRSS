@@ -125,7 +125,7 @@ describe("Email verification API", () => {
     assert.strictEqual(updated?.verifiedEmail, email.toLowerCase());
   });
 
-  it("syncs the new verified email to the owned workspace's Paddle customer on confirm", async () => {
+  it("leaves the owned workspace's billing email unchanged on confirm", async () => {
     const { user, internalId } = await makeUser();
     const email = `${randomUUID()}@example.com`;
 
@@ -161,68 +161,19 @@ describe("Email verification API", () => {
     );
     assert.strictEqual(confirmRes.status, 200);
 
-    assert.deepStrictEqual(paddleCustomerUpdates, [
-      { id: "ctm_sync_target", email: email.toLowerCase() },
-    ]);
-  });
-
-  it("still commits the verified email when the Paddle billing-email sync fails", async () => {
-    const { user, internalId } = await makeUser();
-    const email = `${randomUUID()}@example.com`;
-
-    // Force the billing sync to throw; the email change must still commit.
-    ctx.container.emailVerificationService = new EmailVerificationService({
-      config: ctx.container.config,
-      smtpTransport: {
-        sendMail: async (msg: { to: string; subject: string; html: string }) => {
-          const match = /class="email-code"[^>]*>\s*(\d{6})\s*</.exec(
-            String(msg.html),
-          );
-          sent.push({ to: msg.to, code: match?.[1] ?? "" });
-          return {};
-        },
-      } as unknown as SmtpTransport,
-      emailVerificationRepository: ctx.container.emailVerificationRepository,
-      userRepository: ctx.container.userRepository,
-      workspaceRepository: ctx.container.workspaceRepository,
-      paddleService: makePaddleServiceWith(async () => {
-        throw new Error("paddle down");
-      }),
-    });
-
-    const workspace = await ctx.container.workspaceRepository.createWorkspaceWithOwner(
-      {
-        name: `WS ${randomUUID()}`,
-        slug: `ws-${randomUUID()}`,
-        ownerUserId: internalId,
-      },
-    );
-    await ctx.connection.collection("workspaces").updateOne(
-      { _id: new Types.ObjectId(workspace.id) },
-      {
-        $set: {
-          paddleCustomer: {
-            customerId: "ctm_fail",
-            email: "old@example.com",
-            subscription: { status: "ACTIVE" },
-          },
-        },
-      },
-    );
-
-    await user.fetch("/api/v1/users/@me/email-verification", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
-
-    const confirmRes = await user.fetch(
-      "/api/v1/users/@me/email-verification/confirm",
-      { method: "POST", body: JSON.stringify({ email, code: sent[0]!.code }) },
-    );
-    assert.strictEqual(confirmRes.status, 200);
-
     const updated = await ctx.container.userRepository.findById(internalId);
     assert.strictEqual(updated?.verifiedEmail, email.toLowerCase());
+
+    assert.deepStrictEqual(paddleCustomerUpdates, []);
+
+    const stored = await ctx.connection
+      .collection("workspaces")
+      .findOne({ _id: new Types.ObjectId(workspace.id) });
+    assert.strictEqual(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (stored?.paddleCustomer as any)?.email,
+      "old-verified@example.com",
+    );
   });
 
   it("rejects an incorrect code", async () => {
@@ -850,7 +801,7 @@ describe("Email verification API", () => {
     );
   });
 
-  it("re-syncs the owned workspace's Paddle billing email back on revert", async () => {
+  it("leaves the owned workspace's billing email unchanged on revert", async () => {
     const { internalId } = await makeUser();
     const oldEmail = `old-${randomUUID()}@example.com`.toLowerCase();
     const newEmail = `new-${randomUUID()}@example.com`.toLowerCase();
@@ -887,9 +838,19 @@ describe("Email verification API", () => {
     paddleCustomerUpdates.length = 0;
     await ctx.container.emailVerificationService.revertVerifiedEmail(token);
 
-    assert.deepStrictEqual(paddleCustomerUpdates, [
-      { id: "ctm_revert_target", email: oldEmail },
-    ]);
+    const reverted = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(reverted?.verifiedEmail, oldEmail);
+
+    assert.deepStrictEqual(paddleCustomerUpdates, []);
+
+    const stored = await ctx.connection
+      .collection("workspaces")
+      .findOne({ _id: new Types.ObjectId(workspace.id) });
+    assert.strictEqual(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (stored?.paddleCustomer as any)?.email,
+      newEmail,
+    );
   });
 
   it("rejects confirming an email already verified by another user (409)", async () => {
