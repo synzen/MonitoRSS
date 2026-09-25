@@ -162,20 +162,37 @@ test.describe("Paddle workspace conversion", () => {
 
     const convertDialog = page.getByRole("dialog");
     await expect(convertDialog).toBeVisible({ timeout: 15000 });
-    // All 8 feeds selected by default (the safe move). 8 < 70, so the per-feed
+    // Nothing is pre-selected (explicit-choice default). 8 < 70, so the per-feed
     // list is tucked behind a disclosure; expand it to pick which feeds to move.
-    await expect(convertDialog.getByText(/8 of 70 feeds selected/)).toBeVisible({
+    await expect(convertDialog.getByText(/0 of 70 feeds selected/)).toBeVisible({
       timeout: 15000,
     });
-    // "Keep Feed" is shared and selected by default, so the sharing warning is
-    // shown up front. It names the affected co-manager and explains sharing does
-    // not carry into a workspace. Because a shared feed is selected, the feed
-    // list auto-opens (no need to expand the disclosure manually) so the
-    // per-feed remedy is visible.
-    // The warning is read top-to-bottom on open via the visible alert (its text
-    // is in the accessibility tree, not aria-hidden); the live region stays silent
-    // on open to avoid a double read and speaks only on a later change. So the
+    await convertDialog
+      .getByRole("button", { name: /choose which feeds to bring/i })
+      .click();
+    // The feeds the owner leaves behind start unselected and stay personal.
+    for (const title of leftBehindTitles) {
+      await expect(
+        convertDialog.getByRole("checkbox", {
+          name: new RegExp(`^${title}$`, "i"),
+        }),
+      ).not.toBeChecked();
+    }
+    // Select "Keep Feed": it is shared, so the sharing warning appears. It names
+    // the affected co-manager and explains sharing does not carry into a
+    // workspace. Selecting a shared feed auto-opens the list so the per-feed
+    // remedy is visible.
+    // The warning is read top-to-bottom via the visible alert (its text is in
+    // the accessibility tree, not aria-hidden); the live region stays silent on
+    // open to avoid a double read and speaks only on a later change. So the
     // visible alert is the anchor, present only while a shared feed is selected.
+    const keepFeedCheckbox = convertDialog.getByRole("checkbox", {
+      name: /^Keep Feed$/i,
+    });
+    const keepFeedLabel = convertDialog.getByText("Keep Feed", { exact: true });
+    await keepFeedLabel.scrollIntoViewIfNeeded();
+    await keepFeedLabel.click();
+    await expect(keepFeedCheckbox).toBeChecked();
     const sharingWarning = convertDialog.getByTestId("personal-feed-move-sharing-warning");
     await expect(sharingWarning).toBeVisible({ timeout: 15000 });
     await expect(sharingWarning).toContainText(/you are moving .* shared with other people/i);
@@ -194,10 +211,6 @@ test.describe("Paddle workspace conversion", () => {
 
     // Deselecting the only shared feed removes the warning; re-selecting it
     // brings it back. This proves the warning tracks the actual selection.
-    const keepFeedCheckbox = convertDialog.getByRole("checkbox", {
-      name: /^Keep Feed$/i,
-    });
-    const keepFeedLabel = convertDialog.getByText("Keep Feed", { exact: true });
     await keepFeedLabel.scrollIntoViewIfNeeded();
     await keepFeedLabel.click();
     await expect(keepFeedCheckbox).not.toBeChecked();
@@ -207,11 +220,15 @@ test.describe("Paddle workspace conversion", () => {
     await expect(keepFeedCheckbox).toBeChecked();
     await expect(sharingWarning).toBeVisible();
 
-    // The Reddit feed is selected by default and the workspace has no Reddit
-    // connection, so the dialog warns it will pause until Reddit is connected to
-    // the workspace, and offers the connect remedy inside the warning alert. The
-    // warning is read top-to-bottom on open via the visible alert; the remedy LINK
-    // lives inside it and is present only while the warning is shown.
+    // Selecting the Reddit feed warns it will pause (the workspace has no Reddit
+    // connection), offering the connect remedy inside the warning alert. The
+    // warning is read top-to-bottom via the visible alert; the remedy LINK lives
+    // inside it and is present only while the warning is shown.
+    const redditFeedCheckbox = convertDialog.getByRole("checkbox", { name: /^Reddit Feed$/i });
+    const redditFeedLabel = convertDialog.getByText("Reddit Feed", { exact: true });
+    await redditFeedLabel.scrollIntoViewIfNeeded();
+    await redditFeedLabel.click();
+    await expect(redditFeedCheckbox).toBeChecked();
     const redditWarning = convertDialog.getByTestId("personal-feed-move-reddit-warning");
     await expect(redditWarning).toBeVisible({ timeout: 15000 });
     await expect(redditWarning).toContainText(/uses your Reddit connection/i);
@@ -223,9 +240,6 @@ test.describe("Paddle workspace conversion", () => {
 
     // Deselecting the only Reddit feed removes the warning; re-selecting brings
     // it back, proving the warning tracks the actual selection.
-    const redditFeedCheckbox = convertDialog.getByRole("checkbox", { name: /^Reddit Feed$/i });
-    const redditFeedLabel = convertDialog.getByText("Reddit Feed", { exact: true });
-    await redditFeedLabel.scrollIntoViewIfNeeded();
     await redditFeedLabel.click();
     await expect(redditFeedCheckbox).not.toBeChecked();
     await expect(connectRedditLink).toBeHidden();
@@ -233,22 +247,12 @@ test.describe("Paddle workspace conversion", () => {
     await expect(redditFeedCheckbox).toBeChecked();
     await expect(connectRedditLink).toBeVisible();
 
-    // Move only "Keep Feed": deselect every feed that should stay personal.
-    // The Chakra v3 checkbox INPUT is visually hidden (offscreen), so clicking
-    // it directly fails the viewport check; click the visible label (the feed
-    // title) instead, which toggles the associated input. Verify each toggle
-    // registered before moving on.
-    for (const title of leftBehindTitles) {
-      const checkbox = convertDialog.getByRole("checkbox", {
-        name: new RegExp(`^${title}$`, "i"),
-      });
-      const label = convertDialog.getByText(title, { exact: true });
-      await expect(checkbox).toBeChecked();
-      await label.scrollIntoViewIfNeeded();
-      await label.click();
-      await expect(checkbox).not.toBeChecked();
-    }
-    // "Keep Feed" and "Reddit Feed" remain selected (the rest were deselected).
+    // Move only "Keep Feed" and "Reddit Feed": the feeds staying personal were
+    // never selected (explicit-choice default), so there is nothing to deselect.
+    // The Chakra v3 checkbox INPUT is visually hidden (offscreen), so the label
+    // clicks above toggle the associated input; each toggle was verified as it
+    // happened.
+    // "Keep Feed" and "Reddit Feed" are the two selected feeds.
     await expect(convertDialog.getByText(/2 of 70 feeds selected/)).toBeVisible();
 
     await convertDialog

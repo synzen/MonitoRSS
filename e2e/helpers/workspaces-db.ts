@@ -474,13 +474,31 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
             paddleCustomer: {
               customerId: `ctm_${workspaceId.toHexString()}`,
               email: "seeded-owner@example.com",
+              lastCurrencyCodeUsed: "USD",
+              createdAt: now,
+              updatedAt: now,
               subscription: {
+                id: `sub_${workspaceId.toHexString()}`,
                 productKey: "tier2",
                 status: "ACTIVE",
-                billingInterval: "month",
-                billingPeriodEnd: now,
                 currencyCode: "USD",
+                billingPeriodStart: now,
+                billingPeriodEnd: now,
+                billingInterval: "month",
+                // Mirrors the webhook's Tier 2 benefits so billing-enabled reads
+                // (getWorkspaceBenefits) resolve instead of throwing on a
+                // missing benefits subdocument.
+                benefits: {
+                  maxUserFeeds: 70,
+                  allowWebhooks: true,
+                  dailyArticleLimit: 1000,
+                  refreshRateSeconds: 120,
+                },
                 addons: [],
+                cancellationDate: null,
+                nextBillDate: now,
+                createdAt: now,
+                updatedAt: now,
               },
             },
           }
