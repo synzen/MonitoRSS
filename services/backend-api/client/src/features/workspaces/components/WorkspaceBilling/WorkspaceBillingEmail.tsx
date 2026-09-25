@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, HStack, Input, Stack, Text } from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
@@ -40,6 +40,8 @@ export const WorkspaceBillingEmail = ({
   currentEmail,
 }: WorkspaceBillingEmailProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const editButtonRef = useRef<HTMLButtonElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const { createSuccessAlert } = usePageAlertContext();
   const { mutateAsync, error, reset, status } = useUpdateWorkspaceBillingEmail();
   const {
@@ -57,22 +59,28 @@ export const WorkspaceBillingEmail = ({
     if (isEditing) {
       resetForm({ email: currentEmail });
       reset();
+      // The trigger unmounts as the form mounts, so land focus in the input
+      // instead of dropping it to the body. A direct ref, not RHF's setFocus,
+      // so it can't miss on registration timing.
+      inputRef.current?.focus();
     }
   }, [isEditing, currentEmail, resetForm, reset]);
 
+  // Closing the editor unmounts the form and remounts the trigger, so
+  // focus is deferred past the re-render instead of landing on the body.
+  const closeEditor = () => {
+    setIsEditing(false);
+    window.setTimeout(() => editButtonRef.current?.focus?.(), 0);
+  };
+
   if (!isEditing) {
     return (
-      <HStack gap={3} alignItems="center" flexWrap="wrap">
-        <Text color="fg.muted">
-          Billed to{" "}
-          <Text as="span" color="fg">
-            {currentEmail}
-          </Text>
-        </Text>
-        <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+      <Stack gap={3} alignItems="flex-start">
+        <Text fontWeight="medium">{currentEmail}</Text>
+        <Button ref={editButtonRef} variant="outline" onClick={() => setIsEditing(true)}>
           Change billing email
         </Button>
-      </HStack>
+      </Stack>
     );
   }
 
@@ -80,7 +88,7 @@ export const WorkspaceBillingEmail = ({
     const trimmed = email.trim();
 
     if (trimmed.toLowerCase() === currentEmail.toLowerCase()) {
-      setIsEditing(false);
+      closeEditor();
 
       return;
     }
@@ -88,7 +96,7 @@ export const WorkspaceBillingEmail = ({
     try {
       const result = await mutateAsync({ workspaceSlug, email: trimmed });
 
-      setIsEditing(false);
+      closeEditor();
       createSuccessAlert({
         title: "Billing email updated",
         description: `Receipts will now go to ${result.data.billingEmail}.`,
@@ -101,19 +109,18 @@ export const WorkspaceBillingEmail = ({
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <Stack gap={3}>
-        <Field
-          label="Billing email"
-          invalid={!!errors.email}
-          errorText={errors.email?.message}
-          helperText="Receipts go to this address."
-        >
+        <Field label="Billing email" invalid={!!errors.email} errorText={errors.email?.message}>
           <HStack gap={2} alignSelf="stretch" alignItems="flex-start">
             <Controller
               name="email"
               control={control}
-              render={({ field }) => (
+              render={({ field: { ref: fieldRef, ...field } }) => (
                 <Input
                   {...field}
+                  ref={(el) => {
+                    fieldRef(el);
+                    inputRef.current = el;
+                  }}
                   flex="1"
                   type="email"
                   autoComplete="email"
@@ -140,7 +147,7 @@ export const WorkspaceBillingEmail = ({
           <Button
             variant="ghost"
             onClick={() => {
-              setIsEditing(false);
+              closeEditor();
               reset();
             }}
           >

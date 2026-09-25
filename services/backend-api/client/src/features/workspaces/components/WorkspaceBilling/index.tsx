@@ -1018,7 +1018,7 @@ export const WorkspaceBilling = () => {
         <Stack gap={10} separator={<StackSeparator />}>
           <SettingsSection
             title="Current plan"
-            description="The workspace's active subscription and its renewal schedule."
+            description="The workspace's active subscription, its capacity, and its renewal schedule."
           >
             {/* Plan name, capacity, and renewal status are one block of plan
                 facts, so they sit tight together; the section's larger gap is
@@ -1053,20 +1053,6 @@ export const WorkspaceBilling = () => {
                   </Text>
                 )
               )}
-              {subscription.billingEmail && isOwner && (
-                <WorkspaceBillingEmail
-                  workspaceSlug={workspaceSlug}
-                  currentEmail={subscription.billingEmail}
-                />
-              )}
-              {subscription.billingEmail && !isOwner && (
-                <Text color="fg.muted">
-                  Billed to{" "}
-                  <Text as="span" color="fg">
-                    {subscription.billingEmail}
-                  </Text>
-                </Text>
-              )}
             </Stack>
             {!isOwner && <Text>Only the workspace owner can manage billing.</Text>}
             {isOwner && subscription.cancellationDate && (
@@ -1079,7 +1065,34 @@ export const WorkspaceBilling = () => {
                 </PrimaryActionButton>
               </Box>
             )}
+            {isOwner && !subscription.cancellationDate && (
+              <Box>
+                <Button
+                  ref={changeCapacityTriggerRef}
+                  variant="outline"
+                  aria-haspopup="dialog"
+                  onClick={() => setIsChangeCapacityOpen(true)}
+                >
+                  Change capacity
+                </Button>
+              </Box>
+            )}
           </SettingsSection>
+          {subscription.billingEmail && (
+            <SettingsSection
+              title="Billing email"
+              description="Where receipts go. Changing it updates the billing contact, not your workspace email."
+            >
+              {isOwner ? (
+                <WorkspaceBillingEmail
+                  workspaceSlug={workspaceSlug}
+                  currentEmail={subscription.billingEmail}
+                />
+              ) : (
+                <Text fontWeight="medium">{subscription.billingEmail}</Text>
+              )}
+            </SettingsSection>
+          )}
           {isOwner && (
             <WorkspacePaymentMethodSection
               workspaceSlug={workspaceSlug}
@@ -1092,22 +1105,6 @@ export const WorkspaceBilling = () => {
                 });
               }}
             />
-          )}
-          {isOwner && !subscription.cancellationDate && (
-            <SettingsSection
-              title="Change capacity"
-              description="Adjust how many feeds this workspace can run. You will see the prorated cost before confirming."
-            >
-              <Box>
-                <PrimaryActionButton
-                  ref={changeCapacityTriggerRef}
-                  aria-haspopup="dialog"
-                  onClick={() => setIsChangeCapacityOpen(true)}
-                >
-                  Change capacity
-                </PrimaryActionButton>
-              </Box>
-            </SettingsSection>
           )}
           {isOwner && !subscription.cancellationDate && (
             <SettingsSection

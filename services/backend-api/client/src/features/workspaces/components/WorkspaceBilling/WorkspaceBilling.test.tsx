@@ -828,7 +828,7 @@ describe("WorkspaceBilling", () => {
     await waitFor(() => expect(h.cancel).toHaveBeenCalled());
   });
 
-  it("shows the billing email on the current plan when present", async () => {
+  it("shows the billing email in its own section when present", async () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
@@ -837,17 +837,18 @@ describe("WorkspaceBilling", () => {
 
     renderBilling();
 
-    expect(await screen.findByText(/billed to/i)).toBeInTheDocument();
+    await screen.findByRole("heading", { name: /billing email/i });
     expect(screen.getByText("owner-billing@example.com")).toBeInTheDocument();
   });
 
-  it("omits the billing-to line when no billing email is present", async () => {
+  it("omits the billing email section when no billing email is present", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
 
     renderBilling();
 
     await screen.findByRole("heading", { name: /current plan/i });
+    expect(screen.queryByRole("heading", { name: /billing email/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/billed to/i)).not.toBeInTheDocument();
   });
 
@@ -863,7 +864,7 @@ describe("WorkspaceBilling", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /change billing email/i }));
 
-    const input = await screen.findByLabelText(/billing email/i);
+    const input = await screen.findByRole("textbox", { name: "Billing email" });
     await userEvent.clear(input);
     await userEvent.type(input, "new-billing@example.com");
     fireEvent.click(screen.getByRole("button", { name: /save billing email/i }));
@@ -877,6 +878,28 @@ describe("WorkspaceBilling", () => {
     await waitFor(() => expect(h.createSuccessAlert).toHaveBeenCalled());
   });
 
+  it("moves focus into the input on open and back to the trigger on cancel", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({ billingEmail: "owner-billing@example.com" }),
+    });
+
+    renderBilling();
+
+    fireEvent.click(await screen.findByRole("button", { name: /change billing email/i }));
+
+    const input = await screen.findByRole("textbox", { name: "Billing email" });
+    expect(input).toHaveFocus();
+
+    // Backing out returns focus to the trigger, not the body.
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /change billing email/i })).toHaveFocus(),
+    );
+  });
+
   it("rejects an invalid billing email inline and keeps the old address", async () => {
     mockPaddle();
     mockWorkspace({
@@ -888,7 +911,7 @@ describe("WorkspaceBilling", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /change billing email/i }));
 
-    const input = await screen.findByLabelText(/billing email/i);
+    const input = await screen.findByRole("textbox", { name: "Billing email" });
     await userEvent.clear(input);
     await userEvent.type(input, "not-an-email");
     fireEvent.click(screen.getByRole("button", { name: /save billing email/i }));
@@ -910,7 +933,8 @@ describe("WorkspaceBilling", () => {
 
     renderBilling();
 
-    await screen.findByRole("heading", { name: /current plan/i });
+    await screen.findByRole("heading", { name: /billing email/i });
+    expect(screen.getByText("owner-billing@example.com")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /change billing email/i })).not.toBeInTheDocument();
   });
 
@@ -933,7 +957,7 @@ describe("WorkspaceBilling", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /change billing email/i }));
 
-    const input = await screen.findByLabelText(/billing email/i);
+    const input = await screen.findByRole("textbox", { name: "Billing email" });
     await userEvent.clear(input);
     await userEvent.type(input, "new-billing@example.com");
     fireEvent.click(screen.getByRole("button", { name: /save billing email/i }));
