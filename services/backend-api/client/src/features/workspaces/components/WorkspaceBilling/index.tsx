@@ -480,7 +480,10 @@ const ChangeCapacityDialog = ({
         <DialogCloseTrigger />
         <DialogBody>
           <Stack gap={5}>
-            <DialogDescription>Choose a new capacity for this workspace.</DialogDescription>
+            <DialogDescription>
+              You&apos;re currently on {formatWorkspaceFeedCount(currentFeeds)}. Choose a new
+              capacity for this workspace.
+            </DialogDescription>
             <Stack gap={1}>
               <Text
                 color="fg.muted"
@@ -489,7 +492,7 @@ const ChangeCapacityDialog = ({
                 textTransform="uppercase"
                 letterSpacing="wide"
               >
-                Current capacity
+                Your current capacity
               </Text>
               <Text fontSize="2xl" fontWeight="bold" lineHeight="1.1">
                 {formatWorkspaceFeedCount(currentFeeds)}
@@ -498,7 +501,7 @@ const ChangeCapacityDialog = ({
                 {currentRecurringPrice ? `${currentRecurringPrice} / ${interval}` : "Current price"}
               </Text>
             </Stack>
-            <CapacityPicker value={nextFeeds} onChange={setNextFeeds} />
+            <CapacityPicker value={nextFeeds} onChange={setNextFeeds} currentValue={currentFeeds} />
             {!dirty ? (
               <Box borderTopWidth="1px" borderColor="border.emphasized" pt={5}>
                 <Text color="fg.muted" fontSize="sm">
@@ -535,7 +538,7 @@ const ChangeCapacityDialog = ({
                 </Stack>
               </Box>
             )}
-            {willBeDisabledCount > 0 && (
+            {dirty && willBeDisabledCount > 0 && (
               <Box
                 aria-live="polite"
                 bg="bg.subtle"
@@ -659,9 +662,9 @@ const ChangeCapacityDialog = ({
                 )}
               </Box>
             )}
-            {(immediate || deferred || (dirty && status === "loading")) && (
+            {dirty && (immediate || deferred || status === "loading") && (
               <Box aria-live="polite" aria-busy={status === "loading"}>
-                {dirty && status === "loading" && (
+                {status === "loading" && (
                   <Stack gap={1} aria-label="Loading change preview">
                     <Skeleton height="4" width="24" />
                     <Skeleton height="4" width="full" />
@@ -767,7 +770,7 @@ const ChangeCapacityDialog = ({
                 )}
               </Box>
             )}
-            {error && (
+            {dirty && error && (
               <InlineErrorAlert title="Failed to load change preview" description={error.message} />
             )}
             {updateMutation.error && (
