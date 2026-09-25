@@ -117,15 +117,18 @@ test.describe("Workspace billing email", () => {
     await expect(
       page.getByRole("heading", { name: "Billing" }),
     ).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(verifiedEmail)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(verifiedEmail, { exact: true })).toBeVisible({ timeout: 15000 });
 
     // Owner edit round-trip through the rendered form.
     await page.getByRole("button", { name: /change billing email/i }).click();
-    const billingDialog = page.getByLabel("Billing email");
+    // Scoped to the textbox role: the workspace is named "E2E Billing Email ...",
+    // so a bare getByLabel("Billing email") also matches the "Switch workspace"
+    // menu button whose aria-label contains that phrase (strict-mode violation).
+    const billingDialog = page.getByRole("textbox", { name: "Billing email" });
     await expect(billingDialog).toBeVisible({ timeout: 10000 });
     await billingDialog.fill(editedBillingEmail);
     await page.getByRole("button", { name: /save billing email/i }).click();
-    await expect(page.getByText(editedBillingEmail)).toBeVisible({
+    await expect(page.getByText(editedBillingEmail, { exact: true })).toBeVisible({
       timeout: 15000,
     });
 
@@ -134,7 +137,7 @@ test.describe("Workspace billing email", () => {
     await expect(
       page.getByRole("heading", { name: "Billing" }),
     ).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(editedBillingEmail)).toBeVisible({
+    await expect(page.getByText(editedBillingEmail, { exact: true })).toBeVisible({
       timeout: 15000,
     });
 
@@ -161,7 +164,7 @@ test.describe("Workspace billing email", () => {
     await expect(
       page.getByRole("heading", { name: "Billing" }),
     ).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText(editedBillingEmail)).toBeVisible({
+    await expect(page.getByText(editedBillingEmail, { exact: true })).toBeVisible({
       timeout: 15000,
     });
 
@@ -197,7 +200,7 @@ test.describe("Workspace billing email", () => {
       await expect(
         freshPage.getByRole("heading", { name: "Billing" }),
       ).toBeVisible({ timeout: 15000 });
-      await expect(freshPage.getByText(editedBillingEmail)).toBeVisible({
+      await expect(freshPage.getByText(editedBillingEmail, { exact: true })).toBeVisible({
         timeout: 15000,
       });
     } finally {
