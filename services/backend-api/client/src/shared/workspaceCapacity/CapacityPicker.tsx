@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { Box, HStack, Input, RadioCard, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import { Badge, Box, HStack, Input, RadioCard, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import {
   WORKSPACE_CAPACITY_QUICK_PICKS,
   WORKSPACE_MAX_FEEDS,
@@ -12,9 +12,11 @@ const rangeMessage = `Choose a whole number from ${WORKSPACE_MIN_FEEDS} to ${new
 export const CapacityPicker = ({
   value,
   onChange,
+  currentValue,
 }: {
   value: number;
   onChange: (value: number) => void;
+  currentValue?: number;
 }) => {
   const [draft, setDraft] = useState(String(value));
   const [message, setMessage] = useState<string>();
@@ -81,6 +83,8 @@ export const CapacityPicker = ({
       >
         <SimpleGrid columns={{ base: 2, sm: 3 }} gap={2}>
           {WORKSPACE_CAPACITY_QUICK_PICKS.map((feeds) => {
+            const isCurrent = currentValue !== undefined && feeds === currentValue;
+
             return (
               <RadioCard.Item key={feeds} value={String(feeds)}>
                 <RadioCard.ItemHiddenInput />
@@ -88,7 +92,12 @@ export const CapacityPicker = ({
                   <HStack gap={2} flex="1">
                     <RadioCard.ItemIndicator />
                     <RadioCard.ItemText fontWeight="medium">
-                      {formatWorkspaceFeedCount(feeds)}
+                      {formatWorkspaceFeedCount(feeds)}{" "}
+                      {isCurrent && (
+                        <Badge size="sm" ms={1}>
+                          Current
+                        </Badge>
+                      )}
                     </RadioCard.ItemText>
                   </HStack>
                 </RadioCard.ItemControl>
@@ -100,7 +109,15 @@ export const CapacityPicker = ({
             <RadioCard.ItemControl>
               <HStack gap={2} flex="1">
                 <RadioCard.ItemIndicator />
-                <RadioCard.ItemText fontWeight="medium">Custom</RadioCard.ItemText>
+                <RadioCard.ItemText fontWeight="medium">
+                  Custom{" "}
+                  {currentValue !== undefined &&
+                    !WORKSPACE_CAPACITY_QUICK_PICKS.includes(currentValue) && (
+                      <Badge size="sm" ms={1}>
+                        Current
+                      </Badge>
+                    )}
+                </RadioCard.ItemText>
               </HStack>
             </RadioCard.ItemControl>
           </RadioCard.Item>

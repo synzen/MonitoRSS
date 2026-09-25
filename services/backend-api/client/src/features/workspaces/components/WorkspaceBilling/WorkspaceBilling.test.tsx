@@ -1519,8 +1519,12 @@ describe("WorkspaceBilling", () => {
 
   const setSliderToFeeds = async (targetFeeds: number) => {
     if (WORKSPACE_CAPACITY_QUICK_PICKS.includes(targetFeeds)) {
+      const targetName = formatWorkspaceFeedCount(targetFeeds).replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&",
+      );
       await userEvent.click(
-        await screen.findByRole("radio", { name: formatWorkspaceFeedCount(targetFeeds) }),
+        await screen.findByRole("radio", { name: new RegExp(`^${targetName}( Current)?$`) }),
       );
 
       return;
@@ -1599,8 +1603,37 @@ describe("WorkspaceBilling", () => {
     renderBilling();
     await openChangeDialog();
 
-    expect(await screen.findByText("Current capacity")).toBeInTheDocument();
+    expect(await screen.findByText("Your current capacity")).toBeInTheDocument();
     expect(screen.getByText("$10 / month")).toBeInTheDocument();
+  });
+
+  it("marks the current capacity option in the change-capacity picker", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    // The checked option IS the current plan, so the picker says so on the
+    // option itself — not just in the distant summary above it.
+    const currentOption = await screen.findByRole("radio", { name: /70 feeds.*current/i });
+    expect(currentOption).toBeChecked();
+    expect(screen.getByRole("radio", { name: /^140 feeds$/ })).not.toBeChecked();
+  });
+
+  it("marks Custom as current when the current capacity is not a preset", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 767 }] }),
+    });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    expect(await screen.findByRole("radio", { name: /custom.*current/i })).toBeChecked();
   });
 
   it("opens clean (not dirty) when the current capacity falls between detents", async () => {
@@ -1986,7 +2019,7 @@ describe("WorkspaceBilling", () => {
       name: /or enter an exact feed capacity/i,
     });
     expect(input).toHaveAttribute("aria-valuetext", "837 feeds");
-    expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /^Custom( Current)?$/ })).toBeChecked();
     expect(screen.getByRole("button", { name: /confirm change/i })).toHaveAttribute(
       "aria-disabled",
       "true",
