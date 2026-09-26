@@ -11,6 +11,19 @@ describe('calculateResponseFreshnessLifetime', () => {
       headers,
     });
 
-    expect(freshnessLifetime).toBeGreaterThan(0);
+    expect(freshnessLifetime.original).toBeGreaterThan(0);
+    expect(freshnessLifetime.capped).toBeGreaterThan(0);
+  });
+
+  it('caps freshness lifetime at one hour', () => {
+    const headers = {
+      'cache-control': 'public, max-age=7200',
+    };
+    const freshnessLifetime = calculateResponseFreshnessLifetime({
+      headers,
+    });
+
+    expect(freshnessLifetime.original).toBe(7200 * 1000);
+    expect(freshnessLifetime.capped).toBe(60 * 60 * 1000);
   });
 });
