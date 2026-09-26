@@ -90,6 +90,17 @@ export type WorkspaceBillingConvertBody = Static<
   typeof WorkspaceBillingConvertBodySchema
 >;
 
+export const WorkspaceBillingEmailBodySchema = Type.Object(
+  {
+    email: Type.String({ minLength: 3, maxLength: 254, format: "email" }),
+  },
+  { additionalProperties: false },
+);
+
+export type WorkspaceBillingEmailBody = Static<
+  typeof WorkspaceBillingEmailBodySchema
+>;
+
 export const WorkspacePersonalFeedMovesBodySchema = Type.Object(
   {
     feedIds: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),

@@ -474,13 +474,31 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
             paddleCustomer: {
               customerId: `ctm_${workspaceId.toHexString()}`,
               email: "seeded-owner@example.com",
+              lastCurrencyCodeUsed: "USD",
+              createdAt: now,
+              updatedAt: now,
               subscription: {
+                id: `sub_${workspaceId.toHexString()}`,
                 productKey: "tier2",
                 status: "ACTIVE",
-                billingInterval: "month",
-                billingPeriodEnd: now,
                 currencyCode: "USD",
+                billingPeriodStart: now,
+                billingPeriodEnd: now,
+                billingInterval: "month",
+                // Mirrors the webhook's Tier 2 benefits so billing-enabled reads
+                // (getWorkspaceBenefits) resolve instead of throwing on a
+                // missing benefits subdocument.
+                benefits: {
+                  maxUserFeeds: 70,
+                  allowWebhooks: true,
+                  dailyArticleLimit: 1000,
+                  refreshRateSeconds: 120,
+                },
                 addons: [],
+                cancellationDate: null,
+                nextBillDate: now,
+                createdAt: now,
+                updatedAt: now,
               },
             },
           }
@@ -534,5 +552,31 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
     }
 
     return { workspaceId: workspaceId.toHexString(), slug };
+  });
+}
+
+/**
+ * Point a seeded workspace's billing record at a REAL Paddle customer so the
+ * billing-email edit flow hits the sandbox API for real. The workspace keeps
+ * its seeded (fake) active subscription so the Billing page renders the
+ * current-plan view with the "Billed to" line; only the customer id and email
+ * are swapped to the real ones. Used by the billing-email E2E to exercise the
+ * owner edit round-trip without paying for a full checkout.
+ */
+export async function setWorkspaceBillingCustomerInDb(input: {
+  workspaceId: string;
+  customerId: string;
+  email: string;
+}): Promise<void> {
+  await withDb(async (db) => {
+    await db.collection("workspaces").updateOne(
+      { _id: new ObjectId(input.workspaceId) },
+      {
+        $set: {
+          "paddleCustomer.customerId": input.customerId,
+          "paddleCustomer.email": input.email.trim().toLowerCase(),
+        },
+      },
+    );
   });
 }

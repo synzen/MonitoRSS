@@ -53,14 +53,13 @@ describe("ChangeVerifiedEmailDialog", () => {
     h.workspaces = [];
   });
 
-  it("warns that the billing email moves when the user owns a workspace", () => {
+  it("shows no billing content for owners and non-owners alike", () => {
     h.workspaces = [{ role: "owner" }];
-    renderDialog();
+    const { unmount } = renderDialog();
 
-    expect(screen.getByText(/billing email/i)).toBeInTheDocument();
-  });
+    expect(screen.queryByText(/billing email/i)).not.toBeInTheDocument();
+    unmount();
 
-  it("shows no billing warning when the user owns no workspace", () => {
     h.workspaces = [{ role: "admin" }];
     renderDialog();
 

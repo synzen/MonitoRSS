@@ -16,6 +16,7 @@ import {
   useResumeWorkspaceBilling,
   useUpdateWorkspaceBilling,
   useConvertWorkspaceBilling,
+  useUpdateWorkspaceBillingEmail,
   useWorkspaceUpdatePaymentMethodTransaction,
   useWorkspaceBillingChangePreview,
 } from "../../hooks";
@@ -42,6 +43,8 @@ const h = vi.hoisted(() => ({
   resetCheckoutData: vi.fn(),
   refetchPaymentMethodTransaction: vi.fn(),
   createSuccessAlert: vi.fn(),
+  updateBillingEmail: vi.fn(),
+  resetBillingEmail: vi.fn(),
 }));
 
 vi.mock("@/features/subscriptionProducts", async (importOriginal) => ({
@@ -63,6 +66,7 @@ vi.mock("../../hooks", async (importOriginal) => ({
   useResumeWorkspaceBilling: vi.fn(),
   useUpdateWorkspaceBilling: vi.fn(),
   useConvertWorkspaceBilling: vi.fn(),
+  useUpdateWorkspaceBillingEmail: vi.fn(),
   useWorkspaceUpdatePaymentMethodTransaction: vi.fn(),
   useWorkspaceBillingChangePreview: vi.fn(() => ({
     preview: undefined,
@@ -285,6 +289,12 @@ describe("WorkspaceBilling", () => {
       mutateAsync: h.convert,
       status: "idle",
       error: null,
+    } as never);
+    vi.mocked(useUpdateWorkspaceBillingEmail).mockReturnValue({
+      mutateAsync: h.updateBillingEmail,
+      status: "idle",
+      error: null,
+      reset: h.resetBillingEmail,
     } as never);
     mockConvertibleFeeds([]);
     h.refetchPaymentMethodTransaction.mockResolvedValue({
@@ -818,7 +828,7 @@ describe("WorkspaceBilling", () => {
     await waitFor(() => expect(h.cancel).toHaveBeenCalled());
   });
 
-  it("shows the billing email on the current plan when present", async () => {
+  it("shows the billing email in its own section when present", async () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
@@ -827,18 +837,138 @@ describe("WorkspaceBilling", () => {
 
     renderBilling();
 
-    expect(await screen.findByText(/billed to/i)).toBeInTheDocument();
+    await screen.findByRole("heading", { name: /billing email/i });
     expect(screen.getByText("owner-billing@example.com")).toBeInTheDocument();
   });
 
-  it("omits the billing-to line when no billing email is present", async () => {
+  it("omits the billing email section when no billing email is present", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
 
     renderBilling();
 
     await screen.findByRole("heading", { name: /current plan/i });
+    expect(screen.queryByRole("heading", { name: /billing email/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/billed to/i)).not.toBeInTheDocument();
+  });
+
+  it("lets the owner change the billing email and keeps the new address displayed", async () => {
+    h.updateBillingEmail.mockResolvedValue({ data: { billingEmail: "new-billing@example.com" } });
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({ billingEmail: "owner-billing@example.com" }),
+    });
+
+    renderBilling();
+
+    fireEvent.click(await screen.findByRole("button", { name: /change billing email/i }));
+
+    const input = await screen.findByRole("textbox", { name: "Billing email" });
+    await userEvent.clear(input);
+    await userEvent.type(input, "new-billing@example.com");
+    fireEvent.click(screen.getByRole("button", { name: /save billing email/i }));
+
+    await waitFor(() =>
+      expect(h.updateBillingEmail).toHaveBeenCalledWith({
+        workspaceSlug: "my-team",
+        email: "new-billing@example.com",
+      }),
+    );
+    await waitFor(() => expect(h.createSuccessAlert).toHaveBeenCalled());
+  });
+
+  it("moves focus into the input on open and back to the trigger on cancel", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({ billingEmail: "owner-billing@example.com" }),
+    });
+
+    renderBilling();
+
+    fireEvent.click(await screen.findByRole("button", { name: /change billing email/i }));
+
+    const input = await screen.findByRole("textbox", { name: "Billing email" });
+    expect(input).toHaveFocus();
+
+    // Backing out returns focus to the trigger, not the body.
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /change billing email/i })).toHaveFocus(),
+    );
+  });
+
+  it("rejects an invalid billing email inline and keeps the old address", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({ billingEmail: "owner-billing@example.com" }),
+    });
+
+    renderBilling();
+
+    fireEvent.click(await screen.findByRole("button", { name: /change billing email/i }));
+
+    const input = await screen.findByRole("textbox", { name: "Billing email" });
+    await userEvent.clear(input);
+    await userEvent.type(input, "not-an-email");
+    fireEvent.click(screen.getByRole("button", { name: /save billing email/i }));
+
+    expect(await screen.findByText(/enter a valid email address/i)).toBeInTheDocument();
+    expect(h.updateBillingEmail).not.toHaveBeenCalled();
+
+    // Backing out returns to the unchanged address.
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+    expect(await screen.findByText("owner-billing@example.com")).toBeInTheDocument();
+  });
+
+  it("gives admins no billing-email edit control", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "admin",
+      subscription: activeSubscription({ billingEmail: "owner-billing@example.com" }),
+    });
+
+    renderBilling();
+
+    await screen.findByRole("heading", { name: /billing email/i });
+    expect(screen.getByText("owner-billing@example.com")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /change billing email/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps the old billing email displayed when the save fails", async () => {
+    const saveError = new Error("Paddle is down");
+    h.updateBillingEmail.mockRejectedValue(saveError);
+    vi.mocked(useUpdateWorkspaceBillingEmail).mockReturnValue({
+      mutateAsync: h.updateBillingEmail,
+      status: "error",
+      error: saveError,
+      reset: h.resetBillingEmail,
+    } as never);
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({ billingEmail: "owner-billing@example.com" }),
+    });
+
+    renderBilling();
+
+    fireEvent.click(await screen.findByRole("button", { name: /change billing email/i }));
+
+    const input = await screen.findByRole("textbox", { name: "Billing email" });
+    await userEvent.clear(input);
+    await userEvent.type(input, "new-billing@example.com");
+    fireEvent.click(screen.getByRole("button", { name: /save billing email/i }));
+
+    await waitFor(() => expect(h.updateBillingEmail).toHaveBeenCalled());
+    expect(await screen.findByText(/failed to update billing email/i)).toBeInTheDocument();
+    expect(h.createSuccessAlert).not.toHaveBeenCalled();
+
+    // Backing out returns to the unchanged address: no local write happened.
+    fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+    expect(await screen.findByText("owner-billing@example.com")).toBeInTheDocument();
   });
 
   it("shows the scheduled cancellation and lets the owner resume", async () => {
@@ -1413,8 +1543,12 @@ describe("WorkspaceBilling", () => {
 
   const setSliderToFeeds = async (targetFeeds: number) => {
     if (WORKSPACE_CAPACITY_QUICK_PICKS.includes(targetFeeds)) {
+      const targetName = formatWorkspaceFeedCount(targetFeeds).replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&",
+      );
       await userEvent.click(
-        await screen.findByRole("radio", { name: formatWorkspaceFeedCount(targetFeeds) }),
+        await screen.findByRole("radio", { name: new RegExp(`^${targetName}( Current)?$`) }),
       );
 
       return;
@@ -1493,8 +1627,37 @@ describe("WorkspaceBilling", () => {
     renderBilling();
     await openChangeDialog();
 
-    expect(await screen.findByText("Current capacity")).toBeInTheDocument();
+    expect(await screen.findByText("Your current capacity")).toBeInTheDocument();
     expect(screen.getByText("$10 / month")).toBeInTheDocument();
+  });
+
+  it("marks the current capacity option in the change-capacity picker", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    // The checked option IS the current plan, so the picker says so on the
+    // option itself — not just in the distant summary above it.
+    const currentOption = await screen.findByRole("radio", { name: /70 feeds.*current/i });
+    expect(currentOption).toBeChecked();
+    expect(screen.getByRole("radio", { name: /^140 feeds$/ })).not.toBeChecked();
+  });
+
+  it("marks Custom as current when the current capacity is not a preset", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 767 }] }),
+    });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    expect(await screen.findByRole("radio", { name: /custom.*current/i })).toBeChecked();
   });
 
   it("opens clean (not dirty) when the current capacity falls between detents", async () => {
@@ -1880,7 +2043,7 @@ describe("WorkspaceBilling", () => {
       name: /or enter an exact feed capacity/i,
     });
     expect(input).toHaveAttribute("aria-valuetext", "837 feeds");
-    expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /^Custom( Current)?$/ })).toBeChecked();
     expect(screen.getByRole("button", { name: /confirm change/i })).toHaveAttribute(
       "aria-disabled",
       "true",

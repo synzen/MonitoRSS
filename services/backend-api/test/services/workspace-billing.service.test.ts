@@ -267,3 +267,73 @@ describe("WorkspaceBillingService cancel/resume webhook read-back", () => {
     );
   });
 });
+
+// Billing-email updates go to the provider FIRST and the local record follows
+// only on success. The local write resolving to null (the workspace was deleted
+// concurrently) must not be reported as success: a reload would still show the
+// stale address.
+describe("WorkspaceBillingService.updateBillingEmail", () => {
+  const workspaceId = "507f1f77bcf86cd799439011";
+  const customerId = "ctm-1";
+
+  function buildWorkspace(): IWorkspace {
+    return {
+      id: workspaceId,
+      paddleCustomer: { customerId },
+    } as unknown as IWorkspace;
+  }
+
+  function buildDeps(localWriteResult: unknown): {
+    deps: WorkspaceBillingServiceDeps;
+    calls: string[];
+  } {
+    const calls: string[] = [];
+
+    const deps = {
+      config: {
+        BACKEND_API_ENABLE_SUPPORTERS: true,
+        BACKEND_API_PADDLE_KEY: "key",
+        BACKEND_API_PADDLE_URL: "https://paddle.test",
+      } as Config,
+      workspaceRepository: {
+        updatePaddleCustomerEmail: async () => {
+          calls.push("localWrite");
+
+          return localWriteResult;
+        },
+      } as unknown as WorkspaceBillingServiceDeps["workspaceRepository"],
+      paddleService: {
+        updateCustomer: async () => {
+          calls.push("providerWrite");
+        },
+      } as unknown as WorkspaceBillingServiceDeps["paddleService"],
+    } as unknown as WorkspaceBillingServiceDeps;
+
+    return { deps, calls };
+  }
+
+  it("updates the provider before the local record and returns the normalized email", async () => {
+    const { deps, calls } = buildDeps({ id: workspaceId });
+    const service = new WorkspaceBillingService(deps);
+
+    const result = await service.updateBillingEmail(
+      buildWorkspace(),
+      "New-Billing@Example.com",
+    );
+
+    assert.strictEqual(result.billingEmail, "new-billing@example.com");
+    assert.deepStrictEqual(calls, ["providerWrite", "localWrite"]);
+  });
+
+  it("throws instead of reporting success when the local write lands on a deleted workspace", async () => {
+    const { deps, calls } = buildDeps(null);
+    const service = new WorkspaceBillingService(deps);
+
+    await assert.rejects(
+      service.updateBillingEmail(buildWorkspace(), "new-billing@example.com"),
+      "a dropped local write must not be reported as success",
+    );
+
+    assert.ok(calls.includes("providerWrite"));
+  });
+});

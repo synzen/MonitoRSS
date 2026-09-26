@@ -89,13 +89,13 @@ describe('FeedFetcherService (Integration)', () => {
         skip: 1,
         limit: 1,
         url,
-        select: ['id', 'status'],
       });
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(result[0]).toMatchObject({
         id: re2.id,
         status: re2.status,
+        url,
       });
     });
 

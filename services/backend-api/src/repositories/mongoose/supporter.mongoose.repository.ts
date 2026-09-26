@@ -337,6 +337,15 @@ export class SupporterMongooseRepository
     );
   }
 
+  async findBySubscriptionId(
+    subscriptionId: string,
+  ): Promise<ISupporter | null> {
+    const doc = await this.model
+      .findOne({ "paddleCustomer.subscription.id": subscriptionId })
+      .lean();
+    return doc ? this.toEntity(doc as SupporterDoc & { _id: string }) : null;
+  }
+
   async nullifySubscriptionBySubscriptionId(
     subscriptionId: string,
   ): Promise<ISupporter | null> {

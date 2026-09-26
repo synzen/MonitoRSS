@@ -198,4 +198,36 @@ describe("CapacityPicker", () => {
 
     expect(input).toHaveValue(837);
   });
+
+  it("marks the current preset without changing selection behavior", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <ChakraProvider value={system}>
+        <CapacityPicker value={70} onChange={onChange} currentValue={70} />
+      </ChakraProvider>,
+    );
+
+    expect(screen.getByRole("radio", { name: /70 feeds.*current/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /^140 feeds$/ })).not.toBeChecked();
+
+    await user.click(screen.getByRole("radio", { name: /^140 feeds$/ }));
+    expect(onChange).toHaveBeenLastCalledWith(140);
+  });
+
+  it("marks Custom as current for a non-preset current capacity", () => {
+    render(
+      <ChakraProvider value={system}>
+        <CapacityPicker value={837} onChange={vi.fn()} currentValue={837} />
+      </ChakraProvider>,
+    );
+
+    expect(screen.getByRole("radio", { name: /custom.*current/i })).toBeChecked();
+  });
+
+  it("shows no current marker when no current value is given", () => {
+    renderPicker(70);
+
+    expect(screen.queryByText("Current")).not.toBeInTheDocument();
+  });
 });

@@ -286,8 +286,6 @@ export function createContainer(deps: {
     smtpTransport,
     emailVerificationRepository,
     userRepository,
-    workspaceRepository,
-    paddleService,
   });
 
   const workspacesService = new WorkspacesService({

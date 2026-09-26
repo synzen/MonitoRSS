@@ -767,6 +767,280 @@ describe("Workspace billing API", { concurrency: true }, () => {
     assert.strictEqual(body.data.feedImpact.newFeedLimit, 150);
     assert.strictEqual(body.data.feedImpact.willBeDisabledCount, 0);
   });
+
+  it("lets the owner update the workspace billing email, provider first then local", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(ctx, discordUserId);
+    const { user, workspaceId, slug } =
+      await createWorkspaceAsUser(discordUserId);
+
+    const customerId = generateTestId();
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      workspaceId,
+      buildPaddleCustomer({
+        subscriptionId: generateTestId(),
+        customerId,
+      }),
+    );
+
+    let providerEmail: unknown;
+    paddleApi.server.registerRoute("PATCH", `/customers/${customerId}`, (req) => {
+      providerEmail = (req.body as Record<string, unknown>)?.email;
+
+      return { status: 200, body: { data: { id: customerId } } };
+    });
+
+    const res = await user.fetch(`/api/v1/workspaces/${slug}/billing/email`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "New-Billing@Example.com" }),
+    });
+
+    assert.strictEqual(res.status, 200);
+    const body = await readJson<{ data: { billingEmail: string } }>(res);
+    assert.strictEqual(body.data.billingEmail, "new-billing@example.com");
+    assert.strictEqual(providerEmail, "new-billing@example.com");
+
+    const detail = await readJson<{
+      result: { subscription: { billingEmail: string } };
+    }>(await user.fetch(`/api/v1/workspaces/${slug}`));
+    assert.strictEqual(detail.result.subscription.billingEmail, "new-billing@example.com");
+
+    const stored =
+      await ctx.container.workspaceRepository.findById(workspaceId);
+    assert.strictEqual(stored?.paddleCustomer?.email, "new-billing@example.com");
+  });
+
+  it("rejects an invalid billing email and keeps the old address", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(ctx, discordUserId);
+    const { user, workspaceId, slug } =
+      await createWorkspaceAsUser(discordUserId);
+
+    const customerId = generateTestId();
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      workspaceId,
+      {
+        ...buildPaddleCustomer({
+          subscriptionId: generateTestId(),
+          customerId,
+        }),
+        email: "old-billing@example.com",
+      },
+    );
+
+    const res = await user.fetch(`/api/v1/workspaces/${slug}/billing/email`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "not-an-email" }),
+    });
+
+    assert.strictEqual(res.status, 400);
+
+    const stored =
+      await ctx.container.workspaceRepository.findById(workspaceId);
+    assert.strictEqual(stored?.paddleCustomer?.email, "old-billing@example.com");
+
+    assert.strictEqual(
+      paddleApi.server.getRequestsForPath(`/customers/${customerId}`).length,
+      0,
+    );
+  });
+
+  it("rejects billing email updates for admins, non-members, and the unauthenticated without changing anything", async () => {
+    const ownerDiscordId = randomUUID();
+    await seedWorkspaceUser(ctx, ownerDiscordId);
+    const { workspaceId, slug } = await createWorkspaceAsUser(ownerDiscordId);
+
+    const customerId = generateTestId();
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      workspaceId,
+      {
+        ...buildPaddleCustomer({
+          subscriptionId: generateTestId(),
+          customerId,
+        }),
+        email: "owner-billing@example.com",
+      },
+    );
+    paddleApi.server.registerRoute("PATCH", `/customers/${customerId}`, {
+      status: 200,
+      body: { data: { id: customerId } },
+    });
+
+    const adminDiscordId = randomUUID();
+    const adminUserId = await seedWorkspaceUser(ctx, adminDiscordId);
+    await addMembership(workspaceId, adminUserId, "admin");
+    const admin = await ctx.asUser(adminDiscordId);
+
+    const adminRes = await admin.fetch(`/api/v1/workspaces/${slug}/billing/email`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "admin-try@example.com" }),
+    });
+    assert.strictEqual(adminRes.status, 403);
+    assert.strictEqual(
+      (await readJson<{ code: string }>(adminRes)).code,
+      "WORKSPACE_INSUFFICIENT_ROLE",
+    );
+
+    const outsiderDiscordId = randomUUID();
+    await seedWorkspaceUser(ctx, outsiderDiscordId);
+    const outsider = await ctx.asUser(outsiderDiscordId);
+    const outsiderRes = await outsider.fetch(
+      `/api/v1/workspaces/${slug}/billing/email`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "outsider-try@example.com" }),
+      },
+    );
+    assert.strictEqual(outsiderRes.status, 404);
+
+    const anonRes = await ctx.fetch(`/api/v1/workspaces/${slug}/billing/email`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "anon-try@example.com" }),
+    });
+    assert.strictEqual(anonRes.status, 401);
+
+    const stored =
+      await ctx.container.workspaceRepository.findById(workspaceId);
+    assert.strictEqual(stored?.paddleCustomer?.email, "owner-billing@example.com");
+    assert.strictEqual(
+      paddleApi.server.getRequestsForPath(`/customers/${customerId}`).length,
+      0,
+    );
+  });
+
+  it("leaves sibling workspaces billing emails untouched when one is edited", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(ctx, discordUserId);
+    const owner = await ctx.asUser(discordUserId);
+
+    const makeWorkspace = async () => {
+      const slug = `ws-${randomUUID().slice(0, 18)}`;
+      const res = await owner.fetch("/api/v1/workspaces", {
+        method: "POST",
+        body: JSON.stringify({ name: "Billing Workspace", slug }),
+      });
+      assert.strictEqual(res.status, 201);
+      const created = await readJson<{ result: { id: string } }>(res);
+      return { workspaceId: created.result.id, slug };
+    };
+
+    const first = await makeWorkspace();
+
+    const firstCustomerId = generateTestId();
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      first.workspaceId,
+      {
+        ...buildPaddleCustomer({
+          subscriptionId: generateTestId(),
+          customerId: firstCustomerId,
+        }),
+        email: "first@example.com",
+      },
+    );
+
+    // Activating the first workspace exits the never-activated creation cap,
+    // so the same owner may create the sibling workspace below.
+    const second = await makeWorkspace();
+
+    const secondCustomerId = generateTestId();
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      second.workspaceId,
+      {
+        ...buildPaddleCustomer({
+          subscriptionId: generateTestId(),
+          customerId: secondCustomerId,
+        }),
+        email: "second@example.com",
+      },
+    );
+
+    paddleApi.server.registerRoute("PATCH", `/customers/${firstCustomerId}`, {
+      status: 200,
+      body: { data: { id: firstCustomerId } },
+    });
+
+    const res = await owner.fetch(
+      `/api/v1/workspaces/${first.slug}/billing/email`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "first-new@example.com" }),
+      },
+    );
+    assert.strictEqual(res.status, 200);
+
+    const sibling =
+      await ctx.container.workspaceRepository.findById(second.workspaceId);
+    assert.strictEqual(sibling?.paddleCustomer?.email, "second@example.com");
+    assert.strictEqual(
+      paddleApi.server.getRequestsForPath(`/customers/${secondCustomerId}`)
+        .length,
+      0,
+    );
+  });
+
+  it("keeps the old billing email when the provider update fails, with no local write", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(ctx, discordUserId);
+    const { user, workspaceId, slug } =
+      await createWorkspaceAsUser(discordUserId);
+
+    const customerId = generateTestId();
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      workspaceId,
+      {
+        ...buildPaddleCustomer({
+          subscriptionId: generateTestId(),
+          customerId,
+        }),
+        email: "old-billing@example.com",
+      },
+    );
+
+    paddleApi.server.registerRoute("PATCH", `/customers/${customerId}`, {
+      status: 500,
+      body: { error: { code: "internal_error", message: "paddle down" } },
+    });
+
+    const res = await user.fetch(`/api/v1/workspaces/${slug}/billing/email`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "new-billing@example.com" }),
+    });
+    assert.strictEqual(res.status, 500);
+
+    const stored =
+      await ctx.container.workspaceRepository.findById(workspaceId);
+    assert.strictEqual(stored?.paddleCustomer?.email, "old-billing@example.com");
+
+    const detail = await readJson<{
+      result: { subscription: { billingEmail: string } };
+    }>(await user.fetch(`/api/v1/workspaces/${slug}`));
+    assert.strictEqual(detail.result.subscription.billingEmail, "old-billing@example.com");
+  });
+
+  it("returns WORKSPACE_NOT_SUBSCRIBED when editing the billing email on a never-subscribed workspace", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(ctx, discordUserId);
+    const { user, slug } = await createWorkspaceAsUser(discordUserId);
+
+    const res = await user.fetch(`/api/v1/workspaces/${slug}/billing/email`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "new-billing@example.com" }),
+    });
+
+    assert.strictEqual(res.status, 400);
+    assert.strictEqual(
+      (await readJson<{ code: string }>(res)).code,
+      "WORKSPACE_NOT_SUBSCRIBED",
+    );
+  });
 });
 
 describe(
@@ -795,7 +1069,7 @@ describe(
       });
       assert.strictEqual(createRes.status, 201);
 
-      const endpoints: Array<{ path: string; body?: unknown }> = [
+      const endpoints: Array<{ path: string; body?: unknown; method?: string }> = [
         {
           path: `/api/v1/workspaces/${slug}/billing/update-preview`,
           body: { prices: [{ priceId: "price_x", quantity: 1 }] },
@@ -807,11 +1081,16 @@ describe(
         { path: `/api/v1/workspaces/${slug}/billing/cancel` },
         { path: `/api/v1/workspaces/${slug}/billing/resume` },
         { path: `/api/v1/workspaces/${slug}/billing/update-payment-method` },
+        {
+          path: `/api/v1/workspaces/${slug}/billing/email`,
+          body: { email: "new-billing@example.com" },
+          method: "PATCH",
+        },
       ];
 
       for (const endpoint of endpoints) {
         const res = await user.fetch(endpoint.path, {
-          method: "POST",
+          method: endpoint.method ?? "POST",
           ...(endpoint.body
             ? {
                 body: JSON.stringify(endpoint.body),

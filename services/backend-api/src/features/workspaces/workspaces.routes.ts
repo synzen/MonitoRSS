@@ -22,6 +22,7 @@ import {
   CreateWorkspaceInviteBodySchema,
   UpdateWorkspaceBodySchema,
   WorkspaceBillingConvertBodySchema,
+  WorkspaceBillingEmailBodySchema,
   WorkspaceBillingUpdateBodySchema,
   WorkspaceInviteParamsSchema,
   WorkspaceMemberParamsSchema,
@@ -31,6 +32,7 @@ import {
 import { withExceptionFilter } from "../../shared/filters/exception-filter";
 import {
   previewWorkspaceBillingChangeHandler,
+  updateWorkspaceBillingEmailHandler,
   updateWorkspaceBillingHandler,
   updateWorkspacePaymentMethodHandler,
   cancelWorkspaceBillingHandler,
@@ -193,6 +195,20 @@ export async function workspacesRoutes(app: FastifyInstance): Promise<void> {
     ),
   });
 
+  // Owner-editable billing email for exactly one workspace. The service updates
+  // the provider first and the local record only on success.
+  app.patch("/:workspaceSlug/billing/email", {
+    preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
+    schema: {
+      params: WorkspaceSlugParamsSchema,
+      body: WorkspaceBillingEmailBodySchema,
+    },
+    handler: withExceptionFilter(
+      WORKSPACE_BILLING_EXCEPTION_ERROR_CODES,
+      updateWorkspaceBillingEmailHandler,
+    ),
+  });
+
   // One route covers both remove-other (:userId) and leave (@me); the handler
   // routes by identity.
   app.delete("/:workspaceSlug/members/:userId", {
@@ -202,8 +218,9 @@ export async function workspacesRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Transfers the owner role to an existing admin member (owner only). A pure
-  // role swap; the workspace's billing subscription is unchanged, so the new
-  // owner updates the payment method separately if they want to pay.
+  // role swap; the workspace keeps its billing email and subscription, and the
+  // new owner can edit the billing email and payment method from the billing
+  // area immediately.
   app.post("/:workspaceSlug/members/:userId/transfer-ownership", {
     preHandler: [requireAuthHook, requireWorkspacesFeatureHook],
     schema: { params: WorkspaceMemberParamsSchema },

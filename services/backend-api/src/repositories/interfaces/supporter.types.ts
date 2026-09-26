@@ -129,6 +129,11 @@ export interface ISupporterRepository {
   nullifySubscriptionBySubscriptionId(
     subscriptionId: string,
   ): Promise<ISupporter | null>;
+  // Locates the personal supporter currently holding a subscription id, without
+  // mutating it. Used by the workspace webhook to detect a personal-to-workspace
+  // conversion (the subscription is still on the supporter record when the
+  // re-pointed event lands).
+  findBySubscriptionId(subscriptionId: string): Promise<ISupporter | null>;
   // Strips the personal email from the supporter's Paddle subdocument, keeping
   // the financial record (legal-retention exemption).
   clearPaddleEmailById(discordUserId: string): Promise<void>;

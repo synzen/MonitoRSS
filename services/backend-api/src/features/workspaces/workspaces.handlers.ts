@@ -137,10 +137,11 @@ export async function getWorkspaceHandler(
           key: a.key,
           quantity: a.quantity,
         })),
-        // The billing email is the owner's personal verified address, so only
-        // the owner sees it; a workspace admin manages the workspace but is not
-        // the billing party. A site admin (read-only observer) sees it too, so
-        // they can troubleshoot billing on any workspace.
+        // The workspace's billing email, kept on the workspace's own Paddle
+        // customer record and editable by the owner. Only the owner sees it; a
+        // workspace admin manages the workspace but is not the billing party. A
+        // site admin (read-only observer) sees it too, so they can troubleshoot
+        // billing on any workspace.
         ...((role === "owner" || isAdmin) && workspace.paddleCustomer?.email
           ? { billingEmail: workspace.paddleCustomer.email }
           : {}),

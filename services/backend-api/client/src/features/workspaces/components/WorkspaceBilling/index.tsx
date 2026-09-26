@@ -76,6 +76,7 @@ import {
   useWorkspaceActivationPolling,
 } from "../../hooks";
 import { ConvertPersonalPlanDialog } from "./ConvertPersonalPlanDialog";
+import { WorkspaceBillingEmail } from "./WorkspaceBillingEmail";
 import { TIER_FEED_LIMITS, capacityPlanLabel, type WorkspaceTier } from "./plans";
 
 type BillingInterval = "month" | "year";
@@ -479,7 +480,10 @@ const ChangeCapacityDialog = ({
         <DialogCloseTrigger />
         <DialogBody>
           <Stack gap={5}>
-            <DialogDescription>Choose a new capacity for this workspace.</DialogDescription>
+            <DialogDescription>
+              You&apos;re currently on {formatWorkspaceFeedCount(currentFeeds)}. Choose a new
+              capacity for this workspace.
+            </DialogDescription>
             <Stack gap={1}>
               <Text
                 color="fg.muted"
@@ -488,7 +492,7 @@ const ChangeCapacityDialog = ({
                 textTransform="uppercase"
                 letterSpacing="wide"
               >
-                Current capacity
+                Your current capacity
               </Text>
               <Text fontSize="2xl" fontWeight="bold" lineHeight="1.1">
                 {formatWorkspaceFeedCount(currentFeeds)}
@@ -497,7 +501,7 @@ const ChangeCapacityDialog = ({
                 {currentRecurringPrice ? `${currentRecurringPrice} / ${interval}` : "Current price"}
               </Text>
             </Stack>
-            <CapacityPicker value={nextFeeds} onChange={setNextFeeds} />
+            <CapacityPicker value={nextFeeds} onChange={setNextFeeds} currentValue={currentFeeds} />
             {!dirty ? (
               <Box borderTopWidth="1px" borderColor="border.emphasized" pt={5}>
                 <Text color="fg.muted" fontSize="sm">
@@ -534,7 +538,7 @@ const ChangeCapacityDialog = ({
                 </Stack>
               </Box>
             )}
-            {willBeDisabledCount > 0 && (
+            {dirty && willBeDisabledCount > 0 && (
               <Box
                 aria-live="polite"
                 bg="bg.subtle"
@@ -658,9 +662,9 @@ const ChangeCapacityDialog = ({
                 )}
               </Box>
             )}
-            {(immediate || deferred || (dirty && status === "loading")) && (
+            {dirty && (immediate || deferred || status === "loading") && (
               <Box aria-live="polite" aria-busy={status === "loading"}>
-                {dirty && status === "loading" && (
+                {status === "loading" && (
                   <Stack gap={1} aria-label="Loading change preview">
                     <Skeleton height="4" width="24" />
                     <Skeleton height="4" width="full" />
@@ -766,7 +770,7 @@ const ChangeCapacityDialog = ({
                 )}
               </Box>
             )}
-            {error && (
+            {dirty && error && (
               <InlineErrorAlert title="Failed to load change preview" description={error.message} />
             )}
             {updateMutation.error && (
@@ -1014,7 +1018,7 @@ export const WorkspaceBilling = () => {
         <Stack gap={10} separator={<StackSeparator />}>
           <SettingsSection
             title="Current plan"
-            description="The workspace's active subscription and its renewal schedule."
+            description="The workspace's active subscription, its capacity, and its renewal schedule."
           >
             {/* Plan name, capacity, and renewal status are one block of plan
                 facts, so they sit tight together; the section's larger gap is
@@ -1049,14 +1053,6 @@ export const WorkspaceBilling = () => {
                   </Text>
                 )
               )}
-              {subscription.billingEmail && (
-                <Text color="fg.muted">
-                  Billed to{" "}
-                  <Text as="span" color="fg">
-                    {subscription.billingEmail}
-                  </Text>
-                </Text>
-              )}
             </Stack>
             {!isOwner && <Text>Only the workspace owner can manage billing.</Text>}
             {isOwner && subscription.cancellationDate && (
@@ -1069,7 +1065,34 @@ export const WorkspaceBilling = () => {
                 </PrimaryActionButton>
               </Box>
             )}
+            {isOwner && !subscription.cancellationDate && (
+              <Box>
+                <Button
+                  ref={changeCapacityTriggerRef}
+                  variant="outline"
+                  aria-haspopup="dialog"
+                  onClick={() => setIsChangeCapacityOpen(true)}
+                >
+                  Change capacity
+                </Button>
+              </Box>
+            )}
           </SettingsSection>
+          {subscription.billingEmail && (
+            <SettingsSection
+              title="Billing email"
+              description="Where receipts go. Changing it updates the billing contact, not your workspace email."
+            >
+              {isOwner ? (
+                <WorkspaceBillingEmail
+                  workspaceSlug={workspaceSlug}
+                  currentEmail={subscription.billingEmail}
+                />
+              ) : (
+                <Text fontWeight="medium">{subscription.billingEmail}</Text>
+              )}
+            </SettingsSection>
+          )}
           {isOwner && (
             <WorkspacePaymentMethodSection
               workspaceSlug={workspaceSlug}
@@ -1082,22 +1105,6 @@ export const WorkspaceBilling = () => {
                 });
               }}
             />
-          )}
-          {isOwner && !subscription.cancellationDate && (
-            <SettingsSection
-              title="Change capacity"
-              description="Adjust how many feeds this workspace can run. You will see the prorated cost before confirming."
-            >
-              <Box>
-                <PrimaryActionButton
-                  ref={changeCapacityTriggerRef}
-                  aria-haspopup="dialog"
-                  onClick={() => setIsChangeCapacityOpen(true)}
-                >
-                  Change capacity
-                </PrimaryActionButton>
-              </Box>
-            </SettingsSection>
           )}
           {isOwner && !subscription.cancellationDate && (
             <SettingsSection

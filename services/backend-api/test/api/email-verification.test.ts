@@ -21,19 +21,15 @@ describe("Email verification API", () => {
   let ctx: AppTestContext;
   let sent: Array<{ to: string; code: string }>;
   let mail: Array<{ to: string; subject: string; html: string }>;
-  let paddleCustomerUpdates: Array<{ id: string; email: string }>;
 
   before(async () => {
     // A from-domain is required for the sender address (createFromFormatter);
     // the fake transport below stands in for an actual SMTP server.
+    // Identity-only: confirming or reverting a verified email never touches
+    // workspace billing, so no billing config is needed here.
     ctx = await createAppTestContext({
       configOverrides: {
         BACKEND_API_SMTP_FROM_DOMAIN: "example.com",
-        // Billing enabled so the verified-email change propagates to owned
-        // workspace Paddle customers (the sync is a no-op when billing is off).
-        BACKEND_API_ENABLE_SUPPORTERS: true,
-        BACKEND_API_PADDLE_KEY: "test-paddle-key",
-        BACKEND_API_PADDLE_URL: "https://sandbox.paddle.test",
       },
     });
   });
@@ -47,7 +43,6 @@ describe("Email verification API", () => {
   beforeEach(() => {
     sent = [];
     mail = [];
-    paddleCustomerUpdates = [];
     const fakeTransport = {
       sendMail: async (msg: { to: string; subject: string; html: string }) => {
         mail.push({ to: msg.to, subject: msg.subject, html: String(msg.html) });
@@ -61,34 +56,13 @@ describe("Email verification API", () => {
       },
     } as unknown as SmtpTransport;
 
-    const capturingPaddleService = makePaddleServiceWith(
-      async (id: string, data: { email: string }) => {
-        paddleCustomerUpdates.push({ id, email: data.email });
-      },
-    );
-
     ctx.container.emailVerificationService = new EmailVerificationService({
       config: ctx.container.config,
       smtpTransport: fakeTransport,
       emailVerificationRepository: ctx.container.emailVerificationRepository,
       userRepository: ctx.container.userRepository,
-      workspaceRepository: ctx.container.workspaceRepository,
-      paddleService: capturingPaddleService,
     });
   });
-
-  // A real PaddleService instance with only updateCustomer swapped, so it stays
-  // structurally a PaddleService (its other methods live on the prototype) while
-  // the test observes or fails the one call the sync makes.
-  function makePaddleServiceWith(
-    updateCustomer: (id: string, data: { email: string }) => Promise<void>,
-  ): typeof ctx.container.paddleService {
-    const stub = Object.create(
-      Object.getPrototypeOf(ctx.container.paddleService),
-    );
-    Object.assign(stub, ctx.container.paddleService, { updateCustomer });
-    return stub;
-  }
 
   async function makeUser() {
     const discordUserId = randomUUID();
@@ -125,7 +99,7 @@ describe("Email verification API", () => {
     assert.strictEqual(updated?.verifiedEmail, email.toLowerCase());
   });
 
-  it("syncs the new verified email to the owned workspace's Paddle customer on confirm", async () => {
+  it("leaves the owned workspace's billing email unchanged on confirm", async () => {
     const { user, internalId } = await makeUser();
     const email = `${randomUUID()}@example.com`;
 
@@ -161,68 +135,17 @@ describe("Email verification API", () => {
     );
     assert.strictEqual(confirmRes.status, 200);
 
-    assert.deepStrictEqual(paddleCustomerUpdates, [
-      { id: "ctm_sync_target", email: email.toLowerCase() },
-    ]);
-  });
-
-  it("still commits the verified email when the Paddle billing-email sync fails", async () => {
-    const { user, internalId } = await makeUser();
-    const email = `${randomUUID()}@example.com`;
-
-    // Force the billing sync to throw; the email change must still commit.
-    ctx.container.emailVerificationService = new EmailVerificationService({
-      config: ctx.container.config,
-      smtpTransport: {
-        sendMail: async (msg: { to: string; subject: string; html: string }) => {
-          const match = /class="email-code"[^>]*>\s*(\d{6})\s*</.exec(
-            String(msg.html),
-          );
-          sent.push({ to: msg.to, code: match?.[1] ?? "" });
-          return {};
-        },
-      } as unknown as SmtpTransport,
-      emailVerificationRepository: ctx.container.emailVerificationRepository,
-      userRepository: ctx.container.userRepository,
-      workspaceRepository: ctx.container.workspaceRepository,
-      paddleService: makePaddleServiceWith(async () => {
-        throw new Error("paddle down");
-      }),
-    });
-
-    const workspace = await ctx.container.workspaceRepository.createWorkspaceWithOwner(
-      {
-        name: `WS ${randomUUID()}`,
-        slug: `ws-${randomUUID()}`,
-        ownerUserId: internalId,
-      },
-    );
-    await ctx.connection.collection("workspaces").updateOne(
-      { _id: new Types.ObjectId(workspace.id) },
-      {
-        $set: {
-          paddleCustomer: {
-            customerId: "ctm_fail",
-            email: "old@example.com",
-            subscription: { status: "ACTIVE" },
-          },
-        },
-      },
-    );
-
-    await user.fetch("/api/v1/users/@me/email-verification", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
-
-    const confirmRes = await user.fetch(
-      "/api/v1/users/@me/email-verification/confirm",
-      { method: "POST", body: JSON.stringify({ email, code: sent[0]!.code }) },
-    );
-    assert.strictEqual(confirmRes.status, 200);
-
     const updated = await ctx.container.userRepository.findById(internalId);
     assert.strictEqual(updated?.verifiedEmail, email.toLowerCase());
+
+    const stored = await ctx.connection
+      .collection("workspaces")
+      .findOne({ _id: new Types.ObjectId(workspace.id) });
+    assert.strictEqual(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (stored?.paddleCustomer as any)?.email,
+      "old-verified@example.com",
+    );
   });
 
   it("rejects an incorrect code", async () => {
@@ -850,7 +773,7 @@ describe("Email verification API", () => {
     );
   });
 
-  it("re-syncs the owned workspace's Paddle billing email back on revert", async () => {
+  it("leaves the owned workspace's billing email unchanged on revert", async () => {
     const { internalId } = await makeUser();
     const oldEmail = `old-${randomUUID()}@example.com`.toLowerCase();
     const newEmail = `new-${randomUUID()}@example.com`.toLowerCase();
@@ -884,12 +807,19 @@ describe("Email verification API", () => {
       newEmail,
     );
 
-    paddleCustomerUpdates.length = 0;
     await ctx.container.emailVerificationService.revertVerifiedEmail(token);
 
-    assert.deepStrictEqual(paddleCustomerUpdates, [
-      { id: "ctm_revert_target", email: oldEmail },
-    ]);
+    const reverted = await ctx.container.userRepository.findById(internalId);
+    assert.strictEqual(reverted?.verifiedEmail, oldEmail);
+
+    const stored = await ctx.connection
+      .collection("workspaces")
+      .findOne({ _id: new Types.ObjectId(workspace.id) });
+    assert.strictEqual(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (stored?.paddleCustomer as any)?.email,
+      newEmail,
+    );
   });
 
   it("rejects confirming an email already verified by another user (409)", async () => {
