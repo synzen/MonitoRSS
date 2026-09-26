@@ -54,7 +54,7 @@ async function createTeamAndOpenBilling(
     .first()
     .click();
   await expect(page).toHaveURL(new RegExp(`/workspaces/${workspaceSlug}/settings/billing$`));
-  await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("heading", { name: "Billing", exact: true })).toBeVisible({ timeout: 15000 });
   // Prices render only after Paddle.js initializes; waiting for them ensures the
   // subscribe click can actually open the overlay.
   await expect(page.getByText(/\/ (month|year)/).first()).toBeVisible({ timeout: 30000 });
@@ -336,7 +336,7 @@ test.describe("Paddle workspace roundtrip", () => {
       new RegExp(`/workspaces/${workspaceSlug}/settings/billing\\?feeds=\\d+$`),
       { timeout: 15000 },
     );
-    await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "Billing", exact: true })).toBeVisible({ timeout: 15000 });
   });
 
   test("pricing dialog keeps the create CTA for an owner of only a paid workspace", async ({

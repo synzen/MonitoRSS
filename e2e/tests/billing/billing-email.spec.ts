@@ -115,7 +115,7 @@ test.describe("Workspace billing email", () => {
     // The Billing page surfaces the seeded address as the "Billed to" line.
     await page.goto(`/workspaces/${workspaceSlug}/settings/billing`);
     await expect(
-      page.getByRole("heading", { name: "Billing" }),
+      page.getByRole("heading", { name: "Billing", exact: true }),
     ).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(verifiedEmail, { exact: true })).toBeVisible({ timeout: 15000 });
 
@@ -135,7 +135,7 @@ test.describe("Workspace billing email", () => {
     // Persisted across reload (provider updated first, local follows).
     await page.reload();
     await expect(
-      page.getByRole("heading", { name: "Billing" }),
+      page.getByRole("heading", { name: "Billing", exact: true }),
     ).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(editedBillingEmail, { exact: true })).toBeVisible({
       timeout: 15000,
@@ -162,7 +162,7 @@ test.describe("Workspace billing email", () => {
 
     await page.goto(`/workspaces/${workspaceSlug}/settings/billing`);
     await expect(
-      page.getByRole("heading", { name: "Billing" }),
+      page.getByRole("heading", { name: "Billing", exact: true }),
     ).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(editedBillingEmail, { exact: true })).toBeVisible({
       timeout: 15000,
@@ -198,7 +198,7 @@ test.describe("Workspace billing email", () => {
 
       await freshPage.goto(`/workspaces/${workspaceSlug}/settings/billing`);
       await expect(
-        freshPage.getByRole("heading", { name: "Billing" }),
+        freshPage.getByRole("heading", { name: "Billing", exact: true }),
       ).toBeVisible({ timeout: 15000 });
       await expect(freshPage.getByText(editedBillingEmail, { exact: true })).toBeVisible({
         timeout: 15000,

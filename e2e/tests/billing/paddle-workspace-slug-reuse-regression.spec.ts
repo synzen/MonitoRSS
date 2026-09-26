@@ -67,7 +67,7 @@ async function openBillingForCurrentWorkspace(page: Page, slug: string): Promise
     .first()
     .click();
   await expect(page).toHaveURL(new RegExp(`/workspaces/${slug}/settings/billing$`));
-  await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("heading", { name: "Billing", exact: true })).toBeVisible({ timeout: 15000 });
   await expect(page.getByText(/\/ (month|year)/).first()).toBeVisible({ timeout: 30000 });
 }
 

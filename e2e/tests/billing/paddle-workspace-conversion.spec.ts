@@ -417,7 +417,7 @@ test.describe("Paddle workspace conversion", () => {
 
     // 4. Open the conversion dialog from Billing; it opens in over-limit mode.
     await page.goto(`/workspaces/${workspaceSlug}/settings/billing`);
-    await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "Billing", exact: true })).toBeVisible({ timeout: 15000 });
     await page.getByRole("button", { name: /move my plan to this workspace/i }).click();
 
     const convertDialog = page.getByRole("dialog");

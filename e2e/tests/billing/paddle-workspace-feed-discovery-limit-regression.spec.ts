@@ -57,7 +57,7 @@ async function createTeamAndOpenBilling(page: Page): Promise<string> {
     .first()
     .click();
   await expect(page).toHaveURL(new RegExp(`/workspaces/${workspaceSlug}/settings/billing$`));
-  await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("heading", { name: "Billing", exact: true })).toBeVisible({ timeout: 15000 });
   await expect(page.getByText(/\/ (month|year)/).first()).toBeVisible({ timeout: 30000 });
 
   return workspaceSlug as string;
