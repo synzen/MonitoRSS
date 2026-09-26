@@ -53,36 +53,43 @@ import {
 import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { getEffectiveRefreshRateSeconds } from "@/utils/formatRefreshRateSeconds";
+import { browserTimezone, MAX_SCHEDULE_TIMES, SCHEDULE_TIME_PATTERN } from "@/utils/feedSchedule";
 import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
 import { NativeSelectRoot, NativeSelectField } from "@/components/ui/native-select";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Tag } from "@/components/ui/tag";
+import { FeedScheduleSettings } from "@/features/feed/components/FeedScheduleSettings";
 
 interface Props {
   feedId: string;
 }
 
+const SCHEDULE_DEFAULT_TIME = "09:00";
+
+const isTimezoneValue = (val: string | undefined) => {
+  if (!val) {
+    return true;
+  }
+
+  try {
+    dayjs().tz(val);
+
+    return true;
+  } catch (err) {
+    if (err instanceof RangeError) {
+      return false;
+    }
+
+    throw err;
+  }
+};
+
 const FormSchema = object({
   dateFormat: string().optional(),
-  dateTimezone: string().test("is-timezone", "Must be a valid timezone", (val) => {
-    if (!val) {
-      return true;
-    }
-
-    try {
-      dayjs().tz(val);
-
-      return true;
-    } catch (err) {
-      if (err instanceof RangeError) {
-        return false;
-      }
-
-      throw err;
-    }
-  }),
+  dateTimezone: string().test("is-timezone", "Must be a valid timezone", isTimezoneValue),
   dateLocale: string().optional(),
   oldArticleDateDiffMsThreshold: number().optional(),
   shareManageOptions: object({
@@ -96,6 +103,25 @@ const FormSchema = object({
     .nullable()
     .default(null),
   userRefreshRateMinutes: string().optional(),
+  scheduleMode: string().oneOf(["interval", "scheduled"]).default("interval"),
+  scheduleTimes: array(
+    string().required("Choose a time").matches(SCHEDULE_TIME_PATTERN, "Enter a valid time"),
+  ).when("scheduleMode", {
+    is: "scheduled",
+    then: (schema) =>
+      schema
+        .min(1, "Add at least one delivery time")
+        .max(MAX_SCHEDULE_TIMES, `Up to ${MAX_SCHEDULE_TIMES} times per day`),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  scheduleTimezone: string().when("scheduleMode", {
+    is: "scheduled",
+    then: (schema) =>
+      schema
+        .required("Choose a timezone")
+        .test("is-timezone", "Must be a valid timezone", isTimezoneValue),
+    otherwise: (schema) => schema.notRequired(),
+  }),
 });
 
 type FormValues = InferType<typeof FormSchema>;
@@ -134,6 +160,9 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
         (
           Number(getEffectiveRefreshRateSeconds(feed || { refreshRateSeconds: 0 }).toFixed(1)) / 60
         )?.toString() || "",
+      scheduleMode: feed?.scheduleMode === "scheduled" ? "scheduled" : "interval",
+      scheduleTimes: feed?.schedule?.times?.length ? feed.schedule.times : [SCHEDULE_DEFAULT_TIME],
+      scheduleTimezone: feed?.schedule?.timezone || browserTimezone(),
     },
   });
   const {
@@ -142,6 +171,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
     reset,
     formState: { errors: formErrors },
     watch,
+    setValue,
   } = formMethods;
 
   const [dateFormat, dateTimezone, dateLocale] = watch([
@@ -149,6 +179,20 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
     "dateTimezone",
     "dateLocale",
   ]);
+
+  const scheduleMode = watch("scheduleMode");
+  const scheduleTimezone = watch("scheduleTimezone");
+
+  const scheduleTimesErrors = formErrors.scheduleTimes as
+    | { message?: string }
+    | Array<{ message?: string } | undefined>
+    | undefined;
+  const scheduleTimesListError = !Array.isArray(scheduleTimesErrors)
+    ? scheduleTimesErrors?.message
+    : undefined;
+  const scheduleTimeRowErrors = Array.isArray(scheduleTimesErrors)
+    ? scheduleTimesErrors.map((e) => e?.message)
+    : undefined;
 
   const debouncedPreviewInput = useDebounce(
     {
@@ -184,6 +228,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       const userRefreshRateMinutesInSeconds = !Number.isNaN(values.userRefreshRateMinutes)
         ? Number(values.userRefreshRateMinutes) * 60
         : undefined;
+      const isScheduledMode = values.scheduleMode === "scheduled";
       const updatedFeed = await mutateAsync({
         feedId,
         data: {
@@ -200,7 +245,24 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                   oldArticleDateDiffMsThreshold: values.oldArticleDateDiffMsThreshold,
                 }
               : undefined,
-          userRefreshRateSeconds: userRefreshRateMinutesInSeconds,
+          // In scheduled mode the interval value is left untouched on the
+          // server so switching back to interval mode is lossless.
+          ...(isScheduledMode
+            ? {
+                scheduleMode: "scheduled" as const,
+                schedule: {
+                  times: [
+                    ...new Set(
+                      values.scheduleTimes?.filter((t) => SCHEDULE_TIME_PATTERN.test(t)) || [],
+                    ),
+                  ].sort(),
+                  timezone: values.scheduleTimezone || browserTimezone(),
+                },
+              }
+            : {
+                scheduleMode: "interval" as const,
+                userRefreshRateSeconds: userRefreshRateMinutesInSeconds,
+              }),
         },
       });
 
@@ -214,6 +276,11 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
         userRefreshRateMinutes: (getEffectiveRefreshRateSeconds(updatedFeed.result) / 60).toFixed(
           1,
         ),
+        scheduleMode: updatedFeed.result.scheduleMode === "scheduled" ? "scheduled" : "interval",
+        scheduleTimes: updatedFeed.result.schedule?.times?.length
+          ? updatedFeed.result.schedule.times
+          : [SCHEDULE_DEFAULT_TIME],
+        scheduleTimezone: updatedFeed.result.schedule?.timezone || browserTimezone(),
       });
       createSuccessAlert({
         title: "Successfully updated feed settings",
@@ -547,48 +614,92 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                 <Heading size="sm" as="h3">
                   Refresh Rate
                 </Heading>
-                <Text>
-                  Change the rate at which the bot sends requests for this feed. If you are facing
-                  rate limits for this feed, this may be helpful, but is not guaranteed to resolve
-                  rate-limit-related issues. If other users are using this feed at a rate faster
-                  than what you set here, the bot will ignore this setting.
-                </Text>
+                {scheduleMode === "scheduled" ? (
+                  <Text>
+                    The feed is fetched and delivered once at each scheduled time below. Your
+                    refresh rate is kept and applies again if you switch back.
+                  </Text>
+                ) : (
+                  <Text>
+                    Change the rate at which the bot sends requests for this feed. If you are facing
+                    rate limits for this feed, this may be helpful, but is not guaranteed to resolve
+                    rate-limit-related issues. If other users are using this feed at a rate faster
+                    than what you set here, the bot will ignore this setting.
+                  </Text>
+                )}
                 <Separator mt={2} />
-              </Stack>
-              {!feed?.refreshRateOptions.length && (
-                <Text color="fg.muted">This feed does not have any refresh rate options.</Text>
-              )}
-              {!!feed?.refreshRateOptions.length && (
                 <Controller
-                  name="userRefreshRateMinutes"
+                  name="scheduleMode"
                   control={control}
-                  render={({ field }) => {
-                    return (
-                      <Field
-                        invalid={!!formErrors.oldArticleDateDiffMsThreshold}
-                        errorText={formErrors.userRefreshRateMinutes?.message}
-                      >
-                        <HStack alignItems="center" gap={4}>
-                          <NumberInputRoot
-                            allowMouseWheel
-                            step={0.1}
-                            value={field.value}
-                            onValueChange={(details) => {
-                              return field.onChange(details.value);
-                            }}
-                            onBlur={() => field.onBlur()}
-                            disabled={!user || field.disabled}
-                            ref={field.ref}
-                            name={field.name}
-                          >
-                            <NumberInputField />
-                          </NumberInputRoot>
-                          <Text as="label">minutes</Text>
-                        </HStack>
-                      </Field>
-                    );
-                  }}
+                  render={({ field }) => (
+                    <SegmentedControl
+                      value={field.value}
+                      onValueChange={(details) => field.onChange(details.value)}
+                      items={[
+                        { value: "interval", label: "Refresh rate" },
+                        { value: "scheduled", label: "Scheduled times" },
+                      ]}
+                      aria-label="Scheduling mode"
+                    />
+                  )}
                 />
+              </Stack>
+              {scheduleMode === "scheduled" ? (
+                <Controller
+                  name="scheduleTimes"
+                  control={control}
+                  render={({ field }) => (
+                    <FeedScheduleSettings
+                      times={field.value ?? []}
+                      onTimesChange={field.onChange}
+                      timeErrors={scheduleTimeRowErrors}
+                      timesListError={scheduleTimesListError}
+                      timezone={scheduleTimezone || browserTimezone()}
+                      onTimezoneChange={(tz) =>
+                        setValue("scheduleTimezone", tz, { shouldDirty: true })
+                      }
+                      timezoneError={formErrors.scheduleTimezone?.message}
+                    />
+                  )}
+                />
+              ) : (
+                <>
+                  {!feed?.refreshRateOptions.length && (
+                    <Text color="fg.muted">This feed does not have any refresh rate options.</Text>
+                  )}
+                  {!!feed?.refreshRateOptions.length && (
+                    <Controller
+                      name="userRefreshRateMinutes"
+                      control={control}
+                      render={({ field }) => {
+                        return (
+                          <Field
+                            invalid={!!formErrors.oldArticleDateDiffMsThreshold}
+                            errorText={formErrors.userRefreshRateMinutes?.message}
+                          >
+                            <HStack alignItems="center" gap={4}>
+                              <NumberInputRoot
+                                allowMouseWheel
+                                step={0.1}
+                                value={field.value}
+                                onValueChange={(details) => {
+                                  return field.onChange(details.value);
+                                }}
+                                onBlur={() => field.onBlur()}
+                                disabled={!user || field.disabled}
+                                ref={field.ref}
+                                name={field.name}
+                              >
+                                <NumberInputField />
+                              </NumberInputRoot>
+                              <Text as="label">minutes</Text>
+                            </HStack>
+                          </Field>
+                        );
+                      }}
+                    />
+                  )}
+                </>
               )}
             </Stack>
             <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>

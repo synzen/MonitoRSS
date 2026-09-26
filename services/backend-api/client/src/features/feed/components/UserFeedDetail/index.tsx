@@ -58,6 +58,7 @@ import {
   formatRefreshRateSeconds,
   getEffectiveRefreshRateSeconds,
 } from "@/utils/formatRefreshRateSeconds";
+import { formatScheduleSummary } from "@/utils/feedSchedule";
 import {
   useArticleDailyLimit,
   useDeleteUserFeed,
@@ -185,6 +186,8 @@ export const UserFeedDetail: React.FC = () => {
   }, [feedTitle]);
 
   const isAtLimit = dailyLimit ? dailyLimit.current >= dailyLimit.max : false;
+
+  const scheduleSummary = feed ? formatScheduleSummary(feed) : null;
 
   const onDeleteFeed = async () => {
     if (!feedId) {
@@ -547,8 +550,17 @@ export const UserFeedDetail: React.FC = () => {
                     rowGap={{ base: "8", lg: "14" }}
                     as="ul"
                   >
-                    <CategoryText title={t("pages.feed.refreshRateLabel")}>
-                      {feed ? formatRefreshRateSeconds(getEffectiveRefreshRateSeconds(feed)) : null}
+                    <CategoryText
+                      title={
+                        scheduleSummary
+                          ? t("pages.feed.deliveryScheduleLabel")
+                          : t("pages.feed.refreshRateLabel")
+                      }
+                    >
+                      {feed
+                        ? scheduleSummary ??
+                          formatRefreshRateSeconds(getEffectiveRefreshRateSeconds(feed))
+                        : null}
                     </CategoryText>
                     <CategoryText title={t("pages.feed.createdAtLabel")}>
                       {feed?.createdAt}

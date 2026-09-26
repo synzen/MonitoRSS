@@ -26,6 +26,11 @@ export interface UpdateUserFeedInput {
       }>;
     };
     userRefreshRateSeconds?: number;
+    scheduleMode?: "interval" | "scheduled";
+    schedule?: {
+      times: string[];
+      timezone: string;
+    } | null;
   };
 }
 

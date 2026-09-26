@@ -40,6 +40,13 @@ export const UserFeedSchema = object({
   connections: array(FeedConnectionSchema).required(),
   refreshRateSeconds: number().required(),
   userRefreshRateSeconds: number(),
+  scheduleMode: string().oneOf(["interval", "scheduled"]).optional(),
+  schedule: object({
+    times: array(string().required()).required(),
+    timezone: string().required(),
+  })
+    .nullable()
+    .optional(),
   formatOptions: object({
     dateFormat: string().optional().default(undefined),
     dateTimezone: string().optional().default(undefined),

@@ -336,6 +336,23 @@ export const SendTestArticleBodySchema = Type.Object(
 );
 export type SendTestArticleBody = Static<typeof SendTestArticleBodySchema>;
 
+// 24h "HH:mm", matching the format the scheduler consumes (ADR-009).
+const ScheduleTime = Type.String({
+  pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+});
+
+const FeedScheduleSchema = Type.Object(
+  {
+    times: Type.Array(ScheduleTime, {
+      minItems: 1,
+      maxItems: 10,
+      uniqueItems: true,
+    }),
+    timezone: TimezoneString,
+  },
+  { additionalProperties: false },
+);
+
 export const UpdateUserFeedBodySchema = Type.Object(
   {
     title: Type.Optional(Type.String({ minLength: 1 })),
@@ -385,6 +402,10 @@ export const UpdateUserFeedBodySchema = Type.Object(
     userRefreshRateSeconds: Type.Optional(
       Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
     ),
+    scheduleMode: Type.Optional(
+      Type.Union([Type.Literal("interval"), Type.Literal("scheduled")]),
+    ),
+    schedule: Type.Optional(Type.Union([FeedScheduleSchema, Type.Null()])),
     externalProperties: Type.Optional(
       Type.Array(
         Type.Object(
