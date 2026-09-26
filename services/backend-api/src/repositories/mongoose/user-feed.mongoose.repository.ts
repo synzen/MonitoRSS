@@ -37,6 +37,7 @@ import type {
   UserFeedForPendingInvites,
   ScheduledFeedUrl,
   ScheduledFeedWithLookupKey,
+  ScheduledFeedForClockScheduling,
   FeedForSlotOffsetRecalculation,
   RefreshRateSyncInput,
   MaxDailyArticlesSyncInput,
@@ -71,6 +72,7 @@ import {
   UserFeedHealthStatus,
   UserFeedManagerInviteType,
   UserFeedManagerStatus,
+  UserFeedScheduleMode,
 } from "../shared/enums";
 import {
   FeedConnectionsSchema,
@@ -200,6 +202,21 @@ const UserFeedSchema = new Schema(
     // FAILED_REQUESTS + healthStatus FAILING). It epochs the active recovery
     // cycle so the request worker can ignore failure history that predates it.
     recoveryStartedAt: { type: Date },
+    // Clock-time scheduling (ADR-009). scheduleMode is absent on documents
+    // written before the feature: absence means interval. schedule is present
+    // if and only if the mode is scheduled.
+    scheduleMode: { type: String, enum: Object.values(UserFeedScheduleMode) },
+    schedule: {
+      type: {
+        times: { type: [String], required: true },
+        timezone: { type: String, required: true },
+      },
+      required: false,
+      default: undefined,
+    },
+    // Epoch (stored as Date) of the last delivered scheduled occurrence.
+    // Written by the delivery fan-out's once-per-occurrence guard.
+    lastScheduledFiredAt: { type: Date },
   },
   { timestamps: true, autoIndex: true },
 );
@@ -240,6 +257,12 @@ UserFeedSchema.index({
   "shareManageOptions.invites.status": 1,
   createdAt: -1,
 });
+// The schedule emitter queries scheduled feeds every tick; without this index
+// each tick would scan the whole collection.
+UserFeedSchema.index(
+  { scheduleMode: 1 },
+  { partialFilterExpression: { scheduleMode: UserFeedScheduleMode.Scheduled } },
+);
 
 type UserFeedDoc = InferSchemaType<typeof UserFeedSchema>;
 
@@ -326,6 +349,14 @@ export class UserFeedMongooseRepository
       maxDailyArticles: doc.maxDailyArticles,
       userRefreshRateSeconds: doc.userRefreshRateSeconds,
       slotOffsetMs: doc.slotOffsetMs,
+      scheduleMode: doc.scheduleMode as UserFeedScheduleMode | undefined,
+      schedule: doc.schedule
+        ? {
+            times: doc.schedule.times as string[],
+            timezone: doc.schedule.timezone as string,
+          }
+        : undefined,
+      lastScheduledFiredAt: doc.lastScheduledFiredAt,
       debug: doc.debug,
       feedRequestLookupKey: doc.feedRequestLookupKey,
       lastManualRequestAt: doc.lastManualRequestAt,
@@ -3099,6 +3130,96 @@ export class UserFeedMongooseRepository
     }
   }
 
+  async *iterateScheduledFeedsForClockScheduling(): AsyncIterable<ScheduledFeedForClockScheduling> {
+    const pipeline = getCommonFeedAggregateStages({
+      includeAnyLookupKey: true,
+      includeRecoveryFeeds: true,
+      scheduledOnly: true,
+    });
+    pipeline.push({
+      $project: {
+        url: 1,
+        schedule: 1,
+        lastScheduledFiredAt: 1,
+        feedRequestLookupKey: 1,
+        workspaceId: 1,
+        users: 1,
+        workspaces: 1,
+      },
+    });
+
+    const cursor = this.model
+      .aggregate(pipeline, {
+        readPreference: "secondaryPreferred",
+      })
+      .cursor();
+
+    for await (const doc of cursor) {
+      yield {
+        id: (doc._id as Types.ObjectId).toString(),
+        url: doc.url,
+        schedule: doc.schedule,
+        lastScheduledFiredAt: doc.lastScheduledFiredAt
+          ? new Date(doc.lastScheduledFiredAt).getTime()
+          : undefined,
+        feedRequestLookupKey: doc.feedRequestLookupKey,
+        workspaceId: doc.workspaceId?.toString(),
+        users: doc.users || [],
+        workspaces: doc.workspaces || [],
+      };
+    }
+  }
+
+  async *iterateScheduledFeedsForDelivery(params: {
+    url: string;
+  }): AsyncIterable<UserFeedForDelivery> {
+    const pipeline = getCommonFeedAggregateStages({
+      url: params.url,
+      scheduledOnly: true,
+    });
+
+    const cursor = this.model.aggregate(pipeline).cursor();
+
+    for await (const doc of cursor) {
+      yield this.mapToUserFeedForDelivery(doc);
+    }
+  }
+
+  async *iterateScheduledFeedsWithLookupKeysForDelivery(params: {
+    lookupKey: string;
+  }): AsyncIterable<UserFeedForDelivery> {
+    const pipeline = getCommonFeedAggregateStages({
+      feedRequestLookupKey: params.lookupKey,
+      scheduledOnly: true,
+    });
+
+    const cursor = this.model.aggregate(pipeline).cursor();
+
+    for await (const doc of cursor) {
+      yield this.mapToUserFeedForDelivery(doc);
+    }
+  }
+
+  async claimScheduledDeliveryOccurrence(
+    feedId: string,
+    occurredAt: number,
+  ): Promise<boolean> {
+    const result = await this.model.updateOne(
+      {
+        _id: this.stringToObjectId(feedId),
+        $or: [
+          { lastScheduledFiredAt: { $exists: false } },
+          { lastScheduledFiredAt: { $lt: new Date(occurredAt) } },
+        ],
+      },
+      {
+        $set: { lastScheduledFiredAt: new Date(occurredAt) },
+      },
+    );
+
+    return result.modifiedCount === 1;
+  }
+
   private mapToUserFeedForDelivery(
     doc: Record<string, unknown>,
   ): UserFeedForDelivery {
@@ -3114,6 +3235,7 @@ export class UserFeedMongooseRepository
       externalProperties?: Array<Record<string, unknown>>;
       dateCheckOptions?: Record<string, unknown>;
       feedRequestLookupKey?: string;
+      schedule?: { times: string[]; timezone: string };
       workspaceId?: Types.ObjectId;
       user: { discordUserId: string };
       users?: Array<{
@@ -3150,6 +3272,7 @@ export class UserFeedMongooseRepository
       dateCheckOptions:
         typedDoc.dateCheckOptions as UserFeedForDelivery["dateCheckOptions"],
       feedRequestLookupKey: typedDoc.feedRequestLookupKey,
+      schedule: typedDoc.schedule,
       workspaceId: typedDoc.workspaceId?.toString(),
       user: { discordUserId: typedDoc.user.discordUserId },
       users: typedDoc.users || [],

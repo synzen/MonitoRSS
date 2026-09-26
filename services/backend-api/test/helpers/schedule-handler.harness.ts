@@ -72,6 +72,8 @@ export interface MockUsersService {
 export interface ScheduleHandlerContextOptions {
   supportersService?: MockSupportersServiceOptions;
   encryptionKey?: string;
+  // Overrides the service clock; defaults to 0 (epoch) for determinism.
+  now?: () => number;
 }
 
 export interface CreateFeedWithConnectionInput {
@@ -243,7 +245,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
         userFeedRepository,
         messageBrokerService:
           messageBrokerService as unknown as ScheduleHandlerServiceDeps["messageBrokerService"],
-        now: () => 0,
+        now: options.now ?? (() => 0),
       };
 
       const service = new ScheduleHandlerService(serviceDeps);

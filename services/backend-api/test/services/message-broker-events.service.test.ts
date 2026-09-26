@@ -469,6 +469,295 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
     });
   });
 
+  describe("handleUrlFetchCompletedEvent - scheduled triggers", () => {
+    // 21:00 Asia/Shanghai on 2026-09-26 = 13:00 UTC. The fan-out clock is
+    // pinned 5 minutes after the occurrence: late enough to prove the
+    // catch-up path, well inside the staleness cap.
+    const OCCURRENCE = Date.parse("2026-09-26T13:00:00Z");
+    const FANOUT_NOW = OCCURRENCE + 5 * 60 * 1000;
+
+    const makeScheduledFeed = (overrides: Record<string, unknown> = {}) => ({
+      id: "scheduled-feed-1",
+      url: "https://example.com/feed.xml",
+      maxDailyArticles: 100,
+      schedule: { times: ["21:00"], timezone: "Asia/Shanghai" },
+      connections: { discordChannels: [] },
+      user: { discordUserId: "user-1" },
+      users: [{}],
+      workspaces: [],
+      ...overrides,
+    });
+
+    const runScheduledEvent = (
+      ctx: ReturnType<
+        ReturnType<typeof createMessageBrokerEventsHarness>["createContext"]
+      >,
+      data: Record<string, unknown>,
+    ) =>
+      ctx.service.handleUrlFetchCompletedEvent({
+        data: {
+          url: "https://example.com/feed.xml",
+          rateSeconds: 3600,
+          ...data,
+        } as never,
+      });
+
+    it("resolves scheduled feeds by url and delivers once the occurrence is claimed", async () => {
+      const mockFeed = makeScheduledFeed();
+      const ctx = harness.createContext({
+        now: () => FANOUT_NOW,
+        userFeedRepository: {
+          iterateScheduledFeedsForDeliveryResult: (async function* () {
+            yield mockFeed;
+          })(),
+          claimScheduledDeliveryOccurrenceResult: true,
+        },
+      });
+
+      await runScheduledEvent(ctx, {
+        trigger: { kind: "scheduled", occurredAt: OCCURRENCE },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.iterateScheduledFeedsForDelivery.mock.callCount(),
+        1,
+      );
+      assert.deepStrictEqual(
+        ctx.userFeedRepository.iterateScheduledFeedsForDelivery.mock.calls[0]
+          ?.arguments,
+        [{ url: "https://example.com/feed.xml" }],
+      );
+      assert.strictEqual(
+        ctx.userFeedRepository.claimScheduledDeliveryOccurrence.mock.callCount(),
+        1,
+      );
+      assert.deepStrictEqual(
+        ctx.userFeedRepository.claimScheduledDeliveryOccurrence.mock.calls[0]
+          ?.arguments,
+        [mockFeed.id, OCCURRENCE],
+      );
+      assert.strictEqual(ctx.publishMessage.mock.callCount(), 1);
+    });
+
+    it("uses lookup-key iteration for scheduled triggers carrying a lookupKey", async () => {
+      const mockFeed = makeScheduledFeed();
+      const ctx = harness.createContext({
+        now: () => FANOUT_NOW,
+        userFeedRepository: {
+          iterateScheduledFeedsWithLookupKeysForDeliveryResult: (async function* () {
+            yield mockFeed;
+          })(),
+        },
+      });
+
+      await runScheduledEvent(ctx, {
+        lookupKey: "lookup-1",
+        trigger: { kind: "scheduled", occurredAt: OCCURRENCE },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.iterateScheduledFeedsWithLookupKeysForDelivery.mock.callCount(),
+        1,
+      );
+      assert.strictEqual(
+        ctx.userFeedRepository.iterateScheduledFeedsForDelivery.mock.callCount(),
+        0,
+      );
+      assert.strictEqual(ctx.publishMessage.mock.callCount(), 1);
+    });
+
+    it("skips feeds not due for the trigger's occurrence without claiming", async () => {
+      const feedDueForDifferentTime = makeScheduledFeed({
+        id: "scheduled-feed-other",
+        schedule: { times: ["09:00"], timezone: "Asia/Shanghai" },
+      });
+      const ctx = harness.createContext({
+        now: () => FANOUT_NOW,
+        userFeedRepository: {
+          iterateScheduledFeedsForDeliveryResult: (async function* () {
+            yield feedDueForDifferentTime;
+          })(),
+        },
+      });
+
+      await runScheduledEvent(ctx, {
+        trigger: { kind: "scheduled", occurredAt: OCCURRENCE },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.claimScheduledDeliveryOccurrence.mock.callCount(),
+        0,
+      );
+      assert.strictEqual(ctx.publishMessage.mock.callCount(), 0);
+    });
+
+    it("rejects scheduled triggers older than the staleness cap", async () => {
+      const ctx = harness.createContext({
+        now: () => FANOUT_NOW,
+        userFeedRepository: {
+          iterateScheduledFeedsForDeliveryResult: (async function* () {
+            yield makeScheduledFeed();
+          })(),
+        },
+      });
+
+      await runScheduledEvent(ctx, {
+        trigger: {
+          kind: "scheduled",
+          occurredAt: FANOUT_NOW - 2 * 60 * 60 * 1000,
+        },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.iterateScheduledFeedsForDelivery.mock.callCount(),
+        0,
+      );
+      assert.strictEqual(
+        ctx.userFeedRepository.claimScheduledDeliveryOccurrence.mock.callCount(),
+        0,
+      );
+      assert.strictEqual(ctx.publishMessage.mock.callCount(), 0);
+    });
+
+    it("does not deliver when another consumer already claimed the occurrence", async () => {
+      const ctx = harness.createContext({
+        now: () => FANOUT_NOW,
+        userFeedRepository: {
+          iterateScheduledFeedsForDeliveryResult: (async function* () {
+            yield makeScheduledFeed();
+          })(),
+          claimScheduledDeliveryOccurrenceResult: false,
+        },
+      });
+
+      await runScheduledEvent(ctx, {
+        trigger: { kind: "scheduled", occurredAt: OCCURRENCE },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.claimScheduledDeliveryOccurrence.mock.callCount(),
+        1,
+      );
+      assert.strictEqual(ctx.publishMessage.mock.callCount(), 0);
+    });
+
+    it("keeps interval fan-out out of the scheduled path and vice versa", async () => {
+      const scheduledCtx = harness.createContext({
+        now: () => FANOUT_NOW,
+        userFeedRepository: {
+          iterateScheduledFeedsForDeliveryResult: (async function* () {
+            yield makeScheduledFeed();
+          })(),
+        },
+      });
+
+      await runScheduledEvent(scheduledCtx, {
+        trigger: { kind: "scheduled", occurredAt: OCCURRENCE },
+      });
+
+      assert.strictEqual(
+        scheduledCtx.userFeedRepository.iterateFeedsForDelivery.mock.callCount(),
+        0,
+      );
+      assert.strictEqual(
+        scheduledCtx.userFeedRepository.iterateFeedsWithLookupKeysForDelivery.mock.callCount(),
+        0,
+      );
+
+      const intervalCtx = harness.createContext({
+        now: () => FANOUT_NOW,
+        userFeedRepository: {
+          iterateFeedsForDeliveryResult: (async function* () {
+            yield makeScheduledFeed();
+          })(),
+        },
+      });
+
+      await runScheduledEvent(intervalCtx, {
+        trigger: { kind: "interval", occurredAt: Date.now() },
+      });
+
+      assert.strictEqual(
+        intervalCtx.userFeedRepository.iterateScheduledFeedsForDelivery.mock.callCount(),
+        0,
+      );
+      assert.strictEqual(
+        intervalCtx.userFeedRepository.claimScheduledDeliveryOccurrence.mock.callCount(),
+        0,
+      );
+      assert.strictEqual(intervalCtx.publishMessage.mock.callCount(), 1);
+    });
+
+    it("short-circuits recovery before any trigger handling", async () => {
+      const ctx = harness.createContext({
+        now: () => FANOUT_NOW,
+        userFeedRepository: {
+          claimScheduledDeliveryOccurrenceResult: true,
+        },
+      });
+      const recoveryStartedAt = 123_456;
+
+      await ctx.service.handleUrlFetchCompletedEvent({
+        data: {
+          url: "https://example.com/feed.xml",
+          rateSeconds: 600,
+          recovery: { startedAt: recoveryStartedAt },
+          trigger: { kind: "scheduled", occurredAt: OCCURRENCE },
+        },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.clearDisabledCodeForRecoveredFeeds.mock.callCount(),
+        1,
+      );
+      assert.strictEqual(
+        ctx.userFeedRepository.iterateScheduledFeedsForDelivery.mock.callCount(),
+        0,
+      );
+      assert.strictEqual(
+        ctx.userFeedRepository.claimScheduledDeliveryOccurrence.mock.callCount(),
+        0,
+      );
+      assert.strictEqual(ctx.publishMessage.mock.callCount(), 0);
+    });
+
+    it("continues past a feed whose delivery emission fails", async () => {
+      const feed1 = makeScheduledFeed({
+        id: "scheduled-feed-1",
+        connections: {
+          discordChannels: [
+            {
+              id: "conn-1",
+              details: { channel: { id: "ch-1", guildId: "g-1" } },
+            },
+          ],
+        },
+      });
+      const feed2 = makeScheduledFeed({ id: "scheduled-feed-2" });
+      const ctx = harness.createContext({
+        now: () => FANOUT_NOW,
+        userFeedRepository: {
+          iterateScheduledFeedsForDeliveryResult: (async function* () {
+            yield feed1;
+            yield feed2;
+          })(),
+        },
+      });
+      ctx.publishMessage.mock.mockImplementation(async () => {
+        throw new Error("Publish failed");
+      });
+
+      await runScheduledEvent(ctx, {
+        trigger: { kind: "scheduled", occurredAt: OCCURRENCE },
+      });
+
+      assert.strictEqual(
+        ctx.userFeedRepository.claimScheduledDeliveryOccurrence.mock.callCount(),
+        2,
+      );
+    });
+  });
+
   describe("handleUrlRejectedDisableFeedsEvent", () => {
     it("should atomically disable feeds with FeedTooLarge when status is RefusedLargeFeed", async () => {
       const ctx = harness.createContext({

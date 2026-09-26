@@ -111,6 +111,16 @@ async function main() {
 }
 
 async function runTimers(container: Container) {
+  // The clock branch runs first so scheduled occurrences fire close to their
+  // wall-clock minute regardless of how long the interval aggregations take.
+  try {
+    await container.scheduleHandlerService.handleScheduledFeeds();
+  } catch (err) {
+    logger.error("Failed to run scheduled feeds clock branch", {
+      stack: (err as Error).stack,
+    });
+  }
+
   const { refreshRateSeconds, userRefreshRateSeconds } =
     await container.userFeedRepository.getDistinctRefreshRates();
 

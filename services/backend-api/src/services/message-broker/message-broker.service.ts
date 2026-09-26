@@ -1,5 +1,8 @@
 import { MessageBrokerQueue } from "../../infra/rabbitmq";
-import { UrlFetchBatchSchema } from "@monitorss/contracts";
+import {
+  UrlFetchBatchSchema,
+  type UrlFetchTrigger,
+} from "@monitorss/contracts";
 
 export class MessageBrokerService {
   constructor(
@@ -26,6 +29,7 @@ export class MessageBrokerService {
       lookupKey?: string;
       headers?: Record<string, string>;
       recovery?: { startedAt: number };
+      trigger?: UrlFetchTrigger;
     }>;
   }): Promise<void> {
     const message = { ...data, timestamp: Date.now() };

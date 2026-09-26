@@ -5,8 +5,10 @@ import {
   UserFeedHealthStatus,
   UserFeedManagerInviteType,
   UserFeedManagerStatus,
+  UserFeedScheduleMode,
 } from "../shared/enums";
 import type { IFeedConnections } from "./feed-connection.types";
+import type { FeedSchedule } from "../../shared/utils/scheduled-feed-computation";
 import type { SlotWindow } from "../../shared/types/slot-window.types";
 
 // UserFeedUser
@@ -78,6 +80,11 @@ export interface IUserFeed {
   maxDailyArticles?: number;
   userRefreshRateSeconds?: number;
   slotOffsetMs?: number;
+  // Clock-time scheduling (ADR-009). scheduleMode is absent on documents
+  // written before the feature; absence means interval.
+  scheduleMode?: UserFeedScheduleMode;
+  schedule?: FeedSchedule;
+  lastScheduledFiredAt?: Date;
   debug?: boolean;
   feedRequestLookupKey?: string;
   lastManualRequestAt?: Date;
@@ -396,6 +403,32 @@ export interface ScheduledFeedWithLookupKey {
   }>;
 }
 
+// A scheduled-mode feed as handed to the schedule emitter's clock branch. The
+// due selection (timezone matching, catch-up, spreading) is computed from this
+// shape by scheduled-feed-computation.
+export interface ScheduledFeedForClockScheduling {
+  id: string;
+  url: string;
+  schedule: FeedSchedule;
+  // Epoch ms of the last delivered scheduled occurrence; feeds already fired
+  // for an occurrence are skipped by the emitter.
+  lastScheduledFiredAt?: number;
+  feedRequestLookupKey?: string;
+  workspaceId?: string;
+  users: Array<{
+    externalCredentials?: Array<{
+      type: UserExternalCredentialType;
+      data: Record<string, string>;
+    }>;
+  }>;
+  workspaces: Array<{
+    externalCredentials?: Array<{
+      type: UserExternalCredentialType;
+      data: Record<string, string>;
+    }>;
+  }>;
+}
+
 export interface FeedForSlotOffsetRecalculation {
   id: string;
   url: string;
@@ -450,6 +483,9 @@ export interface UserFeedForDelivery {
   externalProperties?: IExternalFeedProperty[];
   dateCheckOptions?: IUserFeedDateCheckOptions;
   feedRequestLookupKey?: string;
+  // Present on feeds resolved by the scheduled-trigger fan-out; used to check
+  // the feed is due for the trigger's occurrence.
+  schedule?: FeedSchedule;
   workspaceId?: string;
   user: {
     discordUserId: string;
@@ -794,6 +830,27 @@ export interface IUserFeedRepository {
     refreshRateSeconds: number;
     debug?: boolean;
   }): AsyncIterable<UserFeedForDelivery>;
+
+  // Scheduled-mode (clock) scheduling methods. Feeds in scheduled mode are
+  // excluded from every interval scheduling/delivery query; these are the only
+  // queries that surface them (ADR-009).
+  iterateScheduledFeedsForClockScheduling(): AsyncIterable<ScheduledFeedForClockScheduling>;
+
+  iterateScheduledFeedsForDelivery(params: {
+    url: string;
+  }): AsyncIterable<UserFeedForDelivery>;
+
+  iterateScheduledFeedsWithLookupKeysForDelivery(params: {
+    lookupKey: string;
+  }): AsyncIterable<UserFeedForDelivery>;
+
+  // Once-per-occurrence delivery guard: atomically records the occurrence as
+  // fired only if the feed has not already recorded an equal or later one.
+  // Returns true when the caller won the right to deliver.
+  claimScheduledDeliveryOccurrence(
+    feedId: string,
+    occurredAt: number,
+  ): Promise<boolean>;
 
   findIdsWithoutDisabledCode(filter: {
     url?: string;

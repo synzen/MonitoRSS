@@ -220,6 +220,133 @@ describe('FeedFetcherListenerService', () => {
     });
   });
 
+  describe('scheduled trigger copy-through', () => {
+    const occurredAt = Date.parse('2026-09-26T13:00:00Z');
+    const scheduledBatchRequest = {
+      timestamp: Date.now(),
+      data: [
+        {
+          url: feedUrl,
+          trigger: { kind: 'scheduled', occurredAt },
+        },
+      ],
+      rateSeconds: 3600,
+    };
+
+    const runScheduledHandler = async (
+      batchRequest: unknown = scheduledBatchRequest,
+    ) => {
+      await (
+        service as unknown as {
+          onBrokerFetchRequestBatchHandler: (
+            batchRequest: unknown,
+          ) => Promise<void>;
+        }
+      ).onBrokerFetchRequestBatchHandler(batchRequest);
+    };
+
+    const enableSuccessfulFetch = () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.wasRequestedInPastSeconds.mockResolvedValue(
+        false,
+      );
+      feedFetcherService.fetchAndSaveResponse.mockResolvedValue({
+        request: { status: RequestStatus.OK },
+      });
+    };
+
+    it('scopes the processing lock by the occurrence time', async () => {
+      enableSuccessfulFetch();
+
+      await runScheduledHandler();
+
+      expect(cacheStorageService.setNX).toHaveBeenCalledWith({
+        key: `listener-service-${feedUrl}-3600-${occurredAt}`,
+        body: '1',
+        expSeconds: 120,
+      });
+      expect(cacheStorageService.del).toHaveBeenCalledWith(
+        `listener-service-${feedUrl}-3600-${occurredAt}`,
+      );
+    });
+
+    it('copies the trigger onto the completed event after a successful fetch', async () => {
+      enableSuccessfulFetch();
+
+      await runScheduledHandler();
+
+      // Scheduled entries scope response reuse to the short occurrence window,
+      // not the interval-derived rateSeconds / 2.
+      expect(
+        partitionedRequestsStoreService.wasRequestedInPastSeconds,
+      ).toHaveBeenCalledWith(feedUrl, 120);
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        '',
+        'url.fetch.completed',
+        {
+          data: {
+            lookupKey: undefined,
+            url: feedUrl,
+            rateSeconds: 3600,
+            debug: undefined,
+            trigger: { kind: 'scheduled', occurredAt },
+          },
+        },
+      );
+    });
+
+    it('copies the trigger onto the completed event when reusing a recent response', async () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.wasRequestedInPastSeconds.mockResolvedValue(
+        true,
+      );
+
+      await runScheduledHandler();
+
+      expect(feedFetcherService.fetchAndSaveResponse).not.toHaveBeenCalled();
+      expect(amqpConnection.publish).toHaveBeenCalledWith(
+        '',
+        'url.fetch.completed',
+        {
+          data: {
+            lookupKey: undefined,
+            url: feedUrl,
+            rateSeconds: 3600,
+            debug: undefined,
+            trigger: { kind: 'scheduled', occurredAt },
+          },
+        },
+      );
+    });
+
+    it('keeps trigger-less interval entries on the unscoped lock key', async () => {
+      cacheStorageService.setNX.mockResolvedValue(true);
+      partitionedRequestsStoreService.wasRequestedInPastSeconds.mockResolvedValue(
+        true,
+      );
+
+      const intervalBatchRequest = {
+        timestamp: Date.now(),
+        data: [{ url: feedUrl }],
+        rateSeconds: 1800,
+      };
+
+      await (
+        service as unknown as {
+          onBrokerFetchRequestBatchHandler: (
+            batchRequest: unknown,
+          ) => Promise<void>;
+        }
+      ).onBrokerFetchRequestBatchHandler(intervalBatchRequest);
+
+      expect(cacheStorageService.setNX).toHaveBeenCalledWith({
+        key: `listener-service-${feedUrl}-${intervalBatchRequest.rateSeconds}`,
+        body: '1',
+        expSeconds: 120,
+      });
+    });
+  });
+
   describe('bulk recovery attempts', () => {
     const recoveryStartedAt = Date.now() - 60_000;
     const recoveryBatchRequest = {

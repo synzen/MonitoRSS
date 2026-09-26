@@ -13,7 +13,19 @@ import { z } from "zod";
  * the consumer uses it to ignore failure history that predates the recovery
  * cycle (old terminal failure counts, stale backoff dates, and cached
  * responses) so the first recovery attempt performs a fresh request.
+ *
+ * `trigger` is request metadata describing why the fetch happened (ADR-009).
+ * It is copied through to the url.fetch.completed event without interpretation.
+ * Absent and `kind: "interval"` triggers are treated identically by consumers,
+ * which keeps rolling deploys safe in both directions: old producers emit
+ * trigger-less items (interval semantics) and old consumers strip the unknown
+ * field instead of failing validation.
  */
+export const UrlFetchTriggerSchema = z.object({
+  kind: z.enum(["interval", "scheduled"]).default("interval"),
+  occurredAt: z.number().int().positive(),
+});
+
 export const UrlFetchBatchSchema = z.object({
   rateSeconds: z.number().int().positive(),
   timestamp: z.number().int(),
@@ -28,8 +40,11 @@ export const UrlFetchBatchSchema = z.object({
           startedAt: z.number().int().positive(),
         })
         .optional(),
+      trigger: UrlFetchTriggerSchema.optional(),
     }),
   ),
 });
+
+export type UrlFetchTrigger = z.infer<typeof UrlFetchTriggerSchema>;
 
 export type UrlFetchBatchPayload = z.infer<typeof UrlFetchBatchSchema>;
