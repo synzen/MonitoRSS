@@ -2,14 +2,15 @@ import { describe, it } from "node:test";
 import assert from "node:assert";
 import {
   SCHEDULED_CATCHUP_WINDOW_MS,
+  SCHEDULED_JITTER_SLOTS,
   SCHEDULER_WINDOW_SIZE_MS,
 } from "../../../src/shared/constants/scheduler.constants";
-import { fnv1aHash } from "../../../src/shared/utils/fnv1a-hash";
 import {
   isScheduledTime,
   selectDueScheduledFeeds,
   type ScheduledFeedClockInput,
 } from "../../../src/shared/utils/scheduled-feed-computation";
+import { urlWithSlot } from "../../helpers/schedule-slots";
 
 // Independent oracle for "what wall-clock time is this epoch in this zone" —
 // deliberately not the dayjs.tz machinery the implementation uses.
@@ -22,19 +23,6 @@ function localHHMM(epochMs: number, timeZone: string): string {
   }).format(new Date(epochMs));
 
   return parts === "24:00" ? "00:00" : parts;
-}
-
-// The spreading slot is keyed by URL, so tests pick URLs with a known slot.
-function urlWithSlot(slot: number, base: string): string {
-  for (let i = 0; i < 1000; ++i) {
-    const url = `https://example.com/${base}-${i}.xml`;
-
-    if (fnv1aHash(url) % 2 === slot) {
-      return url;
-    }
-  }
-
-  throw new Error(`No url found for slot ${slot}`);
 }
 
 function makeFeed(
@@ -83,25 +71,25 @@ describe("scheduled-feed-computation", () => {
       assert.strictEqual(mid.length, 0);
     });
 
-    it("fires on the second tick of the minute for feeds assigned to it", () => {
+    it("fires a slot-1 URL only at or after its jittered fire time", () => {
       const feed = makeFeed({
         id: "second-tick",
         url: urlWithSlot(1, "second-tick"),
       });
 
-      const firstTick = selectDueScheduledFeeds(
+      const beforeFireTime = selectDueScheduledFeeds(
         [feed],
         SCHEDULED_TIME_2100_UTC + 1,
       );
-      const secondTick = selectDueScheduledFeeds(
+      const atFireTime = selectDueScheduledFeeds(
         [feed],
         SCHEDULED_TIME_2100_UTC + SCHEDULER_WINDOW_SIZE_MS,
       );
 
-      assert.strictEqual(firstTick.length, 0);
-      assert.strictEqual(secondTick.length, 1);
+      assert.strictEqual(beforeFireTime.length, 0);
+      assert.strictEqual(atFireTime.length, 1);
       assert.strictEqual(
-        secondTick[0]?.scheduledAt,
+        atFireTime[0]?.scheduledAt,
         SCHEDULED_TIME_2100_UTC,
         "the trigger carries the scheduled time, not the fire time",
       );
@@ -302,33 +290,106 @@ describe("scheduled-feed-computation", () => {
   });
 
   describe("selectDueScheduledFeeds - spreading", () => {
-    it("spreads due feeds across the minute's ticks without overlap", () => {
-      const slot0 = makeFeed({
+    it("assigns different URLs different slots within the jitter window", () => {
+      const feedA = makeFeed({
         id: "spread-a",
         url: urlWithSlot(0, "spread-a"),
       });
-      const slot1 = makeFeed({
+      const feedB = makeFeed({
         id: "spread-b",
         url: urlWithSlot(1, "spread-b"),
       });
 
       const firstTick = selectDueScheduledFeeds(
-        [slot0, slot1],
+        [feedA, feedB],
         SCHEDULED_TIME_2100_UTC,
       );
       const secondTick = selectDueScheduledFeeds(
-        [slot0, slot1],
+        [feedA, feedB],
         SCHEDULED_TIME_2100_UTC + SCHEDULER_WINDOW_SIZE_MS,
       );
 
       assert.deepStrictEqual(
         firstTick.map((d) => d.feed.id),
-        [slot0.id],
+        [feedA.id],
+        "slot-0 URL fires on its slot; slot-1 URL must wait",
       );
       assert.deepStrictEqual(
         secondTick.map((d) => d.feed.id),
-        [slot1.id],
+        [feedA.id, feedB.id],
+        "an unclaimed occurrence stays due on later ticks within catch-up; feed B fires once its slot arrives",
       );
+    });
+
+    it("keys the slot by URL so feeds sharing a URL fire together", () => {
+      const sharedUrl = urlWithSlot(3, "shared-slot");
+      const feedA = makeFeed({ id: "a", url: sharedUrl });
+      const feedB = makeFeed({ id: "b", url: sharedUrl });
+
+      const beforeSlot = selectDueScheduledFeeds(
+        [feedA, feedB],
+        SCHEDULED_TIME_2100_UTC + SCHEDULER_WINDOW_SIZE_MS,
+      );
+      const atSlot = selectDueScheduledFeeds(
+        [feedA, feedB],
+        SCHEDULED_TIME_2100_UTC + 3 * SCHEDULER_WINDOW_SIZE_MS,
+      );
+
+      assert.strictEqual(beforeSlot.length, 0);
+      assert.strictEqual(atSlot.length, 2);
+    });
+
+    it("fires a late-slot URL on recovery once its slot has passed, within catch-up", () => {
+      // The emitter was down at the URL's slot tick; on the first tick after
+      // recovery the occurrence is still within catch-up of its fire time, so
+      // it fires late rather than waiting for the next occurrence.
+      const lastSlot = SCHEDULED_JITTER_SLOTS - 1;
+      const feed = makeFeed({
+        id: "late-slot",
+        url: urlWithSlot(lastSlot, "late-slot"),
+      });
+
+      const justAfterSlot = selectDueScheduledFeeds(
+        [feed],
+        SCHEDULED_TIME_2100_UTC + lastSlot * SCHEDULER_WINDOW_SIZE_MS,
+      );
+      const afterSlotPassed = selectDueScheduledFeeds(
+        [feed],
+        SCHEDULED_TIME_2100_UTC + (lastSlot + 4) * SCHEDULER_WINDOW_SIZE_MS,
+      );
+
+      assert.strictEqual(justAfterSlot.length, 1);
+      assert.strictEqual(afterSlotPassed.length, 1);
+      assert.strictEqual(
+        afterSlotPassed[0]?.scheduledAt,
+        SCHEDULED_TIME_2100_UTC,
+      );
+    });
+
+    it("measures the catch-up bound against the jittered fire time", () => {
+      // A last-slot URL's catch-up window ends one jitter window after the
+      // wall-clock minute's own catch-up would: the two windows do not stack
+      // into 25 minutes of allowed lateness beyond the design bound of
+      // jitter + catch-up measured from the fire time.
+      const lastSlot = SCHEDULED_JITTER_SLOTS - 1;
+      const feed = makeFeed({
+        id: "late-slot-bound",
+        url: urlWithSlot(lastSlot, "late-slot-bound"),
+      });
+      const fireAt =
+        SCHEDULED_TIME_2100_UTC + lastSlot * SCHEDULER_WINDOW_SIZE_MS;
+
+      const withinBound = selectDueScheduledFeeds(
+        [feed],
+        fireAt + SCHEDULED_CATCHUP_WINDOW_MS,
+      );
+      const pastBound = selectDueScheduledFeeds(
+        [feed],
+        fireAt + SCHEDULED_CATCHUP_WINDOW_MS + SCHEDULER_WINDOW_SIZE_MS,
+      );
+
+      assert.strictEqual(withinBound.length, 1);
+      assert.strictEqual(pastBound.length, 0);
     });
   });
 

@@ -363,7 +363,7 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
                   value="scheduled"
                   selected={scheduleMode === "scheduled"}
                   title="At scheduled times"
-                  description="Delivered once at each time you pick, e.g. every weekday at 09:00. Your interval is kept and applies again if you switch back."
+                  description="Delivered once within about 10 minutes after each time you pick, e.g. every weekday around 09:00. Your interval is kept and applies again if you switch back."
                 >
                   <Controller
                     key="schedule-times"

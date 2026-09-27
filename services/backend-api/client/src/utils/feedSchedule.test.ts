@@ -14,7 +14,7 @@ describe("formatScheduleSummary", () => {
         scheduleMode: "scheduled",
         schedule: { times: ["09:00", "21:00"], timezone: "Asia/Shanghai" },
       }),
-    ).toBe("Every day at 09:00, 21:00 (Asia/Shanghai)");
+    ).toBe("Every day around 09:00, 21:00 (Asia/Shanghai)");
   });
 
   it("formats all seven days as every day", () => {
@@ -27,7 +27,7 @@ describe("formatScheduleSummary", () => {
           days: [0, 1, 2, 3, 4, 5, 6],
         },
       }),
-    ).toBe("Every day at 09:00 (UTC)");
+    ).toBe("Every day around 09:00 (UTC)");
   });
 
   it("lists selected days in Monday-first order", () => {
@@ -40,7 +40,7 @@ describe("formatScheduleSummary", () => {
           days: [0, 1, 3],
         },
       }),
-    ).toBe("Mon, Wed, Sun at 09:00 (UTC)");
+    ).toBe("Mon, Wed, Sun around 09:00 (UTC)");
   });
 
   it("treats an empty days array as every day", () => {
@@ -49,7 +49,7 @@ describe("formatScheduleSummary", () => {
         scheduleMode: "scheduled",
         schedule: { times: ["09:00"], timezone: "UTC", days: [] },
       }),
-    ).toBe("Every day at 09:00 (UTC)");
+    ).toBe("Every day around 09:00 (UTC)");
   });
 
   it("returns null for interval mode", () => {
@@ -131,7 +131,7 @@ describe("getNextScheduledFetchText", () => {
     vi.setSystemTime(new Date("2026-09-26T10:00:00Z"));
 
     expect(getNextScheduledFetchText(["21:00"], "UTC")).toBe(
-      "Next fetch: today at 21:00",
+      "Next fetch: today around 21:00",
     );
   });
 
@@ -140,7 +140,7 @@ describe("getNextScheduledFetchText", () => {
     vi.setSystemTime(new Date("2026-09-26T21:30:00Z"));
 
     expect(getNextScheduledFetchText(["21:00"], "UTC")).toBe(
-      "Next fetch: tomorrow at 21:00",
+      "Next fetch: tomorrow around 21:00",
     );
   });
 
@@ -150,7 +150,7 @@ describe("getNextScheduledFetchText", () => {
     vi.setSystemTime(new Date("2026-09-26T10:00:00Z"));
 
     expect(getNextScheduledFetchText(["21:00", "03:00"], "UTC")).toBe(
-      "Next fetch: today at 21:00",
+      "Next fetch: today around 21:00",
     );
   });
 
@@ -161,7 +161,7 @@ describe("getNextScheduledFetchText", () => {
     vi.setSystemTime(new Date("2026-09-26T21:00:00Z"));
 
     expect(getNextScheduledFetchText(["06:00"], "Asia/Shanghai")).toBe(
-      "Next fetch: today at 06:00",
+      "Next fetch: today around 06:00",
     );
   });
 
@@ -179,7 +179,7 @@ describe("getNextScheduledFetchText", () => {
     vi.setSystemTime(new Date("2026-09-26T10:00:00Z"));
 
     expect(getNextScheduledFetchText(["21:00"], "UTC", [0])).toBe(
-      "Next fetch: tomorrow at 21:00",
+      "Next fetch: tomorrow around 21:00",
     );
   });
 
@@ -188,7 +188,7 @@ describe("getNextScheduledFetchText", () => {
     vi.setSystemTime(new Date("2026-09-26T10:00:00Z"));
 
     expect(getNextScheduledFetchText(["21:00"], "UTC", [1])).toBe(
-      "Next fetch: Mon, Sep 28 at 21:00",
+      "Next fetch: Mon, Sep 28 around 21:00",
     );
   });
 
@@ -197,7 +197,7 @@ describe("getNextScheduledFetchText", () => {
     vi.setSystemTime(new Date("2026-09-26T10:00:00Z"));
 
     expect(getNextScheduledFetchText(["21:00"], "UTC", [6])).toBe(
-      "Next fetch: today at 21:00",
+      "Next fetch: today around 21:00",
     );
   });
 
@@ -209,7 +209,7 @@ describe("getNextScheduledFetchText", () => {
     vi.setSystemTime(new Date("2026-09-26T21:00:00Z"));
 
     expect(getNextScheduledFetchText(["06:00"], "Asia/Shanghai", [0])).toBe(
-      "Next fetch: today at 06:00",
+      "Next fetch: today around 06:00",
     );
   });
 
@@ -220,7 +220,7 @@ describe("getNextScheduledFetchText", () => {
     vi.setSystemTime(new Date("2026-09-26T21:30:00Z"));
 
     expect(getNextScheduledFetchText(["21:00"], "UTC", [6])).toBe(
-      "Next fetch: Sat, Oct 3 at 21:00",
+      "Next fetch: Sat, Oct 3 around 21:00",
     );
   });
 
@@ -229,7 +229,7 @@ describe("getNextScheduledFetchText", () => {
     vi.setSystemTime(new Date("2026-09-26T21:30:00Z"));
 
     expect(getNextScheduledFetchText(["21:00"], "UTC")).toBe(
-      "Next fetch: tomorrow at 21:00",
+      "Next fetch: tomorrow around 21:00",
     );
   });
 });

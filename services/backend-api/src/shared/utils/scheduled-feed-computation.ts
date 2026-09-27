@@ -3,15 +3,13 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {
   SCHEDULED_CATCHUP_WINDOW_MS,
+  SCHEDULED_JITTER_SLOTS,
   SCHEDULER_WINDOW_SIZE_MS,
 } from "../constants/scheduler.constants";
 import { fnv1aHash } from "./fnv1a-hash";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-
-const MS_PER_MINUTE = 60_000;
-const TICKS_PER_MINUTE = MS_PER_MINUTE / SCHEDULER_WINDOW_SIZE_MS;
 
 // Scheduled times are zero-padded 24h "HH:mm".
 const TIME_FORMAT = /^([01]\d|2[0-3]):([0-5]\d)$/;
@@ -187,20 +185,25 @@ export function isScheduledTime(
  *
  * Pure function of (feeds, now) — seam for the schedule emitter's clock branch
  * (ADR-009). A feed is due when:
- * - one of its times is firing right now on the feed's own wall clock,
- * - that firing is no older than the catch-up window (a firing missed while
- *   the process was down still fires; older ones wait for the next one),
- * - it hasn't already fired (`lastScheduledFiredAt` is strictly earlier),
- * - and the URL's hash slot matches this tick within the minute. Feeds are
- *   spread across the minute's ticks instead of bursting on the first one,
- *   keyed by URL, so feeds sharing a URL always fire together — one fetch.
+ * - one of its times has fired on the feed's own wall clock (DST-aware),
+ * - the occurrence's effective fire time has arrived — the wall-clock minute
+ *   plus a delay slot derived from the URL's hash inside the jitter window.
+ *   Keyed by URL — the fetch batching unit — so feeds sharing a URL always
+ *   fire together and cost a single fetch. Users cluster on round times, so
+ *   spreading across the window is what keeps a host serving many scheduled
+ *   subscriber URLs from receiving them all in one burst,
+ * - that effective fire time is no older than the catch-up window (a firing
+ *   missed while the process was down still fires; older ones wait for the
+ *   next one),
+ * - and it hasn't already fired (`lastScheduledFiredAt` is strictly earlier).
+ * An unclaimed occurrence stays due on later ticks until the delivery claim
+ * records it; the fetch layer's response reuse and the claim guard keep the
+ * re-fires cheap and delivery at-most-once.
  */
 export function selectDueScheduledFeeds<T extends ScheduledFeedClockInput>(
   feeds: T[],
   now: number,
 ): Array<ScheduledDueFeed<T>> {
-  const tickIndex = Math.floor((now % MS_PER_MINUTE) / SCHEDULER_WINDOW_SIZE_MS);
-
   // Group by timezone: every feed in the zone shares one calendar conversion.
   const feedsByTimezone = new Map<string, T[]>();
 
@@ -239,10 +242,6 @@ export function selectDueScheduledFeeds<T extends ScheduledFeedClockInput>(
           continue;
         }
 
-        if (now - scheduledAt > SCHEDULED_CATCHUP_WINDOW_MS) {
-          continue;
-        }
-
         if (
           feed.lastScheduledFiredAt != null &&
           feed.lastScheduledFiredAt >= scheduledAt
@@ -250,7 +249,14 @@ export function selectDueScheduledFeeds<T extends ScheduledFeedClockInput>(
           continue;
         }
 
-        if (fnv1aHash(feed.url) % TICKS_PER_MINUTE !== tickIndex) {
+        const slot = fnv1aHash(feed.url) % SCHEDULED_JITTER_SLOTS;
+        const fireAt = scheduledAt + slot * SCHEDULER_WINDOW_SIZE_MS;
+
+        if (now < fireAt) {
+          continue;
+        }
+
+        if (now - fireAt > SCHEDULED_CATCHUP_WINDOW_MS) {
           continue;
         }
 

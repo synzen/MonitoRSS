@@ -65,7 +65,7 @@ export const formatScheduleSummary = (feed: FeedScheduleShape): string | null =>
         .map(dayShortName)
         .join(", ");
 
-  return `${daysLabel} at ${feed.schedule.times.join(", ")} (${feed.schedule.timezone})`;
+  return `${daysLabel} around ${feed.schedule.times.join(", ")} (${feed.schedule.timezone})`;
 };
 
 /**
@@ -165,10 +165,12 @@ const nextCalendarDate = (dateStr: string): string => {
 
 /**
  * The next occurrence across `times` in `timezone`, restricted to the weekdays
- * in `days` (absent/empty = every day), as "Next fetch: today at 21:00" or,
- * when the next occurrence is further out, "Next fetch: Sun, Sep 27 at 09:00".
- * "Today"/"tomorrow" are the schedule zone's calendar dates, not the browser's.
- * Null when no time is usable or the timezone is invalid.
+ * in `days` (absent/empty = every day), as "Next fetch: today around 21:00" or,
+ * when the next occurrence is further out, "Next fetch: Sun, Sep 27 around
+ * 09:00". "Today"/"tomorrow" are the schedule zone's calendar dates, not the
+ * browser's. "Around" because the backend fires each URL at a hash-derived
+ * slot within ~10 minutes after the wall-clock time. Null when no time is
+ * usable or the timezone is invalid.
  */
 export const getNextScheduledFetchText = (
   times: string[],
@@ -250,5 +252,5 @@ export const getNextScheduledFetchText = (
     dateLabel = next.at.format("ddd, MMM D");
   }
 
-  return `Next fetch: ${dateLabel} at ${next.at.format("HH:mm")}`;
+  return `Next fetch: ${dateLabel} around ${next.at.format("HH:mm")}`;
 };

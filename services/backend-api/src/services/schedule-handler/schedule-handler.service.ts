@@ -186,8 +186,9 @@ export class ScheduleHandlerService {
 
   /**
    * Clock branch of the scheduler loop (ADR-009): fires each scheduled-mode
-   * feed once per scheduled local minute. Due feeds are selected by the pure
-   * scheduled-feed-computation (timezone wall clock, catch-up bound,
+   * feed once per scheduled local minute, at the URL's hash-derived delay slot
+   * within the jitter window after that minute. Due feeds are selected by the
+   * pure scheduled-feed-computation (timezone wall clock, catch-up bound,
    * once-per-scheduled-time guard input, hot-minute spreading), grouped by URL
    * into the same batch shape as the interval path, and stamped with a
    * scheduled trigger carrying the scheduled time.

@@ -92,7 +92,7 @@ test.describe("Scheduled feed delivery settings", () => {
     // The overview renders the selected days under the "Delivery Schedule"
     // label.
     await expect(
-      page.getByText("Mon, Fri at 09:00 (Asia/Shanghai)"),
+      page.getByText("Mon, Fri around 09:00 (Asia/Shanghai)"),
     ).toBeVisible({ timeout: 10000 });
 
     // Reopen the dialog and verify the day selection persisted.

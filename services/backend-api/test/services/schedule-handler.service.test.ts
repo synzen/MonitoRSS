@@ -9,7 +9,12 @@ import {
   UserFeedHealthStatus,
 } from "../../src/repositories/shared/enums";
 import { fnv1aHash } from "../../src/shared/utils/fnv1a-hash";
-import { SCHEDULED_BATCH_RATE_SECONDS } from "../../src/shared/constants/scheduler.constants";
+import {
+  SCHEDULED_BATCH_RATE_SECONDS,
+  SCHEDULED_JITTER_SLOTS,
+  SCHEDULER_WINDOW_SIZE_MS,
+} from "../../src/shared/constants/scheduler.constants";
+import { urlWithSlot } from "../helpers/schedule-slots";
 
 const DEFAULT_REFRESH_RATE_SECONDS = 600;
 const DEFAULT_MAX_DAILY_ARTICLES = 100;
@@ -1419,22 +1424,10 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
 
   describe("handleScheduledFeeds", () => {
     // The clock branch fires on wall-clock minutes, so the tests pin `now` to
-    // a fixed UTC occurrence and pick URLs whose spreading slot matches the
-    // tick being simulated (slot = hash(url) % ticks per minute).
+    // a fixed UTC occurrence and pick URLs whose jitter slot matches the tick
+    // being simulated (slot = hash(url) % SCHEDULED_JITTER_SLOTS).
     const OCCURRENCE = Date.parse("2026-09-26T21:00:00Z");
-    const TICK_MS = 30_000;
-
-    function urlWithSlot(slot: number, base: string): string {
-      for (let i = 0; i < 1000; ++i) {
-        const url = `https://example.com/${base}-${i}.xml`;
-
-        if (fnv1aHash(url) % 2 === slot) {
-          return url;
-        }
-      }
-
-      throw new Error(`No url found for slot ${slot}`);
-    }
+    const TICK_MS = SCHEDULER_WINDOW_SIZE_MS;
 
     async function createScheduledFeed(
       ctx: ReturnType<ReturnType<typeof createScheduleHandlerHarness>["createContext"]>,
@@ -1615,7 +1608,7 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       );
     });
 
-    it("spreads due URLs across the minute's ticks", async () => {
+    it("spreads due URLs across the jitter window's ticks", async () => {
       let nowMs = 0;
       const ctx = harness.createContext({ now: () => nowMs });
       const slot0Url = urlWithSlot(0, "spread-tick0");
@@ -1625,6 +1618,13 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
 
       nowMs = OCCURRENCE;
       await ctx.service.handleScheduledFeeds();
+
+      // The fan-out records the delivery claim once the completed event is
+      // processed; an unclaimed occurrence would legitimately re-fire on the
+      // next tick, so simulate the claim landing before the second tick.
+      await ctx.setFields(slot0Feed.id, {
+        lastScheduledFiredAt: new Date(OCCURRENCE),
+      });
 
       nowMs = OCCURRENCE + TICK_MS;
       await ctx.service.handleScheduledFeeds();
@@ -1647,7 +1647,7 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       );
       assert.ok(
         !secondTickUrls.includes(slot0Feed.url),
-        "slot-0 URL must not refire on the second tick",
+        "a claimed slot-0 occurrence must not refire on the second tick",
       );
     });
 
@@ -1703,9 +1703,10 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         feedRequestLookupKey: lookupKey,
       });
 
-      // The spreading slot is keyed by URL, so fire the tick this URL is
-      // assigned to.
-      nowMs = OCCURRENCE + (fnv1aHash(redditUrl) % 2) * TICK_MS;
+      // The firing slot is keyed by URL, so fire the tick this URL is
+      // assigned to within the jitter window.
+      nowMs =
+        OCCURRENCE + (fnv1aHash(redditUrl) % SCHEDULED_JITTER_SLOTS) * TICK_MS;
       await ctx.service.handleScheduledFeeds();
 
       const batches = collectedBatches(ctx);
