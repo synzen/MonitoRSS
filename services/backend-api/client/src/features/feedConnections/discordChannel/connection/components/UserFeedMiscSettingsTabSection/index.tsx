@@ -19,7 +19,6 @@ import {
   TableScrollArea,
   Text,
   Heading,
-  RadioCard,
 } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -35,9 +34,8 @@ import {
   useUpdateUserFeed,
   useUserFeed,
   useFeedScope,
-  FeedScheduleSettings,
 } from "@/features/feed";
-import { DiscordUsername, useDiscordUserMe } from "@/features/discordUser";
+import { DiscordUsername } from "@/features/discordUser";
 import { pages, UserFeedManagerInviteType, UserFeedManagerStatus } from "@/constants";
 import { ResendUserFeedManagementInviteButton } from "./ResendUserFeedManagementInviteButton";
 import { SelectUserDialog } from "./SelectUserDialog";
@@ -52,16 +50,7 @@ import {
   usePageAlertContext,
 } from "@/contexts/PageAlertContext";
 import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
-import ApiAdapterError from "@/utils/ApiAdapterError";
-import { getEffectiveRefreshRateSeconds } from "@/utils/formatRefreshRateSeconds";
-import {
-  browserTimezone,
-  isEveryDay,
-  isTimezoneValue,
-  MAX_SCHEDULE_TIMES,
-  SCHEDULE_TIME_PATTERN,
-  ALL_SCHEDULE_DAYS,
-} from "@/utils/feedSchedule";
+import { isTimezoneValue } from "@/utils/feedSchedule";
 import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
@@ -72,8 +61,6 @@ import { Tag } from "@/components/ui/tag";
 interface Props {
   feedId: string;
 }
-
-const SCHEDULE_DEFAULT_TIME = "09:00";
 
 const FormSchema = object({
   dateFormat: string().optional(),
@@ -90,34 +77,6 @@ const FormSchema = object({
     .optional()
     .nullable()
     .default(null),
-  userRefreshRateMinutes: string().optional(),
-  scheduleMode: string().oneOf(["interval", "scheduled"]).default("interval"),
-  scheduleTimes: array(
-    string().required("Choose a time").matches(SCHEDULE_TIME_PATTERN, "Enter a valid time"),
-  ).when("scheduleMode", {
-    is: "scheduled",
-    then: (schema) =>
-      schema
-        .min(1, "Add at least one delivery time")
-        .max(MAX_SCHEDULE_TIMES, `Up to ${MAX_SCHEDULE_TIMES} times per day`),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  scheduleTimezone: string().when("scheduleMode", {
-    is: "scheduled",
-    then: (schema) =>
-      schema
-        .required("Choose a timezone")
-        .test("is-timezone", "Must be a valid timezone", isTimezoneValue),
-    otherwise: (schema) => schema.notRequired(),
-  }),
-  scheduleDays: array(number().oneOf(ALL_SCHEDULE_DAYS, "Invalid day").required()).when(
-    "scheduleMode",
-    {
-      is: "scheduled",
-      then: (schema) => schema.min(1, "Choose at least one day"),
-      otherwise: (schema) => schema.notRequired(),
-    },
-  ),
 });
 
 type FormValues = InferType<typeof FormSchema>;
@@ -132,7 +91,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
   } = useUserFeed({
     feedId,
   });
-  const { data: user } = useDiscordUserMe();
   const [manageInviteDialogState, setManageInviteDialogState] = useState<{
     isOpen: boolean;
     inviteId: string;
@@ -152,18 +110,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       dateLocale: feed?.formatOptions?.dateLocale || "",
       oldArticleDateDiffMsThreshold: feed?.dateCheckOptions?.oldArticleDateDiffMsThreshold || 0,
       shareManageOptions: feed?.shareManageOptions || null,
-      userRefreshRateMinutes:
-        (
-          Number(getEffectiveRefreshRateSeconds(feed || { refreshRateSeconds: 0 }).toFixed(1)) / 60
-        )?.toString() || "",
-      scheduleMode: feed?.scheduleMode === "scheduled" ? "scheduled" : "interval",
-      scheduleTimes: feed?.schedule?.times?.length ? feed.schedule.times : [SCHEDULE_DEFAULT_TIME],
-      scheduleTimezone: feed?.schedule?.timezone || browserTimezone(),
-      // Absent days on the feed means every day.
-      scheduleDays:
-        feed?.schedule?.days && !isEveryDay(feed.schedule.days)
-          ? feed.schedule.days
-          : ALL_SCHEDULE_DAYS,
     },
   });
   const {
@@ -172,7 +118,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
     reset,
     formState: { errors: formErrors },
     watch,
-    setValue,
   } = formMethods;
 
   const [dateFormat, dateTimezone, dateLocale] = watch([
@@ -180,21 +125,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
     "dateTimezone",
     "dateLocale",
   ]);
-
-  const scheduleMode = watch("scheduleMode");
-  const scheduleTimezone = watch("scheduleTimezone");
-  const scheduleDays = watch("scheduleDays");
-
-  const scheduleTimesErrors = formErrors.scheduleTimes as
-    | { message?: string }
-    | Array<{ message?: string } | undefined>
-    | undefined;
-  const scheduleTimesListError = !Array.isArray(scheduleTimesErrors)
-    ? scheduleTimesErrors?.message
-    : undefined;
-  const scheduleTimeRowErrors = Array.isArray(scheduleTimesErrors)
-    ? scheduleTimesErrors.map((e) => e?.message)
-    : undefined;
 
   const debouncedPreviewInput = useDebounce(
     {
@@ -227,10 +157,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
 
   const onUpdatedFeed = async (values: FormValues) => {
     try {
-      const userRefreshRateMinutesInSeconds = !Number.isNaN(values.userRefreshRateMinutes)
-        ? Number(values.userRefreshRateMinutes) * 60
-        : undefined;
-      const isScheduledMode = values.scheduleMode === "scheduled";
       const updatedFeed = await mutateAsync({
         feedId,
         data: {
@@ -247,32 +173,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                   oldArticleDateDiffMsThreshold: values.oldArticleDateDiffMsThreshold,
                 }
               : undefined,
-          // In scheduled mode the interval value is left untouched on the
-          // server so switching back to interval mode is lossless.
-          ...(isScheduledMode
-            ? {
-                scheduleMode: "scheduled" as const,
-                schedule: {
-                  times: [
-                    ...new Set(
-                      values.scheduleTimes?.filter((time) => SCHEDULE_TIME_PATTERN.test(time)) ||
-                        [],
-                    ),
-                  ].sort(),
-                  timezone: values.scheduleTimezone || browserTimezone(),
-                  // All seven days is the canonical "every day" form, sent
-                  // without the days field.
-                  ...(values.scheduleDays?.length === 7
-                    ? {}
-                    : {
-                        days: [...new Set(values.scheduleDays || [])].sort((a, b) => a - b),
-                      }),
-                },
-              }
-            : {
-                scheduleMode: "interval" as const,
-                userRefreshRateSeconds: userRefreshRateMinutesInSeconds,
-              }),
         },
       });
 
@@ -283,60 +183,15 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
         oldArticleDateDiffMsThreshold:
           updatedFeed.result.dateCheckOptions?.oldArticleDateDiffMsThreshold,
         shareManageOptions: updatedFeed.result.shareManageOptions || null,
-        userRefreshRateMinutes: (getEffectiveRefreshRateSeconds(updatedFeed.result) / 60).toFixed(
-          1,
-        ),
-        scheduleMode: updatedFeed.result.scheduleMode === "scheduled" ? "scheduled" : "interval",
-        scheduleTimes: updatedFeed.result.schedule?.times?.length
-          ? updatedFeed.result.schedule.times
-          : [SCHEDULE_DEFAULT_TIME],
-        scheduleTimezone: updatedFeed.result.schedule?.timezone || browserTimezone(),
-        scheduleDays: isEveryDay(updatedFeed.result.schedule?.days)
-          ? ALL_SCHEDULE_DAYS
-          : updatedFeed.result.schedule?.days,
       });
       createSuccessAlert({
         title: "Successfully updated feed settings",
       });
     } catch (e) {
-      const fastestAllowedRate = Math.min(
-        ...(feed?.refreshRateOptions.filter((r) => !r.disabledCode).map((o) => o.rateSeconds) ||
-          []),
-      );
-      const canHaveLowerRate = feed?.refreshRateOptions.filter(
-        (r) => r.disabledCode === "INSUFFICIENT_SUPPORTER_TIER",
-      );
-
-      if (e instanceof ApiAdapterError && e.errorCode === "USER_REFRESH_RATE_NOT_ALLOWED") {
-        createErrorAlert({
-          title: "Refresh rate is not allowed.",
-          description: (
-            <Text>
-              Your selected refresh rate must be greater than or equal to
-              {(fastestAllowedRate / 60).toFixed(1)} minutes and less than or equal to 1440.0
-              minutes (1 day).
-              {canHaveLowerRate && (
-                <>
-                  {" "}
-                  <ChakraLink
-                    color="text.link"
-                    href="https://monitorss.xyz/pricing"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Get lower rates by being a paid supporter.
-                  </ChakraLink>
-                </>
-              )}
-            </Text>
-          ),
-        });
-      } else {
-        createErrorAlert({
-          title: t("common.errors.failedToSave"),
-          description: e instanceof Error ? e.message : undefined,
-        });
-      }
+      createErrorAlert({
+        title: t("common.errors.failedToSave"),
+        description: e instanceof Error ? e.message : undefined,
+      });
     }
   };
 
@@ -622,125 +477,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                 </Stack>
               </Stack>
             )}
-            <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>
-              <Heading size="sm" as="h3">
-                Delivery schedule
-              </Heading>
-              <Controller
-                name="scheduleMode"
-                control={control}
-                render={({ field }) => (
-                  <RadioCard.Root
-                    value={field.value}
-                    onValueChange={(details) => field.onChange(details.value)}
-                    colorPalette="blue"
-                    aria-label="Scheduling mode"
-                  >
-                    <Stack direction={{ base: "column", md: "row" }} gap={3} alignItems="stretch">
-                      <RadioCard.Item value="interval" flex={1} alignItems="flex-start">
-                        <RadioCard.ItemHiddenInput />
-                        <RadioCard.ItemControl alignItems="flex-start" gap={3}>
-                          <RadioCard.ItemIndicator mt={1} />
-                          <Stack gap={0.5}>
-                            <RadioCard.ItemText fontWeight="medium">
-                              Check automatically
-                            </RadioCard.ItemText>
-                            <RadioCard.ItemDescription>
-                              The feed is checked at a fixed interval and new articles are delivered
-                              as they are found.
-                            </RadioCard.ItemDescription>
-                          </Stack>
-                        </RadioCard.ItemControl>
-                      </RadioCard.Item>
-                      <RadioCard.Item value="scheduled" flex={1} alignItems="flex-start">
-                        <RadioCard.ItemHiddenInput />
-                        <RadioCard.ItemControl alignItems="flex-start" gap={3}>
-                          <RadioCard.ItemIndicator mt={1} />
-                          <Stack gap={0.5}>
-                            <RadioCard.ItemText fontWeight="medium">
-                              At scheduled times
-                            </RadioCard.ItemText>
-                            <RadioCard.ItemDescription>
-                              The feed is checked and delivered once at each time you pick, for
-                              example every weekday at 09:00. Your interval is kept and applies
-                              again if you switch back.
-                            </RadioCard.ItemDescription>
-                          </Stack>
-                        </RadioCard.ItemControl>
-                      </RadioCard.Item>
-                    </Stack>
-                  </RadioCard.Root>
-                )}
-              />
-              {scheduleMode === "scheduled" ? (
-                <Box border="1px solid" borderColor="border" borderRadius="l3" p={4}>
-                  {/* Key forces a remount on mode switch: otherwise React reuses
-                      the interval Controller instance and field.value goes stale. */}
-                  <Controller
-                    key="schedule-times"
-                    name="scheduleTimes"
-                    control={control}
-                    render={({ field }) => (
-                      <FeedScheduleSettings
-                        times={field.value ?? []}
-                        onTimesChange={field.onChange}
-                        timeErrors={scheduleTimeRowErrors}
-                        timesListError={scheduleTimesListError}
-                        days={scheduleDays ?? ALL_SCHEDULE_DAYS}
-                        onDaysChange={(days) =>
-                          setValue("scheduleDays", days, { shouldDirty: true })
-                        }
-                        daysError={formErrors.scheduleDays?.message}
-                        timezone={scheduleTimezone || browserTimezone()}
-                        onTimezoneChange={(tz) =>
-                          setValue("scheduleTimezone", tz, { shouldDirty: true })
-                        }
-                        timezoneError={formErrors.scheduleTimezone?.message}
-                      />
-                    )}
-                  />
-                </Box>
-              ) : (
-                <Box border="1px solid" borderColor="border" borderRadius="l3" p={4}>
-                  {!feed?.refreshRateOptions.length && (
-                    <Text color="fg.muted">This feed does not have any refresh rate options.</Text>
-                  )}
-                  {!!feed?.refreshRateOptions.length && (
-                    <Controller
-                      key="refresh-rate"
-                      name="userRefreshRateMinutes"
-                      control={control}
-                      render={({ field }) => {
-                        return (
-                          <Field
-                            invalid={!!formErrors.userRefreshRateMinutes}
-                            errorText={formErrors.userRefreshRateMinutes?.message}
-                          >
-                            <HStack alignItems="center" gap={4}>
-                              <NumberInputRoot
-                                allowMouseWheel
-                                step={0.1}
-                                value={field.value}
-                                onValueChange={(details) => {
-                                  return field.onChange(details.value);
-                                }}
-                                onBlur={() => field.onBlur()}
-                                disabled={!user || field.disabled}
-                                ref={field.ref}
-                                name={field.name}
-                              >
-                                <NumberInputField />
-                              </NumberInputRoot>
-                              <Text as="label">minutes</Text>
-                            </HStack>
-                          </Field>
-                        );
-                      }}
-                    />
-                  )}
-                </Box>
-              )}
-            </Stack>
             <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>
               <Stack gap={2}>
                 <Heading size="sm" as="h3" pb={2}>

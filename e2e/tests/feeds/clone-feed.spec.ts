@@ -205,12 +205,12 @@ test.describe("Clone Feed", () => {
         timeout: 10000,
       });
 
-      // Verify Settings tab values
+      // Verify Settings tab values. The cloned feed lands on the overview,
+      // where the copied refresh rate is rendered.
+      await expect(page.getByText("30 minutes", { exact: true })).toBeVisible({
+        timeout: 10000,
+      });
       await page.getByRole("tab", { name: "Settings" }).click();
-
-      await expect(
-        page.locator('input[name="userRefreshRateMinutes"]'),
-      ).toHaveValue("30", { timeout: 10000 });
 
       await expect(page.locator('input[name="dateTimezone"]')).toHaveValue(
         "Europe/London",

@@ -244,40 +244,65 @@ test.describe("Feed Settings", () => {
   });
 
   test.describe("Miscellaneous Feed Settings", () => {
-    test("can update refresh rate and verify it in Feed Overview", async ({
+    test("can update refresh rate via the delivery schedule dialog and verify it in Feed Overview", async ({
       page,
       testFeed,
     }) => {
-      await page.goto(`/feeds/${testFeed.id}?view=settings`);
-      await expect(
-        page.getByRole("heading", { name: testFeed.title }),
-      ).toBeVisible({ timeout: 10000 });
-
-      await expect(
-        page.getByRole("heading", { name: "Refresh Rate" }),
-      ).toBeVisible({ timeout: 10000 });
-
-      const refreshRateInput = page.locator(
-        'input[name="userRefreshRateMinutes"]',
-      );
-      await refreshRateInput.clear();
-      await refreshRateInput.fill("15");
-
-      await page.getByRole("button", { name: "Save all changes" }).click();
-
-      await expect(page.getByText("Changes saved.")).toBeVisible({ timeout: 10000 });
-
       await page.goto(`/feeds/${testFeed.id}`);
       await expect(
         page.getByRole("heading", { name: "Feed Overview" }),
       ).toBeVisible({ timeout: 10000 });
 
-      await expect(page.getByText(/15 minutes/i)).toBeVisible({
+      await page.getByRole("button", { name: "Refresh Rate" }).click();
+
+      const refreshRateInput = page.locator('input[name="userRefreshRateMinutes"]');
+      await expect(refreshRateInput).toBeVisible({ timeout: 10000 });
+      await refreshRateInput.fill("30");
+
+      await page.getByRole("button", { name: "Save" }).click();
+
+      // The dialog closes and the overview renders the new interval.
+      await expect(refreshRateInput).toBeHidden();
+      await expect(page.getByText(/30 minutes/i)).toBeVisible({
         timeout: 10000,
       });
 
-      await page.goto(`/feeds/${testFeed.id}?view=settings`);
-      await expect(refreshRateInput).toHaveValue("15", { timeout: 10000 });
+      // Reopen the dialog and verify the value persisted.
+      await page.getByRole("button", { name: "Refresh Rate" }).click();
+      await expect(refreshRateInput).toHaveValue("30", { timeout: 10000 });
+    });
+
+    test("saving a refresh rate below the plan minimum explains why and offers an upgrade", async ({
+      page,
+      testFeed,
+    }) => {
+      await page.goto(`/feeds/${testFeed.id}`);
+      await expect(
+        page.getByRole("heading", { name: "Feed Overview" }),
+      ).toBeVisible({ timeout: 10000 });
+
+      await page.getByRole("button", { name: "Refresh Rate" }).click();
+
+      const refreshRateInput = page.locator('input[name="userRefreshRateMinutes"]');
+      await expect(refreshRateInput).toBeVisible({ timeout: 10000 });
+
+      // Below the free plan's fastest allowed rate, so the server rejects it.
+      await refreshRateInput.fill("2");
+      await page.getByRole("button", { name: "Save" }).click();
+
+      // The dialog stays open and the error alert (rendered at the bottom of
+      // the form) states the plan's minimum instead of a generic message.
+      const alert = page.getByRole("alert");
+      await expect(alert).toBeVisible({ timeout: 10000 });
+      await expect(
+        alert.getByText(/Failed to update the delivery schedule/),
+      ).toBeVisible();
+      await expect(
+        alert.getByText(/once every \d+(\.\d+)? minutes or more/),
+      ).toBeVisible();
+      await expect(
+        alert.getByRole("button", { name: "Upgrade for faster refresh rates" }),
+      ).toBeVisible();
     });
 
     test("can update article date checks", async ({ page, testFeed }) => {
@@ -462,10 +487,9 @@ test.describe("Feed Settings", () => {
       await checkbox.click({ force: true });
     }
 
-    async function navigateToFeedAndTab(
+    async function openFeedFromList(
       page: import("@playwright/test").Page,
       feedTitle: string,
-      tabName: "Settings" | "Comparisons" | "External Properties",
     ) {
       // Click Feeds breadcrumb to go to feeds list
       await page.getByRole("link", { name: "Feeds" }).click();
@@ -473,6 +497,17 @@ test.describe("Feed Settings", () => {
 
       // Click on the feed link in the table (use first() to avoid matching the Configure button)
       await page.getByRole("link", { name: feedTitle }).first().click();
+      await expect(
+        page.getByRole("heading", { name: "Feed Overview" }),
+      ).toBeVisible({ timeout: 10000 });
+    }
+
+    async function navigateToFeedAndTab(
+      page: import("@playwright/test").Page,
+      feedTitle: string,
+      tabName: "Settings" | "Comparisons" | "External Properties",
+    ) {
+      await openFeedFromList(page, feedTitle);
       await expect(page.getByRole("tab", { name: tabName })).toBeVisible({
         timeout: 10000,
       });
@@ -523,11 +558,10 @@ test.describe("Feed Settings", () => {
         ).toBeVisible({ timeout: 10000 });
 
         // Verify target feed 1 has copied settings via UI
-        await navigateToFeedAndTab(page, targetFeed1.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).toHaveValue("15", { timeout: 10000 });
-
+        await openFeedFromList(page, targetFeed1.title);
+        await expect(page.getByText("15 minutes", { exact: true })).toBeVisible({
+          timeout: 10000,
+        });
         await page.getByRole("tab", { name: "Comparisons" }).click();
         await expect(
           page.getByRole("button", {
@@ -541,16 +575,14 @@ test.describe("Feed Settings", () => {
         ).not.toBeVisible();
 
         // Verify target feed 2 has copied settings via UI
-        await navigateToFeedAndTab(page, targetFeed2.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).toHaveValue("15", { timeout: 10000 });
+        await openFeedFromList(page, targetFeed2.title);
+        await expect(page.getByText("15 minutes", { exact: true })).toBeVisible({
+          timeout: 10000,
+        });
 
-        // Verify target feed 3 was NOT updated (not selected) - should have default value, not 15
-        await navigateToFeedAndTab(page, targetFeed3.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).not.toHaveValue("15", { timeout: 10000 });
+        // Verify target feed 3 was NOT updated (not selected) - keeps its default rate
+        await openFeedFromList(page, targetFeed3.title);
+        await expect(page.getByText("15 minutes", { exact: true })).toHaveCount(0);
       } finally {
         await bulkDeleteFeeds(page, [
           targetFeed1.id,
@@ -601,21 +633,19 @@ test.describe("Feed Settings", () => {
         ).toBeVisible({ timeout: 10000 });
 
         // Verify non-excluded target feeds have copied settings via UI
-        await navigateToFeedAndTab(page, targetFeed1.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).toHaveValue("15", { timeout: 10000 });
+        await openFeedFromList(page, targetFeed1.title);
+        await expect(page.getByText("15 minutes", { exact: true })).toBeVisible({
+          timeout: 10000,
+        });
 
-        await navigateToFeedAndTab(page, targetFeed3.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).toHaveValue("15", { timeout: 10000 });
+        await openFeedFromList(page, targetFeed3.title);
+        await expect(page.getByText("15 minutes", { exact: true })).toBeVisible({
+          timeout: 10000,
+        });
 
-        // Verify the excluded feed was NOT updated (keeps its default, not 15)
-        await navigateToFeedAndTab(page, targetFeed2.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).not.toHaveValue("15", { timeout: 10000 });
+        // Verify the excluded feed was NOT updated (keeps its default rate)
+        await openFeedFromList(page, targetFeed2.title);
+        await expect(page.getByText("15 minutes", { exact: true })).toHaveCount(0);
       } finally {
         await bulkDeleteFeeds(page, [
           targetFeed1.id,
@@ -682,10 +712,11 @@ test.describe("Feed Settings", () => {
         ).toBeVisible({ timeout: 10000 });
 
         // Verify settings via UI
-        await navigateToFeedAndTab(page, targetFeed.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).toHaveValue("20", { timeout: 10000 });
+        await openFeedFromList(page, targetFeed.title);
+        await expect(page.getByText("20 minutes", { exact: true })).toBeVisible({
+          timeout: 10000,
+        });
+        await page.getByRole("tab", { name: "Settings" }).click();
         await expect(page.locator('input[name="dateTimezone"]')).toHaveValue(
           "America/New_York",
           { timeout: 10000 },
@@ -784,22 +815,18 @@ test.describe("Feed Settings", () => {
         ).toBeVisible({ timeout: 10000 });
 
         // Verify beta feed has copied settings via UI
-        await navigateToFeedAndTab(page, betaFeed.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).toHaveValue("15", { timeout: 10000 });
+        await openFeedFromList(page, betaFeed.title);
+        await expect(page.getByText("15 minutes", { exact: true })).toBeVisible({
+          timeout: 10000,
+        });
 
-        // Verify alpha feed was NOT updated (filtered out by search) - should have default value, not 15
-        await navigateToFeedAndTab(page, alphaFeed.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).not.toHaveValue("15", { timeout: 10000 });
+        // Verify alpha feed was NOT updated (filtered out by search) - keeps its default rate
+        await openFeedFromList(page, alphaFeed.title);
+        await expect(page.getByText("15 minutes", { exact: true })).toHaveCount(0);
 
-        // Verify gamma feed was NOT updated (filtered out by search) - should have default value, not 15
-        await navigateToFeedAndTab(page, gammaFeed.title, "Settings");
-        await expect(
-          page.locator('input[name="userRefreshRateMinutes"]'),
-        ).not.toHaveValue("15", { timeout: 10000 });
+        // Verify gamma feed was NOT updated (filtered out by search) - keeps its default rate
+        await openFeedFromList(page, gammaFeed.title);
+        await expect(page.getByText("15 minutes", { exact: true })).toHaveCount(0);
       } finally {
         await deleteFeed(page, alphaFeed.id);
         await deleteFeed(page, betaFeed.id);

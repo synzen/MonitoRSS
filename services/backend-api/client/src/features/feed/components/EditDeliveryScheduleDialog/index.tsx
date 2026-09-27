@@ -1,9 +1,11 @@
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Box, Button, HStack, RadioGroup as ChakraRadioGroup, Stack, Text } from "@chakra-ui/react";
 import { Controller, useForm } from "react-hook-form";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { InferType, array, number, object, string } from "yup";
 import { InlineErrorAlert, PrimaryActionButton } from "@/components";
+import { PricingDialogContext } from "@/features/subscriptionProducts";
+import ApiAdapterError from "@/utils/ApiAdapterError";
 import {
   DialogBody,
   DialogCloseTrigger,
@@ -17,6 +19,7 @@ import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input"
 import { FeedScheduleSettings } from "../FeedScheduleSettings";
 import { UpdateUserFeedInput } from "../../api";
 import { UserFeed } from "../../types";
+import { Field } from "@/components/ui/field";
 import {
   ALL_SCHEDULE_DAYS,
   MAX_SCHEDULE_TIMES,
@@ -56,10 +59,34 @@ const FormSchema = object({
       otherwise: (schema) => schema.notRequired(),
     },
   ),
-  userRefreshRateMinutes: string().optional(),
+  userRefreshRateMinutes: string().when("scheduleMode", {
+    is: "interval",
+    then: (schema) =>
+      schema
+        .required("Enter a refresh rate")
+        .test("is-positive-number", "Enter a refresh rate greater than 0", (value) => {
+          const minutes = Number(value);
+
+          return Number.isFinite(minutes) && minutes > 0;
+        }),
+    otherwise: (schema) => schema.notRequired(),
+  }),
 });
 
 type FormValues = InferType<typeof FormSchema>;
+
+// Rates without a disabledCode are the ones the user's plan allows; locked
+// rates are marked INSUFFICIENT_SUPPORTER_TIER.
+const getFastestAllowedRateSeconds = (feed: UserFeed) => {
+  const rates = feed.refreshRateOptions
+    .filter((option) => !option.disabledCode)
+    .map((option) => option.rateSeconds);
+
+  return rates.length ? Math.min(...rates) : undefined;
+};
+
+const getCanUpgradeRefreshRate = (feed: UserFeed) =>
+  feed.refreshRateOptions.some((option) => option.disabledCode === "INSUFFICIENT_SUPPORTER_TIER");
 
 const defaultValues = (feed: UserFeed): FormValues => ({
   scheduleMode: feed.scheduleMode === "scheduled" ? "scheduled" : "interval",
@@ -127,6 +154,15 @@ interface Props {
   onUpdate: (data: UpdateUserFeedInput["data"]) => Promise<void>;
 }
 
+interface SubmitError {
+  message: string;
+  /**
+   * True when the requested rate is faster than the user's plan allows and a
+   * paid tier exists that unlocks lower rates.
+   */
+  canUpgrade: boolean;
+}
+
 export const EditDeliveryScheduleDialog: React.FC<Props> = ({
   isOpen,
   onClose,
@@ -145,7 +181,8 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
     resolver: yupResolver(FormSchema),
     defaultValues: defaultValues(feed),
   });
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<SubmitError | null>(null);
+  const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
 
   useEffect(() => {
     if (isOpen) {
@@ -185,7 +222,10 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
         ].sort();
 
         if (!times.length) {
-          setSubmitError("Add at least one valid delivery time.");
+          setSubmitError({
+            message: "Add at least one valid delivery time.",
+            canUpgrade: false,
+          });
 
           return;
         }
@@ -214,9 +254,24 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
 
       onClose();
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Something went wrong. Please try again.",
-      );
+      if (err instanceof ApiAdapterError && err.errorCode === "USER_REFRESH_RATE_NOT_ALLOWED") {
+        const fastestAllowedRateSeconds = getFastestAllowedRateSeconds(feed);
+
+        setSubmitError({
+          message:
+            fastestAllowedRateSeconds !== undefined
+              ? `Your current plan only allows checking this feed once every ${(
+                  fastestAllowedRateSeconds / 60
+                ).toFixed(1)} minutes or more.`
+              : "The selected refresh rate is not allowed for your current plan.",
+          canUpgrade: getCanUpgradeRefreshRate(feed),
+        });
+      } else {
+        setSubmitError({
+          message: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+          canUpgrade: false,
+        });
+      }
     }
   };
 
@@ -238,12 +293,6 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
         <DialogCloseTrigger />
         <DialogBody>
           <Stack gap={5}>
-            {submitError && (
-              <InlineErrorAlert
-                title="Failed to update the delivery schedule"
-                description={submitError}
-              />
-            )}
             <Stack gap={2}>
               <Text fontSize="sm" fontWeight="medium">
                 Delivery mode
@@ -271,27 +320,43 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
                   <Controller
                     name="userRefreshRateMinutes"
                     control={control}
-                    render={({ field }) => (
-                      <Stack gap={1.5}>
-                        <Text fontSize="sm" fontWeight="medium">
-                          Refresh rate
-                        </Text>
-                        <HStack gap={3}>
-                          <NumberInputRoot
-                            step={0.1}
-                            allowMouseWheel
-                            value={field.value}
-                            onValueChange={(details) => field.onChange(details.value)}
-                            onBlur={() => field.onBlur()}
-                            name={field.name}
-                            ref={field.ref}
-                          >
-                            <NumberInputField width="130px" />
-                          </NumberInputRoot>
-                          <Text>minutes</Text>
-                        </HStack>
-                      </Stack>
-                    )}
+                    render={({ field }) => {
+                      const fastestAllowedRateSeconds = getFastestAllowedRateSeconds(feed);
+
+                      return (
+                        <Field
+                          invalid={!!errors.userRefreshRateMinutes}
+                          errorText={errors.userRefreshRateMinutes?.message}
+                        >
+                          <Text fontSize="sm" fontWeight="medium">
+                            Refresh rate
+                          </Text>
+                          <HStack gap={3}>
+                            <NumberInputRoot
+                              step={0.1}
+                              allowMouseWheel
+                              value={field.value}
+                              onValueChange={(details) => field.onChange(details.value)}
+                              onBlur={() => field.onBlur()}
+                              name={field.name}
+                              ref={field.ref}
+                            >
+                              <NumberInputField width="130px" />
+                            </NumberInputRoot>
+                            <Text>minutes</Text>
+                          </HStack>
+                          {fastestAllowedRateSeconds !== undefined &&
+                            !errors.userRefreshRateMinutes && (
+                              <Text fontSize="sm" color="fg.muted">
+                                Your plan allows checking as often as every{" "}
+                                {(fastestAllowedRateSeconds / 60).toFixed(1)} minutes.
+                                {getCanUpgradeRefreshRate(feed) &&
+                                  " Lower rates are available on paid plans."}
+                              </Text>
+                            )}
+                        </Field>
+                      );
+                    }}
                   />
                 </ModeCard>
                 <ModeCard
@@ -327,6 +392,21 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
                 </ModeCard>
               </ChakraRadioGroup.Root>
             </Stack>
+            {submitError && (
+              <InlineErrorAlert
+                title="Failed to update the delivery schedule"
+                description={
+                  <Stack gap={3} alignItems="flex-start">
+                    <Text>{submitError.message}</Text>
+                    {submitError.canUpgrade && (
+                      <Button size="sm" onClick={() => onOpenPricingDialog()}>
+                        Upgrade for faster refresh rates
+                      </Button>
+                    )}
+                  </Stack>
+                }
+              />
+            )}
           </Stack>
         </DialogBody>
         <DialogFooter justifyContent="space-between" alignItems="center" gap={4}>

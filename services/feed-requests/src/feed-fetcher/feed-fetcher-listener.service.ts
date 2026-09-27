@@ -69,9 +69,8 @@ export class FeedFetcherListenerService {
     // entries for the same URL with different occurrences (or a scheduled
     // entry racing an interval one) must not swallow each other's completed
     // event via the lock (ADR-009).
-    const triggerScope = event.trigger?.kind === "scheduled"
-      ? `-${event.trigger.occurredAt}`
-      : '';
+    const triggerScope =
+      event.trigger?.kind === 'scheduled' ? `-${event.trigger.occurredAt}` : '';
 
     return `listener-service-${lookupKey}-${rateSeconds}${triggerScope}`;
   };
