@@ -489,25 +489,41 @@ async function handleFeedV2EventInternal({
     }
   );
 
-  const sent = deliveryResults.filter(
-    (r) => r.status === ArticleDeliveryStatus.Sent
-  ).length;
-  const filtered = deliveryResults.filter(
-    (r) => r.status === ArticleDeliveryStatus.FilteredOut
-  ).length;
-  const rateLimited = deliveryResults.filter(
-    (r) => r.status === ArticleDeliveryStatus.RateLimited
-  ).length;
-  const failed = deliveryResults.filter(
-    (r) => r.status === ArticleDeliveryStatus.Failed
-  ).length;
+  // Send is asynchronous for Discord mediums: results start as pending-delivery
+  // and only reach a final status once the discord-rest-listener reports back.
+  // A summary stuck on pending-delivery therefore means the message was
+  // enqueued but no listener processed it yet.
+  const countByStatus = (status: ArticleDeliveryStatus) =>
+    deliveryResults.filter((r) => r.status === status).length;
 
-  logger.debug(
-    `Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed`,
-    { feedId: feed.id }
-  );
+  const otherStatusCounts = new Map<string, number>();
+  const primaryStatuses = [
+    ArticleDeliveryStatus.Sent,
+    ArticleDeliveryStatus.FilteredOut,
+    ArticleDeliveryStatus.RateLimited,
+    ArticleDeliveryStatus.Failed,
+  ];
+  for (const result of deliveryResults) {
+    if (!primaryStatuses.includes(result.status)) {
+      otherStatusCounts.set(
+        result.status,
+        (otherStatusCounts.get(result.status) ?? 0) + 1,
+      );
+    }
+  }
+
+  const statusSummary =
+    `${countByStatus(ArticleDeliveryStatus.Sent)} sent, ` +
+    `${countByStatus(ArticleDeliveryStatus.FilteredOut)} filtered, ` +
+    `${countByStatus(ArticleDeliveryStatus.RateLimited)} rate-limited, ` +
+    `${countByStatus(ArticleDeliveryStatus.Failed)} failed` +
+    (otherStatusCounts.size
+      ? `, ${Array.from(otherStatusCounts, ([status, count]) => `${count} ${status}`).join(", ")}`
+      : "");
+
+  logger.debug(`Delivery complete: ${statusSummary}`, { feedId: feed.id });
   debugLog(
-    `Debug feed ${feed.id}: Delivery complete: ${sent} sent, ${filtered} filtered, ${rateLimited} rate-limited, ${failed} failed, total ${deliveryResults.length}`
+    `Debug feed ${feed.id}: Delivery complete: ${statusSummary}, total ${deliveryResults.length}`
   );
 
   // Articles reached the delivery stage but it produced no result at all

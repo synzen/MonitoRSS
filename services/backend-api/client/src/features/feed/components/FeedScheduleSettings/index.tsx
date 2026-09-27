@@ -33,6 +33,9 @@ interface Props {
   timezone: string;
   onTimezoneChange: (timezone: string) => void;
   timezoneError?: string;
+  // Hosts that surface the next-fetch preview elsewhere (e.g. a dialog footer)
+  // turn the inline preview box off.
+  hideNextFetchPreview?: boolean;
 }
 
 export const FeedScheduleSettings = ({
@@ -46,6 +49,7 @@ export const FeedScheduleSettings = ({
   daysError,
   timezone,
   timezoneError,
+  hideNextFetchPreview,
 }: Props) => {
   const timezoneGroups = useMemo(() => buildTimezoneGroups(), []);
   const offsetLabel = getTimezoneOffsetLabel(timezone);
@@ -192,28 +196,30 @@ export const FeedScheduleSettings = ({
           </Text>
         )}
       </Stack>
-      <Box
-        bg="bg.subtle"
-        border="1px solid"
-        borderColor="border"
-        borderRadius="l2"
-        px={3}
-        py={2}
-        width="fit-content"
-        maxW="full"
-        data-testid="next-scheduled-fetch"
-        aria-live="polite"
-      >
-        {nextFetchText ? (
-          <Text fontWeight="medium">{nextFetchText}</Text>
-        ) : (
-          <Text color="fg.muted">Add a valid time to see the next fetch.</Text>
-        )}
-        <Text fontSize="sm" color="fg.muted">
-          Articles are delivered once each. Something stuck at the top of the feed won&apos;t be
-          sent again.
-        </Text>
-      </Box>
+      {!hideNextFetchPreview && (
+        <Box
+          bg="bg.subtle"
+          border="1px solid"
+          borderColor="border"
+          borderRadius="l2"
+          px={3}
+          py={2}
+          width="fit-content"
+          maxW="full"
+          data-testid="next-scheduled-fetch"
+          aria-live="polite"
+        >
+          {nextFetchText ? (
+            <Text fontWeight="medium">{nextFetchText}</Text>
+          ) : (
+            <Text color="fg.muted">Add a valid time to see the next fetch.</Text>
+          )}
+          <Text fontSize="sm" color="fg.muted">
+            Articles are delivered once each. Something stuck at the top of the feed won&apos;t be
+            sent again.
+          </Text>
+        </Box>
+      )}
     </Stack>
   );
 };

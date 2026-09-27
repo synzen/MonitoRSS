@@ -72,9 +72,9 @@ export const formatScheduleSummary = (feed: FeedScheduleShape): string | null =>
  * "GMT+8" / "GMT-5" / "GMT+5:30" for the zone's current offset. Null when the
  * zone is not a valid IANA timezone.
  */
-export const getTimezoneOffsetLabel = (timezone: string): string | null => {
+export const getTimezoneOffsetLabel = (tz: string): string | null => {
   try {
-    const offset = dayjs().tz(timezone).format("Z");
+    const offset = dayjs().tz(tz).format("Z");
 
     if (!/^[+-]\d{2}:\d{2}$/.test(offset)) {
       return null;
@@ -95,6 +95,24 @@ export const browserTimezone = (): string => {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   } catch {
     return "UTC";
+  }
+};
+
+export const isTimezoneValue = (val: string | undefined): boolean => {
+  if (!val) {
+    return true;
+  }
+
+  try {
+    dayjs().tz(val);
+
+    return true;
+  } catch (err) {
+    if (err instanceof RangeError) {
+      return false;
+    }
+
+    throw err;
   }
 };
 
@@ -154,19 +172,19 @@ const nextCalendarDate = (dateStr: string): string => {
  */
 export const getNextScheduledFetchText = (
   times: string[],
-  timezone: string,
+  tz: string,
   days?: number[],
 ): string | null => {
   const usableTimes = times.filter((t) => SCHEDULE_TIME_PATTERN.test(t));
 
-  if (!usableTimes.length || !timezone) {
+  if (!usableTimes.length || !tz) {
     return null;
   }
 
   let zoneNow: dayjs.Dayjs;
 
   try {
-    zoneNow = dayjs().tz(timezone);
+    zoneNow = dayjs().tz(tz);
   } catch {
     return null;
   }
@@ -182,7 +200,7 @@ export const getNextScheduledFetchText = (
 
   // The rule repeats weekly, so scanning the next 7 calendar dates (today
   // through a week out) always finds the next allowed occurrence.
-  for (let offset = 0; offset <= 7; ++offset) {
+  for (let offset = 0; offset <= 7; offset += 1) {
     let dateStr: string;
 
     try {
@@ -199,7 +217,7 @@ export const getNextScheduledFetchText = (
       let at: dayjs.Dayjs;
 
       try {
-        at = dayjs.tz(`${dateStr} ${time}`, "YYYY-MM-DD HH:mm", timezone);
+        at = dayjs.tz(`${dateStr} ${time}`, "YYYY-MM-DD HH:mm", tz);
       } catch {
         return null;
       }
@@ -222,12 +240,15 @@ export const getNextScheduledFetchText = (
     return null;
   }
 
-  const dateLabel =
-    next.dateStr === todayStr
-      ? "today"
-      : next.dateStr === tomorrowStr
-        ? "tomorrow"
-        : next.at.format("ddd, MMM D");
+  let dateLabel: string;
+
+  if (next.dateStr === todayStr) {
+    dateLabel = "today";
+  } else if (next.dateStr === tomorrowStr) {
+    dateLabel = "tomorrow";
+  } else {
+    dateLabel = next.at.format("ddd, MMM D");
+  }
 
   return `Next fetch: ${dateLabel} at ${next.at.format("HH:mm")}`;
 };

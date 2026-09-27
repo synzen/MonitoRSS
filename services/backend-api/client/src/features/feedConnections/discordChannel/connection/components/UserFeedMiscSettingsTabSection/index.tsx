@@ -23,7 +23,6 @@ import {
 } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
 import { yupResolver } from "@hookform/resolvers/yup";
-import dayjs from "dayjs";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
 import { array, InferType, number, object, string } from "yup";
@@ -58,6 +57,7 @@ import { getEffectiveRefreshRateSeconds } from "@/utils/formatRefreshRateSeconds
 import {
   browserTimezone,
   isEveryDay,
+  isTimezoneValue,
   MAX_SCHEDULE_TIMES,
   SCHEDULE_TIME_PATTERN,
   ALL_SCHEDULE_DAYS,
@@ -74,24 +74,6 @@ interface Props {
 }
 
 const SCHEDULE_DEFAULT_TIME = "09:00";
-
-const isTimezoneValue = (val: string | undefined) => {
-  if (!val) {
-    return true;
-  }
-
-  try {
-    dayjs().tz(val);
-
-    return true;
-  } catch (err) {
-    if (err instanceof RangeError) {
-      return false;
-    }
-
-    throw err;
-  }
-};
 
 const FormSchema = object({
   dateFormat: string().optional(),
