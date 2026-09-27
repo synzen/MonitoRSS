@@ -380,6 +380,101 @@ describe("scheduled-feed-computation", () => {
     });
   });
 
+  // 2026-09-26 is a Saturday; 2026-09-27 is the Sunday after it.
+  describe("selectDueScheduledFeeds - days of week", () => {
+    it("fires when the occurrence's calendar date is an allowed day", () => {
+      const feed = makeFeed({
+        id: "saturday",
+        url: urlWithSlot(0, "saturday"),
+        schedule: { times: ["21:00"], timezone: "UTC", days: [6] },
+      });
+
+      const due = selectDueScheduledFeeds([feed], SCHEDULED_TIME_2100_UTC);
+
+      assert.strictEqual(due.length, 1);
+      assert.strictEqual(due[0]?.scheduledAt, SCHEDULED_TIME_2100_UTC);
+    });
+
+    it("does not fire on a disallowed day", () => {
+      const feed = makeFeed({
+        id: "sunday-only",
+        url: urlWithSlot(0, "sunday-only"),
+        schedule: { times: ["21:00"], timezone: "UTC", days: [0] },
+      });
+
+      const due = selectDueScheduledFeeds([feed], SCHEDULED_TIME_2100_UTC);
+
+      assert.strictEqual(due.length, 0);
+    });
+
+    it("treats absent days as every day (pre-feature documents)", () => {
+      const feed = makeFeed({
+        id: "no-days",
+        url: urlWithSlot(0, "no-days"),
+        schedule: { times: ["21:00"], timezone: "UTC" },
+      });
+
+      const due = selectDueScheduledFeeds([feed], SCHEDULED_TIME_2100_UTC);
+
+      assert.strictEqual(due.length, 1);
+    });
+
+    it("evaluates the day on the schedule zone's calendar, not the emitter's", () => {
+      // 21:00 Asia/Shanghai on Saturday 2026-09-26 is 13:00 UTC Saturday; on
+      // Sunday it is 13:00 UTC Sunday. A Sunday-only feed must fire on the
+      // second one.
+      const feed = makeFeed({
+        id: "zone-day",
+        url: urlWithSlot(0, "zone-day"),
+        schedule: { times: ["21:00"], timezone: "Asia/Shanghai", days: [0] },
+      });
+
+      const saturday = selectDueScheduledFeeds(
+        [feed],
+        Date.parse("2026-09-26T13:00:00Z"),
+      );
+      const sunday = selectDueScheduledFeeds(
+        [feed],
+        Date.parse("2026-09-27T13:00:00Z"),
+      );
+
+      assert.strictEqual(saturday.length, 0);
+      assert.strictEqual(sunday.length, 1);
+      assert.strictEqual(sunday[0]?.scheduledAt, Date.parse("2026-09-27T13:00:00Z"));
+    });
+
+    it("catches up a missed occurrence whose own date was an allowed day, even after midnight", () => {
+      // Sunday-only feed, 23:55 Sunday. The process is back within the
+      // catch-up window at 00:10 Monday: the occurrence's date (Sunday) is
+      // what governs, so it still fires.
+      const feed = makeFeed({
+        id: "midnight-catchup",
+        url: urlWithSlot(0, "midnight-catchup"),
+        schedule: { times: ["23:55"], timezone: "UTC", days: [0] },
+      });
+      const scheduledAt = Date.parse("2026-09-27T23:55:00Z");
+      const lateNow = scheduledAt + SCHEDULED_CATCHUP_WINDOW_MS;
+
+      const due = selectDueScheduledFeeds([feed], lateNow);
+
+      assert.strictEqual(due.length, 1);
+      assert.strictEqual(due[0]?.scheduledAt, scheduledAt);
+    });
+
+    it("does not fire a disallowed day's time even within the catch-up window", () => {
+      const feed = makeFeed({
+        id: "wrong-day-catchup",
+        url: urlWithSlot(0, "wrong-day-catchup"),
+        schedule: { times: ["21:00"], timezone: "UTC", days: [0] },
+      });
+      const lateNow = SCHEDULED_TIME_2100_UTC + SCHEDULED_CATCHUP_WINDOW_MS;
+
+      const due = selectDueScheduledFeeds([feed], lateNow);
+
+      assert.strictEqual(due.length, 0);
+    });
+  });
+
   describe("isScheduledTime", () => {
     it("accepts the feed's own scheduled minutes and rejects neighbours", () => {
       const schedule = { times: ["21:00"], timezone: "Asia/Shanghai" };
@@ -426,6 +521,20 @@ describe("scheduled-feed-computation", () => {
           Date.now(),
         ),
         false,
+      );
+    });
+
+    it("rejects the same wall time on a disallowed day and accepts it on an allowed one", () => {
+      const schedule = { times: ["21:00"], timezone: "UTC", days: [0] };
+
+      // 2026-09-26 is a Saturday, 2026-09-27 the Sunday after it.
+      assert.strictEqual(
+        isScheduledTime(schedule, Date.parse("2026-09-26T21:00:00Z")),
+        false,
+      );
+      assert.strictEqual(
+        isScheduledTime(schedule, Date.parse("2026-09-27T21:00:00Z")),
+        true,
       );
     });
   });

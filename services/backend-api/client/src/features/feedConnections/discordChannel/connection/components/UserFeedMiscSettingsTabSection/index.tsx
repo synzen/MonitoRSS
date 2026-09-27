@@ -53,7 +53,7 @@ import {
 import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { getEffectiveRefreshRateSeconds } from "@/utils/formatRefreshRateSeconds";
-import { browserTimezone, MAX_SCHEDULE_TIMES, SCHEDULE_TIME_PATTERN } from "@/utils/feedSchedule";
+import { browserTimezone, isEveryDay, MAX_SCHEDULE_TIMES, SCHEDULE_TIME_PATTERN, ALL_SCHEDULE_DAYS } from "@/utils/feedSchedule";
 import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
@@ -122,6 +122,13 @@ const FormSchema = object({
         .test("is-timezone", "Must be a valid timezone", isTimezoneValue),
     otherwise: (schema) => schema.notRequired(),
   }),
+  scheduleDays: array(
+    number().oneOf(ALL_SCHEDULE_DAYS, "Invalid day").required(),
+  ).when("scheduleMode", {
+    is: "scheduled",
+    then: (schema) => schema.min(1, "Choose at least one day"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
 });
 
 type FormValues = InferType<typeof FormSchema>;
@@ -163,6 +170,11 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       scheduleMode: feed?.scheduleMode === "scheduled" ? "scheduled" : "interval",
       scheduleTimes: feed?.schedule?.times?.length ? feed.schedule.times : [SCHEDULE_DEFAULT_TIME],
       scheduleTimezone: feed?.schedule?.timezone || browserTimezone(),
+      // Absent days on the feed means every day.
+      scheduleDays:
+        feed?.schedule?.days && !isEveryDay(feed.schedule.days)
+          ? feed.schedule.days
+          : ALL_SCHEDULE_DAYS,
     },
   });
   const {
@@ -182,6 +194,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
 
   const scheduleMode = watch("scheduleMode");
   const scheduleTimezone = watch("scheduleTimezone");
+  const scheduleDays = watch("scheduleDays");
 
   const scheduleTimesErrors = formErrors.scheduleTimes as
     | { message?: string }
@@ -257,6 +270,13 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                     ),
                   ].sort(),
                   timezone: values.scheduleTimezone || browserTimezone(),
+                  // All seven days is the canonical "every day" form, sent
+                  // without the days field.
+                  ...(values.scheduleDays?.length === 7
+                    ? {}
+                    : {
+                        days: [...new Set(values.scheduleDays || [])].sort((a, b) => a - b),
+                      }),
                 },
               }
             : {
@@ -281,6 +301,9 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
           ? updatedFeed.result.schedule.times
           : [SCHEDULE_DEFAULT_TIME],
         scheduleTimezone: updatedFeed.result.schedule?.timezone || browserTimezone(),
+        scheduleDays: isEveryDay(updatedFeed.result.schedule?.days)
+          ? ALL_SCHEDULE_DAYS
+          : updatedFeed.result.schedule?.days,
       });
       createSuccessAlert({
         title: "Successfully updated feed settings",
@@ -654,6 +677,11 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                       onTimesChange={field.onChange}
                       timeErrors={scheduleTimeRowErrors}
                       timesListError={scheduleTimesListError}
+                      days={scheduleDays ?? ALL_SCHEDULE_DAYS}
+                      onDaysChange={(days) =>
+                        setValue("scheduleDays", days, { shouldDirty: true })
+                      }
+                      daysError={formErrors.scheduleDays?.message}
                       timezone={scheduleTimezone || browserTimezone()}
                       onTimezoneChange={(tz) =>
                         setValue("scheduleTimezone", tz, { shouldDirty: true })

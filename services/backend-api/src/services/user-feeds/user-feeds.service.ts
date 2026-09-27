@@ -816,10 +816,16 @@ export class UserFeedsService {
 
     if (updates.scheduleMode === UserFeedScheduleMode.Scheduled && updates.schedule) {
       useUpdateObject.$set!.scheduleMode = updates.scheduleMode;
+      const days = updates.schedule.days?.length
+        ? [...new Set(updates.schedule.days)].sort((a, b) => a - b)
+        : undefined;
+
       useUpdateObject.$set!.schedule = {
         // Normalized to sorted so every consumer sees a stable ordering.
         times: [...updates.schedule.times].sort(),
         timezone: updates.schedule.timezone,
+        // An empty days array is the same as absent: every day.
+        ...(days ? { days } : {}),
       };
     } else if (updates.scheduleMode === UserFeedScheduleMode.Interval) {
       useUpdateObject.$unset!.scheduleMode = "";

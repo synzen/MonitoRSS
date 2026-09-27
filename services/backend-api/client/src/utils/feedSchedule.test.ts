@@ -8,13 +8,48 @@ import {
 } from "./feedSchedule";
 
 describe("formatScheduleSummary", () => {
-  it("formats a scheduled feed with times and timezone", () => {
+  it("formats a daily schedule with times and timezone", () => {
     expect(
       formatScheduleSummary({
         scheduleMode: "scheduled",
         schedule: { times: ["09:00", "21:00"], timezone: "Asia/Shanghai" },
       }),
-    ).toBe("09:00, 21:00 (Asia/Shanghai)");
+    ).toBe("Every day at 09:00, 21:00 (Asia/Shanghai)");
+  });
+
+  it("formats all seven days as every day", () => {
+    expect(
+      formatScheduleSummary({
+        scheduleMode: "scheduled",
+        schedule: {
+          times: ["09:00"],
+          timezone: "UTC",
+          days: [0, 1, 2, 3, 4, 5, 6],
+        },
+      }),
+    ).toBe("Every day at 09:00 (UTC)");
+  });
+
+  it("lists selected days in Monday-first order", () => {
+    expect(
+      formatScheduleSummary({
+        scheduleMode: "scheduled",
+        schedule: {
+          times: ["09:00"],
+          timezone: "UTC",
+          days: [0, 1, 3],
+        },
+      }),
+    ).toBe("Mon, Wed, Sun at 09:00 (UTC)");
+  });
+
+  it("treats an empty days array as every day", () => {
+    expect(
+      formatScheduleSummary({
+        scheduleMode: "scheduled",
+        schedule: { times: ["09:00"], timezone: "UTC", days: [] },
+      }),
+    ).toBe("Every day at 09:00 (UTC)");
   });
 
   it("returns null for interval mode", () => {
@@ -136,5 +171,65 @@ describe("getNextScheduledFetchText", () => {
 
   it("returns null when no times are usable", () => {
     expect(getNextScheduledFetchText(["", "bad"], "UTC")).toBe(null);
+  });
+
+  it("skips to the next allowed day when today is not scheduled", () => {
+    vi.useFakeTimers();
+    // 2026-09-26 is a Saturday.
+    vi.setSystemTime(new Date("2026-09-26T10:00:00Z"));
+
+    expect(getNextScheduledFetchText(["21:00"], "UTC", [0])).toBe(
+      "Next fetch: tomorrow at 21:00",
+    );
+  });
+
+  it("skips with a weekday label when the next allowed day is beyond tomorrow", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-26T10:00:00Z"));
+
+    expect(getNextScheduledFetchText(["21:00"], "UTC", [1])).toBe(
+      "Next fetch: Mon, Sep 28 at 21:00",
+    );
+  });
+
+  it("stays on today when today is an allowed day", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-26T10:00:00Z"));
+
+    expect(getNextScheduledFetchText(["21:00"], "UTC", [6])).toBe(
+      "Next fetch: today at 21:00",
+    );
+  });
+
+  it("evaluates days on the schedule zone's calendar, not the browser's", () => {
+    vi.useFakeTimers();
+    // 05:00 Shanghai on Sunday 2026-09-27 is 21:00 UTC Saturday 2026-09-26:
+    // the browser is still on Saturday while the schedule zone is on Sunday.
+    // A Sunday-only schedule is live "today" in the zone.
+    vi.setSystemTime(new Date("2026-09-26T21:00:00Z"));
+
+    expect(getNextScheduledFetchText(["06:00"], "Asia/Shanghai", [0])).toBe(
+      "Next fetch: today at 06:00",
+    );
+  });
+
+  it("rolls a full week when no listed day remains ahead", () => {
+    vi.useFakeTimers();
+    // Saturday 21:30 UTC: today's 21:00 has passed and the only allowed day
+    // is next Saturday.
+    vi.setSystemTime(new Date("2026-09-26T21:30:00Z"));
+
+    expect(getNextScheduledFetchText(["21:00"], "UTC", [6])).toBe(
+      "Next fetch: Sat, Oct 3 at 21:00",
+    );
+  });
+
+  it("ignores days when absent", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-26T21:30:00Z"));
+
+    expect(getNextScheduledFetchText(["21:00"], "UTC")).toBe(
+      "Next fetch: tomorrow at 21:00",
+    );
   });
 });

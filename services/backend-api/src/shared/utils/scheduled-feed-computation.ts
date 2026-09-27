@@ -17,23 +17,23 @@ const TICKS_PER_MINUTE = MS_PER_MINUTE / SCHEDULER_WINDOW_SIZE_MS;
 const TIME_FORMAT = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 /**
- * A repeating daily rule: every day, the feed fires once at each of `times`
- * (24h "HH:mm") in `timezone`. Each firing of a time on a calendar date is one
- * concrete epoch ms — e.g. "21:00" firing on 2026-09-26 in Shanghai is
- * 2026-09-26T13:00:00Z.
+ * A schedule: the feed fires once at each time in `times` ("HH:mm", 24h) on
+ * each day in `days`, read on the wall clock of `timezone`. So "21:00" in
+ * Shanghai means 2026-09-26T13:00:00Z on 2026-09-26.
  */
 export interface FeedSchedule {
   times: string[];
   timezone: string;
+  // Weekdays 0-6, Sunday = 0 (getDay()). Absent or empty = every day.
+  days?: number[];
 }
 
 export interface ScheduledFeedClockInput {
   id: string;
   url: string;
   schedule?: FeedSchedule | null;
-  // Epoch ms of the last delivered scheduled time (the fan-out's
-  // once-per-scheduled-time marker). When it is at or past a scheduled time,
-  // that time has been handled and must not fire again.
+  // Epoch ms of the last delivered scheduled firing. When it is at or past a
+  // firing, that firing already happened and must not fire again.
   lastScheduledFiredAt?: number | null;
 }
 
@@ -52,51 +52,81 @@ function parseTimeParts(time: string): { hour: number; minute: number } | null {
   return { hour: Number(match[1]), minute: Number(match[2]) };
 }
 
+// The weekday of a "YYYY-MM-DD" date comes from plain UTC arithmetic:
+// getUTCDay() on that date at UTC midnight. No timezone math involved.
+function isDayAllowed(days: number[] | undefined | null, dateStr: string): boolean {
+  if (!days || days.length === 0) {
+    return true;
+  }
+
+  const [year = 0, month = 1, day = 1] = dateStr.split("-").map(Number);
+
+  return days.includes(new Date(Date.UTC(year, month - 1, day)).getUTCDay());
+}
+
 /**
- * The epoch ms of the firing of `time` (a single "HH:mm" from a schedule) on
- * calendar date `today` in `timezone`. When that wall-clock time is still
- * ahead of `now`, the most recent firing of this time was yesterday's, so
- * `yesterday`'s epoch is returned instead. The date is passed in (rather than
- * subtracting 24h from an epoch) so DST offsets stay correct.
+ * Where we stand in time: the moment we're asking about (`now`) and the two
+ * calendar dates ("YYYY-MM-DD") in a schedule's timezone that could hold its
+ * most recent firing — today and yesterday.
  */
-function scheduledTimeToEpoch(
-  time: string,
-  timezone: string,
-  today: string,
-  yesterday: string,
-  now: number,
+interface CalendarContext {
+  now: number;
+  today: string;
+  yesterday: string;
+}
+
+/**
+ * When did `timeOfDay` last fire, as of `context.now`? Today's firing if it
+ * already happened, otherwise yesterday's. Returns null when neither day is
+ * scheduled (absent/empty `schedule.days` = every day). Dates are rebuilt
+ * from the calendar date, never by subtracting 24 hours, so DST stays right.
+ */
+function mostRecentOccurrenceOf(
+  schedule: FeedSchedule,
+  timeOfDay: string,
+  context: CalendarContext,
 ): number | null {
-  const parts = parseTimeParts(time);
+  const parts = parseTimeParts(timeOfDay);
 
   if (!parts) {
     return null;
   }
 
-  const candidate = dayjs.tz(`${today} ${time}`, "YYYY-MM-DD HH:mm", timezone).valueOf();
+  if (isDayAllowed(schedule.days, context.today)) {
+    const candidate = dayjs
+      .tz(`${context.today} ${timeOfDay}`, "YYYY-MM-DD HH:mm", schedule.timezone)
+      .valueOf();
 
-  if (candidate <= now) {
-    return candidate;
+    if (candidate <= context.now) {
+      return candidate;
+    }
   }
 
-  // The scheduled time is still ahead today; its most recent firing was
-  // yesterday's. Rebuilt from the calendar date so DST offsets stay correct
-  // instead of subtracting 24h from the epoch.
-  return dayjs.tz(`${yesterday} ${time}`, "YYYY-MM-DD HH:mm", timezone).valueOf();
+  // Today's firing is still ahead (or today isn't scheduled), so the most
+  // recent one was yesterday's. Rebuilt from the calendar date, not by
+  // subtracting 24 hours, so DST stays right.
+  if (!isDayAllowed(schedule.days, context.yesterday)) {
+    return null;
+  }
+
+  return dayjs
+    .tz(`${context.yesterday} ${timeOfDay}`, "YYYY-MM-DD HH:mm", schedule.timezone)
+    .valueOf();
 }
 
 /**
- * Today's and yesterday's calendar dates ("YYYY-MM-DD") in `timezone` — the
- * two dates whose firings can be the most recent one at `epochMs`. Returns
- * null for an unknown IANA timezone: nothing can be scheduled.
+ * The CalendarContext for `timezone` at `now`. Returns null when the IANA
+ * timezone is unknown — nothing can be scheduled.
  */
-function calendarDatesInTimezone(
+function calendarContextInTimezone(
   timezone: string,
-  epochMs: number,
-): { today: string; yesterday: string } | null {
+  now: number,
+): CalendarContext | null {
   try {
-    const localNow = dayjs(epochMs).tz(timezone);
+    const localNow = dayjs(now).tz(timezone);
 
     return {
+      now,
       today: localNow.format("YYYY-MM-DD"),
       yesterday: localNow.subtract(1, "day").format("YYYY-MM-DD"),
     };
@@ -107,12 +137,10 @@ function calendarDatesInTimezone(
 }
 
 /**
- * Stand at `epochMs` on the timeline of the schedule's daily firings and
- * return the latest one that has already happened ("at or before"). The
- * schedule's times repeat every day, so this is the most recent concrete
- * firing of any of them — today's if one has passed, otherwise yesterday's.
- * Minute-aligned in the schedule's timezone. Returns null when the schedule
- * has no usable times or the timezone is unknown.
+ * The schedule's most recent firing at or before `epochMs` — the latest of
+ * every time-of-day's most recent firing. Returns null when the schedule has
+ * no usable times, the timezone is unknown, or neither today nor yesterday
+ * is scheduled.
  */
 export function getMostRecentScheduledTime(
   schedule: FeedSchedule | null | undefined,
@@ -122,22 +150,16 @@ export function getMostRecentScheduledTime(
     return null;
   }
 
-  const dates = calendarDatesInTimezone(schedule.timezone, epochMs);
+  const context = calendarContextInTimezone(schedule.timezone, epochMs);
 
-  if (!dates) {
+  if (!context) {
     return null;
   }
 
   let mostRecent: number | null = null;
 
-  for (const time of schedule.times) {
-    const scheduledAt = scheduledTimeToEpoch(
-      time,
-      schedule.timezone,
-      dates.today,
-      dates.yesterday,
-      epochMs,
-    );
+  for (const timeOfDay of schedule.times) {
+    const scheduledAt = mostRecentOccurrenceOf(schedule, timeOfDay, context);
 
     if (scheduledAt !== null && (mostRecent === null || scheduledAt > mostRecent)) {
       mostRecent = scheduledAt;
@@ -148,12 +170,10 @@ export function getMostRecentScheduledTime(
 }
 
 /**
- * Whether `timestampMs` is exactly one of the schedule's daily firings in its
- * timezone. Works by standing at `timestampMs` and asking for the most recent
- * firing: if the most recent firing IS this moment, the moment is a firing
- * time; otherwise it lands strictly behind it and the timestamps differ.
- * Checked against the trigger's time (not fan-out wall clock) so a fetch
- * completing late within the bounds still delivers.
+ * Is `timestampMs` exactly one of the schedule's firings? Checked by asking
+ * for the most recent firing as of `timestampMs` and comparing. Uses the
+ * trigger's time, not the fan-out wall clock, so a fetch that finishes late
+ * still delivers.
  */
 export function isScheduledTime(
   schedule: FeedSchedule | null | undefined,
@@ -163,21 +183,17 @@ export function isScheduledTime(
 }
 
 /**
- * Select the scheduled feeds that must fire on the tick at time `now`.
+ * Pick the feeds that must fire on the tick at time `now`.
  *
  * Pure function of (feeds, now) — seam for the schedule emitter's clock branch
  * (ADR-009). A feed is due when:
- * - `now` is the feed's most recent scheduled minute in its timezone (wall
- *   clock, DST-aware),
- * - the scheduled time is no older than the catch-up window (missed times
- *   still fire on recovery; older ones wait for the next scheduled time),
- * - the feed's last fired scheduled time is strictly earlier (already
- *   delivered times never re-fire),
- * - and the URL's stable hash slot matches this tick's index within the wall
- *   clock minute (hot-minute spreading: a minute's due URLs are distributed
- *   across the minute's ticks instead of bursting on the first one). The slot
- *   is keyed by URL — the fetch batching unit — so feeds sharing a URL always
- *   fire together and cost a single fetch.
+ * - one of its times is firing right now on the feed's own wall clock,
+ * - that firing is no older than the catch-up window (a firing missed while
+ *   the process was down still fires; older ones wait for the next one),
+ * - it hasn't already fired (`lastScheduledFiredAt` is strictly earlier),
+ * - and the URL's hash slot matches this tick within the minute. Feeds are
+ *   spread across the minute's ticks instead of bursting on the first one,
+ *   keyed by URL, so feeds sharing a URL always fire together — one fetch.
  */
 export function selectDueScheduledFeeds<T extends ScheduledFeedClockInput>(
   feeds: T[],
@@ -185,8 +201,7 @@ export function selectDueScheduledFeeds<T extends ScheduledFeedClockInput>(
 ): Array<ScheduledDueFeed<T>> {
   const tickIndex = Math.floor((now % MS_PER_MINUTE) / SCHEDULER_WINDOW_SIZE_MS);
 
-  // Group by timezone so the per-timezone calendar-date conversion runs once
-  // per timezone instead of once per feed.
+  // Group by timezone: every feed in the zone shares one calendar conversion.
   const feedsByTimezone = new Map<string, T[]>();
 
   for (const feed of feeds) {
@@ -206,9 +221,9 @@ export function selectDueScheduledFeeds<T extends ScheduledFeedClockInput>(
   const due: Array<ScheduledDueFeed<T>> = [];
 
   for (const [timezone, feedsInTimezone] of feedsByTimezone) {
-    const dates = calendarDatesInTimezone(timezone, now);
+    const context = calendarContextInTimezone(timezone, now);
 
-    if (!dates) {
+    if (!context) {
       continue;
     }
 
@@ -217,14 +232,8 @@ export function selectDueScheduledFeeds<T extends ScheduledFeedClockInput>(
         continue;
       }
 
-      for (const time of feed.schedule.times) {
-        const scheduledAt = scheduledTimeToEpoch(
-          time,
-          timezone,
-          dates.today,
-          dates.yesterday,
-          now,
-        );
+      for (const timeOfDay of feed.schedule.times) {
+        const scheduledAt = mostRecentOccurrenceOf(feed.schedule, timeOfDay, context);
 
         if (scheduledAt === null || scheduledAt > now) {
           continue;

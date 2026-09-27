@@ -30,6 +30,7 @@ export interface UpdateUserFeedInput {
     schedule?: {
       times: string[];
       timezone: string;
+      days?: number[];
     } | null;
   };
 }

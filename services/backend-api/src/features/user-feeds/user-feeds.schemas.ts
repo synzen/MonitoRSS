@@ -341,6 +341,13 @@ const ScheduleTime = Type.String({
   pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$",
 });
 
+// Weekdays the schedule applies to, 0-6 with Sunday = 0 (getDay()). Absent or
+// empty means every day, matching pre-days documents.
+const ScheduleDays = Type.Array(Type.Integer({ minimum: 0, maximum: 6 }), {
+  maxItems: 7,
+  uniqueItems: true,
+});
+
 const FeedScheduleSchema = Type.Object(
   {
     times: Type.Array(ScheduleTime, {
@@ -349,6 +356,7 @@ const FeedScheduleSchema = Type.Object(
       uniqueItems: true,
     }),
     timezone: TimezoneString,
+    days: Type.Optional(ScheduleDays),
   },
   { additionalProperties: false },
 );

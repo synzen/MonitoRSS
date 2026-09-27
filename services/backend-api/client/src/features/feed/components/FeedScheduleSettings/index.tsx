@@ -1,20 +1,25 @@
 import {
   Box,
   Button,
+  Fieldset,
   HStack,
   IconButton,
   Input,
   NativeSelectField,
   NativeSelectRoot,
+  SimpleGrid,
   Stack,
   Text,
 } from "@chakra-ui/react";
 import { FaPlus, FaTrash } from "react-icons/fa6";
 import { useMemo } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import {
   MAX_SCHEDULE_TIMES,
+  SCHEDULE_DAYS_ORDER,
   buildTimezoneGroups,
+  dayShortName,
   getNextScheduledFetchText,
   getTimezoneOffsetLabel,
 } from "@/utils/feedSchedule";
@@ -24,6 +29,9 @@ interface Props {
   onTimesChange: (times: string[]) => void;
   timeErrors?: Array<string | undefined>;
   timesListError?: string;
+  days: number[];
+  onDaysChange: (days: number[]) => void;
+  daysError?: string;
   timezone: string;
   onTimezoneChange: (timezone: string) => void;
   timezoneError?: string;
@@ -35,12 +43,15 @@ export const FeedScheduleSettings = ({
   times,
   timeErrors,
   timesListError,
+  days,
+  onDaysChange,
+  daysError,
   timezone,
   timezoneError,
 }: Props) => {
   const timezoneGroups = useMemo(() => buildTimezoneGroups(), []);
   const offsetLabel = getTimezoneOffsetLabel(timezone);
-  const nextFetchText = getNextScheduledFetchText(times, timezone);
+  const nextFetchText = getNextScheduledFetchText(times, timezone, days);
   const atCap = times.length >= MAX_SCHEDULE_TIMES;
 
   const updateTime = (index: number, value: string) => {
@@ -53,8 +64,45 @@ export const FeedScheduleSettings = ({
     onTimesChange(times.filter((_, i) => i !== index));
   };
 
+  const toggleDay = (day: number, checked: boolean | "indeterminate") => {
+    if (checked === "indeterminate") {
+      return;
+    }
+
+    if (checked) {
+      onDaysChange([...days, day].sort((a, b) => a - b));
+    } else {
+      onDaysChange(days.filter((d) => d !== day));
+    }
+  };
+
   return (
     <Stack gap={6}>
+      <Fieldset.Root invalid={!!daysError}>
+        <Fieldset.Legend>Days of week</Fieldset.Legend>
+        <Fieldset.HelperText>
+          The feed is fetched on the selected days only.
+        </Fieldset.HelperText>
+        {daysError && <Fieldset.ErrorText>{daysError}</Fieldset.ErrorText>}
+        <SimpleGrid columns={{ base: 4, md: 7 }} gap={2}>
+          {SCHEDULE_DAYS_ORDER.map((day) => {
+            const checked = days.includes(day);
+            // Never allow unchecking the last selected day.
+            const isLastChecked = checked && days.length === 1;
+
+            return (
+              <Checkbox
+                key={day}
+                checked={checked}
+                disabled={isLastChecked}
+                onCheckedChange={(details) => toggleDay(day, details.checked)}
+              >
+                {dayShortName(day)}
+              </Checkbox>
+            );
+          })}
+        </SimpleGrid>
+      </Fieldset.Root>
       <Field
         label="Times of day"
         invalid={!!timesListError || !!timeErrors?.some(Boolean)}

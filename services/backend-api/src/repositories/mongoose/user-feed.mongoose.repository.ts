@@ -210,6 +210,9 @@ const UserFeedSchema = new Schema(
       type: {
         times: { type: [String], required: true },
         timezone: { type: String, required: true },
+        // Weekdays 0-6 (Sunday = 0); absent means every day. The explicit
+        // undefined default stops mongoose's array default writing [].
+        days: { type: [Number], default: undefined },
       },
       required: false,
       default: undefined,
@@ -354,6 +357,7 @@ export class UserFeedMongooseRepository
         ? {
             times: doc.schedule.times as string[],
             timezone: doc.schedule.timezone as string,
+            days: (doc.schedule.days as number[] | undefined) || undefined,
           }
         : undefined,
       lastScheduledFiredAt: doc.lastScheduledFiredAt,

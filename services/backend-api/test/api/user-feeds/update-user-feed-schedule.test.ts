@@ -24,7 +24,7 @@ const SCHEDULED_PAYLOAD = {
 interface ScheduleResponseBody {
   result: {
     scheduleMode: string;
-    schedule: { times: string[]; timezone: string } | null;
+    schedule: { times: string[]; timezone: string; days?: number[] } | null;
     userRefreshRateSeconds?: number;
   };
 }
@@ -200,6 +200,114 @@ describe("PATCH /api/v1/user-feeds/:feedId schedule validation", { concurrency: 
       body: JSON.stringify({
         scheduleMode: "interval",
         schedule: { times: ["09:00"], timezone: "UTC" },
+      }),
+    });
+
+    assert.strictEqual(response.status, 400);
+  });
+
+  it("accepts days and echoes them normalized and sorted", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feed = await createFeedForUser(discordUserId, "Schedule Days Accept");
+
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        scheduleMode: "scheduled",
+        schedule: {
+          times: ["09:00"],
+          timezone: "UTC",
+          days: [3, 0, 1],
+        },
+      }),
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as ScheduleResponseBody;
+    assert.deepStrictEqual(body.result.schedule?.days, [0, 1, 3]);
+  });
+
+  it("rejects duplicate days", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feed = await createFeedForUser(discordUserId, "Schedule Days Duplicates");
+
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        scheduleMode: "scheduled",
+        schedule: { times: ["09:00"], timezone: "UTC", days: [1, 1] },
+      }),
+    });
+
+    assert.strictEqual(response.status, 400);
+  });
+
+  it("treats an empty days array as every day by omitting it", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feed = await createFeedForUser(discordUserId, "Schedule Days Empty");
+
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        scheduleMode: "scheduled",
+        schedule: { times: ["09:00"], timezone: "UTC", days: [] },
+      }),
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as ScheduleResponseBody;
+    assert.strictEqual(body.result.schedule?.days, undefined);
+  });
+
+  it("rejects a weekday outside 0-6", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feed = await createFeedForUser(discordUserId, "Schedule Days Range");
+
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        scheduleMode: "scheduled",
+        schedule: { times: ["09:00"], timezone: "UTC", days: [7] },
+      }),
+    });
+
+    assert.strictEqual(response.status, 400);
+  });
+
+  it("rejects more than 7 days", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feed = await createFeedForUser(discordUserId, "Schedule Days Cap");
+
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        scheduleMode: "scheduled",
+        schedule: {
+          times: ["09:00"],
+          timezone: "UTC",
+          days: [0, 1, 2, 3, 4, 5, 6, 0],
+        },
+      }),
+    });
+
+    assert.strictEqual(response.status, 400);
+  });
+
+  it("rejects non-integer weekdays", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feed = await createFeedForUser(discordUserId, "Schedule Days Non Integer");
+
+    const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        scheduleMode: "scheduled",
+        schedule: { times: ["09:00"], timezone: "UTC", days: [1.5] },
       }),
     });
 

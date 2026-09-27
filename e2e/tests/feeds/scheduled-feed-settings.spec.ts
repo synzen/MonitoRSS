@@ -71,6 +71,54 @@ test.describe("Scheduled feed delivery settings", () => {
     ).toBeVisible({ timeout: 10000 });
   });
 
+  test("restricts a schedule to specific days of the week", async ({
+    page,
+    testFeed,
+  }) => {
+    await page.goto(`/feeds/${testFeed.id}?view=settings`);
+    await expect(
+      page.getByRole("heading", { name: testFeed.title }),
+    ).toBeVisible({ timeout: 10000 });
+
+    await page.getByText("Scheduled times", { exact: true }).click();
+    const firstTimeInput = page.getByRole("textbox", { name: "Scheduled time 1" });
+    await expect(firstTimeInput).toBeVisible({ timeout: 10000 });
+    await firstTimeInput.fill("09:00");
+
+    await page.getByRole("combobox", { name: "Schedule timezone" }).selectOption(
+      "Asia/Shanghai",
+    );
+
+    // All days start selected (an existing daily schedule); narrow to Mon/Fri.
+    await expect(page.getByRole("checkbox", { name: "Mon", exact: true })).toBeChecked();
+    for (const day of ["Sun", "Tue", "Wed", "Thu", "Sat"]) {
+      // Chakra's styled control overlays the hidden input, so force the click
+      // (the repo-wide pattern for Chakra checkboxes).
+      await page.getByRole("checkbox", { name: day, exact: true }).uncheck({ force: true });
+    }
+
+    await page.getByRole("button", { name: "Save all changes" }).click();
+    await expect(page.getByText("Changes saved.")).toBeVisible({
+      timeout: 10000,
+    });
+
+    await page.reload();
+    await expect(page.getByRole("textbox", { name: "Scheduled time 1" })).toHaveValue(
+      "09:00",
+      { timeout: 10000 },
+    );
+    await expect(page.getByRole("checkbox", { name: "Mon", exact: true })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Fri", exact: true })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Sun", exact: true })).not.toBeChecked();
+
+    // The feed overview renders the selected days under the "Delivery
+    // Schedule" label.
+    await page.goto(`/feeds/${testFeed.id}`);
+    await expect(
+      page.getByText("Mon, Fri at 09:00 (Asia/Shanghai)"),
+    ).toBeVisible({ timeout: 10000 });
+  });
+
   test("switching back to refresh rate keeps the previous interval value", async ({
     page,
     testFeed,

@@ -44,6 +44,7 @@ export const UserFeedSchema = object({
   schedule: object({
     times: array(string().required()).required(),
     timezone: string().required(),
+    days: array(number().required()).optional(),
   })
     .nullable()
     .optional(),
