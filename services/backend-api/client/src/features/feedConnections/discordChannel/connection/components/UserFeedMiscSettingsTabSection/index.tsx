@@ -19,6 +19,7 @@ import {
   TableScrollArea,
   Text,
   Heading,
+  RadioCard,
 } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -35,6 +36,7 @@ import {
   useUpdateUserFeed,
   useUserFeed,
   useFeedScope,
+  FeedScheduleSettings,
 } from "@/features/feed";
 import { DiscordUsername, useDiscordUserMe } from "@/features/discordUser";
 import { pages, UserFeedManagerInviteType, UserFeedManagerStatus } from "@/constants";
@@ -53,15 +55,19 @@ import {
 import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { getEffectiveRefreshRateSeconds } from "@/utils/formatRefreshRateSeconds";
-import { browserTimezone, isEveryDay, MAX_SCHEDULE_TIMES, SCHEDULE_TIME_PATTERN, ALL_SCHEDULE_DAYS } from "@/utils/feedSchedule";
+import {
+  browserTimezone,
+  isEveryDay,
+  MAX_SCHEDULE_TIMES,
+  SCHEDULE_TIME_PATTERN,
+  ALL_SCHEDULE_DAYS,
+} from "@/utils/feedSchedule";
 import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { NumberInputRoot, NumberInputField } from "@/components/ui/number-input";
 import { NativeSelectRoot, NativeSelectField } from "@/components/ui/native-select";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Tag } from "@/components/ui/tag";
-import { FeedScheduleSettings } from "@/features/feed/components/FeedScheduleSettings";
 
 interface Props {
   feedId: string;
@@ -122,13 +128,14 @@ const FormSchema = object({
         .test("is-timezone", "Must be a valid timezone", isTimezoneValue),
     otherwise: (schema) => schema.notRequired(),
   }),
-  scheduleDays: array(
-    number().oneOf(ALL_SCHEDULE_DAYS, "Invalid day").required(),
-  ).when("scheduleMode", {
-    is: "scheduled",
-    then: (schema) => schema.min(1, "Choose at least one day"),
-    otherwise: (schema) => schema.notRequired(),
-  }),
+  scheduleDays: array(number().oneOf(ALL_SCHEDULE_DAYS, "Invalid day").required()).when(
+    "scheduleMode",
+    {
+      is: "scheduled",
+      then: (schema) => schema.min(1, "Choose at least one day"),
+      otherwise: (schema) => schema.notRequired(),
+    },
+  ),
 });
 
 type FormValues = InferType<typeof FormSchema>;
@@ -266,7 +273,8 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                 schedule: {
                   times: [
                     ...new Set(
-                      values.scheduleTimes?.filter((t) => SCHEDULE_TIME_PATTERN.test(t)) || [],
+                      values.scheduleTimes?.filter((time) => SCHEDULE_TIME_PATTERN.test(time)) ||
+                        [],
                     ),
                   ].sort(),
                   timezone: values.scheduleTimezone || browserTimezone(),
@@ -633,76 +641,97 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
               </Stack>
             )}
             <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>
-              <Stack gap={2}>
-                <Heading size="sm" as="h3">
-                  Refresh Rate
-                </Heading>
-                {scheduleMode === "scheduled" ? (
-                  <Text>
-                    The feed is fetched and delivered once at each scheduled time below. Your
-                    refresh rate is kept and applies again if you switch back.
-                  </Text>
-                ) : (
-                  <Text>
-                    Change the rate at which the bot sends requests for this feed. If you are facing
-                    rate limits for this feed, this may be helpful, but is not guaranteed to resolve
-                    rate-limit-related issues. If other users are using this feed at a rate faster
-                    than what you set here, the bot will ignore this setting.
-                  </Text>
+              <Heading size="sm" as="h3">
+                Delivery schedule
+              </Heading>
+              <Controller
+                name="scheduleMode"
+                control={control}
+                render={({ field }) => (
+                  <RadioCard.Root
+                    value={field.value}
+                    onValueChange={(details) => field.onChange(details.value)}
+                    colorPalette="blue"
+                    aria-label="Scheduling mode"
+                  >
+                    <Stack direction={{ base: "column", md: "row" }} gap={3} alignItems="stretch">
+                      <RadioCard.Item value="interval" flex={1} alignItems="flex-start">
+                        <RadioCard.ItemHiddenInput />
+                        <RadioCard.ItemControl alignItems="flex-start" gap={3}>
+                          <RadioCard.ItemIndicator mt={1} />
+                          <Stack gap={0.5}>
+                            <RadioCard.ItemText fontWeight="medium">
+                              Check automatically
+                            </RadioCard.ItemText>
+                            <RadioCard.ItemDescription>
+                              The feed is checked at a fixed interval and new articles are delivered
+                              as they are found.
+                            </RadioCard.ItemDescription>
+                          </Stack>
+                        </RadioCard.ItemControl>
+                      </RadioCard.Item>
+                      <RadioCard.Item value="scheduled" flex={1} alignItems="flex-start">
+                        <RadioCard.ItemHiddenInput />
+                        <RadioCard.ItemControl alignItems="flex-start" gap={3}>
+                          <RadioCard.ItemIndicator mt={1} />
+                          <Stack gap={0.5}>
+                            <RadioCard.ItemText fontWeight="medium">
+                              At scheduled times
+                            </RadioCard.ItemText>
+                            <RadioCard.ItemDescription>
+                              The feed is checked and delivered once at each time you pick, for
+                              example every weekday at 09:00. Your interval is kept and applies
+                              again if you switch back.
+                            </RadioCard.ItemDescription>
+                          </Stack>
+                        </RadioCard.ItemControl>
+                      </RadioCard.Item>
+                    </Stack>
+                  </RadioCard.Root>
                 )}
-                <Separator mt={2} />
-                <Controller
-                  name="scheduleMode"
-                  control={control}
-                  render={({ field }) => (
-                    <SegmentedControl
-                      value={field.value}
-                      onValueChange={(details) => field.onChange(details.value)}
-                      items={[
-                        { value: "interval", label: "Refresh rate" },
-                        { value: "scheduled", label: "Scheduled times" },
-                      ]}
-                      aria-label="Scheduling mode"
-                    />
-                  )}
-                />
-              </Stack>
+              />
               {scheduleMode === "scheduled" ? (
-                <Controller
-                  name="scheduleTimes"
-                  control={control}
-                  render={({ field }) => (
-                    <FeedScheduleSettings
-                      times={field.value ?? []}
-                      onTimesChange={field.onChange}
-                      timeErrors={scheduleTimeRowErrors}
-                      timesListError={scheduleTimesListError}
-                      days={scheduleDays ?? ALL_SCHEDULE_DAYS}
-                      onDaysChange={(days) =>
-                        setValue("scheduleDays", days, { shouldDirty: true })
-                      }
-                      daysError={formErrors.scheduleDays?.message}
-                      timezone={scheduleTimezone || browserTimezone()}
-                      onTimezoneChange={(tz) =>
-                        setValue("scheduleTimezone", tz, { shouldDirty: true })
-                      }
-                      timezoneError={formErrors.scheduleTimezone?.message}
-                    />
-                  )}
-                />
+                <Box border="1px solid" borderColor="border" borderRadius="l3" p={4}>
+                  {/* Key forces a remount on mode switch: otherwise React reuses
+                      the interval Controller instance and field.value goes stale. */}
+                  <Controller
+                    key="schedule-times"
+                    name="scheduleTimes"
+                    control={control}
+                    render={({ field }) => (
+                      <FeedScheduleSettings
+                        times={field.value ?? []}
+                        onTimesChange={field.onChange}
+                        timeErrors={scheduleTimeRowErrors}
+                        timesListError={scheduleTimesListError}
+                        days={scheduleDays ?? ALL_SCHEDULE_DAYS}
+                        onDaysChange={(days) =>
+                          setValue("scheduleDays", days, { shouldDirty: true })
+                        }
+                        daysError={formErrors.scheduleDays?.message}
+                        timezone={scheduleTimezone || browserTimezone()}
+                        onTimezoneChange={(tz) =>
+                          setValue("scheduleTimezone", tz, { shouldDirty: true })
+                        }
+                        timezoneError={formErrors.scheduleTimezone?.message}
+                      />
+                    )}
+                  />
+                </Box>
               ) : (
-                <>
+                <Box border="1px solid" borderColor="border" borderRadius="l3" p={4}>
                   {!feed?.refreshRateOptions.length && (
                     <Text color="fg.muted">This feed does not have any refresh rate options.</Text>
                   )}
                   {!!feed?.refreshRateOptions.length && (
                     <Controller
+                      key="refresh-rate"
                       name="userRefreshRateMinutes"
                       control={control}
                       render={({ field }) => {
                         return (
                           <Field
-                            invalid={!!formErrors.oldArticleDateDiffMsThreshold}
+                            invalid={!!formErrors.userRefreshRateMinutes}
                             errorText={formErrors.userRefreshRateMinutes?.message}
                           >
                             <HStack alignItems="center" gap={4}>
@@ -727,7 +756,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                       }}
                     />
                   )}
-                </>
+                </Box>
               )}
             </Stack>
             <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>

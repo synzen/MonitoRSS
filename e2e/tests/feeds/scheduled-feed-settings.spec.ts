@@ -16,7 +16,7 @@ test.describe("Scheduled feed delivery settings", () => {
     await refreshRateInput.clear();
     await refreshRateInput.fill("15");
 
-    await page.getByText("Scheduled times", { exact: true }).click();
+    await page.getByText("At scheduled times", { exact: true }).click();
 
     // Scheduled mode hides the minutes input and shows the schedule editor.
     await expect(refreshRateInput).toBeHidden();
@@ -38,12 +38,7 @@ test.describe("Scheduled feed delivery settings", () => {
     );
     await expect(
       page.getByText(
-        "Each article is delivered once. A post that stays at the top of the feed won't be delivered again at the next scheduled time.",
-      ),
-    ).toBeVisible();
-    await expect(
-      page.getByText(
-        "Only articles still present in the feed at fetch time can be delivered.",
+        "Articles are delivered once each. Something stuck at the top of the feed won't be sent again.",
       ),
     ).toBeVisible();
 
@@ -80,7 +75,7 @@ test.describe("Scheduled feed delivery settings", () => {
       page.getByRole("heading", { name: testFeed.title }),
     ).toBeVisible({ timeout: 10000 });
 
-    await page.getByText("Scheduled times", { exact: true }).click();
+    await page.getByText("At scheduled times", { exact: true }).click();
     const firstTimeInput = page.getByRole("textbox", { name: "Scheduled time 1" });
     await expect(firstTimeInput).toBeVisible({ timeout: 10000 });
     await firstTimeInput.fill("09:00");
@@ -139,7 +134,7 @@ test.describe("Scheduled feed delivery settings", () => {
       timeout: 10000,
     });
 
-    await page.getByText("Scheduled times", { exact: true }).click();
+    await page.getByText("At scheduled times", { exact: true }).click();
     await expect(refreshRateInput).toBeHidden();
     await expect(page.getByRole("textbox", { name: "Scheduled time 1" })).toBeVisible();
     await page.getByRole("textbox", { name: "Scheduled time 1" }).fill("09:00");
@@ -150,7 +145,7 @@ test.describe("Scheduled feed delivery settings", () => {
     });
 
     // Switch back to interval mode and save.
-    await page.getByText("Refresh rate", { exact: true }).click();
+    await page.getByText("Check automatically", { exact: true }).click();
     await expect(refreshRateInput).toBeVisible();
     await expect(refreshRateInput).toHaveValue("15");
 

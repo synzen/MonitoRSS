@@ -7,14 +7,12 @@ import {
   Input,
   NativeSelectField,
   NativeSelectRoot,
-  SimpleGrid,
   Stack,
   Text,
 } from "@chakra-ui/react";
 import { FaPlus, FaTrash } from "react-icons/fa6";
 import { useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field } from "@/components/ui/field";
 import {
   MAX_SCHEDULE_TIMES,
   SCHEDULE_DAYS_ORDER,
@@ -64,27 +62,14 @@ export const FeedScheduleSettings = ({
     onTimesChange(times.filter((_, i) => i !== index));
   };
 
-  const toggleDay = (day: number, checked: boolean | "indeterminate") => {
-    if (checked === "indeterminate") {
-      return;
-    }
-
-    if (checked) {
-      onDaysChange([...days, day].sort((a, b) => a - b));
-    } else {
-      onDaysChange(days.filter((d) => d !== day));
-    }
-  };
-
   return (
-    <Stack gap={6}>
+    <Stack gap={5}>
       <Fieldset.Root invalid={!!daysError}>
-        <Fieldset.Legend>Days of week</Fieldset.Legend>
-        <Fieldset.HelperText>
-          The feed is fetched on the selected days only.
-        </Fieldset.HelperText>
+        <Fieldset.Legend fontSize="sm" fontWeight="medium">
+          Days
+        </Fieldset.Legend>
         {daysError && <Fieldset.ErrorText>{daysError}</Fieldset.ErrorText>}
-        <SimpleGrid columns={{ base: 4, md: 7 }} gap={2}>
+        <HStack gap={2} flexWrap="wrap">
           {SCHEDULE_DAYS_ORDER.map((day) => {
             const checked = days.includes(day);
             // Never allow unchecking the last selected day.
@@ -95,69 +80,92 @@ export const FeedScheduleSettings = ({
                 key={day}
                 checked={checked}
                 disabled={isLastChecked}
-                onCheckedChange={(details) => toggleDay(day, details.checked)}
+                onCheckedChange={(details) => {
+                  if (details.checked === "indeterminate") {
+                    return;
+                  }
+
+                  if (details.checked) {
+                    onDaysChange([...days, day].sort((a, b) => a - b));
+                  } else {
+                    onDaysChange(days.filter((d) => d !== day));
+                  }
+                }}
+                colorPalette="blue"
+                fontWeight="medium"
+                // Match the default (md) height of the time inputs.
+                height="40px"
+                width="fit-content"
+                border="1px solid"
+                borderColor={checked ? "colorPalette.solid" : "border"}
+                color={checked ? "colorPalette.solid" : undefined}
+                px={3}
+                gap={2}
+                borderRadius="l2"
               >
                 {dayShortName(day)}
               </Checkbox>
             );
           })}
-        </SimpleGrid>
+        </HStack>
       </Fieldset.Root>
-      <Field
-        label="Times of day"
-        invalid={!!timesListError || !!timeErrors?.some(Boolean)}
-        errorText={timesListError}
-        helperText={`Up to ${MAX_SCHEDULE_TIMES} times per day. Duplicates are merged and the list is kept sorted.`}
-      >
-        <Stack gap={2}>
-          {times.map((time, index) => (
-            <HStack key={index} gap={2} alignItems="center">
-              <Input
-                type="time"
-                value={time}
-                width="150px"
-                aria-label={`Scheduled time ${index + 1}`}
-                onChange={(e) => updateTime(index, e.target.value)}
-              />
-              <IconButton
-                aria-label={`Remove scheduled time ${index + 1}`}
-                variant="ghost"
-                size="sm"
-                disabled={times.length === 1}
-                onClick={() => removeTime(index)}
-              >
-                <FaTrash />
-              </IconButton>
-              {timeErrors?.[index] && (
-                <Text color="text.error" fontSize="sm">
-                  {timeErrors[index]}
-                </Text>
-              )}
-            </HStack>
-          ))}
-          <Box>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={atCap}
-              onClick={() => onTimesChange([...times, ""])}
+      <Stack gap={1.5}>
+        <Text fontSize="sm" fontWeight="medium">
+          Times (up to {MAX_SCHEDULE_TIMES} per day)
+        </Text>
+        {timesListError && (
+          <Text color="text.error" fontSize="sm" role="alert">
+            {timesListError}
+          </Text>
+        )}
+        {times.map((time, index) => (
+          // eslint-disable-next-line react/no-array-index-key -- times are positional while being edited; duplicates possible
+          <HStack key={index} gap={2}>
+            <Input
+              type="time"
+              value={time}
+              width="130px"
+              aria-label={`Scheduled time ${index + 1}`}
+              aria-invalid={!!timeErrors?.[index]}
+              onChange={(e) => updateTime(index, e.target.value)}
+            />
+            <IconButton
+              aria-label={`Remove scheduled time ${index + 1}`}
+              variant="ghost"
+              size="xs"
+              disabled={times.length === 1}
+              onClick={() => removeTime(index)}
             >
-              <FaPlus />
-              Add time
-            </Button>
-          </Box>
-        </Stack>
-      </Field>
-      <Field
-        label="Timezone"
-        invalid={!!timezoneError}
-        errorText={timezoneError}
-        helperText="Times follow daylight saving time of the selected timezone."
-      >
-        <HStack alignItems="center" gap={3}>
-          <NativeSelectRoot minW="260px" width="fit-content">
+              <FaTrash />
+            </IconButton>
+            {timeErrors?.[index] && (
+              <Text color="text.error" fontSize="sm">
+                {timeErrors[index]}
+              </Text>
+            )}
+          </HStack>
+        ))}
+        <Box>
+          <Button
+            variant="outline"
+            size="xs"
+            disabled={atCap}
+            onClick={() => onTimesChange([...times, ""])}
+          >
+            <FaPlus />
+            Add time
+          </Button>
+        </Box>
+      </Stack>
+      <Stack gap={1}>
+        <Text fontSize="sm" fontWeight="medium">
+          Timezone
+        </Text>
+        <HStack gap={3} flexWrap="wrap">
+          <NativeSelectRoot width={{ base: "full", sm: "260px" }} size="sm">
             <NativeSelectField
               aria-label="Schedule timezone"
+              aria-invalid={!!timezoneError}
               value={timezone}
               onChange={(e) => onTimezoneChange(e.target.value)}
             >
@@ -172,24 +180,40 @@ export const FeedScheduleSettings = ({
               ))}
             </NativeSelectField>
           </NativeSelectRoot>
-          {offsetLabel && <Text color="fg.muted">{offsetLabel}</Text>}
+          {offsetLabel && (
+            <Text color="fg.muted" fontSize="sm" whiteSpace="nowrap">
+              {offsetLabel}
+            </Text>
+          )}
         </HStack>
-      </Field>
-      {nextFetchText && (
-        <Text fontWeight="medium" data-testid="next-scheduled-fetch">
-          {nextFetchText}
-        </Text>
-      )}
-      <Stack gap={1} color="fg.muted" fontSize="sm">
-        <Text>
-          Each article is delivered once. A post that stays at the top of the
-          feed won&apos;t be delivered again at the next scheduled time.
-        </Text>
-        <Text>
-          Only articles still present in the feed at fetch time can be
-          delivered.
-        </Text>
+        {timezoneError && (
+          <Text color="text.error" fontSize="sm">
+            {timezoneError}
+          </Text>
+        )}
       </Stack>
+      <Box
+        bg="bg.subtle"
+        border="1px solid"
+        borderColor="border"
+        borderRadius="l2"
+        px={3}
+        py={2}
+        width="fit-content"
+        maxW="full"
+        data-testid="next-scheduled-fetch"
+        aria-live="polite"
+      >
+        {nextFetchText ? (
+          <Text fontWeight="medium">{nextFetchText}</Text>
+        ) : (
+          <Text color="fg.muted">Add a valid time to see the next fetch.</Text>
+        )}
+        <Text fontSize="sm" color="fg.muted">
+          Articles are delivered once each. Something stuck at the top of the feed won&apos;t be
+          sent again.
+        </Text>
+      </Box>
     </Stack>
   );
 };
