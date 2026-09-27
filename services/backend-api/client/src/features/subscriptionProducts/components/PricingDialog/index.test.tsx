@@ -152,9 +152,11 @@ const renderDialog = (props: { target?: "workspace" } = {}) => {
 // picker UX), so enter that mode before returning the spinbutton.
 const openSizer = async (forTeam: HTMLElement) => {
   // Ark's accordion toggles on a full pointer sequence, not a bare click event,
-  // so drive it with userEvent.
+  // so drive it with userEvent. The picker content mounts asynchronously after
+  // the panel opens, so wait for it instead of querying synchronously.
   await userEvent.click(within(forTeam).getByRole("button", { name: /add more feeds/i }));
-  await userEvent.click(within(forTeam).getByRole("radio", { name: "Custom" }));
+  const custom = await within(forTeam).findByRole("radio", { name: "Custom" });
+  await userEvent.click(custom);
 
   return within(forTeam).findByRole("spinbutton", { name: /or enter an exact/i });
 };

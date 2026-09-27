@@ -54,9 +54,11 @@ async function openFeedSettingsTab(page: Page): Promise<void> {
     timeout: 15000,
   });
   await page.getByRole("tab", { name: "Settings" }).click();
-  // The Settings tab always renders the Refresh Rate section, so use it to confirm the
+  // The Settings tab always renders this section heading, so use it to confirm the
   // tab content has mounted before asserting on the (conditionally absent) invites section.
-  await expect(page.getByRole("heading", { name: "Refresh Rate" })).toBeVisible({
+  await expect(
+    page.getByRole("heading", { name: "Miscellaneous Feed Settings" }),
+  ).toBeVisible({
     timeout: 15000,
   });
 }
