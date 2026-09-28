@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "../../fixtures/test-fixtures";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
 import { enableWorkspacesFeatureInDb, setVerifiedEmailInDb } from "../../helpers/workspaces-db";
-import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
+import { addFeedViaDiscovery } from "../../helpers/discovery";
 
 // Regression: switching from a scope that HAS feeds, to an empty scope (discovery UI),
 // then BACK to the scope with feeds must show the feeds table again. The discovery-mode
@@ -42,22 +42,6 @@ async function switchToWorkspace(page: Page, workspaceName: string): Promise<voi
   await expect(
     page.getByRole("button", { name: `Switch workspace, current: ${workspaceName}` }),
   ).toBeVisible();
-}
-
-async function addFeedViaDiscovery(page: Page): Promise<void> {
-  // The discovery heading differs by scope ("...to your Discord" personal,
-  // "Add feeds for your team" in a workspace), but the search box is the same.
-  const search = page.getByRole("textbox", {
-    name: "Search popular feeds or paste a URL",
-  });
-  await expect(search).toBeVisible({ timeout: 15000 });
-  await search.fill(MOCK_RSS_FEED_URL);
-  await page.getByRole("button", { name: "Go", exact: true }).click();
-  await page
-    .getByRole("button", { name: /^Add .+ feed$/i })
-    .first()
-    .click();
-  await page.getByRole("button", { name: /View your feeds/ }).click();
 }
 
 test.describe("Workspace switch discovery regression", () => {
