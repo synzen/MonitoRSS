@@ -2,7 +2,9 @@ export { MessageBrokerQueue } from "./queues";
 
 export {
   UrlFetchBatchSchema,
+  UrlFetchTriggerSchema,
   type UrlFetchBatchPayload,
+  type UrlFetchTrigger,
 } from "./events/url-fetch-batch";
 
 export {

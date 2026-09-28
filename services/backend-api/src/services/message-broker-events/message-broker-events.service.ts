@@ -3,6 +3,7 @@ import {
   UrlFetchCompletedSchema,
   UrlFailedDisableFeedsSchema,
 } from "@monitorss/contracts";
+import type { UrlFetchTrigger } from "@monitorss/contracts";
 import type { Config } from "../../config";
 import logger from "../../infra/logger";
 import { createConsumer, MessageBrokerQueue } from "../../infra/rabbitmq";
@@ -30,6 +31,8 @@ import {
 import { castDiscordContentForMedium } from "../../shared/utils/cast-discord-content-for-medium";
 import { castDiscordEmbedsForMedium } from "../../shared/utils/cast-discord-embeds-for-medium";
 import { castDiscordComponentRowsForMedium } from "../../shared/utils/cast-discord-component-rows-for-medium";
+import { isScheduledTime } from "../../shared/utils/scheduled-feed-computation";
+import { SCHEDULED_TRIGGER_STALENESS_MS } from "../../shared/constants/scheduler.constants";
 import type {
   DiscordMediumEvent,
   UserForDelivery,
@@ -47,6 +50,7 @@ export interface MessageBrokerEventsServiceDeps {
     message: unknown,
     options?: { expiration?: number },
   ) => Promise<void>;
+  now?: () => number;
 }
 
 export class MessageBrokerEventsService {
@@ -169,7 +173,7 @@ export class MessageBrokerEventsService {
   }
 
   async handleUrlFetchCompletedEvent({
-    data: { url, lookupKey, rateSeconds, debug, recovery },
+    data: { url, lookupKey, rateSeconds, debug, recovery, trigger },
   }: {
     data: {
       url: string;
@@ -177,6 +181,7 @@ export class MessageBrokerEventsService {
       rateSeconds: number;
       debug?: boolean;
       recovery?: { startedAt: number };
+      trigger?: UrlFetchTrigger;
     };
   }): Promise<void> {
     if (debug) {
@@ -213,6 +218,16 @@ export class MessageBrokerEventsService {
       );
     }
 
+    // Trigger absence means interval (rolling-deploy safety, ADR-009): old
+    // producers emit trigger-less events and old consumers strip the field.
+    if (trigger?.kind === "scheduled") {
+      return this.deliverScheduledFetch({
+        url,
+        lookupKey,
+        occurredAt: trigger.occurredAt,
+      });
+    }
+
     const feedIterator = lookupKey
       ? this.deps.userFeedRepository.iterateFeedsWithLookupKeysForDelivery({
           lookupKey,
@@ -233,20 +248,91 @@ export class MessageBrokerEventsService {
           });
         }
 
-        await this.emitDeliverFeedArticlesEventWithPremiumCheck(
-          feed,
-          feed.users[0],
-          feed.workspaces[0],
-        );
+        await this.emitDeliverFeedArticlesEventForFeed(feed);
       } catch (err) {
-        logger.error(
-          `Failed to emit deliver feed articles event for feed ${feed.id}: ${
-            (err as Error).message
-          }`,
-          {
-            stack: (err as Error).stack,
-          },
-        );
+        this.logDeliveryEmissionError(feed.id, err);
+      }
+    }
+  }
+
+  private async emitDeliverFeedArticlesEventForFeed(
+    feed: UserFeedForDelivery,
+  ): Promise<void> {
+    await this.emitDeliverFeedArticlesEventWithPremiumCheck(
+      feed,
+      feed.users[0],
+      feed.workspaces[0],
+    );
+  }
+
+  private logDeliveryEmissionError(feedId: string, err: unknown): void {
+    logger.error(
+      `Failed to emit deliver feed articles event for feed ${feedId}: ${
+        (err as Error).message
+      }`,
+      {
+        stack: (err as Error).stack,
+      },
+    );
+  }
+
+  /**
+   * Fan-out for clock-scheduled fetches (ADR-009). Rate-scoped interval
+   * matching does not apply: the event is addressed to the scheduled feeds
+   * sharing the URL that are due for this exact occurrence, and each feed's
+   * once-per-occurrence marker must be claimed before delivering so queue
+   * redeliveries and emitter restarts cannot deliver twice.
+   */
+  private async deliverScheduledFetch({
+    url,
+    lookupKey,
+    occurredAt,
+  }: {
+    url: string;
+    lookupKey?: string;
+    occurredAt: number;
+  }): Promise<void> {
+    const staleness = (this.deps.now ? this.deps.now() : Date.now()) - occurredAt;
+
+    if (staleness > SCHEDULED_TRIGGER_STALENESS_MS) {
+      logger.warn(
+        `Rejected scheduled fetch trigger older than the staleness cap for ${lookupKey || url}`,
+        { occurredAt, stalenessMs: staleness },
+      );
+      return;
+    }
+
+    const feedIterator = lookupKey
+      ? this.deps.userFeedRepository.iterateScheduledFeedsWithLookupKeysForDelivery(
+          { lookupKey },
+        )
+      : this.deps.userFeedRepository.iterateScheduledFeedsForDelivery({ url });
+
+    for await (const feed of feedIterator) {
+      try {
+        // A feed sharing the URL may run a different schedule; only feeds
+        // whose own wall clock includes this occurrence deliver.
+        if (!isScheduledTime(feed.schedule, occurredAt)) {
+          continue;
+        }
+
+        // Was it processed earlier already?
+        const claimed =
+          await this.deps.userFeedRepository.claimScheduledDeliveryOccurrence(
+            feed.id,
+            occurredAt,
+          );
+
+        if (!claimed) {
+          logger.debug(
+            `Scheduled occurrence ${occurredAt} for feed ${feed.id} was already delivered, skipping`,
+          );
+          continue;
+        }
+
+        await this.emitDeliverFeedArticlesEventForFeed(feed);
+      } catch (err) {
+        this.logDeliveryEmissionError(feed.id, err);
       }
     }
   }

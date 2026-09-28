@@ -8,6 +8,13 @@ import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../../src/repositories/shared/enums";
+import { fnv1aHash } from "../../src/shared/utils/fnv1a-hash";
+import {
+  SCHEDULED_BATCH_RATE_SECONDS,
+  SCHEDULED_JITTER_SLOTS,
+  SCHEDULER_WINDOW_SIZE_MS,
+} from "../../src/shared/constants/scheduler.constants";
+import { urlWithSlot } from "../helpers/schedule-slots";
 
 const DEFAULT_REFRESH_RATE_SECONDS = 600;
 const DEFAULT_MAX_DAILY_ARTICLES = 100;
@@ -1412,6 +1419,332 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         ctx.userFeedsService.enforceAllUserFeedLimits.mock.calls[0]?.arguments;
       assert.ok(callArgs);
       assert.deepStrictEqual(callArgs[0], []);
+    });
+  });
+
+  describe("handleScheduledFeeds", () => {
+    // The clock branch fires on wall-clock minutes, so the tests pin `now` to
+    // a fixed UTC occurrence and pick URLs whose jitter slot matches the tick
+    // being simulated (slot = hash(url) % SCHEDULED_JITTER_SLOTS).
+    const OCCURRENCE = Date.parse("2026-09-26T21:00:00Z");
+    const TICK_MS = SCHEDULER_WINDOW_SIZE_MS;
+
+    async function createScheduledFeed(
+      ctx: ReturnType<ReturnType<typeof createScheduleHandlerHarness>["createContext"]>,
+      input: {
+        url?: string;
+        times?: string[];
+        timezone?: string;
+        feedRequestLookupKey?: string;
+        disabledCode?: string;
+        lastScheduledFiredAt?: Date;
+      },
+    ) {
+      const feed = await ctx.createFeedWithConnection({
+        url: input.url,
+        feedRequestLookupKey: input.feedRequestLookupKey,
+      });
+      const fields: Record<string, unknown> = {
+        scheduleMode: "scheduled",
+        schedule: {
+          times: input.times ?? ["21:00"],
+          timezone: input.timezone ?? "UTC",
+        },
+      };
+
+      if (input.disabledCode) {
+        fields.disabledCode = input.disabledCode;
+      }
+
+      if (input.lastScheduledFiredAt) {
+        fields.lastScheduledFiredAt = input.lastScheduledFiredAt;
+      }
+
+      await ctx.setFields(feed.id, fields);
+
+      return feed;
+    }
+
+    interface PublishedBatch {
+      rateSeconds: number;
+      data: Array<{
+        url: string;
+        lookupKey?: string;
+        trigger?: { kind: string; occurredAt: number };
+      }>;
+    }
+
+    function collectedBatches(ctx: {
+      messageBrokerService: {
+        publishUrlFetchBatch: {
+          mock: { calls: Array<{ arguments: unknown[] }> };
+        };
+      };
+    }): PublishedBatch[] {
+      return ctx.messageBrokerService.publishUrlFetchBatch.mock.calls.map(
+        (call) => call.arguments[0] as PublishedBatch,
+      );
+    }
+
+    // Suites run concurrently against one shared database, and the clock
+    // branch selects every scheduled feed in it — so tests assert only on the
+    // feeds they created.
+    function entriesForUrl(batches: PublishedBatch[], url: string) {
+      return batches
+        .flatMap((batch) => batch.data)
+        .filter((item) => item.url === url);
+    }
+
+    it("emits a fetch batch stamped with the scheduled trigger for a feed due at its local minute", async () => {
+      let nowMs = 0;
+      const ctx = harness.createContext({ now: () => nowMs });
+      const url = urlWithSlot(0, "scheduled-due");
+      const feed = await createScheduledFeed(ctx, { url });
+
+      nowMs = OCCURRENCE;
+      await ctx.service.handleScheduledFeeds();
+
+      const batches = collectedBatches(ctx);
+      assert.ok(batches.length >= 1);
+      assert.ok(
+        batches.every(
+          (batch) => batch.rateSeconds === SCHEDULED_BATCH_RATE_SECONDS,
+        ),
+      );
+      const matching = batches
+        .flatMap((batch) => batch.data)
+        .find((item) => item.url === feed.url);
+      assert.ok(matching, "due feed URL should be in the batch");
+      assert.deepStrictEqual(matching.trigger, {
+        kind: "scheduled",
+        occurredAt: OCCURRENCE,
+      });
+    });
+
+    it("does not emit fetches at other times of day", async () => {
+      let nowMs = 0;
+      const ctx = harness.createContext({ now: () => nowMs });
+      const url = urlWithSlot(0, "scheduled-other-times");
+      const feed = await createScheduledFeed(ctx, { url });
+
+      nowMs = OCCURRENCE - 60 * 60 * 1000;
+      await ctx.service.handleScheduledFeeds();
+
+      nowMs = OCCURRENCE + 60 * 60 * 1000;
+      await ctx.service.handleScheduledFeeds();
+
+      assert.strictEqual(entriesForUrl(collectedBatches(ctx), feed.url).length, 0);
+    });
+
+    it("catches up a missed occurrence within the bound using the original occurrence time", async () => {
+      let nowMs = 0;
+      const ctx = harness.createContext({ now: () => nowMs });
+      const url = urlWithSlot(0, "scheduled-catchup");
+      const feed = await createScheduledFeed(ctx, { url });
+
+      // Simulate the emitter being down at 21:00 and recovering 10 minutes later.
+      nowMs = OCCURRENCE + 10 * 60 * 1000;
+      await ctx.service.handleScheduledFeeds();
+
+      const batches = collectedBatches(ctx);
+      const matching = batches
+        .flatMap((batch) => batch.data)
+        .find((item) => item.url === feed.url);
+      assert.ok(matching, "missed occurrence should fire on recovery");
+      assert.deepStrictEqual(matching.trigger, {
+        kind: "scheduled",
+        occurredAt: OCCURRENCE,
+      });
+    });
+
+    it("does not re-fire an occurrence already recorded as fired", async () => {
+      let nowMs = 0;
+      const ctx = harness.createContext({ now: () => nowMs });
+      const url = urlWithSlot(0, "scheduled-fired");
+      const feed = await createScheduledFeed(ctx, {
+        url,
+        lastScheduledFiredAt: new Date(OCCURRENCE),
+      });
+
+      nowMs = OCCURRENCE;
+      await ctx.service.handleScheduledFeeds();
+
+      assert.strictEqual(entriesForUrl(collectedBatches(ctx), feed.url).length, 0);
+    });
+
+    it("groups scheduled feeds sharing a URL into a single batch entry", async () => {
+      let nowMs = 0;
+      const ctx = harness.createContext({ now: () => nowMs });
+      const sharedUrl = urlWithSlot(0, "scheduled-shared");
+      await createScheduledFeed(ctx, { url: sharedUrl });
+      await createScheduledFeed(ctx, { url: sharedUrl });
+      await createScheduledFeed(ctx, { url: sharedUrl });
+
+      nowMs = OCCURRENCE;
+      await ctx.service.handleScheduledFeeds();
+
+      const batches = collectedBatches(ctx);
+      const entries = batches
+        .flatMap((batch) => batch.data)
+        .filter((item) => item.url === sharedUrl);
+      assert.strictEqual(entries.length, 1);
+    });
+
+    it("excludes disabled scheduled feeds", async () => {
+      let nowMs = 0;
+      const ctx = harness.createContext({ now: () => nowMs });
+      const disabledUrl = urlWithSlot(0, "scheduled-disabled");
+      const feed = await createScheduledFeed(ctx, {
+        url: disabledUrl,
+        disabledCode: UserFeedDisabledCode.Manual,
+      });
+
+      nowMs = OCCURRENCE;
+      await ctx.service.handleScheduledFeeds();
+
+      assert.strictEqual(
+        entriesForUrl(collectedBatches(ctx), feed.url).length,
+        0,
+      );
+    });
+
+    it("spreads due URLs across the jitter window's ticks", async () => {
+      let nowMs = 0;
+      const ctx = harness.createContext({ now: () => nowMs });
+      const slot0Url = urlWithSlot(0, "spread-tick0");
+      const slot1Url = urlWithSlot(1, "spread-tick1");
+      const slot0Feed = await createScheduledFeed(ctx, { url: slot0Url });
+      const slot1Feed = await createScheduledFeed(ctx, { url: slot1Url });
+
+      nowMs = OCCURRENCE;
+      await ctx.service.handleScheduledFeeds();
+
+      // The fan-out records the delivery claim once the completed event is
+      // processed; an unclaimed occurrence would legitimately re-fire on the
+      // next tick, so simulate the claim landing before the second tick.
+      await ctx.setFields(slot0Feed.id, {
+        lastScheduledFiredAt: new Date(OCCURRENCE),
+      });
+
+      nowMs = OCCURRENCE + TICK_MS;
+      await ctx.service.handleScheduledFeeds();
+
+      const batches = collectedBatches(ctx);
+      const firstTickUrls = (batches[0]?.data ?? []).map((item) => item.url);
+      const secondTickUrls = (batches[1]?.data ?? []).map((item) => item.url);
+
+      assert.ok(
+        firstTickUrls.includes(slot0Feed.url),
+        "slot-0 URL fires on the first tick",
+      );
+      assert.ok(
+        !firstTickUrls.includes(slot1Feed.url),
+        "slot-1 URL must not fire on the first tick",
+      );
+      assert.ok(
+        secondTickUrls.includes(slot1Feed.url),
+        "slot-1 URL fires on the second tick",
+      );
+      assert.ok(
+        !secondTickUrls.includes(slot0Feed.url),
+        "a claimed slot-0 occurrence must not refire on the second tick",
+      );
+    });
+
+    it("sub-batches a hot minute at 25 URLs per publish", async () => {
+      let nowMs = 0;
+      const ctx = harness.createContext({ now: () => nowMs });
+      const createdUrls: string[] = [];
+
+      for (let i = 0; i < 55; ++i) {
+        const url = urlWithSlot(0, `hot-minute-${i}`);
+        createdUrls.push(url);
+        await createScheduledFeed(ctx, { url });
+      }
+
+      nowMs = OCCURRENCE;
+      await ctx.service.handleScheduledFeeds();
+
+      const batches = collectedBatches(ctx);
+      const myEntries = createdUrls.flatMap((url) =>
+        entriesForUrl(batches, url),
+      );
+
+      assert.strictEqual(myEntries.length, 55);
+      for (const batch of batches) {
+        assert.ok(
+          batch.data.length <= 25,
+          "no published batch may exceed 25 entries",
+        );
+      }
+      assert.ok(
+        batches.length >= 3,
+        "55 due URLs require at least three batches",
+      );
+      assert.ok(
+        batches.every((batch) => batch.rateSeconds === SCHEDULED_BATCH_RATE_SECONDS),
+      );
+    });
+
+    it("resolves lookup-key scheduled feeds using user credentials", async () => {
+      const encryptionKey = generateEncryptionKey();
+      let nowMs = 0;
+      const ctx = harness.createContext({ encryptionKey, now: () => nowMs });
+      const lookupKey = `lookup-${ctx.generateId()}`;
+      const redditUrl = `https://reddit.com/r/test/${ctx.generateId()}.rss`;
+
+      await ctx.createUserWithRedditCredentials(
+        ctx.discordUserId,
+        "test-access-token",
+      );
+
+      const feed = await createScheduledFeed(ctx, {
+        url: redditUrl,
+        feedRequestLookupKey: lookupKey,
+      });
+
+      // The firing slot is keyed by URL, so fire the tick this URL is
+      // assigned to within the jitter window.
+      nowMs =
+        OCCURRENCE + (fnv1aHash(redditUrl) % SCHEDULED_JITTER_SLOTS) * TICK_MS;
+      await ctx.service.handleScheduledFeeds();
+
+      const batches = collectedBatches(ctx);
+      const matching = batches
+        .flatMap((batch) => batch.data)
+        .find((item) => item.lookupKey === lookupKey);
+
+      assert.ok(matching, "lookup-key feed should be scheduled");
+      assert.ok(
+        matching.url.includes("oauth.reddit.com"),
+        "URL should be transformed to the OAuth Reddit URL",
+      );
+      assert.deepStrictEqual(matching.trigger, {
+        kind: "scheduled",
+        occurredAt: OCCURRENCE,
+      });
+      assert.notStrictEqual(matching.url, feed.url);
+    });
+
+    it("keeps scheduled feeds out of interval refresh-rate scheduling", async () => {
+      const ctx = harness.createContext();
+      const scheduledUrl = `https://example.com/scheduled-interval-${ctx.generateId()}.xml`;
+
+      await createScheduledFeed(ctx, { url: scheduledUrl });
+
+      const collectedUrls: string[] = [];
+      await ctx.service.handleRefreshRate(DEFAULT_REFRESH_RATE_SECONDS, {
+        urlsHandler: async (batch) => {
+          for (const item of batch) {
+            collectedUrls.push(item.url);
+          }
+        },
+      });
+
+      assert.ok(
+        !collectedUrls.includes(scheduledUrl),
+        "scheduled feeds must not be fetched by interval cycles",
+      );
     });
   });
 

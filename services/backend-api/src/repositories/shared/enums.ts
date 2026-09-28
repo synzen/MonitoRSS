@@ -112,6 +112,15 @@ export enum UserFeedHealthStatus {
   Failing = "FAILING",
 }
 
+// Scheduling mode of a feed (ADR-009). Documents written before the field
+// existed have no scheduleMode; field absence means interval, so every
+// interval-side query must express the exclusion as $ne: "scheduled" rather
+// than requiring an "interval" value.
+export enum UserFeedScheduleMode {
+  Interval = "interval",
+  Scheduled = "scheduled",
+}
+
 // User feed management enums
 export enum UserFeedManagerInviteType {
   CoManage = "CO_MANAGE",

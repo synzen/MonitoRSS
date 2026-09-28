@@ -15,7 +15,11 @@ import type {
 } from "../feed-handler/types";
 import type { IUser } from "../../repositories/interfaces/user.types";
 import type { IUserRepository } from "../../repositories/interfaces/user.types";
-import type { UserFeedDisabledCode } from "../../repositories/shared/enums";
+import type {
+  UserFeedDisabledCode,
+  UserFeedScheduleMode,
+} from "../../repositories/shared/enums";
+import type { FeedSchedule } from "../../shared/utils/scheduled-feed-computation";
 import type { FeedsService } from "../feeds/feeds.service";
 import type { FeedFetcherApiService } from "../feed-fetcher-api/feed-fetcher-api.service";
 import type { FeedFetcherService } from "../feed-fetcher";
@@ -95,6 +99,11 @@ export interface UpdateFeedInput {
     invites: Array<{ discordUserId: string }>;
   };
   userRefreshRateSeconds?: number | null;
+  // Switching the scheduling mode. Scheduled requires `schedule` (validated by
+  // the handler); interval unsets both schedule fields. userRefreshRateSeconds
+  // is untouched by schedule changes so switching back to interval is lossless.
+  scheduleMode?: UserFeedScheduleMode;
+  schedule?: FeedSchedule | null;
   externalProperties?: IExternalFeedProperty[];
 }
 

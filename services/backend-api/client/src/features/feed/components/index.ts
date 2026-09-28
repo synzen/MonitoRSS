@@ -18,3 +18,4 @@ export * from "./SourceFeedSelector";
 export * from "./DatePreferencesForm";
 export * from "./UserFeedDetail";
 export * from "./OwnedPersonalFeedPicker";
+export * from "./FeedScheduleSettings";

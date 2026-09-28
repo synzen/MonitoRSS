@@ -8,7 +8,7 @@ import {
 } from "../../infra/error-handler";
 import { Types } from "mongoose";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
-import { UserFeedManagerStatus } from "../../repositories/shared/enums";
+import { UserFeedManagerStatus, UserFeedScheduleMode } from "../../repositories/shared/enums";
 import { UserFeedComputedStatus } from "../../repositories/interfaces/user-feed.types";
 import {
   ManualRequestTooSoonException,
@@ -181,6 +181,10 @@ export async function formatUserFeedResponse(
     refreshRateSeconds:
       feed.refreshRateSeconds || feedBenefits.refreshRateSeconds,
     userRefreshRateSeconds: feed.userRefreshRateSeconds,
+    // Absence on pre-feature documents means interval (ADR-009); responses
+    // always make the mode explicit.
+    scheduleMode: feed.scheduleMode ?? UserFeedScheduleMode.Interval,
+    schedule: feed.schedule ?? null,
     // Workspace feeds use workspace membership for access, not per-user share invites,
     // so the sharing UI is never surfaced for them.
     shareManageOptions:
@@ -407,6 +411,30 @@ export async function updateUserFeedHandler(
       throw new BadRequestError(
         ApiErrorCode.VALIDATION_FAILED,
         "External properties must have unique labels",
+      );
+    }
+  }
+
+  if (
+    request.body.schedule !== undefined ||
+    request.body.scheduleMode !== undefined
+  ) {
+    const { scheduleMode, schedule } = request.body;
+
+    if (scheduleMode === UserFeedScheduleMode.Scheduled && !schedule) {
+      throw new BadRequestError(
+        ApiErrorCode.VALIDATION_FAILED,
+        "schedule is required when scheduleMode is 'scheduled'",
+      );
+    } else if (scheduleMode === UserFeedScheduleMode.Interval && schedule) {
+      throw new BadRequestError(
+        ApiErrorCode.VALIDATION_FAILED,
+        "schedule must be null when scheduleMode is 'interval'",
+      );
+    } else if (scheduleMode === undefined && schedule !== undefined) {
+      throw new BadRequestError(
+        ApiErrorCode.VALIDATION_FAILED,
+        "scheduleMode is required when updating the schedule",
       );
     }
   }

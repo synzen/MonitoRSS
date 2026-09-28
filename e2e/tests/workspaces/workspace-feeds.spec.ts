@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "../../fixtures/test-fixtures";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
 import { enableWorkspacesFeatureInDb, setVerifiedEmailInDb } from "../../helpers/workspaces-db";
-import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
+import { addFeedViaDiscovery } from "../../helpers/discovery";
 
 // Workspace-scoped feeds reuse the personal feeds dashboard verbatim (discovery UI
 // + bulk add). A feed added while in workspace scope belongs to the workspace,
@@ -29,24 +29,6 @@ async function createWorkspace(page: Page, workspaceName: string): Promise<void>
   await dialog.getByLabel("Workspace name").fill(workspaceName);
   await dialog.getByRole("button", { name: "Create workspace" }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
-}
-
-async function addFeedViaDiscovery(page: Page): Promise<void> {
-  // 0 workspace feeds -> the page renders the discovery UI, with the workspace-scoped
-  // heading (personal scope uses "Get news delivered to your Discord").
-  await expect(
-    page.getByRole("heading", { name: /^Add feeds to / }),
-  ).toBeVisible({ timeout: 15000 });
-  const search = page.getByRole("textbox", {
-    name: "Search popular feeds or paste a URL",
-  });
-  await search.fill(MOCK_RSS_FEED_URL);
-  await page.getByRole("button", { name: "Go", exact: true }).click();
-  await page
-    .getByRole("button", { name: /^Add .+ feed$/i })
-    .first()
-    .click();
-  await page.getByRole("button", { name: /View your feeds/ }).click();
 }
 
 test.describe("Workspace feeds", () => {

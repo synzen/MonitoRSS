@@ -3,6 +3,7 @@ import type { SlotWindow } from "../types/slot-window.types";
 import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,
+  UserFeedScheduleMode,
 } from "../../repositories/shared/enums";
 
 function buildSlotWindowFilter(slotWindow: SlotWindow): FilterQuery<unknown> {
@@ -30,18 +31,29 @@ export function getCommonFeedAggregateStages({
   url,
   feedRequestLookupKey,
   withLookupKeys,
+  includeAnyLookupKey,
   slotWindow,
   includeRecoveryFeeds,
+  scheduledOnly,
 }: {
   refreshRateSeconds?: number;
   url?: string;
   feedRequestLookupKey?: string;
   withLookupKeys?: boolean;
+  // Omits the lookup-key restriction entirely: the query returns feeds with
+  // and without lookup keys. The clock-scheduling query needs this because it
+  // evaluates both kinds of scheduled feed in one pass.
+  includeAnyLookupKey?: boolean;
   slotWindow?: SlotWindow;
   // Opts scheduling queries into bulk-recovery feeds (disabled with
   // FAILED_REQUESTS while health is FAILING). Delivery queries never pass this,
   // so recovering feeds stay excluded from article delivery.
   includeRecoveryFeeds?: boolean;
+  // Restricts the query to scheduled-mode feeds (clock scheduling, ADR-009).
+  // Without it, every interval scheduling/delivery query excludes them: a
+  // scheduled feed must never be fetched by an interval cycle of its retained
+  // refresh rate, nor delivered to by another feed's interval fetch.
+  scheduledOnly?: boolean;
 }): PipelineStage[] {
   const disabledCodeMatch: FilterQuery<unknown> = includeRecoveryFeeds
     ? // Wrapped in $and: the query's top-level $or (connection eligibility)
@@ -74,11 +86,20 @@ export function getCommonFeedAggregateStages({
           feedRequestLookupKey,
         }
       : {}),
-    feedRequestLookupKey: feedRequestLookupKey
-      ? feedRequestLookupKey
+    ...(includeAnyLookupKey
+      ? {}
       : {
-          $exists: withLookupKeys || false,
-        },
+          feedRequestLookupKey: feedRequestLookupKey
+            ? feedRequestLookupKey
+            : {
+                $exists: withLookupKeys || false,
+              },
+        }),
+    // Absence of scheduleMode means interval (pre-feature documents), so the
+    // interval side must exclude with $ne rather than requiring a value.
+    scheduleMode: scheduledOnly
+      ? UserFeedScheduleMode.Scheduled
+      : { $ne: UserFeedScheduleMode.Scheduled },
     $or: [
       {
         "connections.discordChannels.0": {

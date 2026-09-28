@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "../../fixtures/test-fixtures";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
 import { enableWorkspacesFeatureInDb, setVerifiedEmailInDb } from "../../helpers/workspaces-db";
-import { MOCK_RSS_FEED_URL } from "../../helpers/constants";
+import { addFeedViaDiscovery } from "../../helpers/discovery";
 
 // Per-user feed management invites (the "co-manage" / "transfer ownership" sharing on a
 // single feed) are intentionally disabled for workspace feeds — access to a workspace
@@ -32,31 +32,17 @@ async function createWorkspace(page: Page, workspaceName: string): Promise<void>
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
 }
 
-async function addFeedViaDiscovery(page: Page): Promise<void> {
-  // Used in both personal and workspace scope (the discovery heading differs by
-  // scope); the search box is scope-agnostic, so use it as the discovery-ready signal.
-  const search = page.getByRole("textbox", {
-    name: "Search popular feeds or paste a URL",
-  });
-  await expect(search).toBeVisible({ timeout: 15000 });
-  await search.fill(MOCK_RSS_FEED_URL);
-  await page.getByRole("button", { name: "Go", exact: true }).click();
-  await page
-    .getByRole("button", { name: /^Add .+ feed$/i })
-    .first()
-    .click();
-  await page.getByRole("button", { name: /View your feeds/ }).click();
-}
-
 async function openFeedSettingsTab(page: Page): Promise<void> {
   await page.getByRole("link", { name: /^Configure/ }).first().click();
   await expect(page.getByRole("heading", { name: "Feed Overview" })).toBeVisible({
     timeout: 15000,
   });
   await page.getByRole("tab", { name: "Settings" }).click();
-  // The Settings tab always renders the Refresh Rate section, so use it to confirm the
+  // The Settings tab always renders this section heading, so use it to confirm the
   // tab content has mounted before asserting on the (conditionally absent) invites section.
-  await expect(page.getByRole("heading", { name: "Refresh Rate" })).toBeVisible({
+  await expect(
+    page.getByRole("heading", { name: "Miscellaneous Feed Settings" }),
+  ).toBeVisible({
     timeout: 15000,
   });
 }

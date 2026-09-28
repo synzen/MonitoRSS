@@ -14,8 +14,10 @@ import { AmqpChannel } from './constants/amqpChannels'
 import type { ConfigType } from './schemas/ConfigSchema'
 import {
   DEFAULT_RABBITMQ_DISCONNECT_GRACE_MS,
+  initializeWithRabbitMqRetry,
   isRabbitMqConsumerConnectionError,
   watchRabbitMqConnection,
+  watchRabbitMqDisconnectRecovery,
 } from './utils/rabbitmq-health'
 
 dayjs.extend(utc)
@@ -102,16 +104,6 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
     })
     exit(1)
   }
-  const stopRabbitMqWatchdog = watchRabbitMqConnection({
-    connection: amqpConnection,
-    gracePeriodMs: DEFAULT_RABBITMQ_DISCONNECT_GRACE_MS,
-    onUnavailable: (error) => {
-      exitForRabbitMqFailure(
-        `RabbitMQ unavailable for ${DEFAULT_RABBITMQ_DISCONNECT_GRACE_MS}ms, shutting down`,
-        error
-      )
-    },
-  })
   const producer = new RESTProducer(config.rabbitmqUri, {
     clientId: config.discordClientId
   })
@@ -316,7 +308,71 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
   })
 
   await producer.initialize()
-  await consumer.initialize()
+
+  /**
+   * The consumer connects via raw amqplib and throws when the broker is still
+   * coming up (e.g. during stack startup). Retry with backoff instead of
+   * crashing; nodemon in the dev stack does not restart exited processes.
+   */
+  await initializeWithRabbitMqRetry(async () => {
+    try {
+      await consumer.initialize()
+    } catch (err) {
+      // Release any connection established before the failed step so the next
+      // attempt starts clean.
+      await consumer.close().catch(() => {})
+      throw err
+    }
+  }, {
+    onRetry: (attempt, error, delayMs) => {
+      const message = `RabbitMQ consumer initialization failed (attempt ${attempt}), retrying in ${delayMs}ms`
+      log.warn(message, error.message)
+      logDatadog('warn', message, {
+        stack: error.stack
+      })
+    },
+  })
+
+  // RabbitMQ is connected now; from here on, a sustained disconnect is fatal
+  // and handled by the orchestrator's restart policy.
+  const stopRabbitMqWatchdog = watchRabbitMqConnection({
+    connection: amqpConnection,
+    gracePeriodMs: DEFAULT_RABBITMQ_DISCONNECT_GRACE_MS,
+    onUnavailable: (error) => {
+      exitForRabbitMqFailure(
+        `RabbitMQ unavailable for ${DEFAULT_RABBITMQ_DISCONNECT_GRACE_MS}ms, shutting down`,
+        error
+      )
+    },
+  })
+
+  // The consumer's raw amqplib connection does not recover from graceful
+  // broker shutdowns (no 'error' event fires), which silently stops it from
+  // consuming while the connection-manager reconnects on its own. Re-initialize
+  // the consumer whenever the broker reports a disconnect. Sustained outages
+  // still exit via the watchdog above.
+  const stopRabbitMqDisconnectRecovery = watchRabbitMqDisconnectRecovery({
+    connection: amqpConnection,
+    recover: async () => {
+      try {
+        await consumer.initialize()
+      } catch (err) {
+        await consumer.close().catch(() => {})
+        throw err
+      }
+    },
+    onRecoverySuccess: () => {
+      log.info('RabbitMQ consumer connection re-established')
+      logDatadog('info', 'RabbitMQ consumer connection re-established')
+    },
+    onRecoveryFailure: (error) => {
+      const message = `Failed to re-establish RabbitMQ consumer connection`
+      log.warn(message, error.message)
+      logDatadog('warn', message, {
+        stack: error.stack
+      })
+    },
+  })
 
   log.info('Ready')
 
@@ -326,6 +382,7 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
     producer,
     close: async () => {
       stopRabbitMqWatchdog()
+      stopRabbitMqDisconnectRecovery()
       clearInterval(pollInterval)
       await consumer.close()
       await producer.close()

@@ -117,6 +117,7 @@
       "unknownReason": "unknown reason",
       "channelLabel": "Channel",
       "refreshRateLabel": "Refresh Rate",
+      "deliveryScheduleLabel": "Delivery Schedule",
       "refreshRateValue": "{{seconds}} seconds",
       "createdAtLabel": "Since",
       "connectionsTab": "Connections",

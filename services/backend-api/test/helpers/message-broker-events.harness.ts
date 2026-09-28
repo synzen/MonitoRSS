@@ -22,6 +22,9 @@ export interface UserFeedRepositoryMockOptions {
   countWithHealthStatusFilterResult?: number;
   iterateFeedsForDeliveryResult?: AsyncIterable<unknown>;
   iterateFeedsWithLookupKeysForDeliveryResult?: AsyncIterable<unknown>;
+  iterateScheduledFeedsForDeliveryResult?: AsyncIterable<unknown>;
+  iterateScheduledFeedsWithLookupKeysForDeliveryResult?: AsyncIterable<unknown>;
+  claimScheduledDeliveryOccurrenceResult?: boolean;
   findIdsWithoutDisabledCodeResult?: string[];
   findByIdResult?: unknown;
   disableFeedByIdIfNotDisabledResult?: boolean;
@@ -48,6 +51,8 @@ export interface MessageBrokerEventsContextOptions {
     message: unknown,
     options?: unknown,
   ) => Promise<void>;
+  // Overrides the fan-out clock (scheduled-trigger staleness checks).
+  now?: () => number;
 }
 
 export interface MockUserFeedRepository {
@@ -55,6 +60,9 @@ export interface MockUserFeedRepository {
   countWithHealthStatusFilter: ReturnType<typeof mock.fn>;
   iterateFeedsForDelivery: ReturnType<typeof mock.fn>;
   iterateFeedsWithLookupKeysForDelivery: ReturnType<typeof mock.fn>;
+  iterateScheduledFeedsForDelivery: ReturnType<typeof mock.fn>;
+  iterateScheduledFeedsWithLookupKeysForDelivery: ReturnType<typeof mock.fn>;
+  claimScheduledDeliveryOccurrence: ReturnType<typeof mock.fn>;
   findIdsWithoutDisabledCode: ReturnType<typeof mock.fn>;
   findById: ReturnType<typeof mock.fn>;
   disableFeedsByIds: ReturnType<typeof mock.fn>;
@@ -124,6 +132,24 @@ export function createMessageBrokerEventsHarness(): MessageBrokerEventsHarness {
             options.userFeedRepository
               ?.iterateFeedsWithLookupKeysForDeliveryResult ??
             createEmptyAsyncIterable(),
+        ),
+        iterateScheduledFeedsForDelivery: mock.fn(
+          () =>
+            options.userFeedRepository
+              ?.iterateScheduledFeedsForDeliveryResult ??
+            createEmptyAsyncIterable(),
+        ),
+        iterateScheduledFeedsWithLookupKeysForDelivery: mock.fn(
+          () =>
+            options.userFeedRepository
+              ?.iterateScheduledFeedsWithLookupKeysForDeliveryResult ??
+            createEmptyAsyncIterable(),
+        ),
+        claimScheduledDeliveryOccurrence: mock.fn(() =>
+          Promise.resolve(
+            options.userFeedRepository?.claimScheduledDeliveryOccurrenceResult ??
+              true,
+          ),
         ),
         findIdsWithoutDisabledCode: mock.fn(() =>
           Promise.resolve(
@@ -195,6 +221,7 @@ export function createMessageBrokerEventsHarness(): MessageBrokerEventsHarness {
         notificationsService:
           notificationsService as unknown as NotificationsService,
         publishMessage,
+        now: options.now,
       } as MessageBrokerEventsServiceDeps);
 
       return {

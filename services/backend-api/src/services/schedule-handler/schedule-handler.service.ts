@@ -1,3 +1,4 @@
+import type { UrlFetchTrigger } from "@monitorss/contracts";
 import type { Config } from "../../config";
 import type { SupportersService } from "../supporters/supporters.service";
 import type { UserFeedsService } from "../user-feeds/user-feeds.service";
@@ -10,13 +11,19 @@ import type {
   WorkspaceRefreshRateSyncInput,
   WorkspaceMaxDailyArticlesSyncInput,
   FeedForSlotOffsetRecalculation,
+  ScheduledFeedForClockScheduling,
 } from "../../repositories/interfaces/user-feed.types";
 import type { SlotWindow } from "../../shared/types/slot-window.types";
-import { SCHEDULER_WINDOW_SIZE_MS } from "../../shared/constants/scheduler.constants";
+import {
+  SCHEDULED_BATCH_RATE_SECONDS,
+  SCHEDULER_WINDOW_SIZE_MS,
+} from "../../shared/constants/scheduler.constants";
+import { selectDueScheduledFeeds } from "../../shared/utils/scheduled-feed-computation";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
 import {
   getFeedRequestLookupDetails,
   pickFeedCredentialSource,
+  type FeedCredentialSource,
 } from "../../shared/utils/get-feed-request-lookup-details";
 import logger from "../../infra/logger";
 
@@ -40,7 +47,13 @@ interface UrlBatchItem {
   // contract so the request worker can treat the attempt as a fresh recovery
   // verification instead of the continuation of the terminal failure history.
   recovery?: { startedAt: number };
+  // Request metadata for clock-scheduled fetches (ADR-009): the batch entry is
+  // stamped with the occurrence it fulfills and copied through to the
+  // completed event. Interval fetches carry no trigger.
+  trigger?: UrlFetchTrigger;
 }
+
+const URL_BATCH_SIZE = 25;
 
 export class ScheduleHandlerService {
   private readonly defaultRefreshRateSeconds: number;
@@ -125,7 +138,7 @@ export class ScheduleHandlerService {
         ...(recoveryStartedAt ? { recovery: { startedAt: recoveryStartedAt } } : {}),
       });
 
-      if (urlBatch.length === 25) {
+      if (urlBatch.length === URL_BATCH_SIZE) {
         await urlsHandler(urlBatch);
         urlBatch = [];
       }
@@ -142,34 +155,25 @@ export class ScheduleHandlerService {
       refreshRateSeconds,
       slotWindow,
     )) {
-      const lookupDetails = getFeedRequestLookupDetails({
-        feed: {
-          url,
-          feedRequestLookupKey,
-        },
-        credentials: pickFeedCredentialSource({
-          feed: { workspaceId },
-          user: { externalCredentials: users[0]?.externalCredentials },
-          workspace: workspaces[0],
-        }),
-        decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-        redditFeedBaseUrl:
-          this.deps.config.BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL,
+      const item = this.resolveLookupKeyBatchItem({
+        url,
+        feedRequestLookupKey,
+        workspaceId,
+        users,
+        workspaces,
+        saveToObjectStorage: urlsToDebug.has(url),
+        ...(recoveryStartedAt
+          ? { recovery: { startedAt: recoveryStartedAt } }
+          : {}),
       });
 
-      if (!lookupDetails) {
+      if (!item) {
         continue;
       }
 
-      urlBatch.push({
-        url: lookupDetails?.url || url,
-        saveToObjectStorage: urlsToDebug.has(url),
-        lookupKey: lookupDetails?.key,
-        headers: lookupDetails?.headers,
-        ...(recoveryStartedAt ? { recovery: { startedAt: recoveryStartedAt } } : {}),
-      });
+      urlBatch.push(item);
 
-      if (urlBatch.length === 25) {
+      if (urlBatch.length === URL_BATCH_SIZE) {
         await urlsHandler(urlBatch);
         urlBatch = [];
       }
@@ -178,6 +182,132 @@ export class ScheduleHandlerService {
     if (urlBatch.length > 0) {
       await urlsHandler(urlBatch);
     }
+  }
+
+  /**
+   * Clock branch of the scheduler loop (ADR-009): fires each scheduled-mode
+   * feed once per scheduled local minute, at the URL's hash-derived delay slot
+   * within the jitter window after that minute. Due feeds are selected by the
+   * pure scheduled-feed-computation (timezone wall clock, catch-up bound,
+   * once-per-scheduled-time guard input, hot-minute spreading), grouped by URL
+   * into the same batch shape as the interval path, and stamped with a
+   * scheduled trigger carrying the scheduled time.
+   */
+  async handleScheduledFeeds(): Promise<void> {
+    const nowMs = this.deps.now ? this.deps.now() : Date.now();
+    const urlsToDebug = await this.deps.userFeedRepository.findDebugFeedUrls();
+
+    const scheduledFeeds: ScheduledFeedForClockScheduling[] = [];
+
+    for await (const feed of this.deps.userFeedRepository.iterateScheduledFeedsForClockScheduling()) {
+      scheduledFeeds.push(feed);
+    }
+
+    const dueFeeds = selectDueScheduledFeeds(scheduledFeeds, nowMs);
+
+    if (dueFeeds.length === 0) {
+      return;
+    }
+
+    const batchItems: UrlBatchItem[] = [];
+    // Plain feeds sharing a URL and scheduled time collapse into one entry;
+    // the fetch is the batching unit, not the feed.
+    const entriesByUrl = new Map<string, UrlBatchItem>();
+
+    for (const { feed, scheduledAt } of dueFeeds) {
+      if (feed.feedRequestLookupKey) {
+        let item: UrlBatchItem | null = null;
+
+        try {
+          item = this.resolveLookupKeyBatchItem({
+            url: feed.url,
+            feedRequestLookupKey: feed.feedRequestLookupKey,
+            workspaceId: feed.workspaceId,
+            users: feed.users,
+            workspaces: feed.workspaces,
+            saveToObjectStorage: urlsToDebug.has(feed.url),
+            trigger: { kind: "scheduled", occurredAt: scheduledAt },
+          });
+        } catch (err) {
+          // One feed with an undecryptable credential must not kill the
+          // whole clock tick.
+          logger.warn(
+            `Failed to resolve lookup details for scheduled feed ${feed.id}, skipping`,
+            { error: (err as Error).message },
+          );
+        }
+
+        if (!item) {
+          continue;
+        }
+
+        batchItems.push(item);
+
+        continue;
+      }
+
+      const mapKey = `${feed.url}|${scheduledAt}`;
+
+      if (!entriesByUrl.has(mapKey)) {
+        entriesByUrl.set(mapKey, {
+          url: feed.url,
+          saveToObjectStorage: urlsToDebug.has(feed.url),
+          trigger: { kind: "scheduled", occurredAt: scheduledAt },
+        });
+      }
+    }
+
+    batchItems.push(...entriesByUrl.values());
+
+    for (let i = 0; i < batchItems.length; i += URL_BATCH_SIZE) {
+      await this.emitUrlRequestBatchEvent({
+        rateSeconds: SCHEDULED_BATCH_RATE_SECONDS,
+        data: batchItems.slice(i, i + URL_BATCH_SIZE),
+      });
+    }
+  }
+
+  // Lookup-key feeds fetch with the credential owner's transformed URL, so
+  // they are resolved per feed instead of grouped by raw URL. Workspace feeds
+  // resolve only the workspace connection and personal feeds only the
+  // creator's; null means no usable credential, so the feed is skipped.
+  private resolveLookupKeyBatchItem(input: {
+    url: string;
+    feedRequestLookupKey?: string;
+    workspaceId?: string;
+    users: Array<{ externalCredentials?: FeedCredentialSource["externalCredentials"] }>;
+    workspaces: Array<{ externalCredentials?: FeedCredentialSource["externalCredentials"] }>;
+    saveToObjectStorage: boolean;
+    recovery?: { startedAt: number };
+    trigger?: UrlFetchTrigger;
+  }): UrlBatchItem | null {
+    const lookupDetails = getFeedRequestLookupDetails({
+      feed: {
+        url: input.url,
+        feedRequestLookupKey: input.feedRequestLookupKey,
+      },
+      credentials: pickFeedCredentialSource({
+        feed: { workspaceId: input.workspaceId },
+        user: { externalCredentials: input.users[0]?.externalCredentials },
+        workspace: input.workspaces[0],
+      }),
+      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
+      redditFeedBaseUrl:
+        this.deps.config.BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL,
+    });
+
+    if (!lookupDetails) {
+      return null;
+    }
+
+    return {
+      url: lookupDetails.url || input.url,
+      saveToObjectStorage: input.saveToObjectStorage,
+      lookupKey: lookupDetails.key,
+      headers: lookupDetails.headers,
+      ...(input.recovery ? { recovery: input.recovery } : {}),
+      ...(input.trigger ? { trigger: input.trigger } : {}),
+    };
   }
 
   async getValidDiscordUserSupporters(): Promise<

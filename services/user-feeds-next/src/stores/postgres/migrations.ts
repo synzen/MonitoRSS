@@ -402,11 +402,24 @@ export async function ensurePartitionsExist(pool: Pool): Promise<void> {
   ];
 
   for (const partition of partitions) {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ${partition.tableName}
-      PARTITION OF ${partition.parentTable}
-      FOR VALUES FROM ('${partition.from}') TO ('${partition.to}')
-    `);
+    // IF NOT EXISTS normally skips existing partitions, but concurrent creators
+    // (e.g. multiple instances starting at once) can still race past it and hit
+    // duplicate_table. The partition exists in that case, so it is safe to
+    // continue.
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS ${partition.tableName}
+        PARTITION OF ${partition.parentTable}
+        FOR VALUES FROM ('${partition.from}') TO ('${partition.to}')
+      `);
+    } catch (err) {
+      if ((err as { code?: string }).code !== "42P07") {
+        throw err;
+      }
+      logger.info(
+        `Partition ${partition.tableName} already exists, skipping creation`
+      );
+    }
   }
 }
 

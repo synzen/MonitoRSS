@@ -22,7 +22,6 @@ import {
 } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
 import { yupResolver } from "@hookform/resolvers/yup";
-import dayjs from "dayjs";
 import { Controller, FormProvider, useForm } from "react-hook-form";
 import { Trans, useTranslation } from "react-i18next";
 import { array, InferType, number, object, string } from "yup";
@@ -36,7 +35,7 @@ import {
   useUserFeed,
   useFeedScope,
 } from "@/features/feed";
-import { DiscordUsername, useDiscordUserMe } from "@/features/discordUser";
+import { DiscordUsername } from "@/features/discordUser";
 import { pages, UserFeedManagerInviteType, UserFeedManagerStatus } from "@/constants";
 import { ResendUserFeedManagementInviteButton } from "./ResendUserFeedManagementInviteButton";
 import { SelectUserDialog } from "./SelectUserDialog";
@@ -51,8 +50,7 @@ import {
   usePageAlertContext,
 } from "@/contexts/PageAlertContext";
 import { UserFeedTabSearchParam } from "@/constants/userFeedTabSearchParam";
-import ApiAdapterError from "@/utils/ApiAdapterError";
-import { getEffectiveRefreshRateSeconds } from "@/utils/formatRefreshRateSeconds";
+import { isTimezoneValue } from "@/utils/feedSchedule";
 import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { MenuRoot, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
@@ -66,23 +64,7 @@ interface Props {
 
 const FormSchema = object({
   dateFormat: string().optional(),
-  dateTimezone: string().test("is-timezone", "Must be a valid timezone", (val) => {
-    if (!val) {
-      return true;
-    }
-
-    try {
-      dayjs().tz(val);
-
-      return true;
-    } catch (err) {
-      if (err instanceof RangeError) {
-        return false;
-      }
-
-      throw err;
-    }
-  }),
+  dateTimezone: string().test("is-timezone", "Must be a valid timezone", isTimezoneValue),
   dateLocale: string().optional(),
   oldArticleDateDiffMsThreshold: number().optional(),
   shareManageOptions: object({
@@ -95,7 +77,6 @@ const FormSchema = object({
     .optional()
     .nullable()
     .default(null),
-  userRefreshRateMinutes: string().optional(),
 });
 
 type FormValues = InferType<typeof FormSchema>;
@@ -110,7 +91,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
   } = useUserFeed({
     feedId,
   });
-  const { data: user } = useDiscordUserMe();
   const [manageInviteDialogState, setManageInviteDialogState] = useState<{
     isOpen: boolean;
     inviteId: string;
@@ -130,10 +110,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
       dateLocale: feed?.formatOptions?.dateLocale || "",
       oldArticleDateDiffMsThreshold: feed?.dateCheckOptions?.oldArticleDateDiffMsThreshold || 0,
       shareManageOptions: feed?.shareManageOptions || null,
-      userRefreshRateMinutes:
-        (
-          Number(getEffectiveRefreshRateSeconds(feed || { refreshRateSeconds: 0 }).toFixed(1)) / 60
-        )?.toString() || "",
     },
   });
   const {
@@ -181,9 +157,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
 
   const onUpdatedFeed = async (values: FormValues) => {
     try {
-      const userRefreshRateMinutesInSeconds = !Number.isNaN(values.userRefreshRateMinutes)
-        ? Number(values.userRefreshRateMinutes) * 60
-        : undefined;
       const updatedFeed = await mutateAsync({
         feedId,
         data: {
@@ -200,7 +173,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                   oldArticleDateDiffMsThreshold: values.oldArticleDateDiffMsThreshold,
                 }
               : undefined,
-          userRefreshRateSeconds: userRefreshRateMinutesInSeconds,
         },
       });
 
@@ -211,52 +183,15 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
         oldArticleDateDiffMsThreshold:
           updatedFeed.result.dateCheckOptions?.oldArticleDateDiffMsThreshold,
         shareManageOptions: updatedFeed.result.shareManageOptions || null,
-        userRefreshRateMinutes: (getEffectiveRefreshRateSeconds(updatedFeed.result) / 60).toFixed(
-          1,
-        ),
       });
       createSuccessAlert({
         title: "Successfully updated feed settings",
       });
     } catch (e) {
-      const fastestAllowedRate = Math.min(
-        ...(feed?.refreshRateOptions.filter((r) => !r.disabledCode).map((o) => o.rateSeconds) ||
-          []),
-      );
-      const canHaveLowerRate = feed?.refreshRateOptions.filter(
-        (r) => r.disabledCode === "INSUFFICIENT_SUPPORTER_TIER",
-      );
-
-      if (e instanceof ApiAdapterError && e.errorCode === "USER_REFRESH_RATE_NOT_ALLOWED") {
-        createErrorAlert({
-          title: "Refresh rate is not allowed.",
-          description: (
-            <Text>
-              Your selected refresh rate must be greater than or equal to
-              {(fastestAllowedRate / 60).toFixed(1)} minutes and less than or equal to 1440.0
-              minutes (1 day).
-              {canHaveLowerRate && (
-                <>
-                  {" "}
-                  <ChakraLink
-                    color="text.link"
-                    href="https://monitorss.xyz/pricing"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Get lower rates by being a paid supporter.
-                  </ChakraLink>
-                </>
-              )}
-            </Text>
-          ),
-        });
-      } else {
-        createErrorAlert({
-          title: t("common.errors.failedToSave"),
-          description: e instanceof Error ? e.message : undefined,
-        });
-      }
+      createErrorAlert({
+        title: t("common.errors.failedToSave"),
+        description: e instanceof Error ? e.message : undefined,
+      });
     }
   };
 
@@ -542,55 +477,6 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                 </Stack>
               </Stack>
             )}
-            <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>
-              <Stack gap={2}>
-                <Heading size="sm" as="h3">
-                  Refresh Rate
-                </Heading>
-                <Text>
-                  Change the rate at which the bot sends requests for this feed. If you are facing
-                  rate limits for this feed, this may be helpful, but is not guaranteed to resolve
-                  rate-limit-related issues. If other users are using this feed at a rate faster
-                  than what you set here, the bot will ignore this setting.
-                </Text>
-                <Separator mt={2} />
-              </Stack>
-              {!feed?.refreshRateOptions.length && (
-                <Text color="fg.muted">This feed does not have any refresh rate options.</Text>
-              )}
-              {!!feed?.refreshRateOptions.length && (
-                <Controller
-                  name="userRefreshRateMinutes"
-                  control={control}
-                  render={({ field }) => {
-                    return (
-                      <Field
-                        invalid={!!formErrors.oldArticleDateDiffMsThreshold}
-                        errorText={formErrors.userRefreshRateMinutes?.message}
-                      >
-                        <HStack alignItems="center" gap={4}>
-                          <NumberInputRoot
-                            allowMouseWheel
-                            step={0.1}
-                            value={field.value}
-                            onValueChange={(details) => {
-                              return field.onChange(details.value);
-                            }}
-                            onBlur={() => field.onBlur()}
-                            disabled={!user || field.disabled}
-                            ref={field.ref}
-                            name={field.name}
-                          >
-                            <NumberInputField />
-                          </NumberInputRoot>
-                          <Text as="label">minutes</Text>
-                        </HStack>
-                      </Field>
-                    );
-                  }}
-                />
-              )}
-            </Stack>
             <Stack gap={4} border="1px solid" borderColor="border" borderRadius="l3" p={4}>
               <Stack gap={2}>
                 <Heading size="sm" as="h3" pb={2}>

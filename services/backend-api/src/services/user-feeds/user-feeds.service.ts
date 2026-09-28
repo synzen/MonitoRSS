@@ -4,6 +4,7 @@ import type { IUser } from "../../repositories/interfaces/user.types";
 import {
   UserFeedDisabledCode,
   UserFeedHealthStatus,
+  UserFeedScheduleMode,
 } from "../../repositories/shared/enums";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
 import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
@@ -811,6 +812,24 @@ export class UserFeedsService {
           updates.userRefreshRateSeconds,
         );
       }
+    }
+
+    if (updates.scheduleMode === UserFeedScheduleMode.Scheduled && updates.schedule) {
+      useUpdateObject.$set!.scheduleMode = updates.scheduleMode;
+      const days = updates.schedule.days?.length
+        ? [...new Set(updates.schedule.days)].sort((a, b) => a - b)
+        : undefined;
+
+      useUpdateObject.$set!.schedule = {
+        // Normalized to sorted so every consumer sees a stable ordering.
+        times: [...updates.schedule.times].sort(),
+        timezone: updates.schedule.timezone,
+        // An empty days array is the same as absent: every day.
+        ...(days ? { days } : {}),
+      };
+    } else if (updates.scheduleMode === UserFeedScheduleMode.Interval) {
+      useUpdateObject.$unset!.scheduleMode = "";
+      useUpdateObject.$unset!.schedule = "";
     }
 
     const u = await this.deps.userFeedRepository.findOneAndUpdate(

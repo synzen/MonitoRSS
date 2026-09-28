@@ -24,6 +24,7 @@ Each ADR follows the [Michael Nygard one-pager template](https://cognitect.com/b
 | [006](006-npm-workspaces.md) | Convert repo to npm workspaces (internal packages by symlink, not publish) | Accepted |
 | [007](007-packages-contracts.md) | `packages/contracts` is the single source of truth for RabbitMQ event names and payload schemas | Accepted |
 | [008](008-user-feeds-next-internal-architecture.md) | `user-feeds-next` internal architecture: pipeline with domain-partitioned modules | Accepted |
+| [009](009-two-mode-feed-scheduling.md) | Two-mode feed scheduling: interval cycles plus clock-time scheduled occurrences | Accepted |
 
 ## Per-service ADRs
 

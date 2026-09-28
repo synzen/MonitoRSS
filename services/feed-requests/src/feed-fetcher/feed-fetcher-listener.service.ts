@@ -65,10 +65,22 @@ export class FeedFetcherListenerService {
     // refresh rates each get their own lock, so a fast-refreshing feed can't
     // starve a slower one by holding a URL-wide lock and causing its cycles to
     // be skipped (which drops the fetch-completed event and delays delivery).
-    return `listener-service-${lookupKey}-${rateSeconds}`;
+    // Scheduled occurrences are scoped by their occurrence time too: two
+    // entries for the same URL with different occurrences (or a scheduled
+    // entry racing an interval one) must not swallow each other's completed
+    // event via the lock (ADR-009).
+    const triggerScope =
+      event.trigger?.kind === 'scheduled' ? `-${event.trigger.occurredAt}` : '';
+
+    return `listener-service-${lookupKey}-${rateSeconds}${triggerScope}`;
   };
 
   static BASE_FAILED_ATTEMPT_WAIT_MINUTES = 5;
+
+  // Response-reuse window for scheduled-occurrence fetches: long enough to
+  // collapse duplicate same-URL entries processed together in one batch, short
+  // enough that a feed's next scheduled occurrence fetches fresh.
+  static SCHEDULED_DEDUPE_WINDOW_SECONDS = 120;
 
   @RabbitSubscribe({
     exchange: '',
@@ -129,8 +141,14 @@ export class FeedFetcherListenerService {
     try {
       const results = await Promise.allSettled(
         validatedBatch.data.map(async (message) => {
-          const { url, lookupKey, saveToObjectStorage, headers, recovery } =
-            message;
+          const {
+            url,
+            lookupKey,
+            saveToObjectStorage,
+            headers,
+            recovery,
+            trigger,
+          } = message;
           const logPrefix = saveToObjectStorage
             ? `DEBUG ${lookupKey || url}:`
             : '';
@@ -172,11 +190,19 @@ export class FeedFetcherListenerService {
             try {
               // Recovery attempts must perform a fresh request even if the URL
               // was recently processed by a prior (terminal-failure) cycle.
+              // Scheduled occurrences only reuse a response fetched moments
+              // ago (a duplicate entry for the same URL in the same batch); a
+              // long window would let one occurrence serve another feed's
+              // adjacent scheduled time a stale response.
+              const dedupeWindowSeconds =
+                trigger?.kind === 'scheduled'
+                  ? FeedFetcherListenerService.SCHEDULED_DEDUPE_WINDOW_SECONDS
+                  : Math.round(rateSeconds * 0.5);
               const recentlyProcessed = recovery
                 ? false
                 : await this.partitionedRequestsStoreService.wasRequestedInPastSeconds(
                     lookupKey || url,
-                    Math.round(rateSeconds * 0.5),
+                    dedupeWindowSeconds,
                   );
 
               if (recentlyProcessed) {
@@ -192,6 +218,7 @@ export class FeedFetcherListenerService {
                   rateSeconds,
                   debug: saveToObjectStorage,
                   recovery,
+                  trigger,
                 });
 
                 return;
@@ -238,6 +265,7 @@ export class FeedFetcherListenerService {
                   rateSeconds,
                   debug: saveToObjectStorage,
                   recovery,
+                  trigger,
                 });
               }
             } catch (err) {
@@ -610,6 +638,7 @@ export class FeedFetcherListenerService {
     rateSeconds,
     debug,
     recovery,
+    trigger,
   }: UrlFetchCompletedPayload['data']) {
     try {
       if (debug) {
@@ -624,7 +653,7 @@ export class FeedFetcherListenerService {
       }
 
       const event = {
-        data: { lookupKey, url, rateSeconds, debug, recovery },
+        data: { lookupKey, url, rateSeconds, debug, recovery, trigger },
       };
       UrlFetchCompletedSchema.parse(event);
       this.amqpConnection.publish(

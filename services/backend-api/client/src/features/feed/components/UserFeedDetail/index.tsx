@@ -33,6 +33,7 @@ import {
   FaGear,
   FaPause,
   FaUserSlash,
+  FaPencil,
 } from "react-icons/fa6";
 import { useContext, useEffect, useRef } from "react";
 import { FaCopy } from "react-icons/fa";
@@ -58,6 +59,7 @@ import {
   formatRefreshRateSeconds,
   getEffectiveRefreshRateSeconds,
 } from "@/utils/formatRefreshRateSeconds";
+import { formatScheduleSummary } from "@/utils/feedSchedule";
 import {
   useArticleDailyLimit,
   useDeleteUserFeed,
@@ -69,6 +71,7 @@ import { useFeedScope } from "../../contexts/FeedScopeContext";
 import { UpdateUserFeedInput } from "../../api";
 import { UserFeedDisabledCode } from "../../types";
 import { CloneUserFeedDialog } from "../CloneUserFeedDialog";
+import { EditDeliveryScheduleDialog } from "../EditDeliveryScheduleDialog";
 import { EditUserFeedDialog } from "../EditUserFeedDialog";
 import { UserFeedDisabledAlert } from "../UserFeedDisabledAlert";
 import { UserFeedLogs } from "../UserFeedLogs";
@@ -113,6 +116,12 @@ export const UserFeedDetail: React.FC = () => {
   const scope = workspaceSlug ? { workspaceSlug } : undefined;
   const scopeCrumbLabel = useScopeCrumbLabel();
   const { open: editIsOpen, onClose: editOnClose, onOpen: editOnOpen } = useDisclosure();
+  const {
+    open: scheduleEditIsOpen,
+    onClose: scheduleEditOnClose,
+    onOpen: scheduleEditOnOpen,
+  } = useDisclosure();
+  const scheduleEditButtonRef = useRef<HTMLButtonElement>(null);
   const {
     open: copySettingsIsOpen,
     onClose: copySettingsOnClose,
@@ -185,6 +194,8 @@ export const UserFeedDetail: React.FC = () => {
   }, [feedTitle]);
 
   const isAtLimit = dailyLimit ? dailyLimit.current >= dailyLimit.max : false;
+
+  const scheduleSummary = feed ? formatScheduleSummary(feed) : null;
 
   const onDeleteFeed = async () => {
     if (!feedId) {
@@ -305,6 +316,15 @@ export const UserFeedDetail: React.FC = () => {
           onCloseRef={menuButtonRef}
           feedId={feedId}
         />
+        {feed && (
+          <EditDeliveryScheduleDialog
+            isOpen={scheduleEditIsOpen}
+            onClose={scheduleEditOnClose}
+            onCloseRef={scheduleEditButtonRef}
+            feed={feed}
+            onUpdate={onUpdateFeed}
+          />
+        )}
         {feed && (
           <CloneUserFeedDialog
             open={cloneIsOpen}
@@ -547,8 +567,37 @@ export const UserFeedDetail: React.FC = () => {
                     rowGap={{ base: "8", lg: "14" }}
                     as="ul"
                   >
-                    <CategoryText title={t("pages.feed.refreshRateLabel")}>
-                      {feed ? formatRefreshRateSeconds(getEffectiveRefreshRateSeconds(feed)) : null}
+                    <CategoryText
+                      title={
+                        scheduleSummary
+                          ? t("pages.feed.deliveryScheduleLabel")
+                          : t("pages.feed.refreshRateLabel")
+                      }
+                    >
+                      <HStack gap={1}>
+                        <Text display="block">
+                          {feed
+                            ? (scheduleSummary ??
+                              formatRefreshRateSeconds(getEffectiveRefreshRateSeconds(feed)))
+                            : null}
+                        </Text>
+                        {feed && (
+                          <IconButton
+                            aria-label={
+                              scheduleSummary
+                                ? t("pages.feed.deliveryScheduleLabel")
+                                : t("pages.feed.refreshRateLabel")
+                            }
+                            title="Edit"
+                            variant="ghost"
+                            size="xs"
+                            ref={scheduleEditButtonRef}
+                            onClick={scheduleEditOnOpen}
+                          >
+                            <FaPencil fontSize={12} />
+                          </IconButton>
+                        )}
+                      </HStack>
                     </CategoryText>
                     <CategoryText title={t("pages.feed.createdAtLabel")}>
                       {feed?.createdAt}
