@@ -213,7 +213,7 @@ test.describe("Paddle workspace roundtrip", () => {
         await expect(changeDialog).toHaveCount(0);
       }
 
-      await page.getByRole("button", { name: /change capacity/i }).click();
+      await page.getByRole("button", { name: /update plan/i }).click();
       // Dialog + picker are instant client renders; short timeouts so a UI break
       // fails this attempt fast instead of stalling the retry budget. The exact
       // input is nested inside the Custom option. Chakra RadioCard's hidden

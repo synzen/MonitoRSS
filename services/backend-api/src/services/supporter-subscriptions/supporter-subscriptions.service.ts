@@ -467,6 +467,10 @@ export class SupporterSubscriptionsService {
         }),
       check,
       `supporter ${discordUserId} subscription change`,
+      // The default window (50s) can expire before Paddle delivers the
+      // subscription webhook (E2E observed >55s), returning an error for a
+      // change Paddle already applied. Hold the request a bit longer instead.
+      { maxTries: 120 },
     );
   }
 }

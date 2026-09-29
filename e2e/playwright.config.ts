@@ -29,6 +29,7 @@ const PADDLE_CHECKOUT_TESTS = [
   "**/billing/paddle-personal-interval-switch.spec.ts",
   "**/billing/paddle-additional-feeds.spec.ts",
   "**/billing/paddle-workspace-roundtrip.spec.ts",
+  "**/billing/paddle-workspace-interval-switch.spec.ts",
   "**/billing/paddle-workspace-conversion.spec.ts",
   // Not a checkout test, but it needs a billing-enabled backend (dormant
   // workspaces only exist when Paddle is configured), and the E2E runner blanks

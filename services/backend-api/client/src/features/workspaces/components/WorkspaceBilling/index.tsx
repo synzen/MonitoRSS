@@ -59,9 +59,12 @@ import {
   WORKSPACE_MAX_FEEDS,
   WORKSPACE_MIN_FEEDS,
   CapacityPicker,
+  IntervalPicker,
+  BILLING_INTERVAL_WORD,
   formatWorkspaceFeedCount,
   formatWorkspaceFeedNumber,
   WorkspaceFeedPricing,
+  type BillingInterval,
 } from "@/shared/workspaceCapacity";
 import { CapacitySummary } from "./CapacitySlider";
 import type { PricePreview } from "@/types/PricePreview";
@@ -80,14 +83,12 @@ import { ConvertPersonalPlanDialog } from "./ConvertPersonalPlanDialog";
 import { WorkspaceBillingEmail } from "./WorkspaceBillingEmail";
 import { TIER_FEED_LIMITS, capacityPlanLabel, type WorkspaceTier } from "./plans";
 
-type BillingInterval = "month" | "year";
-
 // Plan metadata (tiers, feed limits, labels, features) lives in ./plans so this
 // file stays within the max-lines budget. Re-export the feed limits so the
 // client/backend drift guard test can keep importing them from the component.
 export { TIER_FEED_LIMITS };
 
-// One labelled row in the change-capacity dialog's "Due today" breakdown.
+// One labelled row in the update-plan dialog's "Due today" breakdown.
 // Rendered as a description term/detail pair so the amounts read as a real
 // itemized list to assistive tech, not visually-aligned prose.
 const AmountRow = ({
@@ -334,13 +335,14 @@ const WorkspacePaymentMethodSection = ({
   );
 };
 
-// The change-capacity dialog for a subscribed owner: one slider seeded at the
-// workspace's current capacity drives a live prorated preview and the confirm.
-// An increase shows the plain new price; a DECREASE shows a "Now -> After" diff
-// and the "feeds will be disabled" consequence, because that is the direction
-// that disables feeds. The basket is the same base-tier-plus-add-on shape the
-// activation slider builds, so buy and manage are billed identically.
-const ChangeCapacityDialog = ({
+// The update-plan dialog for a subscribed owner: one picker seeded at the
+// workspace's current capacity plus a billing-interval choice drive a live
+// prorated preview and the confirm. A capacity increase shows the plain new
+// price; a DECREASE shows a "Now -> After" diff and the "feeds will be
+// disabled" consequence, because that is the direction that disables feeds.
+// The basket is the same base-tier-plus-add-on shape the activation slider
+// builds, so buy and manage are billed identically.
+const UpdatePlanDialog = ({
   open,
   onClose,
   workspaceSlug,
@@ -348,7 +350,7 @@ const ChangeCapacityDialog = ({
   currentPrice,
   interval,
   nextBillDate,
-  pricing,
+  pricingFor,
   buildBasket,
   triggerRef,
   successFocusRef,
@@ -358,18 +360,22 @@ const ChangeCapacityDialog = ({
   workspaceSlug: string;
   currentFeeds: number;
   // The recurring price of the subscription as it stands, priced on its own
-  // base tier (see currentPlanPrice above). The picker's NEW capacity is still
+  // base tier (see currentPlanPrice above). The picker's NEW plan is still
   // priced on the Tier-2 basket, because that is what a change re-baskets onto.
   currentPrice: string | undefined;
   interval: BillingInterval;
   nextBillDate: string | null;
-  pricing: WorkspaceFeedPricing | undefined;
-  buildBasket: (feeds: number) => Array<{ priceId: string; quantity: number }>;
+  pricingFor: (interval: BillingInterval) => WorkspaceFeedPricing | undefined;
+  buildBasket: (
+    feeds: number,
+    interval: BillingInterval,
+  ) => Array<{ priceId: string; quantity: number }>;
   triggerRef: RefObject<HTMLButtonElement | null>;
   successFocusRef: RefObject<HTMLElement | null>;
 }) => {
   const closingForSuccessRef = useRef(false);
   const [nextFeeds, setNextFeeds] = useState(currentFeeds);
+  const [nextInterval, setNextInterval] = useState<BillingInterval>(interval);
   const [showReview, setShowReview] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -379,15 +385,20 @@ const ChangeCapacityDialog = ({
     if (open) {
       closingForSuccessRef.current = false;
       setNextFeeds(currentFeeds);
+      setNextInterval(interval);
       setShowReview(false);
       setSearch("");
       setPage(0);
     }
-  }, [open, currentFeeds]);
+  }, [open, currentFeeds, interval]);
 
-  const dirty = nextFeeds !== currentFeeds;
-  const prices = buildBasket(nextFeeds);
-  const { price: recurringPrice } = useWorkspaceSliderPrice({ feeds: nextFeeds, pricing });
+  const intervalChanged = nextInterval !== interval;
+  const dirty = nextFeeds !== currentFeeds || intervalChanged;
+  const prices = buildBasket(nextFeeds, nextInterval);
+  const { price: recurringPrice } = useWorkspaceSliderPrice({
+    feeds: nextFeeds,
+    pricing: pricingFor(nextInterval),
+  });
   const { createSuccessAlert } = usePageAlertContext();
   const { preview, status, error } = useWorkspaceBillingChangePreview({
     workspaceSlug,
@@ -453,14 +464,21 @@ const ChangeCapacityDialog = ({
       description = billDate
         ? `Capacity is now ${formatWorkspaceFeedCount(confirmedFeeds)}. Available now, billed at renewal on ${dayjs(billDate).format("D MMMM YYYY")}.`
         : `Capacity is now ${formatWorkspaceFeedCount(confirmedFeeds)}. Available now, billed at renewal.`;
+    } else if (confirmedFeeds === currentFeeds) {
+      // Interval-only switch: the capacity statement would claim a change that
+      // did not happen, so the billing cadence is the news.
+      description = `This workspace is now billed ${BILLING_INTERVAL_WORD[nextInterval]}.`;
     } else {
-      description = decreasing
+      const capacityCopy = decreasing
         ? `This workspace's capacity is now ${formatWorkspaceFeedCount(confirmedFeeds)}.`
         : `This workspace can now run up to ${formatWorkspaceFeedCount(confirmedFeeds)}.`;
+      description = intervalChanged
+        ? `${capacityCopy} Billing is now ${BILLING_INTERVAL_WORD[nextInterval]}.`
+        : capacityCopy;
     }
 
     window.setTimeout(() => {
-      createSuccessAlert({ title: "Capacity updated", description });
+      createSuccessAlert({ title: "Plan updated", description });
     }, 0);
   };
 
@@ -477,15 +495,11 @@ const ChangeCapacityDialog = ({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle as="h2">Change capacity</DialogTitle>
+          <DialogTitle as="h2">Update plan</DialogTitle>
         </DialogHeader>
         <DialogCloseTrigger />
         <DialogBody>
           <Stack gap={5}>
-            <DialogDescription>
-              You&apos;re currently on {formatWorkspaceFeedCount(currentFeeds)}. Choose a new
-              capacity for this workspace.
-            </DialogDescription>
             <Stack gap={1}>
               <Text
                 color="fg.muted"
@@ -494,7 +508,7 @@ const ChangeCapacityDialog = ({
                 textTransform="uppercase"
                 letterSpacing="wide"
               >
-                Your current capacity
+                Your current plan
               </Text>
               <Text fontSize="2xl" fontWeight="bold" lineHeight="1.1">
                 {formatWorkspaceFeedCount(currentFeeds)}
@@ -504,10 +518,15 @@ const ChangeCapacityDialog = ({
               </Text>
             </Stack>
             <CapacityPicker value={nextFeeds} onChange={setNextFeeds} currentValue={currentFeeds} />
+            <IntervalPicker
+              value={nextInterval}
+              onChange={setNextInterval}
+              currentValue={interval}
+            />
             {!dirty ? (
               <Box borderTopWidth="1px" borderColor="border.emphasized" pt={5}>
                 <Text color="fg.muted" fontSize="sm">
-                  Choose a different capacity to preview changes.
+                  Update your plan to preview changes.
                 </Text>
               </Box>
             ) : (
@@ -519,9 +538,10 @@ const ChangeCapacityDialog = ({
                 aria-busy={status === "loading"}
               >
                 <VisuallyHidden>
-                  Changing capacity from {formatWorkspaceFeedCount(currentFeeds)} to{" "}
-                  {formatWorkspaceFeedCount(nextFeeds)}, {recurringPrice ?? "updating price"} per{" "}
-                  {interval}.
+                  Updating plan from {formatWorkspaceFeedCount(currentFeeds)} billed{" "}
+                  {BILLING_INTERVAL_WORD[interval]} to {formatWorkspaceFeedCount(nextFeeds)} billed{" "}
+                  {BILLING_INTERVAL_WORD[nextInterval]}, {recurringPrice ?? "updating price"} per{" "}
+                  {nextInterval}.
                 </VisuallyHidden>
                 <Stack gap={1}>
                   <Text
@@ -531,7 +551,7 @@ const ChangeCapacityDialog = ({
                     textTransform="uppercase"
                     letterSpacing="wide"
                   >
-                    New capacity
+                    New plan
                   </Text>
                   <Text fontSize="2xl" fontWeight="bold" lineHeight="1.1">
                     {formatWorkspaceFeedCount(nextFeeds)}
@@ -687,7 +707,7 @@ const ChangeCapacityDialog = ({
                     </Text>
                     {recurringPrice && (
                       <Text fontSize="sm">
-                        Then {recurringPrice} / {interval}
+                        Then {recurringPrice} / {nextInterval}
                         {nextBillIso
                           ? `, starting ${dayjs(nextBillIso).format("D MMMM YYYY")}`
                           : ""}
@@ -757,7 +777,7 @@ const ChangeCapacityDialog = ({
                     {recurringPrice && (
                       <Stack gap={1}>
                         <Text fontSize="sm">
-                          Then {recurringPrice} / {interval}
+                          Then {recurringPrice} / {nextInterval}
                           {nextBillIso
                             ? `, starting ${dayjs(nextBillIso).format("D MMMM YYYY")}`
                             : ""}
@@ -777,7 +797,7 @@ const ChangeCapacityDialog = ({
             )}
             {updateMutation.error && (
               <InlineErrorAlert
-                title="Failed to change capacity"
+                title="Failed to update plan"
                 description={updateMutation.error.message}
               />
             )}
@@ -792,7 +812,7 @@ const ChangeCapacityDialog = ({
             loading={updateMutation.status === "loading"}
             disabled={!dirty || !preview}
           >
-            Confirm change
+            Update plan
           </PrimaryActionButton>
         </DialogFooter>
       </DialogContent>
@@ -822,10 +842,10 @@ export const WorkspaceBilling = () => {
       : WORKSPACE_BASE_FEEDS,
   );
   const [isConvertOpen, setIsConvertOpen] = useState(false);
-  // The change-capacity dialog (subscribed owners). Focus returns to its trigger
+  // The update-plan dialog (subscribed owners). Focus returns to its trigger
   // on close, mirroring the checkout-dialog focus discipline.
-  const [isChangeCapacityOpen, setIsChangeCapacityOpen] = useState(false);
-  const changeCapacityTriggerRef = useRef<HTMLButtonElement>(null);
+  const [isUpdatePlanOpen, setIsUpdatePlanOpen] = useState(false);
+  const updatePlanTriggerRef = useRef<HTMLButtonElement>(null);
   // The checkout dialog is page-level so its focus trap is unaffected by where
   // the triggering button lives. We still own the two return trips:
   //  - Cancel (onClose): nothing changed, so return focus to the button that
@@ -899,7 +919,7 @@ export const WorkspaceBilling = () => {
 
   // Every capacity maps to one real purchasable basket: the base workspace tier
   // plus a per-feed add-on for the overage above the base. The buy moment (here)
-  // and the manage moment (change-capacity) build the same basket, so a workspace
+  // and the manage moment (update plan) build the same basket, so a workspace
   // is billed identically however the capacity was chosen.
   const capacityBasket = (feeds: number, useInterval: BillingInterval) => {
     const addonFeeds = feedCountToAddonQuantity(feeds);
@@ -952,7 +972,7 @@ export const WorkspaceBilling = () => {
   const currentAddonQuantity =
     subscription?.addons?.find((a) => a.key === ProductKey.Tier3Feed)?.quantity ?? 0;
   // The workspace's current total capacity = its base tier's feed limit plus any
-  // per-feed add-ons. Seeds the change-capacity slider and the plan summary.
+  // per-feed add-ons. Seeds the update-plan picker and the plan summary.
   const currentCapacityFeeds = currentTier
     ? TIER_FEED_LIMITS[currentTier] + currentAddonQuantity
     : WORKSPACE_BASE_FEEDS;
@@ -1104,12 +1124,12 @@ export const WorkspaceBilling = () => {
             {isOwner && !subscription.cancellationDate && (
               <Box>
                 <Button
-                  ref={changeCapacityTriggerRef}
+                  ref={updatePlanTriggerRef}
                   variant="outline"
                   aria-haspopup="dialog"
-                  onClick={() => setIsChangeCapacityOpen(true)}
+                  onClick={() => setIsUpdatePlanOpen(true)}
                 >
-                  Change capacity
+                  Update plan
                 </Button>
               </Box>
             )}
@@ -1264,18 +1284,18 @@ export const WorkspaceBilling = () => {
         onCancel={onCheckoutCancel}
         onCompleted={onCheckoutCompleted}
       />
-      <ChangeCapacityDialog
-        open={isChangeCapacityOpen}
-        onClose={() => setIsChangeCapacityOpen(false)}
-        triggerRef={changeCapacityTriggerRef}
+      <UpdatePlanDialog
+        open={isUpdatePlanOpen}
+        onClose={() => setIsUpdatePlanOpen(false)}
+        triggerRef={updatePlanTriggerRef}
         successFocusRef={headingRef}
         workspaceSlug={workspaceSlug}
         currentFeeds={currentCapacityFeeds}
         currentPrice={currentPlanPrice}
         interval={subscriptionInterval}
         nextBillDate={subscription?.nextBillDate ?? null}
-        pricing={feedPricingFor(subscriptionInterval)}
-        buildBasket={(feeds) => capacityBasket(feeds, subscriptionInterval)}
+        pricingFor={feedPricingFor}
+        buildBasket={capacityBasket}
       />
       {conversion?.eligible && (
         <ConvertPersonalPlanDialog

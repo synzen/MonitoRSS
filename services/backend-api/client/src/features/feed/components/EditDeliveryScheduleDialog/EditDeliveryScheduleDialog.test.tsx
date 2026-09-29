@@ -85,7 +85,7 @@ describe("EditDeliveryScheduleDialog - refresh rate rejection", () => {
 
     expect(
       await screen.findByText(
-        "Your current plan only allows checking this feed once every 10.0 minutes or more. The fastest rate available, even on paid plans, is every 5.0 minutes.",
+        "Your current plan only allows checking this feed once every 10.0 minutes or more. The fastest rate available is every 5.0 minutes.",
       ),
     ).toBeInTheDocument();
     expect(

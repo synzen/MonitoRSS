@@ -11,7 +11,7 @@ test.describe("Personal billing interval switch", () => {
   test("switches a monthly Personal subscription to yearly from the pricing dialog", async ({
     page,
   }) => {
-    test.setTimeout(420_000);
+    test.setTimeout(540_000);
 
     // The subscription must exist as a REAL Paddle entity for the change
     // preview/update APIs to work (simulated subscriptions 404 on every Paddle
@@ -135,16 +135,16 @@ test.describe("Personal billing interval switch", () => {
     await expect(confirmDialog.getByText("Due Today")).toBeVisible({ timeout: 30000 });
     await confirmDialog.getByRole("button", { name: /confirm payment/i }).click();
 
-    // The change request resolves once the backend observes the Paddle webhook,
-    // which the sandbox can deliver slower than the backend's poll window — in
-    // that case the dialog shows an error even though Paddle applied the
-    // change. Let the request settle either way before reading the result.
+    // The change request resolves once the backend observes the Paddle webhook
+    // (its poll window is ~2 minutes), so let it settle either way before
+    // reading the result. The backend only errors if its whole poll window
+    // expires; with the longer window the dialog usually closes on success.
     await expect
       .poll(
         async () =>
           !(await confirmDialog.isVisible().catch(() => false)) ||
           (await confirmDialog.getByRole("alert").isVisible().catch(() => false)),
-        { timeout: 90000, intervals: [2000] },
+        { timeout: 210000, intervals: [2000] },
       )
       .toBe(true);
 

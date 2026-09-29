@@ -12,6 +12,8 @@ export {
   formatWorkspaceFeedCount,
 } from "./detents";
 export { CapacityPicker } from "./CapacityPicker";
+export { IntervalPicker, BILLING_INTERVAL_WORD } from "./IntervalPicker";
+export type { BillingInterval } from "./IntervalPicker";
 export {
   useWorkspaceSliderPrice,
   feedCountToAddonQuantity,
