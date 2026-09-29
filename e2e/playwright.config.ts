@@ -26,6 +26,7 @@ const PADDLE_CHECKOUT_TESTS = [
   "**/billing/paddle-checkout.spec.ts",
   "**/billing/paddle-branding-checkout.spec.ts",
   "**/billing/paddle-retain-cancellation.spec.ts",
+  "**/billing/paddle-personal-interval-switch.spec.ts",
   "**/billing/paddle-additional-feeds.spec.ts",
   "**/billing/paddle-workspace-roundtrip.spec.ts",
   "**/billing/paddle-workspace-conversion.spec.ts",

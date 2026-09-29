@@ -33,6 +33,7 @@ import { PrimaryActionButton } from "@/components/PrimaryActionButton";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 import { SettingsSection } from "@/components/SettingsSection";
 import { usePageAlertContext } from "@/contexts/PageAlertContext";
+import formatCurrency from "@/utils/formatCurrency";
 import {
   DialogRoot,
   DialogContent,
@@ -344,6 +345,7 @@ const ChangeCapacityDialog = ({
   onClose,
   workspaceSlug,
   currentFeeds,
+  currentPrice,
   interval,
   nextBillDate,
   pricing,
@@ -355,6 +357,10 @@ const ChangeCapacityDialog = ({
   onClose: () => void;
   workspaceSlug: string;
   currentFeeds: number;
+  // The recurring price of the subscription as it stands, priced on its own
+  // base tier (see currentPlanPrice above). The picker's NEW capacity is still
+  // priced on the Tier-2 basket, because that is what a change re-baskets onto.
+  currentPrice: string | undefined;
   interval: BillingInterval;
   nextBillDate: string | null;
   pricing: WorkspaceFeedPricing | undefined;
@@ -381,10 +387,6 @@ const ChangeCapacityDialog = ({
 
   const dirty = nextFeeds !== currentFeeds;
   const prices = buildBasket(nextFeeds);
-  const { price: currentRecurringPrice } = useWorkspaceSliderPrice({
-    feeds: currentFeeds,
-    pricing,
-  });
   const { price: recurringPrice } = useWorkspaceSliderPrice({ feeds: nextFeeds, pricing });
   const { createSuccessAlert } = usePageAlertContext();
   const { preview, status, error } = useWorkspaceBillingChangePreview({
@@ -498,7 +500,7 @@ const ChangeCapacityDialog = ({
                 {formatWorkspaceFeedCount(currentFeeds)}
               </Text>
               <Text color="fg.muted">
-                {currentRecurringPrice ? `${currentRecurringPrice} / ${interval}` : "Current price"}
+                {currentPrice ? `${currentPrice} / ${interval}` : "Current price"}
               </Text>
             </Stack>
             <CapacityPicker value={nextFeeds} onChange={setNextFeeds} currentValue={currentFeeds} />
@@ -855,10 +857,12 @@ export const WorkspaceBilling = () => {
     });
 
   // One price preview powers every capacity picker on this page: it carries the
-  // Tier2 base and Tier3Feed per-feed unit prices for both intervals, from which
-  // each picker derives any total locally. So this is the page's only
-  // pricing round-trip, no matter how the owner changes capacity or toggles the
-  // interval. Owners are the only ones who can subscribe, so gate on ownership.
+  // Tier2 base, the Tier3 base (so an existing Tier3-based subscription can be
+  // priced on its own tier, not the Tier2 basket), and the Tier3Feed per-feed
+  // unit prices for both intervals, from which each picker derives any total
+  // locally. So this is the page's only pricing round-trip, no matter how the
+  // owner changes capacity or toggles the interval. Owners are the only ones
+  // who can subscribe, so gate on ownership.
   useEffect(() => {
     if (!isConfigured || !isLoaded || !isOwner) {
       return;
@@ -867,6 +871,8 @@ export const WorkspaceBilling = () => {
     getPricePreview([
       { priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 },
       { priceId: PRICE_IDS[ProductKey.Tier2].year, quantity: 1 },
+      { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
+      { priceId: PRICE_IDS[ProductKey.Tier3].year, quantity: 1 },
       { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 1 },
       { priceId: PRICE_IDS[ProductKey.Tier3Feed].year, quantity: 1 },
     ])
@@ -946,10 +952,38 @@ export const WorkspaceBilling = () => {
   const currentAddonQuantity =
     subscription?.addons?.find((a) => a.key === ProductKey.Tier3Feed)?.quantity ?? 0;
   // The workspace's current total capacity = its base tier's feed limit plus any
-  // per-feed add-ons. Seeds the change-capacity slider.
+  // per-feed add-ons. Seeds the change-capacity slider and the plan summary.
   const currentCapacityFeeds = currentTier
     ? TIER_FEED_LIMITS[currentTier] + currentAddonQuantity
     : WORKSPACE_BASE_FEEDS;
+
+  // The recurring price the workspace actually bills at: an existing
+  // subscription prices its base on its own tier (a Tier3 base covers 140 feeds
+  // at the Tier3 price), with per-feed add-ons above that. Pricing it on the
+  // slider's Tier-2 basket would overstate Tier3 subscribers. Undefined while
+  // the catalog preview is missing (non-owners never fetch it), in which case
+  // the plan summary omits the price.
+  const currentPlanPrice = (() => {
+    const pricing = workspaceFeedPricingFromProducts(products, subscriptionInterval);
+
+    if (!pricing || !currentTier) {
+      return undefined;
+    }
+
+    const baseUnitAmount =
+      currentTier === ProductKey.Tier3 ? pricing.tier3BaseUnitAmount : pricing.baseUnitAmount;
+
+    if (baseUnitAmount === undefined) {
+      return undefined;
+    }
+
+    const overageFeeds = Math.max(0, currentCapacityFeeds - TIER_FEED_LIMITS[currentTier]);
+
+    return formatCurrency(
+      String(baseUnitAmount + pricing.perFeedUnitAmount * overageFeeds),
+      pricing.currencyCode,
+    );
+  })();
 
   const intervalToggle = (
     <HStack role="group" aria-label="Billing interval">
@@ -1035,9 +1069,11 @@ export const WorkspaceBilling = () => {
               </HStack>
               {currentTier && (
                 <Text color="fg.muted">
+                  Your plan covers{" "}
                   {currentAddonQuantity > 0
-                    ? `${formatWorkspaceFeedCount(TIER_FEED_LIMITS[currentTier] + currentAddonQuantity)} (${formatWorkspaceFeedNumber(TIER_FEED_LIMITS[currentTier])} + ${formatWorkspaceFeedNumber(currentAddonQuantity)} additional)`
-                    : formatWorkspaceFeedCount(TIER_FEED_LIMITS[currentTier])}
+                    ? `${formatWorkspaceFeedCount(TIER_FEED_LIMITS[currentTier] + currentAddonQuantity)} in total (${formatWorkspaceFeedNumber(TIER_FEED_LIMITS[currentTier])} + ${formatWorkspaceFeedNumber(currentAddonQuantity)} additional)`
+                    : `${formatWorkspaceFeedCount(TIER_FEED_LIMITS[currentTier])} in total`}
+                  {currentPlanPrice ? ` at ${currentPlanPrice} / ${subscriptionInterval}` : ""}.
                 </Text>
               )}
               {subscription.cancellationDate ? (
@@ -1235,6 +1271,7 @@ export const WorkspaceBilling = () => {
         successFocusRef={headingRef}
         workspaceSlug={workspaceSlug}
         currentFeeds={currentCapacityFeeds}
+        currentPrice={currentPlanPrice}
         interval={subscriptionInterval}
         nextBillDate={subscription?.nextBillDate ?? null}
         pricing={feedPricingFor(subscriptionInterval)}

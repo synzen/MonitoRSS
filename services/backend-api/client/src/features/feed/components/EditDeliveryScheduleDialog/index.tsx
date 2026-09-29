@@ -88,6 +88,59 @@ const getFastestAllowedRateSeconds = (feed: UserFeed) => {
 const getCanUpgradeRefreshRate = (feed: UserFeed) =>
   feed.refreshRateOptions.some((option) => option.disabledCode === "INSUFFICIENT_SUPPORTER_TIER");
 
+const getFastestPossibleRateSeconds = (feed: UserFeed) => {
+  const rates = feed.refreshRateOptions.map((option) => option.rateSeconds);
+
+  return rates.length ? Math.min(...rates) : undefined;
+};
+
+// A rate below the fastest rate of ANY plan (locked options included) cannot be
+// unlocked by upgrading, so the error must not offer the upgrade CTA.
+const buildRateNotAllowedError = (
+  feed: UserFeed,
+  attemptedRateSeconds: number | undefined,
+): SubmitError => {
+  const fastestAllowedRateSeconds = getFastestAllowedRateSeconds(feed);
+  const fastestPossibleRateSeconds = getFastestPossibleRateSeconds(feed);
+
+  if (
+    attemptedRateSeconds === undefined ||
+    fastestPossibleRateSeconds === undefined ||
+    attemptedRateSeconds >= fastestPossibleRateSeconds
+  ) {
+    return {
+      message:
+        fastestAllowedRateSeconds !== undefined
+          ? `Your current plan only allows checking this feed once every ${(
+              fastestAllowedRateSeconds / 60
+            ).toFixed(1)} minutes or more.`
+          : "The selected refresh rate is not allowed for your current plan.",
+      canUpgrade: getCanUpgradeRefreshRate(feed),
+    };
+  }
+
+  if (
+    fastestAllowedRateSeconds !== undefined &&
+    fastestAllowedRateSeconds > fastestPossibleRateSeconds
+  ) {
+    return {
+      message: `Your current plan only allows checking this feed once every ${(
+        fastestAllowedRateSeconds / 60
+      ).toFixed(1)} minutes or more. The fastest rate available is every ${(
+        fastestPossibleRateSeconds / 60
+      ).toFixed(1)} minutes.`,
+      canUpgrade: false,
+    };
+  }
+
+  return {
+    message: `The fastest refresh rate available is every ${(
+      fastestPossibleRateSeconds / 60
+    ).toFixed(1)} minutes.`,
+    canUpgrade: false,
+  };
+};
+
 const defaultValues = (feed: UserFeed): FormValues => ({
   scheduleMode: feed.scheduleMode === "scheduled" ? "scheduled" : "interval",
   scheduleTimes: feed.schedule?.times?.length ? feed.schedule.times : ["09:00"],
@@ -212,6 +265,7 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
 
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
+    let attemptedRateSeconds: number | undefined;
 
     try {
       if (values.scheduleMode === "scheduled") {
@@ -244,28 +298,18 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
         });
       } else {
         const minutes = Number(values.userRefreshRateMinutes);
+        attemptedRateSeconds = Number.isFinite(minutes) && minutes > 0 ? minutes * 60 : undefined;
 
         await onUpdate({
           scheduleMode: "interval",
-          userRefreshRateSeconds:
-            Number.isFinite(minutes) && minutes > 0 ? minutes * 60 : undefined,
+          userRefreshRateSeconds: attemptedRateSeconds,
         });
       }
 
       onClose();
     } catch (err) {
       if (err instanceof ApiAdapterError && err.errorCode === "USER_REFRESH_RATE_NOT_ALLOWED") {
-        const fastestAllowedRateSeconds = getFastestAllowedRateSeconds(feed);
-
-        setSubmitError({
-          message:
-            fastestAllowedRateSeconds !== undefined
-              ? `Your current plan only allows checking this feed once every ${(
-                  fastestAllowedRateSeconds / 60
-                ).toFixed(1)} minutes or more.`
-              : "The selected refresh rate is not allowed for your current plan.",
-          canUpgrade: getCanUpgradeRefreshRate(feed),
-        });
+        setSubmitError(buildRateNotAllowedError(feed, attemptedRateSeconds));
       } else {
         setSubmitError({
           message: err instanceof Error ? err.message : "Something went wrong. Please try again.",

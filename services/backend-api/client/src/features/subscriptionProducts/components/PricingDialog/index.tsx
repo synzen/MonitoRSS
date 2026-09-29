@@ -154,6 +154,13 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
   const currentProductKey = userSubscription?.product.key;
   const isOnFreePlan = currentProductKey === ProductKey.Free;
   const isOnPersonalPlan = currentProductKey === ProductKey.Tier1;
+  // Same product, different billing period (e.g. a monthly Personal subscriber
+  // toggling to yearly) is still a buyable change, so the current-plan lockout
+  // must not suppress the CTA for it.
+  const isPersonalIntervalMismatch =
+    isOnPersonalPlan &&
+    !!userSubscription?.billingInterval &&
+    interval !== userSubscription.billingInterval;
 
   const onClickPrice = async (priceId?: string, productId?: ProductKey, isDowngrade?: boolean) => {
     if (!priceId || !productId || !userSubscription) {
@@ -449,7 +456,7 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                                   </FeatureRow>
                                 ))}
                               </Stack>
-                              {isOnPersonalPlan ? (
+                              {isOnPersonalPlan && !isPersonalIntervalMismatch ? (
                                 <Button width="100%" variant="outline" aria-disabled>
                                   Current plan
                                 </Button>
@@ -460,7 +467,9 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
                                     onClickPrice(personalPrice?.id, ProductKey.Tier1, false)
                                   }
                                 >
-                                  Choose Personal
+                                  {isPersonalIntervalMismatch
+                                    ? `Switch to ${interval === "year" ? "yearly" : "monthly"} billing`
+                                    : "Choose Personal"}
                                 </PrimaryActionButton>
                               )}
                             </Stack>

@@ -73,6 +73,48 @@ describe("EditDeliveryScheduleDialog - refresh rate rejection", () => {
     expect(onOpenPricingDialog).toHaveBeenCalledTimes(1);
   });
 
+  it("does not show the upgrade CTA when the attempted rate is below even the paid plans' fastest rate", async () => {
+    const onUpdate = vi.fn().mockRejectedValueOnce(rateNotAllowedError);
+    const onOpenPricingDialog = vi.fn();
+    const { user } = renderDialog({ onUpdate, onOpenPricingDialog });
+
+    const refreshRateInput = screen.getByRole("spinbutton");
+    await user.clear(refreshRateInput);
+    await user.type(refreshRateInput, "1");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(
+      await screen.findByText(
+        "Your current plan only allows checking this feed once every 10.0 minutes or more. The fastest rate available, even on paid plans, is every 5.0 minutes.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Upgrade for faster refresh rates" }),
+    ).not.toBeInTheDocument();
+    expect(onOpenPricingDialog).not.toHaveBeenCalled();
+  });
+
+  it("reports the absolute fastest rate without a plan reference when no faster plan exists", async () => {
+    const supporterFeed = {
+      ...feed,
+      refreshRateOptions: [{ rateSeconds: 300 }, { rateSeconds: 600 }],
+    } as unknown as UserFeed;
+    const onUpdate = vi.fn().mockRejectedValueOnce(rateNotAllowedError);
+    const { user } = renderDialog({ feed: supporterFeed, onUpdate });
+
+    const refreshRateInput = screen.getByRole("spinbutton");
+    await user.clear(refreshRateInput);
+    await user.type(refreshRateInput, "1");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(
+      await screen.findByText("The fastest refresh rate available is every 5.0 minutes."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Upgrade for faster refresh rates" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not show the upgrade CTA for unrelated errors", async () => {
     const onUpdate = vi
       .fn()

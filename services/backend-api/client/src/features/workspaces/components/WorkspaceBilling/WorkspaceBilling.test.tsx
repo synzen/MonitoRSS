@@ -150,6 +150,7 @@ const PRICE_PREVIEWS = [
         id: PRICE_IDS[ProductKey.Tier3].month,
         interval: "month",
         formattedPrice: "$20.00",
+        unitAmount: 2000,
         currencyCode: "USD",
         quantity: 1,
       },
@@ -157,6 +158,7 @@ const PRICE_PREVIEWS = [
         id: PRICE_IDS[ProductKey.Tier3].year,
         interval: "year",
         formattedPrice: "$200.00",
+        unitAmount: 20000,
         currencyCode: "USD",
         quantity: 1,
       },
@@ -811,6 +813,72 @@ describe("WorkspaceBilling", () => {
       screen.queryByRole("button", { name: /update payment method/i }),
     ).not.toBeInTheDocument();
     expect(screen.getByText(/only the workspace owner can manage billing/i)).toBeInTheDocument();
+  });
+
+  it("states the total feeds and recurring price on the current plan", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+
+    // The plan summary must say, in one sentence, what the subscription pays
+    // for and how much: the total feed count at the recurring price.
+    expect(
+      await screen.findByText("Your plan covers 70 feeds in total at $10 / month."),
+    ).toBeInTheDocument();
+  });
+
+  it("states the add-on breakdown and price when capacity is above the base tier", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      // 70-feed base + 30 add-on feeds, priced $10 + 30 * $0.50 = $25.
+      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 30 }] }),
+    });
+    mockChangePreview();
+
+    renderBilling();
+
+    expect(
+      await screen.findByText(
+        "Your plan covers 100 feeds in total (70 + 30 additional) at $25 / month.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("prices a Tier3-based subscription on the Tier3 base, not the Tier2 basket", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      // A 140-feed Tier3 base + 10 add-on feeds bills $20 + 10 * $0.50 = $25.
+      // Pricing this on the Tier-2 basket would wrongly read $45.50.
+      subscription: activeSubscription({
+        productKey: "tier3",
+        addons: [{ key: ProductKey.Tier3Feed, quantity: 10 }],
+      }),
+    });
+    mockChangePreview();
+
+    renderBilling();
+
+    expect(
+      await screen.findByText(
+        "Your plan covers 150 feeds in total (140 + 10 additional) at $25 / month.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("omits the price from the plan summary when the catalog preview is unavailable", async () => {
+    // Admins never fetch the price preview (owners are the only subscribers),
+    // so the summary degrades to the feeds-only statement rather than a blank.
+    mockPaddle();
+    mockWorkspace({ role: "admin", subscription: activeSubscription() });
+
+    renderBilling();
+
+    expect(await screen.findByText("Your plan covers 70 feeds in total.")).toBeInTheDocument();
+    expect(screen.queryByText(/at \$10 \/ month/)).not.toBeInTheDocument();
   });
 
   it("lets the owner cancel an active subscription after confirming", async () => {

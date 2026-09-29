@@ -5,3 +5,4 @@ export * from "./useGetUpdatePaymentMethodTransaction";
 export * from "./usePricingData";
 export * from "./useIsFeatureAllowed";
 export * from "./useCheckoutLoadAnnouncement";
+export * from "./useSubscriptionCatalogPrice";

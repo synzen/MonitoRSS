@@ -60,6 +60,28 @@ describe("workspaceFeedPricingFromProducts", () => {
     expect(workspaceFeedPricingFromProducts(baseOnly, "month")).toBeUndefined();
   });
 
+  it("carries the Tier3 base unit amount when the preview includes it", () => {
+    const withTier3: PricePreview[] = [
+      ...products,
+      {
+        id: ProductKey.Tier3,
+        name: "Tier3",
+        prices: [price("month", 2000), price("year", 20000)],
+      },
+    ];
+
+    expect(workspaceFeedPricingFromProducts(withTier3, "month")).toEqual({
+      baseUnitAmount: 1000,
+      perFeedUnitAmount: 50,
+      currencyCode: "USD",
+      tier3BaseUnitAmount: 2000,
+    });
+    // Absent from the preview -> absent from the pricing inputs, not zero.
+    expect(
+      workspaceFeedPricingFromProducts(products, "month")?.tier3BaseUnitAmount,
+    ).toBeUndefined();
+  });
+
   it("is undefined when a unit amount is not a finite number", () => {
     const poisoned: PricePreview[] = [
       { id: ProductKey.Tier2, name: "Tier2", prices: [price("month", Number.NaN)] },
