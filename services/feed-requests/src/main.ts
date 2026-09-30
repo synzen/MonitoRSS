@@ -93,6 +93,7 @@ async function bootstrap() {
 
 async function tryDbConnection(orm: MikroORM, currentTries = 0) {
   if (currentTries >= 10) {
+    console.error('Failed to connect to database after 10 tries. Exiting...');
     logger.error('Failed to connect to database after 10 tries. Exiting...');
 
     process.exit(1);
@@ -122,7 +123,8 @@ async function schedulePruneAndCreatePartitions(app) {
           'Recurring task to prune and create partitions ran successfully',
         );
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error(err);
         logger.error(
           `Failed to run recurring task to prune and create partitions`,
         );

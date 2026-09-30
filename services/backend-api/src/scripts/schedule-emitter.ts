@@ -332,6 +332,7 @@ async function refreshRedditCredentialsForTarget(
 }
 
 main().catch((err) => {
+  console.error(err);
   logger.error("Failed to start schedule emitter service", {
     error: (err as Error).stack,
   });

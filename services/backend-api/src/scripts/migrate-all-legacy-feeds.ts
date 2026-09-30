@@ -241,6 +241,7 @@ async function main() {
 }
 
 main().catch((err) => {
+  console.error(err);
   logger.error("Unhandled error in migration script", {
     stack: (err as Error).stack,
   });

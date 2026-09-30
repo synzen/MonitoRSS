@@ -59,6 +59,7 @@ async function main() {
 }
 
 main().catch((err) => {
+  console.error(err);
   logger.error("Migration failed", { error: (err as Error).stack });
   process.exit(1);
 });

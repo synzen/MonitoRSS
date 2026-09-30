@@ -74,6 +74,7 @@ async function main() {
 }
 
 main().catch((err) => {
+  console.error(err);
   logger.error("Recalculation failed", { stack: (err as Error).stack });
   process.exit(1);
 });
