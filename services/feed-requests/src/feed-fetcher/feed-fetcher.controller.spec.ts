@@ -52,6 +52,18 @@ function createMockInsert(
   };
 }
 
+function createMockStoredRequest(
+  status: RequestStatus,
+  createdAt: Date,
+  statusCode?: number,
+) {
+  return {
+    status,
+    createdAt,
+    response: statusCode ? { statusCode, textHash: null } : null,
+  };
+}
+
 describe('FeedFetcherController', () => {
   let controller: FeedFetcherController;
   let feedFetcherService: Record<string, jest.Mock>;
@@ -208,6 +220,57 @@ describe('FeedFetcherController', () => {
         expect(feedFetcherService.fetchAndSaveResponse).toHaveBeenCalled();
         expect(result.requestStatus).toBe('SUCCESS');
       });
+    });
+  });
+
+  describe('fetchFeedDeliveryPreview', () => {
+    it('passes lookup key and headers through to fetchAndSaveResponse when stale', async () => {
+      const staleDate = dayjs().subtract(1, 'hour').toDate();
+      const headers = { Authorization: 'Bearer token', 'user-agent': 'MonitoRSS:1.0' };
+
+      partitionedRequestsStoreService.getLatestRequestAnyStatus
+        .mockResolvedValueOnce(
+          createMockStoredRequest(RequestStatus.BAD_STATUS_CODE, staleDate, 429),
+        )
+        .mockResolvedValueOnce(
+          createMockStoredRequest(RequestStatus.OK, new Date(), 200),
+        );
+
+      const successInsert = createMockInsert(url, RequestStatus.OK, 200);
+      feedFetcherService.fetchAndSaveResponse.mockResolvedValue({
+        request: successInsert,
+      });
+
+      const result = await controller.fetchFeedDeliveryPreview({
+        url,
+        lookupKey: 'lookup-key',
+        headers,
+        stalenessThresholdSeconds: 120,
+      });
+
+      expect(feedFetcherService.fetchAndSaveResponse).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          lookupDetails: { key: 'lookup-key' },
+          headers,
+        }),
+      );
+      expect(result.requestStatus).toBe('SUCCESS');
+    });
+
+    it('serves the fresh stored request without fetching when not stale', async () => {
+      partitionedRequestsStoreService.getLatestRequestAnyStatus.mockResolvedValue(
+        createMockStoredRequest(RequestStatus.OK, new Date(), 200),
+      );
+
+      const result = await controller.fetchFeedDeliveryPreview({
+        url,
+        lookupKey: 'lookup-key',
+        stalenessThresholdSeconds: 120,
+      });
+
+      expect(feedFetcherService.fetchAndSaveResponse).not.toHaveBeenCalled();
+      expect(result.requestStatus).toBe('SUCCESS');
     });
   });
 });

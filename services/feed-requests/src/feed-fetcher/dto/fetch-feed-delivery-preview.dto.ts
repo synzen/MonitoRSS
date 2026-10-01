@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { IsNumber, IsOptional, IsString, Validate } from 'class-validator';
+import {
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  Validate,
+} from 'class-validator';
 import { HttpValidator } from './fetch-feed.dto';
 
 export class FetchFeedDeliveryPreviewDto {
@@ -9,6 +15,10 @@ export class FetchFeedDeliveryPreviewDto {
   @IsString()
   @IsOptional()
   lookupKey?: string;
+
+  @IsObject()
+  @IsOptional()
+  headers?: Record<string, string>;
 
   @IsNumber()
   @IsOptional()

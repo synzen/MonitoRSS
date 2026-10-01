@@ -133,6 +133,7 @@ export class FeedFetcherController {
         data.url,
         {
           lookupDetails: data.lookupKey ? { key: data.lookupKey } : undefined,
+          headers: data.headers,
           source: undefined,
         },
       );
