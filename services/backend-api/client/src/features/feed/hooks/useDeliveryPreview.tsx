@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import {
   GetDeliveryPreviewInput,
@@ -13,6 +13,7 @@ interface Props {
 }
 
 export const useDeliveryPreview = ({ feedId, data: inputData, disabled }: Props) => {
+  const queryClient = useQueryClient();
   const queryKey = [
     "delivery-preview",
     {
@@ -41,6 +42,19 @@ export const useDeliveryPreview = ({ feedId, data: inputData, disabled }: Props)
         enabled: !!feedId && !disabled,
         keepPreviousData: true,
         refetchOnWindowFocus: false,
+        onSuccess: () => {
+          // The preview may have triggered a feed request, so the request
+          // history needs to pick up the new row.
+          return queryClient.invalidateQueries({
+            predicate: (query) => {
+              return (
+                query.queryKey[0] === "user-feed-requests" &&
+                (query.queryKey[1] as { feedId?: string })?.feedId === feedId
+              );
+            },
+            exact: false,
+          });
+        },
         getNextPageParam: (lastPage, allPages) => {
           if (lastPage.result.results.length < inputData.limit) {
             return undefined;
