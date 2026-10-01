@@ -38,6 +38,7 @@ async function main() {
 }
 
 main().catch((err) => {
+  console.error(err);
   logger.error("Failed to enforce limits", {
     stack: (err as Error).stack,
   });

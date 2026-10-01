@@ -8,6 +8,7 @@ import type { Config } from "../../src/config";
 import { SubscriptionProductKey } from "../../src/repositories/shared/enums";
 import type { IWorkspace } from "../../src/repositories/mongoose/workspace.mongoose.repository";
 import { ConversionAlreadyInProgressException } from "../../src/shared/exceptions/workspace-billing.exceptions";
+import { TransactionBalanceTooLowException } from "../../src/shared/exceptions/paddle.exceptions";
 
 // Service-level unit tests for the conversion command's failure and timeout
 // handling: these paths are impractical to exercise through the HTTP harness (a
@@ -335,5 +336,158 @@ describe("WorkspaceBillingService.updateBillingEmail", () => {
     );
 
     assert.ok(calls.includes("providerWrite"));
+  });
+});
+
+// The update-plan dialog can now change ONLY the billing interval (monthly ↔
+// yearly) while keeping the capacity: the basket sent down carries the other
+// interval's price IDs for the same base tier. These tests pin the preview
+// path for that cross-interval swap: the items pass workspace validation
+// (both intervals' prices belong to the same workspace-capable products), are
+// forwarded to Paddle's preview verbatim, and project the same feed impact a
+// same-interval change would.
+describe("WorkspaceBillingService.previewChange with a cross-interval basket", () => {
+  const workspaceId = "507f1f77bcf86cd799439011";
+  const subscriptionId = "sub-1";
+  const tier2YearlyPriceId = "pri-tier2-year";
+  const tier3FeedYearlyPriceId = "pri-t3feed-year";
+
+  function buildWorkspace(): IWorkspace {
+    return {
+      id: workspaceId,
+      paddleCustomer: {
+        subscription: {
+          id: subscriptionId,
+          currencyCode: "USD",
+          billingInterval: "month",
+          nextBillDate: new Date("2027-03-01T00:00:00.000Z"),
+        },
+      },
+    } as unknown as IWorkspace;
+  }
+
+  function buildDeps(overrides: {
+    updateItems?: () => Promise<unknown>;
+  } = {}): { deps: WorkspaceBillingServiceDeps; updateItemsCalls: Array<unknown> } {
+    const updateItemsCalls: Array<unknown> = [];
+
+    const deps: WorkspaceBillingServiceDeps = {
+      config: {
+        BACKEND_API_ENABLE_SUPPORTERS: true,
+        BACKEND_API_PADDLE_KEY: "key",
+        BACKEND_API_PADDLE_URL: "https://paddle.test",
+      } as Config,
+      workspaceRepository: {} as WorkspaceBillingServiceDeps["workspaceRepository"],
+      paddleService: {
+        getProducts: async () => ({
+          products: [
+            { id: SubscriptionProductKey.Tier2, prices: [{ id: tier2YearlyPriceId }] },
+            {
+              id: SubscriptionProductKey.Tier3AdditionalFeed,
+              prices: [{ id: tier3FeedYearlyPriceId }],
+            },
+          ],
+        }),
+        updateSubscriptionItems: async (...args: unknown[]) => {
+          updateItemsCalls.push(args);
+
+          if (overrides.updateItems) {
+            return overrides.updateItems();
+          }
+
+          return {
+            data: {
+              immediate_transaction: {
+                billing_period: {
+                  starts_at: "2027-02-01T00:00:00.000Z",
+                  ends_at: "2027-02-28T00:00:00.000Z",
+                },
+                details: {
+                  totals: {
+                    subtotal: "10000",
+                    tax: "0",
+                    credit: "0",
+                    total: "10000",
+                    grand_total: "10000",
+                  },
+                },
+              },
+            },
+          };
+        },
+      } as unknown as WorkspaceBillingServiceDeps["paddleService"],
+      supporterRepository: {} as WorkspaceBillingServiceDeps["supporterRepository"],
+      userFeedRepository: {
+        countByWorkspaceExcludingDisabled: async () => 10,
+      } as unknown as WorkspaceBillingServiceDeps["userFeedRepository"],
+      personalFeedMovesService:
+        {} as unknown as WorkspaceBillingServiceDeps["personalFeedMovesService"],
+    };
+
+    return { deps, updateItemsCalls };
+  }
+
+  it("previews a monthly-to-yearly switch on an unchanged capacity", async () => {
+    const { deps, updateItemsCalls } = buildDeps();
+    const service = new WorkspaceBillingService(deps);
+
+    const result = await service.previewChange(buildWorkspace(), [
+      { priceId: tier2YearlyPriceId, quantity: 1 },
+    ]);
+
+    // The items are forwarded to Paddle's preview verbatim: the yearly base
+    // price (same tier, other interval) replaces the monthly one.
+    assert.strictEqual(updateItemsCalls.length, 1);
+    const [subscriptionIdArg, payload] = updateItemsCalls[0] as [
+      string,
+      { items: Array<{ priceId: string }>; preview: boolean },
+    ];
+    assert.strictEqual(subscriptionIdArg, subscriptionId);
+    assert.deepStrictEqual(payload.items, [{ priceId: tier2YearlyPriceId, quantity: 1 }]);
+    assert.strictEqual(payload.preview, true);
+
+    assert.strictEqual(result.deferred, false);
+    assert.strictEqual(result.immediateTransaction?.total, "10000");
+    // Capacity unchanged, so the projected impact is the same tier's limit.
+    assert.strictEqual(result.feedImpact.newFeedLimit, 70);
+    assert.strictEqual(result.feedImpact.willBeDisabledCount, 0);
+  });
+
+  it("previews a cross-interval switch carrying add-on feeds on the new interval", async () => {
+    const { deps, updateItemsCalls } = buildDeps();
+    const service = new WorkspaceBillingService(deps);
+
+    // 70-feed base + 30 add-on feeds, all re-priced onto the yearly interval.
+    const result = await service.previewChange(buildWorkspace(), [
+      { priceId: tier2YearlyPriceId, quantity: 1 },
+      { priceId: tier3FeedYearlyPriceId, quantity: 30 },
+    ]);
+
+    assert.strictEqual(result.feedImpact.newFeedLimit, 100);
+    assert.strictEqual(result.feedImpact.willBeDisabledCount, 0);
+    const [, payload] = updateItemsCalls[0] as [
+      string,
+      { items: Array<{ priceId: string }> },
+    ];
+    assert.deepStrictEqual(payload.items, [
+      { priceId: tier2YearlyPriceId, quantity: 1 },
+      { priceId: tier3FeedYearlyPriceId, quantity: 30 },
+    ]);
+  });
+
+  it("defers the cross-interval change when Paddle rejects the immediate proration", async () => {
+    const { deps } = buildDeps({
+      updateItems: async () => {
+        throw new TransactionBalanceTooLowException("balance too low");
+      },
+    });
+    const service = new WorkspaceBillingService(deps);
+
+    const result = await service.previewChange(buildWorkspace(), [
+      { priceId: tier2YearlyPriceId, quantity: 1 },
+    ]);
+
+    assert.strictEqual(result.deferred, true);
+    assert.strictEqual(result.immediateTransaction, null);
   });
 });

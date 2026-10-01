@@ -213,7 +213,7 @@ test.describe("Paddle workspace roundtrip", () => {
         await expect(changeDialog).toHaveCount(0);
       }
 
-      await page.getByRole("button", { name: /change capacity/i }).click();
+      await page.getByRole("button", { name: /update plan/i }).click();
       // Dialog + picker are instant client renders; short timeouts so a UI break
       // fails this attempt fast instead of stalling the retry budget. The exact
       // input is nested inside the Custom option. Chakra RadioCard's hidden
@@ -404,7 +404,13 @@ test.describe("Paddle workspace roundtrip", () => {
     // 2,000 feeds is the 70-feed Team base item plus 1,930 additional feeds.
     await completeInlineCheckout(page);
     await expect(page.getByText("Current plan").first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText("2,000 feeds (70 + 1,930 additional)")).toBeVisible({ timeout: 10000 });
+    // The plan summary states the total feed count and the recurring price in
+    // one sentence ("Your plan covers 2,000 feeds in total (70 + 1,930
+    // additional) at $X / month."); match the feeds part so the assertion does
+    // not depend on the sandbox price.
+    await expect(
+      page.getByText(/2,000 feeds in total \(70 \+ 1,930 additional\)/),
+    ).toBeVisible({ timeout: 10000 });
 
     // Teardown: cancel the workspace's sandbox subscription, then delete it.
     await cancelAndDeleteWorkspace(page, workspaceSlug);

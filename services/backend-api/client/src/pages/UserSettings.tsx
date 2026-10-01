@@ -20,7 +20,12 @@ import { useContext, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
 import { captureException } from "@sentry/react";
-import { GetUserMeOutput, useUpdateUserMe, useUserMe } from "../features/discordUser";
+import {
+  GetUserMeOutput,
+  useDiscordUserMe,
+  useUpdateUserMe,
+  useUserMe,
+} from "../features/discordUser";
 import {
   BoxConstrained,
   ConfirmModal,
@@ -41,6 +46,7 @@ import {
   ConvertToWorkspacePrompt,
   PricingDialogContext,
   usePaddleContext,
+  useSubscriptionCatalogPrice,
 } from "@/features/subscriptionProducts";
 import { DatePreferencesForm, RedditConnectionSetting } from "@/features/feed";
 import { DeleteAccountSection } from "@/features/account";
@@ -197,6 +203,7 @@ export const UserSettings = () => {
 
 const UserSettingsInner = () => {
   const { status, data, refetch } = useUserMe();
+  const { data: discordUserMeData } = useDiscordUserMe();
   const { mutateAsync } = useUpdateUserMe();
   const { onOpen: onOpenPricingDialog } = useContext(PricingDialogContext);
   const { redirectToLogin } = useLogin();
@@ -282,20 +289,40 @@ const UserSettingsInner = () => {
   const additionalFeedsCount =
     subscription?.addons?.find((addon) => addon.key === ProductKey.Tier3Feed)?.quantity || 0;
 
+  const subscriptionInterval: "month" | "year" =
+    subscription?.billingInterval === "year" ? "year" : "month";
+
+  // The total personal feed limit the subscription pays for (base tier,
+  // add-ons, and any manual grants), as computed by the backend.
+  const maxUserFeeds = discordUserMeData?.maxUserFeeds;
+
+  const { price: recurringPrice } = useSubscriptionCatalogPrice({
+    productKey: subscription?.product.key as ProductKey | undefined,
+    addonQuantity: additionalFeedsCount,
+    interval: subscriptionInterval,
+  });
+
   // Render the user-facing plan name (Free / Personal / Team) from the product
-  // key, plus any additional-feed add-ons. The display map retires the "Tier N"
-  // naming; the Paddle keys are unchanged.
-  const formatPlanName = (productKey?: ProductKey) => {
-    const planName = productKey ? getPlanDisplayName(productKey) : "";
+  // key. The display map retires the "Tier N" naming; the Paddle keys are
+  // unchanged.
+  const formatPlanName = (productKey?: ProductKey) =>
+    productKey ? getPlanDisplayName(productKey) : "";
 
-    if (additionalFeedsCount > 0) {
-      return `${planName} + ${additionalFeedsCount} additional feed${
-        additionalFeedsCount > 1 ? "s" : ""
-      }`;
-    }
+  // The plan sentence states what the subscription pays for and how much:
+  // "Personal (billed $12.50 every month) for 50 feeds". The billed clause
+  // falls back to the interval alone while the catalog price loads, and the
+  // feeds clause is omitted until the limit is known — never a wrong or blank
+  // figure.
+  let billedLabel = "";
 
-    return planName;
-  };
+  if (subscription?.billingInterval) {
+    billedLabel = recurringPrice
+      ? ` (billed ${recurringPrice} every ${subscriptionInterval})`
+      : ` (billed every ${subscriptionInterval})`;
+  }
+
+  const feedsLabel =
+    maxUserFeeds !== undefined ? ` for ${maxUserFeeds.toLocaleString()} feeds` : "";
 
   let subscriptionText: React.ReactNode;
 
@@ -304,10 +331,10 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {formatPlanName(subscription?.product.key as ProductKey)} (billed every{" "}
-          {subscription.billingInterval})
+          {formatPlanName(subscription?.product.key as ProductKey)}
+          {billedLabel}
         </chakra.span>
-        , scheduled to be cancelled on{" "}
+        {feedsLabel}, scheduled to be cancelled on{" "}
         {new Date(subscription.cancellationDate).toLocaleDateString(undefined, {
           year: "numeric",
           month: "long",
@@ -321,10 +348,10 @@ const UserSettingsInner = () => {
       <Text>
         You are currently on{" "}
         <chakra.span fontWeight={600}>
-          {formatPlanName(subscription?.product.key as ProductKey)} (billed every{" "}
-          {subscription.billingInterval})
+          {formatPlanName(subscription?.product.key as ProductKey)}
+          {billedLabel}
         </chakra.span>
-        , scheduled to renew on{" "}
+        {feedsLabel}, scheduled to renew on{" "}
         {new Date(subscription.nextBillDate).toLocaleDateString(undefined, {
           year: "numeric",
           month: "long",
@@ -339,9 +366,9 @@ const UserSettingsInner = () => {
         You are currently on{" "}
         <chakra.span fontWeight={600}>
           {formatPlanName(subscription.product.key as ProductKey)}
-          {subscription.billingInterval && ` (billed every ${subscription.billingInterval})`}
+          {billedLabel}
         </chakra.span>
-        .
+        {feedsLabel}.
       </Text>
     );
   }

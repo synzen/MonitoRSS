@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom";
 import { render, screen, within, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -8,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { system } from "@/utils/theme";
 import { PRICE_IDS, pages, ProductKey } from "@/constants";
 import { PricingDialog } from "./index";
-import { usePricingData } from "../../hooks";
+import { usePricingData, useSubscriptionChangePreview } from "../../hooks";
 import { usePaddleContext } from "../../contexts/PaddleContext";
 import { useUserMe } from "../../../discordUser";
 import { useWorkspaces } from "../../../workspaces";
@@ -16,6 +17,12 @@ import { useWorkspaces } from "../../../workspaces";
 vi.mock("../../hooks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../hooks")>()),
   usePricingData: vi.fn(),
+  useSubscriptionChangePreview: vi.fn(() => ({
+    data: undefined,
+    error: undefined,
+    status: "loading",
+    fetchStatus: "idle",
+  })),
 }));
 
 vi.mock("../../contexts/PaddleContext", () => ({
@@ -81,44 +88,62 @@ const PRODUCTS = [
   },
 ];
 
-const mockPricingData = (overrides: Record<string, unknown> = {}) => {
-  vi.mocked(usePricingData).mockReturnValue({
-    products: PRODUCTS,
-    interval: "month",
-    changeInterval: vi.fn(),
-    isLoading: false,
-    isLoadingAdditionalFeedsChange: false,
-    hasError: false,
-    userSubscription: { product: { key: ProductKey.Free }, billingInterval: "month" },
-    billingPeriodEndsAt: undefined,
-    additionalFeedsInput: 0,
-    changeAdditionalFeedsInput: vi.fn(),
-    additionalFeedPricePreview: null,
-    userSubscriptionAdditionalFeeds: undefined,
-    chargePreview: null,
-    baseAdditionalFeedsPrice: "$0.50",
-    priceIdOfAdditionalFeeds: PRICE_IDS[ProductKey.Tier3Feed].month,
-    getProductPrice: (productId: ProductKey) =>
-      PRODUCTS.find((p) => p.id === productId)?.prices.find((p) => p.interval === "month"),
-    getProduct: (productId: ProductKey) => PRODUCTS.find((p) => p.id === productId),
-    getWorkspaceFeedPricing: (forInterval: "month" | "year") => {
-      const base = PRODUCTS.find((p) => p.id === ProductKey.Tier2)?.prices.find(
-        (p) => p.interval === forInterval,
-      );
-      const feed = PRODUCTS.find((p) => p.id === ProductKey.Tier3Feed)?.prices.find(
-        (p) => p.interval === forInterval,
-      );
+// The interval toggle in PricingDialog routes through changeInterval, so the
+// hook mock keeps the interval in mutable state and re-renders the tree when it
+// changes (mirroring the real hook's state driving a re-render).
+const pricingHookState = { interval: "month" as "month" | "year" };
+let onIntervalChange: (() => void) | undefined;
 
-      return base && feed
-        ? {
-            baseUnitAmount: base.unitAmount,
-            perFeedUnitAmount: feed.unitAmount,
-            currencyCode: base.currencyCode,
-          }
-        : undefined;
-    },
-    ...overrides,
-  } as never);
+const mockPricingData = (
+  overrides: Record<string, unknown> = {},
+  initialInterval: "month" | "year" = "month",
+) => {
+  pricingHookState.interval = initialInterval;
+  vi.mocked(usePricingData).mockImplementation(
+    () =>
+      ({
+        products: PRODUCTS,
+        interval: pricingHookState.interval,
+        changeInterval: (next: "month" | "year") => {
+          pricingHookState.interval = next;
+          onIntervalChange?.();
+        },
+        isLoading: false,
+        isLoadingAdditionalFeedsChange: false,
+        hasError: false,
+        userSubscription: { product: { key: ProductKey.Free }, billingInterval: "month" },
+        billingPeriodEndsAt: undefined,
+        additionalFeedsInput: 0,
+        changeAdditionalFeedsInput: vi.fn(),
+        additionalFeedPricePreview: null,
+        userSubscriptionAdditionalFeeds: undefined,
+        chargePreview: null,
+        baseAdditionalFeedsPrice: "$0.50",
+        priceIdOfAdditionalFeeds: PRICE_IDS[ProductKey.Tier3Feed].month,
+        getProductPrice: (productId: ProductKey) =>
+          PRODUCTS.find((p) => p.id === productId)?.prices.find(
+            (p) => p.interval === pricingHookState.interval,
+          ),
+        getProduct: (productId: ProductKey) => PRODUCTS.find((p) => p.id === productId),
+        getWorkspaceFeedPricing: (forInterval: "month" | "year") => {
+          const base = PRODUCTS.find((p) => p.id === ProductKey.Tier2)?.prices.find(
+            (p) => p.interval === forInterval,
+          );
+          const feed = PRODUCTS.find((p) => p.id === ProductKey.Tier3Feed)?.prices.find(
+            (p) => p.interval === forInterval,
+          );
+
+          return base && feed
+            ? {
+                baseUnitAmount: base.unitAmount,
+                perFeedUnitAmount: feed.unitAmount,
+                currencyCode: base.currencyCode,
+              }
+            : undefined;
+        },
+        ...overrides,
+      }) as never,
+  );
 };
 
 // Surfaces the router's current path so navigation can be asserted as observable
@@ -134,11 +159,27 @@ const renderDialog = (props: { target?: "workspace" } = {}) => {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
 
+  // Re-renders the dialog when the mocked hook's interval changes, so toggling
+  // the yearly switch updates the rendered CTA like the real hook state would.
+  // Children are a render prop so each pass creates a fresh element — a
+  // referentially identical element would let React bail out of re-rendering
+  // the dialog subtree entirely.
+  const ForceUpdate = ({ children }: { children: () => React.ReactNode }) => {
+    const [, setState] = useState(0);
+    onIntervalChange = () => setState((n) => n + 1);
+
+    return <>{children()}</>;
+  };
+
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <ChakraProvider value={system}>
-          <PricingDialog isOpen onClose={vi.fn()} onOpen={vi.fn()} target={props.target} />
+          <ForceUpdate>
+            {() => (
+              <PricingDialog isOpen onClose={vi.fn()} onOpen={vi.fn()} target={props.target} />
+            )}
+          </ForceUpdate>
         </ChakraProvider>
         <LocationDisplay />
       </MemoryRouter>
@@ -569,5 +610,139 @@ describe("PricingDialog workspace CTA when the user already owns a workspace", (
         `${pages.workspaceBilling("mine")}?feeds=70`,
       ),
     );
+  });
+});
+
+describe("PricingDialog billing-interval switch for a current Personal subscriber", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // The dialog reads the subscription from usePricingData, not useUserMe, so
+    // both mocks carry the paid Personal state.
+    mockPricingData({
+      userSubscription: { product: { key: ProductKey.Tier1 }, billingInterval: "month" },
+    });
+    vi.mocked(usePaddleContext).mockReturnValue({
+      resetCheckoutData: vi.fn(),
+      initCancellationFlow: vi.fn(),
+    } as never);
+    vi.mocked(useUserMe).mockReturnValue({
+      data: {
+        result: {
+          subscription: {
+            subscriptionId: "sub_123",
+            product: { key: ProductKey.Tier1 },
+            billingInterval: "month",
+          },
+        },
+      },
+    } as never);
+  });
+
+  const getForYou = async () => screen.findByRole("region", { name: /^for you$/i });
+
+  it("keeps the current-plan lockout while the selected interval matches the subscription", async () => {
+    renderDialog();
+
+    const forYou = await getForYou();
+    expect(within(forYou).getByRole("button", { name: /current plan/i })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(
+      within(forYou).queryByRole("button", { name: /switch to (yearly|monthly) billing/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers an enabled switch CTA when the yearly interval is toggled", async () => {
+    renderDialog();
+
+    await userEvent.click(screen.getByRole("checkbox", { name: /switch to yearly pricing/i }));
+
+    // Re-query from the root: the re-render replaces the region node, so a
+    // reference captured before the toggle can point at detached DOM.
+    const switchCta = await screen.findByRole("button", {
+      name: /switch to yearly billing/i,
+    });
+    expect(switchCta).not.toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByRole("button", { name: /current plan/i })).not.toBeInTheDocument();
+    // The card reprices to the yearly price for the interval being switched to.
+    expect(await screen.findByText("$50")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: /^for you$/i })).getByText("per year"),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the confirm-changes dialog carrying the yearly price when the switch CTA is clicked", async () => {
+    vi.mocked(useSubscriptionChangePreview).mockReturnValue({
+      data: {
+        data: {
+          immediateTransaction: {
+            billingPeriod: {
+              startsAt: new Date(2026, 8, 28).toISOString(),
+              endsAt: new Date(2027, 8, 28).toISOString(),
+            },
+            subtotalFormatted: "$50.00",
+            taxFormatted: "$0.00",
+            credit: "0",
+            creditFormatted: "$0.00",
+            totalFormatted: "$50.00",
+            grandTotalFormatted: "$50.00",
+          },
+        },
+      },
+    } as never);
+    renderDialog();
+
+    await userEvent.click(screen.getByRole("checkbox", { name: /switch to yearly pricing/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /switch to yearly billing/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: /confirm subscription changes/i }),
+    ).toBeInTheDocument();
+    // The change request must target the yearly price of the same product.
+    expect(await screen.findByText("$50.00/year")).toBeInTheDocument();
+  });
+
+  it("restores the current-plan lockout when toggled back to the subscription's interval", async () => {
+    renderDialog();
+
+    await userEvent.click(screen.getByRole("checkbox", { name: /switch to yearly pricing/i }));
+    await screen.findByRole("button", { name: /switch to yearly billing/i });
+
+    // Re-query: the re-render may replace the switch's DOM node.
+    await userEvent.click(screen.getByRole("checkbox", { name: /switch to yearly pricing/i }));
+
+    expect(await screen.findByRole("button", { name: /current plan/i })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(
+      screen.queryByRole("button", { name: /switch to yearly billing/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers the reverse switch to a yearly Personal subscriber toggling monthly", async () => {
+    // The dialog reads the subscription from usePricingData, not useUserMe, so
+    // both mocks carry the paid Personal state. The hook syncs its interval to
+    // the subscription's billing interval on load, so the mock starts at year.
+    mockPricingData(
+      { userSubscription: { product: { key: ProductKey.Tier1 }, billingInterval: "year" } },
+      "year",
+    );
+    renderDialog();
+
+    const forYou = await getForYou();
+    expect(within(forYou).getByRole("button", { name: /current plan/i })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+
+    await userEvent.click(screen.getByRole("checkbox", { name: /switch to yearly pricing/i }));
+
+    const switchCta = await screen.findByRole("button", {
+      name: /switch to monthly billing/i,
+    });
+    expect(switchCta).not.toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByRole("button", { name: /current plan/i })).not.toBeInTheDocument();
   });
 });

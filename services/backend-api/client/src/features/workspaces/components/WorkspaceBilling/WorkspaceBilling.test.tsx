@@ -150,6 +150,7 @@ const PRICE_PREVIEWS = [
         id: PRICE_IDS[ProductKey.Tier3].month,
         interval: "month",
         formattedPrice: "$20.00",
+        unitAmount: 2000,
         currencyCode: "USD",
         quantity: 1,
       },
@@ -157,6 +158,7 @@ const PRICE_PREVIEWS = [
         id: PRICE_IDS[ProductKey.Tier3].year,
         interval: "year",
         formattedPrice: "$200.00",
+        unitAmount: 20000,
         currencyCode: "USD",
         quantity: 1,
       },
@@ -811,6 +813,72 @@ describe("WorkspaceBilling", () => {
       screen.queryByRole("button", { name: /update payment method/i }),
     ).not.toBeInTheDocument();
     expect(screen.getByText(/only the workspace owner can manage billing/i)).toBeInTheDocument();
+  });
+
+  it("states the total feeds and recurring price on the current plan", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+
+    // The plan summary must say, in one sentence, what the subscription pays
+    // for and how much: the total feed count at the recurring price.
+    expect(
+      await screen.findByText("Your plan covers 70 feeds in total at $10 / month."),
+    ).toBeInTheDocument();
+  });
+
+  it("states the add-on breakdown and price when capacity is above the base tier", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      // 70-feed base + 30 add-on feeds, priced $10 + 30 * $0.50 = $25.
+      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 30 }] }),
+    });
+    mockChangePreview();
+
+    renderBilling();
+
+    expect(
+      await screen.findByText(
+        "Your plan covers 100 feeds in total (70 + 30 additional) at $25 / month.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("prices a Tier3-based subscription on the Tier3 base, not the Tier2 basket", async () => {
+    mockPaddle();
+    mockWorkspace({
+      role: "owner",
+      // A 140-feed Tier3 base + 10 add-on feeds bills $20 + 10 * $0.50 = $25.
+      // Pricing this on the Tier-2 basket would wrongly read $45.50.
+      subscription: activeSubscription({
+        productKey: "tier3",
+        addons: [{ key: ProductKey.Tier3Feed, quantity: 10 }],
+      }),
+    });
+    mockChangePreview();
+
+    renderBilling();
+
+    expect(
+      await screen.findByText(
+        "Your plan covers 150 feeds in total (140 + 10 additional) at $25 / month.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("omits the price from the plan summary when the catalog preview is unavailable", async () => {
+    // Admins never fetch the price preview (owners are the only subscribers),
+    // so the summary degrades to the feeds-only statement rather than a blank.
+    mockPaddle();
+    mockWorkspace({ role: "admin", subscription: activeSubscription() });
+
+    renderBilling();
+
+    expect(await screen.findByText("Your plan covers 70 feeds in total.")).toBeInTheDocument();
+    expect(screen.queryByText(/at \$10 \/ month/)).not.toBeInTheDocument();
   });
 
   it("lets the owner cancel an active subscription after confirming", async () => {
@@ -1534,9 +1602,9 @@ describe("WorkspaceBilling", () => {
     } as never);
   };
 
-  // Open the change-capacity dialog from the subscribed current-plan view.
+  // Open the update-plan dialog from the subscribed current-plan view.
   const openChangeDialog = async () => {
-    fireEvent.click(await screen.findByRole("button", { name: /change capacity/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /update plan/i }));
     await screen.findByRole("dialog");
     await screen.findByRole("radiogroup", { name: /feed capacity/i });
   };
@@ -1564,23 +1632,23 @@ describe("WorkspaceBilling", () => {
     await userEvent.keyboard("{Enter}");
   };
 
-  it("shows a read-only current plan with a Change capacity button, not tier-switch cards", async () => {
+  it("shows a read-only current plan with an Update plan button, not tier-switch cards", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
 
     renderBilling();
 
-    // The subscribed owner manages capacity via one deliberate "Change capacity"
+    // The subscribed owner manages their plan via one deliberate "Update plan"
     // button, not a grid of "Switch to Tier N" cards.
-    expect(await screen.findByRole("button", { name: /change capacity/i })).toHaveAttribute(
+    expect(await screen.findByRole("button", { name: /update plan/i })).toHaveAttribute(
       "aria-haspopup",
       "dialog",
     );
     expect(screen.queryByRole("button", { name: /switch to/i })).not.toBeInTheDocument();
   });
 
-  it("seeds the change-capacity slider at the workspace's current capacity", async () => {
+  it("seeds the update-plan picker at the workspace's current capacity", async () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
@@ -1611,15 +1679,16 @@ describe("WorkspaceBilling", () => {
     // On open the slider seeds at the current capacity, so there is no pending
     // change to preview and the change-preview query stays disabled. A disabled
     // React Query reports status "loading", so gating the spinner on status alone
-    // left it spinning forever until the slider moved. The preview spinner must
+    // left it spinning forever until the plan changed. The preview spinner must
     // not appear while nothing is being previewed.
-    const confirmButton = await screen.findByRole("button", { name: /confirm change/i });
+    const dialog = screen.getByRole("dialog");
+    const confirmButton = await within(dialog).findByRole("button", { name: /update plan/i });
     expect(confirmButton).toHaveAttribute("aria-disabled", "true");
-    expect(screen.queryByText(/^Loading\.\.\.$/)).not.toBeInTheDocument();
-    expect(screen.getByText("Choose a different capacity to preview changes.")).toBeInTheDocument();
+    expect(screen.queryByText(/^Loading\.\.$/)).not.toBeInTheDocument();
+    expect(screen.getByText("Update your plan to preview changes.")).toBeInTheDocument();
   });
 
-  it("shows the current recurring charge in the current-capacity summary", async () => {
+  it("shows the current recurring charge in the current-plan summary", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
@@ -1627,11 +1696,96 @@ describe("WorkspaceBilling", () => {
     renderBilling();
     await openChangeDialog();
 
-    expect(await screen.findByText("Your current capacity")).toBeInTheDocument();
+    expect(await screen.findByText("Your current plan")).toBeInTheDocument();
     expect(screen.getByText("$10 / month")).toBeInTheDocument();
   });
 
-  it("marks the current capacity option in the change-capacity picker", async () => {
+  it("offers monthly and yearly interval radio cards with the current one badged", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    // The interval choice uses the same RadioCard idiom as the capacity picker,
+    // so keyboard and screen-reader interaction is identical across the two
+    // sections, and the subscription's current interval is badged on the option.
+    const intervalGroup = await screen.findByRole("radiogroup", { name: /billing interval/i });
+    expect(within(intervalGroup).getByRole("radio", { name: /monthly current/i })).toBeChecked();
+    expect(within(intervalGroup).getByRole("radio", { name: /^yearly$/i })).not.toBeChecked();
+  });
+
+  it("switches a monthly subscription to yearly without touching capacity", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    // Choosing the other interval alone must count as a pending change: the
+    // preview fetches the yearly basket and Update plan becomes available.
+    await userEvent.click(await screen.findByRole("radio", { name: /^yearly$/i }));
+
+    await waitFor(() =>
+      expect(vi.mocked(useWorkspaceBillingChangePreview).mock.calls.at(-1)?.[0].prices).toEqual([
+        { priceId: PRICE_IDS[ProductKey.Tier2].year, quantity: 1 },
+      ]),
+    );
+
+    const dialog = screen.getByRole("dialog");
+    const confirmButton = within(dialog).getByRole("button", { name: /update plan/i });
+    expect(confirmButton).not.toHaveAttribute("aria-disabled", "true");
+
+    fireEvent.click(confirmButton);
+
+    await waitFor(() =>
+      expect(h.update).toHaveBeenCalledWith({
+        workspaceSlug: "my-team",
+        prices: [{ priceId: PRICE_IDS[ProductKey.Tier2].year, quantity: 1 }],
+      }),
+    );
+    await waitFor(() =>
+      expect(h.createSuccessAlert).toHaveBeenCalledWith({
+        title: "Plan updated",
+        description: "This workspace is now billed yearly.",
+      }),
+    );
+  });
+
+  it("announces both the capacity and the billing cadence when both change together", async () => {
+    mockPaddle();
+    mockWorkspace({ role: "owner", subscription: activeSubscription() });
+    mockChangePreview();
+
+    renderBilling();
+    await openChangeDialog();
+
+    await userEvent.click(await screen.findByRole("radio", { name: /^yearly$/i }));
+    await setSliderToFeeds(140);
+
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /update plan/i }));
+
+    await waitFor(() =>
+      expect(h.update).toHaveBeenCalledWith({
+        workspaceSlug: "my-team",
+        prices: [
+          { priceId: PRICE_IDS[ProductKey.Tier2].year, quantity: 1 },
+          { priceId: PRICE_IDS[ProductKey.Tier3Feed].year, quantity: 70 },
+        ],
+      }),
+    );
+    await waitFor(() =>
+      expect(h.createSuccessAlert).toHaveBeenCalledWith({
+        title: "Plan updated",
+        description: "This workspace can now run up to 140 feeds. Billing is now yearly.",
+      }),
+    );
+  });
+
+  it("marks the current capacity option in the update-plan picker", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
@@ -1679,7 +1833,8 @@ describe("WorkspaceBilling", () => {
     renderBilling();
     await openChangeDialog();
 
-    const confirmButton = await screen.findByRole("button", { name: /confirm change/i });
+    const dialog = screen.getByRole("dialog");
+    const confirmButton = await within(dialog).findByRole("button", { name: /update plan/i });
     expect(confirmButton).toHaveAttribute("aria-disabled", "true");
     expect(screen.queryByText(/^Loading\.\.\.$/)).not.toBeInTheDocument();
 
@@ -1689,7 +1844,7 @@ describe("WorkspaceBilling", () => {
     expect(h.createSuccessAlert).not.toHaveBeenCalled();
   });
 
-  it("discloses the recurring charge and renewal date in the change-capacity dialog", async () => {
+  it("discloses the recurring charge and renewal date in the update-plan dialog", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
@@ -1713,7 +1868,7 @@ describe("WorkspaceBilling", () => {
     expect(screen.getByText(/Renews automatically\. Cancel anytime\./)).toBeInTheDocument();
   });
 
-  it("itemizes the prorated amount due today in the change-capacity dialog", async () => {
+  it("itemizes the prorated amount due today in the update-plan dialog", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
@@ -1863,7 +2018,7 @@ describe("WorkspaceBilling", () => {
     await setSliderToFeeds(200);
 
     const dialog = await screen.findByRole("dialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: /confirm change/i }));
+    fireEvent.click(within(dialog).getByRole("button", { name: /update plan/i }));
 
     await waitFor(() =>
       expect(h.update).toHaveBeenCalledWith({
@@ -1881,7 +2036,7 @@ describe("WorkspaceBilling", () => {
     // the owner can't tell whether the change took.
     await waitFor(() =>
       expect(h.createSuccessAlert).toHaveBeenCalledWith({
-        title: "Capacity updated",
+        title: "Plan updated",
         description: "This workspace can now run up to 200 feeds.",
       }),
     );
@@ -1903,13 +2058,13 @@ describe("WorkspaceBilling", () => {
     await setSliderToFeeds(100);
 
     const dialog = await screen.findByRole("dialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: /confirm change/i }));
+    fireEvent.click(within(dialog).getByRole("button", { name: /update plan/i }));
 
     // "can now run up to" reads as an upgrade; a decrease (which can disable
     // feeds) states the new capacity plainly instead.
     await waitFor(() =>
       expect(h.createSuccessAlert).toHaveBeenCalledWith({
-        title: "Capacity updated",
+        title: "Plan updated",
         description: "This workspace's capacity is now 100 feeds.",
       }),
     );
@@ -1921,16 +2076,16 @@ describe("WorkspaceBilling", () => {
     mockChangePreview();
 
     renderBilling();
-    const trigger = await screen.findByRole("button", { name: /change capacity/i });
+    const trigger = await screen.findByRole("button", { name: /update plan/i });
     trigger.focus();
     fireEvent.click(trigger);
 
     await setSliderToFeeds(200);
     const dialog = await screen.findByRole("dialog");
-    fireEvent.click(within(dialog).getByRole("button", { name: /confirm change/i }));
+    fireEvent.click(within(dialog).getByRole("button", { name: /update plan/i }));
 
     // On success the alert carries the announcement; returning focus to the
-    // trigger would announce that button and its "Change capacity" group over
+    // trigger would announce that button and its "Update plan" group over
     // the alert. So unlike the cancel path, focus moves to the page heading
     // (brief, stable) rather than back to the trigger.
     await waitFor(() => expect(h.createSuccessAlert).toHaveBeenCalled());
@@ -1942,13 +2097,13 @@ describe("WorkspaceBilling", () => {
     expect(trigger).not.toHaveFocus();
   });
 
-  it("returns focus to the Change capacity button when the dialog is cancelled", async () => {
+  it("returns focus to the Update plan button when the dialog is cancelled", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: activeSubscription() });
     mockChangePreview();
 
     renderBilling();
-    const trigger = await screen.findByRole("button", { name: /change capacity/i });
+    const trigger = await screen.findByRole("button", { name: /update plan/i });
     trigger.focus();
     fireEvent.click(trigger);
 
@@ -2044,10 +2199,9 @@ describe("WorkspaceBilling", () => {
     });
     expect(input).toHaveAttribute("aria-valuetext", "837 feeds");
     expect(screen.getByRole("radio", { name: /^Custom( Current)?$/ })).toBeChecked();
-    expect(screen.getByRole("button", { name: /confirm change/i })).toHaveAttribute(
-      "aria-disabled",
-      "true",
-    );
+    expect(
+      within(screen.getByRole("dialog")).getByRole("button", { name: /update plan/i }),
+    ).toHaveAttribute("aria-disabled", "true");
   });
 
   // Guard against client/backend drift: these MUST match the backend's

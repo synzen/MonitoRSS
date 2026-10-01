@@ -19,6 +19,11 @@ export interface WorkspaceFeedPricing {
   baseUnitAmount: number;
   perFeedUnitAmount: number;
   currencyCode: string;
+  // The Tier3 (140-feed) base unit amount, when the caller's preview asked for
+  // that line item. A subscription already ON Tier3 bills this base for its
+  // first 140 feeds — not the Tier2 base plus add-ons — so pricing an existing
+  // Tier3 subscription on the slider's Tier-2 basket would overstate its price.
+  tier3BaseUnitAmount?: number;
 }
 
 // Pull the slider's pricing inputs out of an already-fetched page-level price
@@ -39,6 +44,9 @@ export const workspaceFeedPricingFromProducts = (
   const feedPrice = products
     ?.find((p) => p.id === ProductKey.Tier3Feed)
     ?.prices.find((p) => p.interval === interval);
+  const tier3BasePrice = products
+    ?.find((p) => p.id === ProductKey.Tier3)
+    ?.prices.find((p) => p.interval === interval);
 
   if (
     !basePrice ||
@@ -49,10 +57,13 @@ export const workspaceFeedPricingFromProducts = (
     return undefined;
   }
 
+  const tier3BaseUnitAmount = tier3BasePrice?.unitAmount;
+
   return {
     baseUnitAmount: basePrice.unitAmount,
     perFeedUnitAmount: feedPrice.unitAmount,
     currencyCode: basePrice.currencyCode,
+    tier3BaseUnitAmount: Number.isFinite(tier3BaseUnitAmount) ? tier3BaseUnitAmount : undefined,
   };
 };
 
