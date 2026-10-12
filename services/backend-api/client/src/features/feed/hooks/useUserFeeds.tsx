@@ -1,5 +1,5 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { pick } from "lodash";
 import { getUserFeeds, GetUserFeedsInput, GetUserFeedsOutput } from "../api";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
@@ -31,24 +31,27 @@ export const useUserFeeds = (
     },
   ];
 
-  const { data, status, error, isFetching, isPreviousData, isLoading, refetch } = useQuery<
+  const { data, status, error, isFetching, isPlaceholderData, isLoading, refetch } = useQuery<
     GetUserFeedsOutput,
     ApiAdapterError
-  >(
+  >({
     queryKey,
-    async () => {
+    queryFn: async () => {
       const result = await getUserFeeds(scopedInput);
 
       return result;
     },
-    {
-      enabled: !hasErrored && opts?.enabled !== false,
-      keepPreviousData: true,
-      onError: () => {
-        setHasErrored(true);
-      },
-    },
-  );
+    enabled: !hasErrored && opts?.enabled !== false,
+    placeholderData: keepPreviousData,
+  });
+
+  useEffect(() => {
+    if (error) {
+      setHasErrored(true);
+    }
+  }, [error]);
+
+  const isPreviousData = isPlaceholderData;
 
   const isFetchingNewPage = isLoading || (isFetching && isPreviousData);
 

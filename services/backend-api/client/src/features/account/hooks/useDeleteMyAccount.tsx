@@ -7,7 +7,9 @@ export const useDeleteMyAccount = () => {
     void,
     ApiAdapterError,
     DeleteMyAccountInput
-  >((input) => deleteMyAccount(input));
+  >({
+    mutationFn: (input: DeleteMyAccountInput) => deleteMyAccount(input),
+  });
 
   return {
     mutateAsync,

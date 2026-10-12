@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { MikroORM } from '@mikro-orm/core';
+import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 // Polyfill for Jest VM environment (redis v4 depends on undici which needs these)
 import { ReadableStream, WritableStream, TransformStream } from 'stream/web';
 
@@ -61,18 +62,15 @@ describe('FeedFetcherListenerService', () => {
       setNX: jest.fn(),
       del: jest.fn().mockResolvedValue(undefined),
     };
-    mockMikroOrm = await MikroORM.init(
-      {
-        // Get past errors related to @UseRequestContext() decorator from MikroORM
-        type: 'postgresql',
-        dbName: 'test',
-        entities: [],
-        discovery: {
-          warnWhenNoEntities: false,
-        },
+    mockMikroOrm = await MikroORM.init({
+      // Get past errors related to @EnsureRequestContext() decorator from MikroORM
+      driver: PostgreSqlDriver,
+      dbName: 'test',
+      entities: [],
+      discovery: {
+        warnWhenNoEntities: false,
       },
-      false,
-    );
+    });
 
     service = new FeedFetcherListenerService(
       configService,

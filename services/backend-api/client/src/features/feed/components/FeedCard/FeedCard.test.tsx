@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
@@ -60,7 +60,7 @@ describe("FeedCard", () => {
     it("shows feed icon image with correct src", () => {
       renderCard();
 
-      const img = screen.getByRole("img", { hidden: true }) as HTMLImageElement;
+      const img = document.querySelector("img") as HTMLImageElement;
       expect(img.src).toContain("https://www.google.com/s2/favicons?sz=32&domain=ign.com");
     });
 
@@ -69,14 +69,14 @@ describe("FeedCard", () => {
     it("marks the site icon as essential so the Termly auto-blocker leaves src intact", () => {
       renderCard();
 
-      const img = screen.getByRole("img", { hidden: true });
+      const img = document.querySelector("img");
       expect(img).toHaveAttribute("data-categories", "essential");
     });
 
     it("falls back to letter avatar on image error", () => {
       renderCard();
 
-      const img = screen.getByRole("img", { hidden: true }) as HTMLImageElement;
+      const img = document.querySelector("img") as HTMLImageElement;
       fireEvent.error(img);
 
       expect(screen.getByText("I")).toBeInTheDocument();

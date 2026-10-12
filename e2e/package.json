@@ -12,9 +12,9 @@
     "test:runner": "tsx --test scripts/run-e2e-utils.test.ts"
   },
   "devDependencies": {
-    "@playwright/test": "^1.52.0",
-    "mongodb": "^6.0.0",
-    "prettier": "^3.8.1",
-    "tsx": "^4.19.0"
+    "@playwright/test": "^1.64.0",
+    "mongodb": "^7.7.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15"
   }
 }

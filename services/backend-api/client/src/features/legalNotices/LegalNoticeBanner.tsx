@@ -57,7 +57,7 @@ export const LegalNoticeBanner = () => {
           mt={2}
           size="sm"
           aria-label="Dismiss legal notice"
-          loading={dismissal.status === "loading"}
+          loading={dismissal.status === "pending"}
           onClick={() => dismissal.mutate(notice.version)}
         >
           Dismiss

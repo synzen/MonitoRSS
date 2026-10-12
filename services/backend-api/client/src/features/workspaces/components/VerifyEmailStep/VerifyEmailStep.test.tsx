@@ -1,5 +1,5 @@
-import "@testing-library/jest-dom";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import "@testing-library/jest-dom/vitest";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { system } from "@/utils/theme";
@@ -70,12 +70,18 @@ const renderStepWithFooter = (props: Partial<React.ComponentProps<typeof VerifyE
     </ChakraProvider>,
   );
 
+// findBy/waitFor polling never resolves under the suite's fake timers, so
+// async mutation/rejection chains are flushed explicitly and asserted
+// synchronously instead.
+const flushMutations = () => act(async () => {});
+
 // Drives the component into the "code sent" view so the resend/confirm UI renders.
 const reachCodeSentView = async (email = "user@example.com") => {
   h.sendCode.mockResolvedValue(undefined);
   renderStep({ defaultEmail: email });
   fireEvent.click(screen.getByRole("button", { name: /send code/i }));
-  await screen.findByRole("button", { name: /resend code/i });
+  await flushMutations();
+  screen.getByRole("button", { name: /resend code/i });
 };
 
 describe("VerifyEmailStep", () => {
@@ -95,8 +101,9 @@ describe("VerifyEmailStep", () => {
     await elapseCooldown();
 
     fireEvent.click(screen.getByRole("button", { name: /resend code/i }));
+    await flushMutations();
 
-    await waitFor(() => expect(h.sendCode).toHaveBeenCalledTimes(1));
+    expect(h.sendCode).toHaveBeenCalledTimes(1);
     // The empty verification-code field must NOT trip the confirm validation.
     expect(screen.queryByText(/enter the 6-digit code/i)).not.toBeInTheDocument();
     expect(h.confirmCode).not.toHaveBeenCalled();
@@ -127,8 +134,9 @@ describe("VerifyEmailStep", () => {
     renderStep({ defaultEmail: "user@example.com" });
 
     fireEvent.click(screen.getByRole("button", { name: /^send code$/i }));
+    await flushMutations();
 
-    expect(await screen.findByText(/failed to send code/i)).toBeInTheDocument();
+    expect(screen.getByText(/failed to send code/i)).toBeInTheDocument();
     expect(screen.getByText(/please wait a moment before requesting/i)).toBeInTheDocument();
     // The raw server string must NOT leak through.
     expect(screen.queryByText(/raw server detail/i)).not.toBeInTheDocument();
@@ -148,13 +156,15 @@ describe("VerifyEmailStep", () => {
     renderStep({ defaultEmail: "invited@example.com", onSendCode });
 
     fireEvent.click(screen.getByRole("button", { name: /^send code$/i }));
-    await screen.findByRole("button", { name: "Resend code" });
+    await flushMutations();
+    screen.getByRole("button", { name: "Resend code" });
 
     // Change email clears the client cooldown guard so the second send can fire.
     fireEvent.click(screen.getByRole("button", { name: /change email/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /^send code$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^send code$/i }));
+    await flushMutations();
 
-    expect(await screen.findByText(/failed to send code/i)).toBeInTheDocument();
+    expect(screen.getByText(/failed to send code/i)).toBeInTheDocument();
     expect(screen.getByText(/please wait a moment before requesting/i)).toBeInTheDocument();
     expect(onSendCode).toHaveBeenCalledTimes(2);
   });
@@ -166,7 +176,7 @@ describe("VerifyEmailStep", () => {
     h.confirmError = { message: "raw server detail", errorCode: "EMAIL_VERIFICATION_INVALID_CODE" };
     await reachCodeSentView();
 
-    expect(await screen.findByText(/failed to verify/i)).toBeInTheDocument();
+    expect(screen.getByText(/failed to verify/i)).toBeInTheDocument();
     expect(screen.getByText(/invalid or incorrect verification code/i)).toBeInTheDocument();
     expect(screen.queryByText(/raw server detail/i)).not.toBeInTheDocument();
   });
@@ -174,7 +184,7 @@ describe("VerifyEmailStep", () => {
   it("clears a stale confirm error when changing email, resending, or retrying verify", async () => {
     h.confirmError = { message: "raw server detail", errorCode: "EMAIL_ALREADY_IN_USE" };
     await reachCodeSentView();
-    expect(await screen.findByText(/failed to verify/i)).toBeInTheDocument();
+    expect(screen.getByText(/failed to verify/i)).toBeInTheDocument();
 
     // Back to the email step clears the confirm mutation.
     fireEvent.click(screen.getByRole("button", { name: /change email/i }));
@@ -187,7 +197,8 @@ describe("VerifyEmailStep", () => {
       target: { value: "other@example.com" },
     });
     fireEvent.click(screen.getByRole("button", { name: /^send code$/i }));
-    await screen.findByRole("button", { name: "Resend code" });
+    await flushMutations();
+    screen.getByRole("button", { name: "Resend code" });
     expect(h.resetConfirm).toHaveBeenCalled();
 
     // A new verify attempt clears the previous failure first.
@@ -197,7 +208,8 @@ describe("VerifyEmailStep", () => {
       target: { value: "123456" },
     });
     fireEvent.click(screen.getByRole("button", { name: /^verify$/i }));
-    await waitFor(() => expect(h.resetConfirm).toHaveBeenCalled());
+    await flushMutations();
+    expect(h.resetConfirm).toHaveBeenCalled();
   });
 
   it("tells the user how long the verification code is valid", async () => {
@@ -221,8 +233,9 @@ describe("VerifyEmailStep", () => {
     await reachCodeSentView();
 
     fireEvent.click(screen.getByRole("button", { name: /^verify$/i }));
+    await flushMutations();
 
-    expect(await screen.findByText(/enter the 6-digit code/i)).toBeInTheDocument();
+    expect(screen.getByText(/enter the 6-digit code/i)).toBeInTheDocument();
     expect(h.confirmCode).not.toHaveBeenCalled();
   });
 
@@ -244,10 +257,9 @@ describe("VerifyEmailStep", () => {
       renderStepWithFooter({ defaultEmail: "user@example.com" });
 
       fireEvent.click(screen.getByRole("button", { name: /^send code$/i }));
+      await flushMutations();
 
-      await waitFor(() =>
-        expect(h.sendCode).toHaveBeenCalledWith({ details: { email: "user@example.com" } }),
-      );
+      expect(h.sendCode).toHaveBeenCalledWith({ details: { email: "user@example.com" } });
     });
 
     it("swaps the footer button to Verify on the code-sent view, keeping resend/change in the body", async () => {
@@ -282,12 +294,11 @@ describe("VerifyEmailStep", () => {
         target: { value: "123456" },
       });
       fireEvent.click(screen.getByRole("button", { name: /^verify$/i }));
+      await flushMutations();
 
-      await waitFor(() =>
-        expect(h.confirmCode).toHaveBeenCalledWith({
-          details: { email: "user@example.com", code: "123456" },
-        }),
-      );
+      expect(h.confirmCode).toHaveBeenCalledWith({
+        details: { email: "user@example.com", code: "123456" },
+      });
     });
   });
 

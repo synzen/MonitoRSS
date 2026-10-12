@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const moment = require("moment-timezone");
 const htmlConvert = require("html-to-text");
-const htmlDecoder = require("html-to-text/lib/formatter.js").text;
+const { decodeHTML } = require("entities");
 const FlattenedJSON = require("./FlattenedJSON.js");
 const FilterResults = require("./FilterResults.js");
 const Filter = require("./Filter.js");
@@ -263,13 +263,13 @@ function cleanup(feed, text, imgSrcs, anchorLinks, defaultOptions) {
     return "";
   }
 
-  text = htmlDecoder({ data: text }, {})
+  text = decodeHTML(text)
     .replace(/\*/gi, "")
     .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, "**$2**") // Bolded markdown
     .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, "*$2*") // Italicized markdown
     .replace(/<(u)>(.*?)<(\/(u))>/gi, "__$2__"); // Underlined markdown
 
-  text = htmlConvert.fromString(text, {
+  text = htmlConvert.convert(text, {
     tables:
       (feed.formatTables !== undefined && typeof feed.formatTables === "boolean"
         ? feed.formatTables
@@ -277,10 +277,12 @@ function cleanup(feed, text, imgSrcs, anchorLinks, defaultOptions) {
         ? true
         : [],
     wordwrap: null,
-    ignoreHref: true,
-    noLinkBrackets: true,
-    format: {
-      image: (node) => {
+    selectors: [
+      { selector: "a", format: "anchorCollector" },
+      { selector: "img", format: "imageExtractor" },
+    ],
+    formatters: {
+      imageExtractor: (node, walk, builder) => {
         const isStr = typeof node.attribs.src === "string";
         let link = isStr
           ? node.attribs.src.trim().replace(/\s/g, "%20")
@@ -310,7 +312,7 @@ function cleanup(feed, text, imgSrcs, anchorLinks, defaultOptions) {
             : specificExistOption;
 
         if (!exist) {
-          return "";
+          return;
         }
 
         let image = "";
@@ -324,27 +326,18 @@ function cleanup(feed, text, imgSrcs, anchorLinks, defaultOptions) {
               ? link
               : `<${link}>`;
 
-        return image;
+        builder.addInline(image);
       },
-      anchor: (node, fn, options) => {
-        const orig = fn(node.children, options);
-
-        if (!Array.isArray(anchorLinks)) {
-          return orig;
-        }
-
+      anchorCollector: (node, walk, builder) => {
         const href = node.attribs.href ? node.attribs.href.trim() : "";
 
-        if (anchorLinks.length < 5 && href) {
-          anchorLinks.push(href);
+        if (Array.isArray(anchorLinks)) {
+          if (anchorLinks.length < 5 && href) {
+            anchorLinks.push(href);
+          }
         }
 
-        return orig;
-      },
-      blockquote: (node, fn, options) => {
-        const orig = fn(node.children, options).trim();
-
-        return "> " + orig.replace(/(?:\n)/g, "\n> ") + "\n";
+        walk(node.children, builder);
       },
     },
   });

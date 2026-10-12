@@ -10,7 +10,8 @@ export const useMovePersonalFeedsToWorkspace = () => {
     MovePersonalFeedsToWorkspaceOutput,
     ApiAdapterError,
     { workspaceSlug: string; feedIds: string[] }
-  >((input) => movePersonalFeedsToWorkspace(input), {
+  >({
+    mutationFn: (input) => movePersonalFeedsToWorkspace(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["user-feeds"] });
     },

@@ -9,7 +9,8 @@ export const useDisconnectWorkspaceReddit = () => {
     void,
     ApiAdapterError,
     { workspaceSlug: string }
-  >(({ workspaceSlug }) => disconnectWorkspaceReddit(workspaceSlug), {
+  >({
+    mutationFn: ({ workspaceSlug }) => disconnectWorkspaceReddit(workspaceSlug),
     onSuccess: (_data, { workspaceSlug }) => {
       queryClient.invalidateQueries({ queryKey: ["workspace", { workspaceSlug }] });
     },

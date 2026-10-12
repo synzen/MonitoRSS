@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -111,9 +111,7 @@ describe("useWorkspaceActivationPolling", () => {
 
     rerender({ subscription: tier2Subscription });
 
-    await waitFor(() => {
-      expect(result.current.billingAnnouncement).toMatch(/is now active/i);
-    });
+    expect(result.current.billingAnnouncement).toMatch(/is now active/i);
     expect(result.current.awaitingActivation).toBe(false);
     expect(window.sessionStorage.getItem(pendingKey("workspace-1"))).toBeNull();
   });

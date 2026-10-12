@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";
@@ -8,7 +8,7 @@ import { RevertVerifiedEmail } from "./RevertVerifiedEmail";
 
 const h = vi.hoisted(() => ({
   revert: vi.fn(),
-  status: "idle" as "idle" | "loading" | "success" | "error",
+  status: "idle" as "idle" | "pending" | "success" | "error",
   error: null as { errorCode?: string; message: string } | null,
 }));
 

@@ -7,7 +7,9 @@ export const useSendInviteVerification = () => {
     void,
     ApiAdapterError,
     SendInviteVerificationInput
-  >((input) => sendInviteVerification(input));
+  >({
+    mutationFn: (input) => sendInviteVerification(input),
+  });
 
   return {
     mutateAsync,

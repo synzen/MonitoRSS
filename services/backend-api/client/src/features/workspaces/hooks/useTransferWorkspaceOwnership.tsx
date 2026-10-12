@@ -9,7 +9,8 @@ export const useTransferWorkspaceOwnership = () => {
     void,
     ApiAdapterError,
     TransferWorkspaceOwnershipInput
-  >((input) => transferWorkspaceOwnership(input), {
+  >({
+    mutationFn: (input) => transferWorkspaceOwnership(input),
     onSuccess: (_data, { workspaceSlug }) => {
       // The transfer flips the caller's own role (owner -> admin) as well as the
       // target's, so the workspace detail (which drives myRole and every

@@ -20,9 +20,9 @@ export const useDiscordServerChannels = ({ serverId, types }: Props) => {
   const { data, status, error, isFetching, refetch } = useQuery<
     GetServerChannelsOutput,
     ApiAdapterError
-  >(
+  >({
     queryKey,
-    async () => {
+    queryFn: async () => {
       if (!serverId) {
         throw new Error("Missing server ID when getting server channels");
       }
@@ -32,11 +32,14 @@ export const useDiscordServerChannels = ({ serverId, types }: Props) => {
         types,
       });
     },
-    {
-      enabled: !!accessData?.result.authorized && !hadError && !!serverId,
-      onError: () => setHadError(true),
-    },
-  );
+    enabled: !!accessData?.result.authorized && !hadError && !!serverId,
+  });
+
+  useEffect(() => {
+    if (error) {
+      setHadError(true);
+    }
+  }, [error]);
 
   // New channels may be created when window is out-of-focus
   // react-query's built-in refetchOnWindowFocus isn't working as expected

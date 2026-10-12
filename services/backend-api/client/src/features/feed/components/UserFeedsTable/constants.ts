@@ -1,4 +1,4 @@
-import { VisibilityState } from "@tanstack/react-table";
+import { ColumnVisibilityState } from "@tanstack/react-table";
 import { UserFeedComputedStatus } from "../../types";
 
 export const DEFAULT_PAGE_SIZE = 50;
@@ -51,7 +51,7 @@ export const TOGGLEABLE_COLUMNS = [
   { id: SHARED_WITH_ME_COLUMN_ID, label: "Shared with Me" },
 ] as const;
 
-export const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
+export const DEFAULT_COLUMN_VISIBILITY: ColumnVisibilityState = {
   computedStatus: true,
   url: true,
   createdAt: true,

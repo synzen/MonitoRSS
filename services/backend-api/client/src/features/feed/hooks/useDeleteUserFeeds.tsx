@@ -9,7 +9,8 @@ export const useDeleteUserFeeds = () => {
     DeleteUserFeedsOutput,
     ApiAdapterError,
     DeleteUserFeedsInput
-  >((details) => deleteUserFeeds(details), {
+  >({
+    mutationFn: (details) => deleteUserFeeds(details),
     onSuccess: (res) => {
       return queryClient.invalidateQueries(
         {

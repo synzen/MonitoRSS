@@ -25,18 +25,18 @@ export const useDiscordServerMembers = ({ serverId, data: inputData, disabled }:
   ];
 
   const { data, status, error, isFetching } = useQuery<GetServerMembersOutput, ApiAdapterError>(
-    queryKey,
-    async () => {
-      if (!serverId) {
-        throw new Error("Missing server ID when getting server members");
-      }
-
-      return getServerMembers({
-        serverId,
-        data: inputData,
-      });
-    },
     {
+      queryKey,
+      queryFn: async () => {
+        if (!serverId) {
+          throw new Error("Missing server ID when getting server members");
+        }
+
+        return getServerMembers({
+          serverId,
+          data: inputData,
+        });
+      },
       enabled: !!accessData?.result.authorized && !!serverId && !disabled,
     },
   );

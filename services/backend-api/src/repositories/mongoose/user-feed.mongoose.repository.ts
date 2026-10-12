@@ -309,14 +309,14 @@ export class UserFeedMongooseRepository
     return {
       id: this.objectIdToString(doc._id),
       title: doc.title,
-      inputUrl: doc.inputUrl,
+      inputUrl: doc.inputUrl ?? undefined,
       url: doc.url,
-      disabledCode: doc.disabledCode,
+      disabledCode: doc.disabledCode ?? undefined,
       passingComparisons: doc.passingComparisons,
       blockingComparisons: doc.blockingComparisons,
       externalProperties: doc.externalProperties,
       healthStatus: doc.healthStatus,
-      recoveryStartedAt: doc.recoveryStartedAt,
+      recoveryStartedAt: doc.recoveryStartedAt ?? undefined,
       connections: {
         discordChannels:
           discordChannels?.map((conn) =>
@@ -324,12 +324,23 @@ export class UserFeedMongooseRepository
           ) || [],
       },
       user: {
-        id: this.objectIdToString(doc.user.id),
+        id: this.objectIdToString(doc.user.id ?? undefined),
         discordUserId: doc.user.discordUserId,
       },
-      workspaceId: this.objectIdToString(doc.workspaceId),
-      formatOptions: doc.formatOptions,
-      dateCheckOptions: doc.dateCheckOptions,
+      workspaceId: this.objectIdToString(doc.workspaceId ?? undefined),
+      formatOptions: doc.formatOptions
+        ? {
+            dateFormat: doc.formatOptions.dateFormat ?? undefined,
+            dateTimezone: doc.formatOptions.dateTimezone ?? undefined,
+            dateLocale: doc.formatOptions.dateLocale ?? undefined,
+          }
+        : undefined,
+      dateCheckOptions: doc.dateCheckOptions
+        ? {
+            oldArticleDateDiffMsThreshold:
+              doc.dateCheckOptions.oldArticleDateDiffMsThreshold ?? undefined,
+          }
+        : undefined,
       shareManageOptions: doc.shareManageOptions
         ? {
             invites: (
@@ -347,12 +358,14 @@ export class UserFeedMongooseRepository
             })),
           }
         : undefined,
-      legacyFeedId: this.objectIdToString(doc.legacyFeedId),
-      refreshRateSeconds: doc.refreshRateSeconds,
-      maxDailyArticles: doc.maxDailyArticles,
-      userRefreshRateSeconds: doc.userRefreshRateSeconds,
-      slotOffsetMs: doc.slotOffsetMs,
-      scheduleMode: doc.scheduleMode as UserFeedScheduleMode | undefined,
+      legacyFeedId: this.objectIdToString(doc.legacyFeedId ?? undefined),
+      refreshRateSeconds: doc.refreshRateSeconds ?? undefined,
+      maxDailyArticles: doc.maxDailyArticles ?? undefined,
+      userRefreshRateSeconds: doc.userRefreshRateSeconds ?? undefined,
+      slotOffsetMs: doc.slotOffsetMs ?? undefined,
+      scheduleMode: (doc.scheduleMode ?? undefined) as
+        | UserFeedScheduleMode
+        | undefined,
       schedule: doc.schedule
         ? {
             times: doc.schedule.times as string[],
@@ -360,10 +373,10 @@ export class UserFeedMongooseRepository
             days: (doc.schedule.days as number[] | undefined) || undefined,
           }
         : undefined,
-      lastScheduledFiredAt: doc.lastScheduledFiredAt,
-      debug: doc.debug,
-      feedRequestLookupKey: doc.feedRequestLookupKey,
-      lastManualRequestAt: doc.lastManualRequestAt,
+      lastScheduledFiredAt: doc.lastScheduledFiredAt ?? undefined,
+      debug: doc.debug ?? undefined,
+      feedRequestLookupKey: doc.feedRequestLookupKey ?? undefined,
+      lastManualRequestAt: doc.lastManualRequestAt ?? undefined,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
@@ -420,10 +433,10 @@ export class UserFeedMongooseRepository
         title: docWithId.title,
         url: docWithId.url,
         user: {
-          id: this.objectIdToString(docWithId.user.id),
+          id: this.objectIdToString(docWithId.user.id ?? undefined),
           discordUserId: docWithId.user.discordUserId,
         },
-        workspaceId: this.objectIdToString(docWithId.workspaceId),
+        workspaceId: this.objectIdToString(docWithId.workspaceId ?? undefined),
         shareManageOptions: docWithId.shareManageOptions
           ? {
               invites: (
@@ -2054,8 +2067,8 @@ export class UserFeedMongooseRepository
       yield {
         id: this.objectIdToString((doc as { _id: Types.ObjectId })._id),
         url: doc.url,
-        refreshRateSeconds: doc.refreshRateSeconds,
-        userRefreshRateSeconds: doc.userRefreshRateSeconds,
+        refreshRateSeconds: doc.refreshRateSeconds ?? undefined,
+        userRefreshRateSeconds: doc.userRefreshRateSeconds ?? undefined,
       };
     }
   }

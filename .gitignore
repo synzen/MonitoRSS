@@ -153,3 +153,5 @@ skills-lock.json
 docs/*
 !docs/adr
 
+discover.ps1
+prune.ps1

@@ -52,7 +52,7 @@ export const ConnectionDisabledAlert = () => {
               "features.feedConnections.components.connectionDisabledAlert.manuallyDisabledDescription",
             )}
             <Box marginTop="1rem">
-              <PrimaryActionButton loading={status === "loading"} onClick={onClickEnable}>
+              <PrimaryActionButton loading={status === "pending"} onClick={onClickEnable}>
                 <span>{t("common.buttons.reEnable")}</span>
               </PrimaryActionButton>
             </Box>
@@ -121,7 +121,7 @@ export const ConnectionDisabledAlert = () => {
               "features.feedConnections.components.connectionDisabledAlert.missingPermissionsDescription",
             )}
             <Box marginTop="1rem">
-              <PrimaryActionButton loading={status === "loading"} onClick={onClickEnable}>
+              <PrimaryActionButton loading={status === "pending"} onClick={onClickEnable}>
                 <span>Attempt to re-enable</span>
               </PrimaryActionButton>
             </Box>

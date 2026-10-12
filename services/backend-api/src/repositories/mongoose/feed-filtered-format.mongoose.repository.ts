@@ -44,8 +44,39 @@ export class FeedFilteredFormatMongooseRepository
   ): IFeedFilteredFormat {
     return {
       id: this.objectIdToString(doc._id),
-      text: doc.text,
-      embeds: doc.embeds,
+      text: doc.text ?? undefined,
+      embeds: doc.embeds
+        ? doc.embeds.map((embed) => ({
+            title: embed.title ?? undefined,
+            description: embed.description ?? undefined,
+            url: embed.url ?? undefined,
+            color: embed.color ?? undefined,
+            footerText: embed.footerText ?? undefined,
+            footerIconURL: embed.footerIconURL ?? undefined,
+            authorName: embed.authorName ?? undefined,
+            authorIconURL: embed.authorIconURL ?? undefined,
+            authorURL: embed.authorURL ?? undefined,
+            thumbnailURL: embed.thumbnailURL ?? undefined,
+            imageURL: embed.imageURL ?? undefined,
+            timestamp: embed.timestamp ?? undefined,
+            fields: embed.fields
+              ? embed.fields.map((field) => ({
+                  name: field.name,
+                  value: field.value,
+                  inline: field.inline ?? undefined,
+                }))
+              : undefined,
+            webhook: embed.webhook
+              ? {
+                  id: embed.webhook.id,
+                  name: embed.webhook.name ?? undefined,
+                  avatar: embed.webhook.avatar ?? undefined,
+                  disabled: embed.webhook.disabled ?? undefined,
+                  url: embed.webhook.url ?? undefined,
+                }
+              : undefined,
+          }))
+        : undefined,
       feedId: this.objectIdToString(doc.feed),
       priority: doc.priority,
       filters: doc.filters ? Object.fromEntries(doc.filters) : undefined,

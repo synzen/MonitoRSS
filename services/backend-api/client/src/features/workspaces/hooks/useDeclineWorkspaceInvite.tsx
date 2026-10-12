@@ -5,15 +5,13 @@ import { declineWorkspaceInvite } from "../api";
 export const useDeclineWorkspaceInvite = () => {
   const queryClient = useQueryClient();
 
-  const { mutateAsync, status, error, reset } = useMutation<void, ApiAdapterError, string>(
-    (inviteId) => declineWorkspaceInvite(inviteId),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["workspace-invites"], exact: false });
-        queryClient.invalidateQueries({ queryKey: ["workspace-invite"], exact: false });
-      },
+  const { mutateAsync, status, error, reset } = useMutation<void, ApiAdapterError, string>({
+    mutationFn: (inviteId) => declineWorkspaceInvite(inviteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-invites"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["workspace-invite"], exact: false });
     },
-  );
+  });
 
   return {
     mutateAsync,

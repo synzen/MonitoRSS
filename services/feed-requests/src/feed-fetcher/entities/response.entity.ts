@@ -1,4 +1,4 @@
-import { Entity, Property, PrimaryKey, Index } from '@mikro-orm/core';
+import { Entity, Property, PrimaryKey, Index } from '@mikro-orm/decorators/legacy';
 
 @Entity()
 @Index({ properties: ['statusCode'], name: 'status_code_index' })
@@ -9,10 +9,11 @@ import { Entity, Property, PrimaryKey, Index } from '@mikro-orm/core';
 export class Response {
   @PrimaryKey({
     autoincrement: true,
+    type: 'number',
   })
   id!: number;
 
-  @Property()
+  @Property({ type: 'number' })
   statusCode!: number;
 
   @Property({
@@ -28,7 +29,7 @@ export class Response {
   })
   hasCompressedText?: boolean;
 
-  @Property()
+  @Property({ type: 'boolean' })
   isCloudflare!: boolean;
 
   @Property({

@@ -8,7 +8,7 @@ import {
   Property,
   OneToOne,
   Index,
-} from '@mikro-orm/core';
+} from '@mikro-orm/decorators/legacy';
 
 @Entity()
 @Index({
@@ -18,13 +18,14 @@ import {
 export class Request {
   @PrimaryKey({
     autoincrement: true,
+    type: 'number',
   })
   id!: number;
 
-  @Enum(() => RequestStatus)
+  @Enum({ items: () => RequestStatus, type: 'string' })
   status!: RequestStatus;
 
-  @Enum({ items: () => RequestSource, nullable: true, default: null })
+  @Enum({ items: () => RequestSource, nullable: true, default: null, type: 'string' })
   source?: string | null;
 
   @Property({
@@ -69,7 +70,7 @@ export class Request {
     nullable: true,
     entity: () => Response,
     index: true,
-    onDelete: 'cascade',
+    deleteRule: 'cascade',
   })
   response!: Response | null;
 }

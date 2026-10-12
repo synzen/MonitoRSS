@@ -12,7 +12,7 @@ export const UserFeed = () => {
   });
 
   return (
-    <DashboardContentV2 error={error} loading={status === "loading"}>
+    <DashboardContentV2 error={error} loading={status === "pending"}>
       <UserFeedProvider feedId={feedId}>
         <Box display="flex" flexDirection="column" alignItems="center" pt={4} isolation="isolate">
           <PageAlertProvider>

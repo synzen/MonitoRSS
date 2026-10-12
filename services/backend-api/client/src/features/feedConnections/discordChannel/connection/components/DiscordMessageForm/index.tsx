@@ -368,7 +368,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                           onClick={async () => {
                             if (
                               isSendingTestArticle ||
-                              sendTestArticleDirectMutation.isLoading ||
+                              sendTestArticleDirectMutation.isPending ||
                               !articleIdToPreview ||
                               !previewInput.data.article
                             ) {
@@ -446,10 +446,10 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                           }}
                           size="sm"
                           colorPalette="brand"
-                          loading={isSendingTestArticle || sendTestArticleDirectMutation.isLoading}
+                          loading={isSendingTestArticle || sendTestArticleDirectMutation.isPending}
                           aria-disabled={
                             isSendingTestArticle ||
-                            sendTestArticleDirectMutation.isLoading ||
+                            sendTestArticleDirectMutation.isPending ||
                             !articleIdToPreview
                           }
                         >

@@ -59,7 +59,7 @@ export const UserFeedConnectionProvider = ({
     };
   }, [feed, connection, articleFormatOptions]);
 
-  if (status === "loading" || !value) {
+  if (status === "pending" || !value) {
     return <Spinner />;
   }
 

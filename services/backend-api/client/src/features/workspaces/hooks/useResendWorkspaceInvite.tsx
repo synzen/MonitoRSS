@@ -7,7 +7,9 @@ export const useResendWorkspaceInvite = () => {
     void,
     ApiAdapterError,
     ResendWorkspaceInviteInput
-  >((input) => resendWorkspaceInvite(input));
+  >({
+    mutationFn: (input) => resendWorkspaceInvite(input),
+  });
 
   return {
     mutateAsync,

@@ -29,7 +29,7 @@ function cleanup(feed, text, defaultOptions) {
     .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, "*$2*") // Italicized markdown
     .replace(/<(u)>(.*?)<(\/(u))>/gi, "__$2__"); // Underlined markdown
 
-  newText = htmlConvert.fromString(newText, {
+  newText = htmlConvert.convert(newText, {
     tables:
       (feed.formatTables !== undefined && typeof feed.formatTables === "boolean"
         ? feed.formatTables
@@ -37,10 +37,9 @@ function cleanup(feed, text, defaultOptions) {
         ? true
         : [],
     wordwrap: null,
-    ignoreHref: true,
-    noLinkBrackets: true,
-    format: {
-      image: (node) => {
+    selectors: [{ selector: "img", format: "imageExtractor" }],
+    formatters: {
+      imageExtractor: (node, walk, builder) => {
         const isStr = typeof node.attribs.src === "string";
         let link = isStr ? node.attribs.src.trim() : node.attribs.src;
 
@@ -64,7 +63,7 @@ function cleanup(feed, text, defaultOptions) {
             : specificExistOption;
 
         if (!exist) {
-          return "";
+          return;
         }
 
         let image = "";
@@ -78,12 +77,7 @@ function cleanup(feed, text, defaultOptions) {
               ? link
               : `<${link}>`;
 
-        return image;
-      },
-      blockquote: (node, fn, options) => {
-        const orig = fn(node.children, options).trim();
-
-        return "> " + orig.replace(/(?:\n)/g, "\n> ") + "\n";
+        builder.addInline(image);
       },
     },
   });

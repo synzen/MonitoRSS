@@ -60,7 +60,7 @@ export const RedditConnectionSetting = ({ onRemoveSuccess, onRemoveError }: Prop
             colorPalette="red"
             variant="ghost"
             size="sm"
-            loading={removeRedditLoginStatus === "loading"}
+            loading={removeRedditLoginStatus === "pending"}
             onClick={() => {
               onClickRemoveRedditLogin();
             }}

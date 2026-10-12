@@ -12,7 +12,8 @@ export const useCreateDiscordChannelConnection = () => {
     CreateDiscordChannelConnectionOutput,
     ApiAdapterError,
     CreateDiscordChannelConnectionInput
-  >((details) => createDiscordChannelConnection(details), {
+  >({
+    mutationFn: (details) => createDiscordChannelConnection(details),
     onSuccess: (data, inputData) =>
       Promise.all([
         queryClient.invalidateQueries({

@@ -83,7 +83,8 @@ describe('FeedFetcherService (Integration)', () => {
       re3.status = RequestStatus.BAD_STATUS_CODE;
       re3.createdAt = new Date(2022);
 
-      await requestRepo.persistAndFlush([req, re2, re3]);
+      requestRepo.getEntityManager().persist([req, re2, re3]);
+      await requestRepo.getEntityManager().flush();
 
       const result = await service.getRequests({
         skip: 1,
@@ -123,7 +124,8 @@ describe('FeedFetcherService (Integration)', () => {
 
       req1.response = response;
 
-      await requestRepo.persistAndFlush([req1]);
+      requestRepo.getEntityManager().persist([req1]);
+      await requestRepo.getEntityManager().flush();
 
       const latestRequest = await service.getLatestRequest({
         url,

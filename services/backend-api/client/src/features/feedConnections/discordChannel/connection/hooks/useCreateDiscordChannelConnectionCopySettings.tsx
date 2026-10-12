@@ -12,14 +12,14 @@ export const useCreateDiscordChannelConnectionCopySettings = () => {
     ApiAdapterError,
     CreateDiscordChannelConnectionCopySettingsInput
   >(
-    async (details) => {
-      if (!details.details.targetDiscordChannelConnectionIds.length) {
-        throw new Error("Must select at least one target connection");
-      }
-
-      await createDiscordChannelConnectionCopySettings(details);
-    },
     {
+      mutationFn: async (details) => {
+        if (!details.details.targetDiscordChannelConnectionIds.length) {
+          throw new Error("Must select at least one target connection");
+        }
+
+        await createDiscordChannelConnectionCopySettings(details);
+      },
       onSuccess: (data, inputData) =>
         queryClient.invalidateQueries({
           queryKey: [

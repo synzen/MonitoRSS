@@ -31,7 +31,7 @@ export const ResendUserFeedManagementInviteButton = ({ feedId, inviteId }: Props
           title="Resend invite"
           variant="ghost"
           aria-label="Resend invite"
-          loading={status === "loading"}
+          loading={status === "pending"}
           onClick={onClick}
         >
           <FiSend />

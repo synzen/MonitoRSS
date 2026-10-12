@@ -25,7 +25,7 @@ export const LogoutButton = ({ trigger }: Props) => {
   };
 
   if (trigger) {
-    return cloneElement(trigger, {
+    return cloneElement(trigger as React.ReactElement<{ onClick?: () => void }>, {
       onClick: onClickLogout,
     });
   }

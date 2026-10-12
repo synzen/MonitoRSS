@@ -13,7 +13,8 @@ export const useCreateUserFeedManagementInvite = () => {
     CreateUserFeedManagementInviteOutput,
     ApiAdapterError,
     CreateUserFeedManagementInviteInput
-  >((details) => createUserFeedManagementInvite(details), {
+  >({
+    mutationFn: (details) => createUserFeedManagementInvite(details),
     onSuccess: (res, input) => {
       return queryClient.invalidateQueries({
         predicate: (query) => {

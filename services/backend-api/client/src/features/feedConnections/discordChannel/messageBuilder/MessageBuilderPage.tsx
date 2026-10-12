@@ -104,7 +104,7 @@ import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 // When the tree container remounts (key change for Google Translate compatibility),
 // DOM focus is lost to <body>. This component restores focus to the currently
 // selected tree item so keyboard users aren't stranded.
-const TreeFocusRestorer = ({ treeRef }: { treeRef: React.RefObject<HTMLDivElement> }) => {
+const TreeFocusRestorer = ({ treeRef }: { treeRef: React.RefObject<HTMLDivElement | null> }) => {
   const { currentSelectedId } = useNavigableTreeContext();
 
   useEffect(() => {
@@ -326,7 +326,7 @@ const MessageBuilderContent: React.FC = () => {
   const handleSave = async () => {
     const currentMessageComponent = messageComponentRef.current;
 
-    if (updateStatus === "loading" || !feedId || !connectionId || !currentMessageComponent) {
+    if (updateStatus === "pending" || !feedId || !connectionId || !currentMessageComponent) {
       return;
     }
 
@@ -450,7 +450,7 @@ const MessageBuilderContent: React.FC = () => {
                           </Flex>
                         </RouterLink>
                       )}
-                      {botStatus === "loading" && (
+                      {botStatus === "pending" && (
                         <Box>
                           <Loading />
                         </Box>
@@ -628,9 +628,9 @@ const MessageBuilderContent: React.FC = () => {
                               skipBrandingRef.current = true;
                               handleSave();
                             }}
-                            aria-disabled={updateStatus === "loading" || !hasAnyChanges}
+                            aria-disabled={updateStatus === "pending" || !hasAnyChanges}
                           >
-                            {updateStatus === "loading" ? "Saving..." : "Save without branding"}
+                            {updateStatus === "pending" ? "Saving..." : "Save without branding"}
                           </Button>
                           <PrimaryActionButton size="sm" onClick={() => onOpenPricingDialog()}>
                             Upgrade to save with branding
@@ -640,9 +640,9 @@ const MessageBuilderContent: React.FC = () => {
                         <PrimaryActionButton
                           size="sm"
                           onClick={handleSave}
-                          aria-disabled={updateStatus === "loading" || !hasAnyChanges}
+                          aria-disabled={updateStatus === "pending" || !hasAnyChanges}
                         >
-                          {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
+                          {updateStatus === "pending" ? "Saving Changes..." : "Save Changes"}
                         </PrimaryActionButton>
                       )}
                     </HStack>
@@ -924,7 +924,7 @@ const MessageBuilderContent: React.FC = () => {
               articles={galleryArticles}
               selectedArticleId={selectedArticleId}
               onArticleChange={setSelectedArticleId}
-              isLoadingArticles={galleryArticlesStatus === "loading"}
+              isLoadingArticles={galleryArticlesStatus === "pending"}
               feedId={feedId!}
               connectionId={connectionId!}
               userFeed={userFeed}

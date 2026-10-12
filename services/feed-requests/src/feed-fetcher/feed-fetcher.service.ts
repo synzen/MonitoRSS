@@ -15,7 +15,7 @@ import iconv from 'iconv-lite';
 import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
-import { request } from 'undici';
+import { request, interceptors, getGlobalDispatcher } from 'undici';
 import { GetFeedRequestsInputDto } from './dto';
 
 const deflatePromise = promisify(deflate);
@@ -532,7 +532,9 @@ export class FeedFetcherService {
     const r = await request(url, {
       headers: useOptions.headers,
       signal: useOptions.signal,
-      maxRedirections: 10,
+      dispatcher: getGlobalDispatcher().compose(
+        interceptors.redirect({ maxRedirections: 10 }),
+      ),
     }).finally(() => clearTimeout(timer));
 
     const contentTypes =

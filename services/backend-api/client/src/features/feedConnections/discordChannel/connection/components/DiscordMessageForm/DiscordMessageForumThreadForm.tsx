@@ -170,7 +170,7 @@ export const DiscordMessageForumThreadForm = () => {
             </Text>
           </Stack>
           <Stack gap={8} width="100%" maxW={{ md: "3xl" }} minW={{ md: "md", lg: "lg", xl: "3xl" }}>
-            {status === "loading" && (
+            {status === "pending" && (
               <Center height="100%">
                 <Spinner />
               </Center>

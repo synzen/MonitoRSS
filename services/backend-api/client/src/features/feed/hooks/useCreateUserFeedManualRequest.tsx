@@ -13,7 +13,8 @@ export const useCreateUserFeedManualRequest = () => {
     CreateUserFeedManualRequestOutput,
     ApiAdapterError,
     CreateUserManualRequestInput
-  >((details) => createUserFeedManualRequest(details), {
+  >({
+    mutationFn: (details) => createUserFeedManualRequest(details),
     onSuccess: (_, input) => {
       return queryClient.invalidateQueries({
         predicate: (query) => {

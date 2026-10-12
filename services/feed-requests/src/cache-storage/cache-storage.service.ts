@@ -94,7 +94,7 @@ export class CacheStorageService {
 
     const [newVal] = await multi.exec();
 
-    return newVal as number;
+    return newVal as unknown as number;
   }
 
   async decrement(key: string): Promise<number> {

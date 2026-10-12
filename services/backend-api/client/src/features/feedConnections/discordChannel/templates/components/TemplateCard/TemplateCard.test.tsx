@@ -96,7 +96,7 @@ describe("TemplateCard", () => {
 
     it("renders an image when thumbnail is provided", () => {
       render(<TestWrapper templates={[mockTemplateWithThumbnail]} />);
-      const img = screen.getByRole("img", { hidden: true });
+      const img = document.querySelector("img");
       expect(img).toHaveAttribute("src", "https://example.com/thumbnail.png");
     });
 
@@ -104,7 +104,7 @@ describe("TemplateCard", () => {
     // until consent; the template thumbnail must stay pre-categorized as essential.
     it("marks the thumbnail as essential so the Termly auto-blocker leaves src intact", () => {
       render(<TestWrapper templates={[mockTemplateWithThumbnail]} />);
-      const img = screen.getByRole("img", { hidden: true });
+      const img = document.querySelector("img");
       expect(img).toHaveAttribute("data-categories", "essential");
     });
   });

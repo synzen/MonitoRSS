@@ -24,9 +24,9 @@ export const useDiscordServerActiveThreads = ({ serverId, options }: Props) => {
   const { data, status, error, isFetching } = useQuery<
     GetServerActiveThreadsOutput,
     ApiAdapterError
-  >(
+  >({
     queryKey,
-    async () => {
+    queryFn: async () => {
       if (!serverId) {
         throw new Error("Missing server ID when getting server channels");
       }
@@ -36,10 +36,8 @@ export const useDiscordServerActiveThreads = ({ serverId, options }: Props) => {
         options,
       });
     },
-    {
-      enabled: !!accessData?.result.authorized && !!serverId,
-    },
-  );
+    enabled: !!accessData?.result.authorized && !!serverId,
+  });
 
   return {
     data,

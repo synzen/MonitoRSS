@@ -12,7 +12,8 @@ export const useUpdateDiscordChannelConnection = () => {
     UpdateDiscordChannelConnectionOutput,
     ApiAdapterError,
     UpdateDiscordChannelConnectionInput
-  >((details) => updateDiscordChannelConnection(details), {
+  >({
+    mutationFn: (details) => updateDiscordChannelConnection(details),
     onSuccess: (data, inputData) =>
       Promise.all([
         queryClient.invalidateQueries({

@@ -63,7 +63,7 @@ export const UserFeedDisabledAlert = () => {
             {t("pages.userFeed.manuallyDisabledDescription")}
             <Box marginTop="1rem">
               <PrimaryActionButton
-                loading={updatingStatus === "loading"}
+                loading={updatingStatus === "pending"}
                 onClick={() =>
                   onUpdateFeed({
                     disabledCode: null,

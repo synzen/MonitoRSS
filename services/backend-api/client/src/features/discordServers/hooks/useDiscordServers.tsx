@@ -3,10 +3,10 @@ import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { GetServersOutput, getServers } from "../api";
 
 export const useDiscordServers = () => {
-  const { status, error, data, refetch } = useQuery<GetServersOutput, ApiAdapterError>(
-    ["servers"],
-    async () => getServers(),
-  );
+  const { status, error, data, refetch } = useQuery<GetServersOutput, ApiAdapterError>({
+    queryKey: ["servers"],
+    queryFn: async () => getServers(),
+  });
 
   return {
     status,

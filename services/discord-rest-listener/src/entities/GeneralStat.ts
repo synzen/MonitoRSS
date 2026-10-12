@@ -1,4 +1,5 @@
-import { Entity, MikroORM, PrimaryKey, Property } from "@mikro-orm/core";
+import { MikroORM } from "@mikro-orm/core";
+import { Entity, PrimaryKey, Property } from "@mikro-orm/decorators/legacy";
 
 @Entity({
   collection: 'general_stats'

@@ -4,19 +4,17 @@ import { createSubscriptionCancel } from "../api";
 
 export const useCreateSubscriptionCancel = () => {
   const queryClient = useQueryClient();
-  const { status, mutateAsync } = useMutation<void, ApiAdapterError>(
-    () => createSubscriptionCancel(),
-    {
-      onSuccess: () =>
-        queryClient.invalidateQueries({
-          predicate(query) {
-            return query.queryKey[0] === "user-me" || query.queryKey[0] === "discord-user-me";
-          },
-          refetchType: "all",
-          type: "all",
-        }),
-    },
-  );
+  const { status, mutateAsync } = useMutation<void, ApiAdapterError>({
+    mutationFn: () => createSubscriptionCancel(),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        predicate(query) {
+          return query.queryKey[0] === "user-me" || query.queryKey[0] === "discord-user-me";
+        },
+        refetchType: "all",
+        type: "all",
+      }),
+  });
 
   return {
     status,

@@ -2,13 +2,14 @@ import { CSSProperties } from "react";
 import { HStack, Table } from "@chakra-ui/react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa6";
 import { Header, flexRender } from "@tanstack/react-table";
+import { LegacyFeatures } from "@tanstack/react-table/legacy";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDndContext } from "@dnd-kit/core";
 import { RowData } from "../types";
 
 interface SortableTableHeaderProps {
-  header: Header<RowData, unknown>;
+  header: Header<LegacyFeatures, RowData, unknown>;
   isFetching: boolean;
 }
 

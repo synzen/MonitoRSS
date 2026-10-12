@@ -101,7 +101,9 @@ describe("MongoMigrationsService Integration", { concurrency: false }, () => {
 
       await ctx.container.mongoMigrationsService.applyMigrations();
 
-      const feeds = await userFeedModel.find({}).lean();
+      const feeds = await userFeedModel
+        .find({})
+        .lean<{ title: string; slotOffsetMs?: number }[]>();
 
       for (const feed of feeds) {
         assert.ok(

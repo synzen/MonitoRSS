@@ -329,6 +329,10 @@ export const PricingDialog = ({ isOpen, onClose, onOpen, target }: Props) => {
           const targetId = focusTargetIdRef.current;
           focusTargetIdRef.current = null;
 
+          if (target === "workspace" && workspaceRegionRef.current) {
+            return workspaceRegionRef.current;
+          }
+
           return (targetId ? document.getElementById(targetId) : null) ?? headingRef.current;
         }}
       >

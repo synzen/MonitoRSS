@@ -94,7 +94,7 @@ const ArticlesSection = ({ externalProperties, articleId }: Props & { articleId?
 
   const article = data?.result.articles[0] as Record<string, string> | undefined;
 
-  if (status === "loading" || !data) {
+  if (status === "pending" || !data) {
     return (
       <Center flexDir="column" gap={2} bg="bg.subtle" rounded="lg" p={4}>
         <Spinner />

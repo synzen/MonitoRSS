@@ -225,7 +225,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
     });
   };
 
-  if (feedStatus === "loading") {
+  if (feedStatus === "pending") {
     return (
       <Center>
         <Loading size="xl" />
@@ -397,7 +397,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                                             size="sm"
                                             aria-label="Delete user"
                                             variant="ghost"
-                                            disabled={deletingInviteStatus === "loading"}
+                                            disabled={deletingInviteStatus === "pending"}
                                           >
                                             <FaTrash />
                                           </IconButton>
@@ -426,7 +426,7 @@ export const UserFeedMiscSettingsTabSection = ({ feedId }: Props) => {
                         <Button
                           aria-disabled={
                             !feed?.connections.length ||
-                            creatingInvitesStatus === "loading" ||
+                            creatingInvitesStatus === "pending" ||
                             !!feed?.sharedAccessDetails?.inviteId
                           }
                           width="min-content"

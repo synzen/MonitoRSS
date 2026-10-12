@@ -227,7 +227,7 @@ export const usePricingData = ({ isOpen }: UsePricingDataOptions) => {
     products,
     interval,
     changeInterval,
-    isLoading: isLoading || userStatus === "loading",
+    isLoading: isLoading || userStatus === "pending",
     isLoadingAdditionalFeedsChange,
     hasError: hasError || !!userError,
     userError,

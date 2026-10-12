@@ -44,7 +44,7 @@ const FeedManagementInviteRow = ({
   const { createErrorAlert, createSuccessAlert } = usePageAlertContext();
 
   const onAccept = async () => {
-    if (status === "loading") {
+    if (status === "pending") {
       return;
     }
 
@@ -73,7 +73,7 @@ const FeedManagementInviteRow = ({
   };
 
   const onDecline = async () => {
-    if (status === "loading") {
+    if (status === "pending") {
       return;
     }
 
@@ -170,7 +170,7 @@ export const FeedManagementInvitesDialog = ({ trigger }: Props) => {
                   description={error.message}
                 />
               )}
-              {status === "loading" && (
+              {status === "pending" && (
                 <Center>
                   <Spinner />
                 </Center>

@@ -30,7 +30,8 @@ export const useUpdateWorkspaceBilling = () => {
     { deferred?: boolean; nextBillDate?: string | null } | void,
     ApiAdapterError,
     { workspaceSlug: string; prices: Array<{ priceId: string; quantity: number }> }
-  >((input) => updateWorkspaceBilling(input), {
+  >({
+    mutationFn: (input) => updateWorkspaceBilling(input),
     onSuccess: invalidate,
   });
 };
@@ -38,42 +39,36 @@ export const useUpdateWorkspaceBilling = () => {
 export const useCancelWorkspaceBilling = () => {
   const invalidate = useInvalidateWorkspace();
 
-  return useMutation<void, ApiAdapterError, { workspaceSlug: string }>(
-    ({ workspaceSlug }) => cancelWorkspaceBilling(workspaceSlug),
-    {
-      onSuccess: invalidate,
-    },
-  );
+  return useMutation<void, ApiAdapterError, { workspaceSlug: string }>({
+    mutationFn: ({ workspaceSlug }) => cancelWorkspaceBilling(workspaceSlug),
+    onSuccess: invalidate,
+  });
 };
 
 export const useResumeWorkspaceBilling = () => {
   const invalidate = useInvalidateWorkspace();
 
-  return useMutation<void, ApiAdapterError, { workspaceSlug: string }>(
-    ({ workspaceSlug }) => resumeWorkspaceBilling(workspaceSlug),
-    {
-      onSuccess: invalidate,
-    },
-  );
+  return useMutation<void, ApiAdapterError, { workspaceSlug: string }>({
+    mutationFn: ({ workspaceSlug }) => resumeWorkspaceBilling(workspaceSlug),
+    onSuccess: invalidate,
+  });
 };
 
 export const useConvertWorkspaceBilling = () => {
   const invalidate = useInvalidateWorkspace();
   const queryClient = useQueryClient();
 
-  return useMutation<void, ApiAdapterError, { workspaceSlug: string; feedIds: string[] }>(
-    (input) => convertWorkspaceBilling(input),
-    {
-      onSuccess: async () => {
-        await invalidate();
-        // Conversion re-homes the chosen feeds onto the workspace; the feed
-        // list is cached per scope, so the workspace feeds page would otherwise
-        // keep showing its stale (empty) cache. Invalidate every user-feeds
-        // query (personal loses the feeds, workspace gains them).
-        await queryClient.invalidateQueries({ queryKey: ["user-feeds"] });
-      },
+  return useMutation<void, ApiAdapterError, { workspaceSlug: string; feedIds: string[] }>({
+    mutationFn: (input) => convertWorkspaceBilling(input),
+    onSuccess: async () => {
+      await invalidate();
+      // Conversion re-homes the chosen feeds onto the workspace; the feed
+      // list is cached per scope, so the workspace feeds page would otherwise
+      // keep showing its stale (empty) cache. Invalidate every user-feeds
+      // query (personal loses the feeds, workspace gains them).
+      await queryClient.invalidateQueries({ queryKey: ["user-feeds"] });
     },
-  );
+  });
 };
 
 export const useUpdateWorkspaceBillingEmail = () => {
@@ -83,7 +78,8 @@ export const useUpdateWorkspaceBillingEmail = () => {
     { data: { billingEmail: string } },
     ApiAdapterError,
     { workspaceSlug: string; email: string }
-  >((input) => updateWorkspaceBillingEmail(input), {
+  >({
+    mutationFn: (input) => updateWorkspaceBillingEmail(input),
     onSuccess: invalidate,
   });
 };
@@ -95,14 +91,12 @@ export const useWorkspaceUpdatePaymentMethodTransaction = (workspaceSlug: string
   const { error, fetchStatus, refetch } = useQuery<
     WorkspaceUpdatePaymentMethodOutput,
     ApiAdapterError
-  >(
-    ["workspace-update-payment-method-transaction", workspaceSlug],
-    async () => getWorkspaceUpdatePaymentMethodTransaction(workspaceSlug),
-    {
-      cacheTime: 0,
-      enabled: false,
-    },
-  );
+  >({
+    queryKey: ["workspace-update-payment-method-transaction", workspaceSlug],
+    queryFn: async () => getWorkspaceUpdatePaymentMethodTransaction(workspaceSlug),
+    gcTime: 0,
+    enabled: false,
+  });
 
   return { error, fetchStatus, refetch };
 };
@@ -119,19 +113,17 @@ export const useWorkspaceBillingChangePreview = ({
   const { data, status, error } = useQuery<
     WorkspaceBillingChangePreviewOutput,
     ApiAdapterError | Error
-  >(
-    ["workspace-billing-preview", { workspaceSlug, prices }],
-    async () => {
+  >({
+    queryKey: ["workspace-billing-preview", { workspaceSlug, prices }],
+    queryFn: async () => {
       if (!workspaceSlug || !prices?.length) {
         throw new Error("Missing workspace billing preview input");
       }
 
       return previewWorkspaceBillingChange({ workspaceSlug, prices });
     },
-    {
-      enabled: !!enabled && !!workspaceSlug && !!prices?.length,
-    },
-  );
+    enabled: !!enabled && !!workspaceSlug && !!prices?.length,
+  });
 
   return {
     preview: data?.data,

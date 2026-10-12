@@ -18,22 +18,31 @@ describe('FeedFetcherService', () => {
   const url = new URL(feedUrl);
   const feedFilePath = path.join(__dirname, '..', 'test', 'data', 'feed.xml');
   const feedXml = readFileSync(feedFilePath, 'utf8');
-  const requestRepo: EntityRepository<Request> = {
+  const requestRepo: {
+    persistAndFlush: jest.Mock;
+    persist: jest.Mock;
+    findOne: jest.Mock;
+  } = {
     persistAndFlush: jest.fn(),
     persist: jest.fn(),
     findOne: jest.fn(),
-  } as never;
-  const responseRepo: EntityRepository<Response> = {
+  };
+  const responseRepo: { persistAndFlush: jest.Mock; persist: jest.Mock } = {
     persistAndFlush: jest.fn(),
     persist: jest.fn(),
-  } as never;
+  };
 
   beforeEach(async () => {
     configService = {
       get: jest.fn(),
       getOrThrow: jest.fn(),
     } as never;
-    service = new FeedFetcherService(requestRepo, responseRepo, configService);
+    service = new FeedFetcherService(
+      configService,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
     service.defaultUserAgent = defaultUserAgent;
   });
 

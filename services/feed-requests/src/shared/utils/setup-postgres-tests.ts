@@ -1,9 +1,11 @@
 import 'reflect-metadata';
 import { EntityName, MikroOrmModule } from '@mikro-orm/nestjs';
+import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy';
 import { ModuleMetadata } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import type { TestingModule } from '@nestjs/testing';
 import { MikroORM } from '@mikro-orm/core';
+import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { randomUUID } from 'crypto';
 import { SqlEntityManager } from '@mikro-orm/postgresql';
 import config from '../../config';
@@ -37,10 +39,11 @@ export async function setupPostgresTests(
       }),
       MikroOrmModule.forFeature(options?.models || []),
       MikroOrmModule.forRoot({
+        driver: PostgreSqlDriver,
+        metadataProvider: ReflectMetadataProvider,
         entities: ['dist/**/*.entity.js'],
         entitiesTs: ['src/**/*.entity.ts'],
         clientUrl: configVals.FEED_REQUESTS_POSTGRES_URI,
-        type: 'postgresql',
         forceUtcTimezone: true,
         timezone: 'UTC',
         schema: postgresSchema,
@@ -52,10 +55,10 @@ export async function setupPostgresTests(
   const init = async () => {
     testingModule = await uncompiledModule.compile();
     orm = testingModule.get(MikroORM);
-    const generator = orm.getSchemaGenerator();
+    const generator = orm.schema;
     await generator.ensureDatabase();
-    await generator.dropSchema();
-    await generator.createSchema();
+    await generator.drop();
+    await generator.create();
 
     return {
       module: testingModule,
@@ -69,16 +72,16 @@ export async function setupPostgresTests(
 }
 
 export async function clearDatabase() {
-  const generator = orm?.getSchemaGenerator();
+  const generator = orm?.schema;
   await generator.ensureDatabase();
-  await generator.dropSchema();
-  await generator.createSchema();
+  await generator.drop();
+  await generator.create();
 }
 
 export async function teardownPostgresTests() {
   if (orm) {
-    const generator = orm.getSchemaGenerator();
-    await generator.dropSchema();
+    const generator = orm.schema;
+    await generator.drop();
     // const typedEm = orm.em as SqlEntityManager;
     await orm.em.transactional(async (em) => {
       await (em as SqlEntityManager).execute(

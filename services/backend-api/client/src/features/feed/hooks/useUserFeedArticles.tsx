@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { getUserFeedArticles, GetUserFeedArticlesInput, GetUserFeedArticlesOutput } from "../api";
 import { DiscordFormatOptions } from "@/types/discord/DiscordFormatOptions";
@@ -34,9 +35,9 @@ export const useUserFeedArticles = ({
     GetUserFeedArticlesOutput,
     ApiAdapterError | Error,
     GetUserFeedArticlesOutput
-  >(
+  >({
     queryKey,
-    async () => {
+    queryFn: async () => {
       if (!feedId) {
         throw new Error("Feed ID is required to fetch feed articles");
       }
@@ -62,13 +63,16 @@ export const useUserFeedArticles = ({
         },
       });
     },
-    {
-      enabled: !!feedId && !!inputData.selectProperties?.length && !disabled,
-      onSuccess,
-      keepPreviousData: true,
-      staleTime: 1000 * 60 * 5, // 5 minutes
-    },
-  );
+    enabled: !!feedId && !!inputData.selectProperties?.length && !disabled,
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  useEffect(() => {
+    if (data) {
+      onSuccess?.(data);
+    }
+  }, [data]);
 
   return {
     data,

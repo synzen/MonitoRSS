@@ -10,14 +10,14 @@ export const useSubscriptionChangePreview = (input: Partial<GetSubscriptionChang
   const { data, status, error, fetchStatus } = useQuery<
     GetSubscriptionChangePreviewOutput,
     ApiAdapterError
-  >(
-    [
+  >({
+    queryKey: [
       "subscription-change-preview",
       {
         input,
       },
     ],
-    async () => {
+    queryFn: async () => {
       if (!input.data) {
         throw new Error("Missing data when fetching subscription change preview");
       }
@@ -26,11 +26,9 @@ export const useSubscriptionChangePreview = (input: Partial<GetSubscriptionChang
         data: input.data,
       });
     },
-    {
-      enabled: !!input.data,
-      cacheTime: 0,
-    },
-  );
+    enabled: !!input.data,
+    gcTime: 0,
+  });
 
   return {
     data,

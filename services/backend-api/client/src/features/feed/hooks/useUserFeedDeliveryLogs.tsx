@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import {
   GetUserFeedDeliveryLogsInput,
@@ -23,9 +23,9 @@ export const useUserFeedDeliveryLogs = ({ feedId, data: inputData }: Props) => {
   const { data, status, error, fetchStatus } = useQuery<
     GetUserFeedDeliveryLogsOutput,
     ApiAdapterError | Error
-  >(
+  >({
     queryKey,
-    async () => {
+    queryFn: async () => {
       if (!feedId) {
         throw new Error("Feed ID is required to fetch feed articles");
       }
@@ -35,12 +35,10 @@ export const useUserFeedDeliveryLogs = ({ feedId, data: inputData }: Props) => {
         data: inputData,
       });
     },
-    {
-      enabled: !!feedId,
-      keepPreviousData: true,
-      refetchOnWindowFocus: true,
-    },
-  );
+    enabled: !!feedId,
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: true,
+  });
 
   return {
     data,

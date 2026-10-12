@@ -12,13 +12,12 @@ export const useUserMe = (props?: Props) => {
   const checkForSubscriptionCreated = props?.checkForSubscriptionCreated;
 
   const { refetch, data, error, status, fetchStatus } = useQuery<GetUserMeOutput, ApiAdapterError>(
-    ["user-me"],
-    async () => getUserMe(),
     {
-      refetchInterval: (fetchedResult) => {
+      queryKey: ["user-me"],
+      queryFn: async () => getUserMe(),
+      refetchInterval: (query) => {
         if (checkForSubscriptionCreated) {
-          if (fetchedResult?.result.subscription.product.key === ProductKey.Free) {
-            // Keep checking until it's not free
+          if (query.state.data?.result.subscription.product.key === ProductKey.Free) {
             return 1000;
           }
 

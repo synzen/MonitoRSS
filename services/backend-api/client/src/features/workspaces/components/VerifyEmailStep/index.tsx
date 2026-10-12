@@ -139,7 +139,7 @@ export const VerifyEmailStep = ({
   const trimmedCode = code.trim();
   const emailValid = EMAIL_REGEX.test(trimmedEmail);
   const codeValid = CODE_REGEX.test(trimmedCode);
-  const isConfirming = confirmStatus === "loading";
+  const isConfirming = confirmStatus === "pending";
   const inCooldown = cooldownRemaining > 0;
 
   // Drives the visible countdown. Decrements once a second while active; the tick

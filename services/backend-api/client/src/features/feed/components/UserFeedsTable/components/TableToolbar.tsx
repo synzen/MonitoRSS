@@ -19,7 +19,7 @@ import {
   FaTableColumns,
 } from "react-icons/fa6";
 import { useTranslation } from "react-i18next";
-import { VisibilityState } from "@tanstack/react-table";
+import { ColumnVisibilityState } from "@tanstack/react-table";
 import { UserFeedComputedStatus } from "../../../types";
 import { UserFeedStatusTag } from "../UserFeedStatusTag";
 import { SHARED_WITH_ME_COLUMN_ID, STATUS_FILTERS, TOGGLEABLE_COLUMNS } from "../constants";
@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/menu";
 
 interface TableToolbarProps {
-  searchInputRef?: React.RefObject<HTMLInputElement>;
+  searchInputRef?: React.RefObject<HTMLInputElement | null>;
   searchInput: string;
   onSearchInputChange: (value: string) => void;
   onSearchSubmit: () => void;
@@ -42,9 +42,9 @@ interface TableToolbarProps {
   isFetching: boolean;
   statusFilters: UserFeedComputedStatus[];
   onStatusSelect: (statuses: UserFeedComputedStatus[]) => void;
-  columnVisibility: VisibilityState;
+  columnVisibility: ColumnVisibilityState;
   onColumnVisibilityChange: (
-    visibility: VisibilityState | ((prev: VisibilityState) => VisibilityState),
+    visibility: ColumnVisibilityState | ((prev: ColumnVisibilityState) => ColumnVisibilityState),
   ) => void;
   isCompact: boolean;
   onCompactChange: (isCompact: boolean) => void;

@@ -125,8 +125,8 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
                     data: property,
                   })) || []
                 }
-                isDisabled={feedArticlePropertiesStatus === "loading"}
-                loading={feedArticlePropertiesStatus === "loading"}
+                isDisabled={feedArticlePropertiesStatus === "pending"}
+                loading={feedArticlePropertiesStatus === "pending"}
                 value={useArticleProperty}
                 onChange={(value: string) => onChangeFeedArticleProperty(value)}
                 isInvalid={false}
@@ -141,7 +141,7 @@ export const ArticleFilterResults = ({ title, filters, tableContainer }: Props) 
       </Flex>
       <Box>
         {alertComponent}
-        {userFeedArticlesStatus === "loading" && (
+        {userFeedArticlesStatus === "pending" && (
           <Stack alignItems="center" mb={4}>
             <Spinner />
             <Text>Loading articles...</Text>

@@ -47,17 +47,17 @@ export class SupporterMongooseRepository
   protected toEntity(doc: SupporterDoc & { _id: string }): ISupporter {
     return {
       id: doc._id,
-      patron: doc.patron,
-      stripe: doc.stripe,
-      webhook: doc.webhook,
-      maxGuilds: doc.maxGuilds,
-      maxFeeds: doc.maxFeeds,
-      maxUserFeeds: doc.maxUserFeeds,
-      allowCustomPlaceholders: doc.allowCustomPlaceholders,
+      patron: doc.patron ?? undefined,
+      stripe: doc.stripe ?? undefined,
+      webhook: doc.webhook ?? undefined,
+      maxGuilds: doc.maxGuilds ?? undefined,
+      maxFeeds: doc.maxFeeds ?? undefined,
+      maxUserFeeds: doc.maxUserFeeds ?? undefined,
+      allowCustomPlaceholders: doc.allowCustomPlaceholders ?? undefined,
       guilds: doc.guilds,
-      expireAt: doc.expireAt,
-      paddleCustomer: doc.paddleCustomer,
-      slowRate: doc.slowRate,
+      expireAt: doc.expireAt ?? undefined,
+      paddleCustomer: doc.paddleCustomer ?? undefined,
+      slowRate: doc.slowRate ?? undefined,
     };
   }
 

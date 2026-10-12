@@ -8,17 +8,15 @@ interface Input {
 }
 
 export const useDiscordUser = (inputData: Input) => {
-  const { data, status, error, isFetching } = useQuery<GetDiscordUserOutput, ApiAdapterError>(
-    ["discord-user", inputData],
-    async () => {
+  const { data, status, error, isFetching } = useQuery<GetDiscordUserOutput, ApiAdapterError>({
+    queryKey: ["discord-user", inputData],
+    queryFn: async () => {
       return getDiscordUser({
         userId: inputData.userId,
       });
     },
-    {
-      enabled: !inputData.disabled,
-    },
-  );
+    enabled: !inputData.disabled,
+  });
 
   return {
     data,

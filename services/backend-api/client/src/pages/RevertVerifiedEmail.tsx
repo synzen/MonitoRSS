@@ -73,7 +73,7 @@ export const RevertVerifiedEmail = () => {
         )}
         <PrimaryActionButton
           onClick={onRevert}
-          loading={status === "loading"}
+          loading={status === "pending"}
           loadingText="Reverting"
         >
           Revert this change

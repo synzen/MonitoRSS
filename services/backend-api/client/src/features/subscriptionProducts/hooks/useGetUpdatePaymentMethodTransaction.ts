@@ -10,8 +10,10 @@ export const useGetUpdatePaymentMethodTransaction = ({ enabled }: Props) => {
   const { data, status, error, fetchStatus, refetch } = useQuery<
     GetUpdatePaymentMethodTransactionOutput,
     ApiAdapterError
-  >(["update-payment-method-transaction"], async () => getUpdatePaymentMethodTransaction(), {
-    cacheTime: 0,
+  >({
+    queryKey: ["update-payment-method-transaction"],
+    queryFn: async () => getUpdatePaymentMethodTransaction(),
+    gcTime: 0,
     enabled,
   });
 

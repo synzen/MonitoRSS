@@ -9,7 +9,8 @@ export const useRevokeWorkspaceInvite = () => {
     void,
     ApiAdapterError,
     RevokeWorkspaceInviteInput
-  >((input) => revokeWorkspaceInvite(input), {
+  >({
+    mutationFn: (input) => revokeWorkspaceInvite(input),
     onSuccess: (_data, { workspaceSlug }) => {
       queryClient.invalidateQueries({ queryKey: ["workspace-invites-list", { workspaceSlug }] });
     },

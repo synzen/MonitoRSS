@@ -7,7 +7,7 @@ import {
 } from "../api";
 
 export const useSendTestArticleDirect = () => {
-  return useMutation<SendTestArticleDirectOutput, ApiAdapterError, SendTestArticleDirectInput>(
-    (input) => sendTestArticleDirect(input),
-  );
+  return useMutation<SendTestArticleDirectOutput, ApiAdapterError, SendTestArticleDirectInput>({
+    mutationFn: (input) => sendTestArticleDirect(input),
+  });
 };

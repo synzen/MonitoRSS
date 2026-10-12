@@ -12,12 +12,11 @@ export const useUpdateUserFeedManagementInviteStatus = () => {
     void,
     ApiAdapterError,
     UpdateUserFeedManagementInviteStatusInput
-  >(
-    async (details) => {
+  >({
+    mutationFn: async (details) => {
       await updateUserFeedManagementInviteStatus(details);
     },
-    {
-      onSuccess: () => {
+    onSuccess: () => {
         return queryClient.invalidateQueries({
           predicate: (query) => {
             return (
@@ -28,8 +27,7 @@ export const useUpdateUserFeedManagementInviteStatus = () => {
           },
         });
       },
-    },
-  );
+  });
 
   return {
     mutateAsync,

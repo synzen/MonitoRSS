@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { CreatePreviewResult, FeedConnectionType } from "@/types";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import {
@@ -29,18 +29,16 @@ export const useCreateConnectionPreview = (
   const { status, data, fetchStatus, error } = useQuery<
     CreateConnectionPreviewOutput,
     ApiAdapterError
-  >(
-    ["connection-preview", { type, inputData }],
-    () => {
+  >({
+    queryKey: ["connection-preview", { type, inputData }],
+    queryFn: () => {
       const method = methodsByType[type];
 
       return method(inputData.data);
     },
-    {
-      enabled: inputData.enabled,
-      keepPreviousData: true,
-    },
-  );
+    enabled: inputData.enabled,
+    placeholderData: keepPreviousData,
+  });
 
   return {
     data,

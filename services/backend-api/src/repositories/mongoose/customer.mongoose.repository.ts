@@ -66,7 +66,7 @@ export class CustomerMongooseRepository
     return {
       id: this.objectIdToString(doc._id),
       connections: doc.connections,
-      expireAt: doc.expireAt,
+      expireAt: doc.expireAt ?? undefined,
     };
   }
 }

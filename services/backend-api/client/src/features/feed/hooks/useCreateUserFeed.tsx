@@ -11,21 +11,19 @@ export const useCreateUserFeed = () => {
     CreateUserFeedOutput,
     ApiAdapterError,
     CreateUserFeedInput
-  >(
+  >({
     // In workspace scope, new feeds are created under the workspace.
-    (input) =>
+    mutationFn: (input) =>
       createUserFeed({
         details: { ...input.details, workspaceId: input.details.workspaceId ?? workspaceId },
       }),
-    {
-      onSuccess: () => {
+    onSuccess: () => {
         queryClient.invalidateQueries({
           queryKey: ["user-feeds"],
           exact: false,
         });
       },
-    },
-  );
+  });
 
   return {
     mutateAsync,

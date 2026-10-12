@@ -44,14 +44,14 @@ export class PatronMongooseRepository
   protected toEntity(doc: PatronDoc & { _id: string }): IPatron {
     return {
       id: doc._id,
-      statusOverride: doc.statusOverride,
+      statusOverride: doc.statusOverride ?? undefined,
       status: doc.status,
-      lastCharge: doc.lastCharge,
+      lastCharge: doc.lastCharge ?? undefined,
       pledgeLifetime: doc.pledgeLifetime,
-      pledgeOverride: doc.pledgeOverride,
+      pledgeOverride: doc.pledgeOverride ?? undefined,
       pledge: doc.pledge,
       name: doc.name,
-      discord: doc.discord,
+      discord: doc.discord ?? undefined,
       email: doc.email,
     };
   }

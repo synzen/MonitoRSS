@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -101,7 +101,7 @@ describe("WorkspaceScopeLayout", () => {
 
   it("keeps the header mounted and announces loading while the workspace is loading", () => {
     vi.mocked(useWorkspace).mockReturnValue({
-      status: "loading",
+      status: "pending",
       workspace: undefined,
       error: null,
     } as never);

@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { InfiniteData, keepPreviousData, QueryKey, useInfiniteQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getUserFeeds, GetUserFeedsInput, GetUserFeedsOutput } from "../api";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
@@ -43,9 +43,15 @@ export const useUserFeedsInfinite = (
     hasNextPage,
     isFetchedAfterMount,
     fetchStatus,
-  } = useInfiniteQuery<GetUserFeedsOutput, ApiAdapterError>(
+  } = useInfiniteQuery<
+    GetUserFeedsOutput,
+    ApiAdapterError,
+    InfiniteData<GetUserFeedsOutput>,
+    QueryKey,
+    number | undefined
+  >({
     queryKey,
-    async ({ pageParam: newOffset }) => {
+    queryFn: async ({ pageParam: newOffset }) => {
       const result = await getUserFeeds({
         ...input,
         workspaceId: scopedWorkspaceId,
@@ -55,20 +61,19 @@ export const useUserFeedsInfinite = (
 
       return result;
     },
-    {
-      enabled: !opts?.disabled,
-      keepPreviousData: true,
-      refetchOnWindowFocus: false,
-      // Returns the next offset
-      getNextPageParam: (lastPage, allPages) => {
-        if (lastPage.results.length < useLimit) {
-          return undefined;
-        }
+    enabled: !opts?.disabled,
+    initialPageParam: undefined,
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
+    // Returns the next offset
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.results.length < useLimit) {
+        return undefined;
+      }
 
-        return allPages.length * useLimit;
-      },
+      return allPages.length * useLimit;
     },
-  );
+  });
 
   return {
     data,

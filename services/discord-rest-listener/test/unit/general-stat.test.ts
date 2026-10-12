@@ -1,6 +1,8 @@
+import "reflect-metadata"
 import { describe, it, before, beforeEach, after } from "node:test"
 import assert from "node:assert/strict"
 import { MikroORM } from "@mikro-orm/mongodb"
+import { ReflectMetadataProvider } from "@mikro-orm/decorators/legacy"
 import GeneralStat from "../../src/entities/GeneralStat"
 import { setupTestEnvironment, type TestEnvironment } from "../helpers/setup-integration-tests"
 
@@ -12,6 +14,7 @@ describe("GeneralStat", () => {
     env = setupTestEnvironment()
     orm = await MikroORM.init({
       entities: [GeneralStat],
+      metadataProvider: ReflectMetadataProvider,
       clientUrl: env.config.databaseURI,
       allowGlobalContext: true,
     })

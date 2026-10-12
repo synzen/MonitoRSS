@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { InfiniteData, keepPreviousData, QueryKey, useInfiniteQuery } from "@tanstack/react-query";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import {
   GetDeliveryPreviewInput,
@@ -22,9 +22,15 @@ export const useDeliveryPreview = ({ feedId, data: inputData, disabled }: Props)
   ];
 
   const { data, status, error, fetchStatus, refetch, dataUpdatedAt, fetchNextPage, hasNextPage } =
-    useInfiniteQuery<GetDeliveryPreviewOutput, ApiAdapterError | Error>(
+    useInfiniteQuery<
+      GetDeliveryPreviewOutput,
+      ApiAdapterError | Error,
+      InfiniteData<GetDeliveryPreviewOutput>,
+      QueryKey,
+      number
+    >({
       queryKey,
-      async ({ pageParam: skip }) => {
+      queryFn: async ({ pageParam: skip }) => {
         if (!feedId) {
           throw new Error("Feed ID is required to fetch delivery preview");
         }
@@ -33,23 +39,22 @@ export const useDeliveryPreview = ({ feedId, data: inputData, disabled }: Props)
           feedId,
           data: {
             ...inputData,
-            skip,
+            skip: skip ?? 0,
           },
         });
       },
-      {
-        enabled: !!feedId && !disabled,
-        keepPreviousData: true,
-        refetchOnWindowFocus: false,
-        getNextPageParam: (lastPage, allPages) => {
-          if (lastPage.result.results.length < inputData.limit) {
-            return undefined;
-          }
+      enabled: !!feedId && !disabled,
+      initialPageParam: 0,
+      placeholderData: keepPreviousData,
+      refetchOnWindowFocus: false,
+      getNextPageParam: (lastPage, allPages) => {
+        if (lastPage.result.results.length < inputData.limit) {
+          return undefined;
+        }
 
-          return allPages.length * inputData.limit;
-        },
+        return allPages.length * inputData.limit;
       },
-    );
+    });
 
   return {
     data,

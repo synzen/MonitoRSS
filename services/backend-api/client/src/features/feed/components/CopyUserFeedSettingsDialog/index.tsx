@@ -198,7 +198,7 @@ export const CopyUserFeedSettingsDialog = ({
           ? targetSelection.total - excludedFeeds.length
           : targetSelection.selectedFeeds.length;
 
-      if (checkedSettings.length === 0 || effectiveTotal <= 0 || status === "loading" || !feed) {
+      if (checkedSettings.length === 0 || effectiveTotal <= 0 || status === "pending" || !feed) {
         return;
       }
 

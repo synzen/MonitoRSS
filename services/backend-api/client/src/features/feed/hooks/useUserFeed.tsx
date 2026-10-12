@@ -19,9 +19,9 @@ export const useUserFeed = ({ feedId }: Props) => {
   const { data, status, error, refetch, fetchStatus } = useQuery<
     GetUserFeedOutput,
     ApiAdapterError | Error
-  >(
+  >({
     queryKey,
-    async () => {
+    queryFn: async () => {
       if (!feedId) {
         throw new Error("Missing feed selection");
       }
@@ -30,10 +30,8 @@ export const useUserFeed = ({ feedId }: Props) => {
         feedId,
       });
     },
-    {
-      enabled: !!feedId,
-    },
-  );
+    enabled: !!feedId,
+  });
 
   const updateCache = (details: Partial<Feed>) => {
     if (!data) {

@@ -9,6 +9,8 @@ Object.assign(globalThis, {
 });
 
 import { MikroORM } from '@mikro-orm/core';
+import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy';
+import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
 import { RequestStatus } from './constants';
@@ -64,10 +66,11 @@ describe('FeedFetcherListenerService (Integration)', () => {
     await adminClient.end();
 
     orm = await MikroORM.init({
+      driver: PostgreSqlDriver,
+      metadataProvider: ReflectMetadataProvider,
       entities: ['dist/**/*.entity.js'],
       entitiesTs: ['src/**/*.entity.ts'],
       clientUrl: testDbUrl.toString(),
-      type: 'postgresql',
       forceUtcTimezone: true,
       timezone: 'UTC',
       allowGlobalContext: true,

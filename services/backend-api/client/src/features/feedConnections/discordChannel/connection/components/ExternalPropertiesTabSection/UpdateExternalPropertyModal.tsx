@@ -37,7 +37,7 @@ import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 
 interface Props {
   defaultValue: string;
-  trigger: React.ReactElement;
+  trigger: React.ReactElement<any>;
   onSubmitted: (data: { sourceField: string }) => void;
 }
 

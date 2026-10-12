@@ -19,6 +19,8 @@ import { MentionResolvers } from "../../contexts/MentionDataContext";
 dayjs.extend(relativeTime);
 dayjs.extend(localizedFormat);
 
+const DiscordHeader = "discord-header" as unknown as React.ElementType;
+
 const MessageTimestamp = (
   {
     compactMode,
@@ -89,14 +91,14 @@ const CozyMessageHeader = ({
   }
 
   return (
-    <discord-header style={{ lineHeight: "16px" }}>
+    <DiscordHeader style={{ lineHeight: "16px" }}>
       <span className="username-wrapper v-btm">
         <strong className="user-name">{username}</strong>
         <span className="bot-tag">BOT</span>
       </span>
       <span className="highlight-separator"> - </span>
       <MessageTimestamp compactMode={compactMode} />
-    </discord-header>
+    </DiscordHeader>
   );
 };
 

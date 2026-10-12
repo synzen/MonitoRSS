@@ -38,7 +38,7 @@ export const DiscordServerSearchSelectv2: React.FC<Props> = ({
   });
   const { data: discordBot } = useDiscordBot();
 
-  const loading = status === "loading";
+  const loading = status === "pending";
 
   const [showLoadingAlert, setShowLoadingAlert] = useState(false);
 

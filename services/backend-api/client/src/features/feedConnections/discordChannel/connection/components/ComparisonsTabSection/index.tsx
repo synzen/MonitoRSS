@@ -230,7 +230,7 @@ export const ComparisonsTabSection = ({
             <Separator my={2} />
             <AddComparisonSelect
               isDisabled={status !== "success"}
-              isLoading={status === "loading" || fetchStatus === "fetching"}
+              isLoading={status === "pending" || fetchStatus === "fetching"}
               onChange={onAddPassingComparison}
               properties={passingComaprisonsToAdd}
               formLabel="Add a new passing comparison"
@@ -280,7 +280,7 @@ export const ComparisonsTabSection = ({
             <Separator my={2} />
             <AddComparisonSelect
               isDisabled={status !== "success"}
-              isLoading={status === "loading" || fetchStatus === "fetching"}
+              isLoading={status === "pending" || fetchStatus === "fetching"}
               onChange={onAddBlockingComparison}
               properties={blockingComparisonsToAdd}
               formLabel="Add a new blocking comparison"
@@ -324,7 +324,7 @@ export const ComparisonsTabSection = ({
             />
           </Flex>
           {fetchErrorAlert || parseErrorAlert || noArticlesAlert}
-          {userFeedArticlesStatus === "loading" && (
+          {userFeedArticlesStatus === "pending" && (
             <Stack borderRadius="lg" bg="bg.panel" padding={4} alignItems="center">
               <Spinner size="md" />
               <Text>Loading article...</Text>

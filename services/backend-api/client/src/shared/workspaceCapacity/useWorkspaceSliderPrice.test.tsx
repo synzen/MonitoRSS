@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { renderHook } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { ProductKey } from "@/constants";

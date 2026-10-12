@@ -1,4 +1,5 @@
 import { MikroORM } from "@mikro-orm/mongodb"
+import { ReflectMetadataProvider } from "@mikro-orm/decorators/legacy"
 import DeliveryRecord from "../entities/DeliveryRecord"
 import Feed from "../entities/Feed"
 import GeneralStat from "../entities/GeneralStat"
@@ -22,6 +23,7 @@ async function setup (config: ConfigType) {
   log.info('Connecting to Mongo')
   const orm = await MikroORM.init({
     entities: [DeliveryRecord, GeneralStat, Feed, Profile],
+    metadataProvider: ReflectMetadataProvider,
     clientUrl: config.databaseURI,
     ensureIndexes: true,
     allowGlobalContext: true,

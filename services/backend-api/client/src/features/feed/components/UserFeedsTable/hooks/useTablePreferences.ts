@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { SortingState, VisibilityState } from "@tanstack/react-table";
+import { SortingState, ColumnVisibilityState } from "@tanstack/react-table";
 import { useUserMe, useUpdateUserMe } from "../../../../discordUser/hooks";
 import {
   DEFAULT_COLUMN_ORDER,
@@ -45,7 +45,7 @@ export function useTablePreferences(): TablePreferences &
   });
 
   // Column visibility state
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>(
     DEFAULT_COLUMN_VISIBILITY,
   );
 

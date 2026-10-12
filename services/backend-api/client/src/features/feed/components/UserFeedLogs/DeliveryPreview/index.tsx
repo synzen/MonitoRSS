@@ -282,7 +282,7 @@ export const DeliveryPreview = () => {
 
   const activeConnections = userFeed.connections.filter((c) => !c.disabledCode);
   const hasNoConnections = activeConnections.length === 0;
-  const isLoading = status === "loading";
+  const isLoading = status === "pending";
   const isFetching = fetchStatus === "fetching";
 
   const formatLastChecked = () => {
