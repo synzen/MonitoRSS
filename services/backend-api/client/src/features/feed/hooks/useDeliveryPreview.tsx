@@ -1,4 +1,11 @@
-import { InfiniteData, keepPreviousData, QueryKey, useInfiniteQuery } from "@tanstack/react-query";
+import {
+  InfiniteData,
+  keepPreviousData,
+  QueryKey,
+  useInfiniteQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useEffect } from "react";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import {
   GetDeliveryPreviewInput,
@@ -13,6 +20,7 @@ interface Props {
 }
 
 export const useDeliveryPreview = ({ feedId, data: inputData, disabled }: Props) => {
+  const queryClient = useQueryClient();
   const queryKey = [
     "delivery-preview",
     {
@@ -55,6 +63,21 @@ export const useDeliveryPreview = ({ feedId, data: inputData, disabled }: Props)
         return allPages.length * inputData.limit;
       },
     });
+
+  useEffect(() => {
+    if (status === "success") {
+      // The preview may have triggered a feed request, so the request
+      // history needs to pick up the new row.
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          return (
+            query.queryKey[0] === "user-feed-requests" &&
+            (query.queryKey[1] as { feedId?: string })?.feedId === feedId
+          );
+        },
+      });
+    }
+  }, [status, dataUpdatedAt, feedId, queryClient]);
 
   return {
     data,

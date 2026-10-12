@@ -199,6 +199,7 @@ export async function fetchFeedForDeliveryPreview(
     const requestBody = {
       url,
       lookupKey: options.lookupDetails?.key,
+      headers: options.lookupDetails?.headers,
       stalenessThresholdSeconds: options.stalenessThresholdSeconds,
       hashToCompare: options.hashToCompare,
     };
