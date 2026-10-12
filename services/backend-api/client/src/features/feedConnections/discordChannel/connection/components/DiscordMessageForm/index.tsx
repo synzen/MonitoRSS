@@ -20,6 +20,7 @@ import { Suspense, useContext, useEffect, useRef, useState } from "react";
 import { FormProvider, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { motion } from "motion/react";
+import { isEqual } from "lodash";
 import { FaDiscord } from "react-icons/fa";
 import {
   DiscordMessageEmbedFormData,
@@ -98,6 +99,77 @@ interface Props {
 
 const templateEmbed: DiscordMessageEmbedFormData = Object.freeze({});
 
+const stripUndefinedValues = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefinedValues);
+  }
+
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    Object.getPrototypeOf(value) === Object.prototype
+  ) {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, nestedValue]) => nestedValue !== undefined)
+        .map(([key, nestedValue]) => [key, stripUndefinedValues(nestedValue)]),
+    );
+  }
+
+  return value;
+};
+
+/**
+ * react-hook-form's `isDirty` sticks to `true` on this form after a `reset()`
+ * even though every value reverts (empty `dirtyFields` with `isDirty: true`).
+ * The nested `splitOptions`/`formatter` controllers and the `componentRows`
+ * field array materialize empty objects at mount (`{isEnabled: null, ...}`,
+ * `{}`, `[]`) that differ from their `null`/`undefined` defaults, which
+ * permanently confuses the built-in tracking. Compare values directly instead,
+ * normalizing those mount artifacts back to their default shapes first.
+ *
+ * Note lodash `isEqual` treats `{key: undefined}` as different from `{}`,
+ * while the form freely gains and drops explicit-`undefined` keys as fields
+ * register, so those are stripped on both sides before comparing.
+ */
+const normalizeMessageFormValuesForDirtyCheck = (
+  values: DiscordMessageFormData | undefined,
+): Record<string, unknown> => {
+  if (!values) {
+    return {};
+  }
+
+  const normalized: Record<string, unknown> = { ...values };
+  const splitOptions = normalized.splitOptions as {
+    isEnabled?: boolean | null;
+    splitChar?: string | null;
+    appendChar?: string | null;
+    prependChar?: string | null;
+  } | null;
+
+  if (
+    splitOptions &&
+    !splitOptions.isEnabled &&
+    !splitOptions.splitChar &&
+    !splitOptions.appendChar &&
+    !splitOptions.prependChar
+  ) {
+    normalized.splitOptions = null;
+  }
+
+  if (Array.isArray(normalized.componentRows) && normalized.componentRows.length === 0) {
+    normalized.componentRows = undefined;
+  }
+
+  const formatter = normalized.formatter as Record<string, unknown> | undefined;
+
+  if (formatter && Object.values(formatter).every((value) => !value)) {
+    normalized.formatter = undefined;
+  }
+
+  return stripUndefinedValues(normalized) as Record<string, unknown>;
+};
+
 export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }: Props) => {
   const { userFeed, connection } = useUserFeedConnectionContext<FeedDiscordChannelConnection>();
   const defaultIndex = connection.details?.embeds?.length
@@ -115,6 +187,14 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
   const existingWebhookIconUrl = connection.details.webhook?.iconUrl || "";
   const [webhookDisplayName, setWebhookDisplayName] = useState(existingWebhookName);
   const [webhookAvatarUrl, setWebhookAvatarUrl] = useState(existingWebhookIconUrl);
+  // Branding inputs live outside react-hook-form, so they need their own
+  // pristine snapshot (taken at mount, refreshed on save) for dirty checks
+  // and discards. Comparing against the connection prop directly would go
+  // stale between a save and the parent's refetch.
+  const savedBrandingRef = useRef({
+    name: existingWebhookName,
+    iconUrl: existingWebhookIconUrl,
+  });
   const skipBrandingRef = useRef(false);
   const hasBrandingValues = !webhooksAllowed && !!webhookDisplayName.trim();
   const showForumForms =
@@ -138,8 +218,17 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
     handleSubmit,
     control,
     reset,
-    formState: { isDirty, isSubmitting, errors },
+    getValues,
+    formState: { isSubmitting, errors, defaultValues },
   } = formMethods;
+  const isBrandingDirty =
+    webhookDisplayName !== savedBrandingRef.current.name ||
+    webhookAvatarUrl !== savedBrandingRef.current.iconUrl;
+  const isDirty =
+    !isEqual(
+      normalizeMessageFormValuesForDirtyCheck(getValues()),
+      normalizeMessageFormValuesForDirtyCheck(defaultValues as DiscordMessageFormData | undefined),
+    ) || isBrandingDirty;
 
   const {
     fields: embeds,
@@ -278,6 +367,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
 
       await onClickSave(toSubmit, brandingExtra);
       reset(toSubmit);
+      savedBrandingRef.current = { name: webhookDisplayName, iconUrl: webhookAvatarUrl };
     } catch (err) {
       notifyError(t("common.errors.failedToSave"), err as Error);
     }
@@ -296,6 +386,16 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
 
   const onEmbedTabChanged = (index: number) => {
     setActiveEmbedIndex(index);
+  };
+
+  const onClickDiscard = () => {
+    reset();
+    // Branding inputs and the active embed tab live outside react-hook-form,
+    // so a form reset alone leaves their edited values on screen.
+    setWebhookDisplayName(savedBrandingRef.current.name);
+    setWebhookAvatarUrl(savedBrandingRef.current.iconUrl);
+    const revertedEmbeds = getValues("embeds");
+    setActiveEmbedIndex(revertedEmbeds?.length ? revertedEmbeds.length - 1 : 0);
   };
 
   const errorsExist = Object.keys(errors).length > 0;
@@ -682,7 +782,7 @@ export const DiscordMessageForm = ({ onClickSave, articleIdToPreview, guildId }:
                     </HStack>
                     <HStack flexWrap="wrap">
                       <Button
-                        onClick={() => reset()}
+                        onClick={onClickDiscard}
                         variant="ghost"
                         disabled={!isDirty || isSubmitting}
                       >
