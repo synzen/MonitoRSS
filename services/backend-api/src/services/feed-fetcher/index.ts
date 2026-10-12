@@ -1,4 +1,1 @@
-export {
-  FeedFetcherService,
-  type FeedFetcherServiceDeps,
-} from "./feed-fetcher.service";
+export { FeedFetcherService } from "./feed-fetcher.service";

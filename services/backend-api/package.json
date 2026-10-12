@@ -17,12 +17,8 @@
     "commander": "^15.0.0",
     "dayjs": "^1.11.23",
     "dotenv": "^18.0.7",
-    "entities": "^8.1.0",
     "fastify": "^5.12.5",
-    "feedparser": "^2.6.0",
     "handlebars": "^4.7.10",
-    "html-to-text": "^10.0.1",
-    "moment-timezone": "^0.6.5",
     "mongoose": "^9.11.1",
     "nodemailer": "^10.1.0",
     "qs": "^6.16.0",
@@ -44,7 +40,6 @@
     "recalculate-slots": "tsx src/scripts/recalculate-slot-offsets.ts"
   },
   "devDependencies": {
-    "@types/feedparser": "^2.3.0",
     "@types/node": "^26.6.5",
     "@types/nodemailer": "^8.0.2",
     "@types/qs": "^6.15.1",

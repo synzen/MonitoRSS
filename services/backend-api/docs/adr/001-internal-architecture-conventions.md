@@ -24,7 +24,6 @@ Some of these layers do meaningful work; others are ceremony. Concrete observati
 - **`src/services/<x>/` overlaps with `src/features/<x>/`** for 8 capabilities (`user-feeds`, `discord-auth`, `discord-servers`, `discord-users`, `discord-webhooks`, `user-feed-management-invites`, `supporter-subscriptions`, `users`). The split-by-layer cohabits awkwardly with the split-by-feature.
 - **`request.container` is a service locator** — every Fastify request carries the full DI container, and handlers reach in for whatever they need. The dependency surface of a handler is invisible from its signature.
 - **`src/services/` mixes two kinds of services:** external-API wrappers (Discord, Paddle, Reddit, etc.) where DI for testability earns its keep, and domain-logic services that overlap with feature folders.
-- **Legacy `.js` files in `src/shared/utils/`** (`Article.js`, `ArticleIDResolver.js`, `Filter.js`, `FilterRegex.js`, `FilterResults.js`, `FlattenedJSON.js`) are v6 JavaScript carryover.
 - **Cross-feature handler imports exist** (e.g. `features/user-feeds/user-feeds.handlers.ts` imports a formatter from `features/feed-connections/feed-connections.handlers.ts`). The "feature" boundary isn't actually enforced.
 
 None of this is broken — the service works in production. But the layered shape is *accidental*: it accreted rather than being chosen, and several of the layers do not carry their weight.
@@ -52,11 +51,9 @@ This ADR makes the going-forward conventions explicit so new code stops adding t
 
 5. **No pass-through service methods.** A method whose body is `return this.deps.repo.findById(id)` should not be written. The handler can call the repo directly via `request.container.someRepo`. If validation, auth, or event emission is being added, that's the value the service method provides — name it for that, not for the underlying read.
 
-6. **No new files in `src/shared/utils/*.js`.** If you must edit one of the existing JavaScript utilities, convert it to TypeScript first as a separate commit, then make the substantive change.
+6. **No cross-feature handler imports.** A handler in `features/X/` must not `import` from a sibling feature's `*.handlers.ts`. If a formatter or helper is genuinely shared, move it to `src/shared/` (or duplicate the small case).
 
-7. **No cross-feature handler imports.** A handler in `features/X/` must not `import` from a sibling feature's `*.handlers.ts`. If a formatter or helper is genuinely shared, move it to `src/shared/` (or duplicate the small case).
-
-8. **`request.container` is the existing dependency-access pattern.** New routes may prefer the dependency-injected route-plugin pattern (the route registration function receives a typed `deps` object and closes over them) for handler signatures that declare their dependencies. Match existing handlers when modifying in place; do not mix patterns inside a single handler.
+7. **`request.container` is the existing dependency-access pattern.** New routes may prefer the dependency-injected route-plugin pattern (the route registration function receives a typed `deps` object and closes over them) for handler signatures that declare their dependencies. Match existing handlers when modifying in place; do not mix patterns inside a single handler.
 
 ### What to do for existing code (opportunistic)
 
