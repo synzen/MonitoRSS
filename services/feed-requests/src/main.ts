@@ -93,11 +93,9 @@ async function bootstrap() {
   }
 }
 
-async function tryDbConnection(
-  orm: { em: EntityManager },
-  currentTries = 0,
-) {
+async function tryDbConnection(orm: { em: EntityManager }, currentTries = 0) {
   if (currentTries >= 10) {
+    // eslint-disable-next-line no-console -- Datadog mode disables logger console output
     console.error('Failed to connect to database after 10 tries. Exiting...');
     logger.error('Failed to connect to database after 10 tries. Exiting...');
 
@@ -129,6 +127,7 @@ async function schedulePruneAndCreatePartitions(app) {
         );
       })
       .catch((err) => {
+        // eslint-disable-next-line no-console -- Datadog mode disables logger console output
         console.error(err);
         logger.error(
           `Failed to run recurring task to prune and create partitions`,

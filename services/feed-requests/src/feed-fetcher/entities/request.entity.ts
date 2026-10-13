@@ -25,7 +25,12 @@ export class Request {
   @Enum({ items: () => RequestStatus, type: 'string' })
   status!: RequestStatus;
 
-  @Enum({ items: () => RequestSource, nullable: true, default: null, type: 'string' })
+  @Enum({
+    items: () => RequestSource,
+    nullable: true,
+    default: null,
+    type: 'string',
+  })
   source?: string | null;
 
   @Property({

@@ -1,4 +1,9 @@
-import { Entity, Property, PrimaryKey, Index } from '@mikro-orm/decorators/legacy';
+import {
+  Entity,
+  Property,
+  PrimaryKey,
+  Index,
+} from '@mikro-orm/decorators/legacy';
 
 @Entity()
 @Index({ properties: ['statusCode'], name: 'status_code_index' })

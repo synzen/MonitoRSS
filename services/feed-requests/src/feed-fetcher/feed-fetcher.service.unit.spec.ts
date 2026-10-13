@@ -4,9 +4,7 @@ import nock from 'nock';
 import path from 'path';
 import { URL } from 'url';
 import { readFileSync } from 'fs';
-import { Request, Response } from './entities';
 import { RequestStatus } from './constants';
-import { EntityRepository } from '@mikro-orm/postgresql';
 
 jest.mock('../utils/logger');
 

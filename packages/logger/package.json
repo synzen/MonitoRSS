@@ -10,7 +10,8 @@
   "scripts": {
     "prepare": "tsc",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint src/"
   },
   "repository": {
     "type": "git",

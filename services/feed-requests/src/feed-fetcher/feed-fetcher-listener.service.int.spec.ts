@@ -13,6 +13,7 @@ import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
+import { Client } from 'pg';
 import { RequestStatus } from './constants';
 import { RequestSource } from './constants/request-source.constants';
 import { FeedFetcherListenerService } from './feed-fetcher-listener.service';
@@ -48,8 +49,6 @@ describe('FeedFetcherListenerService (Integration)', () => {
     const testDbUrl = new URL(config().FEED_REQUESTS_POSTGRES_URI);
     testDbUrl.pathname = '/feedrequests-test';
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { Client } = require('pg');
     const adminClient = new Client({
       connectionString: config().FEED_REQUESTS_POSTGRES_URI,
     });

@@ -16,7 +16,6 @@ let orm: MikroORM;
 const postgresSchema = randomUUID().replace(/-/g, '');
 
 interface Options {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   models?: EntityName<Partial<any>>[];
 }
 

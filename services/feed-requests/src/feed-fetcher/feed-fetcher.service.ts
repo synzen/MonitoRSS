@@ -39,13 +39,16 @@ const trimHeadersForStorage = (
     return {};
   }
 
-  const trimmed = Object.entries(obj || {}).reduce((acc, [key, val]) => {
-    if (val) {
-      acc[key.toLowerCase()] = val;
-    }
+  const trimmed = Object.entries(obj || {}).reduce(
+    (acc, [key, val]) => {
+      if (val) {
+        acc[key.toLowerCase()] = val;
+      }
 
-    return acc;
-  }, {} as Record<string, string>);
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
 
   if (trimmed.authorization) {
     trimmed.authorization = 'SECRET';

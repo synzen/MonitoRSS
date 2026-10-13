@@ -226,11 +226,18 @@ describe('FeedFetcherController', () => {
   describe('fetchFeedDeliveryPreview', () => {
     it('passes lookup key and headers through to fetchAndSaveResponse when stale', async () => {
       const staleDate = dayjs().subtract(1, 'hour').toDate();
-      const headers = { Authorization: 'Bearer token', 'user-agent': 'MonitoRSS:1.0' };
+      const headers = {
+        Authorization: 'Bearer token',
+        'user-agent': 'MonitoRSS:1.0',
+      };
 
       partitionedRequestsStoreService.getLatestRequestAnyStatus
         .mockResolvedValueOnce(
-          createMockStoredRequest(RequestStatus.BAD_STATUS_CODE, staleDate, 429),
+          createMockStoredRequest(
+            RequestStatus.BAD_STATUS_CODE,
+            staleDate,
+            429,
+          ),
         )
         .mockResolvedValueOnce(
           createMockStoredRequest(RequestStatus.OK, new Date(), 200),

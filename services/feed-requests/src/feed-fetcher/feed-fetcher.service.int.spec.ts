@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 import { INestApplication } from '@nestjs/common';
 import { RequestStatus } from './constants';
 import { FeedFetcherService } from './feed-fetcher.service';
