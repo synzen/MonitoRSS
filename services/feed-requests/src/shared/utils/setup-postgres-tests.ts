@@ -1,95 +1,136 @@
-import 'reflect-metadata';
-import { EntityName, MikroOrmModule } from '@mikro-orm/nestjs';
-import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy';
-import { ModuleMetadata } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import type { TestingModule } from '@nestjs/testing';
 import { MikroORM } from '@mikro-orm/core';
+import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
-import { randomUUID } from 'crypto';
-import { SqlEntityManager } from '@mikro-orm/postgresql';
+import { Client } from 'pg';
 import config from '../../config';
-import { testConfig } from '../../config/test.config';
 
-let testingModule: TestingModule;
-let orm: MikroORM;
-const postgresSchema = randomUUID().replace(/-/g, '');
+let orm: MikroORM | undefined;
+const dbName = `feedrequests-test-${process.pid}`;
 
-interface Options {
-  models?: EntityName<Partial<any>>[];
-}
+/**
+ * Provisions a dedicated database for a suite: the partitioned-requests store
+ * uses raw SQL, which resolves through the connection's default search path
+ * rather than the ORM schema, so the store's tables must exist in `public` of
+ * a database the dev tables never share. The database name is unique per
+ * process because jest may run suites in parallel workers.
+ */
+export async function setupPostgresTests(): Promise<MikroORM> {
+  const testDbUrl = new URL(config().FEED_REQUESTS_POSTGRES_URI);
+  testDbUrl.pathname = `/${dbName}`;
 
-export async function setupPostgresTests(
-  metadata: ModuleMetadata,
-  options?: Options,
-) {
-  const configVals = config();
-
-  const { Test } = await import('@nestjs/testing');
-
-  const uncompiledModule = Test.createTestingModule({
-    ...metadata,
-    imports: [
-      ...(metadata.imports || []),
-      ConfigModule.forRoot({
-        ignoreEnvFile: true,
-        load: [testConfig],
-        isGlobal: true,
-      }),
-      MikroOrmModule.forFeature(options?.models || []),
-      MikroOrmModule.forRoot({
-        driver: PostgreSqlDriver,
-        metadataProvider: ReflectMetadataProvider,
-        entities: ['dist/**/*.entity.js'],
-        entitiesTs: ['src/**/*.entity.ts'],
-        clientUrl: configVals.FEED_REQUESTS_POSTGRES_URI,
-        forceUtcTimezone: true,
-        timezone: 'UTC',
-        schema: postgresSchema,
-        allowGlobalContext: true,
-      }),
-    ],
+  const adminClient = new Client({
+    connectionString: config().FEED_REQUESTS_POSTGRES_URI,
   });
+  await adminClient.connect();
 
-  const init = async () => {
-    testingModule = await uncompiledModule.compile();
-    orm = testingModule.get(MikroORM);
-    const generator = orm.schema;
-    await generator.ensureDatabase();
-    await generator.drop();
-    await generator.create();
-
-    return {
-      module: testingModule,
-    };
-  };
-
-  return {
-    uncompiledModule,
-    init,
-  };
-}
-
-export async function clearDatabase() {
-  const generator = orm?.schema;
-  await generator.ensureDatabase();
-  await generator.drop();
-  await generator.create();
-}
-
-export async function teardownPostgresTests() {
-  if (orm) {
-    const generator = orm.schema;
-    await generator.drop();
-    // const typedEm = orm.em as SqlEntityManager;
-    await orm.em.transactional(async (em) => {
-      await (em as SqlEntityManager).execute(
-        `DROP SCHEMA IF EXISTS "${postgresSchema}" CASCADE`,
-      );
-    });
-
-    await orm.close();
+  try {
+    await adminClient.query(`CREATE DATABASE "${dbName}"`);
+  } catch (err) {
+    // A leftover database from a previous run of this worker pid is fine; the
+    // tables are recreated below. 42P04 = duplicate_database.
+    if ((err as { code?: string }).code !== '42P04') {
+      throw err;
+    }
+  } finally {
+    await adminClient.end();
   }
 
-  await testingModule?.close();
+  orm = await MikroORM.init({
+    driver: PostgreSqlDriver,
+    metadataProvider: ReflectMetadataProvider,
+    entities: ['dist/**/*.entity.js'],
+    entitiesTs: ['src/**/*.entity.ts'],
+    clientUrl: testDbUrl.toString(),
+    forceUtcTimezone: true,
+    timezone: 'UTC',
+    allowGlobalContext: true,
+  });
+
+  await recreatePartitionedTables();
+
+  return orm;
+}
+
+export async function recreatePartitionedTables(): Promise<void> {
+  await dropPartitionedTables();
+
+  const connection = orm!.em.getConnection();
+
+  await connection.execute(
+    `CREATE TYPE request_partitioned_status AS ENUM (
+      'OK', 'INTERNAL_ERROR', 'FETCH_ERROR', 'PARSE_ERROR', 'BAD_STATUS_CODE',
+      'FETCH_TIMEOUT', 'REFUSED_LARGE_FEED', 'MATCHED_HASH', 'INVALID_SSL_CERTIFICATE'
+    );`,
+  );
+  await connection.execute(
+    `CREATE TYPE request_partitioned_source AS ENUM ('SHEDULE');`,
+  );
+  await connection.execute(
+    `CREATE TABLE response_bodies (
+      content TEXT NOT NULL,
+      hash_key TEXT NOT NULL,
+      content_hash TEXT DEFAULT NULL NULL,
+      CONSTRAINT response_bodies_hash_key UNIQUE (hash_key)
+    );`,
+  );
+  await connection.execute(
+    `CREATE TABLE request_partitioned (
+      id TEXT NOT NULL,
+      status request_partitioned_status NOT NULL,
+      source request_partitioned_source DEFAULT NULL NULL,
+      fetch_options JSON DEFAULT NULL NULL,
+      url TEXT NOT NULL,
+      url_hash TEXT DEFAULT NULL NULL,
+      host_hash TEXT DEFAULT NULL NULL,
+      lookup_key TEXT DEFAULT NULL NULL,
+      created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+      next_retry_date TIMESTAMPTZ DEFAULT NULL NULL,
+      error_message TEXT DEFAULT NULL NULL,
+      response_status_code INT DEFAULT NULL NULL,
+      response_text_hash TEXT DEFAULT NULL NULL,
+      response_body_hash_key TEXT DEFAULT NULL NULL,
+      response_s3object_key TEXT DEFAULT NULL NULL,
+      response_redis_cache_key TEXT DEFAULT NULL NULL,
+      response_headers JSON DEFAULT NULL NULL,
+      request_initiated_at TIMESTAMPTZ DEFAULT NULL NULL,
+      PRIMARY KEY (id, created_at)
+    );`,
+  );
+  await connection.execute(
+    `CREATE INDEX request_partitioned_lookupkey_created_at_status_index
+      ON request_partitioned (lookup_key, created_at, status);`,
+  );
+}
+
+export async function teardownPostgresTests(): Promise<void> {
+  if (!orm) {
+    return;
+  }
+
+  await dropPartitionedTables();
+  await orm.close();
+
+  const adminClient = new Client({
+    connectionString: config().FEED_REQUESTS_POSTGRES_URI,
+  });
+  await adminClient.connect();
+
+  try {
+    await adminClient.query(`DROP DATABASE IF EXISTS "${dbName}" WITH (FORCE)`);
+  } finally {
+    await adminClient.end();
+  }
+}
+
+async function dropPartitionedTables(): Promise<void> {
+  const connection = orm!.em.getConnection();
+
+  await connection.execute(`DROP TABLE IF EXISTS request_partitioned CASCADE;`);
+  await connection.execute(`DROP TABLE IF EXISTS response_bodies CASCADE;`);
+  await connection.execute(
+    `DROP TYPE IF EXISTS request_partitioned_status CASCADE;`,
+  );
+  await connection.execute(
+    `DROP TYPE IF EXISTS request_partitioned_source CASCADE;`,
+  );
 }

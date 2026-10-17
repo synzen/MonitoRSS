@@ -5,7 +5,13 @@ import { FeedFetcherController } from './feed-fetcher.controller';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
 import { randomUUID } from 'crypto';
 
-jest.mock('undici', () => ({ request: jest.fn() }));
+jest.mock('undici', () => ({
+  request: jest.fn(),
+  Agent: jest.fn(),
+  setGlobalDispatcher: jest.fn(),
+  getGlobalDispatcher: jest.fn(),
+  interceptors: { redirect: jest.fn() },
+}));
 jest.mock('../utils/logger');
 
 function createMockRequest(

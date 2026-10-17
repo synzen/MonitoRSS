@@ -1,0 +1,26 @@
+name: Feed Requests Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/feed-requests/**"
+      - "packages/contracts/**"
+      - ".github/workflows/feed-requests-tests.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "services/feed-requests/**"
+      - "packages/contracts/**"
+      - ".github/workflows/feed-requests-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run feed-requests tests
+        working-directory: services/feed-requests
+        run: bash test.sh

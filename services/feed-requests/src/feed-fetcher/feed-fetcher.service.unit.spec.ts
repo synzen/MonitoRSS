@@ -1,40 +1,50 @@
 import { ConfigService } from '@nestjs/config';
 import { FeedFetcherService } from './feed-fetcher.service';
-import nock from 'nock';
 import path from 'path';
-import { URL } from 'url';
 import { readFileSync } from 'fs';
+import { inflate } from 'zlib';
+import { promisify } from 'util';
+import { request } from 'undici';
 import { RequestStatus } from './constants';
 
+jest.mock('undici', () => ({
+  request: jest.fn(),
+  Agent: jest.fn(),
+  setGlobalDispatcher: jest.fn(),
+  getGlobalDispatcher: jest.fn(() => ({ compose: jest.fn((d) => d) })),
+  interceptors: { redirect: jest.fn((d) => d) },
+}));
 jest.mock('../utils/logger');
+
+const inflatePromise = promisify(inflate);
 
 describe('FeedFetcherService', () => {
   let service: FeedFetcherService;
-  let configService: ConfigService;
   const feedUrl = 'https://rss-feed.com/feed.xml';
   const defaultUserAgent = 'default-user-agent';
-  const url = new URL(feedUrl);
   const feedFilePath = path.join(__dirname, '..', 'test', 'data', 'feed.xml');
   const feedXml = readFileSync(feedFilePath, 'utf8');
-  const requestRepo: {
-    persistAndFlush: jest.Mock;
-    persist: jest.Mock;
-    findOne: jest.Mock;
-  } = {
-    persistAndFlush: jest.fn(),
-    persist: jest.fn(),
-    findOne: jest.fn(),
-  };
-  const responseRepo: { persistAndFlush: jest.Mock; persist: jest.Mock } = {
-    persistAndFlush: jest.fn(),
-    persist: jest.fn(),
-  };
+
+  const mockedRequest = jest.mocked(request);
+
+  // nock cannot intercept undici.request, so the HTTP layer is mocked at the
+  // undici seam; everything around it (status handling, persistence shaping,
+  // compression, cloudflare detection) runs for real.
+  const toBody = (content: string) => ({
+    arrayBuffer: async () => new TextEncoder().encode(content).buffer,
+  });
+
+  const mockUndiciResponse = (overrides: Record<string, unknown> = {}) => ({
+    statusCode: 200,
+    headers: { 'content-type': 'application/xml' },
+    body: toBody(feedXml),
+    ...overrides,
+  });
 
   beforeEach(async () => {
-    configService = {
-      get: jest.fn(),
+    const configService = {
       getOrThrow: jest.fn(),
-    } as never;
+    } as unknown as ConfigService;
     service = new FeedFetcherService(
       configService,
       {} as never,
@@ -42,11 +52,13 @@ describe('FeedFetcherService', () => {
       {} as never,
     );
     service.defaultUserAgent = defaultUserAgent;
+    service.feedRequestTimeoutMs = 15000;
   });
 
   afterEach(() => {
-    nock.cleanAll();
-    jest.resetAllMocks();
+    // clear, not reset: the mocked undici module keeps its factory
+    // implementations while call history and per-test values are dropped
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
@@ -55,17 +67,15 @@ describe('FeedFetcherService', () => {
 
   describe('fetchFeedResponse', () => {
     it('does not throws when status code is non-200', async () => {
-      nock(url.origin).get(url.pathname).replyWithFile(401, feedFilePath, {
-        'Content-Type': 'application/xml',
-      });
+      mockedRequest.mockResolvedValue(
+        mockUndiciResponse({ statusCode: 401 }) as never,
+      );
 
       await expect(service.fetchFeedResponse(feedUrl)).resolves.toBeDefined();
     });
 
     it('returns the feed xml', async () => {
-      nock(url.origin).get(url.pathname).replyWithFile(200, feedFilePath, {
-        'Content-Type': 'application/xml',
-      });
+      mockedRequest.mockResolvedValue(mockUndiciResponse() as never);
 
       const res = await service.fetchFeedResponse(feedUrl);
       expect(await res.text()).toEqual(feedXml);
@@ -73,83 +83,81 @@ describe('FeedFetcherService', () => {
   });
 
   describe('fetchAndSaveResponse', () => {
-    const userAgent = 'user-agent';
-
-    beforeEach(() => {
-      jest.spyOn(configService, 'get').mockImplementation((key) => {
-        if (key === 'feedUserAgent') {
-          return userAgent;
-        }
-      });
-    });
-
-    it('passes the correct fetch option to fetch feed', async () => {
-      const userAgent = 'my-user-agent';
-      jest.spyOn(configService, 'get').mockImplementation((key) => {
-        if (key === 'feedUserAgent') {
-          return userAgent;
-        }
-      });
-
-      nock(url.origin)
-        .get(url.pathname)
-        .matchHeader('user-agent', userAgent)
-        .replyWithFile(200, feedFilePath, {
-          'Content-Type': 'application/xml',
-        });
-
-      await service.fetchAndSaveResponse(feedUrl);
-    });
-
     it('uses the default user agent if no custom user agent', async () => {
-      nock(url.origin)
-        .get(url.pathname)
-        .matchHeader('user-agent', defaultUserAgent)
-        .replyWithFile(200, feedFilePath, {
-          'Content-Type': 'application/xml',
-        });
+      mockedRequest.mockResolvedValue(mockUndiciResponse() as never);
 
       await service.fetchAndSaveResponse(feedUrl);
+
+      expect(mockedRequest).toHaveBeenCalledWith(
+        feedUrl,
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'user-agent': defaultUserAgent,
+          }),
+        }),
+      );
+    });
+
+    it('uses the explicit user agent header if provided', async () => {
+      mockedRequest.mockResolvedValue(mockUndiciResponse() as never);
+
+      await service.fetchAndSaveResponse(feedUrl, {
+        lookupDetails: undefined,
+        headers: { 'User-Agent': 'my-user-agent' },
+        source: undefined,
+      });
+
+      expect(mockedRequest).toHaveBeenCalledWith(
+        feedUrl,
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'user-agent': 'my-user-agent',
+          }),
+        }),
+      );
     });
 
     describe('if ok response', () => {
-      it('saves request correctly', async () => {
-        nock(url.origin).get(url.pathname).replyWithFile(200, feedFilePath, {
-          'Content-Type': 'application/xml',
-        });
+      it('returns the request insert correctly', async () => {
+        mockedRequest.mockResolvedValue(mockUndiciResponse() as never);
 
-        await service.fetchAndSaveResponse(feedUrl);
-        expect(requestRepo.persist).toHaveBeenCalledWith(
-          expect.objectContaining({
-            url: feedUrl,
-            status: RequestStatus.OK,
-            fetchOptions: {
-              userAgent,
-            },
-            response: {
-              statusCode: 200,
-              isCloudflare: false,
-              text: feedXml,
-              createdAt: expect.any(Date),
-            },
-          }),
-        );
+        const { request: insert, responseText } =
+          await service.fetchAndSaveResponse(feedUrl);
+
+        expect(insert).toMatchObject({
+          url: feedUrl,
+          lookupKey: feedUrl,
+          status: RequestStatus.OK,
+          fetchOptions: {
+            headers: expect.objectContaining({
+              'user-agent': defaultUserAgent,
+            }),
+          },
+          response: {
+            statusCode: 200,
+            headers: expect.objectContaining({
+              'content-type': 'application/xml',
+            }),
+          },
+        });
+        expect(responseText).toEqual(feedXml);
+        expect(insert.response?.body?.hashKey).toBeDefined();
       });
 
-      it('saves response with cloudflare flag correctly', async () => {
-        nock(url.origin).get(url.pathname).replyWithFile(200, feedFilePath, {
-          'Content-Type': 'application/xml',
-          Server: 'cloudflare',
-        });
+      it('stores the deflated feed content', async () => {
+        mockedRequest.mockResolvedValue(mockUndiciResponse() as never);
 
-        await service.fetchAndSaveResponse(feedUrl);
-        expect(responseRepo.persist).toHaveBeenCalledWith(
-          expect.objectContaining({
-            isCloudflare: true,
-            statusCode: 200,
-            text: feedXml,
-          }),
+        const { request: insert } = await service.fetchAndSaveResponse(feedUrl);
+
+        const contents = insert.response?.body?.contents;
+
+        expect(contents).toBeDefined();
+
+        const decoded = await inflatePromise(
+          Buffer.from(contents as string, 'base64'),
         );
+
+        expect(decoded.toString()).toEqual(feedXml);
       });
     });
 
@@ -158,63 +166,39 @@ describe('FeedFetcherService', () => {
         message: 'failed',
       };
 
-      it('saves correctly', async () => {
-        nock(url.origin).get(url.pathname).reply(404, feedResponseBody, {
-          'Content-Type': 'application/xml',
-        });
-
-        await service.fetchAndSaveResponse(feedUrl);
-        expect(requestRepo.persist).toHaveBeenCalledWith(
-          expect.objectContaining({
-            url: feedUrl,
-            status: RequestStatus.BAD_STATUS_CODE,
-            fetchOptions: {
-              userAgent,
-            },
-            response: {
-              statusCode: 404,
-              isCloudflare: false,
-              text: JSON.stringify(feedResponseBody),
-              createdAt: expect.any(Date),
-            },
-          }),
-        );
-      });
-
-      it('saves response with cloudflare flag correctly', async () => {
-        nock(url.origin).get(url.pathname).reply(404, feedResponseBody, {
-          'Content-Type': 'application/xml',
-          Server: 'cloudflare',
-        });
-
-        await service.fetchAndSaveResponse(feedUrl);
-        expect(responseRepo.persist).toHaveBeenCalledWith(
-          expect.objectContaining({
-            isCloudflare: true,
+      it('returns the request insert correctly', async () => {
+        mockedRequest.mockResolvedValue(
+          mockUndiciResponse({
             statusCode: 404,
-            text: JSON.stringify(feedResponseBody),
-            createdAt: expect.any(Date),
-          }),
+            body: toBody(JSON.stringify(feedResponseBody)),
+          }) as never,
         );
+
+        const { request: insert, responseText } =
+          await service.fetchAndSaveResponse(feedUrl);
+
+        expect(insert).toMatchObject({
+          url: feedUrl,
+          status: RequestStatus.BAD_STATUS_CODE,
+          response: {
+            statusCode: 404,
+          },
+        });
+        expect(responseText).toEqual(JSON.stringify(feedResponseBody));
       });
     });
 
     describe('if fetch failed', () => {
-      it('saves request correctly', async () => {
-        nock(url.origin).get(url.pathname).replyWithError('failed');
+      it('returns a failed request insert correctly', async () => {
+        mockedRequest.mockRejectedValue(new Error('failed'));
 
-        await service.fetchAndSaveResponse(feedUrl);
-        expect(requestRepo.persist).toHaveBeenCalledWith(
-          expect.objectContaining({
-            url: feedUrl,
-            status: RequestStatus.FETCH_ERROR,
-            fetchOptions: {
-              userAgent,
-            },
-            errorMessage: expect.any(String),
-            createdAt: expect.any(Date),
-          }),
-        );
+        const { request: insert } = await service.fetchAndSaveResponse(feedUrl);
+
+        expect(insert).toMatchObject({
+          url: feedUrl,
+          status: RequestStatus.FETCH_ERROR,
+          errorMessage: expect.stringContaining('failed'),
+        });
       });
     });
   });

@@ -204,7 +204,9 @@ export default class PartitionedRequestsStoreService {
     return {
       createdAt: new Date(result.created_at),
       responseHeaders: result.response_headers,
-      requestInitiatedAt: result.request_initiated_at,
+      requestInitiatedAt: result.request_initiated_at
+        ? new Date(result.request_initiated_at)
+        : null,
     };
   }
 

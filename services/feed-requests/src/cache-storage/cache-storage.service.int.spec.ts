@@ -9,6 +9,7 @@ Object.assign(globalThis, {
 
 import { createClient, RedisClientType } from 'redis';
 import { CacheStorageService } from './cache-storage.service';
+import config from '../config';
 
 jest.mock('../utils/logger');
 
@@ -19,7 +20,7 @@ describe('CacheStorageService (Integration)', () => {
 
   beforeAll(async () => {
     redisClient = createClient({
-      url: 'redis://localhost:6379',
+      url: config().FEED_REQUESTS_REDIS_URI,
     });
 
     await redisClient.connect();

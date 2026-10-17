@@ -9,17 +9,19 @@ Object.assign(globalThis, {
 });
 
 import { MikroORM } from '@mikro-orm/core';
-import { ReflectMetadataProvider } from '@mikro-orm/decorators/legacy';
-import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
-import { Client } from 'pg';
 import { RequestStatus } from './constants';
 import { RequestSource } from './constants/request-source.constants';
 import { FeedFetcherListenerService } from './feed-fetcher-listener.service';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
 import { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter.service';
+import {
+  recreatePartitionedTables,
+  setupPostgresTests,
+  teardownPostgresTests,
+} from '../shared/utils/setup-postgres-tests';
 import config from '../config';
 
 jest.mock('../utils/logger');
@@ -43,38 +45,6 @@ describe('FeedFetcherListenerService (Integration)', () => {
   };
 
   beforeAll(async () => {
-    // The partitioned-requests store uses raw SQL, which resolves through the
-    // connection's default search path rather than the ORM schema. Run against
-    // a dedicated database so the real dev tables in `public` are never touched.
-    const testDbUrl = new URL(config().FEED_REQUESTS_POSTGRES_URI);
-    testDbUrl.pathname = '/feedrequests-test';
-
-    const adminClient = new Client({
-      connectionString: config().FEED_REQUESTS_POSTGRES_URI,
-    });
-    await adminClient.connect();
-    const dbExists = await adminClient.query(
-      `SELECT 1 FROM pg_database WHERE datname = $1`,
-      ['feedrequests-test'],
-    );
-
-    if (dbExists.rowCount === 0) {
-      await adminClient.query(`CREATE DATABASE "feedrequests-test"`);
-    }
-
-    await adminClient.end();
-
-    orm = await MikroORM.init({
-      driver: PostgreSqlDriver,
-      metadataProvider: ReflectMetadataProvider,
-      entities: ['dist/**/*.entity.js'],
-      entitiesTs: ['src/**/*.entity.ts'],
-      clientUrl: testDbUrl.toString(),
-      forceUtcTimezone: true,
-      timezone: 'UTC',
-      allowGlobalContext: true,
-    });
-
     const configVals = config();
     const configService = {
       get: (key: string) => configVals[key as keyof typeof configVals],
@@ -89,6 +59,8 @@ describe('FeedFetcherListenerService (Integration)', () => {
       },
     };
 
+    orm = await setupPostgresTests();
+
     service = new FeedFetcherListenerService(
       configService as never,
       { fetchAndSaveResponse } as never,
@@ -99,8 +71,6 @@ describe('FeedFetcherListenerService (Integration)', () => {
       new HostRateLimiterService(cacheStorageService as never),
       cacheStorageService as never,
     );
-
-    await recreatePartitionedTables();
   });
 
   beforeEach(async () => {
@@ -115,62 +85,8 @@ describe('FeedFetcherListenerService (Integration)', () => {
   });
 
   afterAll(async () => {
-    await dropPartitionedTables();
-    await orm.close();
+    await teardownPostgresTests();
   });
-
-  const recreatePartitionedTables = async () => {
-    await dropPartitionedTables();
-
-    const connection = orm.em.getConnection();
-
-    await connection.execute(
-      `CREATE TYPE request_partitioned_status AS ENUM ('OK', 'INTERNAL_ERROR', 'FETCH_ERROR', 'PARSE_ERROR', 'BAD_STATUS_CODE', 'FETCH_TIMEOUT', 'REFUSED_LARGE_FEED', 'MATCHED_HASH', 'INVALID_SSL_CERTIFICATE');`,
-    );
-    await connection.execute(
-      `CREATE TYPE request_partitioned_source AS ENUM ('SHEDULE');`,
-    );
-    await connection.execute(
-      `CREATE TABLE request_partitioned (
-        id TEXT NOT NULL,
-        status request_partitioned_status NOT NULL,
-        source request_partitioned_source DEFAULT NULL NULL,
-        fetch_options JSON DEFAULT NULL NULL,
-        url TEXT NOT NULL,
-        url_hash TEXT DEFAULT NULL NULL,
-        host_hash TEXT DEFAULT NULL NULL,
-        lookup_key TEXT DEFAULT NULL NULL,
-        created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-        next_retry_date TIMESTAMPTZ DEFAULT NULL NULL,
-        error_message TEXT DEFAULT NULL NULL,
-        response_status_code INT DEFAULT NULL NULL,
-        response_text_hash TEXT DEFAULT NULL NULL,
-        response_body_hash_key TEXT DEFAULT NULL NULL,
-        response_s3object_key TEXT DEFAULT NULL NULL,
-        response_redis_cache_key TEXT DEFAULT NULL NULL,
-        response_headers JSON DEFAULT NULL NULL,
-        request_initiated_at TIMESTAMPTZ DEFAULT NULL NULL,
-        PRIMARY KEY (id, created_at)
-      );`,
-    );
-    await connection.execute(
-      `CREATE INDEX request_partitioned_lookupkey_created_at_status_index ON request_partitioned (lookup_key, created_at, status);`,
-    );
-  };
-
-  const dropPartitionedTables = async () => {
-    const connection = orm.em.getConnection();
-
-    await connection.execute(
-      `DROP TABLE IF EXISTS request_partitioned CASCADE;`,
-    );
-    await connection.execute(
-      `DROP TYPE IF EXISTS request_partitioned_status CASCADE;`,
-    );
-    await connection.execute(
-      `DROP TYPE IF EXISTS request_partitioned_source CASCADE;`,
-    );
-  };
 
   const buildInsert = (
     overrides: Partial<PartitionedRequestInsert> = {},
@@ -277,6 +193,69 @@ describe('FeedFetcherListenerService (Integration)', () => {
           data: expect.objectContaining({ url: feedUrl }),
         }),
       );
+    });
+
+    // Regression: a scheduled fetch for a URL with prior OK history must not
+    // throw when reading the cached response's timestamps back from raw SQL
+    // (MikroORM v7 returns timestamptz as strings). A throw here silently
+    // skipped every scheduled fetch in production.
+    it('fetches normally when a previous OK request exists with freshness headers', async () => {
+      await seedRequests([
+        buildInsert({
+          status: RequestStatus.OK,
+          createdAt: dayjs().subtract(10, 'minutes').toDate(),
+          requestInitiatedAt: dayjs().subtract(10, 'minutes').toDate(),
+          response: {
+            statusCode: 200,
+            textHash: null,
+            s3ObjectKey: null,
+            redisCacheKey: null,
+            headers: {
+              'cache-control': 'public, max-age=60',
+              date: dayjs().subtract(10, 'minutes').toDate().toUTCString(),
+            },
+            body: null,
+          },
+        }),
+      ]);
+      fetchAndSaveResponse.mockResolvedValue({
+        request: buildInsert({ status: RequestStatus.OK }),
+      });
+
+      await runBatch([{ url: feedUrl }], 100);
+
+      expect(fetchAndSaveResponse).toHaveBeenCalledTimes(1);
+
+      const rows = await getAllRows();
+
+      expect(rows).toHaveLength(2);
+      expect(publishedEvents('url.fetch.completed')).toHaveLength(1);
+    });
+
+    it('skips the fetch but emits fetch completed when the cached response is still fresh', async () => {
+      await seedRequests([
+        buildInsert({
+          status: RequestStatus.OK,
+          createdAt: dayjs().subtract(10, 'minutes').toDate(),
+          requestInitiatedAt: dayjs().subtract(10, 'minutes').toDate(),
+          response: {
+            statusCode: 200,
+            textHash: null,
+            s3ObjectKey: null,
+            redisCacheKey: null,
+            headers: {
+              'cache-control': 'public, max-age=3600',
+              date: dayjs().subtract(10, 'minutes').toDate().toUTCString(),
+            },
+            body: null,
+          },
+        }),
+      ]);
+
+      await runBatch([{ url: feedUrl }], 100);
+
+      expect(fetchAndSaveResponse).not.toHaveBeenCalled();
+      expect(publishedEvents('url.fetch.completed')).toHaveLength(1);
     });
   });
 
@@ -437,6 +416,67 @@ describe('FeedFetcherListenerService (Integration)', () => {
 
       expect(fetchAndSaveResponse).not.toHaveBeenCalled();
       expect(publishedEvents('url.failed.disable-feeds')).toHaveLength(1);
+    });
+  });
+
+  describe('getLatestRequestWithOkStatus', () => {
+    // Regression: MikroORM v7's raw SQL returns timestamptz columns as
+    // strings, so the store must convert them before handing them to callers
+    // that call Date methods on them.
+    it('returns createdAt and requestInitiatedAt as Date instances', async () => {
+      const requestedAt = dayjs().subtract(10, 'minutes').toDate();
+
+      await seedRequests([
+        buildInsert({
+          status: RequestStatus.OK,
+          createdAt: requestedAt,
+          requestInitiatedAt: requestedAt,
+          response: {
+            statusCode: 200,
+            textHash: null,
+            s3ObjectKey: null,
+            redisCacheKey: null,
+            headers: { date: requestedAt.toUTCString() },
+            body: null,
+          },
+        }),
+      ]);
+
+      const result = await new PartitionedRequestsStoreService(
+        orm,
+      ).getLatestRequestWithOkStatus(feedUrl, {
+        fields: ['response_headers'],
+      });
+
+      expect(result).not.toBeNull();
+      expect(result!.createdAt).toBeInstanceOf(Date);
+      expect(result!.createdAt.toISOString()).toEqual(
+        requestedAt.toISOString(),
+      );
+      expect(result!.requestInitiatedAt).toBeInstanceOf(Date);
+      expect(result!.requestInitiatedAt!.toISOString()).toEqual(
+        requestedAt.toISOString(),
+      );
+      expect(result!.responseHeaders).toMatchObject({
+        date: expect.any(String),
+      });
+    });
+
+    it('returns null requestInitiatedAt when the row has none', async () => {
+      await seedRequests([
+        buildInsert({
+          status: RequestStatus.OK,
+          createdAt: new Date(),
+          requestInitiatedAt: null,
+        }),
+      ]);
+
+      const result = await new PartitionedRequestsStoreService(
+        orm,
+      ).getLatestRequestWithOkStatus(feedUrl, {});
+
+      expect(result).not.toBeNull();
+      expect(result!.requestInitiatedAt).toBeNull();
     });
   });
 
