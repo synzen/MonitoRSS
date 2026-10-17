@@ -8,19 +8,17 @@ interface Props {
 }
 
 export const useWorkspaceMembers = ({ workspaceSlug, enabled }: Props) => {
-  const { data, status, error, refetch } = useQuery<GetWorkspaceMembersOutput, ApiAdapterError>(
-    ["workspace-members", { workspaceSlug }],
-    async () => {
+  const { data, status, error, refetch } = useQuery<GetWorkspaceMembersOutput, ApiAdapterError>({
+    queryKey: ["workspace-members", { workspaceSlug }],
+    queryFn: async () => {
       if (!workspaceSlug) {
         throw new Error("Missing workspace selection");
       }
 
       return getWorkspaceMembers(workspaceSlug);
     },
-    {
-      enabled: enabled !== false && !!workspaceSlug,
-    },
-  );
+    enabled: enabled !== false && !!workspaceSlug,
+  });
 
   return {
     members: data?.result,

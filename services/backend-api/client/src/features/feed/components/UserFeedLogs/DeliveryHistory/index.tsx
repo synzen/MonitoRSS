@@ -170,7 +170,7 @@ export const DeliveryHistory = () => {
       </Box>
       <Box px={4} pb={4}>
         <Box srOnly aria-live="polite">
-          {status === "loading" && (
+          {status === "pending" && (
             <span>
               Loading article delivery history rows ${skip + 1} through ${skip + limit}
             </span>
@@ -186,7 +186,7 @@ export const DeliveryHistory = () => {
             </span>
           )}
         </Box>
-        {status === "loading" && (
+        {status === "pending" && (
           <Center>
             <Spinner />
           </Center>

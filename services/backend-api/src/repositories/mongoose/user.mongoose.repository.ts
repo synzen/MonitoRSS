@@ -167,13 +167,19 @@ export class UserMongooseRepository
     return {
       id: this.objectIdToString(doc._id),
       discordUserId: doc.discordUserId,
-      email: doc.email,
-      verifiedEmail: doc.verifiedEmail,
-      verifiedEmailVerifiedAt: doc.verifiedEmailVerifiedAt,
+      email: doc.email ?? undefined,
+      verifiedEmail: doc.verifiedEmail ?? undefined,
+      verifiedEmailVerifiedAt: doc.verifiedEmailVerifiedAt ?? undefined,
       sessionEpoch: doc.sessionEpoch ?? undefined,
       preferences: doc.preferences as IUserPreferences,
-      featureFlags: doc.featureFlags,
-      enableBilling: doc.enableBilling,
+      featureFlags: doc.featureFlags
+        ? {
+            externalProperties:
+              doc.featureFlags.externalProperties ?? undefined,
+            workspaces: doc.featureFlags.workspaces ?? undefined,
+          }
+        : undefined,
+      enableBilling: doc.enableBilling ?? undefined,
       externalCredentials: doc.externalCredentials?.map((cred) => {
         let data: Record<string, string> = {};
         if (cred.data) {
@@ -188,7 +194,7 @@ export class UserMongooseRepository
           type: cred.type,
           status: cred.status,
           data,
-          expireAt: cred.expireAt,
+          expireAt: cred.expireAt ?? undefined,
         };
       }),
       createdAt: doc.createdAt,
@@ -366,7 +372,7 @@ export class UserMongooseRepository
       type: credential.type,
       status: credential.status,
       data: normalizeExternalCredentialData(credential.data),
-      expireAt: credential.expireAt,
+      expireAt: credential.expireAt ?? undefined,
     };
   }
 

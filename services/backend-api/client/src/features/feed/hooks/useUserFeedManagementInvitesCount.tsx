@@ -8,7 +8,7 @@ export const useUserFeedManagementInvitesCount = () => {
   const { data, status, error } = useQuery<
     GetUserFeedManagementInvitesCountOutput,
     ApiAdapterError
-  >(queryKey, () => getUserFeedManagementInvitesCount());
+  >({ queryKey, queryFn: () => getUserFeedManagementInvitesCount() });
 
   return {
     data,

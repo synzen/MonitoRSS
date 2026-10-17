@@ -7,13 +7,11 @@ interface Props {
 }
 
 export const useMyWorkspaceInvites = (props?: Props) => {
-  const { data, status, error, refetch } = useQuery<GetMyWorkspaceInvitesOutput, ApiAdapterError>(
-    ["workspace-invites", "@me"],
-    async () => getMyWorkspaceInvites(),
-    {
-      enabled: props?.enabled,
-    },
-  );
+  const { data, status, error, refetch } = useQuery<GetMyWorkspaceInvitesOutput, ApiAdapterError>({
+    queryKey: ["workspace-invites", "@me"],
+    queryFn: async () => getMyWorkspaceInvites(),
+    enabled: props?.enabled,
+  });
 
   return {
     invites: data?.result,

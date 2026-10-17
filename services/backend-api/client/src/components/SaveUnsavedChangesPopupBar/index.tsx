@@ -39,7 +39,7 @@ interface Props {
    * focus never drops to `<body>`. Pass the form/tab-content region the user was editing.
    * Required: every consumer must decide where focus lands.
    */
-  restoreFocusRef: RefObject<HTMLElement>;
+  restoreFocusRef: RefObject<HTMLElement | null>;
 }
 
 export const SavedUnsavedChangesPopupBar = ({ useDirtyFormCheck, restoreFocusRef }: Props) => {

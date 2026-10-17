@@ -65,7 +65,7 @@ export const ArticleSelectionDialog: React.FC<ArticleSelectionDialogProps> = ({
     },
     disabled: !displayProperty || !isOpen,
   });
-  const isLoading = status === "loading" || fetchStatus === "fetching";
+  const isLoading = status === "pending" || fetchStatus === "fetching";
 
   const totalArticles = data?.result.totalArticles || 0;
   const totalPages = Math.ceil(totalArticles / ITEMS_PER_PAGE);

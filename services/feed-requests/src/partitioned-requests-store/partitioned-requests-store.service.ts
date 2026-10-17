@@ -89,6 +89,7 @@ export default class PartitionedRequestsStoreService {
                   responseInsert.response.body.contents,
                   contentHash,
                 ],
+                'all',
                 transaction,
               );
             }
@@ -120,23 +121,24 @@ export default class PartitionedRequestsStoreService {
             [
               responseInsert.id,
               responseInsert.status,
-              responseInsert.source,
+              responseInsert.source ?? null,
               this.stringifyJson(responseInsert.fetchOptions),
               responseInsert.url,
               urlHash,
               hostHash,
-              responseInsert.lookupKey,
+              responseInsert.lookupKey ?? null,
               responseInsert.createdAt,
-              responseInsert.nextRetryDate,
-              responseInsert.errorMessage,
-              responseInsert.response?.statusCode,
+              responseInsert.nextRetryDate ?? null,
+              responseInsert.errorMessage ?? null,
+              responseInsert.response?.statusCode ?? null,
               null,
-              responseInsert.response?.body?.hashKey,
-              responseInsert.response?.s3ObjectKey,
-              responseInsert.response?.redisCacheKey,
+              responseInsert.response?.body?.hashKey ?? null,
+              responseInsert.response?.s3ObjectKey ?? null,
+              responseInsert.response?.redisCacheKey ?? null,
               this.stringifyJson(responseInsert.response?.headers),
               responseInsert.requestInitiatedAt,
             ],
+            'all',
             transaction,
           );
         }),
@@ -202,7 +204,9 @@ export default class PartitionedRequestsStoreService {
     return {
       createdAt: new Date(result.created_at),
       responseHeaders: result.response_headers,
-      requestInitiatedAt: result.request_initiated_at,
+      requestInitiatedAt: result.request_initiated_at
+        ? new Date(result.request_initiated_at)
+        : null,
     };
   }
 

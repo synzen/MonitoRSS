@@ -8,6 +8,7 @@ import {
   setVerifiedEmailInDb,
 } from "../../helpers/workspaces-db";
 import { connectReddit, uniqueSubreddit } from "../../helpers/reddit-oauth";
+import { fillDiscoverySearchAndSubmit } from "../../helpers/discovery";
 
 // Workspace Reddit connections: workspace feeds resolve the WORKSPACE's Reddit
 // connection (one member's grant backing the whole workspace), never anyone's
@@ -71,7 +72,20 @@ async function createWorkspace(page: Page, workspaceName: string): Promise<strin
 
 // In workspace scope, the switcher menu carries a direct "<name> settings" entry.
 async function gotoWorkspaceSettingsViaSwitcher(page: Page, workspaceName: string): Promise<void> {
-  await page.getByRole("button", { name: /Switch workspace/ }).click();
+  // The workspaces list populates asynchronously and a refetch re-renders the
+  // menu: it may open showing skeletons, or close mid-read. Retry opening until
+  // the settings entry is actionable.
+  await expect(async () => {
+    if (
+      (await page.getByRole("menuitem", { name: `${workspaceName} settings` }).count()) === 0
+    ) {
+      await page.getByRole("button", { name: /Switch workspace/ }).click();
+    }
+
+    await expect(
+      page.getByRole("menuitem", { name: `${workspaceName} settings` }),
+    ).toBeVisible({ timeout: 10000 });
+  }).toPass({ timeout: 60000 });
   await page.getByRole("menuitem", { name: `${workspaceName} settings` }).click();
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/settings$/, { timeout: 15000 });
 }
@@ -87,14 +101,19 @@ async function gotoWorkspaceFeedsViaSwitcher(page: Page, workspaceName: string):
 }
 
 async function pasteUrlIntoInlineDiscovery(page: Page, url: string): Promise<void> {
-  // 0 feeds in scope -> the discovery UI renders directly on the feeds page. The
-  // heading differs by scope, so wait on the scope-agnostic search box instead.
-  const searchInput = page.getByRole("textbox", {
-    name: "Search popular feeds or paste a URL",
-  });
-  await expect(searchInput).toBeVisible({ timeout: 15000 });
-  await searchInput.fill(url);
-  await page.getByRole("button", { name: "Go", exact: true }).click();
+  // Same remount race as addFeedViaDiscovery (see helpers/discovery): the fill
+  // can be wiped by the post-navigation layout swap. Either validation outcome
+  // proves the submit landed — an "Add feed" button when the URL validates, or
+  // the Reddit gate ("a Reddit account" in workspace scope, "your Reddit
+  // account" in personal scope) when it does not.
+  await fillDiscoverySearchAndSubmit(page, url, () =>
+    expect(
+      page
+        .getByRole("button", { name: /^Add .+ feed$/i })
+        .first()
+        .or(page.getByText(/Connect (a|your) Reddit account to continue/)),
+    ).toBeVisible({ timeout: 20000 }),
+  );
 }
 
 test.describe("Workspace Reddit connection", () => {

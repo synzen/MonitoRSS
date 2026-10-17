@@ -13,11 +13,13 @@ import type { GetApplicableLegalNoticeOutput } from "./types";
 export const MAX_REFRESH_DELAY_MS = 2_147_000_000;
 
 export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
-  const query = useQuery<GetApplicableLegalNoticeOutput, ApiAdapterError>(
-    ["applicable-legal-notice"],
-    () => getApplicableLegalNotice(),
-    { enabled, retry: false, refetchOnWindowFocus: false },
-  );
+  const query = useQuery<GetApplicableLegalNoticeOutput, ApiAdapterError>({
+    queryKey: ["applicable-legal-notice"],
+    queryFn: () => getApplicableLegalNotice(),
+    enabled,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
     const nextTransitionAt = query.data?.nextTransitionAt;
@@ -61,15 +63,13 @@ export const useApplicableLegalNotice = ({ enabled }: { enabled: boolean }) => {
 
 export const useDismissLegalNotice = () => {
   const queryClient = useQueryClient();
-  const mutation = useMutation<void, ApiAdapterError, string>(
-    (version) => dismissLegalNotice(version),
-    {
-      onSuccess: () =>
-        queryClient.invalidateQueries({
-          queryKey: ["applicable-legal-notice"],
-        }),
-    },
-  );
+  const mutation = useMutation<void, ApiAdapterError, string>({
+    mutationFn: (version: string) => dismissLegalNotice(version),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["applicable-legal-notice"],
+      }),
+  });
 
   useEffect(() => {
     if (mutation.error) {

@@ -5,10 +5,10 @@ import ApiAdapterError from "../../../utils/ApiAdapterError";
 export const useUserFeedManagementInvites = () => {
   const queryKey = ["user-feed-management-invites"];
 
-  const { data, status, error } = useQuery<GetUserFeedManagementInvitesOutput, ApiAdapterError>(
+  const { data, status, error } = useQuery<GetUserFeedManagementInvitesOutput, ApiAdapterError>({
     queryKey,
-    () => getUserFeedManagementInvites(),
-  );
+    queryFn: () => getUserFeedManagementInvites(),
+  });
 
   return {
     data,

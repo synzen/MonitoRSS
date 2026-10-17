@@ -69,7 +69,7 @@ export const MovePersonalFeedsAction = ({
     setOpen(false);
   };
 
-  if (status === "loading") {
+  if (status === "pending") {
     if (presentation === "menu") {
       return (
         <>

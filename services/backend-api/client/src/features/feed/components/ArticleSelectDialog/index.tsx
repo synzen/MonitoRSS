@@ -133,9 +133,9 @@ export const ArticleSelectDialog = ({
 
   return (
     <>
-      {React.cloneElement(trigger, {
+      {React.cloneElement(trigger as React.ReactElement<{ onClick: () => void }>, {
         onClick: () => {
-          if (trigger.props["aria-disabled"]) {
+          if ((trigger.props as { "aria-disabled"?: unknown })["aria-disabled"]) {
             return;
           }
 
@@ -152,7 +152,7 @@ export const ArticleSelectDialog = ({
           <DialogCloseTrigger />
           <DialogBody>
             <Box aria-live="polite" srOnly>
-              {userFeedArticlesStatus === "loading" && (
+              {userFeedArticlesStatus === "pending" && (
                 <span>
                   Loading articles ${skip + 1} through ${skip + limit}
                 </span>
@@ -170,7 +170,7 @@ export const ArticleSelectDialog = ({
             </Box>
             <Stack gap={4}>
               <Box>
-                {userFeedArticlesStatus === "loading" && (
+                {userFeedArticlesStatus === "pending" && (
                   <Stack aria-hidden>
                     <Center>
                       <Loading />
@@ -209,9 +209,9 @@ export const ArticleSelectDialog = ({
                               })) || []
                             }
                             isDisabled={
-                              feedArticlePropertiesStatus === "loading" || !!singleProperty
+                              feedArticlePropertiesStatus === "pending" || !!singleProperty
                             }
-                            loading={feedArticlePropertiesStatus === "loading"}
+                            loading={feedArticlePropertiesStatus === "pending"}
                             value={useArticleProperty}
                             onChange={onChangeFeedArticleProperty}
                           />

@@ -5,10 +5,9 @@ import { deleteUserFeedManagementInvite, DeleteUserFeedManagementInviteInput } f
 export const useDeleteUserFeedManagementInvite = ({ feedId }: { feedId: string }) => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, ApiAdapterError, DeleteUserFeedManagementInviteInput>(
-    (details) => deleteUserFeedManagementInvite(details),
-    {
-      onSuccess: () => {
+  return useMutation<void, ApiAdapterError, DeleteUserFeedManagementInviteInput>({
+    mutationFn: (details) => deleteUserFeedManagementInvite(details),
+    onSuccess: () => {
         return queryClient.invalidateQueries({
           predicate: (query) => {
             return (
@@ -18,6 +17,5 @@ export const useDeleteUserFeedManagementInvite = ({ feedId }: { feedId: string }
           },
         });
       },
-    },
-  );
+  });
 };

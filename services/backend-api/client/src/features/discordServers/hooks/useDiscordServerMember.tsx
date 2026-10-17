@@ -15,9 +15,9 @@ export const useDiscordServerMember = ({ serverId, memberId, disabled }: Props) 
   const { data, status, error, isFetching } = useQuery<
     GetServerMemberOutput | null,
     ApiAdapterError
-  >(
+  >({
     queryKey,
-    async () => {
+    queryFn: async () => {
       if (!serverId || !memberId) {
         throw new Error("Missing server ID or member ID when getting server member");
       }
@@ -27,10 +27,8 @@ export const useDiscordServerMember = ({ serverId, memberId, disabled }: Props) 
         memberId,
       });
     },
-    {
-      enabled: !!serverId && !!memberId && !disabled,
-    },
-  );
+    enabled: !!serverId && !!memberId && !disabled,
+  });
 
   return {
     data,

@@ -45,7 +45,7 @@ export const AppHeader = ({ invertBackground }: Props) => {
       <NewHeader
         invertBackground={invertBackground}
         bot={discordBotData?.result}
-        isBotLoading={status === "loading"}
+        isBotLoading={status === "pending"}
         botError={error}
         user={discordUserMe}
         logoHref={pages.userFeeds(workspaceSlug ? { workspaceSlug } : undefined)}

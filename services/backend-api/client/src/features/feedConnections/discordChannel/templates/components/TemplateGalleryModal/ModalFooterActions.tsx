@@ -10,7 +10,7 @@ import { useBrandingContext } from "./BrandingContext";
 
 interface ModalFooterBaseProps {
   showTemplateError: boolean;
-  saveButtonRef: React.RefObject<HTMLButtonElement>;
+  saveButtonRef: React.RefObject<HTMLButtonElement | null>;
   onUpgrade: () => void;
   tertiaryActionLabel?: string;
   onTertiaryAction?: () => void;

@@ -9,7 +9,8 @@ export const useConfirmEmailVerification = () => {
     void,
     ApiAdapterError,
     ConfirmEmailVerificationInput
-  >((input) => confirmEmailVerification(input), {
+  >({
+    mutationFn: (input) => confirmEmailVerification(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-me"] });
     },

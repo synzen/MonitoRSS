@@ -23,7 +23,7 @@ import {
 } from "@/constants";
 
 export interface UpgradePromptProps {
-  upgradeHeadingRef: React.RefObject<HTMLParagraphElement>;
+  upgradeHeadingRef: React.RefObject<HTMLParagraphElement | null>;
   billingInterval: "month" | "year";
   onBillingIntervalChange: (interval: "month" | "year") => void;
   isPriceLoading: boolean;

@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";

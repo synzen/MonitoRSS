@@ -29,7 +29,7 @@ export const DiscordMessageEmbedFormLegacy = ({ index }: Props) => {
   useEffect(
     () => {
       const atLeastOneRequiredValueExists = EMBED_REQUIRES_ONE_OF.some((key) =>
-        getNestedField(embed, key),
+        getNestedField(embed ?? {}, key),
       );
 
       if (!atLeastOneRequiredValueExists) {
@@ -42,8 +42,7 @@ export const DiscordMessageEmbedFormLegacy = ({ index }: Props) => {
       } else {
         EMBED_REQUIRES_ONE_OF.forEach((key) => {
           const existingError = getNestedField(errors, `embeds.${index}.${key}` as any) as
-            | FieldError
-            | undefined;
+            FieldError | undefined;
 
           if (existingError?.type === EMBED_REQUIRES_ONE_OF_ERROR_KEY) {
             clearErrors(`embeds.${index}.${key}` as any);
@@ -51,7 +50,7 @@ export const DiscordMessageEmbedFormLegacy = ({ index }: Props) => {
         });
       }
     },
-    EMBED_REQUIRES_ONE_OF.map((key) => getNestedField(embed, key)),
+    EMBED_REQUIRES_ONE_OF.map((key) => getNestedField(embed ?? {}, key)),
   );
 
   const getEmbedError = (fieldName: string) => {

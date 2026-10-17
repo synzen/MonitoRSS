@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
@@ -214,7 +214,7 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      const icon = screen.getByRole("img", { hidden: true });
+      const icon = document.querySelector("img");
       expect(icon).toHaveAttribute(
         "src",
         "https://www.google.com/s2/favicons?sz=32&domain=blog.example.com",
@@ -233,8 +233,9 @@ describe("UrlValidationResult", () => {
         },
       });
 
-      const icon = screen.getByRole("img", { hidden: true });
-      fireEvent.error(icon);
+      const icon = document.querySelector("img");
+      expect(icon).not.toBeNull();
+      fireEvent.error(icon!);
 
       expect(screen.getByText("E")).toBeInTheDocument();
     });

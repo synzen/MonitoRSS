@@ -26,7 +26,7 @@ import { Avatar } from "@/components/ui/avatar";
 interface OptionData {
   id: string;
   name: string;
-  icon?: React.ReactElement | null;
+  icon?: React.ReactElement<any> | null;
 }
 
 interface Props {
@@ -73,7 +73,7 @@ export const SelectUserDialog = ({
   });
   const [saving, setSaving] = useState(false);
 
-  const onSelected = (data: { label: string; value: string; icon?: React.ReactElement | null }) => {
+  const onSelected = (data: { label: string; value: string; icon?: React.ReactElement<any> | null }) => {
     setSelectedMention({
       id: data.value,
       name: data.label,

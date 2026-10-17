@@ -5,9 +5,10 @@ import { retryFailedFeeds, type RetryFailedFeedsOutput } from "../api";
 export const useRetryFailedFeeds = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<RetryFailedFeedsOutput, ApiAdapterError, string>(retryFailedFeeds, {
+  return useMutation<RetryFailedFeedsOutput, ApiAdapterError, string>({
+    mutationFn: retryFailedFeeds,
     onSuccess: async () => {
-      await queryClient.invalidateQueries(["user-feeds"]);
+      await queryClient.invalidateQueries({ queryKey: ["user-feeds"] });
     },
   });
 };

@@ -124,6 +124,7 @@ describe("delivery", () => {
           articleIdHash: "my-hash",
           mediumId: "my-medium",
           articleId: "my-article",
+          debug: false,
         });
       });
     });
@@ -382,6 +383,7 @@ describe("delivery", () => {
           articleIdHash: "success-hash",
           mediumId: "success-medium",
           articleId: undefined,
+          debug: false,
         });
       });
     });
@@ -405,6 +407,7 @@ describe("delivery", () => {
           articleIdHash: "",
           mediumId: "",
           articleId: undefined,
+          debug: false,
         });
       });
     });

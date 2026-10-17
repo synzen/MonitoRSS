@@ -9,7 +9,8 @@ export const useRemoveWorkspaceMember = () => {
     void,
     ApiAdapterError,
     RemoveWorkspaceMemberInput
-  >((input) => removeWorkspaceMember(input), {
+  >({
+    mutationFn: (input) => removeWorkspaceMember(input),
     onSuccess: (_data, { workspaceSlug }) => {
       queryClient.invalidateQueries({ queryKey: ["workspace-members", { workspaceSlug }] });
     },

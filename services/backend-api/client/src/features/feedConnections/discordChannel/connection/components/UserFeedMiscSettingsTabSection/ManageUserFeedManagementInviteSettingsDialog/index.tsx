@@ -149,7 +149,7 @@ export const ManageUserFeedManagementInviteSettingsDialog = ({
             <Button variant="ghost" onClick={onClose}>
               <span>Cancel</span>
             </Button>
-            <PrimaryActionButton mr={3} onClick={onSubmit} loading={status === "loading"}>
+            <PrimaryActionButton mr={3} onClick={onSubmit} loading={status === "pending"}>
               <span>Save</span>
             </PrimaryActionButton>
           </HStack>

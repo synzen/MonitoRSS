@@ -3,9 +3,9 @@ import ApiAdapterError from "@/utils/ApiAdapterError";
 import { sendAccountDeletionCode } from "../api";
 
 export const useSendAccountDeletionCode = () => {
-  const { mutateAsync, status, error, reset } = useMutation<void, ApiAdapterError, void>(() =>
-    sendAccountDeletionCode(),
-  );
+  const { mutateAsync, status, error, reset } = useMutation<void, ApiAdapterError, void>({
+    mutationFn: () => sendAccountDeletionCode(),
+  });
 
   return {
     mutateAsync,

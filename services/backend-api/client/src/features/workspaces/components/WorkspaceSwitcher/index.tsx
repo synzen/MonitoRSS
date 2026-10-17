@@ -132,7 +132,7 @@ export const WorkspaceSwitcher = ({ onCreateWorkspace }: { onCreateWorkspace: ()
             />
           </Box>
         )}
-        {status === "loading" && (
+        {status === "pending" && (
           <Stack px={3} py={2} gap={2} aria-busy="true">
             <Skeleton height="24px" borderRadius="md" />
             <Skeleton height="24px" borderRadius="md" />

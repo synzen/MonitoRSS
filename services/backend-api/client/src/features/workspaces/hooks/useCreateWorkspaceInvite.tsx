@@ -13,7 +13,8 @@ export const useCreateWorkspaceInvite = () => {
     CreateWorkspaceInviteOutput,
     ApiAdapterError,
     CreateWorkspaceInviteInput
-  >((input) => createWorkspaceInvite(input), {
+  >({
+    mutationFn: (input) => createWorkspaceInvite(input),
     onSuccess: (_data, { workspaceSlug }) => {
       queryClient.invalidateQueries({ queryKey: ["workspace-invites-list", { workspaceSlug }] });
     },

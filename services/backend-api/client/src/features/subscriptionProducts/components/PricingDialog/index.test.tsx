@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, within, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
@@ -20,7 +20,7 @@ vi.mock("../../hooks", async (importOriginal) => ({
   useSubscriptionChangePreview: vi.fn(() => ({
     data: undefined,
     error: undefined,
-    status: "loading",
+    status: "pending",
     fetchStatus: "idle",
   })),
 }));

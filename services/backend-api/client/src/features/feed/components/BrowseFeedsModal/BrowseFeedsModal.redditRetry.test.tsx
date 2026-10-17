@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
@@ -190,7 +190,7 @@ describe("BrowseFeedsModal - Reddit connect retry", () => {
 
     const input = await screen.findByLabelText("Search popular feeds or paste a URL");
     await user.type(input, "https://www.reddit.com/r/HolyShitHistory");
-    await user.click(screen.getByRole("button", { name: "Go", exact: true }));
+    await user.click(screen.getByRole("button", { name: "Go" }));
 
     // The mandatory-connection gate is shown in place of a feed card.
     expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();

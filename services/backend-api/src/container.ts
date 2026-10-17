@@ -228,7 +228,7 @@ export function createContainer(deps: {
     discordApiService,
   );
   const feedFetcherApiService = new FeedFetcherApiService(deps.config);
-  const feedFetcherService = new FeedFetcherService({ feedFetcherApiService });
+  const feedFetcherService = new FeedFetcherService();
   const feedHandlerService = new FeedHandlerService(deps.config);
   const paddleService = new PaddleService(deps.config);
   const redditApiService = new RedditApiService(deps.config);

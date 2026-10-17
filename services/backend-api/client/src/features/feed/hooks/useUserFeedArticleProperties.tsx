@@ -24,9 +24,9 @@ export const useUserFeedArticleProperties = ({ feedId, data: inputData, isDisabl
   const { data, status, error, fetchStatus } = useQuery<
     GetUserFeedArticlePropertiesOutput,
     ApiAdapterError | Error
-  >(
+  >({
     queryKey,
-    async () => {
+    queryFn: async () => {
       if (!feedId) {
         throw new Error("Feed ID is required to fetch feed articles");
       }
@@ -36,10 +36,8 @@ export const useUserFeedArticleProperties = ({ feedId, data: inputData, isDisabl
         data: inputData,
       });
     },
-    {
-      enabled: !!feedId && !isDisabled,
-    },
-  );
+    enabled: !!feedId && !isDisabled,
+  });
 
   return {
     data,

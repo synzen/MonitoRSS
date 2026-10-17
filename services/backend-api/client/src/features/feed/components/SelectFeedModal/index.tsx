@@ -108,7 +108,7 @@ interface SelectFeedModalProps {
   onFeedSelected?: (feedId: string, feedTitle: string, feedUrl: string) => void;
   isOpen?: boolean;
   onClose?: () => void;
-  finalFocusRef: React.RefObject<HTMLButtonElement>;
+  finalFocusRef: React.RefObject<HTMLButtonElement | null>;
 }
 
 export const SelectFeedModal = ({

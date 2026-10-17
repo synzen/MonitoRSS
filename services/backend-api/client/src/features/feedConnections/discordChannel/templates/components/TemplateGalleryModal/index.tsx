@@ -52,7 +52,7 @@ interface TemplateGalleryBaseProps {
   isLoadingArticles?: boolean;
   feedId: string;
   userFeed?: UserFeed;
-  finalFocusRef?: React.RefObject<HTMLElement>;
+  finalFocusRef?: React.RefObject<HTMLElement | null>;
   brandingDisabledReason?: string;
   tertiaryActionLabel?: string;
   onTertiaryAction?: () => void;

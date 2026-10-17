@@ -9,7 +9,8 @@ export const useUpdateWorkspace = () => {
     UpdateWorkspaceOutput,
     ApiAdapterError,
     UpdateWorkspaceInput
-  >((input) => updateWorkspace(input), {
+  >({
+    mutationFn: (input) => updateWorkspace(input),
     onSuccess: (_data, { workspaceSlug }) => {
       queryClient.invalidateQueries({ queryKey: ["workspaces"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["workspace", { workspaceSlug }] });

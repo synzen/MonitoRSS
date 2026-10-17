@@ -1,18 +1,52 @@
 import { expect, type Page } from "../fixtures/test-fixtures";
 import { MOCK_RSS_FEED_URL } from "./constants";
 
-// Adds a feed through the discovery UI's URL search and returns once the
-// discovery surface has actually closed (the feeds table is showing).
-export async function addFeedViaDiscovery(page: Page): Promise<void> {
-  // The discovery heading differs by scope ("...to your Discord" personal,
-  // "Add feeds for your team" in a workspace); the search box is scope-agnostic,
-  // so use it as the discovery-ready signal.
+// Fills the discovery search box with a URL and submits it, retrying until the
+// submit provably lands (awaitLanded resolves).
+//
+// Right after navigation — most often right after workspace creation — the
+// workspaces/user-feeds queries are still resolving. When they land, the feeds
+// page swaps between the empty-state and regular discovery layouts, remounting
+// the search input and wiping in-progress text. A fill that gets wiped submits
+// an empty query (which just clears), so without a retry the validation result
+// never appears and the test times out.
+export async function fillDiscoverySearchAndSubmit(
+  page: Page,
+  url: string,
+  awaitLanded: () => Promise<void>,
+): Promise<void> {
+  // The discovery heading differs by scope, so the scope-agnostic search box
+  // is the discovery-ready signal.
   const search = page.getByRole("textbox", {
     name: "Search popular feeds or paste a URL",
   });
   await expect(search).toBeVisible({ timeout: 15000 });
-  await search.fill(MOCK_RSS_FEED_URL);
-  await page.getByRole("button", { name: "Go", exact: true }).click();
+
+  await expect(async () => {
+    await search.fill(url);
+    // If a remount wiped the fill before React saw it, the submit below would
+    // send an empty query — fail fast here so toPass retries the fill.
+    await expect(search).toHaveValue(url, { timeout: 5000 });
+    await page.getByRole("button", { name: "Go", exact: true }).click();
+    // Proves the submit landed on a live input. A remount after the click wipes
+    // both the input and the in-flight validation, so this fails and retries too.
+    await awaitLanded();
+  }).toPass({ timeout: 90000 });
+}
+
+export async function awaitUrlValidationAddButton(page: Page): Promise<void> {
+  await expect(
+    page.getByRole("button", { name: /^Add .+ feed$/i }).first(),
+  ).toBeVisible({ timeout: 15000 });
+}
+
+// Adds a feed through the discovery UI's URL search and returns once the
+// discovery surface has actually closed (the feeds table is showing).
+export async function addFeedViaDiscovery(page: Page): Promise<void> {
+  await fillDiscoverySearchAndSubmit(page, MOCK_RSS_FEED_URL, () =>
+    awaitUrlValidationAddButton(page),
+  );
+
   await page
     .getByRole("button", { name: /^Add .+ feed$/i })
     .first()

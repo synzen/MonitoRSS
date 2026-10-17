@@ -9,7 +9,8 @@ export const useAcceptWorkspaceInvite = () => {
     AcceptWorkspaceInviteOutput,
     ApiAdapterError,
     string
-  >((inviteId) => acceptWorkspaceInvite(inviteId), {
+  >({
+    mutationFn: (inviteId) => acceptWorkspaceInvite(inviteId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workspaces"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["workspace-invites"], exact: false });

@@ -452,7 +452,7 @@ export const WorkspaceMembers = () => {
     >
       <VisuallyHidden aria-live="polite">{LIVE_STATUS_TEXT[membersStatus] ?? ""}</VisuallyHidden>
       <InviteForm workspaceSlug={workspace.slug} />
-      {membersStatus === "loading" && (
+      {membersStatus === "pending" && (
         <Stack gap={3} aria-busy="true">
           <Skeleton height="60px" borderRadius="md" />
           <Skeleton height="60px" borderRadius="md" />
@@ -483,12 +483,12 @@ export const WorkspaceMembers = () => {
           above lands here, so the loop closes within the same row. */}
       <Stack as="section" aria-label="Pending invitations" gap={3} marginTop={4}>
         <VisuallyHidden aria-live="polite">
-          {invitesStatus === "loading" ? "Loading invitations" : ""}
+          {invitesStatus === "pending" ? "Loading invitations" : ""}
         </VisuallyHidden>
         <Heading as="h3" size="sm">
           Pending invitations
         </Heading>
-        {invitesStatus === "loading" && (
+        {invitesStatus === "pending" && (
           <Stack gap={3} aria-busy="true">
             <Skeleton height="60px" borderRadius="md" />
           </Stack>

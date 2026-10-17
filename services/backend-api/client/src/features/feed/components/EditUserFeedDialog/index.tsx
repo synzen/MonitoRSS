@@ -37,7 +37,7 @@ type FormData = InferType<typeof formSchema>;
 interface Props {
   onUpdate: (data: FormData) => Promise<void>;
   defaultValues: Required<FormData>;
-  onCloseRef?: React.RefObject<HTMLButtonElement>;
+  onCloseRef?: React.RefObject<HTMLButtonElement | null>;
   isOpen: boolean;
   onClose: () => void;
   error?: ApiAdapterError | null;
@@ -79,7 +79,7 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   } = useCreateUserFeedUrlValidation();
   const error = updateError || validationError;
   const isConfirming = !!feedUrlValidationData?.result.resolvedToUrl;
-  const isLoading = isSubmitting || validationStatus === "loading";
+  const isLoading = isSubmitting || validationStatus === "pending";
   const canResolveError = !!error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
   const isRedditConnectionRequired = error?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
   const showCta = canResolveError || isRedditConnectionRequired;

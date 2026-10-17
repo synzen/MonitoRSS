@@ -84,7 +84,7 @@ export const WorkspaceRedditConnectionSetting = ({ workspaceSlug }: Props) => {
               colorPalette="red"
               variant="ghost"
               size="sm"
-              loading={disconnectStatus === "loading"}
+              loading={disconnectStatus === "pending"}
               onClick={() => {
                 disconnect({ workspaceSlug }).catch(() => {
                   // Surfaced via disconnectError below

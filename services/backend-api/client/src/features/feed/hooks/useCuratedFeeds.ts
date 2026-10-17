@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { getCuratedFeeds } from "../api";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { getCuratedFeeds, GetCuratedFeedsOutput } from "../api";
 import type { CuratedCategory, CuratedFeed } from "../types";
 
 const MIN_SEARCH_LENGTH = 3;
@@ -72,9 +72,9 @@ export function useCuratedFeeds(options?: UseCuratedFeedsOptions): UseCuratedFee
     isFetching,
     error,
     refetch,
-  } = useQuery(
-    ["curated-feeds", { search, category }],
-    () => {
+  } = useQuery<GetCuratedFeedsOutput>({
+    queryKey: ["curated-feeds", { search, category }],
+    queryFn: () => {
       if (search) {
         return getCuratedFeeds({ q: search });
       }
@@ -85,12 +85,10 @@ export function useCuratedFeeds(options?: UseCuratedFeedsOptions): UseCuratedFee
 
       return getCuratedFeeds();
     },
-    {
-      enabled: callerEnabled && !searchTooShort,
-      staleTime: STALE_TIME_MS,
-      keepPreviousData: true,
-    },
-  );
+    enabled: callerEnabled && !searchTooShort,
+    staleTime: STALE_TIME_MS,
+    placeholderData: keepPreviousData,
+  });
 
   const allFeeds = queryData?.result.feeds.filter((f) => f.category !== "other") ?? [];
   const allCategories = queryData?.result.categories.filter((c) => c.id !== "other") ?? [];

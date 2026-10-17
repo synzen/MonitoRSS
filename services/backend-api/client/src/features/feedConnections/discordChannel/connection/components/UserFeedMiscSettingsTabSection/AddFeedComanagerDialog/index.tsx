@@ -31,7 +31,7 @@ import { Tag } from "@/components/ui/tag";
 interface OptionData {
   id: string;
   name: string;
-  icon?: React.ReactElement | null;
+  icon?: React.ReactElement<any> | null;
 }
 
 interface Props {
@@ -71,9 +71,9 @@ export const AddFeedComanagerDialog = ({ open, onOpenChange }: Props) => {
   const { createSuccessAlert } = usePageAlertContext();
 
   const submitIsDisabled =
-    !selectedMention || !checkedConnections.length || creatingInvitesStatus === "loading";
+    !selectedMention || !checkedConnections.length || creatingInvitesStatus === "pending";
 
-  const onSelected = (data: { label: string; value: string; icon?: React.ReactElement | null }) => {
+  const onSelected = (data: { label: string; value: string; icon?: React.ReactElement<any> | null }) => {
     setSelectedMention({
       id: data.value,
       name: data.label,
@@ -256,7 +256,7 @@ export const AddFeedComanagerDialog = ({ open, onOpenChange }: Props) => {
               mr={3}
               onClick={onClickSave}
               aria-disabled={submitIsDisabled}
-              loading={creatingInvitesStatus === "loading"}
+              loading={creatingInvitesStatus === "pending"}
             >
               <span>Invite User to Co-manage</span>
             </PrimaryActionButton>

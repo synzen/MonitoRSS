@@ -17,7 +17,7 @@ export const RequireAuth = ({ children, waitForUserFetch }: Props) => {
   });
   const { t } = useTranslation();
 
-  const isLoading = authStatus === "loading" || userMeStatus === "loading";
+  const isLoading = authStatus === "pending" || userMeStatus === "pending";
 
   if (isLoading) {
     return (

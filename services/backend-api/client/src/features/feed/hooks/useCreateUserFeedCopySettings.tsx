@@ -12,20 +12,18 @@ export const useCreateUserFeedCopySettings = () => {
     void,
     ApiAdapterError,
     CreateUserFeedCopySettingsInput
-  >(
-    async (details) => {
+  >({
+    mutationFn: async (details) => {
       await createUserFeedCopySettings(details);
     },
-    {
-      onSuccess: async () => {
+    onSuccess: async () => {
         await queryClient.invalidateQueries({
           predicate: ({ queryKey }) => {
             return typeof queryKey[0] === "string" && queryKey[0].includes("user-feed");
           },
         });
       },
-    },
-  );
+  });
 
   return {
     mutateAsync,

@@ -24,7 +24,7 @@ export const DiscordRoleName: React.FC<Props> = ({ serverId, roleId }) => {
     return map;
   }, [data]);
 
-  if (status === "loading") {
+  if (status === "pending") {
     return <Loading size="sm" />;
   }
 

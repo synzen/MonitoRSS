@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 import { getWorkspaces, GetWorkspacesOutput } from "../api";
 
@@ -10,9 +10,11 @@ export const useWorkspaces = (props?: Props) => {
   const { data, status, error, fetchStatus, refetch } = useQuery<
     GetWorkspacesOutput,
     ApiAdapterError
-  >(["workspaces"], async () => getWorkspaces(), {
+  >({
+    queryKey: ["workspaces"],
+    queryFn: async () => getWorkspaces(),
     enabled: props?.enabled,
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   return {

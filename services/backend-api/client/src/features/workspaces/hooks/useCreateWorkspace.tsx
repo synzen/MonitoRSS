@@ -9,7 +9,8 @@ export const useCreateWorkspace = () => {
     CreateWorkspaceOutput,
     ApiAdapterError,
     CreateWorkspaceInput
-  >((details) => createWorkspace(details), {
+  >({
+    mutationFn: (details) => createWorkspace(details),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["workspaces"],

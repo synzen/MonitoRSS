@@ -14,10 +14,9 @@ interface Props {
 export const useUpdateUserFeed = (props?: Props) => {
   const queryClient = useQueryClient();
 
-  return useMutation<UpdateUserFeedOutput, ApiAdapterError, UpdateUserFeedInput>(
-    (details) => updateUserFeed(details),
-    {
-      onSuccess: async (data, inputData) => {
+  return useMutation<UpdateUserFeedOutput, ApiAdapterError, UpdateUserFeedInput>({
+    mutationFn: (details) => updateUserFeed(details),
+    onSuccess: async (data, inputData) => {
         await queryClient.invalidateQueries({
           predicate: (query) => {
             const queryKeyStringsToIgnoreValidation = new Set(
@@ -47,6 +46,5 @@ export const useUpdateUserFeed = (props?: Props) => {
           data,
         );
       },
-    },
-  );
+  });
 };

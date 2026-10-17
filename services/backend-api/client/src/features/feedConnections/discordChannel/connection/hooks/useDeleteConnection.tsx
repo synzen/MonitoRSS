@@ -15,29 +15,27 @@ const methodsByType: Record<FeedConnectionType, (input: DeleteConnectionInput) =
 export const useDeleteConnection = (type: FeedConnectionType) => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, ApiAdapterError, DeleteConnectionInput>(
-    (details) => {
+  return useMutation<void, ApiAdapterError, DeleteConnectionInput>({
+    mutationFn: (details) => {
       const method = methodsByType[type];
 
       return method(details);
     },
-    {
-      onSuccess: (data, inputData) =>
-        Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: [
-              "user-feed",
-              {
-                feedId: inputData.feedId,
-              },
-            ],
-            refetchType: "all",
-          }),
-          queryClient.invalidateQueries({
-            queryKey: ["user-feeds"],
-            refetchType: "all",
-          }),
-        ]),
-    },
-  );
+    onSuccess: (data, inputData) =>
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [
+            "user-feed",
+            {
+              feedId: inputData.feedId,
+            },
+          ],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["user-feeds"],
+          refetchType: "all",
+        }),
+      ]),
+  });
 };

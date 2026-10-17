@@ -39,3 +39,4 @@ lerna-debug.log*
 !.dockerignore
 
 *.sh
+!/test.sh

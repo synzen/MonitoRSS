@@ -23,7 +23,7 @@ import { Tag } from "@/components/ui/tag";
 import { SafeLoadingButton } from "@/components/SafeLoadingButton";
 
 interface Props {
-  trigger: React.ReactElement;
+  trigger: React.ReactElement<any>;
   onSubmitted: (data: { sourceField: string }) => void;
 }
 
@@ -91,7 +91,7 @@ const CreateExternalPropertyModal = ({ trigger, onSubmitted }: Props) => {
           </DialogHeader>
           <DialogCloseTrigger />
           <DialogBody tabIndex={-1}>
-            <Box srOnly aria-live="polite" aria-busy={status === "loading"}>
+            <Box srOnly aria-live="polite" aria-busy={status === "pending"}>
               {status === "success" && (
                 <span>Finished loading ${articleObjectEntries.length} article properties</span>
               )}
@@ -103,7 +103,7 @@ const CreateExternalPropertyModal = ({ trigger, onSubmitted }: Props) => {
                   description={error.message}
                 />
               )}
-              {status === "loading" && (
+              {status === "pending" && (
                 <Stack alignItems="center" width="100%" aria-busy>
                   <Spinner />
                   <Text>Loading article properties...</Text>

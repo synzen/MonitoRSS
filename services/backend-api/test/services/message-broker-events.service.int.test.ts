@@ -189,8 +189,11 @@ describe("MessageBrokerEventsService - scheduled fan-out (integration)", () => {
     });
 
     assert.deepStrictEqual(emittedFeedIds(publishMessage), [feed.id]);
+    const firstCallArgs = publishMessage.mock.calls[0]?.arguments as
+      | unknown[]
+      | undefined;
     assert.strictEqual(
-      publishMessage.mock.calls[0]?.arguments[0],
+      firstCallArgs?.[0],
       MessageBrokerQueue.FeedDeliverArticles,
     );
 

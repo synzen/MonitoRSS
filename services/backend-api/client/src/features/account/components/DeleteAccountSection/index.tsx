@@ -143,8 +143,8 @@ const DeleteAccountDialog = ({
 
   const trimmedCode = code.trim();
   const codeValid = CODE_REGEX.test(trimmedCode);
-  const isSending = sendStatus === "loading";
-  const isDeleting = deleteStatus === "loading";
+  const isSending = sendStatus === "pending";
+  const isDeleting = deleteStatus === "pending";
   const inCooldown = cooldownRemaining > 0;
   const blocked = hasBlockingSubscription;
 

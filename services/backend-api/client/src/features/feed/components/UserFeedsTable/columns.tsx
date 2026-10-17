@@ -11,10 +11,13 @@ import { Link as RouterLink } from "react-router-dom";
 import type { RefObject } from "react";
 import {
   CellContext,
-  ColumnDef,
   HeaderContext,
-  createColumnHelper,
 } from "@tanstack/react-table";
+import {
+  LegacyColumnDef,
+  LegacyFeatures,
+  legacyCreateColumnHelper,
+} from "@tanstack/react-table/legacy";
 import dayjs from "dayjs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RowData } from "./types";
@@ -25,7 +28,7 @@ import type { RouteScope } from "../../../../constants";
 import { formatRefreshRateSeconds } from "../../../../utils/formatRefreshRateSeconds";
 import { FEED_TABLE_FOCUS_KEY, SHARED_WITH_ME_COLUMN_ID } from "./constants";
 
-const columnHelper = createColumnHelper<RowData>();
+const columnHelper = legacyCreateColumnHelper<RowData>();
 
 function rememberFeedForReturn(feedId: string) {
   sessionStorage.setItem(FEED_TABLE_FOCUS_KEY, feedId);
@@ -35,7 +38,7 @@ interface ColumnConfig {
   id: string;
   header: string;
   cell: (
-    info: CellContext<RowData, unknown>,
+    info: CellContext<LegacyFeatures, RowData, unknown>,
     search: string,
     scope?: RouteScope,
     isCompact?: boolean,
@@ -207,11 +210,11 @@ function createSelectColumn(
   isCompact?: boolean,
   selectAllMatching?: boolean,
   onExitMatching?: () => void,
-  headerCheckboxRef?: RefObject<HTMLInputElement>,
-): ColumnDef<RowData> {
+  headerCheckboxRef?: RefObject<HTMLInputElement | null>,
+): LegacyColumnDef<RowData> {
   return columnHelper.display({
     id: "select",
-    header: ({ table }: HeaderContext<RowData, unknown>) => {
+    header: ({ table }: HeaderContext<LegacyFeatures, RowData, unknown>) => {
       let checked: boolean | "indeterminate" = table.getIsAllRowsSelected();
       if (table.getIsSomeRowsSelected()) checked = "indeterminate";
       if (selectAllMatching) checked = true;
@@ -281,7 +284,7 @@ function createSelectColumn(
 function createConfigureColumn(
   scope?: RouteScope,
   isCompact?: boolean,
-): ColumnDef<RowData> {
+): LegacyColumnDef<RowData> {
   return columnHelper.display({
     id: "configure",
     header: () => null,
@@ -337,9 +340,9 @@ export function createTableColumns(
     isCompact?: boolean;
     selectAllMatching?: boolean;
     onExitMatching?: () => void;
-    headerCheckboxRef?: RefObject<HTMLInputElement>;
+    headerCheckboxRef?: RefObject<HTMLInputElement | null>;
   },
-): ColumnDef<RowData>[] {
+): LegacyColumnDef<RowData>[] {
   const selectColumn = createSelectColumn(
     options?.isCompact,
     options?.selectAllMatching,
@@ -359,7 +362,7 @@ export function createTableColumns(
         header: () => <span>{config.header}</span>,
         cell: (info) =>
           config.cell(
-            info as CellContext<RowData, unknown>,
+            info as CellContext<LegacyFeatures, RowData, unknown>,
             search,
             scope,
             options?.isCompact,
@@ -372,13 +375,13 @@ export function createTableColumns(
       header: () => <span>{config.header}</span>,
       cell: (info) =>
         config.cell(
-          info as CellContext<RowData, unknown>,
+          info as CellContext<LegacyFeatures, RowData, unknown>,
           search,
           scope,
           options?.isCompact,
         ),
     });
-  }) as ColumnDef<RowData>[];
+  }) as LegacyColumnDef<RowData>[];
 
   return [selectColumn, ...dataColumns, configureColumn];
 }

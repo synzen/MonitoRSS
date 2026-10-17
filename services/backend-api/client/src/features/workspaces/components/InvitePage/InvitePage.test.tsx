@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -24,7 +24,7 @@ const h = vi.hoisted(() => ({
       alreadyMember?: boolean;
     },
   },
-  inviteStatus: { current: "success" as "loading" | "success" | "error" },
+  inviteStatus: { current: "success" as "pending" | "success" | "error" },
 }));
 
 vi.mock("@/features/discordUser", () => ({
@@ -259,7 +259,7 @@ describe("InvitePage", () => {
   });
 
   it("labels the loading state for assistive technology", () => {
-    h.inviteStatus.current = "loading";
+    h.inviteStatus.current = "pending";
     mockUser("invitee@example.com");
 
     renderPage();

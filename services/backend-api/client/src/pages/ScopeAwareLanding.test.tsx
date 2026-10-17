@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ChakraProvider } from "@chakra-ui/react";
@@ -94,7 +94,7 @@ describe("ScopeAwareLanding", () => {
     mockState({
       lastActiveWorkspaceSlug: "acme-marketing",
       workspace: undefined,
-      workspaceStatus: "loading",
+      workspaceStatus: "pending",
     });
 
     renderLanding();

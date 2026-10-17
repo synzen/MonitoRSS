@@ -1464,7 +1464,7 @@ describe(
                   name: "legacy connection",
                 },
               },
-            },
+            } as never,
           );
 
         await ctx.container.feedConnectionsDiscordChannelsService.deleteConnection(

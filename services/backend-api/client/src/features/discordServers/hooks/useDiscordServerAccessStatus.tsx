@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ApiAdapterError from "../../../utils/ApiAdapterError";
 import { getServerStatus, GetServerStatusOutput } from "../api";
 
@@ -11,21 +11,26 @@ export const useDiscordServerAccessStatus = ({ serverId }: Props) => {
   const [hasErrored, setHasErrored] = useState(false);
 
   const { data, error, status, isFetching } = useQuery<GetServerStatusOutput, ApiAdapterError>(
-    ["server-status", serverId],
-    async () => {
-      if (!serverId) {
-        throw new Error("Server ID is required when fetching discord server status");
-      }
-
-      return getServerStatus({
-        serverId,
-      });
-    },
     {
+      queryKey: ["server-status", serverId],
+      queryFn: async () => {
+        if (!serverId) {
+          throw new Error("Server ID is required when fetching discord server status");
+        }
+
+        return getServerStatus({
+          serverId,
+        });
+      },
       enabled: !!serverId && !hasErrored,
-      onError: () => setHasErrored(true),
     },
   );
+
+  useEffect(() => {
+    if (error) {
+      setHasErrored(true);
+    }
+  }, [error]);
 
   return {
     data,

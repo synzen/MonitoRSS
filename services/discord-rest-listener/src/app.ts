@@ -1,3 +1,4 @@
+import 'reflect-metadata'
 import 'source-map-support/register'
 import log, { logDatadog } from './utils/log'
 import setup from './utils/setup'
@@ -336,7 +337,7 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
   // RabbitMQ is connected now; from here on, a sustained disconnect is fatal
   // and handled by the orchestrator's restart policy.
   const stopRabbitMqWatchdog = watchRabbitMqConnection({
-    connection: amqpConnection,
+    connection: amqpConnection as unknown as Parameters<typeof watchRabbitMqConnection>[0]['connection'],
     gracePeriodMs: DEFAULT_RABBITMQ_DISCONNECT_GRACE_MS,
     onUnavailable: (error) => {
       exitForRabbitMqFailure(
@@ -352,7 +353,7 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
   // the consumer whenever the broker reports a disconnect. Sustained outages
   // still exit via the watchdog above.
   const stopRabbitMqDisconnectRecovery = watchRabbitMqDisconnectRecovery({
-    connection: amqpConnection,
+    connection: amqpConnection as unknown as Parameters<typeof watchRabbitMqDisconnectRecovery>[0]['connection'],
     recover: async () => {
       try {
         await consumer.initialize()

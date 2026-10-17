@@ -292,15 +292,15 @@ export function createMockUserFeedLimitOverrideRepository(
 }
 
 export interface MockFeedFetcherServiceOptions {
-  fetchFeedError?: Error;
+  handleStatusCodeError?: Error;
 }
 
 export function createMockFeedFetcherService(
   options: MockFeedFetcherServiceOptions = {},
 ): UserFeedsServiceDeps["feedFetcherService"] {
   return {
-    fetchFeed: mock.fn(async () => {
-      if (options.fetchFeedError) throw options.fetchFeedError;
+    handleStatusCode: mock.fn(() => {
+      if (options.handleStatusCodeError) throw options.handleStatusCodeError;
     }),
   } as unknown as UserFeedsServiceDeps["feedFetcherService"];
 }

@@ -5,8 +5,8 @@ import { CreateSubscriptionChangeInput, createSubscriptionChange } from "../api"
 export const useCreateSubscriptionChange = () => {
   const queryClient = useQueryClient();
   const { status, mutateAsync } = useMutation<void, ApiAdapterError, CreateSubscriptionChangeInput>(
-    (details) => createSubscriptionChange(details),
     {
+      mutationFn: (details) => createSubscriptionChange(details),
       onSuccess: () =>
         queryClient.invalidateQueries({
           predicate(query) {

@@ -15,7 +15,7 @@ export const useIsFeatureAllowed = ({ feature }: Props): Returned => {
   const { data, status, error } = useDiscordUserMe();
   const { data: userMeData, status: userMeStatus, error: userMeError } = useUserMe();
 
-  const isLoading = status === "loading" || userMeStatus === "loading";
+  const isLoading = status === "pending" || userMeStatus === "pending";
   const isError = status === "error" || userMeStatus === "error";
   const finalError = error || userMeError;
 

@@ -18,7 +18,7 @@ export const RefreshUserFeedButton = () => {
   const { createErrorAlert, createSuccessAlert } = usePageAlertContext();
 
   const onRefreshFeed = async () => {
-    if (manualRequestStatus === "loading") {
+    if (manualRequestStatus === "pending") {
       return;
     }
 
@@ -61,9 +61,9 @@ export const RefreshUserFeedButton = () => {
   return (
     <ConfirmModal
       trigger={
-        <PrimaryActionButton aria-disabled={manualRequestStatus === "loading"}>
+        <PrimaryActionButton aria-disabled={manualRequestStatus === "pending"}>
           <span>
-            {manualRequestStatus === "loading"
+            {manualRequestStatus === "pending"
               ? "Attempting to re-enable..."
               : "Attempt to re-enable"}
           </span>

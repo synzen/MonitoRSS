@@ -14,9 +14,9 @@ export const useArticleDailyLimit = ({ feedId }: Props) => {
     },
   ];
 
-  const { data, error } = useQuery<GetArticleDailyLimitOutput, ApiAdapterError | Error>(
+  const { data, error } = useQuery<GetArticleDailyLimitOutput, ApiAdapterError | Error>({
     queryKey,
-    async () => {
+    queryFn: async () => {
       if (!feedId) {
         throw new Error("Missing feed selection");
       }
@@ -25,11 +25,9 @@ export const useArticleDailyLimit = ({ feedId }: Props) => {
         feedId,
       });
     },
-    {
-      enabled: !!feedId,
-      refetchOnWindowFocus: true,
-    },
-  );
+    enabled: !!feedId,
+    refetchOnWindowFocus: true,
+  });
 
   return {
     data: data?.result,

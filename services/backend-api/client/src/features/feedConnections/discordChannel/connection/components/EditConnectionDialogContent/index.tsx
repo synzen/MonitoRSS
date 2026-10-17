@@ -6,7 +6,7 @@ interface Props {
   connection: FeedDiscordChannelConnection;
   isOpen: boolean;
   onClose: () => void;
-  onCloseRef?: RefObject<HTMLButtonElement>;
+  onCloseRef?: RefObject<HTMLButtonElement | null>;
 }
 
 export const EditConnectionDialogContent = ({ connection, isOpen, onClose, onCloseRef }: Props) => {

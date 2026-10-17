@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChakraProvider } from "@chakra-ui/react";
@@ -547,12 +547,13 @@ describe("WorkspaceBilling", () => {
 
       renderBilling();
 
-      const subscribeButtons = await screen.findAllByRole("button", { name: /subscribe to/i });
+      await act(async () => {});
+      const subscribeButtons = screen.getAllByRole("button", { name: /subscribe to/i });
       await act(async () => {
         fireEvent.click(subscribeButtons[0]);
       });
 
-      const dialog = await screen.findByRole("dialog");
+      const dialog = screen.getByRole("dialog");
       const liveRegion = within(dialog).getByTestId("workspace-checkout-live-message");
 
       // Present but empty at the moment of open: the announcement is the later fill.
@@ -622,12 +623,13 @@ describe("WorkspaceBilling", () => {
 
       renderBilling();
 
-      const subscribeButtons = await screen.findAllByRole("button", { name: /subscribe to/i });
+      await act(async () => {});
+      const subscribeButtons = screen.getAllByRole("button", { name: /subscribe to/i });
       await act(async () => {
         fireEvent.click(subscribeButtons[0]);
       });
 
-      const dialog = await screen.findByRole("dialog");
+      const dialog = screen.getByRole("dialog");
       const visibleRegion = within(dialog).getByTestId("workspace-checkout-frame-region");
       // Nothing of ours is shown during the normal wait; Paddle's loader fills it.
       expect(
@@ -1124,14 +1126,15 @@ describe("WorkspaceBilling", () => {
 
       renderBilling();
 
-      const updateButton = await screen.findByRole("button", {
+      await act(async () => {});
+      const updateButton = screen.getByRole("button", {
         name: /update payment method/i,
       });
       await act(async () => {
         fireEvent.click(updateButton);
       });
 
-      const dialog = await screen.findByRole("dialog", { name: /update payment method/i });
+      const dialog = screen.getByRole("dialog", { name: /update payment method/i });
       const liveRegion = within(dialog).getByTestId("workspace-checkout-live-message");
 
       await act(async () => {
@@ -1366,6 +1369,7 @@ describe("WorkspaceBilling", () => {
     // Nothing selected on open (0 of 1, shown in the list's capacity meter), and
     // the list is shown up front (no disclosure to expand) with the choose-which
     // framing.
+    await screen.findByRole("dialog");
     expect(await screen.findByText(/0 of 1 selected/)).toBeInTheDocument();
     expect(screen.getByText(/more feeds than this plan allows/i)).toBeInTheDocument();
 
@@ -1401,6 +1405,7 @@ describe("WorkspaceBilling", () => {
     // Over-limit opens empty; selecting both feeds exceeds the 1-feed plan. The
     // second check is allowed (never blocked) so the owner can triage — the
     // guard is on confirm, not the checkbox.
+    await screen.findByRole("dialog");
     expect(await screen.findByText(/0 of 1 selected/)).toBeInTheDocument();
     await userEvent.click(await screen.findByRole("checkbox", { name: /alpha feed/i }));
     await userEvent.click(await screen.findByRole("checkbox", { name: /beta feed/i }));
@@ -1439,6 +1444,7 @@ describe("WorkspaceBilling", () => {
     renderBilling();
     await openConvertDialog();
 
+    await screen.findByRole("dialog");
     expect(await screen.findByText(/0 of 1 selected/)).toBeInTheDocument();
     // One action fills to the cap, never past it: 1 of 1, not 2.
     await userEvent.click(screen.getByRole("button", { name: /select my newest 1 feeds/i }));

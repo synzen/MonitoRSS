@@ -8,7 +8,7 @@ interface ActiveFilterChipsProps {
   onSearchClear: () => void;
   statusFilters: UserFeedComputedStatus[];
   onStatusFiltersClear: () => void;
-  searchInputRef?: React.RefObject<HTMLInputElement>;
+  searchInputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({

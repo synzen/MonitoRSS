@@ -10,17 +10,17 @@ interface Props {
 
 export const useDiscordServerRoles = ({ serverId, disabled }: Props) => {
   const { data, status, error, isFetching } = useQuery<GetServerRolesOutput, ApiAdapterError>(
-    discordServerQueryKeys.serverRoles(serverId || ""),
-    async () => {
-      if (!serverId) {
-        throw new Error("Missing server ID when getting server roles");
-      }
-
-      return getServerRoles({
-        serverId,
-      });
-    },
     {
+      queryKey: discordServerQueryKeys.serverRoles(serverId || ""),
+      queryFn: async () => {
+        if (!serverId) {
+          throw new Error("Missing server ID when getting server roles");
+        }
+
+        return getServerRoles({
+          serverId,
+        });
+      },
       enabled: !!serverId && !disabled,
     },
   );

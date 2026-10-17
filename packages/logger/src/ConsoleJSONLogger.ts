@@ -1,7 +1,7 @@
 import winston from 'winston';
 import { AbstractLogger, LoggerOptions } from './AbstractLogger';
 
-interface ConsoleJSONLoggerOptions extends LoggerOptions {}
+type ConsoleJSONLoggerOptions = LoggerOptions;
 
 export default class ConsoleJSONLogger extends AbstractLogger<ConsoleJSONLoggerOptions> {
   protected createLogger() {

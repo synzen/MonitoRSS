@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -18,9 +18,9 @@ const h = vi.hoisted(() => ({
       createdAt: string;
     }>,
   },
-  status: { current: "success" as "loading" | "success" | "error" },
-  acceptStatus: { current: "idle" as "idle" | "loading" | "success" | "error" },
-  declineStatus: { current: "idle" as "idle" | "loading" | "success" | "error" },
+  status: { current: "success" as "pending" | "success" | "error" },
+  acceptStatus: { current: "idle" as "idle" | "pending" | "success" | "error" },
+  declineStatus: { current: "idle" as "idle" | "pending" | "success" | "error" },
 }));
 
 vi.mock("../../hooks", () => ({
@@ -122,7 +122,7 @@ describe("PendingInvitationsList", () => {
 
   it("shows a per-row loading state and disables the other action while accepting", () => {
     h.invites.current = [invite("a", "Workspace A")];
-    h.acceptStatus.current = "loading";
+    h.acceptStatus.current = "pending";
 
     renderList();
 
@@ -135,7 +135,7 @@ describe("PendingInvitationsList", () => {
 
   it("disables Accept while declining", () => {
     h.invites.current = [invite("a", "Workspace A")];
-    h.declineStatus.current = "loading";
+    h.declineStatus.current = "pending";
 
     renderList();
 

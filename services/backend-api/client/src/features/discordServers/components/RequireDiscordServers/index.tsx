@@ -12,7 +12,7 @@ export const RequireDiscordServers = ({ children }: Props) => {
   const { status, error } = useDiscordServers();
   const { t } = useTranslation();
 
-  if (status === "loading") {
+  if (status === "pending") {
     return (
       <Stack alignItems="center" justifyContent="center" height="100%" flexGrow={1} gap="2rem">
         <Loading size="xl" />

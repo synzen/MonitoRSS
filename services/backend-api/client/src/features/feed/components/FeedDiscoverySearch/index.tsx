@@ -45,7 +45,7 @@ interface FeedDiscoverySearchProps {
   isAtLimit: boolean;
   onAdd: (feed: CuratedFeed) => void;
   onRemove?: (feedKey: string) => void;
-  searchInputRef?: RefObject<HTMLInputElement>;
+  searchInputRef?: RefObject<HTMLInputElement | null>;
   onSearchChange?: (query: string) => void;
   onFeedAdded?: (feedId: string, feedUrl: string) => void;
   onFeedRemoved?: (feedUrl: string) => void;
@@ -428,7 +428,9 @@ export const FeedDiscoverySearchResults = ({ state }: { state: SearchStateReturn
         {state.isUrlInput && (
           <UrlValidationResult
             url={state.normalizedUrl}
-            validationStatus={state.validationStatus}
+            validationStatus={
+              state.validationStatus === "pending" ? "loading" : state.validationStatus
+            }
             validationData={state.validationData}
             validationError={state.validationError}
             isAtLimit={state.isAtLimit}

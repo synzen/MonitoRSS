@@ -317,7 +317,7 @@ export const LegacyRootProperties: React.FC = () => {
             <Text fontSize="sm" mb={2} color="fg">
               Forum Thread Tags
             </Text>
-            {forumTagsStatus === "loading" && (
+            {forumTagsStatus === "pending" && (
               <Center height="100%">
                 <Spinner />
               </Center>

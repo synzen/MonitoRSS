@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import { MemoryRouter } from "react-router-dom";

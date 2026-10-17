@@ -140,7 +140,7 @@ const ProgressAlert = ({
 }: {
   total: number;
   completed: number;
-  closeFocusRef: RefObject<HTMLHeadingElement>;
+  closeFocusRef: RefObject<HTMLHeadingElement | null>;
 }) => {
   const [isOpen, setIsOpen] = useState(true);
   const hasCompleted = total === completed;
@@ -510,7 +510,7 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (deduplicateStatus === "loading") {
+    if (deduplicateStatus === "pending") {
       return;
     }
 
@@ -806,10 +806,10 @@ const AddFormView = ({ onSubmitted }: { onSubmitted: (urls: string[]) => void })
             </Button>
             <PrimaryActionButton
               type="submit"
-              aria-disabled={deduplicateStatus === "loading"}
-              aria-busy={deduplicateStatus === "loading"}
+              aria-disabled={deduplicateStatus === "pending"}
+              aria-busy={deduplicateStatus === "pending"}
             >
-              {deduplicateStatus === "loading" || deduplicateStatus === "success"
+              {deduplicateStatus === "pending" || deduplicateStatus === "success"
                 ? "Deduplicating links..."
                 : `Add ${urls?.length || 0} feeds`}
             </PrimaryActionButton>
