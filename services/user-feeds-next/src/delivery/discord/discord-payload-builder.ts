@@ -55,6 +55,31 @@ interface ReplacePlaceholderContext {
   };
 }
 
+/**
+ * Discord rejects URL fields longer than 2048 characters (embeds, unfurled
+ * media, webhook avatars) instead of truncating them, which would reject the
+ * article and disable the connection. Over-long values are omitted so the
+ * message still delivers.
+ */
+const DISCORD_MAX_URL_LENGTH = 2048;
+
+function resolveUrlValue(
+  flattened: Record<string, string | undefined>,
+  template: string | null | undefined,
+  replaceOptions: ReplacePlaceholderContext["replaceOptions"],
+  maxLength = DISCORD_MAX_URL_LENGTH
+): string | undefined {
+  const resolved = replaceTemplateString(flattened, template, replaceOptions);
+
+  if (!resolved) {
+    return undefined;
+  }
+
+  const encoded = resolved.replace(/\s/g, "%20");
+
+  return encoded.length > maxLength ? undefined : encoded;
+}
+
 // ============================================================================
 // V2 Component Builders
 // ============================================================================
@@ -183,11 +208,7 @@ function buildMediaGalleryV2(
   const items = mediaGallery.items.map((item) => ({
     media: {
       url:
-        replaceTemplateString(
-          ctx.flattened,
-          item.media.url,
-          ctx.replaceOptions
-        )?.replace(/\s/g, "%20") || "",
+        resolveUrlValue(ctx.flattened, item.media.url, ctx.replaceOptions) || "",
     },
     description: item.description
       ? truncateText(
@@ -388,7 +409,7 @@ export function generateDiscordPayloads(
           replaceTemplateString(flattened, embed.description, replaceOptions),
           4096
         );
-        const url = replaceTemplateString(flattened, embed.url, replaceOptions);
+        const url = resolveUrlValue(flattened, embed.url, replaceOptions);
 
         if (
           !title &&
@@ -410,7 +431,7 @@ export function generateDiscordPayloads(
 
         if (title) result.title = title;
         if (description) result.description = description;
-        if (url) result.url = url.replace(/\s/g, "%20");
+        if (url) result.url = url;
 
         if (embed.footer?.text) {
           result.footer = {
@@ -424,32 +445,31 @@ export function generateDiscordPayloads(
             ),
           };
           if (embed.footer.iconUrl) {
-            const iconUrl = replaceTemplateString(
+            const iconUrl = resolveUrlValue(
               flattened,
               embed.footer.iconUrl,
               replaceOptions
             );
-            if (iconUrl) result.footer.icon_url = iconUrl.replace(/\s/g, "%20");
+            if (iconUrl) result.footer.icon_url = iconUrl;
           }
         }
 
         if (embed.image?.url) {
-          const imageUrl = replaceTemplateString(
+          const imageUrl = resolveUrlValue(
             flattened,
             embed.image.url,
             replaceOptions
           );
-          if (imageUrl) result.image = { url: imageUrl.replace(/\s/g, "%20") };
+          if (imageUrl) result.image = { url: imageUrl };
         }
 
         if (embed.thumbnail?.url) {
-          const thumbUrl = replaceTemplateString(
+          const thumbUrl = resolveUrlValue(
             flattened,
             embed.thumbnail.url,
             replaceOptions
           );
-          if (thumbUrl)
-            result.thumbnail = { url: thumbUrl.replace(/\s/g, "%20") };
+          if (thumbUrl) result.thumbnail = { url: thumbUrl };
         }
 
         if (embed.author?.name) {
@@ -464,20 +484,20 @@ export function generateDiscordPayloads(
             ),
           };
           if (embed.author.url) {
-            const authorUrl = replaceTemplateString(
+            const authorUrl = resolveUrlValue(
               flattened,
               embed.author.url,
               replaceOptions
             );
-            if (authorUrl) result.author.url = authorUrl.replace(/\s/g, "%20");
+            if (authorUrl) result.author.url = authorUrl;
           }
           if (embed.author.iconUrl) {
-            const iconUrl = replaceTemplateString(
+            const iconUrl = resolveUrlValue(
               flattened,
               embed.author.iconUrl,
               replaceOptions
             );
-            if (iconUrl) result.author.icon_url = iconUrl.replace(/\s/g, "%20");
+            if (iconUrl) result.author.icon_url = iconUrl;
           }
         }
 
@@ -629,10 +649,8 @@ export function enhancePayloadsWithWebhookDetails(
       flattened,
       enablePlaceholderFallback: options.enablePlaceholderFallback,
     }),
-    avatar_url: generateText({
-      content: webhookIconUrl,
-      flattened,
-      enablePlaceholderFallback: options.enablePlaceholderFallback,
+    avatar_url: resolveUrlValue(flattened, webhookIconUrl, {
+      supportFallbacks: options.enablePlaceholderFallback,
     }),
   }));
 }
