@@ -3,6 +3,8 @@ import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
 import { deflate } from 'zlib';
 import { promisify } from 'util';
+import { after, afterEach, before, describe, it } from 'node:test';
+import assert from 'node:assert';
 import { RequestStatus } from './constants';
 import { RequestSource } from './constants/request-source.constants';
 import { FeedFetcherService } from './feed-fetcher.service';
@@ -15,8 +17,9 @@ import {
   setupPostgresTests,
   teardownPostgresTests,
 } from '../shared/utils/setup-postgres-tests';
+import { silenceLogger } from '../test/helpers/silence-logger';
 
-jest.mock('../utils/logger');
+silenceLogger();
 
 const deflatePromise = promisify(deflate);
 
@@ -25,11 +28,11 @@ describe('FeedFetcherService (Integration)', () => {
   let orm: MikroORM;
   const url = 'https://rss-feed.com/feed.xml';
 
-  beforeAll(async () => {
+  before(async () => {
     orm = await setupPostgresTests();
 
     service = new FeedFetcherService(
-      { getOrThrow: jest.fn() } as never,
+      { getOrThrow: () => 'MonitoRSS' } as never,
       {} as never,
       {} as never,
       new PartitionedRequestsStoreService(orm),
@@ -39,11 +42,10 @@ describe('FeedFetcherService (Integration)', () => {
   });
 
   afterEach(async () => {
-    jest.resetAllMocks();
     await recreatePartitionedTables();
   });
 
-  afterAll(async () => {
+  after(async () => {
     await teardownPostgresTests();
   });
 
@@ -93,8 +95,8 @@ describe('FeedFetcherService (Integration)', () => {
         url,
       });
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
+      assert.strictEqual(result.length, 1);
+      assert.partialDeepStrictEqual(result[0], {
         status: RequestStatus.BAD_STATUS_CODE,
         url,
       });
@@ -107,7 +109,7 @@ describe('FeedFetcherService (Integration)', () => {
         url,
       });
 
-      expect(result).toHaveLength(0);
+      assert.strictEqual(result.length, 0);
     });
   });
 
@@ -139,11 +141,11 @@ describe('FeedFetcherService (Integration)', () => {
         lookupKey: url,
       });
 
-      expect(latestRequest?.request.id).toBeDefined();
-      expect(latestRequest?.request.response).toMatchObject({
+      assert.ok(latestRequest?.request.id);
+      assert.partialDeepStrictEqual(latestRequest?.request.response, {
         statusCode: 200,
       });
-      expect(latestRequest?.decodedResponseText).toEqual('feed contents');
+      assert.strictEqual(latestRequest?.decodedResponseText, 'feed contents');
     });
   });
 });

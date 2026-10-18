@@ -48,14 +48,12 @@ $ npm run start:prod
 ## Test
 
 ```bash
-# unit tests
+# runs the full suite in Docker (manages its own Postgres + Redis)
 $ npm run test
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# a single file or directory
+$ npm run test -- src/feed-fetcher/feed-fetcher.service.unit.test.ts
+$ npm run test -- src/feed-fetcher
 ```
 
 ## Support

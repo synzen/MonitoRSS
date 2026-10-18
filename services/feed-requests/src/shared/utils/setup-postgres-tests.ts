@@ -12,7 +12,7 @@ const dbName = `feedrequests-test-${process.pid}`;
  * uses raw SQL, which resolves through the connection's default search path
  * rather than the ORM schema, so the store's tables must exist in `public` of
  * a database the dev tables never share. The database name is unique per
- * process because jest may run suites in parallel workers.
+ * process because the test runner may run suites in parallel processes.
  */
 export async function setupPostgresTests(): Promise<MikroORM> {
   const testDbUrl = new URL(config().FEED_REQUESTS_POSTGRES_URI);

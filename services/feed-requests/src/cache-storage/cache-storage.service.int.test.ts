@@ -1,24 +1,18 @@
-// Polyfill for Jest VM environment (redis v4 depends on undici which needs these)
-import { ReadableStream, WritableStream, TransformStream } from 'stream/web';
-
-Object.assign(globalThis, {
-  ReadableStream,
-  WritableStream,
-  TransformStream,
-});
-
 import { createClient, RedisClientType } from 'redis';
+import { after, afterEach, before, describe, it } from 'node:test';
+import assert from 'node:assert';
 import { CacheStorageService } from './cache-storage.service';
 import config from '../config';
+import { silenceLogger } from '../test/helpers/silence-logger';
 
-jest.mock('../utils/logger');
+silenceLogger();
 
 describe('CacheStorageService (Integration)', () => {
   let redisClient: RedisClientType;
   let service: CacheStorageService;
   const testKeyPrefix = 'test-cache-storage-int';
 
-  beforeAll(async () => {
+  before(async () => {
     redisClient = createClient({
       url: config().FEED_REQUESTS_REDIS_URI,
     });
@@ -38,7 +32,7 @@ describe('CacheStorageService (Integration)', () => {
     }
   });
 
-  afterAll(async () => {
+  after(async () => {
     await redisClient.disconnect();
   });
 
@@ -52,10 +46,10 @@ describe('CacheStorageService (Integration)', () => {
         expSeconds: 60,
       });
 
-      expect(result).toBe(true);
+      assert.strictEqual(result, true);
 
       const value = await redisClient.get(service.generateKey(key));
-      expect(value).toBe('1');
+      assert.strictEqual(value, '1');
     });
 
     it('returns false and does not overwrite when key already exists', async () => {
@@ -67,10 +61,10 @@ describe('CacheStorageService (Integration)', () => {
         expSeconds: 60,
       });
 
-      expect(result).toBe(false);
+      assert.strictEqual(result, false);
 
       const value = await redisClient.get(service.generateKey(key));
-      expect(value).toBe('original');
+      assert.strictEqual(value, 'original');
     });
 
     it('does not refresh TTL when key already exists', async () => {
@@ -81,7 +75,7 @@ describe('CacheStorageService (Integration)', () => {
       await service.setNX({ key, body: '1', expSeconds: 60 });
 
       const ttl = await redisClient.ttl(service.generateKey(key));
-      expect(ttl).toBeLessThanOrEqual(58);
+      assert.ok(ttl <= 58);
     });
   });
 
@@ -102,7 +96,7 @@ describe('CacheStorageService (Integration)', () => {
 
       const ttl = await redisClient.ttl(service.generateKey(key));
       // The old SET+GET behavior resets the TTL back to 60
-      expect(ttl).toBeGreaterThan(58);
+      assert.ok(ttl > 58);
     });
   });
 });

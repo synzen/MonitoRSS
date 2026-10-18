@@ -1,3 +1,5 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
 import {
   CUSTOM_USER_AGENT_TWEAKS_BY_HOST,
   resolveUserAgentForUrl,
@@ -7,61 +9,72 @@ describe('resolveUserAgentForUrl', () => {
   const defaultUserAgent = 'MonitoRSS [Self-Hosted]/1.0 hello@xyz.com';
 
   it('returns the default user agent for hosts without a tweak', () => {
-    expect(
+    assert.strictEqual(
       resolveUserAgentForUrl('https://example.com/feed.xml', defaultUserAgent),
-    ).toBe(defaultUserAgent);
+      defaultUserAgent,
+    );
   });
 
   it('adds a space after @ for www.cbc.ca while keeping the env UA as base', () => {
-    expect(
+    assert.strictEqual(
       resolveUserAgentForUrl(
         'https://www.cbc.ca/webfeed/rss/rss-world',
         defaultUserAgent,
       ),
-    ).toBe('MonitoRSS [Self-Hosted]/1.0 hello@ xyz.com');
+      'MonitoRSS [Self-Hosted]/1.0 hello@ xyz.com',
+    );
   });
 
   it('matches the host case-insensitively', () => {
-    expect(
+    assert.strictEqual(
       resolveUserAgentForUrl(
         'https://WWW.CBC.CA/webfeed/rss/rss-world',
         defaultUserAgent,
       ),
-    ).toBe('MonitoRSS [Self-Hosted]/1.0 hello@ xyz.com');
+      'MonitoRSS [Self-Hosted]/1.0 hello@ xyz.com',
+    );
   });
 
   it('does not match subdomains or apex outside the exact host entry', () => {
-    expect(
+    assert.strictEqual(
       resolveUserAgentForUrl('https://cbc.ca/feed', defaultUserAgent),
-    ).toBe(defaultUserAgent);
-    expect(
+      defaultUserAgent,
+    );
+    assert.strictEqual(
       resolveUserAgentForUrl('https://sub.www.cbc.ca/feed', defaultUserAgent),
-    ).toBe(defaultUserAgent);
+      defaultUserAgent,
+    );
   });
 
   it('does not double-space an already-spaced user agent', () => {
     const alreadySpaced = 'MonitoRSS [Self-Hosted]/1.0 hello@ xyz.com';
 
-    expect(
+    assert.strictEqual(
       resolveUserAgentForUrl('https://www.cbc.ca/feed', alreadySpaced),
-    ).toBe(alreadySpaced);
+      alreadySpaced,
+    );
   });
 
   it('leaves user agents without @ untouched', () => {
     const withoutEmail = 'MonitoRSS [Self-Hosted]/1.0';
 
-    expect(
+    assert.strictEqual(
       resolveUserAgentForUrl('https://www.cbc.ca/feed', withoutEmail),
-    ).toBe(withoutEmail);
+      withoutEmail,
+    );
   });
 
   it('returns the default user agent for invalid urls', () => {
-    expect(resolveUserAgentForUrl('not-a-url', defaultUserAgent)).toBe(
+    assert.strictEqual(
+      resolveUserAgentForUrl('not-a-url', defaultUserAgent),
       defaultUserAgent,
     );
   });
 
   it('tracks tweaks per exact host', () => {
-    expect(CUSTOM_USER_AGENT_TWEAKS_BY_HOST.has('www.cbc.ca')).toBe(true);
+    assert.strictEqual(
+      CUSTOM_USER_AGENT_TWEAKS_BY_HOST.has('www.cbc.ca'),
+      true,
+    );
   });
 });
