@@ -347,7 +347,24 @@ services:
     environment:
       - API_PROXY_URL=http://web-api:8100
       - VITE_PADDLE_CLIENT_TOKEN=${VITE_PADDLE_CLIENT_TOKEN:-}
-    command: npm run dev -- --host 0.0.0.0 --port 3100
+      - E2E_CLIENT_PREVIEW=${E2E_CLIENT_PREVIEW:-0}
+    # Node's fetch is the only HTTP client guaranteed in the image (slim has no
+    # curl/wget); used so `up --wait` only returns once the client actually
+    # serves — in preview mode the container builds before it listens.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 120s
+    # E2E_CLIENT_PREVIEW=1 serves a production `vite build` (few bundled requests,
+    # React production mode) instead of the dev server. `--mode development` keeps
+    # import.meta.env.MODE identical to `npm run dev` (dev-only UI, Sentry env),
+    # but import.meta.env.PROD is true regardless because Vite builds always run
+    # with NODE_ENV=production. PROD only gates Paddle (JS environment + price
+    # IDs), which is inert unless VITE_PADDLE_CLIENT_TOKEN is set — so never
+    # enable this for billing runs, which need `npm run dev`'s sandbox semantics.
+    command: ["sh", "-c", "if [ \"$$E2E_CLIENT_PREVIEW\" = \"1\" ]; then npx vite build --mode development && npx vite preview --host 0.0.0.0 --port 3100; else npm run dev -- --host 0.0.0.0 --port 3100; fi"]
     networks:
       - e2e-default
 

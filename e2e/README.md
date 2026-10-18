@@ -71,6 +71,20 @@ and `workspace-self-host-posture.spec.ts` asserts billing UI is absent entirely.
 must live in `tests/billing/` and be listed in `PADDLE_CHECKOUT_TESTS` so it runs under
 `e2e-paddle` with the real env.
 
+## Client build mode: preview vs dev server
+
+By default `web-client` serves the Vite dev server. Set `E2E_CLIENT_PREVIEW=1` to build and serve a
+bundled production client instead (`vite build --mode development` + `vite preview`, built at
+container start): page loads are ~30–45% faster because there are no per-request transforms and
+React runs in production mode. The CI `e2e-web` shards use this.
+
+`--mode development` keeps `import.meta.env.MODE` as `development` (dev-only UI, Sentry
+environment), but `import.meta.env.PROD` is `true` in any Vite build — which flips the client to
+Paddle's production environment and production price IDs. The runner therefore **ignores the flag
+for billing runs**, which keep the dev server's Paddle sandbox semantics. `VITE_*` values are baked
+into the bundle at build time; the runner force-rebuilds `web-client` with `--no-cache` on every
+run, so this stays correct per run.
+
 ## Project Structure
 
 The single `playwright.config.ts` defines 4 projects:
