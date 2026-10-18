@@ -400,6 +400,59 @@ describe("article-parser", () => {
       assert.strictEqual(flattenedArticle[`extracted::description::anchor1`], "https://example.com");
       assert.strictEqual(flattenedArticle[`extracted::summary::anchor1`], "https://example.com");
     });
+
+    it("excludes data URI images from extracted placeholders", () => {
+      const dataUri = `data:image/png;base64,${"A".repeat(1000)}`;
+      const upperDataUri = `DATA:image/png;base64,${"A".repeat(1000)}`;
+      const article = {
+        id: "123",
+        description:
+          `<div><img src="${dataUri}" />` +
+          `<img src="${upperDataUri}" />` +
+          `<img src="https://example.com/image.jpg" /></div>`,
+      };
+
+      const flattenedArticle = flattenArticle(article, {
+        useParserRules: [],
+      });
+
+      assert.strictEqual(flattenedArticle[`extracted::description::image1`], "https://example.com/image.jpg");
+      assert.strictEqual(flattenedArticle[`extracted::description::image2`], undefined);
+    });
+
+    it("excludes data URI images when falling back to html-to-text parsing", () => {
+      const dataUri = `data:image/png;base64,${"A".repeat(1000)}`;
+      const article = {
+        id: "123",
+        description:
+          `<img src="${dataUri}" />` +
+          `<img src="https://example.com/image.jpg" />`,
+      };
+
+      const flattenedArticle = flattenArticle(article, {
+        useParserRules: [],
+      });
+
+      assert.strictEqual(flattenedArticle[`extracted::description::image1`], "https://example.com/image.jpg");
+      assert.strictEqual(flattenedArticle[`extracted::description::image2`], undefined);
+    });
+
+    it("excludes data URI anchors from extracted placeholders", () => {
+      const dataUri = `data:text/html;base64,${"A".repeat(1000)}`;
+      const article = {
+        id: "123",
+        description:
+          `<div><a href="${dataUri}">bad</a>` +
+          `<a href="https://example.com">good</a></div>`,
+      };
+
+      const flattenedArticle = flattenArticle(article, {
+        useParserRules: [],
+      });
+
+      assert.strictEqual(flattenedArticle[`extracted::description::anchor1`], "https://example.com");
+      assert.strictEqual(flattenedArticle[`extracted::description::anchor2`], undefined);
+    });
   });
 
   describe("dates", () => {

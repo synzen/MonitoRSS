@@ -251,6 +251,32 @@ describe("article-formatter", () => {
       assert.ok((payloads[0]!.embeds?.[0]?.title?.length ?? 0) <= 256);
     });
 
+    it("omits embed image URLs exceeding Discord's URL length limit", () => {
+      const prefix = "https://example.com/";
+      const article = createArticle({
+        title: "Test Title",
+        image: prefix + "a".repeat(2049 - prefix.length),
+      });
+      const payloads = generateDiscordPayloads(article, {
+        embeds: [{ title: "{{title}}", image: { url: "{{image}}" } }],
+      });
+
+      assert.strictEqual(payloads.length, 1);
+      assert.strictEqual(payloads[0]!.embeds?.[0]?.title, "Test Title");
+      assert.strictEqual(payloads[0]!.embeds?.[0]?.image, undefined);
+    });
+
+    it("keeps embed image URLs at Discord's URL length limit", () => {
+      const prefix = "https://example.com/";
+      const url = prefix + "a".repeat(2048 - prefix.length);
+      const article = createArticle({ image: url });
+      const payloads = generateDiscordPayloads(article, {
+        embeds: [{ title: "Test", image: { url: "{{image}}" } }],
+      });
+
+      assert.strictEqual(payloads[0]!.embeds?.[0]?.image?.url, url);
+    });
+
     it("supports placeholder fallbacks", () => {
       const article = createArticle({ backup: "Backup Title" });
       const payloads = generateDiscordPayloads(article, {
@@ -311,6 +337,41 @@ describe("article-formatter", () => {
                     items: [
                       { media: { url: "{{image1}}" } },
                       { media: { url: "{{missing_image}}" } },
+                    ],
+                  },
+                ],
+              },
+            ],
+          });
+
+          assert.strictEqual(payloads.length, 1);
+          const container = payloads[0]!.components![0] as {
+            components: Array<{ items: Array<{ media: { url: string } }> }>;
+          };
+          const gallery = container.components[0]!;
+          assert.strictEqual(gallery.items.length, 1);
+          assert.strictEqual(
+            gallery.items[0]!.media.url,
+            "https://example.com/1.png"
+          );
+        });
+
+        it("filters out media gallery items with over-long URLs", () => {
+          const prefix = "https://example.com/";
+          const article = createArticle({
+            overlong: prefix + "a".repeat(2049 - prefix.length),
+            image1: "https://example.com/1.png",
+          });
+          const payloads = generateDiscordPayloads(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "MEDIA_GALLERY",
+                    items: [
+                      { media: { url: "{{overlong}}" } },
+                      { media: { url: "{{image1}}" } },
                     ],
                   },
                 ],
@@ -747,6 +808,23 @@ describe("article-formatter", () => {
       );
 
       assert.ok(enhanced[0]!.username!.length <= 256);
+    });
+
+    it("omits avatar urls exceeding Discord's URL length limit", () => {
+      const prefix = "https://avatar.com/";
+      const article = createArticle({
+        avatar: prefix + "a".repeat(2049 - prefix.length),
+      });
+
+      const enhanced = enhancePayloadsWithWebhookDetails(
+        article,
+        [{ content: "Test" }],
+        undefined,
+        "{{avatar}}",
+        {}
+      );
+
+      assert.strictEqual(enhanced[0]!.avatar_url, undefined);
     });
   });
   

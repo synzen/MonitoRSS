@@ -12,6 +12,15 @@ interface HtmlElement {
 }
 
 /**
+ * Data URIs (e.g. base64-encoded inline images) are not usable as links on
+ * delivery platforms and can be arbitrarily long, so they are excluded from
+ * extracted placeholders to avoid oversized deliveries.
+ */
+function isDataUri(value: string): boolean {
+  return /^data:/i.test(value.trim());
+}
+
+/**
  * Extracts image URLs and anchor hrefs from HTML content.
  */
 export function extractExtraInfo(inputString: string): {
@@ -41,14 +50,14 @@ export function extractExtraInfo(inputString: string): {
           const attribs = elem.attribs || {};
           const src = (attribs.src || "").trim();
 
-          if (src) {
+          if (src && !isDataUri(src)) {
             images.push(src);
           }
         },
         anchors: (elem: HtmlElement) => {
           const href = elem.attribs?.href;
 
-          if (href) {
+          if (href && !isDataUri(href)) {
             anchors.push(href);
           }
         },
@@ -64,12 +73,12 @@ export function extractExtraInfo(inputString: string): {
   images = root
     .getElementsByTagName("img")
     .map((e) => e.getAttribute("src"))
-    .filter((e): e is string => !!e);
+    .filter((e): e is string => !!e && !isDataUri(e));
 
   anchors = root
     .querySelectorAll("a")
     .map((e) => e.getAttribute("href"))
-    .filter((e): e is string => !!e);
+    .filter((e): e is string => !!e && !isDataUri(e));
 
   return { images, anchors };
 }
