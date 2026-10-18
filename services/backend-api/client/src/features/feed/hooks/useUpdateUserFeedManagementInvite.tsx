@@ -14,12 +14,11 @@ export const useUpdateUserFeedManagementInvite = ({ feedId }: Props) => {
     void,
     ApiAdapterError,
     UpdateUserFeedManagementInviteInput
-  >(
-    async (details) => {
+  >({
+    mutationFn: async (details) => {
       await updateUserFeedManagementInvite(details);
     },
-    {
-      onSuccess: () => {
+    onSuccess: () => {
         if (!feedId) {
           return null;
         }
@@ -33,8 +32,7 @@ export const useUpdateUserFeedManagementInvite = ({ feedId }: Props) => {
           },
         });
       },
-    },
-  );
+  });
 
   return {
     mutateAsync,

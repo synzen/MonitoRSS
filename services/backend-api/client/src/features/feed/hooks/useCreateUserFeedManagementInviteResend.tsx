@@ -16,7 +16,8 @@ export const useCreateUserFeedManagementInviteResend = ({ feedId }: Props) => {
     void,
     ApiAdapterError,
     CreateUserFeedManagementInviteResendInput
-  >((details) => createUserFeedManagementInviteResend(details), {
+  >({
+    mutationFn: (details) => createUserFeedManagementInviteResend(details),
     onSuccess: () => {
       return queryClient.invalidateQueries({
         predicate: (query) => {

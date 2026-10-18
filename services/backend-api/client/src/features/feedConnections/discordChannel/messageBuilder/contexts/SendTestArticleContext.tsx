@@ -260,7 +260,7 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
   const providerValue: ContextProps = useMemo(
     () => ({
       sendTestArticle,
-      isFetching: status === "loading",
+      isFetching: status === "pending",
       error: error?.message,
     }),
     [sendTestArticle, status],

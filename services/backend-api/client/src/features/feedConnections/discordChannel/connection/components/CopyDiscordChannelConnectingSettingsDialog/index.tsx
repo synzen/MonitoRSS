@@ -152,7 +152,7 @@ interface Props {
   connectionId?: string;
   isOpen: boolean;
   onClose: () => void;
-  onCloseRef?: React.MutableRefObject<HTMLButtonElement | null>;
+  onCloseRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 export const CopyDiscordChannelConnectionSettingsDialog = ({
@@ -513,7 +513,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
                       <HStack>
                         <Button
                           size="sm"
-                          onClick={() => field.onChange(feed?.connections.map((c) => c.id))}
+                          onClick={() => field.onChange(feed?.connections.map((c: { id: string }) => c.id))}
                         >
                           Select all connections as targets
                         </Button>
@@ -558,7 +558,7 @@ export const CopyDiscordChannelConnectionSettingsDialog = ({
               </Button>
               <PrimaryActionButton
                 type="submit"
-                loading={status === "loading"}
+                loading={status === "pending"}
                 aria-disabled={isSubmitting || !isValid}
               >
                 <span>

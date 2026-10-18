@@ -52,7 +52,7 @@ interface Props {
     name: string;
     targetFeedIds: string[];
   };
-  trigger: React.ReactElement;
+  trigger: React.ReactElement<any>;
 }
 
 export const CloneDiscordConnectionCloneDialog = ({

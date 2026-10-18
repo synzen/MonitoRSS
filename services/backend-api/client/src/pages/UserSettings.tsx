@@ -177,7 +177,7 @@ export const UserSettings = () => {
 
   return (
     <PageAlertProvider>
-      <DashboardContentV2 error={error} loading={status === "loading"}>
+      <DashboardContentV2 error={error} loading={status === "pending"}>
         <Flex alignItems="center" flexDir="column" isolation="isolate">
           <PageAlertContextOutlet
             containerProps={{
@@ -221,7 +221,7 @@ const UserSettingsInner = () => {
   } = formMethods;
   const formFocusRef = useRef<HTMLFormElement>(null);
   const { createSuccessAlert, createErrorAlert } = usePageAlertContext();
-  const hasLoaded = status !== "loading";
+  const hasLoaded = status !== "pending";
 
   useEffect(() => {
     reset(convertUserMeToFormData(data));

@@ -216,7 +216,7 @@ export const FeedCard = ({
   const previewArticles = resolvedPreview?.result.articles;
   const previewRequestStatus = resolvedPreview?.result.requestStatus;
   const previewResponseStatusCode = resolvedPreview?.result.responseStatusCode;
-  const isPreviewLoading = previewStatus === "loading" && !cachedPreview;
+  const isPreviewLoading = previewStatus === "pending" && !cachedPreview;
   const isPreviewError =
     previewError || (previewRequestStatus && previewRequestStatus !== "SUCCESS");
   const previewErrorMessage = isPreviewError

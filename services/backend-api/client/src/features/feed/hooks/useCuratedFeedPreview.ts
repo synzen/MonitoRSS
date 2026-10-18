@@ -11,7 +11,9 @@ export const useCuratedFeedPreview = () => {
     GetCuratedFeedPreviewOutput,
     ApiAdapterError,
     GetCuratedFeedPreviewInput
-  >((details) => getCuratedFeedPreview(details));
+  >({
+    mutationFn: (details) => getCuratedFeedPreview(details),
+  });
 
   return {
     mutateAsync,

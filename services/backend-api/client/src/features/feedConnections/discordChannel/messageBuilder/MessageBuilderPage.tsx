@@ -104,7 +104,7 @@ import { DestructiveActionButton } from "@/components/DestructiveActionButton";
 // When the tree container remounts (key change for Google Translate compatibility),
 // DOM focus is lost to <body>. This component restores focus to the currently
 // selected tree item so keyboard users aren't stranded.
-const TreeFocusRestorer = ({ treeRef }: { treeRef: React.RefObject<HTMLDivElement> }) => {
+const TreeFocusRestorer = ({ treeRef }: { treeRef: React.RefObject<HTMLDivElement | null> }) => {
   const { currentSelectedId } = useNavigableTreeContext();
 
   useEffect(() => {
@@ -189,6 +189,14 @@ const CENTER_PANEL_WIDTH = {
   [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: `calc(min(100vw - ${350 * 2}px, 100%))`,
   "2xl": `calc(min(100vw - ${500 * 2}px, 100%))`,
 };
+
+// Caps the expanded Problems panel so the preview — the most important element
+// of the right column — always keeps at least half of it.
+const PROBLEMS_PANEL_MAX_HEIGHT = "min(50%, 400px)";
+
+// Keeps the Discord preview from being squeezed out of existence when the
+// Problems panel expands on a short viewport; the preview column scrolls instead.
+const MIN_PREVIEW_HEIGHT = "200px";
 
 const MessageBuilderContent: React.FC = () => {
   const { resetMessage } = useMessageBuilderContext();
@@ -326,7 +334,7 @@ const MessageBuilderContent: React.FC = () => {
   const handleSave = async () => {
     const currentMessageComponent = messageComponentRef.current;
 
-    if (updateStatus === "loading" || !feedId || !connectionId || !currentMessageComponent) {
+    if (updateStatus === "pending" || !feedId || !connectionId || !currentMessageComponent) {
       return;
     }
 
@@ -413,8 +421,14 @@ const MessageBuilderContent: React.FC = () => {
     <NavigableTreeContext.Consumer>
       {({ currentSelectedId }) => {
         return (
-          <Box position="relative" height="100%" bg="bg">
-            <Flex direction="column" height="100%">
+          // The builder is a full-screen, chrome-free route, so it sizes to the
+          // viewport directly: the app shell's page wrapper is content-sized (its
+          // `min-height: 100%` only sets a floor), so neither a percentage height
+          // nor a flexed item can claim the leftover height — both inherit the
+          // content's intrinsic height and push the columns past the fold.
+          // Each column then scrolls independently inside this box.
+          <Box position="relative" display="flex" flexDirection="column" height="100dvh" bg="bg">
+            <Flex direction="column" flex="1" minH={0}>
               {/* Header */}
               <Box bg="bg" borderBottomWidth="1px" borderColor="border" width="full">
                 <Flex
@@ -450,7 +464,7 @@ const MessageBuilderContent: React.FC = () => {
                           </Flex>
                         </RouterLink>
                       )}
-                      {botStatus === "loading" && (
+                      {botStatus === "pending" && (
                         <Box>
                           <Loading />
                         </Box>
@@ -628,9 +642,9 @@ const MessageBuilderContent: React.FC = () => {
                               skipBrandingRef.current = true;
                               handleSave();
                             }}
-                            aria-disabled={updateStatus === "loading" || !hasAnyChanges}
+                            aria-disabled={updateStatus === "pending" || !hasAnyChanges}
                           >
-                            {updateStatus === "loading" ? "Saving..." : "Save without branding"}
+                            {updateStatus === "pending" ? "Saving..." : "Save without branding"}
                           </Button>
                           <PrimaryActionButton size="sm" onClick={() => onOpenPricingDialog()}>
                             Upgrade to save with branding
@@ -640,9 +654,9 @@ const MessageBuilderContent: React.FC = () => {
                         <PrimaryActionButton
                           size="sm"
                           onClick={handleSave}
-                          aria-disabled={updateStatus === "loading" || !hasAnyChanges}
+                          aria-disabled={updateStatus === "pending" || !hasAnyChanges}
                         >
-                          {updateStatus === "loading" ? "Saving Changes..." : "Save Changes"}
+                          {updateStatus === "pending" ? "Saving Changes..." : "Save Changes"}
                         </PrimaryActionButton>
                       )}
                     </HStack>
@@ -651,7 +665,12 @@ const MessageBuilderContent: React.FC = () => {
                 <PageAlertContextOutlet containerProps={{ zIndex: 0 }} />
               </Stack>
               {/* Main Content */}
-              <Flex flex={1} bg="bg" position="relative">
+              <Flex flex={1} minH={0} bg="bg" position="relative">
+                {/* Each scroll panel is its own positioning context: an absolutely
+                    positioned descendant (srOnly live regions, labels, badges) whose
+                    containing block resolves above a scroll container is exempt from
+                    that container's overflow clip, letting invisible content inflate
+                    the page scroll. `position: relative` keeps it contained. */}
                 {/* Left Panel - Component Tree */}
                 <Box
                   display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
@@ -667,6 +686,7 @@ const MessageBuilderContent: React.FC = () => {
                     width="100%"
                     overflowY="auto"
                     overflowX="hidden"
+                    position="relative"
                     data-tour-target="components-section"
                   >
                     <VStack align="stretch" gap={0} minWidth={200} height="100%">
@@ -715,6 +735,7 @@ const MessageBuilderContent: React.FC = () => {
                     height="100%"
                     width="100%"
                     overflowY="auto"
+                    position="relative"
                     data-tour-target="properties-panel"
                   >
                     {allComponentIds.map((id) => (
@@ -725,10 +746,12 @@ const MessageBuilderContent: React.FC = () => {
                   </Box>
                 </Box>
                 {/* Right Panel - Discord Preview and Problems */}
-                <Flex flex={1} direction="column" bg="bg" maxW={CENTER_PANEL_WIDTH}>
+                <Flex flex={1} direction="column" minH={0} bg="bg" maxW={CENTER_PANEL_WIDTH}>
                   <Box
-                    flex={isProblemsCollapsed ? 1 : "none"}
-                    overflow="hidden"
+                    flex={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: 1 }}
+                    minH={0}
+                    overflowY="auto"
+                    position="relative"
                     data-tour-target="discord-preview"
                     p={4}
                     display="flex"
@@ -739,7 +762,7 @@ const MessageBuilderContent: React.FC = () => {
                         Discord Message Preview
                       </Text>
                     </Box>
-                    <Box flex={1} overflow="hidden">
+                    <Box flex={1} minH={MIN_PREVIEW_HEIGHT} overflow="hidden">
                       <DiscordMessagePreview
                         maxHeight={isProblemsCollapsed ? "none" : undefined}
                         onResolvedMessages={setResolvedMessages}
@@ -753,7 +776,11 @@ const MessageBuilderContent: React.FC = () => {
                     </Box>
                   </Box>
                   <Box
-                    display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "block" }}
+                    display={{ base: "none", [MESSAGE_BUILDER_MOBILE_BREAKPOINT]: "flex" }}
+                    flexDirection="column"
+                    minH={0}
+                    maxH={isProblemsCollapsed ? undefined : PROBLEMS_PANEL_MAX_HEIGHT}
+                    overflow="hidden"
                     borderTopWidth="1px"
                     borderColor="border"
                     data-tour-target="problems-section"
@@ -761,6 +788,7 @@ const MessageBuilderContent: React.FC = () => {
                     <Box
                       as="button"
                       width="100%"
+                      flexShrink={0}
                       p={4}
                       borderBottomWidth="1px"
                       borderColor="border"
@@ -793,7 +821,15 @@ const MessageBuilderContent: React.FC = () => {
                       </HStack>
                     </Box>
                     {!isProblemsCollapsed && (
-                      <Box id="problems-content" role="region" aria-labelledby="problems-heading">
+                      <Box
+                        id="problems-content"
+                        role="region"
+                        aria-labelledby="problems-heading"
+                        flex={1}
+                        minH={0}
+                        overflowY="auto"
+                        position="relative"
+                      >
                         <ProblemsSection
                           problems={allProblems}
                           onClickComponentPath={handlePathClick}
@@ -924,7 +960,7 @@ const MessageBuilderContent: React.FC = () => {
               articles={galleryArticles}
               selectedArticleId={selectedArticleId}
               onArticleChange={setSelectedArticleId}
-              isLoadingArticles={galleryArticlesStatus === "loading"}
+              isLoadingArticles={galleryArticlesStatus === "pending"}
               feedId={feedId!}
               connectionId={connectionId!}
               userFeed={userFeed}

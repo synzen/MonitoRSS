@@ -1,4 +1,4 @@
-import type { PipelineStage, FilterQuery } from "mongoose";
+import type { PipelineStage, QueryFilter } from "mongoose";
 import type { SlotWindow } from "../types/slot-window.types";
 import {
   UserFeedDisabledCode,
@@ -6,7 +6,7 @@ import {
   UserFeedScheduleMode,
 } from "../../repositories/shared/enums";
 
-function buildSlotWindowFilter(slotWindow: SlotWindow): FilterQuery<unknown> {
+function buildSlotWindowFilter(slotWindow: SlotWindow): QueryFilter<unknown> {
   if (slotWindow.wrapsAroundInterval) {
     const wrappedEndMs = slotWindow.windowEndMs - slotWindow.refreshRateMs;
 
@@ -55,7 +55,7 @@ export function getCommonFeedAggregateStages({
   // refresh rate, nor delivered to by another feed's interval fetch.
   scheduledOnly?: boolean;
 }): PipelineStage[] {
-  const disabledCodeMatch: FilterQuery<unknown> = includeRecoveryFeeds
+  const disabledCodeMatch: QueryFilter<unknown> = includeRecoveryFeeds
     ? // Wrapped in $and: the query's top-level $or (connection eligibility)
       // is a separate operator key, and an object literal cannot carry two
       // $or keys — the later spread would silently drop this one.
@@ -78,7 +78,7 @@ export function getCommonFeedAggregateStages({
         },
       };
 
-  const query: FilterQuery<unknown> = {
+  const query: QueryFilter<unknown> = {
     ...(url ? { url } : {}),
     ...disabledCodeMatch,
     ...(feedRequestLookupKey

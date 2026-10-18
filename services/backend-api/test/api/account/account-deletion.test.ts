@@ -55,8 +55,6 @@ describe("Account deletion API", () => {
       smtpTransport: fakeTransport,
       emailVerificationRepository: ctx.container.emailVerificationRepository,
       userRepository: ctx.container.userRepository,
-      workspaceRepository: ctx.container.workspaceRepository,
-      paddleService: ctx.container.paddleService,
     });
 
     ctx.container.emailVerificationService = emailVerificationService;

@@ -8,7 +8,8 @@ export const useUpdateUserMe = () => {
     UpdateUserMeOutput,
     ApiAdapterError,
     UpdateUserMeInput
-  >((details) => updateUserMe(details), {
+  >({
+    mutationFn: (details: UpdateUserMeInput) => updateUserMe(details),
     onSuccess: (response) => {
       return queryClient.setQueryData<GetUserMeOutput>(["user-me"], response);
     },

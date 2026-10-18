@@ -5,7 +5,13 @@ import { FeedFetcherController } from './feed-fetcher.controller';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
 import { randomUUID } from 'crypto';
 
-jest.mock('undici', () => ({ request: jest.fn() }));
+jest.mock('undici', () => ({
+  request: jest.fn(),
+  Agent: jest.fn(),
+  setGlobalDispatcher: jest.fn(),
+  getGlobalDispatcher: jest.fn(),
+  interceptors: { redirect: jest.fn() },
+}));
 jest.mock('../utils/logger');
 
 function createMockRequest(
@@ -226,11 +232,18 @@ describe('FeedFetcherController', () => {
   describe('fetchFeedDeliveryPreview', () => {
     it('passes lookup key and headers through to fetchAndSaveResponse when stale', async () => {
       const staleDate = dayjs().subtract(1, 'hour').toDate();
-      const headers = { Authorization: 'Bearer token', 'user-agent': 'MonitoRSS:1.0' };
+      const headers = {
+        Authorization: 'Bearer token',
+        'user-agent': 'MonitoRSS:1.0',
+      };
 
       partitionedRequestsStoreService.getLatestRequestAnyStatus
         .mockResolvedValueOnce(
-          createMockStoredRequest(RequestStatus.BAD_STATUS_CODE, staleDate, 429),
+          createMockStoredRequest(
+            RequestStatus.BAD_STATUS_CODE,
+            staleDate,
+            429,
+          ),
         )
         .mockResolvedValueOnce(
           createMockStoredRequest(RequestStatus.OK, new Date(), 200),

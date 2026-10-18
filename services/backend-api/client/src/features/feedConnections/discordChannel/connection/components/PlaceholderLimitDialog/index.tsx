@@ -33,7 +33,7 @@ const formDataSchema = object({
 type FormData = InferType<typeof formDataSchema>;
 
 interface Props {
-  trigger: React.ReactElement;
+  trigger: React.ReactElement<any>;
   defaultValues?: FormData;
   onSubmit: (data: FormData) => void;
   mode: "add" | "update";

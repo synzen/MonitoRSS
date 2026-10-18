@@ -9,7 +9,8 @@ export const useCreateUserFeedClone = () => {
     CreateUserFeedCloneOutput,
     ApiAdapterError,
     CreateUserFeedCloneInput
-  >((details) => createUserFeedClone(details), {
+  >({
+    mutationFn: (details) => createUserFeedClone(details),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["user-feeds"],

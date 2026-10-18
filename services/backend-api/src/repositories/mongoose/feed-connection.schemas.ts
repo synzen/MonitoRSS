@@ -174,7 +174,9 @@ const DiscordBaseComponentSchema = new Schema(
     type: {
       type: Number,
       required: true,
-      enum: Object.values(FeedConnectionDiscordComponentType),
+      enum: Object.values(FeedConnectionDiscordComponentType).filter(
+        (v) => typeof v === "number",
+      ),
     },
   },
   {

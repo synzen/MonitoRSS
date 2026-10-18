@@ -53,7 +53,7 @@ export const UserFeedProvider = ({
     return errorComponent || <ErrorAlert description={error.message} />;
   }
 
-  if (status === "loading" || !feed) {
+  if (status === "pending" || !feed) {
     return loadingComponent || <Spinner />;
   }
 

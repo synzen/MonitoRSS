@@ -57,7 +57,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
   useEffect(
     () => {
       const atLeastOneRequiredValueExists = EMBED_REQUIRES_ONE_OF.some((key) =>
-        getNestedField(embed, key),
+        getNestedField(embed ?? {}, key),
       );
 
       if (!atLeastOneRequiredValueExists) {
@@ -79,7 +79,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
         });
       }
     },
-    EMBED_REQUIRES_ONE_OF.map((key) => getNestedField(embed, key)),
+    EMBED_REQUIRES_ONE_OF.map((key) => getNestedField(embed ?? {}, key)),
   );
 
   const getEmbedError = (fieldName: string) => {
@@ -415,7 +415,7 @@ export const DiscordMessageEmbedForm = ({ index }: Props) => {
                     </Table.Header>
                     <Table.Body>
                       <AnimatedComponent>
-                        {embed.fields?.map((f, fieldIndex) => {
+                        {embed?.fields?.map((f, fieldIndex) => {
                           return (
                             <Table.Row key={f.id} asChild>
                               <motion.tr

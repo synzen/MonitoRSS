@@ -14,7 +14,7 @@ interface Props {
   feedId: string;
   connectionId: string;
   type: FeedConnectionType;
-  trigger?: React.ReactElement;
+  trigger?: React.ReactElement<any>;
 }
 
 export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: Props) => {
@@ -46,10 +46,10 @@ export const DeleteConnectionButton = ({ feedId, connectionId, type, trigger }: 
       trigger={
         trigger ? (
           React.cloneElement(trigger, {
-            disabled: status === "loading",
+            disabled: status === "pending",
           })
         ) : (
-          <Button variant="outline" disabled={status === "loading"}>
+          <Button variant="outline" disabled={status === "pending"}>
             <FaTrash />
             {t("common.buttons.delete")}
           </Button>

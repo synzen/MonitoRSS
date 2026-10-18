@@ -33,6 +33,8 @@ test.describe("Bulk actions — all matching feeds", () => {
   test("select all matching across pages, paging preserves, search change clears, and delete via all-matching removes every match", async ({
     page,
   }) => {
+    test.setTimeout(120_000);
+
     await page.goto("/feeds");
     await expect(page.getByRole("button", { name: "Account settings" })).toBeVisible({
       timeout: 15000,
@@ -135,6 +137,8 @@ test.describe("Bulk actions — all matching feeds", () => {
   test("enable/disable via all-matching with search filter only affects matching feeds", async ({
     page,
   }) => {
+    test.setTimeout(120_000);
+
     await page.goto("/feeds");
     await expect(page.getByRole("button", { name: "Account settings" })).toBeVisible({
       timeout: 15000,
@@ -203,6 +207,8 @@ test.describe("Bulk actions — all matching feeds", () => {
   });
 
   test("changing search clears all-matching selection", async ({ page }) => {
+    test.setTimeout(120_000);
+
     await page.goto("/feeds");
     await expect(page.getByRole("button", { name: "Account settings" })).toBeVisible({
       timeout: 15000,

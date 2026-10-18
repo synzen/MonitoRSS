@@ -20,9 +20,8 @@ import {
   OnChangeFn,
   RowSelectionState,
   flexRender,
-  getCoreRowModel,
-  useReactTable,
 } from "@tanstack/react-table";
+import { getCoreRowModel, useLegacyTable } from "@tanstack/react-table/legacy";
 import {
   closestCenter,
   closestCorners,
@@ -372,7 +371,7 @@ export const UserFeedsTable: React.FC = () => {
   );
 
   // Table instance
-  const tableInstance = useReactTable({
+  const tableInstance = useLegacyTable({
     columns,
     data: rows,
     manualSorting: true,
@@ -432,7 +431,7 @@ export const UserFeedsTable: React.FC = () => {
     [setStatusFilters, setSearchParams],
   );
 
-  const isInitiallyLoading = status === "loading" && !data;
+  const isInitiallyLoading = status === "pending" && !data;
 
   const isFilteredEmpty =
     !isInitiallyLoading && rows.length === 0 && hasActiveFilters;

@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { Button, ChakraProvider } from "@chakra-ui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
@@ -191,11 +191,13 @@ describe("MovePersonalFeedsAction", () => {
         body: JSON.stringify({ feedIds: ["feed-1", "feed-2"] }),
       }),
     );
-    expect(
-      screen.getByRole("dialog", {
-        name: "Move personal feeds to Workspace One",
-      }),
-    ).toHaveAttribute("data-state", "closed");
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", {
+          name: "Move personal feeds to Workspace One",
+        }),
+      ).not.toBeInTheDocument(),
+    );
   });
 
   it("starts oversized selections empty and caps age shortcuts at the remaining slots", async () => {

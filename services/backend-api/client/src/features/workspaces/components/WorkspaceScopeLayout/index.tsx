@@ -64,7 +64,7 @@ export const WorkspaceScopeLayout = ({ header }: { header?: ReactNode }) => {
         }}
       >
         {header}
-        {workspaceStatus === "loading" && (
+        {workspaceStatus === "pending" && (
           <Center as="main" width="100%" mt={24} role="status" aria-live="polite" aria-busy="true">
             <VisuallyHidden>Loading workspace</VisuallyHidden>
             <Spinner aria-hidden="true" />
@@ -84,7 +84,7 @@ export const WorkspaceScopeLayout = ({ header }: { header?: ReactNode }) => {
               </ErrorAlert>
             </Center>
           ))}
-        {workspaceStatus !== "loading" && !error && !workspace && (
+        {workspaceStatus !== "pending" && !error && !workspace && (
           <Navigate to={pages.notFound()} replace />
         )}
         {workspace && (

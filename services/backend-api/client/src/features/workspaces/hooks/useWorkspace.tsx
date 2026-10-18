@@ -10,19 +10,17 @@ export const useWorkspace = ({ workspaceSlug }: Props) => {
   const { data, status, error, fetchStatus, refetch } = useQuery<
     GetWorkspaceOutput,
     ApiAdapterError | Error
-  >(
-    ["workspace", { workspaceSlug }],
-    async () => {
+  >({
+    queryKey: ["workspace", { workspaceSlug }],
+    queryFn: async () => {
       if (!workspaceSlug) {
         throw new Error("Missing workspace selection");
       }
 
       return getWorkspace({ workspaceSlug });
     },
-    {
-      enabled: !!workspaceSlug,
-    },
-  );
+    enabled: !!workspaceSlug,
+  });
 
   return {
     workspace: data?.result,

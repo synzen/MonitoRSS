@@ -76,7 +76,7 @@ export const InvitePage = () => {
     null,
   );
 
-  if (status === "loading") {
+  if (status === "pending") {
     return (
       <Box width="100%" maxW="640px" px={4} py={12} aria-busy="true">
         <HStack justifyContent="center">
@@ -142,8 +142,8 @@ export const InvitePage = () => {
   // The user has proven ownership of some email, but it isn't the invited one
   // (so the server withheld the full address and returned only the hint).
   const hasMismatchedVerifiedEmail = !!verifiedEmail && !emailMatches;
-  const isAccepting = acceptStatus === "loading";
-  const isDeclining = declineStatus === "loading";
+  const isAccepting = acceptStatus === "pending";
+  const isDeclining = declineStatus === "pending";
 
   const resolveErrorMessage = (err: unknown): string => {
     const code = (err as ApiAdapterError)?.errorCode as ApiErrorCode | undefined;

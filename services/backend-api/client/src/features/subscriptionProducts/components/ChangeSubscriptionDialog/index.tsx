@@ -88,7 +88,7 @@ export const ChangeSubscriptionDialog = ({
       return;
     }
 
-    if ((!isChangingToFree && !data) || createStatus === "loading" || cancelStatus === "loading") {
+    if ((!isChangingToFree && !data) || createStatus === "pending" || cancelStatus === "pending") {
       return;
     }
 
@@ -324,8 +324,8 @@ export const ChangeSubscriptionDialog = ({
               onClick={onConfirm}
               aria-disabled={
                 (!isChangingToFree && !data) ||
-                createStatus === "loading" ||
-                cancelStatus === "loading"
+                createStatus === "pending" ||
+                cancelStatus === "pending"
               }
             >
               <span>

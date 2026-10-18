@@ -12,7 +12,8 @@ export const useCreateDiscordChannelConnectionClone = () => {
     CreateDiscordChannelConnectionCloneOutput,
     ApiAdapterError,
     CreateDiscordChannelConnectionCloneInput
-  >((details) => createDiscordChannelConnectionClone(details), {
+  >({
+    mutationFn: (details) => createDiscordChannelConnectionClone(details),
     onSuccess: () =>
       queryClient.invalidateQueries({
         predicate: ({ queryKey }) =>

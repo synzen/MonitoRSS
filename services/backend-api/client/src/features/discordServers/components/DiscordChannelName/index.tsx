@@ -69,7 +69,7 @@ export const DiscordChannelName: React.FC<Props> = ({
   }
 
   const isLoading =
-    status === "loading" || (!channelFound && status === "success" && threadsStatus === "loading");
+    status === "pending" || (!channelFound && status === "success" && threadsStatus === "pending");
 
   if (isLoading) {
     return (

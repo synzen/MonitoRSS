@@ -2,8 +2,8 @@ import { DiscordUser, useDiscordUserMe } from "@/features/discordUser";
 import ApiAdapterError from "@/utils/ApiAdapterError";
 
 interface UseAuthOutput {
-  status: "loading" | "idle" | "error" | "success";
-  authCheckStatus: "loading" | "idle" | "error" | "success";
+  status: "pending" | "idle" | "error" | "success";
+  authCheckStatus: "pending" | "idle" | "error" | "success";
   discordUser?: DiscordUser;
   error?: ApiAdapterError | null;
   authenticated?: boolean;

@@ -7,7 +7,9 @@ export const useRevertEmailVerification = () => {
     void,
     ApiAdapterError,
     RevertEmailVerificationInput
-  >((input) => revertEmailVerification(input));
+  >({
+    mutationFn: (input) => revertEmailVerification(input),
+  });
 
   return {
     mutateAsync,

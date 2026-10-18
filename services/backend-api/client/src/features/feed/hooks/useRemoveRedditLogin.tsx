@@ -5,10 +5,9 @@ import { getRemoveRedditLogin } from "../api/getRemoveRedditLogin";
 export const useRemoveRedditLogin = () => {
   const queryClient = useQueryClient();
 
-  const { mutateAsync, status, error } = useMutation<void, ApiAdapterError, void>(
-    () => getRemoveRedditLogin(),
-    {
-      onSuccess: () =>
+  const { mutateAsync, status, error } = useMutation<void, ApiAdapterError, void>({
+    mutationFn: () => getRemoveRedditLogin(),
+    onSuccess: () =>
         queryClient.invalidateQueries(
           {
             queryKey: ["user-me"],
@@ -18,8 +17,7 @@ export const useRemoveRedditLogin = () => {
             throwOnError: true,
           },
         ),
-    },
-  );
+  });
 
   return {
     mutateAsync,

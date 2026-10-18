@@ -39,7 +39,7 @@ export const DiscordMessageFormLegacy = ({ defaultValues, onClickSave }: Props) 
   const [activeEmbedIndex, setActiveEmbedIndex] = useState(defaultIndex);
 
   const formMethods = useForm<DiscordMessageFormDataLegacy>({
-    resolver: yupResolver(discordMessageFormSchema),
+    resolver: yupResolver(discordMessageFormSchema) as any,
     defaultValues,
     mode: "all",
   });

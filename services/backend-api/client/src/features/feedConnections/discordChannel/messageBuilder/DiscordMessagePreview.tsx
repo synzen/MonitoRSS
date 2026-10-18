@@ -173,7 +173,9 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
       healedArticleIdRef.current !== staleArticleId
     ) {
       healedArticleIdRef.current = staleArticleId;
-      queryClient.invalidateQueries(["user-feed-articles", { feedId: userFeed.id }]);
+      queryClient.invalidateQueries({
+        queryKey: ["user-feed-articles", { feedId: userFeed.id }],
+      });
     }
   }, [error, currentArticle?.id, userFeed.id, queryClient]);
 

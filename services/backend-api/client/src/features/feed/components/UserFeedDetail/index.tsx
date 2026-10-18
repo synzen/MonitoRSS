@@ -458,7 +458,7 @@ export const UserFeedDetail: React.FC = () => {
                           )}
                           {feed?.sharedAccessDetails?.inviteId && (
                             <MenuItem
-                              disabled={updatingStatus === "loading"}
+                              disabled={updatingStatus === "pending"}
                               value="remove-access"
                               onClick={removeAccessOnOpen}
                             >
@@ -468,7 +468,7 @@ export const UserFeedDetail: React.FC = () => {
                           )}
                           {feed && feed.disabledCode !== UserFeedDisabledCode.Manual && (
                             <MenuItem
-                              disabled={updatingStatus === "loading"}
+                              disabled={updatingStatus === "pending"}
                               value="disable-feed"
                               onClick={disableFeedOnOpen}
                             >
@@ -479,7 +479,7 @@ export const UserFeedDetail: React.FC = () => {
                           <MenuSeparator />
                           {feedId && (
                             <MenuItem
-                              disabled={deleteingStatus === "loading"}
+                              disabled={deleteingStatus === "pending"}
                               value="delete-feed"
                               color="text.error"
                               _icon={{ color: "text.error" }}

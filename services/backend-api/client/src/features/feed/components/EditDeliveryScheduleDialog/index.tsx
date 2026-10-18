@@ -31,7 +31,7 @@ import {
 } from "@/utils/feedSchedule";
 import { getEffectiveRefreshRateSeconds } from "@/utils/formatRefreshRateSeconds";
 
-const FormSchema = object({
+export const FormSchema = object({
   scheduleMode: string().oneOf(["interval", "scheduled"]).default("interval"),
   scheduleTimes: array(
     string().required("Choose a time").matches(SCHEDULE_TIME_PATTERN, "Enter a valid time"),
@@ -202,7 +202,7 @@ const ModeCard = ({ value, title, description, selected, children }: ModeCardPro
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onCloseRef?: React.RefObject<HTMLButtonElement>;
+  onCloseRef?: React.RefObject<HTMLButtonElement | null>;
   feed: UserFeed;
   onUpdate: (data: UpdateUserFeedInput["data"]) => Promise<void>;
 }
@@ -381,6 +381,7 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
                               allowMouseWheel
                               value={field.value}
                               onValueChange={(details) => field.onChange(details.value)}
+
                               onBlur={() => field.onBlur()}
                               name={field.name}
                               ref={field.ref}

@@ -1,12 +1,12 @@
 import { Dispatch, SetStateAction } from "react";
-import { SortingState, VisibilityState } from "@tanstack/react-table";
+import { SortingState, ColumnVisibilityState } from "@tanstack/react-table";
 import { UserFeedSummary } from "../../types";
 
 export type RowData = UserFeedSummary;
 
 export interface TablePreferences {
   sorting: SortingState;
-  columnVisibility: VisibilityState;
+  columnVisibility: ColumnVisibilityState;
   columnOrder: string[];
   isCompact: boolean;
   pageSize: number;
@@ -14,7 +14,7 @@ export interface TablePreferences {
 
 export interface TablePreferencesHandlers {
   setSorting: Dispatch<SetStateAction<SortingState>>;
-  setColumnVisibility: Dispatch<SetStateAction<VisibilityState>>;
+  setColumnVisibility: Dispatch<SetStateAction<ColumnVisibilityState>>;
   setColumnOrder: Dispatch<SetStateAction<string[]>>;
   setIsCompact: Dispatch<SetStateAction<boolean>>;
   setPageSize: Dispatch<SetStateAction<number>>;

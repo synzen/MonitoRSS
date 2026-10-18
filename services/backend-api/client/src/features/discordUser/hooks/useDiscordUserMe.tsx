@@ -5,13 +5,11 @@ import { useDiscordAuthStatus } from "./useDiscordAuthStatus";
 
 export const useDiscordUserMe = () => {
   const { data: authStatusData, status: authStatus, error: authError } = useDiscordAuthStatus();
-  const { data, status, error, refetch } = useQuery<GetDiscordMeOutput, ApiAdapterError>(
-    ["discord-user-me"],
-    async () => getDiscordMe(),
-    {
-      enabled: !!authStatusData?.authenticated,
-    },
-  );
+  const { data, status, error, refetch } = useQuery<GetDiscordMeOutput, ApiAdapterError>({
+    queryKey: ["discord-user-me"],
+    queryFn: async () => getDiscordMe(),
+    enabled: !!authStatusData?.authenticated,
+  });
 
   return {
     authCheck: {

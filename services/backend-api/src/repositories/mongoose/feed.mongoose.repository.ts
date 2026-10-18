@@ -139,30 +139,73 @@ export class FeedMongooseRepository
 
     return {
       id: this.objectIdToString(doc._id),
-      text: doc.text,
+      text: doc.text ?? undefined,
       title: doc.title,
       url: doc.url,
       guild: doc.guild,
       channel: doc.channel,
       filters: mapFieldToRecord<string[]>(doc.filters),
       rfilters: mapFieldToRecord<string>(doc.rfilters),
-      embeds: doc.embeds,
-      disabled: doc.disabled,
-      checkTitles: doc.checkTitles,
-      checkDates: doc.checkDates,
-      imgPreviews: doc.imgPreviews,
-      imgLinksExistence: doc.imgLinksExistence,
-      formatTables: doc.formatTables,
-      directSubscribers: doc.directSubscribers,
+      embeds: (doc.embeds ?? []).map((embed) => ({
+        title: embed.title ?? undefined,
+        description: embed.description ?? undefined,
+        url: embed.url ?? undefined,
+        color: embed.color ?? undefined,
+        footerText: embed.footerText ?? undefined,
+        footerIconURL: embed.footerIconURL ?? undefined,
+        authorName: embed.authorName ?? undefined,
+        authorIconURL: embed.authorIconURL ?? undefined,
+        authorURL: embed.authorURL ?? undefined,
+        thumbnailURL: embed.thumbnailURL ?? undefined,
+        imageURL: embed.imageURL ?? undefined,
+        timestamp: embed.timestamp ?? undefined,
+        fields: embed.fields?.map((field) => ({
+          name: field.name,
+          value: field.value,
+          inline: field.inline ?? undefined,
+        })),
+        webhook: embed.webhook
+          ? {
+              id: embed.webhook.id,
+              name: embed.webhook.name ?? undefined,
+              avatar: embed.webhook.avatar ?? undefined,
+              disabled: embed.webhook.disabled ?? undefined,
+              url: embed.webhook.url ?? undefined,
+            }
+          : undefined,
+      })),
+      disabled: doc.disabled ?? undefined,
+      checkTitles: doc.checkTitles ?? undefined,
+      checkDates: doc.checkDates ?? undefined,
+      imgPreviews: doc.imgPreviews ?? undefined,
+      imgLinksExistence: doc.imgLinksExistence ?? undefined,
+      formatTables: doc.formatTables ?? undefined,
+      directSubscribers: doc.directSubscribers ?? undefined,
       ncomparisons: doc.ncomparisons,
       pcomparisons: doc.pcomparisons,
-      webhook: doc.webhook,
+      webhook: doc.webhook
+        ? {
+            id: doc.webhook.id,
+            name: doc.webhook.name ?? undefined,
+            avatar: doc.webhook.avatar ?? undefined,
+            disabled: doc.webhook.disabled ?? undefined,
+            url: doc.webhook.url ?? undefined,
+          }
+        : undefined,
       addedAt: doc.addedAt,
-      split: doc.split,
+      split: doc.split
+        ? {
+            enabled: doc.split.enabled ?? undefined,
+            char: doc.split.char ?? undefined,
+            prepend: doc.split.prepend ?? undefined,
+            append: doc.split.append ?? undefined,
+            maxLength: doc.split.maxLength ?? undefined,
+          }
+        : undefined,
       regexOps: mapFieldToRecord<NonNullable<IFeed["regexOps"]>[string]>(
         doc.regexOps,
       ),
-      isFeedv2: doc.isFeedv2,
+      isFeedv2: doc.isFeedv2 ?? undefined,
       connections: discordChannels
         ? {
             discordChannels: discordChannels.map((conn) =>

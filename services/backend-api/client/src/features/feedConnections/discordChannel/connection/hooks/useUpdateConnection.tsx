@@ -23,7 +23,8 @@ export const useUpdateConnection = ({ type, disablePreviewInvalidation }: Props)
     UpdateDiscordChannelConnectionOutput,
     ApiAdapterError,
     UpdateDiscordChannelConnectionInput
-  >((details) => updateDiscordChannelConnection(details), {
+  >({
+    mutationFn: (details) => updateDiscordChannelConnection(details),
     onSuccess: async (data, inputData) => {
       const promises: Array<Promise<void>> = [];
 

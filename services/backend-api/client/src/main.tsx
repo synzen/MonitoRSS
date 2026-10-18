@@ -184,7 +184,21 @@ async function prepare() {
               ]
             : []),
         ],
-        sendDefaultPii: false,
+        dataCollection: {
+          userInfo: false,
+          cookies: false,
+          httpHeaders: {
+            request: { deny: ["forwarded", "-ip", "remote-", "via", "-user"] },
+            response: { deny: ["forwarded", "-ip", "remote-", "via", "-user"] },
+          },
+          httpBodies: [],
+          urlQueryParams: {
+            deny: ["forwarded", "-ip", "remote-", "via", "-user"],
+          },
+          genAI: { inputs: false, outputs: false },
+          databaseQueryData: false,
+          graphQL: { document: false, variables: false },
+        },
         tracesSampleRate: 0.2,
         // Session Replay
         replaysSessionSampleRate: 0.5, // 50% of ordinary sessions, only when Performance consent is granted.

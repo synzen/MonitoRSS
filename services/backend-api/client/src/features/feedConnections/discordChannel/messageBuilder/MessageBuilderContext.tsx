@@ -112,7 +112,7 @@ const MessageBuilderInternalProvider: React.FC<{ children: React.ReactNode }> = 
   const articles: Record<string, string>[] =
     (articlesResponse?.result?.articles as Record<string, string>[]) || [];
 
-  const isLoading = status === "loading";
+  const isLoading = status === "pending";
   const isFetchingDifferentArticle = fetchStatus === "fetching";
 
   const fetchArticles = useCallback(async () => {

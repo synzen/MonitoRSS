@@ -58,8 +58,7 @@ export function loadConfig(): AppConfig {
 
   const status = statusRaw as DiscordPresenceStatus | undefined;
   const activityType = activityTypeRaw as
-    | DiscordPresenceActivityType
-    | undefined;
+    DiscordPresenceActivityType | undefined;
   const activityName = process.env.BOT_PRESENCE_ACTIVITY_NAME;
   const activityStreamUrl = process.env.BOT_PRESENCE_ACTIVITY_STREAM_URL;
 

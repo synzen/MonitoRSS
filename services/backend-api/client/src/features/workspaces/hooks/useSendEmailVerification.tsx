@@ -7,7 +7,9 @@ export const useSendEmailVerification = () => {
     void,
     ApiAdapterError,
     SendEmailVerificationInput
-  >((input) => sendEmailVerification(input));
+  >({
+    mutationFn: (input) => sendEmailVerification(input),
+  });
 
   return {
     mutateAsync,

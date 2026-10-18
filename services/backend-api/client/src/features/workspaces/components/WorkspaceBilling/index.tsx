@@ -535,7 +535,7 @@ const UpdatePlanDialog = ({
                 borderColor="border.emphasized"
                 pt={5}
                 aria-live="polite"
-                aria-busy={status === "loading"}
+                aria-busy={status === "pending"}
               >
                 <VisuallyHidden>
                   Updating plan from {formatWorkspaceFeedCount(currentFeeds)} billed{" "}
@@ -684,9 +684,9 @@ const UpdatePlanDialog = ({
                 )}
               </Box>
             )}
-            {dirty && (immediate || deferred || status === "loading") && (
-              <Box aria-live="polite" aria-busy={status === "loading"}>
-                {status === "loading" && (
+            {dirty && (immediate || deferred || status === "pending") && (
+              <Box aria-live="polite" aria-busy={status === "pending"}>
+                {status === "pending" && (
                   <Stack gap={1} aria-label="Loading change preview">
                     <Skeleton height="4" width="24" />
                     <Skeleton height="4" width="full" />
@@ -809,7 +809,7 @@ const UpdatePlanDialog = ({
           </Button>
           <PrimaryActionButton
             onClick={onConfirm}
-            loading={updateMutation.status === "loading"}
+            loading={updateMutation.status === "pending"}
             disabled={!dirty || !preview}
           >
             Update plan
@@ -1115,7 +1115,7 @@ export const WorkspaceBilling = () => {
               <Box>
                 <PrimaryActionButton
                   onClick={() => resumeMutation.mutateAsync({ workspaceSlug })}
-                  loading={resumeMutation.status === "loading"}
+                  loading={resumeMutation.status === "pending"}
                 >
                   Keep subscription
                 </PrimaryActionButton>

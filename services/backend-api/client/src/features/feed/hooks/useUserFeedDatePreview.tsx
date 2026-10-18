@@ -24,9 +24,9 @@ export const useUserFeedDatePreview = ({ feedId, data: inputData, disabled }: Pr
   const { data, status, error, refetch, fetchStatus } = useQuery<
     CreateUserFeedDatePreviewOutput,
     ApiAdapterError | Error
-  >(
+  >({
     queryKey,
-    async () => {
+    queryFn: async () => {
       if (!feedId) {
         throw new Error("Missing feed selection for creating date preview");
       }
@@ -36,10 +36,8 @@ export const useUserFeedDatePreview = ({ feedId, data: inputData, disabled }: Pr
         data: inputData,
       });
     },
-    {
-      enabled: !!feedId || disabled,
-    },
-  );
+    enabled: !!feedId || disabled,
+  });
 
   return {
     data,

@@ -71,6 +71,21 @@ and `workspace-self-host-posture.spec.ts` asserts billing UI is absent entirely.
 must live in `tests/billing/` and be listed in `PADDLE_CHECKOUT_TESTS` so it runs under
 `e2e-paddle` with the real env.
 
+## Client build: always a `vite build`
+
+`web-client` always serves a built client (`vite build --mode development` + `vite preview`, built at
+container start), not the Vite dev server — the dev server's per-request module transforms and
+development-mode React made page-heavy specs 25–50% more expensive, which is what pushed them
+against their timeouts. `--mode development` keeps `import.meta.env.MODE` as `development` (dev-only
+UI, Sentry environment).
+
+`import.meta.env.PROD` is `true` in any Vite build, so which Paddle world the client talks to (API
+environment + price IDs) is decided by the explicit `VITE_PADDLE_ENVIRONMENT` variable instead (see
+`constants/paddleEnvironment.ts` in the client). The E2E stack sets it to `sandbox`, matching the
+sandbox credentials the billing specs use. `VITE_*` values are baked into the bundle at build time;
+the runner force-rebuilds `web-client` with `--no-cache` on every run, so this stays correct per
+run.
+
 ## Project Structure
 
 The single `playwright.config.ts` defines 4 projects:

@@ -40,8 +40,8 @@ const InviteRow = ({ invite }: { invite: WorkspaceInvite }) => {
     null,
   );
 
-  const isAccepting = acceptStatus === "loading";
-  const isDeclining = declineStatus === "loading";
+  const isAccepting = acceptStatus === "pending";
+  const isDeclining = declineStatus === "pending";
 
   const resolveErrorMessage = (err: unknown): string => {
     const code = (err as ApiAdapterError)?.errorCode as ApiErrorCode | undefined;
@@ -122,7 +122,7 @@ const InviteRow = ({ invite }: { invite: WorkspaceInvite }) => {
 export const PendingInvitationsList = () => {
   const { invites, status, error, refetch } = useMyWorkspaceInvites();
 
-  if (status === "loading") {
+  if (status === "pending") {
     return (
       <Stack gap={3} aria-busy="true">
         <VisuallyHidden aria-live="polite">{LIVE_STATUS_TEXT[status]}</VisuallyHidden>

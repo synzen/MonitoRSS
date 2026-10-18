@@ -14,7 +14,7 @@ export const DiscordServerName = ({ serverId, textStyle }: Props) => {
     return id === serverId;
   });
 
-  if (status === "loading") {
+  if (status === "pending") {
     return <Skeleton height="1em" width="80px" display="inline-block" />;
   }
 

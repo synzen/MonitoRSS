@@ -70,7 +70,7 @@ export const UserFeedHealthAlert = () => {
 
   // A disabled feed is not being polled, so the failing-requests warning (and its
   // retry CTA) would be misleading; the disabled alert already explains the state.
-  if (!isFailing || status === "loading" || !!userFeed.disabledCode) {
+  if (!isFailing || status === "pending" || !!userFeed.disabledCode) {
     return null;
   }
 
@@ -91,7 +91,7 @@ export const UserFeedHealthAlert = () => {
               also manually attempt a request via the button below.
               <HStack>
                 <PrimaryActionButton
-                  loading={manualRequestStatus === "loading"}
+                  loading={manualRequestStatus === "pending"}
                   onClick={handleManualAttempt}
                 >
                   <span>Retry feed request</span>

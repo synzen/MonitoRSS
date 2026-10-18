@@ -49,10 +49,10 @@ export class DiscordServerProfileMongooseRepository
   ): IDiscordServerProfile {
     return {
       id: doc._id,
-      dateFormat: doc.dateFormat,
-      dateLanguage: doc.dateLanguage,
-      timezone: doc.timezone,
-      locale: doc.locale,
+      dateFormat: doc.dateFormat ?? undefined,
+      dateLanguage: doc.dateLanguage ?? undefined,
+      timezone: doc.timezone ?? undefined,
+      locale: doc.locale ?? undefined,
       name: doc.name,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,

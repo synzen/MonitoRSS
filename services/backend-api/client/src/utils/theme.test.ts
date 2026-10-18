@@ -24,7 +24,9 @@ describe("theme system", () => {
   });
 
   it("resolves the info action border token", () => {
-    expect(system.token("colors.blue.actionBorder")).toBe("#60a5fa");
+    expect(system.tokens.getByName("colors.blue.actionBorder")?.value).toBe(
+      "#60a5fa",
+    );
   });
 
   it("coordinates neutral outline buttons with tinted alert surfaces", () => {

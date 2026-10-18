@@ -33,8 +33,8 @@ const configSchema = z.object({
   BACKEND_API_SESSION_SALT: z.string().min(1),
   BACKEND_API_SESSION_COOKIE_SECURE: z
     .string()
-    .transform((val) => val === "true")
-    .default("false"),
+    .default("false")
+    .transform((val) => val === "true"),
 
   // RabbitMQ
   BACKEND_API_RABBITMQ_BROKER_URL: z.string().min(1),
@@ -66,16 +66,16 @@ const configSchema = z.object({
   // Subscriptions
   BACKEND_API_SUBSCRIPTIONS_ENABLED: z
     .string()
-    .transform((val) => val === "true")
-    .default("false"),
+    .default("false")
+    .transform((val) => val === "true"),
   BACKEND_API_SUBSCRIPTIONS_HOST: z.string().optional(),
   BACKEND_API_SUBSCRIPTIONS_ACCESS_TOKEN: z.string().optional(),
 
   // Supporters
   BACKEND_API_ENABLE_SUPPORTERS: z
     .string()
-    .transform((val) => val === "true")
-    .default("false"),
+    .default("false")
+    .transform((val) => val === "true"),
   BACKEND_API_DEFAULT_MAX_SUPPORTER_USER_FEEDS: z.coerce.number().default(5),
   BACKEND_API_MAX_DAILY_ARTICLES_SUPPORTER: z.coerce.number().default(100),
   BACKEND_API_MAX_DAILY_ARTICLES_DEFAULT: z.coerce.number().default(0),
@@ -97,8 +97,8 @@ const configSchema = z.object({
   BACKEND_API_SMTP_PORT: z.coerce.number().optional(),
   BACKEND_API_SMTP_SECURE: z
     .string()
-    .transform((val) => val !== "false")
-    .default("true"),
+    .default("true")
+    .transform((val) => val !== "false"),
   // Optional disclosures rendered in the shared email footer. Both are
   // omitted from the footer when unset, so a self-host instance sends no
   // legal boilerplate it has not configured. The hosted instance sets them
@@ -114,15 +114,15 @@ const configSchema = z.object({
   // Legacy
   BACKEND_API_ALLOW_LEGACY_REVERSION: z
     .string()
-    .transform((val) => val === "true")
-    .default("false"),
+    .default("false")
+    .transform((val) => val === "true"),
 
   // Sentry
   BACKEND_API_SENTRY_HOST: z.string().optional(),
   BACKEND_API_SENTRY_PROJECT_IDS: z
     .string()
-    .transform((val) => (val ? val.split(",") : []))
-    .default(""),
+    .default("")
+    .transform((val) => (val ? val.split(",") : [])),
 
   // Encryption
   BACKEND_API_ENCRYPTION_KEY_HEX: z
@@ -146,6 +146,7 @@ const configSchema = z.object({
   // Admin
   BACKEND_API_ADMIN_USER_IDS: z
     .string()
+    .default("")
     .transform((val) =>
       val
         ? val
@@ -153,8 +154,7 @@ const configSchema = z.object({
             .map((id) => id.trim())
             .filter(Boolean)
         : [],
-    )
-    .default(""),
+    ),
 })
   .refine(
     (cfg) => {

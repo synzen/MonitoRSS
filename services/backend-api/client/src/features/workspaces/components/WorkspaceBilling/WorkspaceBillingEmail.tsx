@@ -139,7 +139,7 @@ export const WorkspaceBillingEmail = ({
         <HStack gap={2}>
           <PrimaryActionButton
             type="submit"
-            loading={isSubmitting || status === "loading"}
+            loading={isSubmitting || status === "pending"}
             loadingText="Saving..."
           >
             Save billing email

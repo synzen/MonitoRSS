@@ -6,7 +6,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   feedId?: string;
-  finalFocusRef?: RefObject<HTMLElement>;
+  finalFocusRef?: RefObject<HTMLElement | null>;
   /**
    * Which destination's connection dialog to render. Defaults to DiscordChannel today.
    * When destination #2 ships, this becomes the dispatch axis to its dialog.

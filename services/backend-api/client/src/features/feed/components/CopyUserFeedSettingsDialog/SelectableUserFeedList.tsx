@@ -193,7 +193,7 @@ export const SelectableUserFeedList = ({
                 );
               })}
             </Stack>
-            {status === "loading" && (
+            {status === "pending" && (
               <Center px={4} py={3}>
                 <Spinner margin={4} />
               </Center>

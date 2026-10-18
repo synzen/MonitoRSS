@@ -10,7 +10,7 @@ import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 
 interface Props {
   getUserFeedArticlesOutput?: GetUserFeedArticlesOutput;
-  getUserFeedArticlesStatus: "error" | "success" | "loading";
+  getUserFeedArticlesStatus: "error" | "success" | "pending";
   getUserFeedArticlesError?: ApiAdapterError | null;
 }
 

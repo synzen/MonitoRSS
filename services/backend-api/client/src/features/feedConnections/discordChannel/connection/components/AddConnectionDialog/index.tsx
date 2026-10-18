@@ -86,7 +86,7 @@ interface Props {
   isOpen: boolean;
   connection?: FeedDiscordChannelConnection;
   feedId?: string;
-  finalFocusRef?: RefObject<HTMLElement>;
+  finalFocusRef?: RefObject<HTMLElement | null>;
 }
 
 type FormData = InferType<typeof formSchema>;
@@ -464,12 +464,34 @@ export const DiscordTextChannelConnectionDialogContent: React.FC<Props> = ({
       ? "Display name and avatar customization aren't available with the new thread option. To customize these, go back and select a different thread setting."
       : undefined;
 
+  // The template gallery mounts its own DialogRoot. Mounting a dialog already
+  // open while the channel dialog is still open makes the gallery emit an
+  // immediate onOpenChange(false), which tears down the whole flow. Mount it
+  // closed and open it on the next tick, after the channel dialog unmounts —
+  // the same closed-then-open path every other dialog uses.
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isTemplateStep) {
+      return;
+    }
+
+    const id = window.setTimeout(() => {
+      setIsGalleryOpen(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(id);
+      setIsGalleryOpen(false);
+    };
+  }, [isTemplateStep]);
+
   // For template selection step, show TemplateGalleryModal instead of regular modal
   if (isTemplateStep) {
     return (
       <TemplateGalleryModal
         mode="editor"
-        isOpen={isOpen}
+        isOpen={isOpen && isGalleryOpen}
         onClose={handleClose}
         finalFocusRef={finalFocusRef}
         templates={TEMPLATES}

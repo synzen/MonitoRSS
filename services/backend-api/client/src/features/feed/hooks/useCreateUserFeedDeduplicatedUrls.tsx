@@ -11,7 +11,9 @@ export const useCreateUserFeedDeduplicatedUrls = () => {
     CreateUserFeedDeduplicatedUrlsOutput,
     ApiAdapterError,
     CreateUserFeedDeduplicatedUrlsInput
-  >((details) => createUserFeedDeduplicatedUrls(details));
+  >({
+    mutationFn: (details) => createUserFeedDeduplicatedUrls(details),
+  });
 
   return {
     mutateAsync,

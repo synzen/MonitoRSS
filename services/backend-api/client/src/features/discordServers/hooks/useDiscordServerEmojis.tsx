@@ -12,9 +12,9 @@ export const useDiscordServerEmojis = ({ serverId, disabled }: Props) => {
   const { data, status, error, isFetching, refetch } = useQuery<
     GetServerEmojisOutput,
     ApiAdapterError
-  >(
-    discordServerQueryKeys.serverEmojis(serverId || ""),
-    async () => {
+  >({
+    queryKey: discordServerQueryKeys.serverEmojis(serverId || ""),
+    queryFn: async () => {
       if (!serverId) {
         throw new Error("Missing server ID when getting server emojis");
       }
@@ -23,10 +23,8 @@ export const useDiscordServerEmojis = ({ serverId, disabled }: Props) => {
         serverId,
       });
     },
-    {
-      enabled: !!serverId && !disabled,
-    },
-  );
+    enabled: !!serverId && !disabled,
+  });
 
   return {
     data,

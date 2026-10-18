@@ -347,7 +347,23 @@ services:
     environment:
       - API_PROXY_URL=http://web-api:8100
       - VITE_PADDLE_CLIENT_TOKEN=${VITE_PADDLE_CLIENT_TOKEN:-}
-    command: npm run dev -- --host 0.0.0.0 --port 3100
+      - VITE_PADDLE_ENVIRONMENT=sandbox
+    # Node's fetch is the only HTTP client guaranteed in the image (slim has no
+    # curl/wget); used so `up --wait` only returns once the client actually
+    # serves — the container builds before it listens.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 120s
+    # Always serve a built client instead of the dev server: the dev server's
+    # per-request module transforms and development-mode React made page-heavy
+    # specs 25-50% more expensive. `--mode development` keeps
+    # import.meta.env.MODE as `development` (dev-only UI, Sentry env);
+    # VITE_PADDLE_ENVIRONMENT=sandbox keeps Paddle on the sandbox API and price
+    # IDs even though the build bakes import.meta.env.PROD=true.
+    command: ["sh", "-c", "npx vite build --mode development && npx vite preview --host 0.0.0.0 --port 3100"]
     networks:
       - e2e-default
 

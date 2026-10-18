@@ -28,9 +28,11 @@ export const useCreateConnectionTestArticle = () => {
     CreateConnectionTestArticleOutput,
     ApiAdapterError,
     CreateConnectionTestArticleInput
-  >((details) => {
-    const method = methodsByType[details.connectionType];
+  >({
+    mutationFn: (details) => {
+      const method = methodsByType[details.connectionType];
 
-    return method(details.previewInput);
+      return method(details.previewInput);
+    },
   });
 };

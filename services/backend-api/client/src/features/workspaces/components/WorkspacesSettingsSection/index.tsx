@@ -50,7 +50,7 @@ export const WorkspacesSettingsSection = () => {
           </PrimaryActionButton>
         </Box>
         <VisuallyHidden aria-live="polite">{LIVE_STATUS_TEXT[status] ?? ""}</VisuallyHidden>
-        {status === "loading" && (
+        {status === "pending" && (
           <Stack gap={3} aria-busy="true">
             <Skeleton height="60px" borderRadius="md" />
             <Skeleton height="60px" borderRadius="md" />

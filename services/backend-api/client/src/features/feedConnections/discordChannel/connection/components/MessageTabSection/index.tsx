@@ -160,7 +160,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
         <Separator />
       </Stack>
       <Stack>
-        {userFeedArticlesStatus === "loading" && (
+        {userFeedArticlesStatus === "pending" && (
           <Stack alignItems="center">
             <Spinner size="xl" />
             <Text>
@@ -267,7 +267,7 @@ export const MessageTabSection = ({ onMessageUpdated, guildId }: Props) => {
               </Text>
             </Stack>
             {alertComponent}
-            {userFeedArticlesStatus === "loading" && (
+            {userFeedArticlesStatus === "pending" && (
               <Center mt={6}>
                 <Spinner />
               </Center>

@@ -9,7 +9,8 @@ export const useDisableUserFeeds = () => {
     DisableUserFeedsOutput,
     ApiAdapterError,
     DisableUserFeedsInput
-  >((details) => DisableUserFeeds(details), {
+  >({
+    mutationFn: (details) => DisableUserFeeds(details),
     onSuccess: () =>
       queryClient.invalidateQueries(
         {

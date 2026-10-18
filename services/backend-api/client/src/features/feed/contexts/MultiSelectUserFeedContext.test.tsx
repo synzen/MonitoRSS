@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
+import { RowSelectionState } from "@tanstack/react-table";
 import {
   MultiSelectUserFeedProvider,
   useMultiSelectUserFeedContext,
@@ -22,14 +23,14 @@ function feed(id: string): UserFeedSummary {
   };
 }
 
-function selectAll(feeds: UserFeedSummary[]): Record<string, boolean> {
+function selectAll(feeds: UserFeedSummary[]): RowSelectionState {
   return feeds.reduce(
     (acc, f) => {
       acc[f.id] = true;
 
       return acc;
     },
-    {} as Record<string, boolean>,
+    {} as RowSelectionState,
   );
 }
 

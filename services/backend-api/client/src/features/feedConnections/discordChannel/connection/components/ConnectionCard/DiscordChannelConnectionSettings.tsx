@@ -21,7 +21,7 @@ import { usePageAlertContext } from "@/contexts/PageAlertContext";
 interface Props {
   feedId: string;
   connection: FeedDiscordChannelConnection;
-  trigger?: React.ReactElement;
+  trigger?: React.ReactElement<any>;
 }
 
 export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }: Props) => {
@@ -113,7 +113,7 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
               description={t("pages.discordChannelConnection.manualDisableConfirmDescription")}
               error={error?.message}
               trigger={
-                <MenuItem value="disable" disabled={updateStatus === "loading"}>
+                <MenuItem value="disable" disabled={updateStatus === "pending"}>
                   <FaPause />
                   {t("common.buttons.disable")}
                 </MenuItem>
@@ -137,7 +137,7 @@ export const DiscordChannelConnectionSettings = ({ feedId, connection, trigger }
               description="Are you sure you want to re-enable this connection?"
               error={error?.message}
               trigger={
-                <MenuItem value="enable" disabled={updateStatus === "loading"}>
+                <MenuItem value="enable" disabled={updateStatus === "pending"}>
                   <FaPlay />
                   Enable
                 </MenuItem>

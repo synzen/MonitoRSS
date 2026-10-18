@@ -19,12 +19,12 @@ export const ScopeAwareLanding = () => {
   // landing arrives at the workspace route with this result already cached.
   const { workspace, status: workspaceStatus } = useWorkspace({ workspaceSlug });
 
-  if (userStatus === "loading") {
+  if (userStatus === "pending") {
     return <LoadingFallback />;
   }
 
   if (workspaceSlug) {
-    if (workspaceStatus === "loading") {
+    if (workspaceStatus === "pending") {
       return <LoadingFallback />;
     }
 

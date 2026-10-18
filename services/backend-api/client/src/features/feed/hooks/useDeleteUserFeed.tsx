@@ -5,10 +5,9 @@ import { deleteUserFeed, DeleteUserFeedInput } from "../api";
 export const useDeleteUserFeed = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, ApiAdapterError, DeleteUserFeedInput>(
-    (details) => deleteUserFeed(details),
-    {
-      onSuccess: () => {
+  return useMutation<void, ApiAdapterError, DeleteUserFeedInput>({
+    mutationFn: (details) => deleteUserFeed(details),
+    onSuccess: () => {
         return queryClient.invalidateQueries(
           {
             predicate: (query) => {
@@ -22,6 +21,5 @@ export const useDeleteUserFeed = () => {
           },
         );
       },
-    },
-  );
+  });
 };

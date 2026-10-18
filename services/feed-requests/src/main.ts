@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory } from '@nestjs/core';
@@ -10,6 +11,7 @@ import { AllExceptionsFilter } from './shared/filters';
 import logger from './utils/logger';
 import { MikroORM } from '@mikro-orm/core';
 import { RequestContext } from '@mikro-orm/core';
+import type { EntityManager } from '@mikro-orm/core';
 import compression from '@fastify/compress';
 import pruneAndCreatePartitions from './utils/prune-and-create-partitions';
 
@@ -91,8 +93,9 @@ async function bootstrap() {
   }
 }
 
-async function tryDbConnection(orm: MikroORM, currentTries = 0) {
+async function tryDbConnection(orm: { em: EntityManager }, currentTries = 0) {
   if (currentTries >= 10) {
+    // eslint-disable-next-line no-console -- Datadog mode disables logger console output
     console.error('Failed to connect to database after 10 tries. Exiting...');
     logger.error('Failed to connect to database after 10 tries. Exiting...');
 
@@ -124,6 +127,7 @@ async function schedulePruneAndCreatePartitions(app) {
         );
       })
       .catch((err) => {
+        // eslint-disable-next-line no-console -- Datadog mode disables logger console output
         console.error(err);
         logger.error(
           `Failed to run recurring task to prune and create partitions`,

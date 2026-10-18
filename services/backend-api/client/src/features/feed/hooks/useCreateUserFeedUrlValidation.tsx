@@ -14,13 +14,14 @@ export const useCreateUserFeedUrlValidation = () => {
     CreateUserFeedUrlValidationOutput,
     ApiAdapterError,
     CreateUserFeedUrlValidationInput
-  >(
-    // In workspace scope, validation (and its reddit gate) runs against the workspace.
-    (input) =>
-      createUserFeedUrlValidation({
-        details: { ...input.details, workspaceId: input.details.workspaceId ?? workspaceId },
-      }),
-  );
+  >({
+    mutationFn:
+      // In workspace scope, validation (and its reddit gate) runs against the workspace.
+      (input) =>
+        createUserFeedUrlValidation({
+          details: { ...input.details, workspaceId: input.details.workspaceId ?? workspaceId },
+        }),
+  });
 
   return {
     mutateAsync,

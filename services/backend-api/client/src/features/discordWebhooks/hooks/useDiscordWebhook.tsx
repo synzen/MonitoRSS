@@ -8,22 +8,22 @@ interface Props {
 
 export const useDiscordWebhook = ({ webhookId }: Props) => {
   const { data, status, error, fetchStatus } = useQuery<GetDiscordWebhookOutput, ApiAdapterError>(
-    [
-      "discord-webhook",
-      {
-        webhookId,
-      },
-    ],
-    async () => {
-      if (!webhookId) {
-        throw new Error("Missing webhook ID when getting webhooks");
-      }
-
-      return getDiscordWebhook({
-        webhookId,
-      });
-    },
     {
+      queryKey: [
+        "discord-webhook",
+        {
+          webhookId,
+        },
+      ],
+      queryFn: async () => {
+        if (!webhookId) {
+          throw new Error("Missing webhook ID when getting webhooks");
+        }
+
+        return getDiscordWebhook({
+          webhookId,
+        });
+      },
       enabled: !!webhookId,
     },
   );

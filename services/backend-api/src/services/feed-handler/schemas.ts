@@ -9,8 +9,8 @@ export const GetDeliveryCountResultSchema = z.object({
 
 export const SendTestArticleResultSchema = z.object({
   status: z.nativeEnum(TestDeliveryStatus),
-  apiResponse: z.record(z.unknown()).optional(),
-  apiPayload: z.record(z.unknown()).optional(),
+  apiResponse: z.record(z.string(), z.unknown()).optional(),
+  apiPayload: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const CreatePreviewOutputSchema = z.object({
@@ -51,7 +51,7 @@ const ExternalContentErrorSchema = z.object({
 const ResultSchema = z.object({
   requestStatus: z.nativeEnum(GetArticlesResponseRequestStatus),
   response: ResponseSchema.optional(),
-  articles: z.array(z.record(z.string())),
+  articles: z.array(z.record(z.string(), z.string())),
   totalArticles: z.number().min(0),
   filterStatuses: z.array(FilterStatusSchema).optional(),
   selectedProperties: z.array(z.string()),

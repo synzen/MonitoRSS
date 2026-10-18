@@ -15,7 +15,7 @@ import iconv from 'iconv-lite';
 import { RequestSource } from './constants/request-source.constants';
 import PartitionedRequestsStoreService from '../partitioned-requests-store/partitioned-requests-store.service';
 import { PartitionedRequestInsert } from '../partitioned-requests-store/types/partitioned-request.type';
-import { request } from 'undici';
+import { request, interceptors, getGlobalDispatcher } from 'undici';
 import { GetFeedRequestsInputDto } from './dto';
 
 const deflatePromise = promisify(deflate);
@@ -39,13 +39,16 @@ const trimHeadersForStorage = (
     return {};
   }
 
-  const trimmed = Object.entries(obj || {}).reduce((acc, [key, val]) => {
-    if (val) {
-      acc[key.toLowerCase()] = val;
-    }
+  const trimmed = Object.entries(obj || {}).reduce(
+    (acc, [key, val]) => {
+      if (val) {
+        acc[key.toLowerCase()] = val;
+      }
 
-    return acc;
-  }, {} as Record<string, string>);
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
 
   if (trimmed.authorization) {
     trimmed.authorization = 'SECRET';
@@ -532,7 +535,9 @@ export class FeedFetcherService {
     const r = await request(url, {
       headers: useOptions.headers,
       signal: useOptions.signal,
-      maxRedirections: 10,
+      dispatcher: getGlobalDispatcher().compose(
+        interceptors.redirect({ maxRedirections: 10 }),
+      ),
     }).finally(() => clearTimeout(timer));
 
     const contentTypes =

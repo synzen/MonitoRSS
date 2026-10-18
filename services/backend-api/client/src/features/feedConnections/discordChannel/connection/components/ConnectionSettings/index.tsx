@@ -80,7 +80,7 @@ export const ConnectionDiscordChannelSettings: React.FC = () => {
   return (
     <DashboardContentV2
       error={feedError || connectionError}
-      loading={feedStatus === "loading" || connectionStatus === "loading"}
+      loading={feedStatus === "pending" || connectionStatus === "pending"}
     >
       <UserFeedProvider feedId={feedId}>
         <UserFeedConnectionProvider feedId={feedId} connectionId={connectionId}>
@@ -271,7 +271,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                         connection.details.webhook.isApplicationOwned
                       }
                     >
-                      {discordWebhooksStatus === "loading" ? <Spinner size="sm" /> : null}
+                      {discordWebhooksStatus === "pending" ? <Spinner size="sm" /> : null}
                       <HStack>
                         <Text>{matchingWebhook?.name}</Text>
                         <DiscordChannelName
@@ -289,7 +289,7 @@ const ConnectionDiscordChannelSettingsInner: React.FC = () => {
                         !connection.details.webhook.isApplicationOwned
                       }
                     >
-                      {discordWebhooksStatus === "loading" ? <Spinner size="sm" /> : null}
+                      {discordWebhooksStatus === "pending" ? <Spinner size="sm" /> : null}
                       <HStack>
                         <DiscordChannelName
                           serverId={serverId}

@@ -13,7 +13,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for MediaGall
         data-part="root"
         data-scope="avatar"
         dir="ltr"
-        id="avatar::rs:"
+        id="avatar:_r_s_"
       >
         <span
           class="chakra-avatar__fallback css-1cuxwyn"
@@ -21,7 +21,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for MediaGall
           data-scope="avatar"
           data-state="visible"
           dir="ltr"
-          id="avatar::rs::fallback"
+          id="avatar:_r_s_:fallback"
         >
           M
         </span>
@@ -35,7 +35,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for MediaGall
           dir="ltr"
           draggable="false"
           hidden=""
-          id="avatar::rs::image"
+          id="avatar:_r_s_:image"
           referrerpolicy="no-referrer"
           src="https://cdn.discordapp.com/embed/avatars/0.png"
         />
@@ -127,7 +127,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 messag
         data-part="root"
         data-scope="avatar"
         dir="ltr"
-        id="avatar::rp:"
+        id="avatar:_r_p_"
       >
         <span
           class="chakra-avatar__fallback css-1cuxwyn"
@@ -135,7 +135,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 messag
           data-scope="avatar"
           data-state="visible"
           dir="ltr"
-          id="avatar::rp::fallback"
+          id="avatar:_r_p_:fallback"
         >
           M
         </span>
@@ -149,7 +149,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for V2 messag
           dir="ltr"
           draggable="false"
           hidden=""
-          id="avatar::rp::image"
+          id="avatar:_r_p_:image"
           referrerpolicy="no-referrer"
           src="https://cdn.discordapp.com/embed/avatars/0.png"
         />
@@ -301,7 +301,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for empty sta
         data-part="root"
         data-scope="avatar"
         dir="ltr"
-        id="avatar::rq:"
+        id="avatar:_r_q_"
       >
         <span
           class="chakra-avatar__fallback css-1cuxwyn"
@@ -309,7 +309,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for empty sta
           data-scope="avatar"
           data-state="visible"
           dir="ltr"
-          id="avatar::rq::fallback"
+          id="avatar:_r_q_:fallback"
         >
           M
         </span>
@@ -323,7 +323,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for empty sta
           dir="ltr"
           draggable="false"
           hidden=""
-          id="avatar::rq::image"
+          id="avatar:_r_q_:image"
           referrerpolicy="no-referrer"
           src="https://cdn.discordapp.com/embed/avatars/0.png"
         />
@@ -374,7 +374,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for loading s
         data-part="root"
         data-scope="avatar"
         dir="ltr"
-        id="avatar::rr:"
+        id="avatar:_r_r_"
       >
         <span
           class="chakra-avatar__fallback css-1cuxwyn"
@@ -382,7 +382,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for loading s
           data-scope="avatar"
           data-state="visible"
           dir="ltr"
-          id="avatar::rr::fallback"
+          id="avatar:_r_r_:fallback"
         >
           M
         </span>
@@ -396,7 +396,7 @@ exports[`DiscordMessageDisplay > Snapshot Tests > matches snapshot for loading s
           dir="ltr"
           draggable="false"
           hidden=""
-          id="avatar::rr::image"
+          id="avatar:_r_r_:image"
           referrerpolicy="no-referrer"
           src="https://cdn.discordapp.com/embed/avatars/0.png"
         />

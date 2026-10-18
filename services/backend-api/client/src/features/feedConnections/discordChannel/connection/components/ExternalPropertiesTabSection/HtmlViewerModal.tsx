@@ -13,7 +13,7 @@ import {
 import { toaster } from "@/components/ui/toaster";
 
 interface Props {
-  trigger: React.ReactElement;
+  trigger: React.ReactElement<any>;
   html: string;
   isTruncated?: boolean;
   cssSelector: string;

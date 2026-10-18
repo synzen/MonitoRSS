@@ -42,7 +42,7 @@ export class BannedFeedMongooseRepository
     return {
       id: this.objectIdToString(doc._id),
       url: doc.url,
-      reason: doc.reason,
+      reason: doc.reason ?? undefined,
       guildIds: doc.guildIds,
     };
   }

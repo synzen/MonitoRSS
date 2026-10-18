@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -37,7 +37,7 @@ describe("SetupChecklistCard", () => {
   it("marks the site icon as essential so the Termly auto-blocker leaves src intact", () => {
     renderWithChakra(<SetupChecklistCard feed={baseFeed} onAddConnection={vi.fn()} />);
 
-    const img = screen.getByRole("img", { hidden: true });
+    const img = document.querySelector("img");
     expect(img).toHaveAttribute("data-categories", "essential");
   });
 

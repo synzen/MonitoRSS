@@ -84,6 +84,37 @@ function astToString(node) {
   return inner(node).join("");
 }
 
+const REACT_LEGACY_ELEMENT_SYMBOL =
+  (typeof Symbol === "function" && Symbol.for && Symbol.for("react.element")) || 0xeac7;
+const REACT_ELEMENT_SYMBOL =
+  (typeof Symbol === "function" && Symbol.for && Symbol.for("react.transitional.element")) ||
+  0xeac7;
+
+// simple-markdown hand-rolls elements with the legacy `react.element` symbol,
+// which React 19 no longer accepts. Retag them to the current element symbol;
+// the rest of the element shape is identical.
+function normalizeParsedOutput(node) {
+  if (Array.isArray(node)) {
+    return node.map(normalizeParsedOutput);
+  }
+
+  if (node && typeof node === "object" && node.$$typeof) {
+    const { props } = node;
+    const nextProps =
+      props && typeof props === "object" && "children" in props
+        ? { ...props, children: normalizeParsedOutput(props.children) }
+        : props;
+
+    if (node.$$typeof === REACT_LEGACY_ELEMENT_SYMBOL) {
+      return { ...node, $$typeof: REACT_ELEMENT_SYMBOL, props: nextProps };
+    }
+
+    return nextProps === props ? node : { ...node, props: nextProps };
+  }
+
+  return node;
+}
+
 function parserFor(rules, returnAst) {
   const parser = SimpleMarkdown.parserFor(rules);
   const renderer = SimpleMarkdown.reactFor(SimpleMarkdown.ruleOutput(rules, "react"));
@@ -112,7 +143,7 @@ function parserFor(rules, returnAst) {
       return ast;
     }
 
-    return renderer(ast, state);
+    return normalizeParsedOutput(renderer(ast, state));
   };
 }
 

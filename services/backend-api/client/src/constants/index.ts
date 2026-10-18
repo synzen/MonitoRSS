@@ -4,5 +4,6 @@ export * from "./userFeedManagerStatus";
 export * from "./userFeedManagerInviteType";
 export * from "./supporterTier";
 export * from "./productKey";
+export * from "./paddleEnvironment";
 export * from "./planDisplayName";
 export * from "./customPlaceholderStepType";

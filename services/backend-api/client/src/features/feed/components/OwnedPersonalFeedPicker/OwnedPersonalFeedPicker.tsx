@@ -743,7 +743,7 @@ export const OwnedPersonalFeedPicker = ({
           {refreshedSelectedRows.map((feed) => renderRow(feed))}
           {pickedTop?.map((feed) => renderRow(feed))}
           {browseRows.map((feed) => renderRow(feed))}
-          {status === "loading" && (
+          {status === "pending" && (
             <Center py={3}>
               <Spinner />
             </Center>
