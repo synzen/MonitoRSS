@@ -1,16 +1,17 @@
 /* eslint-disable max-len */
-// Polyfill for Jest VM environment (redis v4 depends on undici which needs these)
-import { ReadableStream, WritableStream, TransformStream } from 'stream/web';
-
-Object.assign(globalThis, {
-  ReadableStream,
-  WritableStream,
-  TransformStream,
-});
-
 import { MikroORM } from '@mikro-orm/core';
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
+import {
+  after,
+  afterEach,
+  before,
+  beforeEach,
+  describe,
+  it,
+  mock,
+} from 'node:test';
+import assert from 'node:assert';
 import { RequestStatus } from './constants';
 import { RequestSource } from './constants/request-source.constants';
 import { FeedFetcherListenerService } from './feed-fetcher-listener.service';
@@ -23,8 +24,9 @@ import {
   teardownPostgresTests,
 } from '../shared/utils/setup-postgres-tests';
 import config from '../config';
+import { silenceLogger } from '../test/helpers/silence-logger';
 
-jest.mock('../utils/logger');
+silenceLogger();
 
 describe('FeedFetcherListenerService (Integration)', () => {
   let service: FeedFetcherListenerService;
@@ -34,17 +36,17 @@ describe('FeedFetcherListenerService (Integration)', () => {
   // nock cannot intercept undici.request, so the HTTP layer is stubbed at the
   // FeedFetcherService seam; everything around it (locks, dedupe, failure
   // counting, backoff, flush, event emission) runs for real.
-  const fetchAndSaveResponse = jest.fn();
+  const fetchAndSaveResponse = mock.fn<any>();
   const amqpConnection = {
-    publish: jest.fn(),
+    publish: mock.fn<any>(),
   };
   const cacheStorageService = {
-    setNX: jest.fn(),
-    del: jest.fn(),
-    increment: jest.fn(),
+    setNX: mock.fn<any>(),
+    del: mock.fn<any>(),
+    increment: mock.fn<any>(),
   };
 
-  beforeAll(async () => {
+  before(async () => {
     const configVals = config();
     const configService = {
       get: (key: string) => configVals[key as keyof typeof configVals],
@@ -74,17 +76,22 @@ describe('FeedFetcherListenerService (Integration)', () => {
   });
 
   beforeEach(async () => {
-    cacheStorageService.setNX.mockResolvedValue(true);
-    cacheStorageService.del.mockResolvedValue(undefined);
-    cacheStorageService.increment.mockResolvedValue(1);
+    cacheStorageService.setNX.mock.mockImplementation(async () => true);
+    cacheStorageService.del.mock.mockImplementation(async () => undefined);
+    cacheStorageService.increment.mock.mockImplementation(async () => 1);
   });
 
   afterEach(async () => {
-    jest.resetAllMocks();
+    fetchAndSaveResponse.mock.resetCalls();
+    amqpConnection.publish.mock.resetCalls();
+    cacheStorageService.setNX.mock.resetCalls();
+    cacheStorageService.del.mock.resetCalls();
+    cacheStorageService.increment.mock.resetCalls();
+
     await recreatePartitionedTables();
   });
 
-  afterAll(async () => {
+  after(async () => {
     await teardownPostgresTests();
   });
 
@@ -128,7 +135,9 @@ describe('FeedFetcherListenerService (Integration)', () => {
   };
 
   const publishedEvents = (queue: string) =>
-    amqpConnection.publish.mock.calls.filter((call) => call[1] === queue);
+    amqpConnection.publish.mock.calls.filter(
+      (call) => call.arguments[1] === queue,
+    );
 
   const runBatch = async (
     data: unknown[],
@@ -143,17 +152,17 @@ describe('FeedFetcherListenerService (Integration)', () => {
 
   describe('onBrokerFetchRequestBatch', () => {
     it('saves a failed attempt with a next retry date if failed', async () => {
-      fetchAndSaveResponse.mockResolvedValue({
+      fetchAndSaveResponse.mock.mockImplementation(async () => ({
         request: buildInsert(),
-      });
+      }));
 
       await runBatch([{ url: feedUrl }], 100);
 
       const rows = await getAllRows();
 
-      expect(rows).toHaveLength(1);
-      expect(rows[0].status).toEqual(RequestStatus.FETCH_ERROR);
-      expect(rows[0].next_retry_date).toBeDefined();
+      assert.strictEqual(rows.length, 1);
+      assert.strictEqual(rows[0].status, RequestStatus.FETCH_ERROR);
+      assert.ok(rows[0].next_retry_date);
     });
 
     it('does not process the event if at failure retry count', async () => {
@@ -169,7 +178,7 @@ describe('FeedFetcherListenerService (Integration)', () => {
 
       await runBatch([{ url: feedUrl }], 100);
 
-      expect(fetchAndSaveResponse).not.toHaveBeenCalled();
+      assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 0);
     });
 
     it('emits a failed url if at failure retry count', async () => {
@@ -185,13 +194,10 @@ describe('FeedFetcherListenerService (Integration)', () => {
 
       await runBatch([{ url: feedUrl }], 100);
 
-      expect(amqpConnection.publish).toHaveBeenCalledTimes(1);
-      expect(amqpConnection.publish).toHaveBeenCalledWith(
-        '',
-        'url.failed.disable-feeds',
-        expect.objectContaining({
-          data: expect.objectContaining({ url: feedUrl }),
-        }),
+      assert.strictEqual(amqpConnection.publish.mock.callCount(), 1);
+      assert.partialDeepStrictEqual(
+        amqpConnection.publish.mock.calls[0].arguments,
+        ['', 'url.failed.disable-feeds', { data: { url: feedUrl } }],
       );
     });
 
@@ -218,18 +224,18 @@ describe('FeedFetcherListenerService (Integration)', () => {
           },
         }),
       ]);
-      fetchAndSaveResponse.mockResolvedValue({
+      fetchAndSaveResponse.mock.mockImplementation(async () => ({
         request: buildInsert({ status: RequestStatus.OK }),
-      });
+      }));
 
       await runBatch([{ url: feedUrl }], 100);
 
-      expect(fetchAndSaveResponse).toHaveBeenCalledTimes(1);
+      assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 1);
 
       const rows = await getAllRows();
 
-      expect(rows).toHaveLength(2);
-      expect(publishedEvents('url.fetch.completed')).toHaveLength(1);
+      assert.strictEqual(rows.length, 2);
+      assert.strictEqual(publishedEvents('url.fetch.completed').length, 1);
     });
 
     it('skips the fetch but emits fetch completed when the cached response is still fresh', async () => {
@@ -254,8 +260,8 @@ describe('FeedFetcherListenerService (Integration)', () => {
 
       await runBatch([{ url: feedUrl }], 100);
 
-      expect(fetchAndSaveResponse).not.toHaveBeenCalled();
-      expect(publishedEvents('url.fetch.completed')).toHaveLength(1);
+      assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 0);
+      assert.strictEqual(publishedEvents('url.fetch.completed').length, 1);
     });
   });
 
@@ -302,7 +308,7 @@ describe('FeedFetcherListenerService (Integration)', () => {
           }),
         ),
       ]);
-      fetchAndSaveResponse.mockResolvedValue({
+      fetchAndSaveResponse.mock.mockImplementation(async () => ({
         request: buildInsert({
           status: RequestStatus.OK,
           response: {
@@ -314,27 +320,30 @@ describe('FeedFetcherListenerService (Integration)', () => {
             body: null,
           },
         }),
-      });
+      }));
 
       await runRecoveryBatch();
 
-      expect(fetchAndSaveResponse).toHaveBeenCalledTimes(1);
+      assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 1);
 
       const rows = await getAllRows();
 
-      expect(rows).toHaveLength(7);
-      expect(rows[rows.length - 1].status).toEqual(RequestStatus.OK);
+      assert.strictEqual(rows.length, 7);
+      assert.strictEqual(rows[rows.length - 1].status, RequestStatus.OK);
 
-      expect(publishedEvents('url.fetch.completed')).toHaveLength(1);
-      expect(amqpConnection.publish).toHaveBeenCalledWith(
-        '',
-        'url.fetch.completed',
-        expect.objectContaining({
-          data: expect.objectContaining({
-            url: feedUrl,
-            recovery: { startedAt: recoveryStartedAt },
-          }),
-        }),
+      assert.strictEqual(publishedEvents('url.fetch.completed').length, 1);
+      assert.partialDeepStrictEqual(
+        amqpConnection.publish.mock.calls[0].arguments,
+        [
+          '',
+          'url.fetch.completed',
+          {
+            data: {
+              url: feedUrl,
+              recovery: { startedAt: recoveryStartedAt },
+            },
+          },
+        ],
       );
     });
 
@@ -349,18 +358,18 @@ describe('FeedFetcherListenerService (Integration)', () => {
           }),
         ),
       );
-      fetchAndSaveResponse.mockResolvedValue({
+      fetchAndSaveResponse.mock.mockImplementation(async () => ({
         request: buildInsert({ status: RequestStatus.OK }),
-      });
+      }));
 
       await runRecoveryBatch();
 
-      expect(fetchAndSaveResponse).toHaveBeenCalledTimes(1);
-      expect(publishedEvents('url.failed.disable-feeds')).toHaveLength(0);
+      assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 1);
+      assert.strictEqual(publishedEvents('url.failed.disable-feeds').length, 0);
     });
 
     it('persists the exponential backoff after a failed recovery attempt and skips until it elapses', async () => {
-      fetchAndSaveResponse.mockImplementation(async () => ({
+      fetchAndSaveResponse.mock.mockImplementation(async () => ({
         request: buildInsert(),
       }));
 
@@ -368,17 +377,17 @@ describe('FeedFetcherListenerService (Integration)', () => {
 
       let rows = await getAllRows();
 
-      expect(rows).toHaveLength(1);
+      assert.strictEqual(rows.length, 1);
 
       const firstBackoff = dayjs(rows[0].next_retry_date);
 
-      expect(firstBackoff.diff(dayjs(), 'minute')).toBeGreaterThanOrEqual(4);
-      expect(firstBackoff.diff(dayjs(), 'minute')).toBeLessThanOrEqual(6);
+      assert.ok(firstBackoff.diff(dayjs(), 'minute') >= 4);
+      assert.ok(firstBackoff.diff(dayjs(), 'minute') <= 6);
 
       // An immediate retry of the same recovery cycle honors the backoff.
       await runRecoveryBatch();
 
-      expect(fetchAndSaveResponse).toHaveBeenCalledTimes(1);
+      assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 1);
 
       // Once the backoff elapses, the next attempt proceeds and the backoff
       // grows exponentially (5 * 2^1 minutes for the second fresh failure).
@@ -390,16 +399,16 @@ describe('FeedFetcherListenerService (Integration)', () => {
 
       await runRecoveryBatch();
 
-      expect(fetchAndSaveResponse).toHaveBeenCalledTimes(2);
+      assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 2);
 
       rows = await getAllRows();
 
-      expect(rows).toHaveLength(2);
+      assert.strictEqual(rows.length, 2);
 
       const secondBackoff = dayjs(rows[rows.length - 1].next_retry_date);
 
-      expect(secondBackoff.diff(dayjs(), 'minute')).toBeGreaterThanOrEqual(9);
-      expect(secondBackoff.diff(dayjs(), 'minute')).toBeLessThanOrEqual(11);
+      assert.ok(secondBackoff.diff(dayjs(), 'minute') >= 9);
+      assert.ok(secondBackoff.diff(dayjs(), 'minute') <= 11);
     });
 
     it('returns the recovery cycle to the failed state when the fresh cycle exhausts the threshold', async () => {
@@ -414,8 +423,8 @@ describe('FeedFetcherListenerService (Integration)', () => {
 
       await runRecoveryBatch();
 
-      expect(fetchAndSaveResponse).not.toHaveBeenCalled();
-      expect(publishedEvents('url.failed.disable-feeds')).toHaveLength(1);
+      assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 0);
+      assert.strictEqual(publishedEvents('url.failed.disable-feeds').length, 1);
     });
   });
 
@@ -448,18 +457,18 @@ describe('FeedFetcherListenerService (Integration)', () => {
         fields: ['response_headers'],
       });
 
-      expect(result).not.toBeNull();
-      expect(result!.createdAt).toBeInstanceOf(Date);
-      expect(result!.createdAt.toISOString()).toEqual(
+      assert.ok(result);
+      assert.ok(result.createdAt instanceof Date);
+      assert.strictEqual(
+        result.createdAt.toISOString(),
         requestedAt.toISOString(),
       );
-      expect(result!.requestInitiatedAt).toBeInstanceOf(Date);
-      expect(result!.requestInitiatedAt!.toISOString()).toEqual(
+      assert.ok(result.requestInitiatedAt instanceof Date);
+      assert.strictEqual(
+        result.requestInitiatedAt.toISOString(),
         requestedAt.toISOString(),
       );
-      expect(result!.responseHeaders).toMatchObject({
-        date: expect.any(String),
-      });
+      assert.strictEqual(typeof result.responseHeaders?.date, 'string');
     });
 
     it('returns null requestInitiatedAt when the row has none', async () => {
@@ -475,8 +484,8 @@ describe('FeedFetcherListenerService (Integration)', () => {
         orm,
       ).getLatestRequestWithOkStatus(feedUrl, {});
 
-      expect(result).not.toBeNull();
-      expect(result!.requestInitiatedAt).toBeNull();
+      assert.ok(result);
+      assert.strictEqual(result.requestInitiatedAt, null);
     });
   });
 
@@ -487,8 +496,8 @@ describe('FeedFetcherListenerService (Integration)', () => {
           url: feedUrl,
         });
 
-      expect(skip).toEqual(false);
-      expect(failedAttemptsCount).toEqual(0);
+      assert.strictEqual(skip, false);
+      assert.strictEqual(failedAttemptsCount, 0);
     });
 
     it('should return false if latest attempt was successful', async () => {
@@ -500,7 +509,7 @@ describe('FeedFetcherListenerService (Integration)', () => {
         url: feedUrl,
       });
 
-      expect(skip).toEqual(false);
+      assert.strictEqual(skip, false);
     });
 
     it('should skip if the found latest retry date is in the future', async () => {
@@ -519,7 +528,7 @@ describe('FeedFetcherListenerService (Integration)', () => {
         url: feedUrl,
       });
 
-      expect(skip).toEqual(true);
+      assert.strictEqual(skip, true);
     });
 
     it('should not skip if the found latest retry date is in the past', async () => {
@@ -538,7 +547,7 @@ describe('FeedFetcherListenerService (Integration)', () => {
         url: feedUrl,
       });
 
-      expect(skip).toEqual(false);
+      assert.strictEqual(skip, false);
     });
   });
 
@@ -568,7 +577,7 @@ describe('FeedFetcherListenerService (Integration)', () => {
         url: feedUrl,
       });
 
-      expect(failedRequestsCount).toEqual(2);
+      assert.strictEqual(failedRequestsCount, 2);
     });
 
     it('should return 0 if there are no failed requests after the latest OK attempt', async () => {
@@ -590,14 +599,14 @@ describe('FeedFetcherListenerService (Integration)', () => {
         url: feedUrl,
       });
 
-      expect(failedRequestsCount).toEqual(0);
+      assert.strictEqual(failedRequestsCount, 0);
     });
   });
 
   describe('calculateNextRetryDate', () => {
     const referenceDate = new Date();
 
-    it.each([
+    for (const { attemptsSoFar, expected } of [
       {
         attemptsSoFar: 0,
         expected: dayjs(referenceDate).add(5, 'minutes').toDate(),
@@ -614,16 +623,15 @@ describe('FeedFetcherListenerService (Integration)', () => {
         attemptsSoFar: 3,
         expected: dayjs(referenceDate).add(40, 'minutes').toDate(),
       },
-    ])(
-      'returns correctly on attempt #$attemptsSoFar',
-      ({ attemptsSoFar, expected }) => {
+    ]) {
+      it(`returns correctly on attempt #${attemptsSoFar}`, () => {
         const returned = service.calculateNextRetryDate(
           referenceDate,
           attemptsSoFar,
         );
 
-        expect(returned).toEqual(expected);
-      },
-    );
+        assert.deepStrictEqual(returned, expected);
+      });
+    }
   });
 });

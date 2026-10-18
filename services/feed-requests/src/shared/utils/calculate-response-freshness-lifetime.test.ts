@@ -1,3 +1,5 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
 import calculateResponseFreshnessLifetime from './calculate-response-freshness-lifetime';
 
 describe('calculateResponseFreshnessLifetime', () => {
@@ -11,8 +13,8 @@ describe('calculateResponseFreshnessLifetime', () => {
       headers,
     });
 
-    expect(freshnessLifetime.original).toBeGreaterThan(0);
-    expect(freshnessLifetime.capped).toBeGreaterThan(0);
+    assert.ok(freshnessLifetime.original > 0);
+    assert.ok(freshnessLifetime.capped > 0);
   });
 
   it('caps freshness lifetime at one hour', () => {
@@ -23,7 +25,7 @@ describe('calculateResponseFreshnessLifetime', () => {
       headers,
     });
 
-    expect(freshnessLifetime.original).toBe(7200 * 1000);
-    expect(freshnessLifetime.capped).toBe(60 * 60 * 1000);
+    assert.strictEqual(freshnessLifetime.original, 7200 * 1000);
+    assert.strictEqual(freshnessLifetime.capped, 60 * 60 * 1000);
   });
 });

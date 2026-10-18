@@ -1,3 +1,5 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
 import calculateCurrentResponseAge from './calculate-current-response-age';
 
 describe('calculateCurrentResponseAge', () => {
@@ -16,6 +18,6 @@ describe('calculateCurrentResponseAge', () => {
       responseTime,
     });
 
-    expect(age).toBeGreaterThan(0);
+    assert.ok(age > 0);
   });
 });
