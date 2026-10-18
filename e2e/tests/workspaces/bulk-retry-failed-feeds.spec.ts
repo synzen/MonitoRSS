@@ -79,7 +79,9 @@ test.describe("Bulk retry failed workspace feeds", () => {
 
     // The command queues the feeds and surfaces the success alert; the filter
     // change is user-initiated via the alert's link, never auto-applied.
-    await expect(page.getByText("Failed feeds queued for retry.")).toBeVisible();
+    await expect(
+      page.getByRole("alert").getByText("Failed feeds queued for retry."),
+    ).toBeVisible();
     await page.getByText("View pending retries.").click();
 
     // The applied filter renders as a chip, and the recovering feeds come

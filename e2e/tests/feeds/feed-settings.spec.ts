@@ -36,11 +36,13 @@ test.describe("Feed Settings", () => {
     // Verify redirect to feeds list
     await expect(page).toHaveURL("/feeds", { timeout: 10000 });
 
-    // Verify success alert is shown
+    // Verify success alert is shown. Scope to the visible alert: the sr-only
+    // page-alert live region announces the same text, so a bare getByText()
+    // matches two elements.
     await expect(
-      page.getByText(
-        new RegExp(`Successfully deleted feed.*${testFeed.title}`),
-      ),
+      page
+        .getByRole("alert")
+        .getByText(new RegExp(`Successfully deleted feed.*${testFeed.title}`)),
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -412,10 +414,11 @@ test.describe("Feed Settings", () => {
         .getByRole("button", { name: /Invite User to Co-manage/i })
         .click();
 
+      // Scope to the visible alert: the sr-only live region announces the same text.
       await expect(
-        page.getByText(
-          new RegExp(`Successfully sent invite to ${inviteUsername}`),
-        ),
+        page
+          .getByRole("alert")
+          .getByText(new RegExp(`Successfully sent invite to ${inviteUsername}`)),
       ).toBeVisible({ timeout: 10000 });
 
       await expect(page.getByText("Pending")).toBeVisible({ timeout: 10000 });

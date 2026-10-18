@@ -177,7 +177,7 @@ test.describe("Message Builder V2", () => {
     await page.getByRole("button", { name: /Send to Discord/i }).click();
 
     await expect(
-      page.getByText("Successfully sent article to Discord."),
+      page.getByRole("alert").getByText("Successfully sent article to Discord."),
     ).toBeVisible({ timeout: 30000 });
 
     // Close the success alert from the send before saving
@@ -203,7 +203,7 @@ test.describe("Message Builder V2", () => {
     await page.getByRole("button", { name: /Send to Discord/i }).click();
 
     await expect(
-      page.getByText("Successfully sent article to Discord."),
+      page.getByRole("alert").getByText("Successfully sent article to Discord."),
     ).toBeVisible({ timeout: 30000 });
   });
 
