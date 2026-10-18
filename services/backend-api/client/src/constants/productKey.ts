@@ -1,3 +1,5 @@
+import { PADDLE_ENVIRONMENT } from "./paddleEnvironment";
+
 export enum ProductKey {
   Free = "free",
   Tier1 = "tier1",
@@ -58,9 +60,8 @@ const PRODUCTION_PRICE_IDS: ProductPriceIds = {
   },
 };
 
-export const PRICE_IDS: ProductPriceIds = import.meta.env.PROD
-  ? PRODUCTION_PRICE_IDS
-  : SANDBOX_PRICE_IDS;
+export const PRICE_IDS: ProductPriceIds =
+  PADDLE_ENVIRONMENT === "production" ? PRODUCTION_PRICE_IDS : SANDBOX_PRICE_IDS;
 
 export enum ProductFeature {
   Feeds = "Feeds",

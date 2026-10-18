@@ -71,19 +71,20 @@ and `workspace-self-host-posture.spec.ts` asserts billing UI is absent entirely.
 must live in `tests/billing/` and be listed in `PADDLE_CHECKOUT_TESTS` so it runs under
 `e2e-paddle` with the real env.
 
-## Client build mode: preview vs dev server
+## Client build: always a `vite build`
 
-By default `web-client` serves the Vite dev server. Set `E2E_CLIENT_PREVIEW=1` to build and serve a
-bundled production client instead (`vite build --mode development` + `vite preview`, built at
-container start): page loads are ~30–45% faster because there are no per-request transforms and
-React runs in production mode. The CI `e2e-web` shards use this.
+`web-client` always serves a built client (`vite build --mode development` + `vite preview`, built at
+container start), not the Vite dev server — the dev server's per-request module transforms and
+development-mode React made page-heavy specs 25–50% more expensive, which is what pushed them
+against their timeouts. `--mode development` keeps `import.meta.env.MODE` as `development` (dev-only
+UI, Sentry environment).
 
-`--mode development` keeps `import.meta.env.MODE` as `development` (dev-only UI, Sentry
-environment), but `import.meta.env.PROD` is `true` in any Vite build — which flips the client to
-Paddle's production environment and production price IDs. The runner therefore **ignores the flag
-for billing runs**, which keep the dev server's Paddle sandbox semantics. `VITE_*` values are baked
-into the bundle at build time; the runner force-rebuilds `web-client` with `--no-cache` on every
-run, so this stays correct per run.
+`import.meta.env.PROD` is `true` in any Vite build, so which Paddle world the client talks to (API
+environment + price IDs) is decided by the explicit `VITE_PADDLE_ENVIRONMENT` variable instead (see
+`constants/paddleEnvironment.ts` in the client). The E2E stack sets it to `sandbox`, matching the
+sandbox credentials the billing specs use. `VITE_*` values are baked into the bundle at build time;
+the runner force-rebuilds `web-client` with `--no-cache` on every run, so this stays correct per
+run.
 
 ## Project Structure
 

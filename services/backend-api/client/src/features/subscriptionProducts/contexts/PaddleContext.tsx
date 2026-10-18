@@ -15,7 +15,7 @@ import { captureException } from "@sentry/react";
 import { Box, Spinner, Stack, Text } from "@chakra-ui/react";
 import { useDiscordUserMe, useUserMe } from "@/features/discordUser";
 import { notifyError } from "@/utils/notifyError";
-import { pages, getPlanDisplayName, ProductKey } from "@/constants";
+import { pages, getPlanDisplayName, ProductKey, PADDLE_ENVIRONMENT } from "@/constants";
 import { CheckoutSummaryData } from "@/types/CheckoutSummaryData";
 import { PricePreview } from "@/types/PricePreview";
 import { retryPromise } from "@/utils/retryPromise";
@@ -170,7 +170,7 @@ export const PaddleContextProvider = ({ children }: PropsWithChildren<{}>) => {
     }
 
     initializePaddle({
-      environment: import.meta.env.PROD ? "production" : "sandbox",
+      environment: PADDLE_ENVIRONMENT,
       pwAuth,
       pwCustomer: {
         email: user?.result.email,

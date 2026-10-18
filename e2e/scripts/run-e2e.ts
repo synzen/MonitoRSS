@@ -524,14 +524,6 @@ async function main(): Promise<number> {
     ]) {
       context.env[key] = "";
     }
-  } else if (context.env.E2E_CLIENT_PREVIEW === "1") {
-    // A Vite build always bakes import.meta.env.PROD as true, which flips the
-    // client to Paddle production (environment + price IDs). Billing runs need
-    // the dev server's Paddle sandbox semantics.
-    context.env.E2E_CLIENT_PREVIEW = "0";
-    console.log(
-      "WARNING: E2E_CLIENT_PREVIEW is ignored for billing runs; the client dev server is required for Paddle sandbox semantics.",
-    );
   }
 
   prepareLogs(context);

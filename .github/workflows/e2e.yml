@@ -23,12 +23,6 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      # Serve the prebuilt production client bundle instead of the Vite dev
-      # server (see e2e/README.md). Never set this on e2e-paddle: a Vite build
-      # bakes PROD=true, but billing specs need the dev server's Paddle
-      # sandbox semantics.
-      E2E_CLIENT_PREVIEW: '1'
     strategy:
       fail-fast: false
       matrix:
