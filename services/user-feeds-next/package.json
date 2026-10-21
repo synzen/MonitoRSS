@@ -5,7 +5,7 @@
   "dependencies": {
     "@monitorss/contracts": "^0.3.0",
     "@monitorss/logger": "^1.1.2",
-    "@synzen/discord-rest": "0.7.0-beta.16",
+    "@synzen/discord-rest": "0.7.0-beta.17",
     "@types/feedparser": "^2.3.0",
     "dayjs": "^1.11.23",
     "dotenv": "^18.0.7",
@@ -24,10 +24,6 @@
     "undici": "^8.11.2",
     "workerpool": "^10.0.3",
     "zod": "^4.6.5"
-  },
-  "overrides": {
-    "amqp-connection-manager": "5.0.0",
-    "amqplib": "0.10.9"
   },
   "scripts": {
     "build": "tsc",
