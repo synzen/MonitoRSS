@@ -95,6 +95,13 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// Legacy filters matched plain values as case-insensitive whole-word
+// occurrences, so conversion must preserve that (EQ would demand the entire
+// field equal the term).
+function toWordBoundaryRegex(term: string): string {
+  return `(^|\\s)${escapeRegExp(term)}(\\s|$)`;
+}
+
 function getConnectionDisabledCode(
   legacyFeedDisabledCode?: string,
 ): FeedConnectionDisabledCode | undefined {
@@ -171,9 +178,13 @@ export class LegacyFeedConversionService {
     {
       discordUserId,
       doNotSave,
+      markConverted = true,
+      targetChannelId,
     }: {
       discordUserId: string;
       doNotSave?: boolean;
+      markConverted?: boolean;
+      targetChannelId?: string;
     },
   ): Promise<Omit<IUserFeed, "id">> {
     try {
@@ -209,6 +220,7 @@ export class LegacyFeedConversionService {
         profile,
         subscribers,
         filteredFormats,
+        targetChannelId,
       });
 
       if (doNotSave) {
@@ -219,12 +231,16 @@ export class LegacyFeedConversionService {
         converted as unknown as CreateUserFeedInput,
       );
 
-      await this.deps.feedRepository.updateById(feed.id, {
-        $set: {
-          disabled: ConversionDisabledCode.ConvertSuccess,
-          disabledReason: "Converted to personal feed",
-        },
-      });
+      // Skipped for migrations where the legacy feed lives in a separate DB
+      // that must stay untouched.
+      if (markConverted) {
+        await this.deps.feedRepository.updateById(feed.id, {
+          $set: {
+            disabled: ConversionDisabledCode.ConvertSuccess,
+            disabledReason: "Converted to personal feed",
+          },
+        });
+      }
 
       if (isOverLimit) {
         await this.deps.userFeedLimitOverrideRepository.upsertIncrement(
@@ -252,15 +268,17 @@ export class LegacyFeedConversionService {
       filteredFormats,
       profile,
       subscribers,
+      targetChannelId,
     }: {
       discordUserId: string;
       profile?: IDiscordServerProfile | null;
       subscribers?: IFeedSubscriber[] | null;
       filteredFormats?: IFeedFilteredFormat[] | null;
       failRecord?: IFailRecord | null;
+      targetChannelId?: string;
     },
   ): Promise<Omit<IUserFeed, "id">> {
-    const guildId = feed.guild;
+    let guildId = feed.guild;
 
     const customPlaceholders: ICustomPlaceholder[] = Object.keys(
       feed.regexOps || {},
@@ -370,18 +388,29 @@ export class LegacyFeedConversionService {
       | IDiscordChannelConnection["details"]["webhook"]
       | undefined;
 
-    if (!feed.webhook) {
+    if (!feed.webhook || targetChannelId) {
+      const channelId = targetChannelId ?? feed.channel;
+
       try {
-        const fetched = await this.deps.discordApiService.getChannel(
-          feed.channel,
-        );
+        const fetched = await this.deps.discordApiService.getChannel(channelId);
         name = `Channel: #${fetched.name}`;
+
+        if (targetChannelId && fetched.guild_id) {
+          guildId = fetched.guild_id;
+        }
       } catch {
-        name = `Channel: ${feed.channel}`;
+        if (targetChannelId) {
+          throw new Error(
+            `Target channel ${targetChannelId} could not be fetched from` +
+              ` Discord, refusing to convert feed ${feed.id}`,
+          );
+        }
+
+        name = `Channel: ${channelId}`;
       }
 
       channelToAdd = {
-        id: feed.channel,
+        id: channelId,
         guildId,
       };
     } else {
@@ -402,7 +431,10 @@ export class LegacyFeedConversionService {
       disabledCode: getConnectionDisabledCode(feed.disabled),
       createdAt: feed.createdAt || new Date(),
       updatedAt: feed.updatedAt || new Date(),
-      id: randomUUID(),
+      // Connection ids are ObjectIds in storage (see
+      // DiscordChannelConnectionSchema), matching how the app creates them
+      // elsewhere. A UUID string fails ObjectId casting on save.
+      id: new Types.ObjectId().toHexString(),
       name: name,
       splitOptions: {
         isEnabled: feed.split?.enabled || false,
@@ -736,7 +768,7 @@ export class LegacyFeedConversionService {
         } else if (isBlocking) {
           (expression.children as Record<string, unknown>[]).push({
             type: ExpressionType.Relational,
-            op: RelationalExpressionOperator.Eq,
+            op: RelationalExpressionOperator.Matches,
             not: true,
             left: {
               type: RelationalExpressionLeft.Article,
@@ -744,7 +776,7 @@ export class LegacyFeedConversionService {
             },
             right: {
               type: RelationalExpressionRight.String,
-              value: filterVal.slice(1),
+              value: toWordBoundaryRegex(filterVal.slice(1)),
             },
           });
         } else if (isBroad) {
@@ -763,14 +795,14 @@ export class LegacyFeedConversionService {
         } else {
           (orExpression.children as Record<string, unknown>[]).push({
             type: ExpressionType.Relational,
-            op: RelationalExpressionOperator.Eq,
+            op: RelationalExpressionOperator.Matches,
             left: {
               type: RelationalExpressionLeft.Article,
               value: cleanedCategory,
             },
             right: {
               type: RelationalExpressionRight.String,
-              value: filterVal,
+              value: toWordBoundaryRegex(filterVal),
             },
           });
         }

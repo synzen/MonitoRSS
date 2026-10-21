@@ -37,6 +37,7 @@
     "test:docker": "bash test-e2e.sh",
     "enforce-limits": "tsx src/scripts/enforce-limits.ts",
     "migrate-legacy-feeds": "tsx src/scripts/migrate-all-legacy-feeds.ts",
+    "migrate-legacy-feeds:by-id": "tsx src/scripts/migrate-legacy-feeds-by-id.ts",
     "recalculate-slots": "tsx src/scripts/recalculate-slot-offsets.ts"
   },
   "devDependencies": {

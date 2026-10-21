@@ -339,4 +339,15 @@ export class FeedMongooseRepository
       this.toEntity(doc as FeedDoc & { _id: Types.ObjectId }),
     );
   }
+
+  async findByIds(ids: string[]): Promise<IFeed[]> {
+    const docs = await this.model
+      .find({
+        _id: { $in: ids },
+      })
+      .lean();
+    return docs.map((doc) =>
+      this.toEntity(doc as FeedDoc & { _id: Types.ObjectId }),
+    );
+  }
 }
