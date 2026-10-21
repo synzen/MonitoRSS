@@ -3,6 +3,7 @@ import assert from "node:assert";
 import dayjs from "dayjs";
 import {
   LegacyFeedConversionService,
+  ConversionDisabledCode,
   type LegacyFeedConversionServiceDeps,
 } from "../../src/services/legacy-feed-conversion/legacy-feed-conversion.service";
 import type { IFeed } from "../../src/repositories/interfaces/feed.types";
@@ -1131,10 +1132,10 @@ describe("LegacyFeedConversionService", { concurrency: true }, () => {
         Record<string, unknown>
       >;
 
-      assert.strictEqual(orChildrenArr[0]?.op, "EQ");
+      assert.strictEqual(orChildrenArr[0]?.op, "MATCHES");
       assert.deepStrictEqual(orChildrenArr[0]?.right, {
         type: "STRING",
-        value: "filter1",
+        value: "(^|\\s)filter1(\\s|$)",
       });
     });
 
@@ -1150,11 +1151,32 @@ describe("LegacyFeedConversionService", { concurrency: true }, () => {
       const children = expression.children as Array<Record<string, unknown>>;
 
       assert.strictEqual(children[1]?.type, "RELATIONAL");
-      assert.strictEqual(children[1]?.op, "EQ");
+      assert.strictEqual(children[1]?.op, "MATCHES");
       assert.strictEqual(children[1]?.not, true);
       assert.deepStrictEqual(children[1]?.right, {
         type: "STRING",
-        value: "filter1",
+        value: "(^|\\s)filter1(\\s|$)",
+      });
+    });
+
+    it("escapes regex special characters in filter terms", () => {
+      const deps = createMockDeps();
+      const service = new LegacyFeedConversionService(deps);
+      const filters = {
+        title: ["air jordan 4 (tag)"],
+      };
+
+      const result = service.convertRegularFilters(filters);
+      const expression = result?.expression as Record<string, unknown>;
+      const children = expression.children as Array<Record<string, unknown>>;
+      const orChildren = children[0] as Record<string, unknown>;
+      const orChildrenArr = orChildren.children as Array<
+        Record<string, unknown>
+      >;
+
+      assert.deepStrictEqual(orChildrenArr[0]?.right, {
+        type: "STRING",
+        value: "(^|\\s)air jordan 4 \\(tag\\)(\\s|$)",
       });
     });
 
@@ -1220,14 +1242,14 @@ describe("LegacyFeedConversionService", { concurrency: true }, () => {
         type: "STRING",
         value: "filter4",
       });
-      assert.strictEqual(orChildrenArr[1]?.op, "EQ");
+      assert.strictEqual(orChildrenArr[1]?.op, "MATCHES");
       assert.deepStrictEqual(orChildrenArr[1]?.right, {
         type: "STRING",
-        value: "filter2",
+        value: "(^|\\s)filter2(\\s|$)",
       });
       assert.strictEqual(children[1]?.op, "CONTAINS");
       assert.strictEqual(children[1]?.not, true);
-      assert.strictEqual(children[2]?.op, "EQ");
+      assert.strictEqual(children[2]?.op, "MATCHES");
       assert.strictEqual(children[2]?.not, true);
     });
 
@@ -1256,15 +1278,15 @@ describe("LegacyFeedConversionService", { concurrency: true }, () => {
         type: "STRING",
         value: "filter4",
       });
-      assert.strictEqual(orChildrenArr[1]?.op, "EQ");
+      assert.strictEqual(orChildrenArr[1]?.op, "MATCHES");
       assert.strictEqual(orChildrenArr[1]?.not, true);
       assert.deepStrictEqual(orChildrenArr[1]?.right, {
         type: "STRING",
-        value: "filter2",
+        value: "(^|\\s)filter2(\\s|$)",
       });
       assert.strictEqual(children[1]?.op, "CONTAINS");
       assert.strictEqual(children[1]?.not, false);
-      assert.strictEqual(children[2]?.op, "EQ");
+      assert.strictEqual(children[2]?.op, "MATCHES");
       assert.strictEqual(children[2]?.not, false);
     });
 
@@ -1286,6 +1308,212 @@ describe("LegacyFeedConversionService", { concurrency: true }, () => {
       assert.deepStrictEqual(orChildrenArr[0]?.left, {
         type: "ARTICLE",
         value: "title",
+      });
+    });
+  });
+
+  describe("convertToUserFeed", () => {
+    function createConvertDeps(): LegacyFeedConversionServiceDeps {
+      const deps = createMockDeps();
+      deps.feedRepository = {
+        updateById: mock.fn(async () => null),
+      } as unknown as LegacyFeedConversionServiceDeps["feedRepository"];
+      deps.feedSubscriberRepository = {
+        findByFeedId: mock.fn(async () => []),
+      } as unknown as LegacyFeedConversionServiceDeps["feedSubscriberRepository"];
+      deps.feedFilteredFormatRepository = {
+        findByFeedId: mock.fn(async () => []),
+      } as unknown as LegacyFeedConversionServiceDeps["feedFilteredFormatRepository"];
+      deps.failRecordRepository = {
+        findByUrl: mock.fn(async () => null),
+      } as unknown as LegacyFeedConversionServiceDeps["failRecordRepository"];
+      deps.discordServerProfileRepository = {
+        findById: mock.fn(async () => null),
+      } as unknown as LegacyFeedConversionServiceDeps["discordServerProfileRepository"];
+      deps.userFeedRepository = {
+        countByOwnership: mock.fn(async () => 0),
+        create: mock.fn(async () => ({})),
+      } as unknown as LegacyFeedConversionServiceDeps["userFeedRepository"];
+      deps.userFeedLimitOverrideRepository = {
+        upsertIncrement: mock.fn(async () => ({})),
+      } as unknown as LegacyFeedConversionServiceDeps["userFeedLimitOverrideRepository"];
+      return deps;
+    }
+
+    it("marks the legacy feed as converted by default", async () => {
+      const deps = createConvertDeps();
+      const service = new LegacyFeedConversionService(deps);
+
+      await service.convertToUserFeed(baseFeed, { discordUserId: "123" });
+
+      const updateById = deps.feedRepository.updateById as unknown as ReturnType<
+        typeof mock.fn
+      >;
+      const create = deps.userFeedRepository.create as unknown as ReturnType<
+        typeof mock.fn
+      >;
+      assert.strictEqual(updateById.mock.calls.length, 1);
+      assert.deepStrictEqual(updateById.mock.calls[0]?.arguments, [
+        baseFeed.id,
+        {
+          $set: {
+            disabled: ConversionDisabledCode.ConvertSuccess,
+            disabledReason: "Converted to personal feed",
+          },
+        },
+      ]);
+      assert.strictEqual(create.mock.calls.length, 1);
+    });
+
+    it("still creates the user feed without marking converted when markConverted is false", async () => {
+      const deps = createConvertDeps();
+      const service = new LegacyFeedConversionService(deps);
+
+      await service.convertToUserFeed(baseFeed, {
+        discordUserId: "123",
+        markConverted: false,
+      });
+
+      const updateById = deps.feedRepository.updateById as unknown as ReturnType<
+        typeof mock.fn
+      >;
+      const create = deps.userFeedRepository.create as unknown as ReturnType<
+        typeof mock.fn
+      >;
+      assert.strictEqual(updateById.mock.calls.length, 0);
+      assert.strictEqual(create.mock.calls.length, 1);
+    });
+
+    it("creates and marks nothing when doNotSave is true", async () => {
+      const deps = createConvertDeps();
+      const service = new LegacyFeedConversionService(deps);
+
+      await service.convertToUserFeed(baseFeed, {
+        discordUserId: "123",
+        doNotSave: true,
+      });
+
+      const updateById = deps.feedRepository.updateById as unknown as ReturnType<
+        typeof mock.fn
+      >;
+      const create = deps.userFeedRepository.create as unknown as ReturnType<
+        typeof mock.fn
+      >;
+      assert.strictEqual(updateById.mock.calls.length, 0);
+      assert.strictEqual(create.mock.calls.length, 0);
+    });
+
+    describe("targetChannelId", () => {
+      function createRetargetDeps(): LegacyFeedConversionServiceDeps {
+        const deps = createConvertDeps();
+        deps.discordApiService = {
+          getChannel: mock.fn(async () => ({
+            name: "new-channel",
+            guild_id: "new-guild",
+          })),
+          getWebhook: mock.fn(async () => {
+            throw new Error("getWebhook should not be called when retargeting");
+          }),
+        } as unknown as LegacyFeedConversionServiceDeps["discordApiService"];
+        return deps;
+      }
+
+      it("points the converted feed at the target channel with its guild", async () => {
+        const deps = createRetargetDeps();
+        const service = new LegacyFeedConversionService(deps);
+
+        await service.convertToUserFeed(baseFeed, {
+          discordUserId: "123",
+          markConverted: false,
+          targetChannelId: "target-channel",
+        });
+
+        const create = deps.userFeedRepository
+          .create as unknown as ReturnType<typeof mock.fn>;
+        assert.strictEqual(create.mock.calls.length, 1);
+        const created = create.mock.calls[0]?.arguments[0] as {
+          connections: {
+            discordChannels: Array<{
+              id: string;
+              name: string;
+              details: {
+                channel?: { id: string; guildId: string };
+                webhook?: unknown;
+              };
+            }>;
+          };
+        };
+        const connection = created.connections.discordChannels[0];
+        assert.strictEqual(connection?.details.channel?.id, "target-channel");
+        assert.strictEqual(connection?.details.channel?.guildId, "new-guild");
+        assert.strictEqual(connection?.name, "Channel: #new-channel");
+        assert.match(
+          connection?.id as string,
+          /^[a-f0-9]{24}$/,
+          "connection id must be ObjectId-compatible for storage",
+        );
+      });
+
+      it("converts webhook feeds to channel feeds when retargeting", async () => {
+        const deps = createRetargetDeps();
+        const service = new LegacyFeedConversionService(deps);
+
+        await service.convertToUserFeed(
+          {
+            ...baseFeed,
+            webhook: { id: "webhook-1" },
+          },
+          {
+            discordUserId: "123",
+            markConverted: false,
+            targetChannelId: "target-channel",
+          },
+        );
+
+        const getWebhook = deps.discordApiService
+          .getWebhook as unknown as ReturnType<typeof mock.fn>;
+        assert.strictEqual(getWebhook.mock.calls.length, 0);
+
+        const create = deps.userFeedRepository
+          .create as unknown as ReturnType<typeof mock.fn>;
+        const created = create.mock.calls[0]?.arguments[0] as {
+          connections: {
+            discordChannels: Array<{
+              details: {
+                channel?: { id: string };
+                webhook?: unknown;
+              };
+            }>;
+          };
+        };
+        const connection = created.connections.discordChannels[0];
+        assert.strictEqual(connection?.details.channel?.id, "target-channel");
+        assert.strictEqual(connection?.details.webhook, undefined);
+      });
+
+      it("fails without creating when the target channel cannot be fetched", async () => {
+        const deps = createRetargetDeps();
+        deps.discordApiService = {
+          getChannel: mock.fn(async () => {
+            throw new Error("Unknown Channel");
+          }),
+        } as unknown as LegacyFeedConversionServiceDeps["discordApiService"];
+        const service = new LegacyFeedConversionService(deps);
+
+        await assert.rejects(
+          service.convertToUserFeed(baseFeed, {
+            discordUserId: "123",
+            markConverted: false,
+            targetChannelId: "missing-channel",
+          }),
+        );
+
+        const create = deps.userFeedRepository
+          .create as unknown as ReturnType<typeof mock.fn>;
+        const updateById = deps.feedRepository
+          .updateById as unknown as ReturnType<typeof mock.fn>;
+        assert.strictEqual(create.mock.calls.length, 0);
+        assert.strictEqual(updateById.mock.calls.length, 0);
       });
     });
   });

@@ -155,3 +155,4 @@ docs/*
 
 discover.ps1
 prune.ps1
+migrate-legacy-feeds-by-id.sh

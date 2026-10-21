@@ -174,8 +174,12 @@ const DiscordBaseComponentSchema = new Schema(
     type: {
       type: Number,
       required: true,
+      // Numeric TS enums have reverse mappings, so Object.values includes
+      // the names as well as the numbers. Mongoose spreads array enum
+      // options into separate arguments and casts each one, so the names
+      // must be filtered out (they were never valid document values).
       enum: Object.values(FeedConnectionDiscordComponentType).filter(
-        (v) => typeof v === "number",
+        (v): v is number => typeof v === "number",
       ),
     },
   },

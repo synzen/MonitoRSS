@@ -152,7 +152,7 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
     logDatadog('warn', message, details)
   })
 
-  consumer.on('LongRunningHandlerRequest', details => {
+  consumer.on('longRunningHandlerRequest', details => {
     const message = `Long running handler request detected`
     log.warn(message, details)
     logDatadog('warn', message, details)
