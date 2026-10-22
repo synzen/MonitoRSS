@@ -52,6 +52,18 @@ export const DISCORD_COMPONENT_TYPE_TO_NUMBER = {
 
 export const DISCORD_COMPONENTS_V2_FLAG = 1 << 15; // 32768
 
+/**
+ * Discord shares a single 4000-character budget across every Text Display
+ * component in a Components V2 message (including those nested in Sections and
+ * Containers). This is not in Discord's published docs yet, but the API
+ * enforces it and a docs PR is open:
+ * https://github.com/discord/discord-api-docs/pull/8562
+ *
+ * Resolved placeholders have no inherent bound, so this must be enforced
+ * before sending.
+ */
+export const DISCORD_MAX_TEXT_DISPLAY_CHARS = 4000;
+
 // ============================================================================
 // V2 Component Output Types
 // ============================================================================

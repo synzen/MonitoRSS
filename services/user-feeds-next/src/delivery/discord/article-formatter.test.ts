@@ -322,6 +322,132 @@ describe("article-formatter", () => {
         assert.strictEqual(payloads[0]!.content, undefined);
       });
 
+      it("truncates text display content to Discord's 4000 character limit", () => {
+        const article = createArticle({ summary: "A".repeat(5000) });
+        const payloads = generateDiscordPayloads(article, {
+          componentsV2: [
+            {
+              type: "CONTAINER",
+              components: [
+                {
+                  type: "TEXT_DISPLAY",
+                  content: "{{summary}}",
+                },
+              ],
+            },
+          ],
+        });
+
+        assert.strictEqual(payloads.length, 1);
+        const container = payloads[0]!.components![0] as {
+          components: Array<{ content: string }>;
+        };
+        const textDisplay = container.components[0]!;
+        assert.ok(textDisplay.content.length > 0);
+        assert.ok(textDisplay.content.length <= 4000);
+      });
+
+      it("shares Discord's 4000 character budget across text displays", () => {
+        const article = createArticle({
+          first: "A".repeat(3000),
+          second: "B".repeat(3000),
+        });
+        const payloads = generateDiscordPayloads(article, {
+          componentsV2: [
+            {
+              type: "CONTAINER",
+              components: [
+                { type: "TEXT_DISPLAY", content: "{{first}}" },
+                { type: "TEXT_DISPLAY", content: "{{second}}" },
+              ],
+            },
+          ],
+        });
+
+        assert.strictEqual(payloads.length, 1);
+        const container = payloads[0]!.components![0] as {
+          components: Array<{ content: string }>;
+        };
+        const totalLength = container.components.reduce(
+          (sum, component) => sum + component.content.length,
+          0
+        );
+        assert.strictEqual(container.components.length, 2);
+        assert.strictEqual(container.components[0]!.content.length, 3000);
+        assert.ok(totalLength <= 4000);
+      });
+
+      it("drops text displays once the 4000 character budget is exhausted", () => {
+        const article = createArticle({
+          first: "A".repeat(4000),
+          second: "Second",
+        });
+        const payloads = generateDiscordPayloads(article, {
+          componentsV2: [
+            {
+              type: "CONTAINER",
+              components: [
+                { type: "TEXT_DISPLAY", content: "{{first}}" },
+                { type: "TEXT_DISPLAY", content: "{{second}}" },
+              ],
+            },
+          ],
+        });
+
+        assert.strictEqual(payloads.length, 1);
+        const container = payloads[0]!.components![0] as {
+          components: Array<{ content: string }>;
+        };
+        assert.strictEqual(container.components.length, 1);
+        assert.strictEqual(container.components[0]!.content.length, 4000);
+      });
+
+      it("drops text displays that resolve to empty content", () => {
+        const article = createArticle({ title: "Test" });
+        const payloads = generateDiscordPayloads(article, {
+          componentsV2: [
+            {
+              type: "CONTAINER",
+              components: [
+                { type: "TEXT_DISPLAY", content: "{{missing}}" },
+                { type: "TEXT_DISPLAY", content: "{{title}}" },
+              ],
+            },
+          ],
+        });
+
+        assert.strictEqual(payloads.length, 1);
+        const container = payloads[0]!.components![0] as {
+          components: Array<{ content: string }>;
+        };
+        assert.strictEqual(container.components.length, 1);
+        assert.strictEqual(container.components[0]!.content, "Test");
+      });
+
+      it("drops sections and containers whose text displays all resolve to empty content", () => {
+        const article = createArticle({});
+        const payloads = generateDiscordPayloads(article, {
+          componentsV2: [
+            {
+              type: "SECTION",
+              components: [{ type: "TEXT_DISPLAY", content: "{{missing}}" }],
+              accessory: {
+                type: "BUTTON",
+                style: 5,
+                label: "Click",
+                url: "https://example.com",
+              },
+            },
+            {
+              type: "CONTAINER",
+              components: [{ type: "TEXT_DISPLAY", content: "{{missing}}" }],
+            },
+          ],
+        });
+
+        assert.strictEqual(payloads.length, 0);
+      });
+
       describe("Media Gallery", () => {
         it("filters out media gallery items with empty URLs", () => {
           const article = createArticle({
