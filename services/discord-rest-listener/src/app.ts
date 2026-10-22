@@ -313,7 +313,7 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
   /**
    * The consumer connects via raw amqplib and throws when the broker is still
    * coming up (e.g. during stack startup). Retry with backoff instead of
-   * crashing; nodemon in the dev stack does not restart exited processes.
+   * crashing; the dev watcher does not restart exited processes.
    */
   await initializeWithRabbitMqRetry(async () => {
     try {

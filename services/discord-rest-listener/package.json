@@ -5,10 +5,10 @@
   "main": "build/app.js",
   "scripts": {
     "test": "./test.sh",
-    "start": "nodemon src/app.ts --legacy-watch",
+    "start": "node --watch -r ts-node/register src/app.ts",
     "build": "tsc",
     "lint": "eslint src",
-    "dev": "nodemon"
+    "dev": "node --watch -r ts-node/register src/app.ts"
   },
   "author": "synzen",
   "license": "MIT",
@@ -32,7 +32,6 @@
     "@typescript-eslint/eslint-plugin": "^8.71.1",
     "@typescript-eslint/parser": "^8.71.1",
     "eslint": "^9.39.5",
-    "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }

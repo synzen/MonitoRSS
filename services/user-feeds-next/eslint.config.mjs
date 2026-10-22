@@ -1,5 +1,4 @@
 import tseslint from "typescript-eslint";
-import boundaries from "eslint-plugin-boundaries";
 import importPlugin from "eslint-plugin-import";
 
 export default tseslint.config(
@@ -10,75 +9,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
 
   // ============================================================================
-  // Architecture boundary rules (ADR-008)
-  // ============================================================================
-  {
-    files: ["src/**/*.ts"],
-    ignores: ["src/**/*.test.ts", "src/scripts/**"],
-    plugins: { boundaries },
-    settings: {
-      "boundaries/elements": [
-        { type: "articles", pattern: ["src/articles/**"], mode: "full" },
-        { type: "formatting", pattern: ["src/formatting/**"], mode: "full" },
-        {
-          type: "delivery-discord",
-          pattern: ["src/delivery/discord/**"],
-          mode: "full",
-        },
-        {
-          type: "delivery",
-          pattern: ["src/delivery/*"],
-          mode: "full",
-        },
-        { type: "pipeline", pattern: ["src/pipeline/**"], mode: "full" },
-        { type: "stores", pattern: ["src/stores/**"], mode: "full" },
-        { type: "http", pattern: ["src/http/**"], mode: "full" },
-        { type: "shared", pattern: ["src/shared/**"], mode: "full" },
-        {
-          type: "feed-fetcher",
-          pattern: ["src/feed-fetcher/**"],
-          mode: "full",
-        },
-      ],
-    },
-    rules: {
-      "boundaries/dependencies": [
-        "error",
-        {
-          default: "allow",
-          rules: [
-            {
-              from: "articles",
-              disallow: ["delivery", "delivery-discord", "pipeline", "http"],
-            },
-            {
-              from: "formatting",
-              disallow: ["delivery", "delivery-discord", "pipeline", "http", "stores"],
-            },
-            {
-              from: "stores",
-              disallow: ["pipeline", "delivery", "delivery-discord", "http"],
-            },
-            {
-              from: "delivery",
-              disallow: ["pipeline"],
-            },
-            {
-              from: "delivery-discord",
-              disallow: ["pipeline"],
-            },
-            {
-              from: "pipeline",
-              disallow: ["http"],
-            },
-          ],
-        },
-      ],
-    },
-  },
-
-  // ============================================================================
-  // Circular import detection
+  // Architecture boundary and circular import rules (ADR-008)
   // ============================================================================
   {
     files: ["src/**/*.ts"],
@@ -92,6 +23,38 @@ export default tseslint.config(
       },
     },
     rules: {
+      "import/no-restricted-paths": [
+        "error",
+        {
+          zones: [
+            {
+              target: "./src/articles",
+              from: ["./src/delivery", "./src/pipeline", "./src/http"],
+            },
+            {
+              target: "./src/formatting",
+              from: [
+                "./src/delivery",
+                "./src/pipeline",
+                "./src/http",
+                "./src/stores",
+              ],
+            },
+            {
+              target: "./src/stores",
+              from: ["./src/delivery", "./src/pipeline", "./src/http"],
+            },
+            {
+              target: "./src/delivery",
+              from: ["./src/pipeline"],
+            },
+            {
+              target: "./src/pipeline",
+              from: ["./src/http"],
+            },
+          ],
+        },
+      ],
       "import/no-cycle": ["error", { maxDepth: 5 }],
     },
   },
@@ -151,7 +114,6 @@ export default tseslint.config(
   {
     files: ["src/**/*.test.ts", "test/**/*.ts"],
     rules: {
-      "boundaries/dependencies": "off",
       "max-lines": "off",
     },
   }
