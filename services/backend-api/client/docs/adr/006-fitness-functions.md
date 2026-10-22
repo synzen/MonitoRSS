@@ -27,7 +27,7 @@ Listed in priority order. Each is justified by an architecture characteristic fr
 Enforces ADR-002.
 
 ```jsonc
-// .eslintrc.js (excerpt) — applied to:
+// eslint.config.mjs (excerpt) - applied to:
 //   src/components/**, src/contexts/**, src/hooks/**,
 //   src/constants/**, src/types/**, src/utils/**
 {

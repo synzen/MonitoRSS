@@ -43,7 +43,7 @@ See [ADR-008](../../../docs/adr/008-user-feeds-next-internal-architecture.md) fo
 
 ## Dependency Rules
 
-Arrows point from consumer to dependency. If there is no arrow, the import is **forbidden** (enforced by ESLint `eslint-plugin-boundaries`).
+Arrows point from consumer to dependency. If there is no arrow, the import is **forbidden** (enforced by ESLint `import/no-restricted-paths`).
 
 ```
                     shared/  formatting/  articles/  stores/  feed-fetcher/
