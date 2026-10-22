@@ -216,7 +216,7 @@ ADR-006 established that, for a solo + LLM-augmented maintainer, **prose decays 
 enforced**. Role-not-hue (§1) is the styling analogue of ADR-006's import rules, so it gets the same
 treatment: a **fourth fitness function** — an ESLint rule banning raw palette refs in JSX color props.
 
-- **Rule (LIVE in `.eslintrc.js`):** a `no-restricted-syntax` AST selector flags a JSX color prop
+- **Rule (LIVE in `eslint.config.mjs`):** a `no-restricted-syntax` AST selector flags a JSX color prop
   (`color` / `bg` / `background` / `borderColor` / `fill` / `stroke` / …) whose value is a raw palette
   ref — `gray.800`, `blue.300`, **and the primitive-leak forms** `red.fg`, `blue.solid`, etc. The
   selector keys on a **raw-hue prefix** (`gray|blue|red|green|orange|yellow|purple|pink|cyan|teal`),
