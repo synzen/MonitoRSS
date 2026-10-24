@@ -17,12 +17,9 @@ import {
   DiscordMessageDisplay,
   resolvePreviewAvatarUrl,
 } from "../shared/components/DiscordMessageDisplay";
-import convertMessageBuilderStateToConnectionPreviewInput, {
-  V2_COMPONENT_TYPE,
-} from "./utils/convertMessageBuilderStateToConnectionPreviewInput";
+import convertMessageBuilderStateToConnectionPreviewInput from "./utils/convertMessageBuilderStateToConnectionPreviewInput";
 import { useUserFeedConnectionContext } from "@/features/feed";
 import { DiscordServerName, DiscordChannelName } from "@/features/discordServers";
-import { CreateDiscordChannelConnectionPreviewInput } from "../connection/api";
 import { MentionDataProvider, useMentionData } from "../shared/contexts/MentionDataContext";
 import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 
@@ -105,43 +102,12 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   const hasValidationErrors =
     errors.messageComponent != null && Object.keys(errors.messageComponent).length > 0;
 
-  const hasEmptyTextContent = React.useMemo(() => {
-    type V2Component = NonNullable<
-      CreateDiscordChannelConnectionPreviewInput["data"]["componentsV2"]
-    >[number];
-
-    const checkComponents = (components: V2Component[] | null | undefined): boolean => {
-      if (!components || !Array.isArray(components)) return false;
-
-      return components.some((comp) => {
-        if (comp.type === V2_COMPONENT_TYPE.TextDisplay && !comp.content) return true;
-
-        if (
-          comp.type === V2_COMPONENT_TYPE.Section &&
-          comp.components?.some((c) => c.type === V2_COMPONENT_TYPE.TextDisplay && !c.content)
-        ) {
-          return true;
-        }
-
-        if (comp.components) return checkComponents(comp.components as V2Component[]);
-
-        return false;
-      });
-    };
-
-    return checkComponents(debouncedPreviewData.componentsV2);
-  }, [debouncedPreviewData]);
-
   const {
     data: connectionPreview,
     fetchStatus,
     error,
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
-    enabled:
-      !!currentArticle?.id &&
-      !hasEmptyTextContent &&
-      !hasValidationErrors &&
-      !previewDataIsDebouncing,
+    enabled: !!currentArticle?.id && !hasValidationErrors && !previewDataIsDebouncing,
     data: {
       connectionId: connection.id,
       feedId: userFeed.id,
@@ -199,8 +165,8 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
 
   let emptyMessage: string | undefined;
 
-  if (hasEmptyTextContent) {
-    emptyMessage = "Add content to every Text Display component to load the preview.";
+  if (hasValidationErrors) {
+    emptyMessage = "Resolve the problems flagged in the editor to load the preview.";
   } else if (previewReturnedNoMessages) {
     emptyMessage = hasConfiguredComponents
       ? "No message would be sent for this article. All configured content is empty after replacing placeholders."
@@ -208,19 +174,12 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   }
 
   React.useEffect(() => {
-    if (connectionPreview && !isFetching && !hasValidationErrors && !hasEmptyTextContent) {
+    if (connectionPreview && !isFetching && !hasValidationErrors) {
       onResolvedMessages?.(messages);
     } else {
       onResolvedMessages?.(undefined);
     }
-  }, [
-    messages,
-    connectionPreview,
-    isFetching,
-    hasValidationErrors,
-    hasEmptyTextContent,
-    onResolvedMessages,
-  ]);
+  }, [messages, connectionPreview, isFetching, hasValidationErrors, onResolvedMessages]);
 
   if (error && !hasValidationErrors && !previewDataIsDebouncing) {
     return (
