@@ -23,6 +23,18 @@ const PreviewPlaceholder = ({ children }: { children: React.ReactNode }) => (
   </Box>
 );
 
+const getEmptyPreviewMessage = (articles: Article[], selectedArticleId?: string) => {
+  if (articles.length === 0) {
+    return "There are currently no articles in the feed to preview. You can save now - previews will be available once articles arrive.";
+  }
+
+  if (!selectedArticleId) {
+    return "Select an article to preview.";
+  }
+
+  return "No message would be sent for this article. The template's content is empty after replacing placeholders.";
+};
+
 export interface PreviewColumnProps {
   articles: Article[];
   selectedArticleId?: string;
@@ -78,6 +90,7 @@ export const PreviewColumn = ({
   });
 
   const showUnfurlNote = previewMayUnfurl(previewMessages);
+  const emptyPreviewMessage = getEmptyPreviewMessage(articles, selectedArticleId);
 
   return (
     <Panel
@@ -217,10 +230,7 @@ export const PreviewColumn = ({
               !isActuallyLoading &&
               !isPreviewError &&
               previewMessages.length === 0 && (
-                <PreviewPlaceholder>
-                  There are currently no articles in the feed to preview. You can save now -
-                  previews will be available once articles arrive.
-                </PreviewPlaceholder>
+                <PreviewPlaceholder>{emptyPreviewMessage}</PreviewPlaceholder>
               )}
           </Box>
           <Text fontSize="sm" color="fg.muted" mt={2}>
@@ -260,11 +270,9 @@ export const PreviewColumn = ({
           {selectedTemplateId &&
             !isActuallyLoading &&
             !isPreviewError &&
-            previewMessages.length === 0 &&
-            articles.length === 0 && (
+            previewMessages.length === 0 && (
               <Text color="fg.subtle" textAlign="center" py={8}>
-                There are currently no articles in the feed to preview. You can save now - previews
-                will be available once articles arrive.
+                {emptyPreviewMessage}
               </Text>
             )}
           {!!articles.length && !showUnfurlNote && (

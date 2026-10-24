@@ -12,7 +12,7 @@ import { SendTestArticleDeliveryStatus } from "@/types";
 export const getErrorMessageByStatus = (status: SendTestArticleDeliveryStatus): string => {
   switch (status) {
     case SendTestArticleDeliveryStatus.BadPayload:
-      return "Discord couldn't process this message. The template may have placeholders that couldn't be filled with the article's data.";
+      return "The message could not be sent with your current message format. Check the details below, then update your message format and try again.";
     case SendTestArticleDeliveryStatus.MissingChannel:
       return "The Discord channel could not be found. It may have been deleted.";
     case SendTestArticleDeliveryStatus.MissingApplicationPermission:

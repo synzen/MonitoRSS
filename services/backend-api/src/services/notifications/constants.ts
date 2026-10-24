@@ -35,10 +35,9 @@ export const USER_FEED_CONNECTION_DISABLED_REASONS: Partial<
   Record<FeedConnectionDisabledCode, { reason: string; action: string }>
 > = {
   [FeedConnectionDisabledCode.BadFormat]: {
-    reason: "Message payload was rejected due to malformed input",
+    reason: "Message could not be sent with the current message format",
     action:
-      "Change your message customization settings to make sure it generally works by sending test articles" +
-      ", specifically the latest articles on the feed.",
+      "Update your message customization settings and send test articles, especially for the latest articles on the feed, to confirm delivery works.",
   },
   [FeedConnectionDisabledCode.MissingMedium]: {
     reason: "The channel with the service provider is missing",

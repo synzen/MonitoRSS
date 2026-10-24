@@ -12,6 +12,7 @@ import {
 } from "./html-to-discord";
 import {
   generateDiscordPayloads,
+  generateDiscordPayloadsWithDiagnostics,
   generateThreadName,
   buildForumThreadBody,
   getForumTagsToSend,
@@ -713,6 +714,106 @@ describe("article-formatter", () => {
         assert.strictEqual(payloads[0]!.flags, DISCORD_COMPONENTS_V2_FLAG);
         // V2 takes precedence, content should not be present
         assert.strictEqual(payloads[0]!.content, undefined);
+      });
+    });
+
+    describe("V2 component build diagnostics", () => {
+      it("reports truncated text displays with their configured path and lengths", () => {
+        const article = createArticle({ summary: "A".repeat(5000) });
+        const { payloads, diagnostics } =
+          generateDiscordPayloadsWithDiagnostics(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [{ type: "TEXT_DISPLAY", content: "{{summary}}" }],
+              },
+            ],
+          });
+
+        assert.strictEqual(payloads.length, 1);
+        deepStrictEqual(diagnostics, [
+          {
+            path: "componentsV2[0].components[0]",
+            componentType: "TEXT_DISPLAY",
+            reason: "truncated",
+            resolvedLength: 5000,
+            allowedLength: 4000,
+          },
+        ]);
+      });
+
+      it("reports text displays dropped after the budget is exhausted", () => {
+        const article = createArticle({
+          first: "A".repeat(4000),
+          second: "Second",
+        });
+        const { diagnostics } = generateDiscordPayloadsWithDiagnostics(
+          article,
+          {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  { type: "TEXT_DISPLAY", content: "{{first}}" },
+                  { type: "TEXT_DISPLAY", content: "{{second}}" },
+                ],
+              },
+            ],
+          }
+        );
+
+        deepStrictEqual(diagnostics, [
+          {
+            path: "componentsV2[0].components[1]",
+            componentType: "TEXT_DISPLAY",
+            reason: "budget-exhausted",
+          },
+        ]);
+      });
+
+      it("reports nested components dropped because their text resolved empty", () => {
+        const article = createArticle({});
+        const { payloads, diagnostics } =
+          generateDiscordPayloadsWithDiagnostics(article, {
+            componentsV2: [
+              {
+                type: "CONTAINER",
+                components: [
+                  {
+                    type: "SECTION",
+                    components: [
+                      { type: "TEXT_DISPLAY", content: "{{missing}}" },
+                    ],
+                    accessory: {
+                      type: "BUTTON",
+                      style: 5,
+                      label: "Click",
+                      url: "https://example.com",
+                    },
+                  },
+                ],
+              },
+            ],
+          });
+
+        assert.strictEqual(payloads.length, 0);
+        deepStrictEqual(diagnostics, [
+          {
+            path: "componentsV2[0].components[0].components[0]",
+            componentType: "TEXT_DISPLAY",
+            reason: "empty-content",
+          },
+          {
+            path: "componentsV2[0].components[0]",
+            componentType: "SECTION",
+            reason: "empty-content",
+          },
+          {
+            path: "componentsV2[0]",
+            componentType: "CONTAINER",
+            reason: "empty-content",
+          },
+        ]);
       });
     });
 

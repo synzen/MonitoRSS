@@ -28,7 +28,7 @@ import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 
 interface DiscordMessagePreviewProps {
   maxHeight?: string | number;
-  onResolvedMessages?: (messages: Record<string, any>[]) => void;
+  onResolvedMessages?: (messages: Record<string, any>[] | undefined) => void;
   brandingDisplayName: string;
   brandingAvatarUrl: string;
   onBrandingDisplayNameChange: (value: string) => void;
@@ -193,15 +193,34 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
     previewVersionRef.current += 1;
   }
 
-  const showEmptyState =
-    currentArticle &&
-    messages.length === 0 &&
-    !!messageComponent &&
-    messageComponent.children.length === 0;
+  const hasConfiguredComponents = (messageComponent?.children.length ?? 0) > 0;
+  const previewReturnedNoMessages =
+    !isFetching && !hasValidationErrors && !!connectionPreview && messages.length === 0;
+
+  let emptyMessage: string | undefined;
+
+  if (hasEmptyTextContent) {
+    emptyMessage = "Add content to every Text Display component to load the preview.";
+  } else if (previewReturnedNoMessages) {
+    emptyMessage = hasConfiguredComponents
+      ? "No message would be sent for this article. All configured content is empty after replacing placeholders."
+      : "No components added yet";
+  }
 
   React.useEffect(() => {
-    onResolvedMessages?.(messages);
-  }, [messages]);
+    if (connectionPreview && !isFetching && !hasValidationErrors && !hasEmptyTextContent) {
+      onResolvedMessages?.(messages);
+    } else {
+      onResolvedMessages?.(undefined);
+    }
+  }, [
+    messages,
+    connectionPreview,
+    isFetching,
+    hasValidationErrors,
+    hasEmptyTextContent,
+    onResolvedMessages,
+  ]);
 
   if (error && !hasValidationErrors && !previewDataIsDebouncing) {
     return (
@@ -363,7 +382,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
             messages={messages}
             maxHeight={maxHeight}
             isLoading={isFetching || !currentArticle}
-            emptyMessage={showEmptyState ? "No components added yet" : undefined}
+            emptyMessage={emptyMessage}
             showVerifiedInAppBadge={!connection.details.webhook}
             username={brandingDisplayName || undefined}
             avatarUrl={resolvedAvatarUrl}

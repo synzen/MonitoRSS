@@ -57,7 +57,7 @@ const TestSendErrorPanel = ({
           tabIndex={-1}
           outline="none"
         >
-          Discord couldn&apos;t send this preview
+          This preview couldn&apos;t be sent
         </Heading>
       </HStack>
       <Text id="test-send-error-description" color="fg.muted" mb={6}>
@@ -105,7 +105,7 @@ const TestSendErrorPanel = ({
                 {feedback.apiResponse && (
                   <Box minW={0}>
                     <Heading size="sm" color="fg.muted" mb={2}>
-                      Discord&apos;s Response
+                      Response Details
                     </Heading>
                     <Box
                       as="pre"

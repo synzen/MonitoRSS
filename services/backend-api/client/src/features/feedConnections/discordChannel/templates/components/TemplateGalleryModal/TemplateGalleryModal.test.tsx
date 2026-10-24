@@ -1559,6 +1559,30 @@ describe("TemplateGalleryModal", () => {
         ).toBeInTheDocument();
       });
     });
+
+    it("shows an empty-content message when articles exist but the template preview has no messages", async () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal {...editorDefaultProps} selectedTemplateId="default" />
+        </TestWrapper>,
+      );
+      await waitFor(() => {
+        expect(screen.getByText(/No message would be sent for this article/i)).toBeInTheDocument();
+      });
+    });
+
+    it("prompts to select an article when articles exist but none is selected", async () => {
+      render(
+        <TestWrapper>
+          <TemplateGalleryModal
+            {...editorDefaultProps}
+            selectedTemplateId="default"
+            selectedArticleId={undefined}
+          />
+        </TestWrapper>,
+      );
+      expect(screen.getByText("Select an article to preview.")).toBeInTheDocument();
+    });
   });
 
   describe("preview panel error state", () => {
@@ -1788,7 +1812,7 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>,
       );
 
-      expect(screen.getByText(/Discord couldn't send this preview/i)).toBeInTheDocument();
+      expect(screen.getByText(/This preview couldn't be sent/i)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Try Another Template/i })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Use this template/i })).toBeInTheDocument();
     });
@@ -1807,7 +1831,7 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>,
       );
 
-      expect(screen.queryByText(/Discord couldn't send this preview/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/This preview couldn't be sent/i)).not.toBeInTheDocument();
       expect(screen.getByText("Article sent to Discord successfully!")).toBeInTheDocument();
     });
 
@@ -1825,7 +1849,7 @@ describe("TemplateGalleryModal", () => {
         </TestWrapper>,
       );
 
-      expect(screen.queryByText(/Discord couldn't send this preview/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/This preview couldn't be sent/i)).not.toBeInTheDocument();
       expect(
         screen.getByText("Failed to send test article. Please try again."),
       ).toBeInTheDocument();

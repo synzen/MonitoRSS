@@ -64,6 +64,26 @@ export const DISCORD_COMPONENTS_V2_FLAG = 1 << 15; // 32768
  */
 export const DISCORD_MAX_TEXT_DISPLAY_CHARS = 4000;
 
+export type V2ComponentBuildDiagnosticReason =
+  | "empty-content"
+  | "budget-exhausted"
+  | "truncated";
+
+/**
+ * Describes a configured Components V2 component that was dropped or truncated
+ * while adapting the payload to Discord's text limits.
+ */
+export interface V2ComponentBuildDiagnostic {
+  /** Index path in the configured component tree, e.g. `componentsV2[0].components[2]`. */
+  path: string;
+  componentType: "TEXT_DISPLAY" | "SECTION" | "CONTAINER";
+  reason: V2ComponentBuildDiagnosticReason;
+  /** Length of the resolved text before truncation (`truncated` only). */
+  resolvedLength?: number;
+  /** Characters the shared budget allowed (`truncated` only). */
+  allowedLength?: number;
+}
+
 // ============================================================================
 // V2 Component Output Types
 // ============================================================================
@@ -305,6 +325,11 @@ export interface GeneratePayloadsOptions {
   mentions?: { targets?: MentionTarget[] };
   components?: ActionRowInput[];
   componentsV2?: ComponentV2Input[];
+}
+
+export interface GenerateDiscordPayloadsResult {
+  payloads: DiscordMessageApiPayload[];
+  diagnostics: V2ComponentBuildDiagnostic[];
 }
 
 export interface ForumThreadTag {

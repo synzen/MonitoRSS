@@ -2,6 +2,7 @@ import * as yup from "yup";
 import { Component, ComponentType } from "../types";
 import { DiscordButtonStyle } from "../constants/DiscordButtonStyle";
 import { getMaxForChildType, getMaxTotalChildren } from "../constants/componentChildRules";
+import countTextDisplayCharacters from "./countTextDisplayCharacters";
 
 const MAX_LEGACY_EMBEDS = getMaxTotalChildren(ComponentType.LegacyEmbedContainer)!;
 const MAX_LEGACY_EMBED_FIELDS = getMaxForChildType(
@@ -14,6 +15,7 @@ const MAX_V2_ROOT_CHILDREN = getMaxTotalChildren(ComponentType.V2Root)!;
 const MAX_V2_CONTAINER_CHILDREN = getMaxTotalChildren(ComponentType.V2Container)!;
 const MAX_V2_SECTION_CHILDREN = getMaxTotalChildren(ComponentType.V2Section)!;
 const MAX_V2_MEDIA_GALLERY_ITEMS = getMaxTotalChildren(ComponentType.V2MediaGallery)!;
+const MAX_TOTAL_TEXT_DISPLAY_CHARACTERS = 4000;
 
 // Recursive schema for component validation
 const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any> => {
@@ -224,7 +226,24 @@ const createMessageBuilderComponentSchema = (): yup.Lazy<any, yup.AnyObject, any
             .max(
               MAX_V2_ROOT_CHILDREN,
               `Expected message to have at most ${MAX_V2_ROOT_CHILDREN} components`,
-            ),
+            )
+            .test({
+              name: "total-text-display-characters",
+              test: function validateTotalTextDisplayCharacters(children) {
+                const total = (Array.isArray(children) ? children : []).reduce(
+                  (sum, child) => sum + countTextDisplayCharacters(child as Component),
+                  0,
+                );
+
+                if (total <= MAX_TOTAL_TEXT_DISPLAY_CHARACTERS) {
+                  return true;
+                }
+
+                return this.createError({
+                  message: `Total Text Display content is ${total} characters, which exceeds Discord's ${MAX_TOTAL_TEXT_DISPLAY_CHARACTERS}-character limit. Reduce the total content to ${MAX_TOTAL_TEXT_DISPLAY_CHARACTERS} characters or fewer.`,
+                });
+              },
+            }),
         });
       case ComponentType.V2Section:
         return baseSchema.shape({

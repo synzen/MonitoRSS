@@ -2,6 +2,7 @@ import { describe, it, before, after } from "node:test";
 import * as assert from "node:assert";
 import { randomUUID } from "crypto";
 import { ArticleDeliveryStatus } from "../../src/delivery";
+import { ArticleDeliveryErrorCode } from "../../src/stores/interfaces/delivery-record-store";
 import getTestRssFeed from "../data/test-rss-feed";
 import { createTestContext } from "../helpers/test-context";
 import { setupTestDatabase, teardownTestDatabase, type TestStores } from "../helpers/setup-integration-tests";
@@ -600,6 +601,99 @@ describe("Discord Payload Forum Channels (e2e)", { concurrency: true }, () => {
         assert.strictEqual(embeds[0]!.title, "Forum with Embeds");
         assert.strictEqual(embeds[0]!.description, "Forum article description");
         assert.strictEqual(embeds[0]!.color, 0x00ff00);
+      } finally {
+        ctx.cleanup();
+      }
+    });
+  });
+
+  describe("Empty content", () => {
+    it("rejects channel forum delivery without creating a thread when all content is empty", async () => {
+      const ctx = createTestContext(stores);
+
+      const eventWithForum = createEventWithForumChannel(ctx.testFeedV2Event, {
+        content: "{{undefined}}",
+      });
+
+      try {
+        await ctx.seedArticles(eventWithForum);
+
+        ctx.setFeedResponse(() => ({
+          body: getTestRssFeed(
+            [
+              {
+                guid: "forum-empty-content-test",
+                title: "Empty Forum Content",
+              },
+            ],
+            true
+          ),
+          hash: randomUUID(),
+        }));
+
+        const results = await ctx.handleEvent(eventWithForum);
+
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(
+          results![0]!.status,
+          ArticleDeliveryStatus.Rejected
+        );
+        assert.strictEqual(
+          results![0]!.errorCode,
+          ArticleDeliveryErrorCode.NoPayloadForMedium
+        );
+        assert.strictEqual(
+          ctx.discordClient.capturedPayloads.length,
+          0,
+          "Should not create a thread when there is nothing to send"
+        );
+      } finally {
+        ctx.cleanup();
+      }
+    });
+
+    it("rejects forum webhook delivery without creating a thread when all content is empty", async () => {
+      const ctx = createTestContext(stores);
+
+      const eventWithForumWebhook = createEventWithForumWebhook(
+        ctx.testFeedV2Event,
+        {
+          content: "{{undefined}}",
+        }
+      );
+
+      try {
+        await ctx.seedArticles(eventWithForumWebhook);
+
+        ctx.setFeedResponse(() => ({
+          body: getTestRssFeed(
+            [
+              {
+                guid: "forum-webhook-empty-content-test",
+                title: "Empty Forum Webhook Content",
+              },
+            ],
+            true
+          ),
+          hash: randomUUID(),
+        }));
+
+        const results = await ctx.handleEvent(eventWithForumWebhook);
+
+        assert.strictEqual(results!.length, 1);
+        assert.strictEqual(
+          results![0]!.status,
+          ArticleDeliveryStatus.Rejected
+        );
+        assert.strictEqual(
+          results![0]!.errorCode,
+          ArticleDeliveryErrorCode.NoPayloadForMedium
+        );
+        assert.strictEqual(
+          ctx.discordClient.capturedPayloads.length,
+          0,
+          "Should not create a thread when there is nothing to send"
+        );
       } finally {
         ctx.cleanup();
       }

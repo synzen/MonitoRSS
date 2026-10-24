@@ -23,18 +23,10 @@ const extractMessageBuilderProblems = (
     return problems;
   }
 
-  let textDisplayCharacterCount = 0;
-
   const processErrors = (errors: Record<string, any>, component: Component, currentPath = "") => {
     if (!errors || typeof errors !== "object") return;
 
     Object.keys(errors).forEach((key) => {
-      if (component.type === ComponentType.V2TextDisplay && key === "content") {
-        const content = component.content || "";
-        const charCount = content.length;
-        textDisplayCharacterCount += charCount;
-      }
-
       // Handle children and accessory separately since they have special handling
       if (key === "children") {
         // Handle array-level errors (e.g., min/max validation)
@@ -93,15 +85,6 @@ const extractMessageBuilderProblems = (
 
   if (formStateErrors) {
     processErrors(formStateErrors, messageComponent);
-  }
-
-  if (textDisplayCharacterCount > 4000) {
-    problems.push({
-      message: `Total character length for all Text Display components exceeds Discord limit of 4000. Current length: ${textDisplayCharacterCount}.`,
-      path: getComponentPath(messageComponent, messageComponent.id) || "Message Root",
-      componentId: messageComponent.id,
-      severity: "error",
-    });
   }
 
   if (messageComponent.type === ComponentType.LegacyRoot) {

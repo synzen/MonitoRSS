@@ -12,7 +12,7 @@ const mockUseSendTestArticleDirect = useSendTestArticleDirect as Mock;
 describe("getErrorMessageByStatus", () => {
   it("returns correct message for BAD_PAYLOAD", () => {
     const message = getErrorMessageByStatus(SendTestArticleDeliveryStatus.BadPayload);
-    expect(message).toContain("Discord couldn't process this message");
+    expect(message).toContain("could not be sent with your current message format");
   });
 
   it("returns correct message for MISSING_CHANNEL", () => {
@@ -114,7 +114,7 @@ describe("useTestSendFlow", () => {
 
       expect(result.current.testSendFeedback).toEqual({
         status: "error",
-        message: expect.stringContaining("Discord couldn't process this message"),
+        message: expect.stringContaining("could not be sent with your current message format"),
         deliveryStatus: SendTestArticleDeliveryStatus.BadPayload,
         apiPayload,
         apiResponse,

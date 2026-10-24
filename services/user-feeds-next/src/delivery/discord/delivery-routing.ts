@@ -15,7 +15,7 @@ import {
   type LogicalExpression,
 } from "../../articles/filters";
 import {
-  generateDiscordPayloads,
+  generateDiscordPayloadsWithDiagnostics,
   enhancePayloadsWithWebhookDetails,
   generateThreadName,
   buildForumThreadBody,
@@ -270,46 +270,76 @@ interface InternalDeliverArticleContext {
 
 function generatePayloadsForFormattedArticle(
   formattedArticle: Article,
-  medium: DeliveryMedium
+  medium: DeliveryMedium,
+  context: Pick<InternalDeliverArticleContext, "feedId" | "mediumId">
 ): DiscordMessageApiPayload[] {
-  return generateDiscordPayloads(formattedArticle, {
-    content: medium.details.content,
-    embeds: medium.details.embeds?.map((e) => ({
-      ...e,
-      title: e.title ?? undefined,
-      description: e.description ?? undefined,
-      url: e.url ?? undefined,
-      color: e.color ?? undefined,
-      footer: e.footer
-        ? { text: e.footer.text, iconUrl: e.footer.iconUrl ?? undefined }
-        : undefined,
-      image: e.image ? { url: e.image.url } : undefined,
-      thumbnail: e.thumbnail ? { url: e.thumbnail.url } : undefined,
-      author: e.author
-        ? {
-            name: e.author.name,
-            url: e.author.url ?? undefined,
-            iconUrl: e.author.iconUrl ?? undefined,
-          }
-        : undefined,
-      timestamp: e.timestamp ?? undefined,
-    })),
-    splitOptions: medium.details.splitOptions,
-    placeholderLimits: medium.details.placeholderLimits,
-    enablePlaceholderFallback: medium.details.enablePlaceholderFallback,
-    mentions: medium.details.mentions,
-    components: medium.details.components?.map((row) => ({
-      type: row.type,
-      components: row.components.map((btn) => ({
-        type: btn.type,
-        style: btn.style,
-        label: btn.label,
-        url: btn.url ?? undefined,
-        emoji: btn.emoji ?? undefined,
+  const { payloads, diagnostics } = generateDiscordPayloadsWithDiagnostics(
+    formattedArticle,
+    {
+      content: medium.details.content,
+      embeds: medium.details.embeds?.map((e) => ({
+        ...e,
+        title: e.title ?? undefined,
+        description: e.description ?? undefined,
+        url: e.url ?? undefined,
+        color: e.color ?? undefined,
+        footer: e.footer
+          ? { text: e.footer.text, iconUrl: e.footer.iconUrl ?? undefined }
+          : undefined,
+        image: e.image ? { url: e.image.url } : undefined,
+        thumbnail: e.thumbnail ? { url: e.thumbnail.url } : undefined,
+        author: e.author
+          ? {
+              name: e.author.name,
+              url: e.author.url ?? undefined,
+              iconUrl: e.author.iconUrl ?? undefined,
+            }
+          : undefined,
+        timestamp: e.timestamp ?? undefined,
       })),
-    })),
-    componentsV2: medium.details.componentsV2 ?? undefined,
-  });
+      splitOptions: medium.details.splitOptions,
+      placeholderLimits: medium.details.placeholderLimits,
+      enablePlaceholderFallback: medium.details.enablePlaceholderFallback,
+      mentions: medium.details.mentions,
+      components: medium.details.components?.map((row) => ({
+        type: row.type,
+        components: row.components.map((btn) => ({
+          type: btn.type,
+          style: btn.style,
+          label: btn.label,
+          url: btn.url ?? undefined,
+          emoji: btn.emoji ?? undefined,
+        })),
+      })),
+      componentsV2: medium.details.componentsV2 ?? undefined,
+    }
+  );
+
+  if (diagnostics.length > 0) {
+    const contextDetails = {
+      feedId: context.feedId,
+      mediumId: context.mediumId,
+      articleId: formattedArticle.flattened.id,
+      diagnostics,
+    };
+    const droppedCount = diagnostics.filter(
+      (d) => d.reason !== "truncated"
+    ).length;
+
+    if (droppedCount > 0) {
+      logger.warn(
+        "Dropped Components V2 content while building Discord payload",
+        contextDetails
+      );
+    } else {
+      logger.info(
+        "Truncated Components V2 content to fit Discord's text limit",
+        contextDetails
+      );
+    }
+  }
+
+  return payloads;
 }
 
 // ============================================================================
@@ -336,7 +366,11 @@ async function deliverToWebhookForum(
     })),
   };
 
-  const initialBodies = generatePayloadsForFormattedArticle(article, medium);
+  const initialBodies = generatePayloadsForFormattedArticle(
+    article,
+    medium,
+    context
+  );
 
   const bodies = enhancePayloadsWithWebhookDetails(
     article,
@@ -353,7 +387,7 @@ async function deliverToWebhookForum(
   );
 
   if (bodies.length === 0) {
-    throw new Error("No payloads generated for webhook forum delivery");
+    return { states: [], pendingPayloads: [] };
   }
 
   const firstPayload = bodies[0]!;
@@ -435,10 +469,10 @@ async function deliverToChannelForum(
     })),
   };
 
-  const bodies = generatePayloadsForFormattedArticle(article, medium);
+  const bodies = generatePayloadsForFormattedArticle(article, medium, context);
 
   if (bodies.length === 0) {
-    throw new Error("No payloads generated for channel forum delivery");
+    return { states: [], pendingPayloads: [] };
   }
 
   const threadName = generateThreadName(
@@ -523,17 +557,18 @@ async function deliverToChannel(
     })),
   };
 
-  const bodies = generatePayloadsForFormattedArticle(article, medium);
+  const bodies = generatePayloadsForFormattedArticle(article, medium, context);
+
+  if (bodies.length === 0) {
+    return { states: [], pendingPayloads: [] };
+  }
+
   let currentBodiesIndex = 0;
   const shouldCreateThread = channel.type === "new-thread";
 
   let useChannelId = channel.id;
 
   if (shouldCreateThread) {
-    if (bodies.length === 0) {
-      throw new Error("No payloads generated for channel new-thread delivery");
-    }
-
     const shouldCreateThreadFirst =
       !!medium.details.channelNewThreadExcludesPreview;
     const threadName = generateThreadName(
@@ -568,12 +603,7 @@ async function deliverToChannel(
       useChannelId = (firstResponse.body as Record<string, unknown>)
         .id as string;
     } else {
-      const firstBody = bodies[0];
-      if (!firstBody) {
-        throw new Error(
-          "No payloads generated for channel new-thread delivery"
-        );
-      }
+      const firstBody = bodies[0]!;
 
       const apiUrl = getChannelApiUrl(channel.id);
       const firstPostResponse = await context.discordClient.sendApiRequest(
@@ -711,7 +741,11 @@ async function deliverToWebhook(
     })),
   };
 
-  const initialBodies = generatePayloadsForFormattedArticle(article, medium);
+  const initialBodies = generatePayloadsForFormattedArticle(
+    article,
+    medium,
+    context
+  );
 
   const bodies = enhancePayloadsWithWebhookDetails(
     article,
@@ -881,7 +915,7 @@ async function sendArticleToMedium(
 
     if (result.states.length === 0) {
       logger.warn(
-        "No Discord payloads generated for article - content and embeds are both empty after placeholder resolution",
+        "No Discord payloads generated for article - all configured message content was empty after placeholder resolution",
         {
           feedId,
           mediumId: medium.id,
@@ -898,10 +932,10 @@ async function sendArticleToMedium(
             errorCode: ArticleDeliveryErrorCode.NoPayloadForMedium,
             internalMessage:
               "No Discord payloads were generated for this article. " +
-              "The message content and embeds are both empty after placeholder resolution.",
+              "All configured message content (text, embeds, and Components V2 components) was empty after placeholder resolution.",
             externalDetail:
-              "No Discord payloads were generated for this article. " +
-              "Check that your message content or embeds contain valid placeholders.",
+              "No message was sent because all configured content was empty after replacing placeholders. " +
+              "Check that your message content, embeds, and components are not empty after placeholders are replaced.",
             articleIdHash: formattedArticle.flattened.idHash,
             article: formattedArticle,
           },
