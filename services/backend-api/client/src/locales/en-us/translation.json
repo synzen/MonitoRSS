@@ -492,8 +492,8 @@
           "description": "Apply character limits to placeholders to shorten messages."
         },
         "connectionDisabledAlert": {
-          "badFormatTitle": "Disabled due to invalid message format",
-          "badFormatDescription": "Discord rejected a message with your current message format. To re-enable this connection, re-set your message format.",
+          "badFormatTitle": "Disabled due to a message format problem",
+          "badFormatDescription": "Discord rejected the message, or the message had no content after placeholders were replaced. Update your message format, then send a test article to confirm it works.",
           "manuallyDisabledTitle": "This connection has been manually disabled.",
           "manuallyDisabledDescription": "Article delivery through this connection is paused until it is re-enabled.",
           "missingMediumTitle": "This connection has been disabled because the delivery channel is missing.",
@@ -538,12 +538,12 @@
           "alertTitleFailure": "Failed to send article",
           "alertDescriptionThirdPartyInternalError": "Internal error occurred at target channel. Try again later.",
           "alertDescriptionMissingApplicationPermission": "Missing application permissions. Ensure the bot has the proper permissions view messages, send messages, and create embeds if applicable in the appropriate channels.",
-          "alertDescriptionBadPayload": "Malformed payload detected. Update message setting and try again.",
+          "alertDescriptionBadPayload": "The message could not be sent with your current message format. Check the details below, then update your message format and try again.",
           "alertDescriptionMissingChannel": "Connection channel no longer exists. Update this connection to target a different channel.",
           "alertDescriptionTooManyRequests": "Too many requests have been sent in a short period of time. Try again later.",
           "alertDescriptionNoArticles": "There are no articles in the feed to deliver",
           "apiPayload": "API Payload",
-          "apiResponse": "API Response"
+          "apiResponse": "Response Details"
         },
         "articlePlaceholderTable": {
           "columnHeaderPlaceholder": "Placeholder",

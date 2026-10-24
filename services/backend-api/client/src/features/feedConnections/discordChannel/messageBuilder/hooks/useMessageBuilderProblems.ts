@@ -10,7 +10,9 @@ const useMessageBuilderProblems = (
   formStateErrors: Merge<FieldError, FieldErrorsImpl<any>> | undefined,
   messageComponent?: MessageComponentRoot,
 ) => {
-  const [resolvedMessages, setResolvedMessages] = useState<ResolvedMessage[]>([]);
+  const [resolvedMessages, setResolvedMessages] = useState<ResolvedMessage[] | undefined>(
+    undefined,
+  );
 
   const errors = useMemo(
     () => extractMessageBuilderProblems(formStateErrors, messageComponent),

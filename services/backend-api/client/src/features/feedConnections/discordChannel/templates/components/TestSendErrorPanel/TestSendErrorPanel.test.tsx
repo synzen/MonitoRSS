@@ -45,7 +45,7 @@ describe("TestSendErrorPanel", () => {
     it("renders error headline with icon", () => {
       renderComponent();
 
-      expect(screen.getByText(/Discord couldn't send this preview/i)).toBeInTheDocument();
+      expect(screen.getByText(/This preview couldn't be sent/i)).toBeInTheDocument();
     });
 
     it("renders user-friendly error message", () => {
@@ -160,7 +160,7 @@ describe("TestSendErrorPanel", () => {
       });
       await user.click(detailsButton);
 
-      expect(screen.getByText(/Discord's Response/i)).toBeInTheDocument();
+      expect(screen.getByText(/Response Details/i)).toBeInTheDocument();
       expect(screen.getByText(/"code": 50006/)).toBeInTheDocument();
     });
   });
@@ -200,21 +200,21 @@ describe("TestSendErrorPanel", () => {
     it('has role="region" with proper aria attributes', () => {
       renderComponent();
 
-      const panel = screen.getByRole("region", { name: /Discord couldn't send this preview/i });
+      const panel = screen.getByRole("region", { name: /This preview couldn't be sent/i });
       expect(panel).toBeInTheDocument();
     });
 
     it("has aria-labelledby pointing to heading", () => {
       renderComponent();
 
-      const panel = screen.getByRole("region", { name: /Discord couldn't send this preview/i });
+      const panel = screen.getByRole("region", { name: /This preview couldn't be sent/i });
       expect(panel).toHaveAttribute("aria-labelledby", "test-send-error-heading");
     });
 
     it("has aria-describedby pointing to description", () => {
       renderComponent();
 
-      const panel = screen.getByRole("region", { name: /Discord couldn't send this preview/i });
+      const panel = screen.getByRole("region", { name: /This preview couldn't be sent/i });
       expect(panel).toHaveAttribute("aria-describedby", "test-send-error-description");
     });
   });

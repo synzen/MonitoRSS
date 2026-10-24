@@ -52,6 +52,38 @@ export const DISCORD_COMPONENT_TYPE_TO_NUMBER = {
 
 export const DISCORD_COMPONENTS_V2_FLAG = 1 << 15; // 32768
 
+/**
+ * Discord shares a single 4000-character budget across every Text Display
+ * component in a Components V2 message (including those nested in Sections and
+ * Containers). This is not in Discord's published docs yet, but the API
+ * enforces it and a docs PR is open:
+ * https://github.com/discord/discord-api-docs/pull/8562
+ *
+ * Resolved placeholders have no inherent bound, so this must be enforced
+ * before sending.
+ */
+export const DISCORD_MAX_TEXT_DISPLAY_CHARS = 4000;
+
+export type V2ComponentBuildDiagnosticReason =
+  | "empty-content"
+  | "budget-exhausted"
+  | "truncated";
+
+/**
+ * Describes a configured Components V2 component that was dropped or truncated
+ * while adapting the payload to Discord's text limits.
+ */
+export interface V2ComponentBuildDiagnostic {
+  /** Index path in the configured component tree, e.g. `componentsV2[0].components[2]`. */
+  path: string;
+  componentType: "TEXT_DISPLAY" | "SECTION" | "CONTAINER";
+  reason: V2ComponentBuildDiagnosticReason;
+  /** Length of the resolved text before truncation (`truncated` only). */
+  resolvedLength?: number;
+  /** Characters the shared budget allowed (`truncated` only). */
+  allowedLength?: number;
+}
+
 // ============================================================================
 // V2 Component Output Types
 // ============================================================================
@@ -293,6 +325,11 @@ export interface GeneratePayloadsOptions {
   mentions?: { targets?: MentionTarget[] };
   components?: ActionRowInput[];
   componentsV2?: ComponentV2Input[];
+}
+
+export interface GenerateDiscordPayloadsResult {
+  payloads: DiscordMessageApiPayload[];
+  diagnostics: V2ComponentBuildDiagnostic[];
 }
 
 export interface ForumThreadTag {

@@ -42,7 +42,10 @@ interface WarningContext {
 type ResolvedComponent = Record<string, any>;
 
 const CONSEQUENCE =
-  "This may cause article delivery to fail, which can result in this feed getting disabled.";
+  "This content may be omitted from the message or cause delivery to fail, which can pause this connection.";
+
+const ALL_CONTENT_EMPTY_WARNING =
+  "All configured content resolved to empty for this article, so no message would be sent. This can cause delivery to fail and pause this connection.";
 
 const checkField = (
   ctx: WarningContext,
@@ -297,8 +300,25 @@ const extractResolutionWarnings = (
   templateRoot: MessageComponentRoot | undefined,
   resolvedMessages: ResolvedComponent[] | undefined,
 ): MessageBuilderProblem[] => {
-  if (!templateRoot || !resolvedMessages?.length) {
+  if (!templateRoot || resolvedMessages === undefined) {
     return [];
+  }
+
+  if (resolvedMessages.length === 0) {
+    const firstConfiguredComponent = templateRoot.children[0];
+
+    if (!firstConfiguredComponent) {
+      return [];
+    }
+
+    return [
+      {
+        message: ALL_CONTENT_EMPTY_WARNING,
+        path: getComponentPath(templateRoot, firstConfiguredComponent.id) || templateRoot.name,
+        componentId: firstConfiguredComponent.id,
+        severity: "warning",
+      },
+    ];
   }
 
   const ctx: WarningContext = {

@@ -217,8 +217,8 @@ export const SendTestArticleProvider = ({ children }: PropsWithChildren<{}>) => 
                   {t("features.feedConnections.components.sendTestArticleButton.apiResponse")}
                 </Heading>
                 <Text>
-                  The response Discord gave. This should include details on the issues that Discord
-                  is reporting with the configured message.
+                  Details returned while sending the test message. This may include errors reported
+                  by Discord or by MonitoRSS.
                 </Text>
                 <pre
                   style={{

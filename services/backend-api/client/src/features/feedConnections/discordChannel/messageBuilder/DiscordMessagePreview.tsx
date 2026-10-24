@@ -17,18 +17,15 @@ import {
   DiscordMessageDisplay,
   resolvePreviewAvatarUrl,
 } from "../shared/components/DiscordMessageDisplay";
-import convertMessageBuilderStateToConnectionPreviewInput, {
-  V2_COMPONENT_TYPE,
-} from "./utils/convertMessageBuilderStateToConnectionPreviewInput";
+import convertMessageBuilderStateToConnectionPreviewInput from "./utils/convertMessageBuilderStateToConnectionPreviewInput";
 import { useUserFeedConnectionContext } from "@/features/feed";
 import { DiscordServerName, DiscordChannelName } from "@/features/discordServers";
-import { CreateDiscordChannelConnectionPreviewInput } from "../connection/api";
 import { MentionDataProvider, useMentionData } from "../shared/contexts/MentionDataContext";
 import { ApiErrorCode } from "@/utils/getStandardErrorCodeMessage";
 
 interface DiscordMessagePreviewProps {
   maxHeight?: string | number;
-  onResolvedMessages?: (messages: Record<string, any>[]) => void;
+  onResolvedMessages?: (messages: Record<string, any>[] | undefined) => void;
   brandingDisplayName: string;
   brandingAvatarUrl: string;
   onBrandingDisplayNameChange: (value: string) => void;
@@ -105,43 +102,12 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
   const hasValidationErrors =
     errors.messageComponent != null && Object.keys(errors.messageComponent).length > 0;
 
-  const hasEmptyTextContent = React.useMemo(() => {
-    type V2Component = NonNullable<
-      CreateDiscordChannelConnectionPreviewInput["data"]["componentsV2"]
-    >[number];
-
-    const checkComponents = (components: V2Component[] | null | undefined): boolean => {
-      if (!components || !Array.isArray(components)) return false;
-
-      return components.some((comp) => {
-        if (comp.type === V2_COMPONENT_TYPE.TextDisplay && !comp.content) return true;
-
-        if (
-          comp.type === V2_COMPONENT_TYPE.Section &&
-          comp.components?.some((c) => c.type === V2_COMPONENT_TYPE.TextDisplay && !c.content)
-        ) {
-          return true;
-        }
-
-        if (comp.components) return checkComponents(comp.components as V2Component[]);
-
-        return false;
-      });
-    };
-
-    return checkComponents(debouncedPreviewData.componentsV2);
-  }, [debouncedPreviewData]);
-
   const {
     data: connectionPreview,
     fetchStatus,
     error,
   } = useCreateConnectionPreview(FeedConnectionType.DiscordChannel, {
-    enabled:
-      !!currentArticle?.id &&
-      !hasEmptyTextContent &&
-      !hasValidationErrors &&
-      !previewDataIsDebouncing,
+    enabled: !!currentArticle?.id && !hasValidationErrors && !previewDataIsDebouncing,
     data: {
       connectionId: connection.id,
       feedId: userFeed.id,
@@ -193,15 +159,27 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
     previewVersionRef.current += 1;
   }
 
-  const showEmptyState =
-    currentArticle &&
-    messages.length === 0 &&
-    !!messageComponent &&
-    messageComponent.children.length === 0;
+  const hasConfiguredComponents = (messageComponent?.children.length ?? 0) > 0;
+  const previewReturnedNoMessages =
+    !isFetching && !hasValidationErrors && !!connectionPreview && messages.length === 0;
+
+  let emptyMessage: string | undefined;
+
+  if (hasValidationErrors) {
+    emptyMessage = "Resolve the problems flagged in the editor to load the preview.";
+  } else if (previewReturnedNoMessages) {
+    emptyMessage = hasConfiguredComponents
+      ? "No message would be sent for this article. All configured content is empty after replacing placeholders."
+      : "No components added yet";
+  }
 
   React.useEffect(() => {
-    onResolvedMessages?.(messages);
-  }, [messages]);
+    if (connectionPreview && !isFetching && !hasValidationErrors) {
+      onResolvedMessages?.(messages);
+    } else {
+      onResolvedMessages?.(undefined);
+    }
+  }, [messages, connectionPreview, isFetching, hasValidationErrors, onResolvedMessages]);
 
   if (error && !hasValidationErrors && !previewDataIsDebouncing) {
     return (
@@ -363,7 +341,7 @@ export const DiscordMessagePreview: React.FC<DiscordMessagePreviewProps> = ({
             messages={messages}
             maxHeight={maxHeight}
             isLoading={isFetching || !currentArticle}
-            emptyMessage={showEmptyState ? "No components added yet" : undefined}
+            emptyMessage={emptyMessage}
             showVerifiedInAppBadge={!connection.details.webhook}
             username={brandingDisplayName || undefined}
             avatarUrl={resolvedAvatarUrl}

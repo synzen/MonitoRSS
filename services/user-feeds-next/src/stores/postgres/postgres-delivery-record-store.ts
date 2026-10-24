@@ -338,6 +338,14 @@ export function createPostgresDeliveryRecordStore(
             ) {
               details.message = "Connection destination does not exist";
             } else if (
+              record.error_code === ArticleDeliveryErrorCode.NoPayloadForMedium
+            ) {
+              details.message =
+                "No message was sent because all configured content was empty after replacing placeholders";
+              if (record.external_detail) {
+                details.data = { message: record.external_detail };
+              }
+            } else if (
               record.error_code === ArticleDeliveryErrorCode.ThirdPartyBadRequest
             ) {
               details.message = "Invalid message format";

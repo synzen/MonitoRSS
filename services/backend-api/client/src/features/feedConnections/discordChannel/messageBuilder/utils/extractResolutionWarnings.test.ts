@@ -31,6 +31,30 @@ describe("extractResolutionWarnings", () => {
     expect(extractResolutionWarnings(template, [])).toEqual([]);
   });
 
+  it("warns when configured content produces no resolved messages", () => {
+    const template: V2MessageComponentRoot = {
+      id: "root",
+      name: "root",
+      type: ComponentType.V2Root,
+      children: [
+        {
+          id: "td-1",
+          name: "Text",
+          type: ComponentType.V2TextDisplay,
+          content: "{{hi}}",
+          children: [],
+        },
+      ],
+    };
+
+    const warnings = extractResolutionWarnings(template, []);
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0].severity).toBe("warning");
+    expect(warnings[0].componentId).toBe("td-1");
+    expect(warnings[0].message).toContain("All configured content resolved to empty");
+  });
+
   describe("V2 TextDisplay", () => {
     it("warns when placeholder in content resolves to empty", () => {
       const template: V2MessageComponentRoot = {

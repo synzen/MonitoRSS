@@ -9,6 +9,7 @@ import {
   DiscordComponentType,
   DISCORD_COMPONENT_TYPE_TO_NUMBER,
   DISCORD_COMPONENTS_V2_FLAG,
+  DISCORD_MAX_TEXT_DISPLAY_CHARS,
   type DiscordMessageApiPayload,
   type DiscordMessageComponent,
   type DiscordMessageComponentV2,
@@ -20,6 +21,8 @@ import {
   type DiscordSeparatorV2,
   type DiscordMediaGalleryV2,
   type DiscordContainerV2,
+  type V2ComponentBuildDiagnostic,
+  type GenerateDiscordPayloadsResult,
   type ButtonInput,
   type ActionRowInput,
   type TextDisplayV2Input,
@@ -53,6 +56,14 @@ interface ReplacePlaceholderContext {
       limits?: PlaceholderLimit[] | null;
     };
   };
+}
+
+/**
+ * Tracks Discord's message-wide Text Display character budget while components
+ * are built in payload order.
+ */
+interface TextDisplayBudget {
+  remainingChars: number;
 }
 
 /**
@@ -146,26 +157,96 @@ function buildThumbnailV2(
 
 function buildTextDisplayV2(
   textDisplay: TextDisplayV2Input,
-  ctx: ReplacePlaceholderContext
-): DiscordTextDisplayV2 {
+  ctx: ReplacePlaceholderContext,
+  budget: TextDisplayBudget,
+  path: string,
+  diagnostics: V2ComponentBuildDiagnostic[]
+): DiscordTextDisplayV2 | null {
+  if (budget.remainingChars <= 0) {
+    diagnostics.push({
+      path,
+      componentType: "TEXT_DISPLAY",
+      reason: "budget-exhausted",
+    });
+    return null;
+  }
+
+  const resolved = replaceTemplateString(
+    ctx.flattened,
+    textDisplay.content,
+    ctx.replaceOptions
+  )?.trim();
+
+  if (!resolved) {
+    diagnostics.push({
+      path,
+      componentType: "TEXT_DISPLAY",
+      reason: "empty-content",
+    });
+    return null;
+  }
+
+  const allowedLength = Math.min(
+    DISCORD_MAX_TEXT_DISPLAY_CHARS,
+    budget.remainingChars
+  );
+
+  if (resolved.length > allowedLength) {
+    diagnostics.push({
+      path,
+      componentType: "TEXT_DISPLAY",
+      reason: "truncated",
+      resolvedLength: resolved.length,
+      allowedLength,
+    });
+  }
+
+  const content = truncateText(resolved, allowedLength);
+
+  if (!content) {
+    diagnostics.push({
+      path,
+      componentType: "TEXT_DISPLAY",
+      reason: "empty-content",
+    });
+    return null;
+  }
+
+  budget.remainingChars -= content.length;
+
   return {
     type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.TextDisplay],
-    content:
-      replaceTemplateString(
-        ctx.flattened,
-        textDisplay.content,
-        ctx.replaceOptions
-      )?.trim() || "",
+    content,
   };
 }
 
 function buildSectionV2(
   section: SectionV2Input,
-  ctx: ReplacePlaceholderContext
-): DiscordSectionV2 {
-  const components = section.components.map((child) =>
-    buildTextDisplayV2(child, ctx)
-  );
+  ctx: ReplacePlaceholderContext,
+  budget: TextDisplayBudget,
+  path: string,
+  diagnostics: V2ComponentBuildDiagnostic[]
+): DiscordSectionV2 | null {
+  const components = section.components
+    .map((child, index) =>
+      buildTextDisplayV2(
+        child,
+        ctx,
+        budget,
+        `${path}.components[${index}]`,
+        diagnostics
+      )
+    )
+    .filter((c): c is DiscordTextDisplayV2 => c !== null);
+
+  if (components.length === 0) {
+    diagnostics.push({
+      path,
+      componentType: "SECTION",
+      reason: "empty-content",
+    });
+    return null;
+  }
 
   const accessory =
     section.accessory.type === "THUMBNAIL"
@@ -231,7 +312,10 @@ function buildMediaGalleryV2(
 
 function buildContainerChildV2(
   child: ContainerChildV2Input,
-  ctx: ReplacePlaceholderContext
+  ctx: ReplacePlaceholderContext,
+  budget: TextDisplayBudget,
+  path: string,
+  diagnostics: V2ComponentBuildDiagnostic[]
 ): DiscordMessageComponentV2 | null {
   switch (child.type) {
     case "SEPARATOR":
@@ -239,11 +323,14 @@ function buildContainerChildV2(
     case "ACTION_ROW":
       return buildActionRowV2(child, ctx);
     case "SECTION":
-      return buildSectionV2(child, ctx);
+      return buildSectionV2(child, ctx, budget, path, diagnostics);
     case "TEXT_DISPLAY":
       return buildTextDisplayV2(
         child,
-        ctx
+        ctx,
+        budget,
+        path,
+        diagnostics
       ) as unknown as DiscordMessageComponentV2;
     case "MEDIA_GALLERY": {
       const gallery = buildMediaGalleryV2(child, ctx);
@@ -262,11 +349,31 @@ function buildContainerChildV2(
 
 function buildContainerV2(
   container: ContainerV2Input,
-  ctx: ReplacePlaceholderContext
-): DiscordContainerV2 {
-  const components = container.components.map((child) =>
-    buildContainerChildV2(child, ctx)
-  ).filter((c): c is DiscordMessageComponentV2 => c !== null);
+  ctx: ReplacePlaceholderContext,
+  budget: TextDisplayBudget,
+  path: string,
+  diagnostics: V2ComponentBuildDiagnostic[]
+): DiscordContainerV2 | null {
+  const components = container.components
+    .map((child, index) =>
+      buildContainerChildV2(
+        child,
+        ctx,
+        budget,
+        `${path}.components[${index}]`,
+        diagnostics
+      )
+    )
+    .filter((c): c is DiscordMessageComponentV2 => c !== null);
+
+  if (components.length === 0) {
+    diagnostics.push({
+      path,
+      componentType: "CONTAINER",
+      reason: "empty-content",
+    });
+    return null;
+  }
 
   return {
     type: DISCORD_COMPONENT_TYPE_TO_NUMBER[DiscordComponentType.ContainerV2],
@@ -278,24 +385,33 @@ function buildContainerV2(
 
 function buildComponentsV2(
   componentsV2: ComponentV2Input[],
-  ctx: ReplacePlaceholderContext
+  ctx: ReplacePlaceholderContext,
+  diagnostics: V2ComponentBuildDiagnostic[]
 ): DiscordMessageComponentV2[] {
-  return componentsV2.map((component) => {
-    switch (component.type) {
-      case "ACTION_ROW":
-        return buildActionRowV2(component, ctx);
-      case "SEPARATOR":
-        return buildSeparatorV2(component);
-      case "CONTAINER":
-        return buildContainerV2(component, ctx);
-      case "SECTION":
-        return buildSectionV2(component, ctx);
-      default:
-        throw new Error(
-          `Unknown V2 component type: ${(component as { type: string }).type}`
-        );
-    }
-  });
+  const budget: TextDisplayBudget = {
+    remainingChars: DISCORD_MAX_TEXT_DISPLAY_CHARS,
+  };
+
+  return componentsV2
+    .map((component, index) => {
+      const path = `componentsV2[${index}]`;
+
+      switch (component.type) {
+        case "ACTION_ROW":
+          return buildActionRowV2(component, ctx);
+        case "SEPARATOR":
+          return buildSeparatorV2(component);
+        case "CONTAINER":
+          return buildContainerV2(component, ctx, budget, path, diagnostics);
+        case "SECTION":
+          return buildSectionV2(component, ctx, budget, path, diagnostics);
+        default:
+          throw new Error(
+            `Unknown V2 component type: ${(component as { type: string }).type}`
+          );
+      }
+    })
+    .filter((c): c is DiscordMessageComponentV2 => c !== null);
 }
 
 // ============================================================================
@@ -336,6 +452,14 @@ export function generateDiscordPayloads(
   article: Article,
   options: GeneratePayloadsOptions
 ): DiscordMessageApiPayload[] {
+  return generateDiscordPayloadsWithDiagnostics(article, options).payloads;
+}
+
+export function generateDiscordPayloadsWithDiagnostics(
+  article: Article,
+  options: GeneratePayloadsOptions
+): GenerateDiscordPayloadsResult {
+  const diagnostics: V2ComponentBuildDiagnostic[] = [];
   const flattened = { ...article.flattened };
 
   if (options.mentions?.targets?.length) {
@@ -375,12 +499,25 @@ export function generateDiscordPayloads(
   };
 
   if (options.componentsV2?.length) {
-    return [
-      {
-        flags: DISCORD_COMPONENTS_V2_FLAG,
-        components: buildComponentsV2(options.componentsV2, ctx),
-      },
-    ];
+    const components = buildComponentsV2(
+      options.componentsV2,
+      ctx,
+      diagnostics
+    );
+
+    if (components.length === 0) {
+      return { payloads: [], diagnostics };
+    }
+
+    return {
+      payloads: [
+        {
+          flags: DISCORD_COMPONENTS_V2_FLAG,
+          components,
+        },
+      ],
+      diagnostics,
+    };
   }
 
   const contentTemplate = replaceTemplateString(
@@ -543,12 +680,15 @@ export function generateDiscordPayloads(
     );
   }
 
-  return payloads.filter(
-    (p) =>
-      p.content ||
-      (p.embeds && p.embeds.length > 0) ||
-      (p.components && p.components.length > 0)
-  );
+  return {
+    payloads: payloads.filter(
+      (p) =>
+        p.content ||
+        (p.embeds && p.embeds.length > 0) ||
+        (p.components && p.components.length > 0)
+    ),
+    diagnostics,
+  };
 }
 
 // ============================================================================

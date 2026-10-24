@@ -42,6 +42,10 @@ import {
 import { DiscordSendArticleOperationType } from "../../shared/constants";
 import { EmptyDiscordPayloadException } from "../../formatting/exceptions";
 
+const EMPTY_PAYLOAD_MESSAGE =
+  "No message was sent because all configured content was empty after replacing placeholders. " +
+  "Add fallback text or check that this article has values for the placeholders you used.";
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -169,9 +173,7 @@ async function deliverTestToForum(
     bodies = generatePayloads(article, details);
 
     if (bodies.length === 0) {
-      throw new EmptyDiscordPayloadException(
-        "No Discord payloads generated for forum delivery - content and embeds are empty after placeholder resolution"
-      );
+      throw new EmptyDiscordPayloadException(EMPTY_PAYLOAD_MESSAGE);
     }
 
     threadBody = buildForumThreadBody({
@@ -192,9 +194,7 @@ async function deliverTestToForum(
     );
 
     if (bodies.length === 0) {
-      throw new EmptyDiscordPayloadException(
-        "No Discord payloads generated for forum webhook delivery - content and embeds are empty after placeholder resolution"
-      );
+      throw new EmptyDiscordPayloadException(EMPTY_PAYLOAD_MESSAGE);
     }
 
     threadBody = buildForumThreadBody({
@@ -286,9 +286,7 @@ async function deliverTestToWebhook(
   );
 
   if (apiPayloads.length === 0) {
-    throw new EmptyDiscordPayloadException(
-      "No Discord payloads generated for webhook delivery - content and embeds are empty after placeholder resolution"
-    );
+    throw new EmptyDiscordPayloadException(EMPTY_PAYLOAD_MESSAGE);
   }
 
   const results = await Promise.all(
@@ -336,9 +334,7 @@ async function deliverTestToChannel(
   const apiPayloads = generatePayloads(article, details);
 
   if (apiPayloads.length === 0) {
-    throw new EmptyDiscordPayloadException(
-      "No Discord payloads generated for channel delivery - content and embeds are empty after placeholder resolution"
-    );
+    throw new EmptyDiscordPayloadException(EMPTY_PAYLOAD_MESSAGE);
   }
 
   let currentApiPayloadIndex = 0;
