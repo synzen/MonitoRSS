@@ -10,7 +10,7 @@ import {
 // implementation; the full aggregation pipelines stay per-repository because
 // their lookup directions and missing-owner semantics differ.
 
-export const REDDIT_URL_REGEX = /^http(s?):\/\/(www.)?(\w+\.)?reddit\.com\/r\//i;
+export const REDDIT_URL_REGEX = /^http(s?):\/\/(www\.)?(\w+\.)?reddit\.com\/r\//i;
 
 interface CredentialHostModel {
   updateOne(

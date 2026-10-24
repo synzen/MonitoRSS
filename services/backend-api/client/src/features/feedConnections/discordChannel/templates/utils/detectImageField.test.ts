@@ -266,6 +266,19 @@ describe("detectImageFields", () => {
       ];
       expect(detectImageFields(articles)).toEqual([{ field: "full", presentInAll: true }]);
     });
+
+    it("does not treat lookalike hosts as reddit CDNs", () => {
+      const articles = [
+        {
+          a: "https://evil-redd.it/abc123.jpg",
+          b: "https://i.redditmedia.com/abc123.jpg",
+        },
+      ];
+      expect(detectImageFields(articles)).toEqual([
+        { field: "a", presentInAll: true },
+        { field: "b", presentInAll: true },
+      ]);
+    });
   });
 
   describe("query parameter normalization", () => {

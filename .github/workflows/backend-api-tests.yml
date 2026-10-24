@@ -10,6 +10,9 @@ on:
     paths:
       - 'services/backend-api/**'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest

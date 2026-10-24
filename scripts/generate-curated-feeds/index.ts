@@ -481,7 +481,8 @@ function step3_assignDomains(feeds: PipelineFeed[]): PipelineFeed[] {
         host.includes("moxie.") ||
         host.includes("cr-news-api") ||
         host.includes("uecdn.") ||
-        host.includes("svc.com") ||
+        host === "svc.com" ||
+        host.endsWith(".svc.com") ||
         !host.includes(".");
 
       if (looksLikeProxy) {

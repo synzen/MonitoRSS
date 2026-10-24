@@ -33,6 +33,12 @@ function isImageUrl(value: unknown): boolean {
   }
 }
 
+const REDDIT_IMAGE_HOSTS = ["redd.it", "redditmedia.com"];
+
+function isRedditImageHost(hostname: string): boolean {
+  return REDDIT_IMAGE_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`));
+}
+
 /**
  * Extracts a normalized key for deduplication purposes.
  * This handles cases where the same image appears with different subdomains
@@ -48,7 +54,7 @@ function getImageDedupeKey(urlString: string): string {
 
     // For Reddit CDN URLs, normalize by using just the filename
     // since preview.redd.it and i.redd.it serve the same images
-    if (url.hostname.endsWith("redd.it") || url.hostname.endsWith("redditmedia.com")) {
+    if (isRedditImageHost(url.hostname)) {
       return `reddit:${filename}`;
     }
 

@@ -12,6 +12,9 @@ on:
       - "services/discord-rest-listener/**"
       - ".github/workflows/discord-rest-listener-tests.yml"
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest

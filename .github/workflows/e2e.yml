@@ -12,6 +12,9 @@ on:
       - 'services/backend-api/**'
       - '.github/workflows/e2e.yml'
 
+permissions:
+  contents: read
+
 env:
   BACKEND_API_PADDLE_KEY: ${{ secrets.BACKEND_API_PADDLE_KEY }}
   BACKEND_API_PADDLE_URL: https://sandbox-api.paddle.com

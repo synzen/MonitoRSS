@@ -15,6 +15,9 @@ on:
       - "services/**"
       - ".github/workflows/docker-images.yml"
 
+permissions:
+  contents: read
+
 env:
   REGISTRY: ghcr.io
   USER_FEEDS_IMAGE_NAME: ${{ github.repository }}-user-feeds
