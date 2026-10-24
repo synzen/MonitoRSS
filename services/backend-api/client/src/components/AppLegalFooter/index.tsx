@@ -1,7 +1,7 @@
 import { Box, Flex, Link, Text, chakra } from "@chakra-ui/react";
 import { useLocation } from "react-router-dom";
 import { BOX_CONSTRAINED_MAX_WIDTH, BOX_CONSTRAINED_PADDING_X } from "../BoxConstrainedWidth";
-import { isOfficialMonitoRSSHost } from "./constants";
+import { isOfficialMonitoRSSHost, LEGAL_IDENTITY_EFFECTIVE_AT } from "./constants";
 import { openConsentPreferences } from "../../utils/consentPreferences";
 
 const links = [
@@ -32,9 +32,8 @@ export const AppLegalFooter = () => {
   return (
     <Box
       as="footer"
-      mt="auto"
       width="100%"
-      flexShrink={0}
+      marginTop={6}
       borderTopWidth="1px"
       borderColor="border"
     >
@@ -44,14 +43,19 @@ export const AppLegalFooter = () => {
         paddingX={BOX_CONSTRAINED_PADDING_X}
         py="3"
         gap="4"
-        align="center"
+        align={{ base: "flex-start", md: "center" }}
         justify="space-between"
-        flexWrap="wrap"
+        flexDir={{ base: "column-reverse", md: "row" }}
       >
         <Box>
           <Text fontSize="sm" color="fg.muted">
             MonitoRSS
           </Text>
+          {Date.now() >= LEGAL_IDENTITY_EFFECTIVE_AT.getTime() && (
+            <Text fontSize="xs" color="fg.subtle">
+              Relayvale LLC
+            </Text>
+          )}
         </Box>
         <Flex as="nav" aria-label="Legal" gap="3" flexWrap="wrap" align="center">
           {links.map(({ label, href }) => (

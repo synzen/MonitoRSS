@@ -30,9 +30,7 @@ const App: React.FC = () => {
       <Box flex="1" minH="0" overflowY="auto" position="relative">
         <SendTestArticleProvider>
           <ScopeNavigationContainer>
-            {/* minHeight (not height) lets the footer pin to the viewport bottom on
-                short pages via mt=auto while still flowing after long content. */}
-            <Box display="flex" flexDir="column" minHeight="100%">
+            <Box display="flex" flexDir="column">
               <Pages />
               <AppLegalFooter />
             </Box>

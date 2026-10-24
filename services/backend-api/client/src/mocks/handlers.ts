@@ -881,7 +881,10 @@ const handlers = [
     const matchingUserFeed = mockUserFeeds.find((feed) => feed.id === params.feedId);
 
     if (!matchingUserFeed) {
-      return HttpResponse.json({}, { status: 404 });
+      return HttpResponse.json(
+        generateMockApiErrorResponse({ code: "USER_FEED_NOT_FOUND" }),
+        { status: 404 },
+      );
     }
 
     await delay(500);
@@ -899,7 +902,7 @@ const handlers = [
     if (!feed) {
       return HttpResponse.json(
         generateMockApiErrorResponse({
-          code: "FEED_NOT_FOUND",
+          code: "USER_FEED_NOT_FOUND",
         }),
         {
           status: 404,

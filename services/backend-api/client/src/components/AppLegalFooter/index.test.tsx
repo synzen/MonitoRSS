@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { system } from "@/utils/theme";
-import { isOfficialMonitoRSSHost } from "./constants";
+import { isOfficialMonitoRSSHost, LEGAL_IDENTITY_EFFECTIVE_AT } from "./constants";
 import { AppLegalFooter } from "./index";
 
 vi.mock("./constants", async (importOriginal) => {
@@ -27,13 +27,45 @@ const renderFooter = (initialPath = "/feeds") =>
     </ChakraProvider>,
   );
 
+const afterEffectiveAt = () =>
+  vi.setSystemTime(LEGAL_IDENTITY_EFFECTIVE_AT.getTime() + 60 * 60 * 1000);
+
 describe("AppLegalFooter", () => {
   it("renders as a footer landmark with the product identity", () => {
+    vi.useFakeTimers();
+    afterEffectiveAt();
     mockIsOfficialHost.mockReturnValue(true);
     renderFooter();
 
     expect(screen.getByRole("contentinfo")).toBeInTheDocument();
     expect(screen.getByText("MonitoRSS")).toBeInTheDocument();
+    expect(screen.getByText("Relayvale LLC")).toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+
+  it("attributes the service to Relayvale LLC once the legal identity is effective", () => {
+    vi.useFakeTimers();
+    afterEffectiveAt();
+    mockIsOfficialHost.mockReturnValue(true);
+    renderFooter();
+
+    expect(screen.getByText("MonitoRSS")).toBeInTheDocument();
+    expect(screen.getByText("Relayvale LLC")).toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+
+  it("hides the Relayvale LLC attribution before it is effective", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(LEGAL_IDENTITY_EFFECTIVE_AT.getTime() - 60 * 60 * 1000);
+    mockIsOfficialHost.mockReturnValue(true);
+    renderFooter();
+
+    expect(screen.getByText("MonitoRSS")).toBeInTheDocument();
+    expect(screen.queryByText("Relayvale LLC")).not.toBeInTheDocument();
+
+    vi.useRealTimers();
   });
 
   it("links to the legal documents and support with safe rel", () => {
