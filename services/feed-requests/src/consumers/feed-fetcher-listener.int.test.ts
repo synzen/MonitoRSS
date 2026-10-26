@@ -17,7 +17,7 @@ import { createPartitionedRequestsStore } from '../stores/postgres/partitioned-r
 import type { PartitionedRequestInsert } from '../shared/types';
 import { createHostRateLimiterService } from '../host-rate-limiter/host-rate-limiter';
 import {
-  recreatePartitionedTables,
+  truncatePartitionedTables,
   setupPostgresTests,
   teardownPostgresTests,
   getTestPool,
@@ -70,7 +70,7 @@ describe('FeedFetcherListener (Integration)', () => {
     cacheStorageService.del.mock.resetCalls();
     cacheStorageService.increment.mock.resetCalls();
 
-    await recreatePartitionedTables();
+    await truncatePartitionedTables();
   });
 
   after(async () => {

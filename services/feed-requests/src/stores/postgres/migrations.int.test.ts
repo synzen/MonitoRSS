@@ -1,51 +1,25 @@
 import { after, describe, it } from 'node:test';
 import assert from 'node:assert';
-import { Client, Pool } from 'pg';
+import type { Pool } from 'pg';
 import { runMigrationsDown, runMigrationsUp, MIGRATIONS } from './migrations';
-import { loadConfig } from '../../config';
+import { createEmptyDatabase, dropDatabase } from './setup-postgres-tests';
 import { silenceLogger } from '../../test/helpers/silence-logger';
 
 silenceLogger();
 
-// Migration scenarios need a pristine database each: the migration set creates
-// tables that the shared partitioned-table test setup also creates directly.
+// Migration scenarios need a pristine database each: the migration set must
+// build the schema itself, so these cannot clone the post-migration template.
 const dbName = `feedrequests-test-migrations-${process.pid}`;
 
 async function createFreshDatabase(): Promise<Pool> {
-  const adminClient = new Client({
-    connectionString: loadConfig().FEED_REQUESTS_POSTGRES_URI,
-  });
-  await adminClient.connect();
+  await dropDatabase(dbName);
 
-  try {
-    await adminClient.query(`DROP DATABASE IF EXISTS "${dbName}"`);
-    await adminClient.query(`CREATE DATABASE "${dbName}"`);
-  } finally {
-    await adminClient.end();
-  }
-
-  const testDbUrl = new URL(loadConfig().FEED_REQUESTS_POSTGRES_URI);
-  testDbUrl.pathname = `/${dbName}`;
-
-  return new Pool({ connectionString: testDbUrl.toString() });
-}
-
-async function dropDatabase(): Promise<void> {
-  const adminClient = new Client({
-    connectionString: loadConfig().FEED_REQUESTS_POSTGRES_URI,
-  });
-  await adminClient.connect();
-
-  try {
-    await adminClient.query(`DROP DATABASE IF EXISTS "${dbName}" WITH (FORCE)`);
-  } finally {
-    await adminClient.end();
-  }
+  return createEmptyDatabase(dbName);
 }
 
 describe('migrations (Integration)', () => {
   after(async () => {
-    await dropDatabase();
+    await dropDatabase(dbName);
   });
 
   describe('runMigrationsUp', () => {

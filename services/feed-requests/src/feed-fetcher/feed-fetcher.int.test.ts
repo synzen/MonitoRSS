@@ -9,7 +9,7 @@ import { createFeedFetcherService } from './feed-fetcher';
 import { createPartitionedRequestsStore } from '../stores/postgres/partitioned-requests-store';
 import type { PartitionedRequestInsert } from '../shared/types';
 import {
-  recreatePartitionedTables,
+  truncatePartitionedTables,
   setupPostgresTests,
   teardownPostgresTests,
   getTestPool,
@@ -37,7 +37,7 @@ describe('FeedFetcherService (Integration)', () => {
   });
 
   afterEach(async () => {
-    await recreatePartitionedTables();
+    await truncatePartitionedTables();
   });
 
   after(async () => {

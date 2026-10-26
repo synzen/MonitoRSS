@@ -22,7 +22,7 @@ else
   done
 fi
 
-export TEST_COMMAND="node --import tsx --test-reporter=spec --test $TARGETS"
+export TEST_COMMAND="npx tsx src/test/helpers/prepare-template-db.ts && node --import tsx --test-reporter=spec --test $TARGETS"
 
 docker compose -f docker-compose.test.yml -p feed-requests-test up \
   --build \

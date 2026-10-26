@@ -6,7 +6,7 @@ import { RequestStatus, RequestSource } from '../../shared/types';
 import { createPartitionedRequestsStore } from './partitioned-requests-store';
 import type { PartitionedRequestInsert } from '../../shared/types';
 import {
-  recreatePartitionedTables,
+  truncatePartitionedTables,
   setupPostgresTests,
   teardownPostgresTests,
   getTestPool,
@@ -23,7 +23,7 @@ describe('PartitionedRequestsStore (Integration)', () => {
   });
 
   afterEach(async () => {
-    await recreatePartitionedTables();
+    await truncatePartitionedTables();
   });
 
   after(async () => {

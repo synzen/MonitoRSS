@@ -1,42 +1,110 @@
 import { Client, Pool } from 'pg';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 import { loadConfig } from '../../config';
+import { runMigrationsUp } from './migrations';
+import pruneAndCreatePartitions from '../../utils/prune-and-create-partitions';
 
-let pool: Pool | undefined;
-const dbName = `feedrequests-test-${process.pid}`;
+dayjs.extend(utc);
 
-/**
- * Provisions a dedicated database for a suite: the partitioned-requests store
- * uses raw SQL, which resolves through the connection's default search path,
- * so the store's tables must exist in `public` of a database nothing else
- * shares. The database name is unique per process because the test runner may
- * run suites in parallel processes.
- */
-export async function setupPostgresTests(): Promise<Pool> {
-  const testDbUrl = new URL(loadConfig().FEED_REQUESTS_POSTGRES_URI);
-  testDbUrl.pathname = `/${dbName}`;
+// Cloned per test file via CREATE DATABASE ... TEMPLATE, so every file starts
+// from the exact schema the migrations produce. Prepared once per test run by
+// src/test/helpers/prepare-template-db.ts.
+const TEMPLATE_DB_NAME = 'feedrequests_template';
 
-  const adminClient = new Client({
-    connectionString: loadConfig().FEED_REQUESTS_POSTGRES_URI,
-  });
-  await adminClient.connect();
+function getAdminUri(): string {
+  const url = new URL(loadConfig().FEED_REQUESTS_POSTGRES_URI);
+  url.pathname = '/postgres';
+
+  return url.toString();
+}
+
+function getDatabaseUri(dbName: string): string {
+  const url = new URL(loadConfig().FEED_REQUESTS_POSTGRES_URI);
+  url.pathname = `/${dbName}`;
+
+  return url.toString();
+}
+
+async function withAdminClient<T>(
+  fn: (client: Client) => Promise<T>,
+): Promise<T> {
+  const client = new Client({ connectionString: getAdminUri() });
+
+  await client.connect();
 
   try {
-    await adminClient.query(`CREATE DATABASE "${dbName}"`);
-  } catch (err) {
-    // A leftover database from a previous run of this worker pid is fine; the
-    // tables are recreated below. 42P04 = duplicate_database.
-    if ((err as { code?: string }).code !== '42P04') {
-      throw err;
-    }
+    return await fn(client);
   } finally {
-    await adminClient.end();
+    await client.end();
   }
+}
 
-  pool = new Pool({
-    connectionString: testDbUrl.toString(),
+/**
+ * Runs the real migration runner against a fresh template database. Called
+ * once per test run, before the test files spawn.
+ */
+export async function prepareTemplateDatabase(): Promise<void> {
+  await withAdminClient(async (admin) => {
+    await admin.query(
+      `DROP DATABASE IF EXISTS "${TEMPLATE_DB_NAME}" WITH (FORCE)`,
+    );
+    await admin.query(`CREATE DATABASE "${TEMPLATE_DB_NAME}"`);
   });
 
-  await recreatePartitionedTables();
+  const pool = new Pool({ connectionString: getDatabaseUri(TEMPLATE_DB_NAME) });
+
+  try {
+    await runMigrationsUp(pool);
+
+    // The app creates the current/next monthly partitions through its
+    // prune-and-create job at boot; run that same path here.
+    await pruneAndCreatePartitions(
+      pool,
+      loadConfig().FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS,
+    );
+
+    // Integration tests insert backdated rows (failure history), which need
+    // trailing partitions the prune job never creates.
+    const startOfMonth = dayjs().utc().startOf('month');
+
+    for (let monthsBack = 1; monthsBack <= 6; monthsBack++) {
+      const month = startOfMonth.subtract(monthsBack, 'month');
+      const tableName = `request_partitioned_y${month.year()}m${
+        month.month() + 1
+      }`;
+
+      await pool.query(
+        `CREATE TABLE IF NOT EXISTS ${tableName} PARTITION OF request_partitioned` +
+          ` FOR VALUES FROM ('${month.toISOString()}')` +
+          ` TO ('${month.add(1, 'month').toISOString()}')`,
+      );
+    }
+  } finally {
+    await pool.end();
+  }
+}
+
+let pool: Pool | undefined;
+let dbName: string | undefined;
+
+/**
+ * Clones the template database under a unique name for the current test file.
+ * Call in the file's before() hook; node:test runs files in separate
+ * processes, so the unique name keeps parallel files isolated.
+ */
+export async function setupPostgresTests(): Promise<Pool> {
+  dbName = `feedrequests_test_${Date.now()}_${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+
+  await withAdminClient(async (admin) => {
+    await admin.query(
+      `CREATE DATABASE "${dbName}" TEMPLATE "${TEMPLATE_DB_NAME}"`,
+    );
+  });
+
+  pool = new Pool({ connectionString: getDatabaseUri(dbName) });
 
   return pool;
 }
@@ -49,59 +117,9 @@ export function getTestPool(): Pool {
   return pool;
 }
 
-export async function recreatePartitionedTables(): Promise<void> {
-  await dropPartitionedTables();
-
-  const client = await pool!.connect();
-
-  try {
-    await client.query(
-      `CREATE TYPE request_partitioned_status AS ENUM (
-      'OK', 'INTERNAL_ERROR', 'FETCH_ERROR', 'PARSE_ERROR', 'BAD_STATUS_CODE',
-      'FETCH_TIMEOUT', 'REFUSED_LARGE_FEED', 'MATCHED_HASH', 'INVALID_SSL_CERTIFICATE'
-    );`,
-    );
-    await client.query(
-      `CREATE TYPE request_partitioned_source AS ENUM ('SHEDULE');`,
-    );
-    await client.query(
-      `CREATE TABLE response_bodies (
-      content TEXT NOT NULL,
-      hash_key TEXT NOT NULL,
-      content_hash TEXT DEFAULT NULL NULL,
-      CONSTRAINT response_bodies_hash_key UNIQUE (hash_key)
-    );`,
-    );
-    await client.query(
-      `CREATE TABLE request_partitioned (
-      id TEXT NOT NULL,
-      status request_partitioned_status NOT NULL,
-      source request_partitioned_source DEFAULT NULL NULL,
-      fetch_options JSON DEFAULT NULL NULL,
-      url TEXT NOT NULL,
-      url_hash TEXT DEFAULT NULL NULL,
-      host_hash TEXT DEFAULT NULL NULL,
-      lookup_key TEXT DEFAULT NULL NULL,
-      created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
-      next_retry_date TIMESTAMPTZ DEFAULT NULL NULL,
-      error_message TEXT DEFAULT NULL NULL,
-      response_status_code INT DEFAULT NULL NULL,
-      response_text_hash TEXT DEFAULT NULL NULL,
-      response_body_hash_key TEXT DEFAULT NULL NULL,
-      response_s3object_key TEXT DEFAULT NULL NULL,
-      response_redis_cache_key TEXT DEFAULT NULL NULL,
-      response_headers JSON DEFAULT NULL NULL,
-      request_initiated_at TIMESTAMPTZ DEFAULT NULL NULL,
-      PRIMARY KEY (id, created_at)
-    );`,
-    );
-    await client.query(
-      `CREATE INDEX request_partitioned_lookupkey_created_at_status_index
-      ON request_partitioned (lookup_key, created_at, status);`,
-    );
-  } finally {
-    client.release();
-  }
+/** Resets the partitioned tables between tests (FK-safe, single statement). */
+export async function truncatePartitionedTables(): Promise<void> {
+  await getTestPool().query(`TRUNCATE request_partitioned, response_bodies`);
 }
 
 export async function teardownPostgresTests(): Promise<void> {
@@ -109,35 +127,31 @@ export async function teardownPostgresTests(): Promise<void> {
     return;
   }
 
-  await dropPartitionedTables();
+  const name = dbName;
+  dbName = undefined;
   await pool.end();
   pool = undefined;
 
-  const adminClient = new Client({
-    connectionString: loadConfig().FEED_REQUESTS_POSTGRES_URI,
+  await withAdminClient(async (admin) => {
+    await admin.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
   });
-  await adminClient.connect();
-
-  try {
-    await adminClient.query(`DROP DATABASE IF EXISTS "${dbName}" WITH (FORCE)`);
-  } finally {
-    await adminClient.end();
-  }
 }
 
-async function dropPartitionedTables(): Promise<void> {
-  const client = await pool!.connect();
+/**
+ * Creates an empty (non-template) database and returns a pool for it.
+ * Used by the migration suite, which must apply migrations to pristine
+ * databases itself.
+ */
+export async function createEmptyDatabase(name: string): Promise<Pool> {
+  await withAdminClient(async (admin) => {
+    await admin.query(`CREATE DATABASE "${name}"`);
+  });
 
-  try {
-    await client.query(`DROP TABLE IF EXISTS request_partitioned CASCADE;`);
-    await client.query(`DROP TABLE IF EXISTS response_bodies CASCADE;`);
-    await client.query(
-      `DROP TYPE IF EXISTS request_partitioned_status CASCADE;`,
-    );
-    await client.query(
-      `DROP TYPE IF EXISTS request_partitioned_source CASCADE;`,
-    );
-  } finally {
-    client.release();
-  }
+  return new Pool({ connectionString: getDatabaseUri(name) });
+}
+
+export async function dropDatabase(name: string): Promise<void> {
+  await withAdminClient(async (admin) => {
+    await admin.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
+  });
 }
