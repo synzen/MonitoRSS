@@ -86,6 +86,11 @@ services:
       - ./services/feed-requests:/usr/src/app
       - /usr/src/app/node_modules/
     command: npm run start:watch
+    develop:
+      watch:
+        - action: sync
+          path: ./services/feed-requests/src
+          target: /usr/src/app/src
     env_file:
       - ./.env.local
     environment:

@@ -46,7 +46,7 @@ export const configSchema = z.object({
   FEED_REQUESTS_POSTGRES_URI: z.string().min(1),
   FEED_REQUESTS_MAX_FAIL_ATTEMPTS: numberWithDefault(11),
   FEED_REQUESTS_API_PORT: z.coerce.number(),
-  FEED_REQUESTS_RABBITMQ_BROKER_URL: z.string().min(1).transform(encodeURI),
+  FEED_REQUESTS_RABBITMQ_BROKER_URL: z.string().min(1),
   FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT: z.string().min(1),
   FEED_REQUESTS_S3_ENDPOINT: z.string().optional(),
   FEED_REQUESTS_S3_API_KEY_ID: z.string().optional(),

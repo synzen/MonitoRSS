@@ -14,7 +14,17 @@ function parseMessageBody(body: Buffer | string | unknown): unknown {
 }
 
 export function createRabbitConnection(url: string): Connection {
-  const connection = new Connection(encodeURI(url));
+  // The compose-provided broker URL has no credentials; the previous
+  // amqplib-based client defaulted those to guest:guest, so keep that
+  // behavior for the frozen environment contract.
+  const parsed = new URL(url);
+
+  if (!parsed.username && !parsed.password) {
+    parsed.username = 'guest';
+    parsed.password = 'guest';
+  }
+
+  const connection = new Connection(encodeURI(parsed.toString()));
 
   connection.on('error', (err) => {
     logger.error('RabbitMQ connection error', { error: (err as Error).stack });
