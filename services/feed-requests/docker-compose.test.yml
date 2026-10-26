@@ -15,7 +15,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --save ""
+    command: redis-server --save "" --databases 64
     tmpfs: /data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

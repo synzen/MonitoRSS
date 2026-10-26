@@ -104,7 +104,9 @@ export async function setupPostgresTests(): Promise<Pool> {
     );
   });
 
-  pool = new Pool({ connectionString: getDatabaseUri(dbName) });
+  // Keeps N parallel test files well under the Postgres default
+  // max_connections (100); files run sequentially within themselves.
+  pool = new Pool({ connectionString: getDatabaseUri(dbName), max: 4 });
 
   return pool;
 }
@@ -147,7 +149,7 @@ export async function createEmptyDatabase(name: string): Promise<Pool> {
     await admin.query(`CREATE DATABASE "${name}"`);
   });
 
-  return new Pool({ connectionString: getDatabaseUri(name) });
+  return new Pool({ connectionString: getDatabaseUri(name), max: 4 });
 }
 
 export async function dropDatabase(name: string): Promise<void> {

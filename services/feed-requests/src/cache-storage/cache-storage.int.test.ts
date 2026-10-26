@@ -1,8 +1,8 @@
-import { createClient, RedisClientType } from 'redis';
+import type { RedisClientType } from 'redis';
 import { after, afterEach, before, describe, it } from 'node:test';
 import assert from 'node:assert';
 import { createCacheStorageService } from './cache-storage';
-import { loadConfig } from '../config';
+import { claimTestRedisClient } from '../test/helpers/redis-test-claims';
 import { silenceLogger } from '../test/helpers/silence-logger';
 
 silenceLogger();
@@ -13,11 +13,8 @@ describe('CacheStorageService (Integration)', () => {
   const testKeyPrefix = 'test-cache-storage-int';
 
   before(async () => {
-    redisClient = createClient({
-      url: loadConfig().FEED_REQUESTS_REDIS_URI,
-    });
-
-    await redisClient.connect();
+    // A dedicated claimed DB per file keeps parallel test files isolated.
+    redisClient = await claimTestRedisClient();
 
     service = createCacheStorageService(redisClient as never);
   });
