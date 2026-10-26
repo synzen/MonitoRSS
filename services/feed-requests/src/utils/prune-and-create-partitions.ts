@@ -1,16 +1,14 @@
-import { MikroORM } from '@mikro-orm/core';
-import logger from '../utils/logger';
+import type { Pool } from 'pg';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import { INestApplicationContext } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import logger from './logger';
 
 dayjs.extend(utc);
 
-async function pruneAndCreatePartitions(app: INestApplicationContext) {
-  const orm = app.get(MikroORM);
-  const connection = orm.em.getConnection();
-  const configService = app.get(ConfigService);
+async function pruneAndCreatePartitions(
+  pool: Pool,
+  historyPersistenceMonths: number,
+) {
   const startOfMonth = dayjs().utc().startOf('month');
   const thisMonthDate = startOfMonth;
   const nextMonthDate = startOfMonth.add(1, 'month');
@@ -24,9 +22,6 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
     nextMonthDate.month() + 1
   }`;
 
-  const historyPersistenceMonths = configService.getOrThrow<number>(
-    'FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS',
-  );
   const cutoffDate = startOfMonth.subtract(historyPersistenceMonths, 'month');
   const tableNameToDrop = `request_partitioned_y${cutoffDate.year()}m${
     cutoffDate.month() + 1
@@ -39,12 +34,12 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
     logger.debug(`Skipping prune of protected partition ${tableNameToDrop}`);
   } else {
     try {
-      const dropResult = await connection.execute(
+      const dropResult = await pool.query(
         `DROP TABLE IF EXISTS ${tableNameToDrop};`,
       );
 
       logger.debug(`Old partition ${tableNameToDrop} dropped`, {
-        dropResult,
+        dropResult: dropResult.rows,
       });
     } catch (err) {
       logger.error('Failed to drop old partition', {
@@ -71,7 +66,7 @@ async function pruneAndCreatePartitions(app: INestApplicationContext) {
   try {
     await Promise.all(
       tablesToCreate.map(async ({ from, to, tableName, partitionParent }) => {
-        await connection.execute(
+        await pool.query(
           `CREATE TABLE IF NOT EXISTS` +
             ` ${tableName}` +
             ` PARTITION OF ${partitionParent}` +

@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
     "module": "commonjs",
+    "moduleResolution": "node10",
+    "ignoreDeprecations": "6.0",
     "declaration": true,
     "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "es2017",
     "sourceMap": true,
@@ -17,6 +17,7 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "types": ["node"],
     "tsBuildInfoFile": "./.tsbuildinfo"
   },
@@ -24,8 +25,6 @@
     "src/**/*"
   ],
   "exclude": [
-    "dist",
-    "src/**/*.test.ts",
-    "src/test",
+    "dist"
   ]
 }

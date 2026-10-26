@@ -1,11 +1,17 @@
 import setupLogger from '@monitorss/logger';
-import config from '../config';
-import { EnvironmentVariables } from '../config/validate';
+import { loadConfig } from '../config';
 
-const configValues =
-  process.env.NODE_ENV === 'test' ? ({} as EnvironmentVariables) : config();
+// The logger is imported by scripts (e.g. run-migrations) that may run with a
+// partial environment; config validation failures must not break logging.
+let datadogApiKey: string | undefined;
 
-const datadogApiKey = configValues.FEED_REQUESTS_DATADOG_API_KEY as string;
+if (process.env.NODE_ENV !== 'test') {
+  try {
+    datadogApiKey = loadConfig().FEED_REQUESTS_DATADOG_API_KEY;
+  } catch {
+    datadogApiKey = process.env.FEED_REQUESTS_DATADOG_API_KEY;
+  }
+}
 
 const logger = setupLogger({
   env: process.env.NODE_ENV as string,
