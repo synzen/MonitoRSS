@@ -5,6 +5,7 @@ import assert from 'node:assert';
 import type { FastifyInstance } from 'fastify';
 import { createApp, type HttpAppDeps } from './app';
 import { RequestStatus } from '../shared/types';
+import logger from '../utils/logger';
 
 import { silenceLogger } from '../test/helpers/silence-logger';
 
@@ -63,7 +64,7 @@ function createMockStoredRequest(
   statusCode?: number,
 ) {
   return {
-    id: 1,
+    id: '1',
     status,
     createdAt,
     lookupKey: url,
@@ -73,7 +74,7 @@ function createMockStoredRequest(
     errorMessage: null,
     response: statusCode
       ? {
-          id: 1,
+          id: '1',
           statusCode,
           textHash: null,
           hasCompressedText: true,
@@ -94,14 +95,14 @@ function createMockDeps() {
     fetchAndSaveResponse: mock.fn<any>(),
     getLatestRequest: mock.fn<any>(),
     getLatestRequestNon304: mock.fn<any>(),
-    getRequests: mock.fn<any>(async () => []),
-    getLatestRetryDate: mock.fn<any>(async () => null),
     decodeResponseContent: mock.fn<any>(async () => ''),
   };
   const partitionedRequestsStore = {
     flushInserts: mock.fn<any>(async () => undefined),
     getLatestRequestAnyStatus: mock.fn<any>(async () => null),
     getLatestRequestWithResponseBody: mock.fn<any>(async () => null),
+    getRequests: mock.fn<any>(async () => []),
+    getLatestNextRetryDate: mock.fn<any>(async () => null),
   };
   const hostRateLimiter = {
     getLimitForUrl: mock.fn<any>(() => null),
@@ -166,26 +167,203 @@ describe('HTTP app', () => {
         error: 'Not Found',
       });
     });
+
+    it('logs the pre-migration HTTP Exception records for a 404', async () => {
+      const errorMock = mock.method(logger, 'error', () => {});
+
+      try {
+        await app.inject({
+          method: 'GET',
+          url: '/v1/nonexistent',
+        });
+      } finally {
+        errorMock.mock.restore();
+      }
+
+      const messages = errorMock.mock.calls.map(
+        (call) => call.arguments[0] as string,
+      );
+
+      assert.ok(messages.includes('Cannot GET /v1/nonexistent'));
+      assert.ok(
+        messages.includes('HTTP Exception - Cannot GET /v1/nonexistent'),
+      );
+      assert.ok(
+        messages.includes('HTTP Exception: Cannot GET /v1/nonexistent'),
+      );
+
+      const exceptionMeta = errorMock.mock.calls.find(
+        (call) => call.arguments[0] === 'Cannot GET /v1/nonexistent',
+      )?.arguments[1] as Error & {
+        name: string;
+        status: number;
+        response: Record<string, unknown>;
+      };
+
+      assert.strictEqual(exceptionMeta.name, 'NotFoundException');
+      assert.strictEqual(exceptionMeta.status, 404);
+    });
+
+    it('logs the pre-migration HTTP Exception records for a validation 400', async () => {
+      const errorMock = mock.method(logger, 'error', () => {});
+
+      try {
+        await app.inject({
+          method: 'POST',
+          url: '/v1/feed-requests',
+          headers: { 'api-key': API_KEY },
+          payload: { url: 'ftp://example.com/feed.xml' },
+        });
+      } finally {
+        errorMock.mock.restore();
+      }
+
+      const messages = errorMock.mock.calls.map(
+        (call) => call.arguments[0] as string,
+      );
+
+      // The validation-400 exception message is the class-validator-style
+      // message list, which the template-literal log lines comma-join.
+      assert.ok(
+        messages.includes('HTTP Exception - Must a HTTP URI'),
+        `expected HTTP Exception log, got ${JSON.stringify(messages)}`,
+      );
+
+      // The first record's message arg is the raw message list (an array),
+      // mirroring the old filter passing exception.message straight through;
+      // its meta arg is the HttpException-shaped object.
+      const exceptionMeta = errorMock.mock.calls.find((call) =>
+        Array.isArray(call.arguments[0]),
+      )?.arguments[1] as Error & {
+        name: string;
+        status: number;
+        response: Record<string, unknown>;
+      };
+
+      assert.strictEqual(exceptionMeta.name, 'BadRequestException');
+      assert.strictEqual(exceptionMeta.status, 400);
+      assert.deepStrictEqual(exceptionMeta.response, {
+        statusCode: 400,
+        message: ['Must a HTTP URI'],
+        error: 'Bad Request',
+      });
+    });
+
+    it('logs the pre-migration HTTP Exception records for a guard 403', async () => {
+      const errorMock = mock.method(logger, 'error', () => {});
+
+      try {
+        await app.inject({
+          method: 'GET',
+          url: `/v1/feed-requests?limit=10&skip=0&url=${encodeURIComponent(url)}`,
+        });
+      } finally {
+        errorMock.mock.restore();
+      }
+
+      const messages = errorMock.mock.calls.map(
+        (call) => call.arguments[0] as string,
+      );
+
+      assert.ok(messages.includes('Forbidden resource'));
+      assert.ok(
+        messages.includes('HTTP Exception - Forbidden resource'),
+        `expected HTTP Exception log, got ${JSON.stringify(messages)}`,
+      );
+      assert.ok(messages.includes('HTTP Exception: Forbidden resource'));
+
+      const contextCall = errorMock.mock.calls.find(
+        (call) => call.arguments[0] === 'HTTP Exception - Forbidden resource',
+      );
+      assert.deepStrictEqual(
+        (contextCall?.arguments[1] as { http: Record<string, unknown> }).http,
+        {
+          method: 'GET',
+          url: `/v1/feed-requests?limit=10&skip=0&url=${encodeURIComponent(url)}`,
+          res: {
+            statusCode: 403,
+            message: 'Forbidden resource',
+            error: 'Forbidden',
+          },
+        },
+      );
+
+      // The first and last records received the HttpException-shaped meta
+      // (winston merges its own enumerable props, message, and stack).
+      const exceptionMeta = errorMock.mock.calls.find(
+        (call) => call.arguments[0] === 'Forbidden resource',
+      )?.arguments[1] as Error & {
+        name: string;
+        status: number;
+        response: Record<string, unknown>;
+      };
+
+      assert.strictEqual(exceptionMeta.name, 'ForbiddenException');
+      assert.strictEqual(exceptionMeta.status, 403);
+      assert.deepStrictEqual(exceptionMeta.response, {
+        statusCode: 403,
+        message: 'Forbidden resource',
+        error: 'Forbidden',
+      });
+      assert.ok(exceptionMeta.stack);
+    });
+
+    it('replies with the error status code for malformed JSON bodies', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/feed-requests',
+        headers: { 'api-key': API_KEY, 'content-type': 'application/json' },
+        payload: '{"url": ',
+      });
+
+      assert.strictEqual(res.statusCode, 400);
+      const body = res.json();
+      assert.strictEqual(body.statusCode, 400);
+      assert.strictEqual(typeof body.message, 'string');
+      assert.strictEqual(body.error, undefined);
+    });
+
+    it('replies with the nest-style 500 body for handler errors', async () => {
+      mocks.partitionedRequestsStore.getRequests.mock.mockImplementation(
+        async () => {
+          throw new Error('database exploded');
+        },
+      );
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/v1/feed-requests?limit=10&skip=0&url=${encodeURIComponent(url)}`,
+        headers: { 'api-key': API_KEY },
+      });
+
+      assert.strictEqual(res.statusCode, 500);
+      assert.deepStrictEqual(res.json(), {
+        statusCode: 500,
+        message: 'Internal server error',
+      });
+    });
   });
 
   describe('GET /v1/feed-requests', () => {
     it('returns the request history shape', async () => {
       const now = new Date();
-      mocks.feedFetcher.getRequests.mock.mockImplementation(async () => [
-        {
-          id: 5,
-          createdAt: now,
-          finishedAt: now,
-          nextRetryDate: null,
-          url,
-          status: RequestStatus.OK,
-          fetchOptions: { headers: { 'user-agent': 'ua' } },
-          response: {
-            statusCode: 200,
-            headers: { 'content-type': 'application/xml' },
+      mocks.partitionedRequestsStore.getRequests.mock.mockImplementation(
+        async () => [
+          {
+            id: 5,
+            createdAt: now,
+            finishedAt: now,
+            nextRetryDate: null,
+            url,
+            status: RequestStatus.OK,
+            fetchOptions: { headers: { 'user-agent': 'ua' } },
+            response: {
+              statusCode: 200,
+              headers: { 'content-type': 'application/xml' },
+            },
           },
-        },
-      ]);
+        ],
+      );
 
       const res = await app.inject({
         method: 'GET',
@@ -205,19 +383,21 @@ describe('HTTP app', () => {
 
     it('includes the next retry timestamp when the latest request failed', async () => {
       const retryDate = dayjs().add(10, 'minute').toDate();
-      mocks.feedFetcher.getRequests.mock.mockImplementation(async () => [
-        {
-          id: 1,
-          createdAt: new Date(),
-          finishedAt: new Date(),
-          nextRetryDate: retryDate,
-          url,
-          status: RequestStatus.BAD_STATUS_CODE,
-          fetchOptions: null,
-          response: { statusCode: 500, headers: {} },
-        },
-      ]);
-      mocks.feedFetcher.getLatestRetryDate.mock.mockImplementation(
+      mocks.partitionedRequestsStore.getRequests.mock.mockImplementation(
+        async () => [
+          {
+            id: 1,
+            createdAt: new Date(),
+            finishedAt: new Date(),
+            nextRetryDate: retryDate,
+            url,
+            status: RequestStatus.BAD_STATUS_CODE,
+            fetchOptions: null,
+            response: { statusCode: 500, headers: {} },
+          },
+        ],
+      );
+      mocks.partitionedRequestsStore.getLatestNextRetryDate.mock.mockImplementation(
         async () => retryDate,
       );
 
@@ -256,7 +436,7 @@ describe('HTTP app', () => {
       });
 
       assert.strictEqual(res.statusCode, 200);
-      const call = mocks.feedFetcher.getRequests.mock.calls[0];
+      const call = mocks.partitionedRequestsStore.getRequests.mock.calls[0];
       assert.deepStrictEqual(call.arguments[0], {
         limit: 10,
         skip: 0,
@@ -291,6 +471,51 @@ describe('HTTP app', () => {
       });
 
       assert.strictEqual(res.statusCode, 400);
+    });
+
+    it('coerces any present boolean field like the pre-migration pipe', async () => {
+      // The old @Type(() => Boolean) transform turned every non-empty value
+      // into true (including the string "false"), so this must fetch.
+      mocks.feedFetcher.getLatestRequest.mock.mockImplementation(async () =>
+        createMockRequest(RequestStatus.OK, new Date(), 200),
+      );
+      mocks.feedFetcher.fetchAndSaveResponse.mock.mockImplementation(
+        async () => ({ request: createMockInsert(url, RequestStatus.OK, 200) }),
+      );
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/feed-requests',
+        headers: { 'api-key': API_KEY },
+        payload: { url, executeFetch: 'not-a-bool', debug: 'no' },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(
+        mocks.feedFetcher.fetchAndSaveResponse.mock.callCount(),
+        1,
+      );
+      assert.strictEqual(res.json().requestStatus, 'SUCCESS');
+    });
+
+    it('treats empty-string boolean fields as falsy like the pre-migration pipe', async () => {
+      mocks.feedFetcher.getLatestRequest.mock.mockImplementation(async () =>
+        createMockRequest(RequestStatus.OK, new Date(), 200),
+      );
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/feed-requests',
+        headers: { 'api-key': API_KEY },
+        payload: { url, executeFetch: '', executeFetchIfStale: 0 },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(
+        mocks.feedFetcher.fetchAndSaveResponse.mock.callCount(),
+        0,
+      );
+      assert.strictEqual(res.json().requestStatus, 'SUCCESS');
     });
 
     it('re-fetches when the only record is a stale error and executeFetchIfStale is true', async () => {

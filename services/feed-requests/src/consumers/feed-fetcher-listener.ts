@@ -62,6 +62,8 @@ export interface FeedFetcherListener {
   countFailedRequests(params: {
     lookupKey?: string;
     url: string;
+    // `since` is meaningful as null: null counts every failure, while
+    // undefined falls back to counting failures since the latest OK request.
     since?: Date | null;
   }): Promise<number>;
   calculateNextRetryDate(referenceDate: Date, attemptsSoFar: number): Date;
@@ -101,6 +103,28 @@ export function createFeedFetcherListener({
   cacheStorage: Pick<CacheStorageService, 'setNX' | 'del'>;
   publish: Publish;
 }): FeedFetcherListener {
+  // Every queue event shares the validate-then-publish shape: the contract
+  // schema is the validator (ADR-007), and a validation failure or publish
+  // rejection is only logged — it never interrupts batch processing.
+  const publishValidated = (params: {
+    queue: MessageBrokerQueue;
+    // Structurally typed because Zod schema generics don't survive the
+    // version skew between contracts' and this service's zod installs.
+    schema: { parse: (input: unknown) => unknown };
+    event: unknown;
+    onError: (stack: string | undefined) => void;
+  }): void => {
+    try {
+      params.schema.parse(params.event);
+
+      void publish(params.queue, params.event).catch((err) => {
+        params.onError((err as Error).stack);
+      });
+    } catch (err) {
+      params.onError((err as Error).stack);
+    }
+  };
+
   return {
     calculateCurrentlyProcessingCacheKeyForMessage(event, rateSeconds) {
       const lookupKey = event.lookupKey || event.url;
@@ -556,99 +580,76 @@ export function createFeedFetcherListener({
     },
 
     emitRejectedUrl({ url, lookupKey }) {
-      try {
-        contextLogger.info(
-          `Emitting rejected url for feeds with url "${url}", lookupkey ${lookupKey} `,
-          {
-            url,
-            lookupKey,
-          },
-        );
+      contextLogger.info(
+        `Emitting rejected url for feeds with url "${url}", lookupkey ${lookupKey} `,
+        {
+          url,
+          lookupKey,
+        },
+      );
 
-        const event = {
+      publishValidated({
+        queue: MessageBrokerQueue.UrlRejectedDisableFeeds,
+        schema: UrlRejectedDisableFeedsSchema,
+        event: {
           data: {
             url,
             status: RequestStatus.REFUSED_LARGE_FEED,
             lookupKey,
           },
-        };
-        UrlRejectedDisableFeedsSchema.parse(event);
-        void publish(MessageBrokerQueue.UrlRejectedDisableFeeds, event).catch(
-          (err) => {
-            contextLogger.error(
-              `Failed to publish rejected url event: ${url}`,
-              {
-                stack: (err as Error).stack,
-                url,
-              },
-            );
-          },
-        );
-      } catch (err) {
-        contextLogger.error(`Failed to publish rejected url event: ${url}`, {
-          stack: (err as Error).stack,
-          url,
-        });
-      }
+        },
+        onError: (stack) =>
+          contextLogger.error(`Failed to publish rejected url event: ${url}`, {
+            stack,
+            url,
+          }),
+      });
     },
 
     emitFailedUrl({ lookupKey, url, recovery }) {
-      try {
-        contextLogger.info(
-          `Disabling feeds with lookup key "${lookupKey}" and url ${url} due to failure threshold `,
-        );
+      contextLogger.info(
+        `Disabling feeds with lookup key "${lookupKey}" and url ${url} due to failure threshold `,
+      );
 
-        const event: UrlFailedDisableFeedsPayload = {
-          data: {
-            lookupKey,
-            url,
-            recovery,
-          },
-        };
-        UrlFailedDisableFeedsSchema.parse(event);
-        void publish(MessageBrokerQueue.UrlFailedDisableFeeds, event).catch(
-          (err) => {
-            contextLogger.error(
-              `Failed to publish failed url event: ${lookupKey}`,
-              {
-                stack: (err as Error).stack,
-                lookupKey,
-              },
-            );
-          },
-        );
-      } catch (err) {
-        contextLogger.error(
-          `Failed to publish failed url event: ${lookupKey}`,
-          {
-            stack: (err as Error).stack,
-            lookupKey,
-          },
-        );
-      }
+      const event: UrlFailedDisableFeedsPayload = {
+        data: {
+          lookupKey,
+          url,
+          recovery,
+        },
+      };
+
+      publishValidated({
+        queue: MessageBrokerQueue.UrlFailedDisableFeeds,
+        schema: UrlFailedDisableFeedsSchema,
+        event,
+        onError: (stack) =>
+          contextLogger.error(
+            `Failed to publish failed url event: ${lookupKey}`,
+            {
+              stack,
+              lookupKey,
+            },
+          ),
+      });
     },
 
     emitFailingUrl({ lookupKey, url }) {
-      try {
-        const event = {
+      publishValidated({
+        queue: MessageBrokerQueue.UrlFailing,
+        schema: UrlFailingSchema,
+        event: {
           data: {
             lookupKey,
             url,
           },
-        };
-        UrlFailingSchema.parse(event);
-        void publish(MessageBrokerQueue.UrlFailing, event).catch((err) => {
+        },
+        onError: (stack) =>
           contextLogger.error(`Failed to publish failing lookup key event`, {
-            stack: (err as Error).stack,
+            stack,
             lookupKey,
-          });
-        });
-      } catch (err) {
-        contextLogger.error(`Failed to publish failing lookup key event`, {
-          stack: (err as Error).stack,
-          lookupKey,
-        });
-      }
+          }),
+      });
     },
 
     emitFetchCompleted({
@@ -659,42 +660,32 @@ export function createFeedFetcherListener({
       recovery,
       trigger,
     }) {
-      try {
-        if (debug) {
-          contextLogger.info(
-            `Publishing url.fetch.completed event for feeds with url "${url}", lookupkey ${lookupKey}`,
-            {
-              url,
-              lookupKey,
-              rateSeconds,
-            },
-          );
-        }
-
-        const event = {
-          data: { lookupKey, url, rateSeconds, debug, recovery, trigger },
-        };
-        UrlFetchCompletedSchema.parse(event);
-        void publish(MessageBrokerQueue.UrlFetchCompleted, event).catch(
-          (err) => {
-            contextLogger.error(
-              `Failed to publish fetch completed event: ${lookupKey}`,
-              {
-                stack: (err as Error).stack,
-                lookupKey,
-              },
-            );
-          },
-        );
-      } catch (err) {
-        contextLogger.error(
-          `Failed to publish fetch completed event: ${lookupKey}`,
+      if (debug) {
+        contextLogger.info(
+          `Publishing url.fetch.completed event for feeds with url "${url}", lookupkey ${lookupKey}`,
           {
-            stack: (err as Error).stack,
+            url,
             lookupKey,
+            rateSeconds,
           },
         );
       }
+
+      publishValidated({
+        queue: MessageBrokerQueue.UrlFetchCompleted,
+        schema: UrlFetchCompletedSchema,
+        event: {
+          data: { lookupKey, url, rateSeconds, debug, recovery, trigger },
+        },
+        onError: (stack) =>
+          contextLogger.error(
+            `Failed to publish fetch completed event: ${lookupKey}`,
+            {
+              stack,
+              lookupKey,
+            },
+          ),
+      });
     },
 
     async isLatestResponseStillFreshInCache({ lookupKey }) {

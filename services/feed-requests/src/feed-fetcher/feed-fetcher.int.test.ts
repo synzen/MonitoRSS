@@ -1,5 +1,4 @@
 import { randomUUID } from 'crypto';
-import dayjs from 'dayjs';
 import { deflate } from 'zlib';
 import { promisify } from 'util';
 import { after, afterEach, before, describe, it } from 'node:test';
@@ -66,47 +65,6 @@ describe('FeedFetcherService (Integration)', () => {
   ): Promise<void> => {
     await createPartitionedRequestsStore(getTestPool()).flushInserts(inserts);
   };
-
-  describe('getRequests', () => {
-    it('returns correctly according to input params', async () => {
-      await seedRequests([
-        buildInsert({
-          status: RequestStatus.OK,
-          createdAt: dayjs().subtract(30, 'minutes').toDate(),
-        }),
-        buildInsert({
-          status: RequestStatus.BAD_STATUS_CODE,
-          createdAt: dayjs().subtract(20, 'minutes').toDate(),
-        }),
-        buildInsert({
-          status: RequestStatus.BAD_STATUS_CODE,
-          createdAt: dayjs().subtract(10, 'minutes').toDate(),
-        }),
-      ]);
-
-      const result = await service.getRequests({
-        skip: 1,
-        limit: 1,
-        url,
-      });
-
-      assert.strictEqual(result.length, 1);
-      assert.partialDeepStrictEqual(result[0], {
-        status: RequestStatus.BAD_STATUS_CODE,
-        url,
-      });
-    });
-
-    it('returns an empty array if nothing matches', async () => {
-      const result = await service.getRequests({
-        skip: 0,
-        limit: 10,
-        url,
-      });
-
-      assert.strictEqual(result.length, 0);
-    });
-  });
 
   describe('getLatestRequest', () => {
     it('returns the request with the response', async () => {

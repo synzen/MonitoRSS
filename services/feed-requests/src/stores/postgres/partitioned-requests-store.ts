@@ -43,7 +43,7 @@ export interface PartitionedRequestsStore {
     beforeDate?: string;
   }): Promise<
     Array<{
-      id: number;
+      id: string;
       createdAt: Date;
       finishedAt: Date;
       nextRetryDate: Date | null;
@@ -326,7 +326,7 @@ export function createPartitionedRequestsStore(
     },
 
     async getLatestRequestWithResponseBody(lookupKey) {
-      const rows = await query(
+      const rows = (await query(
         `SELECT req.*, res.content AS response_body_content,
         res.content_hash AS response_content_hash
        FROM request_partitioned req
@@ -338,7 +338,7 @@ export function createPartitionedRequestsStore(
        ORDER BY created_at DESC
        LIMIT 1`,
         [lookupKey],
-      );
+      )) as unknown as JoinedRequestRow[];
 
       const result = rows[0];
 
@@ -357,7 +357,7 @@ export function createPartitionedRequestsStore(
     },
 
     async getLatestRequestNon304(lookupKey) {
-      const rows = await query(
+      const rows = (await query(
         `SELECT req.*, res.content AS response_body_content,
         res.content_hash AS response_content_hash
        FROM request_partitioned req
@@ -368,7 +368,7 @@ export function createPartitionedRequestsStore(
        ORDER BY created_at DESC
        LIMIT 1`,
         [lookupKey],
-      );
+      )) as unknown as JoinedRequestRow[];
 
       const result = rows[0];
 
@@ -380,7 +380,7 @@ export function createPartitionedRequestsStore(
     },
 
     async getLatestRequestAnyStatus(lookupKey) {
-      const rows = await query(
+      const rows = (await query(
         `SELECT req.*, res.content AS response_body_content,
         res.content_hash AS response_content_hash
        FROM request_partitioned req
@@ -390,7 +390,7 @@ export function createPartitionedRequestsStore(
        ORDER BY created_at DESC
        LIMIT 1`,
         [lookupKey],
-      );
+      )) as unknown as JoinedRequestRow[];
 
       const result = rows[0];
 
@@ -404,7 +404,8 @@ export function createPartitionedRequestsStore(
 }
 
 interface RequestRow {
-  id: number;
+  // TEXT column; pg returns it as a string.
+  id: string;
   url: string;
   created_at: Date;
   next_retry_date: Date | null;
@@ -415,12 +416,27 @@ interface RequestRow {
   request_initiated_at: Date | null;
 }
 
-function mapPartitionedRequestToModel(result: any): Request {
+// The row shape of the getLatestRequest* queries, which join the response
+// bodies table onto every request_partitioned column.
+interface JoinedRequestRow extends RequestRow {
+  source: string | null;
+  error_message: string | null;
+  lookup_key: string | null;
+  response_s3object_key: string | null;
+  response_redis_cache_key: string | null;
+  response_body_hash_key: string | null;
+  response_body_content: string | null;
+  response_content_hash: string | null;
+}
+
+function mapPartitionedRequestToModel(result: JoinedRequestRow): Request {
   const request: Request = {
     id: result.id,
     status: result.status,
     source: result.source,
-    createdAt: new Date(result.request_initiated_at),
+    // Rows predating the request_initiated_at column map to the epoch, as
+    // the pre-migration store service did.
+    createdAt: new Date(result.request_initiated_at ?? 0),
     lookupKey: result.lookup_key,
     nextRetryDate: result.next_retry_date,
     url: result.url,

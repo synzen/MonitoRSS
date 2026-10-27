@@ -46,20 +46,13 @@ const optionalNumber = (field: string) =>
     ]),
   );
 
-const optionalBoolean = (field: string) =>
-  optionalize(
-    z.union([
-      z.boolean({ error: `${field} must be a boolean` }),
-      z
-        .string()
-        .transform((val) => val.toLowerCase())
-        .refine(
-          (val): val is 'true' | 'false' => val === 'true' || val === 'false',
-          { error: `${field} must be a boolean` },
-        )
-        .transform((val) => val === 'true'),
-    ]),
-  );
+// The pre-migration pipe coerced every present boolean field through
+// Boolean() (class-transformer @Type(() => Boolean) + @IsBoolean), so no
+// value could ever fail validation — e.g. the string "false" became true.
+// Handlers only branch on truthiness, which Boolean() preserves for every
+// JSON value.
+const optionalBoolean = () =>
+  optionalize(z.unknown().transform((val) => Boolean(val)));
 
 export const lookupDetailsSchema = optionalize(
   z.object({
@@ -73,12 +66,12 @@ export const lookupDetailsSchema = optionalize(
 export const fetchFeedInputSchema = z.object({
   url: httpUrl,
   lookupDetails: lookupDetailsSchema,
-  executeFetch: optionalBoolean('executeFetch'),
-  executeFetchIfStale: optionalBoolean('executeFetchIfStale'),
+  executeFetch: optionalBoolean(),
+  executeFetchIfStale: optionalBoolean(),
   stalenessThresholdSeconds: optionalNumber('stalenessThresholdSeconds'),
-  executeFetchIfNotExists: optionalBoolean('executeFetchIfNotExists'),
+  executeFetchIfNotExists: optionalBoolean(),
   hashToCompare: optionalString('hashToCompare'),
-  debug: optionalBoolean('debug'),
+  debug: optionalBoolean(),
 });
 
 export const fetchFeedDeliveryPreviewInputSchema = z.object({

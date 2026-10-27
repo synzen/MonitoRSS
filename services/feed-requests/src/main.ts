@@ -183,25 +183,21 @@ async function bootstrap() {
 
   const startTarget = process.env.FEED_REQUESTS_START_TARGET;
 
-  if (startTarget === 'api') {
-    api = await startApi();
-
-    await schedulePruneAndCreatePartitions(
-      loadConfig().FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS,
-    );
-  } else if (startTarget === 'service') {
-    service = await startService();
-  } else if (startTarget) {
+  if (startTarget && startTarget !== 'api' && startTarget !== 'service') {
     logger.error('Invalid FEED_REQUESTS_START_TARGET environment variable');
 
     process.exit(1);
-  } else {
+  }
+
+  if (startTarget !== 'service') {
     api = await startApi();
 
     await schedulePruneAndCreatePartitions(
       loadConfig().FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS,
     );
+  }
 
+  if (startTarget !== 'api') {
     service = await startService();
   }
 

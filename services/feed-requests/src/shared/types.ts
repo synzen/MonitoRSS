@@ -22,7 +22,8 @@ export interface RequestFetchOptions {
 }
 
 export interface Response {
-  id: number;
+  // The request_partitioned id column is TEXT; pg returns it as a string.
+  id: string;
   statusCode: number;
   textHash?: string | null;
   hasCompressedText?: boolean;
@@ -36,7 +37,7 @@ export interface Response {
 }
 
 export interface Request {
-  id: number;
+  id: string;
   status: RequestStatus;
   source?: string | null;
   fetchOptions?: RequestFetchOptions | null;

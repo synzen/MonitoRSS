@@ -7,7 +7,6 @@ import iconv from 'iconv-lite';
 import { request, interceptors, getGlobalDispatcher } from 'undici';
 import type { ObjectFileStorageService } from '../object-file-storage/object-file-storage';
 import type { CacheStorageService } from '../cache-storage/cache-storage';
-import { FeedTooLargeException } from './exceptions';
 import { resolveUserAgentForUrl } from './user-agent';
 import type { PartitionedRequestsStore } from '../stores/postgres/partitioned-requests-store';
 import {
@@ -98,32 +97,7 @@ interface FetchError extends Error {
   };
 }
 
-export interface GetFeedRequestsInput {
-  skip: number;
-  limit: number;
-  url: string;
-  lookupKey?: string;
-  afterDate?: string;
-  beforeDate?: string;
-}
-
 export interface FeedFetcherService {
-  getRequests(params: GetFeedRequestsInput): Promise<
-    Array<{
-      id: number;
-      createdAt: Date;
-      finishedAt: Date;
-      nextRetryDate: Date | null;
-      url: string;
-      status: RequestStatus;
-      fetchOptions: Record<string, string> | null;
-      response: {
-        statusCode: number;
-        headers: Record<string, string> | null;
-      } | null;
-    }>
-  >;
-  getLatestRetryDate(params: { lookupKey: string }): Promise<Date | null>;
   getLatestRequest(params: {
     url: string;
     lookupKey: string | undefined;
@@ -204,14 +178,6 @@ export function createFeedFetcherService({
   };
 
   return {
-    async getRequests(params) {
-      return partitionedRequestsStore.getRequests(params);
-    },
-
-    async getLatestRetryDate({ lookupKey }) {
-      return partitionedRequestsStore.getLatestNextRetryDate(lookupKey);
-    },
-
     async getLatestRequest({ url, lookupKey }) {
       const request =
         await partitionedRequestsStore.getLatestRequestWithResponseBody(
@@ -299,8 +265,10 @@ export function createFeedFetcherService({
         },
       };
 
+      const requestId = randomUUID();
+
       const requestModel: Request = {
-        id: 0,
+        id: requestId,
         status: RequestStatus.FETCH_ERROR,
         source: options?.source,
         lookupKey: options?.lookupDetails?.key || url,
@@ -332,7 +300,7 @@ export function createFeedFetcherService({
         }
 
         const response: Response = {
-          id: 0,
+          id: requestId,
           statusCode: res.status,
           isCloudflare: false,
           createdAt: new Date(),
@@ -367,9 +335,6 @@ export function createFeedFetcherService({
             );
           }
 
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const sizeOfTextInMb = Buffer.byteLength(text) / 1024 / 1024;
-
           try {
             const deflated = await deflatePromise(text);
             const compressedText = deflated.toString('base64');
@@ -403,10 +368,6 @@ export function createFeedFetcherService({
               response.content = compressedText;
             }
           } catch (err) {
-            if (err instanceof FeedTooLargeException) {
-              throw err;
-            }
-
             contextLogger.error(
               `Failed to upload feed html content for url ${url} to cache`,
               {
@@ -415,14 +376,10 @@ export function createFeedFetcherService({
             );
           }
         } catch (err) {
-          if (err instanceof FeedTooLargeException) {
-            requestModel.status = RequestStatus.REFUSED_LARGE_FEED;
-          } else {
-            requestModel.status = RequestStatus.PARSE_ERROR;
-            contextLogger.debug(`Failed to parse response text of url ${url}`, {
-              stack: (err as Error).stack,
-            });
-          }
+          requestModel.status = RequestStatus.PARSE_ERROR;
+          contextLogger.debug(`Failed to parse response text of url ${url}`, {
+            stack: (err as Error).stack,
+          });
         }
 
         const isCloudflareServer = !!res.headers
@@ -433,7 +390,7 @@ export function createFeedFetcherService({
         requestModel.response = response;
 
         const partitionedRequest: PartitionedRequestInsert = {
-          id: randomUUID(),
+          id: requestId,
           url: requestModel.url,
           lookupKey: requestModel.lookupKey,
           createdAt: response.createdAt,
@@ -499,7 +456,7 @@ export function createFeedFetcherService({
         }
 
         const partitionedRequest: PartitionedRequestInsert = {
-          id: randomUUID(),
+          id: requestId,
           url: requestModel.url,
           lookupKey: requestModel.lookupKey,
           createdAt: requestModel.createdAt,
@@ -576,46 +533,22 @@ export function createFeedFetcherService({
 
       const headers: FetchResponse['headers'] = new Map();
 
-      const etag = normalizedHeaders.get('etag');
+      // Only these headers are persisted; insertion order is preserved into
+      // the JSON stored in the database.
+      for (const headerName of [
+        'etag',
+        'content-type',
+        'last-modified',
+        'server',
+        'cache-control',
+        'date',
+        'expires',
+      ]) {
+        const value = normalizedHeaders.get(headerName);
 
-      if (etag) {
-        headers.set('etag', convertHeaderValue(etag));
-      }
-
-      const contentType = normalizedHeaders.get('content-type');
-
-      if (contentType) {
-        headers.set('content-type', convertHeaderValue(contentType));
-      }
-
-      const lastModified = normalizedHeaders.get('last-modified');
-
-      if (lastModified) {
-        headers.set('last-modified', convertHeaderValue(lastModified));
-      }
-
-      const server = normalizedHeaders.get('server');
-
-      if (server) {
-        headers.set('server', convertHeaderValue(server));
-      }
-
-      const cacheControl = normalizedHeaders.get('cache-control');
-
-      if (cacheControl) {
-        headers.set('cache-control', convertHeaderValue(cacheControl));
-      }
-
-      const date = normalizedHeaders.get('date');
-
-      if (date) {
-        headers.set('date', convertHeaderValue(date));
-      }
-
-      const expires = normalizedHeaders.get('expires');
-
-      if (expires) {
-        headers.set('expires', convertHeaderValue(expires));
+        if (value) {
+          headers.set(headerName, convertHeaderValue(value));
+        }
       }
 
       return {

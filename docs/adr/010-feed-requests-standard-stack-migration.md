@@ -9,7 +9,7 @@
 
 Two constraints dominated every decision:
 
-1. **Compose files are frozen outside major releases** (see ADR-005). `docker-compose.base.yml` builds two services from `services/feed-requests`: the app (Dockerfile `build` stage target, `CMD node ./dist/main`, port 5000, healthcheck on `/v1/feed-requests/health`) and a migration container whose command is `npm run migration:up`. A parallel-run `-next` directory was unattractive anyway — the old and new consumer cannot share `url.fetch-batch` without duplicate consumption.
+1. **Compose files are frozen outside major releases** (see ADR-005) — but the freeze protects only the files self-hosters depend on: `docker-compose.yml`, `docker-compose.base.yml`, and per-service `docker-compose.yml` files. Internal-use-only compose files (`docker-compose.dev.yml`, per-service `docker-compose.test.yml`) are not part of that contract and may change freely between minor/patch releases. `docker-compose.base.yml` builds two services from `services/feed-requests`: the app (Dockerfile `build` stage target, `CMD node ./dist/main`, port 5000, healthcheck on `/v1/feed-requests/health`) and a migration container whose command is `npm run migration:up`. A parallel-run `-next` directory was unattractive anyway — the old and new consumer cannot share `url.fetch-batch` without duplicate consumption.
 2. **The MikroORM runtime was already vestigial.** Every live read/write went through raw SQL against `request_partitioned`/`response_bodies` via the ORM's connection; no `em.persist()` existed, so `em.flush()` flushed nothing, and read-replica routing never applied to the raw-SQL paths. Dropping the ORM runtime was low-risk — only the migration tooling needed a real replacement.
 
 ## Decision
