@@ -1,4 +1,5 @@
 import vm from "node:vm";
+import { FiltersRegexEvalException } from "../../formatting/exceptions";
 import type { Article } from "../parser";
 
 // Expression Types
@@ -75,6 +76,39 @@ export interface FilterResult {
 
 const REGEX_TIMEOUT_MS = 5000;
 
+// Inline flag groups supported by other regex dialects (e.g. PCRE) that users
+// commonly paste in. JS has no inline flags, so they are converted to compile
+// flags instead. "i" is always applied by the caller; other flags are merged in.
+const INLINE_FLAG_PATTERN = /(?<!\\)\(\?([ims]+)\)/g;
+
+/**
+ * Convert PCRE-style inline flag groups such as "(?i)" into RegExp compile
+ * flags. Escaped occurrences (\(\?i\)) are left untouched. Flag groups with
+ * unsupported flags (e.g. "(?x)") are left in place so they fail compilation
+ * and surface as a filter regex error.
+ */
+export function extractInlineRegexFlags(inputRegex: string): {
+  pattern: string;
+  flags: string;
+} {
+  let flags = "";
+
+  const pattern = inputRegex.replace(
+    INLINE_FLAG_PATTERN,
+    (_match, flagChars: string) => {
+      for (const flag of flagChars) {
+        if (!flags.includes(flag)) {
+          flags += flag;
+        }
+      }
+
+      return "";
+    }
+  );
+
+  return { pattern, flags };
+}
+
 const TRUNCATE_LIMITS: Record<string, number> = {
   title: 80,
   description: 150,
@@ -120,7 +154,8 @@ function truncateValue(
 
     if (operator === RelationalExpressionOperator.Matches) {
       try {
-        const match = new RegExp(filterInput, "i").exec(value);
+        const { pattern } = extractInlineRegexFlags(filterInput);
+        const match = new RegExp(pattern, "i").exec(value);
 
         if (match) {
           const start = Math.max(0, match.index - CONTEXT_CHARS);
@@ -148,14 +183,17 @@ function truncateValue(
  * Test a regex pattern against a reference string using a sandboxed VM context.
  */
 function testRegex(inputRegex: string, reference: string): boolean {
+  const { pattern, flags } = extractInlineRegexFlags(inputRegex);
+  const compileFlags = flags.includes("i") ? flags : `i${flags}`;
   const context = {
     reference,
-    inputRegex,
+    inputRegex: pattern,
+    regexFlags: compileFlags,
     matches: false,
   };
 
   const script = new vm.Script(`
-    const regex = new RegExp(inputRegex, 'i');
+    const regex = new RegExp(inputRegex, regexFlags);
     matches = regex.test(reference);
   `);
 
@@ -165,8 +203,11 @@ function testRegex(inputRegex: string, reference: string): boolean {
     });
     return context.matches;
   } catch (err) {
-    throw new Error(
-      `Filter regex "${inputRegex}" evaluation on text "${reference}" errored: ${(err as Error).message}`
+    throw new FiltersRegexEvalException(
+      `Filter regex "${inputRegex}" evaluation on text "${reference}" errored: ${
+        (err as Error).message
+      }`,
+      { regexErrors: [(err as Error)] }
     );
   }
 }
@@ -602,4 +643,49 @@ export function validateLogicalExpression(
   );
 
   return errors;
+}
+
+/**
+ * Validate that MATCHES filter inputs compile as regular expressions using the
+ * same normalization applied during evaluation, so patterns are validated
+ * exactly as they will run.
+ */
+export function validateFilterRegexes(
+  input: Record<string, unknown>,
+  currentPath = "root."
+): string[] {
+  const { type, children } = input;
+
+  if (type === ExpressionType.Relational) {
+    const { op, right } = input;
+    const rightValue =
+      right && typeof right === "object"
+        ? (right as Record<string, unknown>).value
+        : undefined;
+
+    if (op === RelationalExpressionOperator.Matches) {
+      if (typeof rightValue !== "string") {
+        return [
+          `Expected ${currentPath}right.value to be a string but got ${rightValue}`,
+        ];
+      }
+
+      try {
+        new RegExp(extractInlineRegexFlags(rightValue).pattern, "i");
+      } catch (err) {
+        return [`${currentPath}right.value: ${(err as Error).message}`];
+      }
+    }
+
+    return [];
+  }
+
+  if (type === ExpressionType.Logical && Array.isArray(children)) {
+    return children.flatMap(
+      (child: Record<string, unknown>, index: number) =>
+        validateFilterRegexes(child, `${currentPath}children[${index}].`)
+    );
+  }
+
+  return [];
 }
