@@ -12,7 +12,7 @@ import {
   RequestSource,
   RequestStatus,
   type PartitionedRequestInsert,
-} from '../shared/types';
+} from '../feed-fetcher/types';
 import {
   truncatePartitionedTables,
   setupPostgresTests,

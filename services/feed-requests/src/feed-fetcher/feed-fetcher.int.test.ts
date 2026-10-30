@@ -3,10 +3,10 @@ import { deflate } from 'zlib';
 import { promisify } from 'util';
 import { after, afterEach, before, describe, it } from 'node:test';
 import assert from 'node:assert';
-import { RequestStatus, RequestSource } from '../shared/types';
+import { RequestStatus, RequestSource } from '../feed-fetcher/types';
 import { createFeedFetcherService } from './feed-fetcher';
 import { createPartitionedRequestsStore } from '../stores/postgres/partitioned-requests-store';
-import type { PartitionedRequestInsert } from '../shared/types';
+import type { PartitionedRequestInsert } from '../feed-fetcher/types';
 import {
   truncatePartitionedTables,
   setupPostgresTests,

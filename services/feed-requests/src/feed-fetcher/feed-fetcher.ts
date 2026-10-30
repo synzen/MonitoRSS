@@ -15,7 +15,7 @@ import {
   type PartitionedRequestInsert,
   type Request,
   type Response,
-} from '../shared/types';
+} from './types';
 
 const deflatePromise = promisify(deflate);
 const inflatePromise = promisify(inflate);

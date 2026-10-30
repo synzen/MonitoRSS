@@ -2,9 +2,9 @@ import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
 import { after, afterEach, before, describe, it } from 'node:test';
 import assert from 'node:assert';
-import { RequestStatus, RequestSource } from '../../shared/types';
+import { RequestStatus, RequestSource } from '../../feed-fetcher/types';
 import { createPartitionedRequestsStore } from './partitioned-requests-store';
-import type { PartitionedRequestInsert } from '../../shared/types';
+import type { PartitionedRequestInsert } from '../../feed-fetcher/types';
 import {
   truncatePartitionedTables,
   setupPostgresTests,

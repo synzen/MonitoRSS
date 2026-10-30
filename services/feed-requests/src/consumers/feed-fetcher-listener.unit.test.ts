@@ -1,7 +1,7 @@
 import { beforeEach, describe, it, mock } from 'node:test';
 import assert from 'node:assert';
 import { createFeedFetcherListener } from './feed-fetcher-listener';
-import { RequestStatus } from '../shared/types';
+import { RequestStatus } from '../feed-fetcher/types';
 import { MessageBrokerQueue } from '@monitorss/contracts';
 import { silenceLogger } from '../test/helpers/silence-logger';
 

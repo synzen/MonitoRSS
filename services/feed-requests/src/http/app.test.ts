@@ -4,7 +4,7 @@ import { beforeEach, describe, it, mock } from 'node:test';
 import assert from 'node:assert';
 import type { FastifyInstance } from 'fastify';
 import { createApp, type HttpAppDeps } from './app';
-import { RequestStatus } from '../shared/types';
+import { RequestStatus } from '../feed-fetcher/types';
 import logger from '../utils/logger';
 
 import { silenceLogger } from '../test/helpers/silence-logger';

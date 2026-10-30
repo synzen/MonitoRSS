@@ -5,7 +5,7 @@ import {
   RequestStatus,
   type PartitionedRequestInsert,
   type Request,
-} from '../../shared/types';
+} from '../../feed-fetcher/types';
 import { getUrlHost } from '../../utils/get-url-host';
 import logger from '../../utils/logger';
 import { createExecutor, toPgPlaceholders, withTransaction } from './index';

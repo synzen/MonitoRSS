@@ -11,7 +11,7 @@ import {
   type Dispatcher,
 } from 'undici';
 import { createFeedFetcherService } from './feed-fetcher';
-import { RequestStatus } from '../shared/types';
+import { RequestStatus } from '../feed-fetcher/types';
 import { silenceLogger } from '../test/helpers/silence-logger';
 
 silenceLogger();

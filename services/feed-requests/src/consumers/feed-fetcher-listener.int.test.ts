@@ -11,10 +11,14 @@ import {
   mock,
 } from 'node:test';
 import assert from 'node:assert';
-import { RequestStatus, RequestSource } from '../shared/types';
+import { RequestStatus, RequestSource } from '../feed-fetcher/types';
 import { createFeedFetcherListener } from './feed-fetcher-listener';
+import {
+  calculateNextRetryDate,
+  createScheduledFetchPolicies,
+} from '../feed-fetcher/scheduled-fetch';
 import { createPartitionedRequestsStore } from '../stores/postgres/partitioned-requests-store';
-import type { PartitionedRequestInsert } from '../shared/types';
+import type { PartitionedRequestInsert } from '../feed-fetcher/types';
 import { createHostRateLimiterService } from '../host-rate-limiter/host-rate-limiter';
 import {
   truncatePartitionedTables,
@@ -28,6 +32,7 @@ silenceLogger();
 
 describe('FeedFetcherListener (Integration)', () => {
   let listener: ReturnType<typeof createFeedFetcherListener>;
+  let policies: ReturnType<typeof createScheduledFetchPolicies>;
   const feedUrl = 'https://rss-feed.com/feed.xml';
   const maxFailAttempts = 11;
 
@@ -54,6 +59,10 @@ describe('FeedFetcherListener (Integration)', () => {
       ) as never,
       cacheStorage: cacheStorageService as never,
       publish: publish as never,
+    });
+    policies = createScheduledFetchPolicies({
+      maxFailAttempts,
+      partitionedRequestsStore: createPartitionedRequestsStore(getTestPool()),
     });
   });
 
@@ -466,7 +475,7 @@ describe('FeedFetcherListener (Integration)', () => {
   describe('shouldSkipAfterPreviousFailedAttempt', () => {
     it('should return false if no previous attempt', async () => {
       const { skip, failedAttemptsCount } =
-        await listener.shouldSkipAfterPreviousFailedAttempt({
+        await policies.shouldSkipAfterPreviousFailedAttempt({
           url: feedUrl,
         });
 
@@ -479,7 +488,7 @@ describe('FeedFetcherListener (Integration)', () => {
         buildInsert({ status: RequestStatus.OK, createdAt: new Date() }),
       ]);
 
-      const { skip } = await listener.shouldSkipAfterPreviousFailedAttempt({
+      const { skip } = await policies.shouldSkipAfterPreviousFailedAttempt({
         url: feedUrl,
       });
 
@@ -498,7 +507,7 @@ describe('FeedFetcherListener (Integration)', () => {
         }),
       ]);
 
-      const { skip } = await listener.shouldSkipAfterPreviousFailedAttempt({
+      const { skip } = await policies.shouldSkipAfterPreviousFailedAttempt({
         url: feedUrl,
       });
 
@@ -517,7 +526,7 @@ describe('FeedFetcherListener (Integration)', () => {
         }),
       ]);
 
-      const { skip } = await listener.shouldSkipAfterPreviousFailedAttempt({
+      const { skip } = await policies.shouldSkipAfterPreviousFailedAttempt({
         url: feedUrl,
       });
 
@@ -547,7 +556,7 @@ describe('FeedFetcherListener (Integration)', () => {
         }),
       ]);
 
-      const failedRequestsCount = await listener.countFailedRequests({
+      const failedRequestsCount = await policies.countFailedRequests({
         url: feedUrl,
       });
 
@@ -569,7 +578,7 @@ describe('FeedFetcherListener (Integration)', () => {
         }),
       ]);
 
-      const failedRequestsCount = await listener.countFailedRequests({
+      const failedRequestsCount = await policies.countFailedRequests({
         url: feedUrl,
       });
 
@@ -599,10 +608,7 @@ describe('FeedFetcherListener (Integration)', () => {
       },
     ]) {
       it(`returns correctly on attempt #${attemptsSoFar}`, () => {
-        const returned = listener.calculateNextRetryDate(
-          referenceDate,
-          attemptsSoFar,
-        );
+        const returned = calculateNextRetryDate(referenceDate, attemptsSoFar);
 
         assert.deepStrictEqual(returned, expected);
       });
