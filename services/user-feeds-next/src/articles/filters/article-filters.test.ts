@@ -7,6 +7,8 @@ import {
   validateRelationalRight,
   validateRelationalExpression,
   validateLogicalExpression,
+  validateFilterRegexes,
+  extractInlineRegexFlags,
   ExpressionType,
   LogicalExpressionOperator,
   RelationalExpressionOperator,
@@ -16,6 +18,10 @@ import {
   type RelationalExpression,
   type FilterExpressionReference,
 } from ".";
+import {
+  FiltersRegexEvalException,
+  RegexEvalException,
+} from "../../formatting/exceptions";
 import type { Article } from "../parser";
 
 function createArticle(flattened: Record<string, string>): Article {
@@ -1051,6 +1057,188 @@ describe("article-filters", () => {
         },
         "root."
       );
+      assert.deepStrictEqual(result, []);
+    });
+  });
+
+  describe("extractInlineRegexFlags", () => {
+    it("strips a leading (?i) inline flag group", () => {
+      const { pattern, flags } = extractInlineRegexFlags("(?i)hello");
+      assert.strictEqual(pattern, "hello");
+      assert.strictEqual(flags, "i");
+    });
+
+    it("merges supported inline flags into compile flags", () => {
+      const { pattern, flags } = extractInlineRegexFlags("(?im)hello");
+      assert.strictEqual(pattern, "hello");
+      assert.strictEqual(flags, "im");
+    });
+
+    it("strips inline flag groups at any position", () => {
+      const { pattern, flags } = extractInlineRegexFlags("foo(?i)bar");
+      assert.strictEqual(pattern, "foobar");
+      assert.strictEqual(flags, "i");
+    });
+
+    it("leaves escaped (?i) untouched", () => {
+      const { pattern, flags } = extractInlineRegexFlags("\\(\\?i\\)");
+      assert.strictEqual(pattern, "\\(\\?i\\)");
+      assert.strictEqual(flags, "");
+    });
+
+    it("leaves lookaheads and named groups untouched", () => {
+      const { pattern, flags } = extractInlineRegexFlags("(?=foo)(?!bar)(?<name>x)");
+      assert.strictEqual(pattern, "(?=foo)(?!bar)(?<name>x)");
+      assert.strictEqual(flags, "");
+    });
+
+    it("leaves scoped inline flag groups untouched", () => {
+      const { pattern, flags } = extractInlineRegexFlags("(?i:foo)");
+      assert.strictEqual(pattern, "(?i:foo)");
+      assert.strictEqual(flags, "");
+    });
+
+    it("leaves unsupported inline flags untouched", () => {
+      const { pattern, flags } = extractInlineRegexFlags("(?x)foo");
+      assert.strictEqual(pattern, "(?x)foo");
+      assert.strictEqual(flags, "");
+    });
+  });
+
+  describe("Matches with inline flags", () => {
+    it("matches case-insensitively when pattern uses a leading (?i)", () => {
+      const expression: RelationalExpression = {
+        left: { type: RelationalExpressionLeft.Article, value: "title" },
+        op: RelationalExpressionOperator.Matches,
+        right: {
+          type: RelationalExpressionRight.String,
+          value: "(?i)#?shorts",
+        },
+        type: ExpressionType.Relational,
+      };
+
+      const reference: FilterExpressionReference = {
+        [RelationalExpressionLeft.Article]: createArticle({
+          title: "New Episode #shorts",
+        }),
+      };
+
+      assert.strictEqual(evaluateExpression(expression, reference).result, true);
+    });
+
+    it("evaluates a real-world (?i) alternation filter", () => {
+      const expression: RelationalExpression = {
+        left: { type: RelationalExpressionLeft.Article, value: "title" },
+        op: RelationalExpressionOperator.Matches,
+        right: {
+          type: RelationalExpressionRight.String,
+          value: "(?i)(-6\\d%|-7\\d%|-8\\d%|-9\\d%|erreur|bug|gratuit)",
+        },
+        type: ExpressionType.Relational,
+      };
+
+      const reference: FilterExpressionReference = {
+        [RelationalExpressionLeft.Article]: createArticle({
+          title: "This product has a bug",
+        }),
+      };
+
+      assert.strictEqual(evaluateExpression(expression, reference).result, true);
+    });
+
+    it("throws FiltersRegexEvalException for invalid regexes", () => {
+      const expression: RelationalExpression = {
+        left: { type: RelationalExpressionLeft.Article, value: "title" },
+        op: RelationalExpressionOperator.Matches,
+        right: {
+          type: RelationalExpressionRight.String,
+          value: "[Ll]aunch ([Tt]ime",
+        },
+        type: ExpressionType.Relational,
+      };
+
+      const reference: FilterExpressionReference = {
+        [RelationalExpressionLeft.Article]: createArticle({
+          title: "Launch Time announced",
+        }),
+      };
+
+      assert.throws(
+        () => evaluateExpression(expression, reference),
+        (err: unknown) => {
+          assert.ok(err instanceof FiltersRegexEvalException);
+          assert.ok(err instanceof RegexEvalException);
+          assert.strictEqual(err.regexErrors?.length, 1);
+          return true;
+        }
+      );
+    });
+  });
+
+  describe("validateFilterRegexes", () => {
+    it("returns no errors for compilable regexes", () => {
+      const result = validateFilterRegexes({
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.And,
+        children: [
+          {
+            type: ExpressionType.Relational,
+            op: RelationalExpressionOperator.Matches,
+            left: { type: RelationalExpressionLeft.Article, value: "title" },
+            right: {
+              type: RelationalExpressionRight.String,
+              value: "(?i)(system update|firmware|patch)",
+            },
+          },
+        ],
+      });
+      assert.deepStrictEqual(result, []);
+    });
+
+    it("returns an error for non-compilable regexes", () => {
+      const result = validateFilterRegexes({
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.And,
+        children: [
+          {
+            type: ExpressionType.Relational,
+            op: RelationalExpressionOperator.Matches,
+            left: { type: RelationalExpressionLeft.Article, value: "title" },
+            right: {
+              type: RelationalExpressionRight.String,
+              value: "[Ll]aunch ([Tt]ime",
+            },
+          },
+        ],
+      });
+      assert.strictEqual(result.length, 1);
+      assert.ok(result[0].includes("root.children[0].right.value"));
+      assert.ok(result[0].includes("Invalid regular expression"));
+    });
+
+    it("returns no errors for non-Matches operands", () => {
+      const result = validateFilterRegexes({
+        type: ExpressionType.Logical,
+        op: LogicalExpressionOperator.And,
+        children: [
+          {
+            type: ExpressionType.Relational,
+            op: RelationalExpressionOperator.Contains,
+            left: { type: RelationalExpressionLeft.Article, value: "title" },
+            right: {
+              type: RelationalExpressionRight.String,
+              value: "[Ll]aunch ([Tt]ime",
+            },
+          },
+        ],
+      });
+      assert.deepStrictEqual(result, []);
+    });
+
+    it("returns no errors for unknown expression types", () => {
+      const result = validateFilterRegexes({
+        children: [{ op: "MATCHES" }],
+      } as never);
       assert.deepStrictEqual(result, []);
     });
   });

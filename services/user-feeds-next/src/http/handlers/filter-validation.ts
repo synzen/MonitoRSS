@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
-import { validateLogicalExpression } from "../../articles/filters";
+import {
+  validateFilterRegexes,
+  validateLogicalExpression,
+} from "../../articles/filters";
 import { withAuth } from "../middleware";
 import { jsonResponse, parseJsonBody } from "../utils";
 
@@ -17,10 +20,11 @@ export async function handleFilterValidation(req: Request): Promise<Response> {
     const body = await parseJsonBody<unknown>(req);
     const { expression } = filterValidationInputSchema.parse(body);
 
-    const errors = validateLogicalExpression(
-      expression as Record<string, unknown>,
-      "root."
-    );
+    const input = expression as Record<string, unknown>;
+    const errors = [
+      ...validateLogicalExpression(input, "root."),
+      ...validateFilterRegexes(input, "root."),
+    ];
 
     return jsonResponse({
       result: {
