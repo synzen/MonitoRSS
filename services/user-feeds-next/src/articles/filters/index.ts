@@ -6,6 +6,8 @@ export {
   validateRelationalRight,
   validateRelationalExpression,
   validateLogicalExpression,
+  validateFilterRegexes,
+  extractInlineRegexFlags,
   ExpressionType,
   LogicalExpressionOperator,
   RelationalExpressionOperator,
