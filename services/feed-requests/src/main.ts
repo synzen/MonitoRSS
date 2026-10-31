@@ -1,99 +1,25 @@
-import 'reflect-metadata';
-import { VersioningType } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { HttpAdapterHost, NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
-import { AllExceptionsFilter } from './shared/filters';
+import { MessageBrokerQueue } from '@monitorss/contracts';
+import { loadConfig } from './config';
 import logger from './utils/logger';
-import { MikroORM } from '@mikro-orm/core';
-import { RequestContext } from '@mikro-orm/core';
-import type { EntityManager } from '@mikro-orm/core';
-import compression from '@fastify/compress';
 import pruneAndCreatePartitions from './utils/prune-and-create-partitions';
+import { initPool, closePool, getPool } from './stores/postgres';
+import { createPartitionedRequestsStore } from './stores/postgres/partitioned-requests-store';
+import {
+  createCacheClient,
+  createCacheStorageService,
+} from './cache-storage/cache-storage';
+import { createObjectFileStorageService } from './object-file-storage/object-file-storage';
+import { createHostRateLimiterService } from './host-rate-limiter/host-rate-limiter';
+import { createFeedFetcherService } from './feed-fetcher/feed-fetcher';
+import { createApp } from './http/app';
+import {
+  createRabbitConnection,
+  createPublisher,
+  createQueueConsumer,
+} from './consumers/rabbitmq';
+import { createFeedFetcherListener } from './consumers/feed-fetcher-listener';
 
-async function startApi() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.forApi(),
-    new FastifyAdapter(),
-  );
-
-  app.register(compression, {
-    encodings: ['gzip', 'deflate'],
-  });
-
-  app.enableShutdownHooks();
-
-  const orm = app.get(MikroORM);
-  const httpAdapterHost = app.get(HttpAdapterHost);
-
-  app.use((req, res, next) => {
-    RequestContext.create(orm.em, next);
-  });
-
-  app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
-    prefix: 'v',
-  });
-
-  const configService = app.get(ConfigService);
-  const port = configService.getOrThrow<number>('FEED_REQUESTS_API_PORT');
-
-  await app.listen(port, '0.0.0.0');
-
-  setInterval(() => {
-    tryDbConnection(orm).catch(() => process.exit(1));
-  }, 60000);
-
-  logger.info(`API is running on port ${port}`);
-
-  return { app };
-}
-
-async function startService() {
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.forService(),
-    new FastifyAdapter(),
-  );
-  app.enableShutdownHooks();
-
-  const orm = app.get(MikroORM);
-  await app.init();
-
-  setInterval(() => {
-    tryDbConnection(orm).catch(() => process.exit(1));
-  }, 60000);
-
-  logger.info(`Service is running`);
-
-  return { app };
-}
-
-async function bootstrap() {
-  if (process.env.FEED_REQUESTS_START_TARGET === 'api') {
-    const { app } = await startApi();
-
-    await schedulePruneAndCreatePartitions(app);
-  } else if (process.env.FEED_REQUESTS_START_TARGET === 'service') {
-    await startService();
-  } else if (process.env.FEED_REQUESTS_START_TARGET) {
-    logger.error('Invalid FEED_REQUESTS_START_TARGET environment variable');
-
-    process.exit(1);
-  } else {
-    const { app } = await startApi();
-
-    await schedulePruneAndCreatePartitions(app);
-    await startService();
-  }
-}
-
-async function tryDbConnection(orm: { em: EntityManager }, currentTries = 0) {
+async function tryDbConnection(currentTries = 0) {
   if (currentTries >= 10) {
     // eslint-disable-next-line no-console -- Datadog mode disables logger console output
     console.error('Failed to connect to database after 10 tries. Exiting...');
@@ -102,25 +28,25 @@ async function tryDbConnection(orm: { em: EntityManager }, currentTries = 0) {
     process.exit(1);
   }
 
-  await orm.em
-    .getDriver()
-    .getConnection()
-    .execute('SELECT 1')
-    .catch((err) => {
-      logger.error('Failed to ping database', {
-        error: (err as Error).stack,
-      });
-
-      return tryDbConnection(orm, currentTries + 1);
+  try {
+    await getPool().query('SELECT 1');
+  } catch (err) {
+    logger.error('Failed to ping database', {
+      error: (err as Error).stack,
     });
+
+    return tryDbConnection(currentTries + 1);
+  }
 }
 
-async function schedulePruneAndCreatePartitions(app) {
-  await pruneAndCreatePartitions(app);
+async function schedulePruneAndCreatePartitions(
+  historyPersistenceMonths: number,
+) {
+  await pruneAndCreatePartitions(getPool(), historyPersistenceMonths);
 
   setInterval(() => {
     logger.info('Running recurring task to prune and create partitions...');
-    pruneAndCreatePartitions(app)
+    pruneAndCreatePartitions(getPool(), historyPersistenceMonths)
       .then(() => {
         logger.info(
           'Recurring task to prune and create partitions ran successfully',
@@ -137,4 +63,172 @@ async function schedulePruneAndCreatePartitions(app) {
   }, 60000 * 24);
 }
 
-bootstrap();
+interface CoreInfrastructure {
+  cacheStorage: ReturnType<typeof createCacheStorageService>;
+  partitionedRequestsStore: ReturnType<typeof createPartitionedRequestsStore>;
+  feedFetcher: ReturnType<typeof createFeedFetcherService>;
+}
+
+async function buildCoreInfrastructure(
+  config: ReturnType<typeof loadConfig>,
+): Promise<CoreInfrastructure> {
+  const pool = initPool(config.FEED_REQUESTS_POSTGRES_URI, {
+    max: config.FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT * 3,
+  });
+  const cacheClient = await createCacheClient({
+    uri: config.FEED_REQUESTS_REDIS_URI,
+    disableCluster: config.FEED_REQUESTS_REDIS_DISABLE_CLUSTER,
+  });
+  const cacheStorage = createCacheStorageService(cacheClient);
+  const objectFileStorage = createObjectFileStorageService({
+    endpoint: config.FEED_REQUESTS_S3_ENDPOINT,
+    keyId: config.FEED_REQUESTS_S3_API_KEY_ID,
+    key: config.FEED_REQUESTS_S3_API_KEY,
+  });
+  const partitionedRequestsStore = createPartitionedRequestsStore(pool);
+  const feedFetcher = createFeedFetcherService({
+    defaultUserAgent: config.FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT,
+    requestTimeoutMs: config.FEED_REQUESTS_REQUEST_TIMEOUT_MS,
+    objectFileStorage,
+    cacheStorage,
+    partitionedRequestsStore,
+  });
+
+  return { cacheStorage, partitionedRequestsStore, feedFetcher };
+}
+
+async function startApi() {
+  const config = loadConfig();
+  const { cacheStorage, feedFetcher, partitionedRequestsStore } =
+    await buildCoreInfrastructure(config);
+  const hostRateLimiter = createHostRateLimiterService(cacheStorage);
+
+  const app = createApp({
+    apiKey: config.FEED_REQUESTS_API_KEY,
+    feedFetcher,
+    partitionedRequestsStore,
+    hostRateLimiter,
+  });
+
+  await app.listen({
+    port: config.FEED_REQUESTS_API_PORT,
+    host: '0.0.0.0',
+  });
+
+  setInterval(() => {
+    tryDbConnection().catch(() => process.exit(1));
+  }, 60000);
+
+  logger.info(`API is running on port ${config.FEED_REQUESTS_API_PORT}`);
+
+  return {
+    shutdown: async () => {
+      await app.close();
+      await cacheStorage.closeClient();
+      await closePool();
+    },
+  };
+}
+
+async function startService() {
+  const config = loadConfig();
+  const { cacheStorage, feedFetcher, partitionedRequestsStore } =
+    await buildCoreInfrastructure(config);
+  const hostRateLimiter = createHostRateLimiterService(cacheStorage);
+
+  const connection = createRabbitConnection(
+    config.FEED_REQUESTS_RABBITMQ_BROKER_URL,
+  );
+  const publish = createPublisher(connection);
+  const listener = createFeedFetcherListener({
+    maxFailAttempts: config.FEED_REQUESTS_MAX_FAIL_ATTEMPTS,
+    feedFetcher,
+    partitionedRequestsStore,
+    hostRateLimiter,
+    cacheStorage,
+    publish,
+  });
+  const consumer = createQueueConsumer(
+    connection,
+    {
+      queue: MessageBrokerQueue.UrlFetchBatch,
+      prefetchCount: config.FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT,
+    },
+    async (message) => {
+      await listener.onBrokerFetchRequestBatch(
+        message as Parameters<typeof listener.onBrokerFetchRequestBatch>[0],
+      );
+    },
+  );
+
+  setInterval(() => {
+    tryDbConnection().catch(() => process.exit(1));
+  }, 60000);
+
+  logger.info(`Service is running`);
+
+  return {
+    shutdown: async () => {
+      await consumer.close();
+      await connection.close();
+      await cacheStorage.closeClient();
+      await closePool();
+    },
+  };
+}
+
+async function bootstrap() {
+  let api: Awaited<ReturnType<typeof startApi>> | undefined;
+  let service: Awaited<ReturnType<typeof startService>> | undefined;
+
+  const startTarget = process.env.FEED_REQUESTS_START_TARGET;
+
+  if (startTarget && startTarget !== 'api' && startTarget !== 'service') {
+    logger.error('Invalid FEED_REQUESTS_START_TARGET environment variable');
+
+    process.exit(1);
+  }
+
+  if (startTarget !== 'service') {
+    api = await startApi();
+
+    await schedulePruneAndCreatePartitions(
+      loadConfig().FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS,
+    );
+  }
+
+  if (startTarget !== 'api') {
+    service = await startService();
+  }
+
+  const shutdown = async (signal: string) => {
+    logger.info(`Received ${signal}. Shutting down...`);
+
+    try {
+      await api?.shutdown();
+    } catch (err) {
+      logger.error('Error during API shutdown', {
+        error: (err as Error).stack,
+      });
+    }
+
+    try {
+      await service?.shutdown();
+    } catch (err) {
+      logger.error('Error during service shutdown', {
+        error: (err as Error).stack,
+      });
+    }
+
+    process.exit(0);
+  };
+
+  process.on('SIGINT', () => {
+    void shutdown('SIGINT');
+  });
+  process.on('SIGTERM', () => {
+    void shutdown('SIGTERM');
+  });
+}
+
+void bootstrap();

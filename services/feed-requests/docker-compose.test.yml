@@ -15,7 +15,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --save ""
+    command: redis-server --save "" --databases 64
     tmpfs: /data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -49,4 +49,4 @@ services:
       - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
       - FEED_REQUESTS_S3_API_KEY_ID=1
       - FEED_REQUESTS_S3_API_KEY=1
-    command: bash -c "${TEST_COMMAND:-node --import tsx --test-reporter=spec --test $(find ./src -name '*.test.ts' -type f)}"
+    command: bash -c "${TEST_COMMAND:-npx tsx src/test/helpers/prepare-template-db.ts && node --import tsx --test-reporter=spec --test $(find ./src -name '*.test.ts' -type f)}"

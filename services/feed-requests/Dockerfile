@@ -13,9 +13,6 @@ COPY . ./
 
 RUN npm run build
 
-# There seems to be a bug where nest build completes before it actually finishes building
-RUN sleep 1
-
 FROM build AS build-prod
 
 WORKDIR /usr/src/app

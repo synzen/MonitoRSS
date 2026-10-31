@@ -1,4 +1,0 @@
-DROP DATABASE IF EXISTS feedrequests;
-CREATE DATABASE feedrequests;
-DROP DATABASE IF EXISTS userfeeds;
-CREATE DATABASE userfeeds;

@@ -22,7 +22,11 @@ else
   done
 fi
 
-export TEST_COMMAND="node --import tsx --test-reporter=spec --test $TARGETS"
+if [ $# -gt 0 ]; then
+  # Narrow the run to the caller's paths; without this override the compose
+  # file's default command runs the full suite.
+  export TEST_COMMAND="npx tsx src/test/helpers/prepare-template-db.ts && node --import tsx --test-reporter=spec --test $TARGETS"
+fi
 
 docker compose -f docker-compose.test.yml -p feed-requests-test up \
   --build \
