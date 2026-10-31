@@ -213,10 +213,13 @@ export function createScheduledFetchPolicies({
       );
 
     if (!latestNextRetryDate) {
-      contextLogger.error(
-        `Request for ${lookupKey} has previously failed, but there is no` +
-          ` nextRetryDate set. All failed requests handled via broker events` +
-          ` should have retry dates. Continuing with request as fallback behavior.`,
+      // Failures recorded by non-broker paths (e.g. direct API fetches) do
+      // not carry retry dates, so this is reachable without a data issue.
+      contextLogger.warn(
+        `Request for ${key} has previously failed, but there is no` +
+          ` nextRetryDate set. Failed requests that did not go through the` +
+          ` broker do not have retry dates. Continuing with request as` +
+          ` fallback behavior.`,
       );
 
       return {

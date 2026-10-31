@@ -12,6 +12,23 @@ import { createExecutor, toPgPlaceholders, withTransaction } from './index';
 
 const sha1 = createHash('sha1');
 
+const FLUSH_MAX_ATTEMPTS = 3;
+const FLUSH_RETRY_BASE_DELAY_MS = 100;
+const POSTGRES_DEADLOCK_SQLSTATE = '40P01';
+
+function isDeadlockError(err: unknown): boolean {
+  const error = err as { code?: string; message?: string };
+
+  return (
+    error?.code === POSTGRES_DEADLOCK_SQLSTATE ||
+    (error?.message?.includes('deadlock detected') ?? false)
+  );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export interface PartitionedRequestsStore {
   wasRequestedInPastSeconds(
     lookupKey: string,
@@ -91,108 +108,149 @@ export function createPartitionedRequestsStore(
       const stringifyJson = (json?: object | null) =>
         json ? JSON.stringify(json) : null;
 
-      await withTransaction(pool, async (txExec) => {
-        const query = async (sql: string, params?: unknown[]) =>
-          txExec(toPgPlaceholders(sql), params);
+      // Deterministic ordering so concurrent flushes acquire locks (primarily
+      // response_bodies rows shared by duplicate URLs across batches) in the
+      // same sequence — otherwise overlapping batches can deadlock.
+      const orderedInserts = [...inserts].sort((a, b) => {
+        const urlCompare = a.url < b.url ? -1 : a.url > b.url ? 1 : 0;
 
-        if (inserts.some((i) => i.response?.s3ObjectKey)) {
-          logger.info('DEBUG: Flushing pending inserts', {
-            pendingInserts: inserts.map((i) => ({
-              id: i.id,
-              lookupKey: i.lookupKey,
-              url: i.url,
-            })),
-          });
-        }
+        return urlCompare !== 0
+          ? urlCompare
+          : a.id < b.id
+            ? -1
+            : a.id > b.id
+              ? 1
+              : 0;
+      });
 
-        for (const responseInsert of inserts) {
-          const urlHash = sha1.copy().update(responseInsert.url).digest('hex');
-          let hostHash: string | null = null;
+      const flushInsertBatch = async (batch: PartitionedRequestInsert[]) => {
+        await withTransaction(pool, async (txExec) => {
+          const query = async (sql: string, params?: unknown[]) =>
+            txExec(toPgPlaceholders(sql), params);
 
-          try {
-            const host = getUrlHost(responseInsert.url);
-            hostHash = sha1.copy().update(host).digest('hex');
-          } catch (err) {
-            logger.error('Failed to get host from url', {
-              url: responseInsert.url,
-              err: (err as Error).stack,
+          if (batch.some((i) => i.response?.s3ObjectKey)) {
+            logger.info('DEBUG: Flushing pending inserts', {
+              pendingInserts: batch.map((i) => ({
+                id: i.id,
+                lookupKey: i.lookupKey,
+                url: i.url,
+              })),
             });
           }
 
-          if (responseInsert.response?.body) {
-            const contentHash = sha1
+          for (const responseInsert of batch) {
+            const urlHash = sha1
               .copy()
-              .update(responseInsert.response.body.contents)
+              .update(responseInsert.url)
               .digest('hex');
+            let hostHash: string | null = null;
 
-            // does this content already exist in the db?
-            const results = await query(
-              `SELECT 1 FROM response_bodies WHERE hash_key = ? AND content_hash = ?`,
-              [responseInsert.response.body.hashKey, contentHash],
-            );
-
-            if (results.length === 0) {
-              await query(
-                `INSERT INTO response_bodies (content, content_hash, hash_key) VALUES (?, ?, ?)
-                ON CONFLICT (hash_key) DO UPDATE SET content = ?, content_hash = ?
-              `,
-                [
-                  responseInsert.response.body.contents,
-                  contentHash,
-                  responseInsert.response.body.hashKey,
-                  responseInsert.response.body.contents,
-                  contentHash,
-                ],
-              );
+            try {
+              const host = getUrlHost(responseInsert.url);
+              hostHash = sha1.copy().update(host).digest('hex');
+            } catch (err) {
+              logger.error('Failed to get host from url', {
+                url: responseInsert.url,
+                err: (err as Error).stack,
+              });
             }
+
+            if (responseInsert.response?.body) {
+              const contentHash = sha1
+                .copy()
+                .update(responseInsert.response.body.contents)
+                .digest('hex');
+
+              // does this content already exist in the db?
+              const results = await query(
+                `SELECT 1 FROM response_bodies WHERE hash_key = ? AND content_hash = ?`,
+                [responseInsert.response.body.hashKey, contentHash],
+              );
+
+              if (results.length === 0) {
+                await query(
+                  `INSERT INTO response_bodies (content, content_hash, hash_key) VALUES (?, ?, ?)
+                  ON CONFLICT (hash_key) DO UPDATE SET content = ?, content_hash = ?
+                `,
+                  [
+                    responseInsert.response.body.contents,
+                    contentHash,
+                    responseInsert.response.body.hashKey,
+                    responseInsert.response.body.contents,
+                    contentHash,
+                  ],
+                );
+              }
+            }
+
+            await query(
+              `INSERT INTO request_partitioned (
+                id,
+                status,
+                source,
+                fetch_options,
+                url,
+                url_hash,
+                host_hash,
+                lookup_key,
+                created_at,
+                next_retry_date,
+                error_message,
+                response_status_code,
+                response_text_hash,
+                response_body_hash_key,
+                response_s3object_key,
+                response_redis_cache_key,
+                response_headers,
+                request_initiated_at
+              ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+              )`,
+              [
+                responseInsert.id,
+                responseInsert.status,
+                responseInsert.source ?? null,
+                stringifyJson(responseInsert.fetchOptions),
+                responseInsert.url,
+                urlHash,
+                hostHash,
+                responseInsert.lookupKey ?? null,
+                responseInsert.createdAt,
+                responseInsert.nextRetryDate ?? null,
+                responseInsert.errorMessage ?? null,
+                responseInsert.response?.statusCode ?? null,
+                null,
+                responseInsert.response?.body?.hashKey ?? null,
+                responseInsert.response?.s3ObjectKey ?? null,
+                responseInsert.response?.redisCacheKey ?? null,
+                stringifyJson(responseInsert.response?.headers),
+                responseInsert.requestInitiatedAt,
+              ],
+            );
+          }
+        });
+      };
+
+      for (let attempt = 1; ; ++attempt) {
+        try {
+          await flushInsertBatch(orderedInserts);
+
+          return;
+        } catch (err) {
+          if (!isDeadlockError(err) || attempt >= FLUSH_MAX_ATTEMPTS) {
+            throw err;
           }
 
-          await query(
-            `INSERT INTO request_partitioned (
-              id,
-              status,
-              source,
-              fetch_options,
-              url,
-              url_hash,
-              host_hash,
-              lookup_key,
-              created_at,
-              next_retry_date,
-              error_message,
-              response_status_code,
-              response_text_hash,
-              response_body_hash_key,
-              response_s3object_key,
-              response_redis_cache_key,
-              response_headers,
-              request_initiated_at
-            ) VALUES (
-              ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )`,
-            [
-              responseInsert.id,
-              responseInsert.status,
-              responseInsert.source ?? null,
-              stringifyJson(responseInsert.fetchOptions),
-              responseInsert.url,
-              urlHash,
-              hostHash,
-              responseInsert.lookupKey ?? null,
-              responseInsert.createdAt,
-              responseInsert.nextRetryDate ?? null,
-              responseInsert.errorMessage ?? null,
-              responseInsert.response?.statusCode ?? null,
-              null,
-              responseInsert.response?.body?.hashKey ?? null,
-              responseInsert.response?.s3ObjectKey ?? null,
-              responseInsert.response?.redisCacheKey ?? null,
-              stringifyJson(responseInsert.response?.headers),
-              responseInsert.requestInitiatedAt,
-            ],
+          logger.warn(
+            'Deadlock detected while flushing request inserts, retrying',
+            {
+              attempt,
+              insertCount: orderedInserts.length,
+            },
           );
+          await sleep(FLUSH_RETRY_BASE_DELAY_MS * attempt);
         }
-      });
+      }
     },
 
     async getLatestNextRetryDate(lookupKey, since) {
