@@ -20,7 +20,36 @@ export interface Migration {
 
 // To add a migration, append an entry here with a new 14-digit UTC timestamp
 // version (YYYYMMDDHHmmss) and hand-written up/down SQL statements.
-export const MIGRATIONS: Migration[] = LEGACY_MIGRATIONS.map(toMigration);
+export const MIGRATIONS: Migration[] = [
+  ...LEGACY_MIGRATIONS.map(toMigration),
+  {
+    version: '20261031140122',
+    name: 'Migration20261031140122',
+    async up(client) {
+      // Adopting the existing unique index is metadata-only: no table rewrite,
+      // just a momentary ACCESS EXCLUSIVE lock. The lock timeout keeps the
+      // ALTER from queueing behind a long transaction and stalling traffic —
+      // if it can't get the lock in 5s it fails fast and the run can be
+      // retried.
+      await client.query(`SET LOCAL lock_timeout = '5s'`);
+      await client.query(`
+        ALTER TABLE response_bodies
+        ADD CONSTRAINT response_bodies_pkey
+        PRIMARY KEY USING INDEX response_bodies_hash_key;
+      `);
+    },
+    async down(client) {
+      await client.query(`SET LOCAL lock_timeout = '5s'`);
+      await client.query(`
+        ALTER TABLE response_bodies
+        DROP CONSTRAINT response_bodies_pkey;
+      `);
+      await client.query(`
+        CREATE UNIQUE INDEX response_bodies_hash_key ON response_bodies (hash_key);
+      `);
+    },
+  },
+];
 
 function toMigration(legacy: LegacyMigration): Migration {
   return {

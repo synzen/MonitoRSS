@@ -21,7 +21,6 @@ dotenv.config({
     __dirname,
     '..',
     '..',
-    '..',
     envFiles[process.env.NODE_ENV as string] || envFiles.local,
   ),
 });
