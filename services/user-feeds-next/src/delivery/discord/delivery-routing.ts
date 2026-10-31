@@ -972,7 +972,14 @@ async function sendArticleToMedium(
     logger.error(
       `Failed to deliver article ${article.flattened.id} to Discord webhook/channel`,
       {
-        webhook: medium.details.webhook,
+        webhook: medium.details.webhook
+          ? {
+              id: medium.details.webhook.id,
+              name: medium.details.webhook.name,
+              type: medium.details.webhook.type,
+              threadId: medium.details.webhook.threadId ?? null,
+            }
+          : undefined,
         channel: medium.details.channel,
         mediumId: medium.id,
         error: (err as Error).stack,
