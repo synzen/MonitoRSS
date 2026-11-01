@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import type { Pool, PoolClient } from 'pg';
 import logger from '../../utils/logger';
 import {
@@ -40,6 +41,12 @@ export const MIGRATIONS: Migration[] = [
     },
     async down(client) {
       await client.query(`SET LOCAL lock_timeout = '5s'`);
+      // The request_partitioned FK references hash_key's uniqueness, so it
+      // depends on this PK constraint and must be rebuilt around the drop.
+      await client.query(`
+        ALTER TABLE request_partitioned
+        DROP CONSTRAINT request_partitioned_response_body_hash_key_fk;
+      `);
       await client.query(`
         ALTER TABLE response_bodies
         DROP CONSTRAINT response_bodies_pkey;
@@ -47,6 +54,75 @@ export const MIGRATIONS: Migration[] = [
       await client.query(`
         CREATE UNIQUE INDEX response_bodies_hash_key ON response_bodies (hash_key);
       `);
+      await client.query(`
+        ALTER TABLE request_partitioned
+        ADD CONSTRAINT request_partitioned_response_body_hash_key_fk
+        FOREIGN KEY (response_body_hash_key)
+        REFERENCES response_bodies (hash_key)
+        ON DELETE SET NULL;
+      `);
+    },
+  },
+  {
+    version: '20261031224107',
+    name: 'Migration20261031224107',
+    async up(client) {
+      // Small partial index for getLatestRequestWithResponseBody — the
+      // "latest non-304 request with a stored body" lookup behind the feed
+      // content API.
+      await client.query(`SET LOCAL lock_timeout = '5s'`);
+      await client.query(`
+        DO $$
+        DECLARE
+          part text;
+          idx_name text;
+        BEGIN
+          FOR part IN
+            SELECT c.relname
+            FROM pg_inherits i
+            JOIN pg_class c ON c.oid = i.inhrelid
+            WHERE i.inhparent = 'request_partitioned'::regclass
+          LOOP
+            idx_name := 'idx_req_latest_body_' || replace(part, 'request_partitioned_', '');
+            EXECUTE format(
+              'CREATE INDEX IF NOT EXISTS %I ON %I (lookup_key, created_at DESC) WHERE response_body_hash_key IS NOT NULL AND response_status_code <> 304',
+              idx_name, part
+            );
+          END LOOP;
+        END $$;
+      `);
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_req_latest_body
+        ON ONLY request_partitioned (lookup_key, created_at DESC)
+        WHERE response_body_hash_key IS NOT NULL AND response_status_code <> 304;
+      `);
+      await client.query(`
+        DO $$
+        DECLARE
+          part text;
+          idx_name text;
+        BEGIN
+          FOR part IN
+            SELECT c.relname
+            FROM pg_inherits i
+            JOIN pg_class c ON c.oid = i.inhrelid
+            WHERE i.inhparent = 'request_partitioned'::regclass
+          LOOP
+            idx_name := 'idx_req_latest_body_' || replace(part, 'request_partitioned_', '');
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_inherits
+              WHERE inhparent = 'idx_req_latest_body'::regclass
+                AND inhrelid = idx_name::regclass
+            ) THEN
+              EXECUTE format('ALTER INDEX idx_req_latest_body ATTACH PARTITION %I', idx_name);
+            END IF;
+          END LOOP;
+        END $$;
+      `);
+    },
+    async down(client) {
+      await client.query(`SET LOCAL lock_timeout = '5s'`);
+      await client.query(`DROP INDEX IF EXISTS idx_req_latest_body;`);
     },
   },
 ];

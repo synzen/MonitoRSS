@@ -384,34 +384,47 @@ export function createPartitionedRequestsStore(
     },
 
     async getLatestRequestWithResponseBody(lookupKey) {
-      const rows = (await query(
-        `SELECT req.*, res.content AS response_body_content,
-        res.content_hash AS response_content_hash
-       FROM request_partitioned req
-       LEFT JOIN response_bodies res
-       ON req.response_body_hash_key = res.hash_key
-       WHERE req.lookup_key = ?
-       AND req.response_status_code != 304
-       AND response_body_hash_key IS NOT NULL
-       ORDER BY created_at DESC
-       LIMIT 1`,
-        [lookupKey],
-      )) as unknown as JoinedRequestRow[];
+      // The lookup walks the partition's btree newest-first and heap-checks
+      // every row until it finds one with a stored body. For feeds with a
+      // long run of 304/no-body requests that walk grows unbounded and
+      // dominates database I/O. Bounding by created_at caps each walk (and
+      // prunes old partitions); the bound widens until a match is found, so
+      // the result is identical to the unbounded query.
+      const bounds = ['7 days', '30 days', '90 days'];
 
-      const result = rows[0];
+      for (const bound of bounds) {
+        const rows = (await query(
+          `SELECT req.*, res.content AS response_body_content,
+          res.content_hash AS response_content_hash
+         FROM request_partitioned req
+         LEFT JOIN response_bodies res
+         ON req.response_body_hash_key = res.hash_key
+         WHERE req.lookup_key = ?
+         AND req.response_status_code != 304
+         AND response_body_hash_key IS NOT NULL
+         AND created_at >= now() - ?::interval
+         ORDER BY created_at DESC
+         LIMIT 1`,
+          [lookupKey, bound],
+        )) as unknown as JoinedRequestRow[];
 
-      if (!result) {
-        return null;
+        const result = rows[0];
+
+        if (!result) {
+          continue;
+        }
+
+        if (!result.response_body_content) {
+          /**
+           * Handle cases where response bodies were temporarily stored in S3 and Redis instead
+           */
+          return null;
+        }
+
+        return mapPartitionedRequestToModel(result);
       }
 
-      if (!result.response_body_content) {
-        /**
-         * Handle cases where response bodies were temporarily stored in S3 and Redis instead
-         */
-        return null;
-      }
-
-      return mapPartitionedRequestToModel(result);
+      return null;
     },
 
     async getLatestRequestNon304(lookupKey) {
