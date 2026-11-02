@@ -12,6 +12,9 @@ const SUFFIX = INSTANCE === "0" ? "" : `-${INSTANCE}`;
 // Concurrent runs (instance > 0) share one Docker host, so cap workers to ease
 // resource contention. E2E_WORKERS overrides for manual tuning.
 function resolveWorkers(): number {
+  if (process.env.E2E_PADDLE_WORKERS) {
+    return Number(process.env.E2E_PADDLE_WORKERS);
+  }
   if (process.env.E2E_WORKERS) {
     return Number(process.env.E2E_WORKERS);
   }
