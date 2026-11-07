@@ -16,6 +16,7 @@
     "e2e": "tsx e2e/scripts/run-e2e.ts",
     "e2e:doctor": "tsx e2e/scripts/run-e2e.ts --doctor",
     "e2e:paddle": "tsx e2e/scripts/run-e2e.ts --project=e2e-paddle",
+    "e2e:scheduler": "tsx e2e/scripts/run-e2e.ts --project=e2e-scheduler",
     "e2e:web": "tsx e2e/scripts/run-e2e.ts --project=e2e-web"
   }
 }

@@ -265,10 +265,6 @@ services:
     # in-image (see its comment).
     volumes:
       - ./services/backend-api/src:/usr/src/app/src
-      # The published @monitorss/contracts lacks ADR-011's `force` field, which
-      # UrlFetchBatchSchema.parse strips before publishing; mount the local
-      # workspace package over it until contracts is republished.
-      - ./packages/contracts:/usr/src/app/node_modules/@monitorss/contracts
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -355,8 +351,6 @@ services:
     restart: "no"
     volumes:
       - ./services/backend-api/src:/usr/src/app/src
-      # Same local-contracts mount as web-api (see its comment).
-      - ./packages/contracts:/usr/src/app/node_modules/@monitorss/contracts
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
