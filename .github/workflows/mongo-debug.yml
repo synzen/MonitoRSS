@@ -1,7 +1,8 @@
 name: Mongo Debug
 
 on:
-  workflow_dispatch:
+  push:
+    paths: ['.github/workflows/mongo-debug.yml']
 
 permissions:
   contents: read
