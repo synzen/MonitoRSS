@@ -103,6 +103,10 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
       testIgnore: [
         ...PADDLE_CHECKOUT_TESTS,
+        // Scheduler specs wait on real scheduler ticks and wall-clock backoff
+        // tiers, so they run in their own project/CI job instead of the
+        // sharded suite.
+        "**/tests/scheduler/**",
         "**/auth.setup.ts",
         "**/mock-auth.setup.ts",
         "**/paddle.setup.ts",
@@ -114,6 +118,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
       dependencies: ["e2e-paddle-setup"],
       testMatch: PADDLE_CHECKOUT_TESTS,
+    },
+    {
+      name: "e2e-scheduler",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: "**/tests/scheduler/**",
     },
   ],
   // Mock servers run on the HOST (not in Docker), so their output would otherwise be

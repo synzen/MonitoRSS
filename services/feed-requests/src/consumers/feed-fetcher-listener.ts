@@ -4,6 +4,7 @@ import contextLogger from '../shared/utils/log-context';
 import type { FeedFetcherService } from '../feed-fetcher/feed-fetcher';
 import {
   createScheduledFetchProcessor,
+  type BackoffConfig,
   type ScheduledFetchEvent,
 } from '../feed-fetcher/scheduled-fetch';
 import type { PartitionedRequestsStore } from '../stores/postgres/partitioned-requests-store';
@@ -35,22 +36,22 @@ export interface FeedFetcherListener {
 }
 
 export function createFeedFetcherListener({
-  maxFailAttempts,
+  backoffConfig,
   feedFetcher,
   partitionedRequestsStore,
   hostRateLimiter,
   cacheStorage,
   publish,
 }: {
-  maxFailAttempts: number;
+  backoffConfig: BackoffConfig;
   feedFetcher: Pick<FeedFetcherService, 'fetchAndSaveResponse'>;
   partitionedRequestsStore: Pick<
     PartitionedRequestsStore,
     | 'flushInserts'
     | 'wasRequestedInPastSeconds'
     | 'getLatestRequestWithOkStatus'
-    | 'countFailedRequests'
-    | 'getLatestNextRetryDate'
+    | 'getLatestAttempt'
+    | 'getEarliestRequestCreatedAt'
   >;
   hostRateLimiter: Pick<HostRateLimiterService, 'incrementUrlCount'>;
   cacheStorage: Pick<CacheStorageService, 'setNX' | 'del'>;
@@ -173,7 +174,7 @@ export function createFeedFetcherListener({
   };
 
   const processor = createScheduledFetchProcessor({
-    maxFailAttempts,
+    backoffConfig,
     feedFetcher,
     partitionedRequestsStore,
     hostRateLimiter,

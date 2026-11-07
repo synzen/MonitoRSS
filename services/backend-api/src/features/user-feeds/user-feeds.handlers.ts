@@ -4,6 +4,7 @@ import {
   BadRequestError,
   ForbiddenError,
   NotFoundError,
+  UnprocessableEntityError,
   ApiErrorCode,
 } from "../../infra/error-handler";
 import { Types } from "mongoose";
@@ -934,11 +935,16 @@ export async function getUserFeedsHandler(
   });
 }
 
+// Forced re-fetches bypass every request-side dedupe (ADR-011), so repeat
+// bulk-retry clicks would re-fetch every expired URL each time.
+const BULK_RETRY_COOLDOWN_MS = 10 * 60 * 1000;
+
 export async function retryFailedFeedsHandler(
   request: FastifyRequest<{ Body: RetryFailedFeedsBody }>,
   reply: FastifyReply,
 ): Promise<void> {
   const {
+    scheduleHandlerService,
     userFeedRepository,
     usersService,
     workspacesService,
@@ -949,7 +955,10 @@ export async function retryFailedFeedsHandler(
     request.discordUserId,
   );
 
-  await workspacesService.getWorkspaceForMember(workspaceId, user.id);
+  const { workspace } = await workspacesService.getWorkspaceForMember(
+    workspaceId,
+    user.id,
+  );
   const benefits = await supportersService.resolveFeedBenefits({
     workspaceId,
     user: { discordUserId: request.discordUserId },
@@ -960,9 +969,28 @@ export async function retryFailedFeedsHandler(
     );
   }
 
-  const result = await userFeedRepository.startBulkRetry(workspaceId);
+  if (
+    workspace.lastBulkRetryAt &&
+    Date.now() - workspace.lastBulkRetryAt.getTime() < BULK_RETRY_COOLDOWN_MS
+  ) {
+    throw new UnprocessableEntityError(ApiErrorCode.BULK_RETRY_TOO_SOON);
+  }
 
-  return reply.status(200).send({ result });
+  const feeds = await userFeedRepository.findBulkRetryableFeeds(workspaceId);
+  const retriedCount = await scheduleHandlerService.emitForcedFetchBatches(
+    workspaceId,
+    feeds,
+  );
+
+  if (retriedCount > 0) {
+    await workspacesService.setLastBulkRetryAt(workspaceId, new Date());
+  }
+
+  // recoveryAlreadyActive is legacy response shape (ADR-011 removed the
+  // recovery epoch); the client schema still requires the field.
+  return reply.status(200).send({
+    result: { retriedCount, recoveryAlreadyActive: false },
+  });
 }
 
 export async function copySettingsHandler(

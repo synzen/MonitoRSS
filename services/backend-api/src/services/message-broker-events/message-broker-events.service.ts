@@ -169,11 +169,12 @@ export class MessageBrokerEventsService {
       lookupKey ? { lookupKey } : { url },
       UserFeedHealthStatus.Failing,
       UserFeedHealthStatus.Failing,
+      true,
     );
   }
 
   async handleUrlFetchCompletedEvent({
-    data: { url, lookupKey, rateSeconds, debug, recovery, trigger },
+    data: { url, lookupKey, rateSeconds, debug, trigger },
   }: {
     data: {
       url: string;
@@ -192,17 +193,16 @@ export class MessageBrokerEventsService {
       });
     }
 
-    logger.debug("Got url fetched event", { lookupKey, url, rateSeconds });
+    logger.debug("Got url fetched event", { url, lookupKey, rateSeconds });
 
     const filter = lookupKey ? { lookupKey } : { url };
 
-    if (recovery) {
-      await this.deps.userFeedRepository.clearDisabledCodeForRecoveredFeeds(
-        filter,
-        recovery.startedAt,
-      );
-      return;
-    }
+    // A successful fetch proves the URL is alive: revive any feeds disabled
+    // with FAILED_REQUESTS on it (ADR-011). They rejoin delivery on this or
+    // the next cycle.
+    await this.deps.userFeedRepository.clearDisabledCodeForRecoveredFeeds(
+      filter,
+    );
 
     const healthStatusUpdateCount =
       await this.deps.userFeedRepository.countWithHealthStatusFilter(
@@ -358,7 +358,7 @@ export class MessageBrokerEventsService {
   }
 
   async handleUrlRequestFailureEvent({
-    data: { url, lookupKey, recovery },
+    data: { url, lookupKey },
   }: {
     data: { url: string; lookupKey?: string; recovery?: { startedAt: number } };
   }): Promise<void> {
@@ -384,16 +384,6 @@ export class MessageBrokerEventsService {
           stack: (err as Error).stack,
         });
       }
-    }
-
-    // Feeds that were already disabled and in the bulk-recovery state have
-    // exhausted their fresh retry cycle: revert them to the terminal failed
-    // state so they stop being scheduled.
-    if (recovery) {
-      await this.deps.userFeedRepository.revertRecoveryFeedsToFailed(
-        filter,
-        recovery.startedAt,
-      );
     }
   }
 

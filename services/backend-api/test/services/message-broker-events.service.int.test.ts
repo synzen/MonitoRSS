@@ -337,14 +337,14 @@ describe("MessageBrokerEventsService - scheduled fan-out (integration)", () => {
     assert.strictEqual(after?.lastScheduledFiredAt, undefined);
   });
 
-  it("does not deliver disabled scheduled feeds", async () => {
+  it("does not deliver scheduled feeds disabled for non-recoverable reasons", async () => {
     const feed = await createScheduledFeed({
       url: `https://example.com/${generateTestId()}.xml`,
     });
     await userFeedRepository.updateById(feed.id, {
       $set: {
-        disabledCode: UserFeedDisabledCode.FailedRequests,
-        healthStatus: UserFeedHealthStatus.Failing,
+        disabledCode: UserFeedDisabledCode.Manual,
+        healthStatus: UserFeedHealthStatus.Failed,
       },
     });
     const { service, publishMessage } = createService();
@@ -355,5 +355,30 @@ describe("MessageBrokerEventsService - scheduled fan-out (integration)", () => {
     });
 
     assert.strictEqual(publishMessage.mock.callCount(), 0);
+  });
+
+  it("revives a FAILED_REQUESTS-disabled scheduled feed when its URL fetches successfully (ADR-011)", async () => {
+    const feed = await createScheduledFeed({
+      url: `https://example.com/${generateTestId()}.xml`,
+    });
+    await userFeedRepository.updateById(feed.id, {
+      $set: {
+        disabledCode: UserFeedDisabledCode.FailedRequests,
+        healthStatus: UserFeedHealthStatus.Failed,
+      },
+    });
+    const { service, publishMessage } = createService();
+
+    await runFetchCompleted(service, {
+      url: feed.url,
+      trigger: { kind: "scheduled", occurredAt: OCCURRENCE },
+    });
+
+    assert.ok(publishMessage.mock.callCount() > 0);
+
+    const restored = await userFeedRepository.findById(feed.id);
+
+    assert.ok(restored);
+    assert.strictEqual(restored.disabledCode, undefined);
   });
 });

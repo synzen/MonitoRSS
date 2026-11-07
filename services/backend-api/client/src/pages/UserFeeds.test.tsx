@@ -1571,7 +1571,7 @@ describe("UserFeeds - scope-aware feed limit", () => {
           .getAllByRole("status", { hidden: true })
           .map((status) => status.textContent)
           .filter(Boolean),
-      ).toContain("3 failed feeds require your attention. Retry all 3 failed feeds is available."),
+      ).toContain("3 failed feeds require your attention. You can retry all 3 failed feeds."),
     );
 
     await user.click(screen.getByRole("button", { name: "Retry all 3 failed feeds" }));
@@ -1731,7 +1731,7 @@ describe("UserFeeds - bulk retry recovery presentation", () => {
     expect(screen.getByRole("button", { name: "Retry all 2 failed feeds" })).toBeInTheDocument();
   });
 
-  it("applies the Pending Retry filter only when the user follows the success-alert link", async () => {
+  it("applies the failed-feeds filter only when the user follows the success-alert link", async () => {
     mockRetryFailedFeeds.mockResolvedValue({
       result: { retriedCount: 2, recoveryAlreadyActive: false },
     });
@@ -1780,8 +1780,8 @@ describe("UserFeeds - bulk retry recovery presentation", () => {
 
     expect(setStatusFilters).not.toHaveBeenCalled();
 
-    await user.click(screen.getByText("View pending retries."));
+    await user.click(screen.getByText("View failed feeds"));
 
-    expect(setStatusFilters).toHaveBeenCalledWith([UserFeedComputedStatus.Retrying]);
+    expect(setStatusFilters).toHaveBeenCalledWith([UserFeedComputedStatus.RequiresAttention]);
   });
 });

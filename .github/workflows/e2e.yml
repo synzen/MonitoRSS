@@ -94,3 +94,38 @@ jobs:
             e2e/test-results/
             e2e/logs/
           retention-days: 30
+
+  # Scheduler specs (e2e/tests/scheduler/) wait on real scheduler ticks and
+  # wall-clock backoff tiers, so they run as their own unsharded job instead of
+  # inflating the sharded e2e-web suite.
+  e2e-scheduler:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci -w e2e
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests (scheduler)
+        run: npm run e2e:scheduler
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-scheduler-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+            e2e/logs/
+          retention-days: 30

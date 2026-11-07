@@ -23,7 +23,7 @@ export const STATUS_FILTERS = [
   },
   {
     label: "Failed",
-    description: "Disabled after too many failures",
+    description: "Disabled because its source could not be reached",
     value: UserFeedComputedStatus.RequiresAttention,
   },
   {

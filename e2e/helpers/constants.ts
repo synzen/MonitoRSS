@@ -16,14 +16,27 @@ export const MOCK_RSS_HTML_PAGE_URL = `http://${MOCK_RSS_HOST}:${MOCK_RSS_SERVER
 // host); the fail toggle is POSTed by the spec itself (host -> host).
 export const mockRssFlakyFeedUrl = (key: string) =>
   `http://${MOCK_RSS_HOST}:${MOCK_RSS_SERVER_PORT}/flaky/${key}.xml`;
+// Toggles for the flaky URL's response mode (see mock-rss-server.ts): fail
+// (500), ok (200) to restore a recovered source, and rate-limit (429 with a
+// multi-hour Retry-After the retry backoff must respect).
 export const mockRssFlakyFeedFailUrl = (key: string) =>
   `http://localhost:${MOCK_RSS_SERVER_PORT}/flaky/${key}/fail`;
+export const mockRssFlakyFeedOkUrl = (key: string) =>
+  `http://localhost:${MOCK_RSS_SERVER_PORT}/flaky/${key}/ok`;
+export const mockRssFlakyFeedRateLimitUrl = (key: string) =>
+  `http://localhost:${MOCK_RSS_SERVER_PORT}/flaky/${key}/rate-limit`;
 
 export const FRONTEND_URL = process.env.E2E_BASE_URL || "http://localhost:3000";
 // Default host 27019 matches docker-compose.e2e.yml's mongo mapping, kept distinct
 // from the dev stack's 27018 so both stacks can run at once; parameterized so
 // concurrent e2e runs can each bind a distinct host port.
 export const MONGO_URI = `mongodb://127.0.0.1:${e2ePort("E2E_MONGO_PORT", 27019)}/rss`;
+
+// Host-mapped feed-requests Postgres (feedrequests DB, feedrequests schema), used
+// by specs to shift request-row timestamps — the retry backoff derives its state
+// from those rows, so backdating them is the only way to fast-forward 24h/14d
+// tiers in a test.
+export const E2E_POSTGRES_URI = `postgres://postgres:postgres@127.0.0.1:${e2ePort("E2E_POSTGRES_PORT", 5433)}/feedrequests`;
 export const MOCK_DISCORD_SERVER_PORT = e2ePort("E2E_MOCK_DISCORD_PORT", 3002);
 
 // Mock Reddit OAuth + authenticated-feed server. The backend (in Docker) and the

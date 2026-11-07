@@ -580,3 +580,18 @@ export async function setWorkspaceBillingCustomerInDb(input: {
     );
   });
 }
+
+/**
+ * Retry-all stamps `lastBulkRetryAt` on the workspace (a 10-minute cooldown).
+ * Backdate it so a test can trigger the command again within the same run.
+ */
+export async function clearWorkspaceBulkRetryCooldownInDb(
+  workspaceId: string,
+): Promise<void> {
+  await withDb(async (db) => {
+    await db.collection("workspaces").updateOne(
+      { _id: new ObjectId(workspaceId) },
+      { $set: { lastBulkRetryAt: new Date(Date.now() - 20 * 60_000) } },
+    );
+  });
+}

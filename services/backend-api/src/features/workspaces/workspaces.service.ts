@@ -389,6 +389,10 @@ export class WorkspacesService {
     throw new NotFoundError(ApiErrorCode.WORKSPACE_NOT_FOUND);
   }
 
+  async setLastBulkRetryAt(workspaceId: string, at: Date): Promise<void> {
+    await this.deps.workspaceRepository.updateLastBulkRetryAt(workspaceId, at);
+  }
+
   async updateWorkspaceName(
     workspaceId: string,
     userId: string,

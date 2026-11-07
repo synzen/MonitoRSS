@@ -378,16 +378,22 @@ export interface UserFeedForPendingInvites {
 
 export interface ScheduledFeedUrl {
   url: string;
-  // Epoch ms of the earliest active bulk-recovery transition among the feeds
-  // sharing this URL, when any of them is in the recovery state.
-  recoveryStartedAt?: number;
+}
+
+// Per-feed targets for the workspace bulk retry (ADR-011): one entry per
+// expired feed; the emitter dedupes resolved URLs and publishes forced
+// fetch batches grouped by refresh rate.
+export interface BulkRetryableFeed {
+  url: string;
+  feedRequestLookupKey: string | null;
+  refreshRateSeconds: number;
+  users: ScheduledFeedWithLookupKey['users'];
+  workspaces: ScheduledFeedWithLookupKey['workspaces'];
 }
 
 export interface ScheduledFeedWithLookupKey {
   url: string;
   feedRequestLookupKey?: string;
-  // Epoch ms when this feed entered the bulk-recovery state, when it is in it.
-  recoveryStartedAt?: number;
   workspaceId?: string;
   users: Array<{
     externalCredentials?: Array<{
@@ -783,35 +789,24 @@ export interface IUserFeedRepository {
     slotWindow: SlotWindow,
   ): AsyncIterable<ScheduledFeedWithLookupKey>;
 
-  // Bulk-recovery methods. The recovery queue is the feed state itself: feeds
-  // disabled with FAILED_REQUESTS (terminal, health FAILED) are marked into the
-  // recovery state (health FAILING + recoveryStartedAt), which makes them
-  // eligible for scheduled recovery requests while staying disabled for
-  // delivery.
-  startBulkRetry(workspaceId: string): Promise<{
-    retriedCount: number;
-    recoveryAlreadyActive: boolean;
-  }>;
-  clearDisabledCodeForRecoveredFeeds(
-    filter: {
-      url?: string;
-      lookupKey?: string;
-    },
-    recoveryStartedAt: number,
-  ): Promise<number>;
-  revertRecoveryFeedsToFailed(
-    filter: {
-      url?: string;
-      lookupKey?: string;
-    },
-    recoveryStartedAt: number,
-  ): Promise<number>;
+  // Retry-backoff methods (ADR-011). Expired feeds (disabled with
+  // FAILED_REQUESTS) are revived by forced fetch-now batches; the retry
+  // backoff in feed-requests decides when a URL is actually fetched.
+  findBulkRetryableFeeds(workspaceId: string): Promise<BulkRetryableFeed[]>;
+  clearDisabledCodeForRecoveredFeeds(filter: {
+    url?: string;
+    lookupKey?: string;
+  }): Promise<number>;
 
   // Message broker events methods
   updateHealthStatusByFilter(
     filter: { url?: string; lookupKey?: string },
     healthStatus: UserFeedHealthStatus,
     excludeStatus?: UserFeedHealthStatus,
+    // Disabled feeds own their badge (the disabled alert supersedes the
+    // health alert), and Failing on a FAILED_REQUESTS feed would resurrect
+    // the recovery-limbo state ADR-011 removed.
+    excludeDisabledCode?: boolean,
   ): Promise<number>;
 
   countWithHealthStatusFilter(

@@ -543,6 +543,8 @@ export function createFeedFetcherService({
         'cache-control',
         'date',
         'expires',
+        // The retry backoff (ADR-011) reads this from the stored row.
+        'retry-after',
       ]) {
         const value = normalizedHeaders.get(headerName);
 

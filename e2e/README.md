@@ -43,6 +43,11 @@ npm run e2e:web
 # Run only paddle tests (requires cloudflared + Paddle key)
 npm run e2e:paddle
 
+# Run only scheduler tests (e2e/tests/scheduler/) — they wait on real
+# scheduler ticks and wall-clock backoff tiers, so they run in their own
+# project and CI job instead of the sharded e2e-web suite
+npm run e2e:scheduler
+
 # Run tests with UI
 npm run e2e:ui
 

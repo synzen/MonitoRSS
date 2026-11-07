@@ -40,6 +40,7 @@ import type {
   ScheduledFeedForClockScheduling,
   FeedForSlotOffsetRecalculation,
   RefreshRateSyncInput,
+  BulkRetryableFeed,
   MaxDailyArticlesSyncInput,
   WorkspaceRefreshRateSyncInput,
   WorkspaceMaxDailyArticlesSyncInput,
@@ -850,7 +851,6 @@ export class UserFeedMongooseRepository
 
     if (filters?.eligibleForBulkRetry) {
       $match.disabledCode = UserFeedDisabledCode.FailedRequests;
-      $match.healthStatus = UserFeedHealthStatus.Failed;
     }
 
     if (search) {
@@ -2930,10 +2930,6 @@ export class UserFeedMongooseRepository
     pipeline.push({
       $group: {
         _id: "$url",
-        // The earliest active recovery epoch among feeds sharing this URL.
-        // Only feeds in the recovery state carry recoveryStartedAt, so a plain
-        // min is null for URLs without recovering feeds.
-        recoveryStartedAt: { $min: "$recoveryStartedAt" },
       },
     });
 
@@ -2947,9 +2943,6 @@ export class UserFeedMongooseRepository
       if (doc._id) {
         yield {
           url: doc._id,
-          recoveryStartedAt: doc.recoveryStartedAt
-            ? new Date(doc.recoveryStartedAt).getTime()
-            : undefined,
         };
       }
     }
@@ -2972,7 +2965,6 @@ export class UserFeedMongooseRepository
         workspaceId: 1,
         users: 1,
         workspaces: 1,
-        recoveryStartedAt: 1,
       },
     });
 
@@ -2989,9 +2981,6 @@ export class UserFeedMongooseRepository
         workspaceId: doc.workspaceId?.toString(),
         users: doc.users || [],
         workspaces: doc.workspaces || [],
-        recoveryStartedAt: doc.recoveryStartedAt
-          ? new Date(doc.recoveryStartedAt).getTime()
-          : undefined,
       };
     }
   }
@@ -3000,6 +2989,7 @@ export class UserFeedMongooseRepository
     filter: { url?: string; lookupKey?: string },
     healthStatus: UserFeedHealthStatus,
     excludeStatus?: UserFeedHealthStatus,
+    excludeDisabledCode?: boolean,
   ): Promise<number> {
     const queryFilter: Record<string, unknown> = filter.lookupKey
       ? { feedRequestLookupKey: filter.lookupKey }
@@ -3007,6 +2997,10 @@ export class UserFeedMongooseRepository
 
     if (excludeStatus) {
       queryFilter.healthStatus = { $ne: excludeStatus };
+    }
+
+    if (excludeDisabledCode) {
+      queryFilter.disabledCode = { $exists: false };
     }
 
     const result = await this.model.updateMany(queryFilter, {
@@ -3029,85 +3023,68 @@ export class UserFeedMongooseRepository
     return this.model.countDocuments(queryFilter);
   }
 
-  async startBulkRetry(workspaceId: string): Promise<{
-    retriedCount: number;
-    recoveryAlreadyActive: boolean;
-  }> {
-    const recoveryAlreadyActive =
-      (await this.model.exists({
-        workspaceId: this.stringToObjectId(workspaceId),
-        disabledCode: UserFeedDisabledCode.FailedRequests,
-        healthStatus: UserFeedHealthStatus.Failing,
-      })) !== null;
-
-    if (recoveryAlreadyActive) {
-      return { retriedCount: 0, recoveryAlreadyActive: true };
-    }
-
-    const result = await this.model.updateMany(
+  async findBulkRetryableFeeds(
+    workspaceId: string,
+  ): Promise<BulkRetryableFeed[]> {
+    const pipeline: PipelineStage[] = [
       {
-        workspaceId: this.stringToObjectId(workspaceId),
-        disabledCode: UserFeedDisabledCode.FailedRequests,
-        healthStatus: UserFeedHealthStatus.Failed,
-      },
-      {
-        $set: {
-          healthStatus: UserFeedHealthStatus.Failing,
-          recoveryStartedAt: new Date(),
+        $match: {
+          workspaceId: this.stringToObjectId(workspaceId),
+          disabledCode: UserFeedDisabledCode.FailedRequests,
         },
       },
-    );
+      {
+        $lookup: {
+          from: "users",
+          localField: "user.discordUserId",
+          foreignField: "discordUserId",
+          as: "users",
+        },
+      },
+      {
+        $lookup: {
+          from: "workspaces",
+          localField: "workspaceId",
+          foreignField: "_id",
+          as: "workspaces",
+        },
+      },
+      {
+        $project: {
+          url: 1,
+          feedRequestLookupKey: 1,
+          refreshRateSeconds: 1,
+          users: 1,
+          workspaces: 1,
+        },
+      },
+    ];
 
-    return {
-      retriedCount: result.modifiedCount,
-      recoveryAlreadyActive: false,
-    };
+    const docs = await this.model.aggregate(pipeline);
+
+    return docs.map((doc) => ({
+      url: doc.url as string,
+      feedRequestLookupKey: (doc.feedRequestLookupKey as string) ?? null,
+      refreshRateSeconds: doc.refreshRateSeconds as number,
+      users: doc.users ?? [],
+      workspaces: doc.workspaces ?? [],
+    }));
   }
 
-  async clearDisabledCodeForRecoveredFeeds(
-    filter: {
-      url?: string;
-      lookupKey?: string;
-    },
-    recoveryStartedAt: number,
-  ): Promise<number> {
-    const queryFilter: Record<string, unknown> = filter.lookupKey
-      ? { feedRequestLookupKey: filter.lookupKey }
-      : { url: filter.url };
-
-    // Only feeds still in the marked recovery state are restored; feeds that
-    // share the URL but were never marked (or already exhausted recovery) are
-    // left alone.
-    queryFilter.disabledCode = UserFeedDisabledCode.FailedRequests;
-    queryFilter.healthStatus = UserFeedHealthStatus.Failing;
-    queryFilter.recoveryStartedAt = new Date(recoveryStartedAt);
+  async clearDisabledCodeForRecoveredFeeds(filter: {
+    url?: string;
+    lookupKey?: string;
+  }): Promise<number> {
+    const queryFilter: Record<string, unknown> = {
+      disabledCode: UserFeedDisabledCode.FailedRequests,
+      ...(filter.lookupKey
+        ? { feedRequestLookupKey: filter.lookupKey }
+        : { url: filter.url }),
+    };
 
     const result = await this.model.updateMany(queryFilter, {
       $set: { healthStatus: UserFeedHealthStatus.Ok },
       $unset: { disabledCode: 1, recoveryStartedAt: 1 },
-    });
-
-    return result.modifiedCount;
-  }
-
-  async revertRecoveryFeedsToFailed(
-    filter: {
-      url?: string;
-      lookupKey?: string;
-    },
-    recoveryStartedAt: number,
-  ): Promise<number> {
-    const queryFilter: Record<string, unknown> = filter.lookupKey
-      ? { feedRequestLookupKey: filter.lookupKey }
-      : { url: filter.url };
-
-    queryFilter.disabledCode = UserFeedDisabledCode.FailedRequests;
-    queryFilter.healthStatus = UserFeedHealthStatus.Failing;
-    queryFilter.recoveryStartedAt = new Date(recoveryStartedAt);
-
-    const result = await this.model.updateMany(queryFilter, {
-      $set: { healthStatus: UserFeedHealthStatus.Failed },
-      $unset: { recoveryStartedAt: 1 },
     });
 
     return result.modifiedCount;

@@ -337,47 +337,56 @@ describe('PartitionedRequestsStore (Integration)', () => {
       );
     });
 
-    it('countFailedRequests counts failed statuses, optionally since a time', async () => {
+    it('getLatestAttempt reads the newest request of any status', async () => {
       const store = createPartitionedRequestsStore(getTestPool());
 
       await store.flushInserts([
-        buildInsert({
-          status: RequestStatus.FETCH_ERROR,
-          createdAt: dayjs().subtract(20, 'minutes').toDate(),
-        }),
         buildInsert({
           status: RequestStatus.OK,
           createdAt: dayjs().subtract(10, 'minutes').toDate(),
         }),
         buildInsert({
-          status: RequestStatus.FETCH_TIMEOUT,
-          createdAt: dayjs().subtract(5, 'minutes').toDate(),
+          status: RequestStatus.BAD_STATUS_CODE,
+          createdAt: dayjs().subtract(1, 'minutes').toDate(),
+          response: {
+            statusCode: 404,
+            textHash: null,
+            s3ObjectKey: null,
+            redisCacheKey: null,
+            headers: {},
+            body: null,
+          },
         }),
       ]);
 
-      // Without a since cutoff every failed row counts; the listener supplies
-      // the latest-OK cutoff itself.
-      assert.strictEqual(await store.countFailedRequests(url), 2);
+      const attempt = await store.getLatestAttempt(url);
+
+      assert.strictEqual(attempt?.statusCode, 404);
+      assert.ok(attempt?.createdAt);
+    });
+
+    it('getEarliestRequestCreatedAt anchors never-succeeded URLs at their first request', async () => {
+      const store = createPartitionedRequestsStore(getTestPool());
+      const firstAt = dayjs().subtract(3, 'days').toDate();
+
+      await store.flushInserts([
+        buildInsert({
+          status: RequestStatus.BAD_STATUS_CODE,
+          createdAt: firstAt,
+        }),
+        buildInsert({
+          status: RequestStatus.BAD_STATUS_CODE,
+          createdAt: dayjs().subtract(1, 'minutes').toDate(),
+        }),
+      ]);
+
       assert.strictEqual(
-        await store.countFailedRequests(
-          url,
-          dayjs().subtract(15, 'minutes').toDate(),
-        ),
-        1,
+        (await store.getEarliestRequestCreatedAt(url))?.getTime(),
+        firstAt.getTime(),
       );
       assert.strictEqual(
-        await store.countFailedRequests(
-          url,
-          dayjs().subtract(30, 'minutes').toDate(),
-        ),
-        2,
-      );
-      assert.strictEqual(
-        await store.countFailedRequests(
-          url,
-          dayjs().subtract(3, 'minutes').toDate(),
-        ),
-        0,
+        await store.getEarliestRequestCreatedAt('https://unknown-feed.example/rss'),
+        null,
       );
     });
 

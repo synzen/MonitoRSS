@@ -20,6 +20,10 @@ import { z } from "zod";
  * which keeps rolling deploys safe in both directions: old producers emit
  * trigger-less items (interval semantics) and old consumers strip the unknown
  * field instead of failing validation.
+ *
+ * `force` marks a bulk-retry fetch (ADR-011): the consumer bypasses the retry
+ * backoff skip, the fresh-cache skip, and the recent-request dedupe so the
+ * fetch happens now regardless of the URL's backoff state.
  */
 export const UrlFetchTriggerSchema = z.object({
   kind: z.enum(["interval", "scheduled"]).default("interval"),
@@ -41,6 +45,7 @@ export const UrlFetchBatchSchema = z.object({
         })
         .optional(),
       trigger: UrlFetchTriggerSchema.optional(),
+      force: z.boolean().optional(),
     }),
   ),
 });

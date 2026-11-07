@@ -46,7 +46,14 @@ export interface PartitionedRequestsStore {
     responseHeaders?: Record<string, string>;
     requestInitiatedAt: Date | null;
   }>;
-  countFailedRequests(lookupKey: string, since?: Date): Promise<number>;
+  getLatestAttempt(
+    lookupKey: string,
+  ): Promise<null | {
+    createdAt: Date;
+    statusCode: number | null;
+    responseHeaders?: Record<string, string>;
+  }>;
+  getEarliestRequestCreatedAt(lookupKey: string): Promise<Date | null>;
   getLatestStatusAfterTime(
     lookupKey: string,
     time: Date,
@@ -300,31 +307,44 @@ export function createPartitionedRequestsStore(
       };
     },
 
-    async countFailedRequests(lookupKey, since) {
-      const params: unknown[] = [lookupKey];
-
-      if (since) {
-        params.push(since.toISOString());
-      }
-
+    async getLatestAttempt(lookupKey) {
       const rows = await query(
-        `SELECT COUNT(*) FROM request_partitioned
+        `SELECT created_at, response_status_code, response_headers FROM request_partitioned
        WHERE lookup_key = ?
-       AND status IN (
-        'INTERNAL_ERROR',
-        'FETCH_ERROR',
-        'PARSE_ERROR',
-        'BAD_STATUS_CODE',
-        'FETCH_TIMEOUT',
-        'REFUSED_LARGE_FEED',
-        'INVALID_SSL_CERTIFICATE'
-       )
-        ${since ? 'AND created_at >= ?' : ''}
-       `,
-        params,
+       ORDER BY created_at DESC
+       LIMIT 1`,
+        [lookupKey],
       );
 
-      return parseInt(rows[0].count, 10);
+      const result = rows[0] as
+        | {
+            created_at: Date;
+            response_status_code: number | null;
+            response_headers: Record<string, string> | null;
+          }
+        | undefined;
+
+      if (!result) {
+        return null;
+      }
+
+      return {
+        createdAt: new Date(result.created_at),
+        statusCode: result.response_status_code,
+        responseHeaders: result.response_headers ?? undefined,
+      };
+    },
+
+    async getEarliestRequestCreatedAt(lookupKey) {
+      const rows = await query(
+        `SELECT MIN(created_at) AS earliest FROM request_partitioned
+       WHERE lookup_key = ?`,
+        [lookupKey],
+      );
+
+      const value = rows[0]?.earliest as string | Date | undefined;
+
+      return value ? new Date(value) : null;
     },
 
     async getLatestStatusAfterTime(lookupKey, time) {

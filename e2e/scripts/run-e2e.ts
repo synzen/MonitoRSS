@@ -38,6 +38,7 @@ const DEFAULT_PORTS = {
   smtp: 3004,
   smtpHttp: 3005,
   reddit: 3006,
+  postgres: 5433,
 };
 
 type ProcessResult = {
@@ -300,6 +301,7 @@ function createContext(instance: number): RunContext {
     E2E_MOCK_SMTP_PORT: String(DEFAULT_PORTS.smtp + offset),
     E2E_MOCK_SMTP_HTTP_PORT: String(DEFAULT_PORTS.smtpHttp + offset),
     E2E_MOCK_REDDIT_PORT: String(DEFAULT_PORTS.reddit + offset),
+    E2E_POSTGRES_PORT: String(DEFAULT_PORTS.postgres + offset),
     BACKEND_API_REDDIT_CLIENT_ID:
       process.env.BACKEND_API_REDDIT_CLIENT_ID || "e2e-reddit-client-id",
     COMPOSE_PROJECT_NAME: projectName,

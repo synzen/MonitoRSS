@@ -14,8 +14,8 @@ import assert from 'node:assert';
 import { RequestStatus, RequestSource } from '../feed-fetcher/types';
 import { createFeedFetcherListener } from './feed-fetcher-listener';
 import {
-  calculateNextRetryDate,
   createScheduledFetchPolicies,
+  type BackoffConfig,
 } from '../feed-fetcher/scheduled-fetch';
 import { createPartitionedRequestsStore } from '../stores/postgres/partitioned-requests-store';
 import type { PartitionedRequestInsert } from '../feed-fetcher/types';
@@ -34,11 +34,20 @@ describe('FeedFetcherListener (Integration)', () => {
   let listener: ReturnType<typeof createFeedFetcherListener>;
   let policies: ReturnType<typeof createScheduledFetchPolicies>;
   const feedUrl = 'https://rss-feed.com/feed.xml';
-  const maxFailAttempts = 11;
+
+  const backoffConfig: BackoffConfig = {
+    suspensionBaseMs: 4 * 60 * 60 * 1000,
+    suspensionRateMultiplier: 2,
+    tier1BoundaryMs: 24 * 60 * 60 * 1000,
+    tier2BoundaryMs: 72 * 60 * 60 * 1000,
+    expiryMs: 14 * 24 * 60 * 60 * 1000,
+    rateLimitFloorMs: 60 * 60 * 1000,
+    retryAfterClampMs: 24 * 60 * 60 * 1000,
+  };
 
   // nock cannot intercept undici.request, so the HTTP layer is stubbed at the
-  // FeedFetcherService seam; everything around it (locks, dedupe, failure
-  // counting, backoff, flush, event emission) runs for real.
+  // FeedFetcherService seam; everything around it (locks, dedupe, backoff
+  // derivation, flush, event emission) runs for real.
   const fetchAndSaveResponse = mock.fn<any>();
   const publish = mock.fn<any>();
   const cacheStorageService = {
@@ -51,7 +60,7 @@ describe('FeedFetcherListener (Integration)', () => {
     await setupPostgresTests();
 
     listener = createFeedFetcherListener({
-      maxFailAttempts,
+      backoffConfig,
       feedFetcher: { fetchAndSaveResponse } as never,
       partitionedRequestsStore: createPartitionedRequestsStore(getTestPool()),
       hostRateLimiter: createHostRateLimiterService(
@@ -61,7 +70,7 @@ describe('FeedFetcherListener (Integration)', () => {
       publish: publish as never,
     });
     policies = createScheduledFetchPolicies({
-      maxFailAttempts,
+      backoffConfig,
       partitionedRequestsStore: createPartitionedRequestsStore(getTestPool()),
     });
   });
@@ -139,6 +148,19 @@ describe('FeedFetcherListener (Integration)', () => {
     } as unknown as Parameters<typeof listener.onBrokerFetchRequestBatch>[0]);
   };
 
+  // A listener whose backoff gives up after 30 minutes, for expiry tests.
+  const createShortBackoffListener = () =>
+    createFeedFetcherListener({
+      backoffConfig: { ...backoffConfig, expiryMs: 30 * 60 * 1000 },
+      feedFetcher: { fetchAndSaveResponse } as never,
+      partitionedRequestsStore: createPartitionedRequestsStore(getTestPool()),
+      hostRateLimiter: createHostRateLimiterService(
+        cacheStorageService as never,
+      ) as never,
+      cacheStorage: cacheStorageService as never,
+      publish: publish as never,
+    });
+
   describe('onBrokerFetchRequestBatch', () => {
     it('saves a failed attempt with a next retry date if failed', async () => {
       fetchAndSaveResponse.mock.mockImplementation(async () => ({
@@ -154,34 +176,40 @@ describe('FeedFetcherListener (Integration)', () => {
       assert.ok(rows[0].next_retry_date);
     });
 
-    it('does not process the event if at failure retry count', async () => {
-      await seedRequests(
-        Array.from({ length: 11 }, () =>
-          buildInsert({
-            status: RequestStatus.BAD_STATUS_CODE,
-            createdAt: dayjs().subtract(1, 'day').toDate(),
-            nextRetryDate: dayjs().subtract(1, 'hour').toDate(),
-          }),
-        ),
-      );
+    it('does not process the event once the backoff expires', async () => {
+      // A listener whose backoff gives up after 30 minutes; the seeded failure
+      // is an hour old, so the URL is expired.
+      const shortBackoffListener = createShortBackoffListener();
 
-      await runBatch([{ url: feedUrl }], 100);
+      await seedRequests([
+        buildInsert({ createdAt: dayjs().subtract(1, 'hour').toDate() }),
+      ]);
+
+      await shortBackoffListener.onBrokerFetchRequestBatchHandler({
+        timestamp: Date.now(),
+        rateSeconds: 1800,
+        data: [{ url: feedUrl }],
+      } as unknown as Parameters<
+        typeof listener.onBrokerFetchRequestBatchHandler
+      >[0]);
 
       assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 0);
     });
 
-    it('emits a failed url if at failure retry count', async () => {
-      await seedRequests(
-        Array.from({ length: 11 }, () =>
-          buildInsert({
-            status: RequestStatus.BAD_STATUS_CODE,
-            createdAt: dayjs().subtract(1, 'day').toDate(),
-            nextRetryDate: dayjs().subtract(1, 'hour').toDate(),
-          }),
-        ),
-      );
+    it('emits a failed url once the backoff expires', async () => {
+      const shortBackoffListener = createShortBackoffListener();
 
-      await runBatch([{ url: feedUrl }], 100);
+      await seedRequests([
+        buildInsert({ createdAt: dayjs().subtract(1, 'hour').toDate() }),
+      ]);
+
+      await shortBackoffListener.onBrokerFetchRequestBatchHandler({
+        timestamp: Date.now(),
+        rateSeconds: 1800,
+        data: [{ url: feedUrl }],
+      } as unknown as Parameters<
+        typeof listener.onBrokerFetchRequestBatchHandler
+      >[0]);
 
       assert.strictEqual(publish.mock.callCount(), 1);
       assert.partialDeepStrictEqual(publish.mock.calls[0].arguments, [
@@ -332,7 +360,7 @@ describe('FeedFetcherListener (Integration)', () => {
       ]);
     });
 
-    it('does not count failures recorded before the recovery cycle toward the threshold', async () => {
+    it('fetches despite terminal-failure history: the backoff derives from request rows, not counts', async () => {
       await seedRequests(
         Array.from({ length: 11 }, () =>
           buildInsert({
@@ -353,58 +381,46 @@ describe('FeedFetcherListener (Integration)', () => {
       assert.strictEqual(publishedEvents('url.failed.disable-feeds').length, 0);
     });
 
-    it('persists the exponential backoff after a failed recovery attempt and skips until it elapses', async () => {
+    it('persists the backoff interval on the failure row as observability', async () => {
       fetchAndSaveResponse.mock.mockImplementation(async () => ({
         request: buildInsert(),
       }));
 
       await runRecoveryBatch();
 
-      let rows = await getAllRows();
+      const rows = await getAllRows();
 
       assert.strictEqual(rows.length, 1);
 
-      const firstBackoff = dayjs(rows[0].next_retry_date);
+      // Active phase: the next attempt is the feed's own cadence away
+      // (rateSeconds 1800 → ~30 minutes).
+      const recordedRetry = dayjs(rows[0].next_retry_date);
 
-      assert.ok(firstBackoff.diff(dayjs(), 'minute') >= 4);
-      assert.ok(firstBackoff.diff(dayjs(), 'minute') <= 6);
+      assert.ok(recordedRetry.diff(dayjs(), 'minute') >= 29);
+      assert.ok(recordedRetry.diff(dayjs(), 'minute') <= 31);
 
-      // An immediate retry of the same recovery cycle honors the backoff.
-      await runRecoveryBatch();
-
-      assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 1);
-
-      // Once the backoff elapses, the next attempt proceeds and the backoff
-      // grows exponentially (5 * 2^1 minutes for the second fresh failure).
-      await getTestPool().query(
-        `UPDATE request_partitioned SET next_retry_date = NOW() - INTERVAL '1 second'`,
-      );
-
+      // The active phase never skips: an immediate re-run fetches again.
       await runRecoveryBatch();
 
       assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 2);
-
-      rows = await getAllRows();
-
-      assert.strictEqual(rows.length, 2);
-
-      const secondBackoff = dayjs(rows[rows.length - 1].next_retry_date);
-
-      assert.ok(secondBackoff.diff(dayjs(), 'minute') >= 9);
-      assert.ok(secondBackoff.diff(dayjs(), 'minute') <= 11);
     });
 
-    it('returns the recovery cycle to the failed state when the fresh cycle exhausts the threshold', async () => {
-      await seedRequests(
-        Array.from({ length: 11 }, () =>
-          buildInsert({
-            createdAt: dayjs(recoveryStartedAt).add(1, 'minute').toDate(),
-            nextRetryDate: dayjs().subtract(1, 'minute').toDate(),
-          }),
-        ),
-      );
+    it('still expires when a recovery marker arrives; revival is the force flag\'s job', async () => {
+      const shortBackoffListener = createShortBackoffListener();
 
-      await runRecoveryBatch();
+      await seedRequests([
+        buildInsert({ createdAt: dayjs().subtract(1, 'hour').toDate() }),
+      ]);
+
+      await shortBackoffListener.onBrokerFetchRequestBatchHandler({
+        timestamp: Date.now(),
+        rateSeconds: 1800,
+        data: [
+          { url: feedUrl, recovery: { startedAt: recoveryStartedAt } },
+        ],
+      } as unknown as Parameters<
+        typeof listener.onBrokerFetchRequestBatchHandler
+      >[0]);
 
       assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 0);
       assert.strictEqual(publishedEvents('url.failed.disable-feeds').length, 1);
@@ -472,146 +488,171 @@ describe('FeedFetcherListener (Integration)', () => {
     });
   });
 
-  describe('shouldSkipAfterPreviousFailedAttempt', () => {
-    it('should return false if no previous attempt', async () => {
-      const { skip, failedAttemptsCount } =
-        await policies.shouldSkipAfterPreviousFailedAttempt({
-          url: feedUrl,
-        });
+  describe('getBackoffDecision', () => {
+    // Compressed boundaries keep every seeded row inside the current month's
+    // partition: suspension starts at 2h, tier 1 probes hourly until 3h, then
+    // 6-hourly until expiry.
+    const compressedBackoffConfig: BackoffConfig = {
+      ...backoffConfig,
+      suspensionBaseMs: 2 * 60 * 60 * 1000,
+      tier1BoundaryMs: 3 * 60 * 60 * 1000,
+      tier2BoundaryMs: 6 * 60 * 60 * 1000,
+      expiryMs: 14 * 24 * 60 * 60 * 1000,
+    };
+    const compressedPolicies = () =>
+      createScheduledFetchPolicies({
+        backoffConfig: compressedBackoffConfig,
+        partitionedRequestsStore: createPartitionedRequestsStore(getTestPool()),
+      });
+
+    it('should not skip a URL with no history', async () => {
+      const { skip, expired } = await compressedPolicies().getBackoffDecision({
+        url: feedUrl,
+        rateSeconds: 1800,
+      });
 
       assert.strictEqual(skip, false);
-      assert.strictEqual(failedAttemptsCount, 0);
+      assert.strictEqual(expired, false);
     });
 
-    it('should return false if latest attempt was successful', async () => {
+    it('should not skip while the URL is in the active phase', async () => {
       await seedRequests([
         buildInsert({ status: RequestStatus.OK, createdAt: new Date() }),
       ]);
 
-      const { skip } = await policies.shouldSkipAfterPreviousFailedAttempt({
+      const { skip } = await compressedPolicies().getBackoffDecision({
         url: feedUrl,
+        rateSeconds: 1800,
       });
 
       assert.strictEqual(skip, false);
     });
 
-    it('should skip if the found latest retry date is in the future', async () => {
+    it('should skip a suspended URL whose tier has not elapsed', async () => {
       await seedRequests([
         buildInsert({
           status: RequestStatus.OK,
-          createdAt: dayjs().subtract(30, 'minutes').toDate(),
+          createdAt: dayjs().subtract(150, 'minutes').toDate(),
         }),
         buildInsert({
           createdAt: dayjs().subtract(20, 'minutes').toDate(),
-          nextRetryDate: dayjs().add(30, 'minutes').toDate(),
         }),
       ]);
 
-      const { skip } = await policies.shouldSkipAfterPreviousFailedAttempt({
+      const { skip, nextRetryDate } = await compressedPolicies().getBackoffDecision(
+        { url: feedUrl, rateSeconds: 1800 },
+      );
+
+      // elapsed 150min ≥ suspension (2h) and < tier1 (3h) → hourly probes;
+      // the last attempt was 20 minutes ago, so the probe waits ~40 minutes.
+      assert.strictEqual(skip, true);
+      assert.ok(nextRetryDate);
+      assert.ok(nextRetryDate!.getTime() > Date.now());
+    });
+
+    it('should not skip a suspended URL once its probe tier elapses', async () => {
+      await seedRequests([
+        buildInsert({
+          status: RequestStatus.OK,
+          createdAt: dayjs().subtract(150, 'minutes').toDate(),
+        }),
+        buildInsert({
+          createdAt: dayjs().subtract(65, 'minutes').toDate(),
+        }),
+      ]);
+
+      const { skip } = await compressedPolicies().getBackoffDecision({
         url: feedUrl,
+        rateSeconds: 1800,
+      });
+
+      assert.strictEqual(skip, false);
+    });
+
+    it('should skip and flag expiry once the time since the last success runs out', async () => {
+      const expiringPolicies = createScheduledFetchPolicies({
+        backoffConfig: { ...compressedBackoffConfig, expiryMs: 30 * 60 * 1000 },
+        partitionedRequestsStore: createPartitionedRequestsStore(getTestPool()),
+      });
+
+      await seedRequests([
+        buildInsert({ createdAt: dayjs().subtract(1, 'hour').toDate() }),
+      ]);
+
+      const { skip, expired, elapsedMs } = await expiringPolicies.getBackoffDecision(
+        { url: feedUrl, rateSeconds: 1800 },
+      );
+
+      assert.strictEqual(skip, true);
+      assert.strictEqual(expired, true);
+      assert.ok(elapsedMs >= 30 * 60 * 1000);
+    });
+
+    it('should rate-limit-floor a 429 even in the active phase', async () => {
+      // Success 5 minutes ago, headerless 429 two minutes ago: the active
+      // phase alone would fetch on the next tick, but the 429 floor pushes
+      // the attempt an hour out.
+      await seedRequests([
+        buildInsert({
+          status: RequestStatus.OK,
+          createdAt: dayjs().subtract(5, 'minutes').toDate(),
+        }),
+        buildInsert({
+          createdAt: dayjs().subtract(2, 'minutes').toDate(),
+          response: {
+            statusCode: 429,
+            textHash: null,
+            s3ObjectKey: null,
+            redisCacheKey: null,
+            headers: {},
+            body: null,
+          },
+        }),
+      ]);
+
+      const { skip } = await compressedPolicies().getBackoffDecision({
+        url: feedUrl,
+        rateSeconds: 1800,
       });
 
       assert.strictEqual(skip, true);
     });
 
-    it('should not skip if the found latest retry date is in the past', async () => {
+    it('should never skip an active-phase failure (capped cadence)', async () => {
+      // The original bug this backoff replaces: a plain 404 used to schedule
+      // the next attempt minutes-to-hours out. Active-phase failures now
+      // always fetch on the next tick.
       await seedRequests([
         buildInsert({
           status: RequestStatus.OK,
-          createdAt: dayjs().subtract(30, 'minutes').toDate(),
+          createdAt: dayjs().subtract(5, 'minutes').toDate(),
         }),
         buildInsert({
-          createdAt: dayjs().subtract(20, 'minutes').toDate(),
-          nextRetryDate: dayjs().subtract(10, 'minutes').toDate(),
+          createdAt: dayjs().subtract(2, 'minutes').toDate(),
         }),
       ]);
 
-      const { skip } = await policies.shouldSkipAfterPreviousFailedAttempt({
+      const { skip } = await compressedPolicies().getBackoffDecision({
         url: feedUrl,
+        rateSeconds: 1800,
       });
 
       assert.strictEqual(skip, false);
     });
-  });
 
-  describe('countFailedRequests', () => {
-    it('should return the number of failed requests after the latest OK attempt', async () => {
+    it('should force through the backoff for bulk-retry fetches', async () => {
       await seedRequests([
-        buildInsert({
-          status: RequestStatus.OK,
-          createdAt: dayjs().subtract(30, 'days').toDate(),
-        }),
-        buildInsert({
-          createdAt: dayjs().subtract(20, 'days').toDate(),
-        }),
-        buildInsert({
-          status: RequestStatus.OK,
-          createdAt: dayjs().subtract(30, 'minutes').toDate(),
-        }),
-        buildInsert({
-          createdAt: dayjs().subtract(20, 'minutes').toDate(),
-        }),
-        buildInsert({
-          createdAt: dayjs().subtract(10, 'minutes').toDate(),
-        }),
+        buildInsert({ createdAt: dayjs().subtract(1, 'hour').toDate() }),
       ]);
 
-      const failedRequestsCount = await policies.countFailedRequests({
+      const { skip, expired } = await compressedPolicies().getBackoffDecision({
         url: feedUrl,
+        rateSeconds: 1800,
+        force: true,
       });
 
-      assert.strictEqual(failedRequestsCount, 2);
+      assert.strictEqual(skip, false);
+      assert.strictEqual(expired, false);
     });
-
-    it('should return 0 if there are no failed requests after the latest OK attempt', async () => {
-      await seedRequests([
-        buildInsert({
-          status: RequestStatus.OK,
-          createdAt: dayjs().subtract(30, 'days').toDate(),
-        }),
-        buildInsert({
-          createdAt: dayjs().subtract(20, 'days').toDate(),
-        }),
-        buildInsert({
-          status: RequestStatus.OK,
-          createdAt: dayjs().subtract(30, 'minutes').toDate(),
-        }),
-      ]);
-
-      const failedRequestsCount = await policies.countFailedRequests({
-        url: feedUrl,
-      });
-
-      assert.strictEqual(failedRequestsCount, 0);
-    });
-  });
-
-  describe('calculateNextRetryDate', () => {
-    const referenceDate = new Date();
-
-    for (const { attemptsSoFar, expected } of [
-      {
-        attemptsSoFar: 0,
-        expected: dayjs(referenceDate).add(5, 'minutes').toDate(),
-      },
-      {
-        attemptsSoFar: 1,
-        expected: dayjs(referenceDate).add(10, 'minutes').toDate(),
-      },
-      {
-        attemptsSoFar: 2,
-        expected: dayjs(referenceDate).add(20, 'minutes').toDate(),
-      },
-      {
-        attemptsSoFar: 3,
-        expected: dayjs(referenceDate).add(40, 'minutes').toDate(),
-      },
-    ]) {
-      it(`returns correctly on attempt #${attemptsSoFar}`, () => {
-        const returned = calculateNextRetryDate(referenceDate, attemptsSoFar);
-
-        assert.deepStrictEqual(returned, expected);
-      });
-    }
   });
 });

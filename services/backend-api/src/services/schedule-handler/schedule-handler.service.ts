@@ -14,6 +14,7 @@ import type {
   ScheduledFeedForClockScheduling,
 } from "../../repositories/interfaces/user-feed.types";
 import type { SlotWindow } from "../../shared/types/slot-window.types";
+import type { BulkRetryableFeed } from "../../repositories/interfaces/user-feed.types";
 import {
   SCHEDULED_BATCH_RATE_SECONDS,
   SCHEDULER_WINDOW_SIZE_MS,
@@ -42,11 +43,9 @@ interface UrlBatchItem {
   saveToObjectStorage?: boolean;
   lookupKey?: string;
   headers?: Record<string, string>;
-  // Set when the URL is being fetched as part of a bulk-recovery cycle for
-  // feeds disabled with FAILED_REQUESTS. Travels through the url.fetch-batch
-  // contract so the request worker can treat the attempt as a fresh recovery
-  // verification instead of the continuation of the terminal failure history.
-  recovery?: { startedAt: number };
+  // Marks a bulk-retry fetch; see the url.fetch-batch contract (ADR-011) for
+  // what the consumer bypasses.
+  force?: boolean;
   // Request metadata for clock-scheduled fetches (ADR-009): the batch entry is
   // stamped with the occurrence it fulfills and copied through to the
   // completed event. Interval fetches carry no trigger.
@@ -115,10 +114,7 @@ export class ScheduleHandlerService {
 
     let urlBatch: UrlBatchItem[] = [];
 
-    for await (const {
-      url,
-      recoveryStartedAt,
-    } of this.deps.userFeedRepository.iterateUrlsForRefreshRate(
+    for await (const { url } of this.deps.userFeedRepository.iterateUrlsForRefreshRate(
       refreshRateSeconds,
       slotWindow,
     )) {
@@ -135,7 +131,6 @@ export class ScheduleHandlerService {
       urlBatch.push({
         url,
         saveToObjectStorage: urlsToDebug.has(url),
-        ...(recoveryStartedAt ? { recovery: { startedAt: recoveryStartedAt } } : {}),
       });
 
       if (urlBatch.length === URL_BATCH_SIZE) {
@@ -150,7 +145,6 @@ export class ScheduleHandlerService {
       workspaceId,
       users,
       workspaces,
-      recoveryStartedAt,
     } of this.deps.userFeedRepository.iterateFeedsWithLookupKeysForRefreshRate(
       refreshRateSeconds,
       slotWindow,
@@ -162,9 +156,6 @@ export class ScheduleHandlerService {
         users,
         workspaces,
         saveToObjectStorage: urlsToDebug.has(url),
-        ...(recoveryStartedAt
-          ? { recovery: { startedAt: recoveryStartedAt } }
-          : {}),
       });
 
       if (!item) {
@@ -278,7 +269,7 @@ export class ScheduleHandlerService {
     users: Array<{ externalCredentials?: FeedCredentialSource["externalCredentials"] }>;
     workspaces: Array<{ externalCredentials?: FeedCredentialSource["externalCredentials"] }>;
     saveToObjectStorage: boolean;
-    recovery?: { startedAt: number };
+    force?: boolean;
     trigger?: UrlFetchTrigger;
   }): UrlBatchItem | null {
     const lookupDetails = getFeedRequestLookupDetails({
@@ -305,9 +296,79 @@ export class ScheduleHandlerService {
       saveToObjectStorage: input.saveToObjectStorage,
       lookupKey: lookupDetails.key,
       headers: lookupDetails.headers,
-      ...(input.recovery ? { recovery: input.recovery } : {}),
+      ...(input.force ? { force: true } : {}),
       ...(input.trigger ? { trigger: input.trigger } : {}),
     };
+  }
+
+  /**
+   * Publishes forced (bulk-retry) fetch batches for expired feeds (ADR-011):
+   * lookup details resolve per feed, duplicate URLs collapse to one entry,
+   * and each refresh rate gets its own batch so the request worker's
+   * per-rate lock scoping stays intact.
+   */
+  async emitForcedFetchBatches(
+    workspaceId: string,
+    feeds: BulkRetryableFeed[],
+  ): Promise<number> {
+    const resolved = new Map<
+      string,
+      { url: string; lookupKey?: string; rateSeconds: number }
+    >();
+
+    for (const feed of feeds) {
+      // Plain feeds fetch their stored URL as-is; only lookup-key feeds need
+      // per-feed credential resolution (resolveLookupKeyBatchItem is the
+      // OAuth-only resolver and rejects plain URLs).
+      const item: UrlBatchItem | null = feed.feedRequestLookupKey
+        ? this.resolveLookupKeyBatchItem({
+            url: feed.url,
+            feedRequestLookupKey: feed.feedRequestLookupKey,
+            workspaceId,
+            users: feed.users,
+            workspaces: feed.workspaces,
+            saveToObjectStorage: false,
+            force: true,
+          })
+        : { url: feed.url, force: true };
+
+      if (!item) {
+        continue;
+      }
+
+      const key = `${item.url}|${item.lookupKey ?? ""}`;
+
+      if (!resolved.has(key)) {
+        resolved.set(key, {
+          url: item.url,
+          lookupKey: item.lookupKey,
+          // Legacy rows can lack the field; the schema default never backfilled.
+          rateSeconds: feed.refreshRateSeconds ?? this.defaultRefreshRateSeconds,
+        });
+      }
+    }
+
+    const byRate = new Map<
+      number,
+      Array<{ url: string; lookupKey?: string; force: true }>
+    >();
+
+    for (const entry of resolved.values()) {
+      const batch = byRate.get(entry.rateSeconds) ?? [];
+
+      batch.push({
+        url: entry.url,
+        ...(entry.lookupKey ? { lookupKey: entry.lookupKey } : {}),
+        force: true,
+      });
+      byRate.set(entry.rateSeconds, batch);
+    }
+
+    for (const [rateSeconds, data] of byRate) {
+      await this.emitUrlRequestBatchEvent({ rateSeconds, data });
+    }
+
+    return resolved.size;
   }
 
   async getValidDiscordUserSupporters(): Promise<

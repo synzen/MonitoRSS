@@ -1,5 +1,4 @@
 /* eslint-disable max-len */
-import dayjs from 'dayjs';
 import logger from '../utils/logger';
 import contextLogger, { logContextStorage } from '../shared/utils/log-context';
 import retryUntilTrue, {
@@ -24,7 +23,19 @@ import type {
 type BatchRequestMessage = UrlFetchBatchPayload;
 type BatchRequestItem = UrlFetchBatchPayload['data'][number];
 
-const BASE_FAILED_ATTEMPT_WAIT_MINUTES = 5;
+// Backoff probe tiers (ADR-011): interval ceilings while a URL is suspended.
+// Boundaries live in config; the intervals themselves are policy constants.
+const TIER_INTERVALS_MS = [3_600_000, 6 * 3_600_000, 24 * 3_600_000];
+
+export interface BackoffConfig {
+  suspensionBaseMs: number;
+  suspensionRateMultiplier: number;
+  tier1BoundaryMs: number;
+  tier2BoundaryMs: number;
+  expiryMs: number;
+  rateLimitFloorMs: number;
+  retryAfterClampMs: number;
+}
 
 // Response-reuse window for scheduled-occurrence fetches: long enough to
 // collapse duplicate same-URL entries processed together in one batch, short
@@ -45,14 +56,85 @@ export interface ScheduledFetchProcessor {
   processBatch(batchRequest: BatchRequestMessage): Promise<void>;
 }
 
-export function calculateNextRetryDate(
-  referenceDate: Date,
-  attemptsSoFar: number,
-): Date {
-  const minutesToWait =
-    BASE_FAILED_ATTEMPT_WAIT_MINUTES * Math.pow(2, attemptsSoFar);
+function parseRetryAfterMs(
+  value: string | undefined,
+  nowMs: number,
+): number | null {
+  if (!value) {
+    return null;
+  }
 
-  return dayjs(referenceDate).add(minutesToWait, 'minute').toDate();
+  const seconds = Number(value);
+
+  if (Number.isFinite(seconds)) {
+    return seconds * 1000;
+  }
+
+  const dateMs = Date.parse(value);
+
+  return Number.isNaN(dateMs) ? null : dateMs - nowMs;
+}
+
+/**
+ * Interval before the next fetch attempt for a URL, derived from the time
+ * since its last success (ADR-011). The active phase keeps the feed's own
+ * cadence — failures never push the next attempt further out than the feed
+ * pays for. After suspension the probe tiers take over, and rate-limit
+ * responses (429/503) floor the interval at their Retry-After (or a default).
+ */
+export function calculateBackoffIntervalMs(params: {
+  elapsedMs: number;
+  rateSeconds: number;
+  lastAttempt?: {
+    statusCode: number | null;
+    headers: Record<string, string> | null;
+  } | null;
+  config: BackoffConfig;
+  nowMs?: number;
+}): number {
+  const {
+    elapsedMs,
+    rateSeconds,
+    lastAttempt,
+    config,
+    nowMs = Date.now(),
+  } = params;
+  const rateMs = rateSeconds * 1000;
+  const suspensionThresholdMs = Math.max(
+    config.suspensionBaseMs,
+    config.suspensionRateMultiplier * rateMs,
+  );
+
+  let intervalMs = rateMs;
+
+  if (elapsedMs >= suspensionThresholdMs) {
+    const tierIntervalMs =
+      elapsedMs >= config.tier2BoundaryMs
+        ? TIER_INTERVALS_MS[2]
+        : elapsedMs >= config.tier1BoundaryMs
+          ? TIER_INTERVALS_MS[1]
+          : TIER_INTERVALS_MS[0];
+
+    intervalMs = Math.max(tierIntervalMs, rateMs);
+  }
+
+  if (
+    lastAttempt &&
+    (lastAttempt.statusCode === 429 || lastAttempt.statusCode === 503)
+  ) {
+    const retryAfterMs = parseRetryAfterMs(
+      lastAttempt.headers?.['retry-after'],
+      nowMs,
+    );
+    const flooredMs = Math.min(
+      config.retryAfterClampMs,
+      Math.max(retryAfterMs ?? 0, config.rateLimitFloorMs),
+    );
+
+    intervalMs = Math.max(intervalMs, flooredMs);
+  }
+
+  return intervalMs;
 }
 
 /**
@@ -68,35 +150,29 @@ export interface ScheduledFetchPolicies {
       ReturnType<PartitionedRequestsStore['getLatestRequestWithOkStatus']>
     >;
   }>;
-  countFailedRequests(params: {
+  getBackoffDecision(params: {
     lookupKey?: string;
     url: string;
-    // `since` is meaningful as null: null counts every failure, while
-    // undefined falls back to counting failures since the latest OK request.
-    since?: Date | null;
-  }): Promise<number>;
-  shouldSkipAfterPreviousFailedAttempt(params: {
-    lookupKey?: string;
-    url: string;
-    recoveryStartedAt?: number;
+    rateSeconds: number;
+    force?: boolean;
   }): Promise<{
     skip: boolean;
-    failedAttemptsCount: number;
-    nextRetryDate?: Date | null;
-    thresholdExceeded?: boolean;
+    expired: boolean;
+    nextRetryDate: Date | null;
+    elapsedMs: number;
   }>;
 }
 
 export function createScheduledFetchPolicies({
-  maxFailAttempts,
+  backoffConfig,
   partitionedRequestsStore,
 }: {
-  maxFailAttempts: number;
+  backoffConfig: BackoffConfig;
   partitionedRequestsStore: Pick<
     PartitionedRequestsStore,
     | 'getLatestRequestWithOkStatus'
-    | 'countFailedRequests'
-    | 'getLatestNextRetryDate'
+    | 'getLatestAttempt'
+    | 'getEarliestRequestCreatedAt'
   >;
 }): ScheduledFetchPolicies {
   async function isLatestResponseStillFreshInCache({
@@ -135,144 +211,119 @@ export function createScheduledFetchPolicies({
     };
   }
 
-  async function countFailedRequests({
+  /**
+   * Derived-state backoff decision (ADR-011): the interval is computed from the
+   * request rows on every tick, so there is no stored backoff state to
+   * persist or reset. The active phase never skips — scheduled ticks arrive
+   * at the feed cadence and every one of them fetches. Only tiers or
+   * rate-limit floors longer than the cadence gate the next attempt.
+   */
+  async function getBackoffDecision({
     lookupKey,
     url,
-    since,
+    rateSeconds,
+    force,
   }: {
     lookupKey?: string;
     url: string;
-    // `since` is meaningful as null: null counts every failure, while
-    // undefined falls back to counting failures since the latest OK request.
-    since?: Date | null;
-  }) {
-    const effectiveSince =
-      since !== undefined
-        ? (since ?? undefined)
-        : (
-            await partitionedRequestsStore.getLatestRequestWithOkStatus(
-              lookupKey || url,
-              {},
-            )
-          )?.createdAt;
-
-    return partitionedRequestsStore.countFailedRequests(
-      lookupKey || url,
-      effectiveSince,
-    );
-  }
-
-  async function shouldSkipAfterPreviousFailedAttempt({
-    lookupKey,
-    url,
-    recoveryStartedAt,
-  }: {
-    lookupKey?: string;
-    url: string;
-    recoveryStartedAt?: number;
-  }) {
+    rateSeconds: number;
+    force?: boolean;
+  }): Promise<{
+    skip: boolean;
+    expired: boolean;
+    nextRetryDate: Date | null;
+    elapsedMs: number;
+  }> {
     const key = lookupKey || url;
-
     const latestOkRequest =
       await partitionedRequestsStore.getLatestRequestWithOkStatus(key, {});
-    const shouldStartNewRecoveryCycle =
-      recoveryStartedAt !== undefined &&
-      (!latestOkRequest ||
-        latestOkRequest.createdAt.getTime() < recoveryStartedAt);
-    const failureCycleStart = shouldStartNewRecoveryCycle
-      ? new Date(recoveryStartedAt)
-      : (latestOkRequest?.createdAt ?? null);
 
-    const failedAttempts = await countFailedRequests({
-      lookupKey: key,
-      url,
-      since: failureCycleStart,
+    let anchorMs: number | null = latestOkRequest?.createdAt.getTime() ?? null;
+
+    if (anchorMs === null) {
+      // Never-succeeded URLs anchor the clock at their first request.
+      const earliest =
+        await partitionedRequestsStore.getEarliestRequestCreatedAt(key);
+
+      anchorMs = earliest?.getTime() ?? null;
+    }
+
+    if (anchorMs === null) {
+      return { skip: false, expired: false, nextRetryDate: null, elapsedMs: 0 };
+    }
+
+    const elapsedMs = Date.now() - anchorMs;
+
+    // Forced (bulk-retry) fetches bypass the skip and expiry logic but still
+    // report the true elapsed time, so failure rows record truthful
+    // observability intervals.
+    if (force) {
+      return { skip: false, expired: false, nextRetryDate: null, elapsedMs };
+    }
+
+    if (elapsedMs >= backoffConfig.expiryMs) {
+      return { skip: true, expired: true, nextRetryDate: null, elapsedMs };
+    }
+
+    const latestAttempt = await partitionedRequestsStore.getLatestAttempt(key);
+    const intervalMs = calculateBackoffIntervalMs({
+      elapsedMs,
+      rateSeconds,
+      lastAttempt: latestAttempt
+        ? {
+            statusCode: latestAttempt.statusCode,
+            headers: latestAttempt.responseHeaders ?? null,
+          }
+        : null,
+      config: backoffConfig,
     });
 
-    if (failedAttempts === 0) {
-      return {
-        skip: false,
-        failedAttemptsCount: 0,
-      };
-    }
-
-    if (failedAttempts >= maxFailAttempts) {
+    if (
+      intervalMs > rateSeconds * 1000 &&
+      latestAttempt &&
+      Date.now() < latestAttempt.createdAt.getTime() + intervalMs
+    ) {
       return {
         skip: true,
-        failedAttemptsCount: failedAttempts,
-        thresholdExceeded: true,
+        expired: false,
+        nextRetryDate: new Date(latestAttempt.createdAt.getTime() + intervalMs),
+        elapsedMs,
       };
     }
 
-    const latestNextRetryDate =
-      await partitionedRequestsStore.getLatestNextRetryDate(
-        key,
-        recoveryStartedAt !== undefined
-          ? (failureCycleStart ?? undefined)
-          : undefined,
-      );
-
-    if (!latestNextRetryDate) {
-      // Failures recorded by non-broker paths (e.g. direct API fetches) do
-      // not carry retry dates, so this is reachable without a data issue.
-      contextLogger.warn(
-        `Request for ${key} has previously failed, but there is no` +
-          ` nextRetryDate set. Failed requests that did not go through the` +
-          ` broker do not have retry dates. Continuing with request as` +
-          ` fallback behavior.`,
-      );
-
-      return {
-        skip: false,
-        failedAttemptsCount: failedAttempts,
-      };
-    }
-
-    if (dayjs().isBefore(latestNextRetryDate)) {
-      return {
-        skip: true,
-        nextRetryDate: latestNextRetryDate,
-        failedAttemptsCount: failedAttempts,
-      };
-    }
-
-    return {
-      skip: false,
-      failedAttemptsCount: failedAttempts,
-    };
+    return { skip: false, expired: false, nextRetryDate: null, elapsedMs };
   }
 
   return {
     isLatestResponseStillFreshInCache,
-    countFailedRequests,
-    shouldSkipAfterPreviousFailedAttempt,
+    getBackoffDecision,
   };
 }
 
 export function createScheduledFetchProcessor({
-  maxFailAttempts,
+  backoffConfig,
   feedFetcher,
   partitionedRequestsStore,
   hostRateLimiter,
   cacheStorage,
   onEvent,
 }: {
-  maxFailAttempts: number;
+  backoffConfig: BackoffConfig;
   feedFetcher: Pick<FeedFetcherService, 'fetchAndSaveResponse'>;
   partitionedRequestsStore: Pick<
     PartitionedRequestsStore,
     | 'flushInserts'
     | 'wasRequestedInPastSeconds'
     | 'getLatestRequestWithOkStatus'
-    | 'countFailedRequests'
-    | 'getLatestNextRetryDate'
+    | 'getLatestAttempt'
+    | 'getEarliestRequestCreatedAt'
   >;
   hostRateLimiter: Pick<HostRateLimiterService, 'incrementUrlCount'>;
   cacheStorage: Pick<CacheStorageService, 'setNX' | 'del'>;
   onEvent: (event: ScheduledFetchEvent) => void;
 }): ScheduledFetchProcessor {
   const policies = createScheduledFetchPolicies({
-    maxFailAttempts,
+    backoffConfig,
     partitionedRequestsStore,
   });
 
@@ -306,31 +357,33 @@ export function createScheduledFetchProcessor({
     const rateSeconds = data.rateSeconds;
     const lookupKey = data.lookupKey;
 
-    const { skip, nextRetryDate, failedAttemptsCount, thresholdExceeded } =
-      await policies.shouldSkipAfterPreviousFailedAttempt({
+    const { skip, expired, nextRetryDate, elapsedMs } =
+      await policies.getBackoffDecision({
         lookupKey,
         url,
-        recoveryStartedAt: data.recovery?.startedAt,
+        rateSeconds,
+        force: data.force,
       });
 
-    if (thresholdExceeded) {
+    if (expired) {
+      // The retry backoff gave up (ADR-011): 14 days of continuous failure.
+      // Emissions past expiry repeat per tick; the consumer dedupes via its
+      // not-yet-disabled feed lookup.
       onEvent({
         kind: 'url-failed',
         data: {
           lookupKey,
           url,
-          recovery:
-            data.recovery?.startedAt !== undefined
-              ? { startedAt: data.recovery.startedAt }
-              : undefined,
         },
       });
     }
 
     if (skip) {
       contextLogger.debug(
-        `Request ${url} with rate ${rateSeconds} has ` +
-          `recently failed and will be skipped until ${nextRetryDate}`,
+        expired
+          ? `Request ${url} with rate ${rateSeconds} expired on the retry backoff, skipping`
+          : `Request ${url} with rate ${rateSeconds} has ` +
+              `recently failed and will be skipped until ${nextRetryDate}`,
       );
 
       return { emitFetchCompleted: false };
@@ -347,8 +400,8 @@ export function createScheduledFetchProcessor({
 
     // Recovery attempts ignore a still-fresh cached response: the point of the
     // cycle is to verify the URL with a fresh request, not to trust the cache
-    // built before the outage.
-    if (isCacheStillActive && !data.recovery) {
+    // built before the outage. Forced (bulk-retry) fetches do too.
+    if (isCacheStillActive && !data.recovery && !data.force) {
       const cacheSkipMessage =
         `Request with lookup key ${lookupKey || url} still has active` +
         ` cache-control, skipping fetch but emitting fetch completed`;
@@ -402,9 +455,21 @@ export function createScheduledFetchProcessor({
         },
       });
     } else if (request.status !== RequestStatus.OK) {
-      const nextRetryDate = calculateNextRetryDate(
-        new Date(),
-        failedAttemptsCount,
+      // nextRetryDate is observability only (ADR-011): the real schedule is
+      // derived from the request rows on the next tick.
+      const nextRetryDate = new Date(
+        Date.now() +
+          calculateBackoffIntervalMs({
+            elapsedMs,
+            rateSeconds,
+            lastAttempt: {
+              statusCode: request.response?.statusCode ?? null,
+              headers:
+                (request.response?.headers as Record<string, string> | null) ??
+                null,
+            },
+            config: backoffConfig,
+          }),
       );
 
       onEvent({ kind: 'url-failing', data: { lookupKey, url } });
@@ -437,6 +502,7 @@ export function createScheduledFetchProcessor({
             headers,
             recovery,
             trigger,
+            force,
           } = message;
           const logPrefix = saveToObjectStorage
             ? `DEBUG ${lookupKey || url}:`
@@ -478,6 +544,7 @@ export function createScheduledFetchProcessor({
             try {
               // Recovery attempts must perform a fresh request even if the URL
               // was recently processed by a prior (terminal-failure) cycle.
+              // Forced (bulk-retry) fetches bypass the backoff and dedupe too.
               // Scheduled occurrences only reuse a response fetched moments
               // ago (a duplicate entry for the same URL in the same batch); a
               // long window would let one occurrence serve another feed's
@@ -486,12 +553,13 @@ export function createScheduledFetchProcessor({
                 trigger?.kind === 'scheduled'
                   ? SCHEDULED_DEDUPE_WINDOW_SECONDS
                   : Math.round(rateSeconds * 0.5);
-              const recentlyProcessed = recovery
-                ? false
-                : await partitionedRequestsStore.wasRequestedInPastSeconds(
-                    lookupKey || url,
-                    dedupeWindowSeconds,
-                  );
+              const recentlyProcessed =
+                recovery || force
+                  ? false
+                  : await partitionedRequestsStore.wasRequestedInPastSeconds(
+                      lookupKey || url,
+                      dedupeWindowSeconds,
+                    );
 
               if (recentlyProcessed) {
                 contextLogger.info(
@@ -536,6 +604,7 @@ export function createScheduledFetchProcessor({
                 saveToObjectStorage,
                 headers,
                 recovery,
+                force,
               });
 
               if (result) {
