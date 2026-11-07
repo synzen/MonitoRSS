@@ -12,12 +12,16 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-24.04, ubuntu-26.04]
+        tunable: [1, 0]
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - name: Probe mongo:8.0
         run: |
           uname -r
-          docker run -d --name mongo-probe --tmpfs /data/db mongo:8.0 mongod --replSet rs0 --bind_ip_all
+          docker run -d --name mongo-probe \
+            -e GLIBC_TUNABLES=glibc.pthread.rseq=${{ matrix.tunable }} \
+            --tmpfs /data/db mongo:8.0 mongod --replSet rs0 --bind_ip_all
           sleep 12
           if ! docker inspect -f '{{.State.Running}}' mongo-probe | grep -q true; then
             echo "== container exited =="
@@ -25,6 +29,9 @@ jobs:
             docker logs mongo-probe 2>&1 | tail -60
             exit 1
           fi
-          echo "== still running after 12s =="
+          echo "== still running after 12s, trying rs.initiate =="
+          docker exec mongo-probe mongosh --quiet --eval "rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]})" || true
+          sleep 5
+          docker exec mongo-probe mongosh --quiet --eval "db.runCommand({ping:1}).ok"
           docker logs mongo-probe 2>&1 | tail -5
           docker rm -f mongo-probe
