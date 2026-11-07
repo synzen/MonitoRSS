@@ -2,6 +2,10 @@ services:
   mongo:
     image: mongo:8.0
     command: ["--replSet", "rs0", "--bind_ip_all"]
+    # Kernel >= 6.19 (GitHub runners, Nov 2026) triggers SERVER-121912; the
+    # tunable avoids the incompatibility. Remove once mongo ships the kernel fix.
+    environment:
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
     healthcheck:
       test: |
         mongosh --quiet --eval "
