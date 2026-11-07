@@ -1,0 +1,29 @@
+name: Mongo Debug
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Probe mongo:8.0
+        run: |
+          uname -r
+          docker run -d --name mongo-probe --tmpfs /data/db mongo:8.0 mongod --replSet rs0 --bind_ip_all
+          sleep 12
+          if ! docker inspect -f '{{.State.Running}}' mongo-probe | grep -q true; then
+            echo "== container exited =="
+            docker inspect -f 'exitCode={{.State.ExitCode}} oom={{.State.OOMKilled}}' mongo-probe
+            docker logs mongo-probe 2>&1 | tail -60
+            exit 1
+          fi
+          echo "== still running after 12s =="
+          docker logs mongo-probe 2>&1 | tail -5
+          docker rm -f mongo-probe
