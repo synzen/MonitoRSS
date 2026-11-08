@@ -403,7 +403,7 @@ test.describe("Feed retry backoff (ADR-011)", () => {
       ).toBeVisible();
       await expect(
         page.getByText(
-          "MonitoRSS could not fetch this feed for 14 days, so it has stopped checking it.",
+          "MonitoRSS could not fetch this feed after repeated attempts, so it has stopped checking it.",
         ),
       ).toBeVisible();
 

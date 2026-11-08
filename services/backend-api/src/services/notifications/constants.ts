@@ -12,7 +12,7 @@ export const USER_FEED_DISABLED_REASONS: Partial<
       "Remove some feeds or become a supporter to get an increased feed limit.",
   },
   [UserFeedDisabledCode.FailedRequests]: {
-    reason: "Its source could not be reached for 14 days",
+    reason: "Its source could not be reached after repeated attempts",
     action:
       "Check that the feed is still valid by using online validators or by clicking the feed link." +
       " If it is valid, try re-enabling it in the control panel.",
