@@ -77,14 +77,13 @@ services:
   # --- Migrations ---
 
   feed-requests-postgres-migration:
-    # Built from the repo root (see e2e/docker/feed-requests.e2e.Dockerfile) so
-    # the image consumes the local workspace contracts, not the published npm
-    # package.
+    # The build stage keeps dev deps (tsx) and mirrors docker-compose.base.yml.
     build:
-      context: .
-      dockerfile: e2e/docker/feed-requests.e2e.Dockerfile
+      context: services/feed-requests
+      dockerfile: Dockerfile
+      target: build
     restart: "no"
-    command: "npm run migration:up --workspace services/feed-requests"
+    command: "npm run migration:up"
     depends_on:
       feed-requests-postgres-db:
         condition: service_healthy
@@ -121,12 +120,9 @@ services:
   # --- Application Services ---
 
   feed-requests-service:
-    # Built from the repo root (see e2e/docker/feed-requests.e2e.Dockerfile) so
-    # the image consumes the local workspace contracts, not the published npm
-    # package.
     build:
-      context: .
-      dockerfile: e2e/docker/feed-requests.e2e.Dockerfile
+      context: services/feed-requests
+      dockerfile: Dockerfile
     restart: "no"
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -155,12 +151,9 @@ services:
       - e2e-default
 
   feed-requests-api:
-    # Built from the repo root (see e2e/docker/feed-requests.e2e.Dockerfile) so
-    # the image consumes the local workspace contracts, not the published npm
-    # package.
     build:
-      context: .
-      dockerfile: e2e/docker/feed-requests.e2e.Dockerfile
+      context: services/feed-requests
+      dockerfile: Dockerfile
     restart: "no"
     extra_hosts:
       - "host.docker.internal:host-gateway"
