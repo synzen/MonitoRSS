@@ -26,7 +26,7 @@ async function waitForAuthenticatedApp(page: Page): Promise<void> {
 }
 
 const FAILED_REQUESTS_ALERT_TEXT =
-  "This feed is currently disabled because there has been too many connection failures.";
+  "This feed is disabled because its source could not be reached.";
 
 test.describe("Dormant workspace failed-feed retry", () => {
   test("explains the subscription requirement instead of offering a doomed re-enable", async ({

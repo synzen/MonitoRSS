@@ -101,7 +101,10 @@ jobs:
   e2e-scheduler:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # retry-backoff.spec.ts budgets itself up to 25 minutes per test
+    # (setTimeout(1_500_000)); the job timeout must exceed that plus stack
+    # startup.
+    timeout-minutes: 40
 
     steps:
       - uses: actions/checkout@v4
