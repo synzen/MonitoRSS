@@ -426,9 +426,12 @@ test.describe("Feed retry backoff (ADR-011)", () => {
       // the confirm dialog stays open on the failed attempt, so dismiss it
       // the way a user would (the dialog allows escape).
       await retryAllFailedFeeds(page, 1);
+      // exact:true: the failure toast concatenates the same sentence after its
+      // title, so a prefix match would resolve to two elements (strict mode).
       await expect(
         page.getByText(
           "Please wait a few minutes before retrying all failed feeds again.",
+          { exact: true },
         ),
       ).toBeVisible({ timeout: 15_000 });
       await page.keyboard.press("Escape");
