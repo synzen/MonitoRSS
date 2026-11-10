@@ -274,7 +274,7 @@ test.describe("Feed Settings", () => {
       await expect(refreshRateInput).toHaveValue("30", { timeout: 10000 });
     });
 
-    test("saving a refresh rate below the plan minimum explains why and offers an upgrade", async ({
+    test("saving a refresh rate below the plan minimum explains why", async ({
       page,
       testFeed,
     }) => {
@@ -288,23 +288,26 @@ test.describe("Feed Settings", () => {
       const refreshRateInput = page.locator('input[name="userRefreshRateMinutes"]');
       await expect(refreshRateInput).toBeVisible({ timeout: 10000 });
 
-      // Below the free plan's fastest allowed rate, so the server rejects it.
-      await refreshRateInput.fill("2");
+      // The e2e stack sets the default refresh rate to 1 minute (the retry
+      // backoff spec needs fast ticks), so 0.5 is below the plan's fastest
+      // allowed rate and the server rejects it.
+      await refreshRateInput.fill("0.5");
       await page.getByRole("button", { name: "Save" }).click();
 
       // The dialog stays open and the error alert (rendered at the bottom of
-      // the form) states the plan's minimum instead of a generic message.
+      // the form) states the fastest available rate instead of a generic
+      // message. No upgrade CTA: no paid tier unlocks anything faster.
       const alert = page.getByRole("alert");
       await expect(alert).toBeVisible({ timeout: 10000 });
       await expect(
         alert.getByText(/Failed to update the delivery schedule/),
       ).toBeVisible();
       await expect(
-        alert.getByText(/once every \d+(\.\d+)? minutes or more/),
+        alert.getByText(/fastest refresh rate available is every 1\.0 minutes/),
       ).toBeVisible();
       await expect(
         alert.getByRole("button", { name: "Upgrade for faster refresh rates" }),
-      ).toBeVisible();
+      ).not.toBeVisible();
     });
 
     test("can update article date checks", async ({ page, testFeed }) => {

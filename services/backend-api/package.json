@@ -10,7 +10,7 @@
     "@fastify/rate-limit": "^11.2.1",
     "@fastify/secure-session": "^8.4.1",
     "@fastify/static": "^10.1.6",
-    "@monitorss/contracts": "^0.3.0",
+    "@monitorss/contracts": "^0.4.0",
     "@monitorss/logger": "^1.1.2",
     "@sinclair/typebox": "^0.34.52",
     "ajv-formats": "^3.0.1",

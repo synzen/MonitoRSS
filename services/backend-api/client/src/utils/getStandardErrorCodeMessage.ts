@@ -77,6 +77,7 @@ export enum ApiErrorCode {
   WORKSPACE_INVITE_RESEND_TOO_SOON = "WORKSPACE_INVITE_RESEND_TOO_SOON",
   WORKSPACE_INVITE_LIMIT_REACHED = "WORKSPACE_INVITE_LIMIT_REACHED",
   CANNOT_REMOVE_LAST_OWNER = "CANNOT_REMOVE_LAST_OWNER",
+  BULK_RETRY_TOO_SOON = "BULK_RETRY_TOO_SOON",
   WORKSPACE_TRANSFER_TARGET_INVALID = "WORKSPACE_TRANSFER_TARGET_INVALID",
   SUBSCRIPTION_ALREADY_CANCELLED = "SUBSCRIPTION_ALREADY_CANCELLED",
   WORKSPACE_BILLING_NOT_CONFIGURED = "WORKSPACE_BILLING_NOT_CONFIGURED",
@@ -186,6 +187,7 @@ const ERROR_CODE_MESSAGES: Record<ApiErrorCode, string> = {
   WORKSPACE_INVITE_EMAIL_UNAVAILABLE:
     "The invitation email could not be sent because email delivery is currently unavailable. Please try again later.",
   WORKSPACE_INVITE_RESEND_TOO_SOON: "Please wait a moment before resending this invitation.",
+  BULK_RETRY_TOO_SOON: "Please wait a few minutes before retrying all failed feeds again.",
   WORKSPACE_INVITE_LIMIT_REACHED:
     "This workspace has reached its limit of pending invitations. Revoke a pending invitation before sending another.",
   CANNOT_REMOVE_LAST_OWNER:

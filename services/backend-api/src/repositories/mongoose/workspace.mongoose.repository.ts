@@ -79,12 +79,15 @@ export interface IWorkspace {
   // Cleared by the webhook that records the subscription; a TTL expires a stale
   // one so a dropped webhook can never exempt the workspace indefinitely.
   conversionInProgressAt?: Date | null;
-  // Low-value courtesy extension: when a prorated increase is below Paddle's
-  // charge limit, billing is deferred to renewal but capacity is granted
-  // immediately. While live, effective maxFeeds is max(subscription, grant).
-  // Cleared on successful renewal (webhook promotes), failed renewal/cancel,
-  // or expiry.
-  pendingCapacityGrant?: PendingCapacityGrant | null;
+    // Low-value courtesy extension: when a prorated increase is below Paddle's
+    // charge limit, billing is deferred to renewal but capacity is granted
+    // immediately. While live, effective maxFeeds is max(subscription, grant).
+    // Cleared on successful renewal (webhook promotes), failed renewal/cancel,
+    // or expiry.
+    pendingCapacityGrant?: PendingCapacityGrant | null;
+    // Set on every workspace bulk retry (ADR-011): throttles repeat clicks so
+    // forced re-fetches of every expired feed can't hammer hosts.
+    lastBulkRetryAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -212,6 +215,7 @@ const WorkspaceSchema = new Schema(
     firstActivatedAt: { type: Date },
     conversionInProgressAt: { type: Date },
     pendingCapacityGrant: { type: PendingCapacityGrantSchema },
+    lastBulkRetryAt: { type: Date },
     // Incremented transactionally to serialize writes that consume workspace
     // feed capacity across feed creation, cloning, and personal-feed moves.
     feedCapacityVersion: { type: Number, default: 0, select: false },
@@ -324,6 +328,7 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
       firstActivatedAt: doc.firstActivatedAt ?? null,
       conversionInProgressAt: doc.conversionInProgressAt ?? null,
       pendingCapacityGrant: (doc.pendingCapacityGrant ?? null) as IWorkspace["pendingCapacityGrant"],
+      lastBulkRetryAt: doc.lastBulkRetryAt ?? null,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     };
@@ -787,6 +792,16 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
     return doc
       ? this.toEntity(doc as WorkspaceDoc & { _id: Types.ObjectId })
       : null;
+  }
+
+  async updateLastBulkRetryAt(
+    workspaceId: string,
+    at: Date,
+  ): Promise<void> {
+    await this.workspaceModel.updateOne(
+      { _id: this.stringToObjectId(workspaceId) },
+      { $set: { lastBulkRetryAt: at } },
+    );
   }
 
   async updateSlug(

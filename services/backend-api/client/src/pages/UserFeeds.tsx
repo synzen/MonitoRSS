@@ -241,7 +241,7 @@ const UserFeedsInner: React.FC = () => {
     previousFailedFeedsAnnouncementRef.current = announcementKey;
     setFailedFeedsAnnouncement(
       failedFeedCount
-        ? `${failedFeedCount} failed feed${failedFeedCount === 1 ? "" : "s"} require your attention. Retry all ${failedFeedCount} failed feed${failedFeedCount === 1 ? "" : "s"} is available.`
+        ? `${failedFeedCount} failed feed${failedFeedCount === 1 ? "" : "s"} require your attention. You can retry all ${failedFeedCount} failed feed${failedFeedCount === 1 ? "" : "s"}.`
         : "",
     );
   }, [retryFailedFeedsResults?.total, workspaceId]);
@@ -691,13 +691,14 @@ const UserFeedsInner: React.FC = () => {
         title: "Failed feeds queued for retry.",
         description: (
           <>
-            Requests run in the background. Each feed remains disabled until its request succeeds.{" "}
+            Requests run in the background. Each feed remains disabled until its request succeeds. Feeds whose
+            source has recovered will resume delivery automatically.{" "}
             <ChakraLink
               as="button"
               color="text.link"
-              onClick={() => setStatusFilters([UserFeedComputedStatus.Retrying])}
+              onClick={() => setStatusFilters([UserFeedComputedStatus.RequiresAttention])}
             >
-              View pending retries.
+              View failed feeds
             </ChakraLink>
           </>
         ),

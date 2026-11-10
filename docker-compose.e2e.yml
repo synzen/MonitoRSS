@@ -47,6 +47,11 @@ services:
   feed-requests-postgres-db:
     image: postgres:17-alpine
     restart: "no"
+    # Mapped so specs can shift request_partitioned row timestamps: the retry
+    # backoff (ADR-011) derives its state from those rows, so backdating them is
+    # the only way to fast-forward its 24h/14d tiers inside a test.
+    ports:
+      - "${E2E_POSTGRES_PORT:-5433}:5432"
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:
@@ -72,6 +77,7 @@ services:
   # --- Migrations ---
 
   feed-requests-postgres-migration:
+    # The build stage keeps dev deps (tsx) and mirrors docker-compose.base.yml.
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
@@ -117,11 +123,9 @@ services:
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
-      target: build
     restart: "no"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: node ./dist/main
     depends_on:
       feed-requests-postgres-db:
         condition: service_healthy
@@ -131,6 +135,7 @@ services:
         condition: service_completed_successfully
     environment:
       - NODE_ENV=local
+      - LOG_LEVEL=debug
       - FEED_REQUESTS_START_TARGET=service
       - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
       - FEED_REQUESTS_POSTGRES_SCHEMA=feedrequests
@@ -149,11 +154,9 @@ services:
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
-      target: build
     restart: "no"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: node ./dist/main
     depends_on:
       feed-requests-postgres-db:
         condition: service_healthy
@@ -317,6 +320,9 @@ services:
       # disable/re-enable with a handful of seeded feeds. Other specs create at
       # most a couple of feeds per workspace.
       - BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS=5
+      # 1-minute default refresh rate so the schedule emitter ticks feeds fast
+      # enough for the retry-backoff spec to observe tier transitions.
+      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=1
       - LOG_LEVEL=debug
       # Development, not Local: legal notices are only exposed in Local (dev
       # preview) or on the production dashboard host, and a live banner
@@ -324,6 +330,48 @@ services:
       # locators, click interception). Sessions only need non-production.
       - NODE_ENV=development
     command: npm run dev
+    networks:
+      - e2e-default
+
+  # Ticks interval feeds on their refresh rate and pushes url.fetch-batch
+  # messages (the production scheduler loop). Absent from this stack until the
+  # retry-backoff spec needed it: without it no feed is ever scheduled, so the
+  # fetch-side backoff logic never runs in E2E.
+  schedule-emitter:
+    build:
+      context: services/backend-api
+      dockerfile: Dockerfile.dev
+    restart: "no"
+    volumes:
+      - ./services/backend-api/src:/usr/src/app/src
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq-broker:
+        condition: service_healthy
+    environment:
+      - BACKEND_API_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
+      - BACKEND_API_RABBITMQ_BROKER_URL=amqp://guest:guest@rabbitmq-broker:5672/
+      - BACKEND_API_USER_FEEDS_API_HOST=http://e2e-user-feeds-api:5000
+      - BACKEND_API_USER_FEEDS_API_KEY=user-feeds-api-key
+      - BACKEND_API_FEED_REQUESTS_API_HOST=http://feed-requests-api:5000
+      - BACKEND_API_FEED_REQUESTS_API_KEY=feed-requests-api-key
+      - BACKEND_API_FEED_USER_AGENT=MonitoRSS
+      - BACKEND_API_DISCORD_API_BASE_URL=http://host.docker.internal:${E2E_MOCK_DISCORD_PORT:-3002}/api/v9
+      - BACKEND_API_DISCORD_BOT_TOKEN=fake-bot-token
+      - BACKEND_API_DISCORD_CLIENT_ID=000000000000000001
+      - BACKEND_API_DISCORD_CLIENT_SECRET=fake-client-secret
+      - BACKEND_API_DISCORD_REDIRECT_URI=http://localhost:${E2E_BACKEND_PORT:-8100}/api/v1/discord/callback-v2
+      - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:${E2E_FRONTEND_PORT:-3100}
+      - BACKEND_API_SESSION_SECRET=e2e-session-secret-that-is-long-enough-for-validation
+      - BACKEND_API_SESSION_SALT=e2esessionsalt16
+      - BACKEND_API_ENABLE_SUPPORTERS=true
+      - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=1
+      - LOG_LEVEL=debug
+      - NODE_ENV=development
+    command: npm run dev:schedule-emitter
     networks:
       - e2e-default
 

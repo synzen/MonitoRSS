@@ -9,10 +9,15 @@ teeConsoleToFile("mock-rss");
 
 // Feeds that must START healthy and LATER fail: a feed cannot be created against a
 // failing URL (creation validates it), so specs that need an established-then-broken
-// feed create it against /flaky/<key>.xml and then POST /flaky/<key>/fail to flip
-// that key to 500 for the rest of the run. Keys are per-spec-generated, so parallel
+// feed create it against /flaky/<key>.xml and then POST /flaky/<key>/<mode> to flip
+// that key's response for the rest of the run. Keys are per-spec-generated, so parallel
 // workers never interfere with each other's feeds.
-const failedFlakyKeys = new Set<string>();
+type FlakyMode = "ok" | "fail" | "rate-limit";
+const flakyModes = new Map<string, FlakyMode>();
+
+// Hours out, not minutes: the Retry-After header has to dominate the retry
+// backoff's own tier intervals to be observable in the health-alert timestamp.
+const RATE_LIMIT_RETRY_AFTER_SECONDS = 7200;
 
 const server = createServer((req, res) => {
   const parsedUrl = new URL(
@@ -28,9 +33,13 @@ const server = createServer((req, res) => {
     res.end(rss);
   } else if (/^\/flaky\/[^/]+\.xml$/.test(parsedUrl.pathname)) {
     const key = parsedUrl.pathname.slice("/flaky/".length, -".xml".length);
-    if (failedFlakyKeys.has(key)) {
+    const mode = flakyModes.get(key) ?? "ok";
+    if (mode === "fail") {
       res.writeHead(500);
       res.end("Internal Server Error");
+    } else if (mode === "rate-limit") {
+      res.writeHead(429, { "Retry-After": String(RATE_LIMIT_RETRY_AFTER_SECONDS) });
+      res.end("Too Many Requests");
     } else {
       const rss = readFileSync(
         join(__dirname, "fixtures", "test-feed.xml"),
@@ -41,9 +50,11 @@ const server = createServer((req, res) => {
     }
   } else if (
     req.method === "POST" &&
-    /^\/flaky\/[^/]+\/fail$/.test(parsedUrl.pathname)
+    /^\/flaky\/[^/]+\/(fail|ok|rate-limit)$/.test(parsedUrl.pathname)
   ) {
-    failedFlakyKeys.add(parsedUrl.pathname.split("/")[2]);
+    // /flaky/<key>/<mode> — the leading slash yields an empty first segment.
+    const [, , key, mode] = parsedUrl.pathname.split("/");
+    flakyModes.set(key, mode as FlakyMode);
     res.writeHead(200);
     res.end("OK");
   } else if (parsedUrl.pathname === "/feed-500") {

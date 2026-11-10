@@ -140,8 +140,17 @@ async function startService() {
     config.FEED_REQUESTS_RABBITMQ_BROKER_URL,
   );
   const publish = createPublisher(connection);
+  const backoffConfig = {
+    suspensionBaseMs: config.FEED_REQUESTS_BACKOFF_SUSPENSION_BASE_MINUTES * 60_000,
+    suspensionRateMultiplier: config.FEED_REQUESTS_BACKOFF_SUSPENSION_RATE_MULTIPLIER,
+    tier1BoundaryMs: config.FEED_REQUESTS_BACKOFF_TIER1_HOURS * 3_600_000,
+    tier2BoundaryMs: config.FEED_REQUESTS_BACKOFF_TIER2_HOURS * 3_600_000,
+    expiryMs: config.FEED_REQUESTS_BACKOFF_EXPIRY_DAYS * 24 * 3_600_000,
+    rateLimitFloorMs: config.FEED_REQUESTS_BACKOFF_RATE_LIMIT_FLOOR_MINUTES * 60_000,
+    retryAfterClampMs: config.FEED_REQUESTS_BACKOFF_RETRY_AFTER_MAX_HOURS * 3_600_000,
+  };
   const listener = createFeedFetcherListener({
-    maxFailAttempts: config.FEED_REQUESTS_MAX_FAIL_ATTEMPTS,
+    backoffConfig,
     feedFetcher,
     partitionedRequestsStore,
     hostRateLimiter,

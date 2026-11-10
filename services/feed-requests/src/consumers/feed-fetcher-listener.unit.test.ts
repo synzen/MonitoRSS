@@ -1,11 +1,22 @@
 import { beforeEach, describe, it, mock } from 'node:test';
 import assert from 'node:assert';
 import { createFeedFetcherListener } from './feed-fetcher-listener';
+import type { BackoffConfig } from '../feed-fetcher/scheduled-fetch';
 import { RequestStatus } from '../feed-fetcher/types';
 import { MessageBrokerQueue } from '@monitorss/contracts';
 import { silenceLogger } from '../test/helpers/silence-logger';
 
 silenceLogger();
+
+const backoffConfig: BackoffConfig = {
+  suspensionBaseMs: 4 * 60 * 60 * 1000,
+  suspensionRateMultiplier: 2,
+  tier1BoundaryMs: 24 * 60 * 60 * 1000,
+  tier2BoundaryMs: 72 * 60 * 60 * 1000,
+  expiryMs: 14 * 24 * 60 * 60 * 1000,
+  rateLimitFloorMs: 60 * 60 * 1000,
+  retryAfterClampMs: 24 * 60 * 60 * 1000,
+};
 
 const createFeedFetcherServiceMock = () => ({
   fetchAndSaveResponse: mock.fn<any>(),
@@ -15,8 +26,8 @@ const createPartitionedRequestsStoreServiceMock = () => ({
   flushInserts: mock.fn<any>(),
   wasRequestedInPastSeconds: mock.fn<any>(),
   getLatestRequestWithOkStatus: mock.fn<any>(),
-  countFailedRequests: mock.fn<any>(),
-  getLatestNextRetryDate: mock.fn<any>(),
+  getLatestAttempt: mock.fn<any>(),
+  getEarliestRequestCreatedAt: mock.fn<any>(),
 });
 
 const createHostRateLimiterServiceMock = () => ({
@@ -42,9 +53,6 @@ describe('FeedFetcherListener', () => {
   let cacheStorageService: ReturnType<typeof createCacheStorageServiceMock>;
   let publish: ReturnType<typeof createPublishMock>;
   const feedUrl = 'https://rss-feed.com/feed.xml';
-  // The pre-migration unit test's config mock returned 3 for every key,
-  // including the max-fail-attempts threshold.
-  const maxFailAttempts = 3;
 
   const publishCallsFor = (queue: string) =>
     publish.mock.calls.filter((call) => call.arguments[0] === queue);
@@ -70,10 +78,10 @@ describe('FeedFetcherListener', () => {
     partitionedRequestsStoreService.getLatestRequestWithOkStatus.mock.mockImplementation(
       async () => null,
     );
-    partitionedRequestsStoreService.countFailedRequests.mock.mockImplementation(
-      async () => 0,
+    partitionedRequestsStoreService.getLatestAttempt.mock.mockImplementation(
+      async () => null,
     );
-    partitionedRequestsStoreService.getLatestNextRetryDate.mock.mockImplementation(
+    partitionedRequestsStoreService.getEarliestRequestCreatedAt.mock.mockImplementation(
       async () => null,
     );
     hostRateLimiterService = createHostRateLimiterServiceMock();
@@ -84,7 +92,7 @@ describe('FeedFetcherListener', () => {
     publish = createPublishMock();
 
     listener = createFeedFetcherListener({
-      maxFailAttempts,
+      backoffConfig,
       feedFetcher: feedFetcherService as never,
       partitionedRequestsStore: partitionedRequestsStoreService as never,
       hostRateLimiter: hostRateLimiterService as never,
@@ -395,15 +403,10 @@ describe('FeedFetcherListener', () => {
       );
     };
 
-    // eslint-disable-next-line max-len
-    it('performs a fresh request despite old terminal failures and recent-request state', async () => {
+    it('performs a fresh request despite recent-request state', async () => {
       cacheStorageService.setNX.mock.mockImplementation(async () => true);
       partitionedRequestsStoreService.wasRequestedInPastSeconds.mock.mockImplementation(
         async () => true,
-      );
-      partitionedRequestsStoreService.countFailedRequests.mock.mockImplementation(
-        (_lookupKey: string, since?: Date) =>
-          since && since.getTime() >= recoveryStartedAt ? 0 : 3,
       );
       feedFetcherService.fetchAndSaveResponse.mock.mockImplementation(
         async () => ({
@@ -416,13 +419,6 @@ describe('FeedFetcherListener', () => {
       assert.strictEqual(
         partitionedRequestsStoreService.wasRequestedInPastSeconds.mock.callCount(),
         0,
-      );
-
-      const countCall =
-        partitionedRequestsStoreService.countFailedRequests.mock.calls[0];
-      assert.ok(countCall.arguments[1] instanceof Date);
-      assert.ok(
-        (countCall.arguments[1] as Date).getTime() >= recoveryStartedAt,
       );
 
       assert.ok(feedFetcherService.fetchAndSaveResponse.mock.callCount() > 0);
@@ -439,9 +435,6 @@ describe('FeedFetcherListener', () => {
 
     it('fetches fresh instead of trusting a still-fresh cached response', async () => {
       enableFreshCacheMocks();
-      partitionedRequestsStoreService.countFailedRequests.mock.mockImplementation(
-        async () => 0,
-      );
       feedFetcherService.fetchAndSaveResponse.mock.mockImplementation(
         async () => ({
           request: { status: RequestStatus.OK },
@@ -453,36 +446,13 @@ describe('FeedFetcherListener', () => {
       assert.ok(feedFetcherService.fetchAndSaveResponse.mock.callCount() > 0);
     });
 
-    it('emits the failed url event when the fresh recovery cycle is exhausted', async () => {
+    it('emits the failed url event when the backoff has expired', async () => {
       cacheStorageService.setNX.mock.mockImplementation(async () => true);
-      partitionedRequestsStoreService.countFailedRequests.mock.mockImplementation(
-        async () => 3,
-      );
-
-      await runRecoveryHandler();
-
-      assert.strictEqual(
-        feedFetcherService.fetchAndSaveResponse.mock.callCount(),
-        0,
-      );
-      assert.partialDeepStrictEqual(
-        publishCallsFor(MessageBrokerQueue.UrlFailedDisableFeeds)[0]
-          .arguments[1],
-        {
-          data: {
-            recovery: { startedAt: recoveryStartedAt },
-          },
-        },
-      );
-    });
-
-    it('honors fresh backoff recorded during the recovery cycle', async () => {
-      cacheStorageService.setNX.mock.mockImplementation(async () => true);
-      partitionedRequestsStoreService.countFailedRequests.mock.mockImplementation(
-        async () => 1,
-      );
-      partitionedRequestsStoreService.getLatestNextRetryDate.mock.mockImplementation(
-        async () => new Date(Date.now() + 10 * 60_000),
+      partitionedRequestsStoreService.getLatestRequestWithOkStatus.mock.mockImplementation(
+        async () => ({
+          createdAt: new Date(Date.now() - 15 * 24 * 3_600_000),
+          requestInitiatedAt: new Date(Date.now() - 15 * 24 * 3_600_000),
+        }),
       );
 
       await runRecoveryHandler();
@@ -492,20 +462,21 @@ describe('FeedFetcherListener', () => {
         0,
       );
       assert.strictEqual(
-        publishCallsFor(MessageBrokerQueue.UrlFetchCompleted).length,
-        0,
+        publishCallsFor(MessageBrokerQueue.UrlFailedDisableFeeds).length,
+        1,
       );
     });
 
-    it('ignores stale backoff dates from the terminal failure history', async () => {
+    it('bypasses the backoff for forced bulk-retry fetches', async () => {
       cacheStorageService.setNX.mock.mockImplementation(async () => true);
-      partitionedRequestsStoreService.countFailedRequests.mock.mockImplementation(
-        async () => 1,
+      partitionedRequestsStoreService.wasRequestedInPastSeconds.mock.mockImplementation(
+        async () => true,
       );
-      // A backoff date from the old (terminal) cycle still far in the future.
-      partitionedRequestsStoreService.getLatestNextRetryDate.mock.mockImplementation(
-        (_lookupKey: string, since?: Date) =>
-          since ? null : new Date(Date.now() + 48 * 3_600_000),
+      partitionedRequestsStoreService.getLatestRequestWithOkStatus.mock.mockImplementation(
+        async () => ({
+          createdAt: new Date(Date.now() - 15 * 24 * 3_600_000),
+          requestInitiatedAt: new Date(Date.now() - 15 * 24 * 3_600_000),
+        }),
       );
       feedFetcherService.fetchAndSaveResponse.mock.mockImplementation(
         async () => ({
@@ -513,12 +484,16 @@ describe('FeedFetcherListener', () => {
         }),
       );
 
-      await runRecoveryHandler();
+      await runHandler({
+        timestamp: Date.now(),
+        data: [{ url: feedUrl, force: true }],
+        rateSeconds: 1800,
+      });
 
       assert.ok(feedFetcherService.fetchAndSaveResponse.mock.callCount() > 0);
-      assert.ok(
-        partitionedRequestsStoreService.getLatestNextRetryDate.mock.calls[0]
-          .arguments[1] instanceof Date,
+      assert.strictEqual(
+        publishCallsFor(MessageBrokerQueue.UrlFailedDisableFeeds).length,
+        0,
       );
     });
 

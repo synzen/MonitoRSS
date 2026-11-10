@@ -520,30 +520,34 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       );
     });
 
-    it("schedules marked recovery feeds with their recovery epoch", async () => {
+    it("schedules legacy recovery feeds without a recovery marker (ADR-011)", async () => {
       const ctx = harness.createContext();
       const feed = await ctx.createFeedWithConnection({
         url: `https://example.com/recovery-${ctx.generateId()}.xml`,
         refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
       });
-      const recoveryStartedAt = new Date(Date.now() - 1_000);
       await ctx.setFields(feed.id, {
         disabledCode: UserFeedDisabledCode.FailedRequests,
         healthStatus: UserFeedHealthStatus.Failing,
-        recoveryStartedAt,
+        recoveryStartedAt: new Date(Date.now() - 1_000),
       });
 
-      const scheduled: Array<{ url: string; recovery?: { startedAt: number } }> = [];
+      const scheduled: Array<{
+        url: string;
+        recovery?: { startedAt: number };
+        force?: boolean;
+      }> = [];
       await ctx.service.handleRefreshRate(DEFAULT_REFRESH_RATE_SECONDS, {
         urlsHandler: async (batch) => {
           scheduled.push(...batch);
         },
       });
 
-      assert.deepStrictEqual(
-        scheduled.find((item) => item.url === feed.url)?.recovery,
-        { startedAt: recoveryStartedAt.getTime() },
-      );
+      const item = scheduled.find((batchItem) => batchItem.url === feed.url);
+
+      assert.ok(item);
+      assert.strictEqual(item.recovery, undefined);
+      assert.strictEqual(item.force, undefined);
     });
 
     it("excludes feeds without connections", async () => {

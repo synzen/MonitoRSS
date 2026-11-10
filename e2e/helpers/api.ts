@@ -41,12 +41,13 @@ export function generateTestId(): string {
 
 export async function createFeed(
   page: Page,
-  overrides?: { url?: string; title?: string },
+  overrides?: { url?: string; title?: string; workspaceId?: string },
 ): Promise<Feed> {
   const testId = generateTestId();
   const body = {
     url: overrides?.url ?? MOCK_RSS_FEED_URL,
     title: overrides?.title ?? `Test Feed ${testId}`,
+    ...(overrides?.workspaceId ? { workspaceId: overrides.workspaceId } : {}),
   };
 
   const response = await page.request.post("/api/v1/user-feeds", {

@@ -26,6 +26,7 @@ Each ADR follows the [Michael Nygard one-pager template](https://cognitect.com/b
 | [008](008-user-feeds-next-internal-architecture.md) | `user-feeds-next` internal architecture: pipeline with domain-partitioned modules | Accepted |
 | [009](009-two-mode-feed-scheduling.md) | Two-mode feed scheduling: interval cycles plus clock-time scheduled occurrences | Accepted |
 | [010](010-feed-requests-standard-stack-migration.md) | Cutover record: migrate `feed-requests` off NestJS to the standard stack | Accepted |
+| [011](011-feed-retry-backoff.md) | Feed retry backoff: one time-based per-URL schedule owned by feed-requests | Accepted |
 
 ## Per-service ADRs
 

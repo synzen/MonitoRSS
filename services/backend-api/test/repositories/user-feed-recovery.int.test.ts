@@ -149,13 +149,11 @@ describe("UserFeedMongooseRepository bulk recovery state transitions", () => {
     }
 
     assert.strictEqual(scheduledUrls.length, 1);
-    assert.strictEqual(
-      scheduledUrls[0]!.recoveryStartedAt,
-      recoveryStartedAt.getTime(),
-    );
+    // ADR-011: no recovery epoch travels with scheduled URLs anymore (the
+    // field is gone from the yielded type).
   });
 
-  it("drops a recovery feed from scheduling once it reverts to the terminal state", async () => {
+  it("drops an expired feed from scheduling once it reaches the terminal state", async () => {
     const url = `https://example.com/recovery-revert-${generateTestId()}.xml`;
     const recoveryFeedId = await createFeed({ url, title: "Recovering feed" });
     const recoveryStartedAt = new Date(Date.now() - 5_000);
@@ -165,10 +163,11 @@ describe("UserFeedMongooseRepository bulk recovery state transitions", () => {
       recoveryStartedAt,
     });
 
-    await repository.revertRecoveryFeedsToFailed(
-      { url },
-      recoveryStartedAt.getTime(),
-    );
+    // The expiry path (url.failed.disable-feeds) flips health to Failed;
+    // terminal feeds stay excluded from scheduling.
+    await setRawFields(recoveryFeedId, {
+      healthStatus: UserFeedHealthStatus.Failed,
+    });
 
     const reverted = await repository.findById(recoveryFeedId);
 
@@ -178,7 +177,6 @@ describe("UserFeedMongooseRepository bulk recovery state transitions", () => {
       reverted.disabledCode,
       UserFeedDisabledCode.FailedRequests,
     );
-    assert.ok(!reverted.recoveryStartedAt);
 
     const scheduledUrls: string[] = [];
 
@@ -240,10 +238,7 @@ describe("UserFeedMongooseRepository bulk recovery state transitions", () => {
 
     assert.ok(!deliveredBefore.includes(feedId));
 
-    await repository.clearDisabledCodeForRecoveredFeeds(
-      { lookupKey },
-      recoveryStartedAt.getTime(),
-    );
+    await repository.clearDisabledCodeForRecoveredFeeds({ lookupKey });
 
     const restored = await repository.findById(feedId);
 

@@ -30,6 +30,7 @@ export class MessageBrokerService {
       headers?: Record<string, string>;
       recovery?: { startedAt: number };
       trigger?: UrlFetchTrigger;
+      force?: boolean;
     }>;
   }): Promise<void> {
     const message = { ...data, timestamp: Date.now() };

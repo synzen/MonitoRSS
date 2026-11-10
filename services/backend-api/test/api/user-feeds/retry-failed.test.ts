@@ -96,7 +96,7 @@ describe("Bulk retry of failed workspace feeds", { concurrency: true }, () => {
     assert.strictEqual(response.status, 404);
   });
 
-  it("counts and queues every terminal request failure, excluding other disabled feeds", async () => {
+  it("queues every expired feed for a forced fetch, excluding other disabled feeds", async () => {
     const discordUserId = randomUUID();
     await seedWorkspaceUser(discordUserId);
     const user = await ctx.asUser(discordUserId);
@@ -129,14 +129,16 @@ describe("Bulk retry of failed workspace feeds", { concurrency: true }, () => {
       result: { retriedCount: 3, recoveryAlreadyActive: false },
     });
 
+    // ADR-011: retry emits forced fetches; feed state only changes when a
+    // fetch succeeds (url.fetch-completed), so nothing flips here.
     for (const id of eligibleIds) {
       const feed = await ctx.container.userFeedRepository.findById(id);
       assert.strictEqual(
         feed?.disabledCode,
         UserFeedDisabledCode.FailedRequests,
       );
-      assert.strictEqual(feed?.healthStatus, UserFeedHealthStatus.Failing);
-      assert.ok(feed?.recoveryStartedAt);
+      assert.strictEqual(feed?.healthStatus, UserFeedHealthStatus.Failed);
+      assert.strictEqual(feed?.recoveryStartedAt, undefined);
     }
     const excluded =
       await ctx.container.userFeedRepository.findById(excludedId);
@@ -180,11 +182,11 @@ describe("Bulk retry of failed workspace feeds", { concurrency: true }, () => {
         workspaceId,
         filters: { eligibleForBulkRetry: true },
       }),
-      0,
+      1001,
     );
   });
 
-  it("lists only terminal request failures as eligible in the requested workspace", async () => {
+  it("lists request-failure feeds as eligible in the requested workspace regardless of health badge", async () => {
     const discordUserId = randomUUID();
     await seedWorkspaceUser(discordUserId);
     const user = await ctx.asUser(discordUserId);
@@ -204,7 +206,7 @@ describe("Bulk retry of failed workspace feeds", { concurrency: true }, () => {
     await seedFeed({
       discordUserId,
       workspaceId,
-      title: "Already recovering",
+      title: "Legacy limbo badge",
       disabledCode: UserFeedDisabledCode.FailedRequests,
       healthStatus: UserFeedHealthStatus.Failing,
     });
@@ -238,14 +240,14 @@ describe("Bulk retry of failed workspace feeds", { concurrency: true }, () => {
       total: number;
       results: Array<{ title: string }>;
     };
-    assert.strictEqual(body.total, 1);
-    assert.deepStrictEqual(
-      body.results.map((feed) => feed.title),
-      ["Eligible"],
-    );
+    assert.strictEqual(body.total, 2);
+    assert.deepStrictEqual(body.results.map((feed) => feed.title).sort(), [
+      "Eligible",
+      "Legacy limbo badge",
+    ]);
   });
 
-  it("is idempotent while a recovery cycle is active", async () => {
+  it("is throttled by the workspace cooldown, then retryable again after it elapses", async () => {
     const discordUserId = randomUUID();
     await seedWorkspaceUser(discordUserId);
     const user = await ctx.asUser(discordUserId);
@@ -266,12 +268,32 @@ describe("Bulk retry of failed workspace feeds", { concurrency: true }, () => {
       result: { retriedCount: 1, recoveryAlreadyActive: false },
     });
 
+    // Forced re-fetches bypass every request-side dedupe (ADR-011), so an
+    // immediate second click is rejected instead of re-fetching everything.
     const second = await user.fetch("/api/v1/user-feeds/retry-failed", {
       method: "POST",
       body: JSON.stringify({ workspaceId }),
     });
-    assert.deepStrictEqual(await second.json(), {
-      result: { retriedCount: 0, recoveryAlreadyActive: true },
+    assert.strictEqual(second.status, 422);
+    assert.strictEqual(
+      ((await second.json()) as { code: string }).code,
+      "BULK_RETRY_TOO_SOON",
+    );
+
+    // Once the cooldown elapses, the still-failed feed retries again.
+    await ctx.connection
+      .collection("workspaces")
+      .updateOne(
+        { _id: new Types.ObjectId(workspaceId) },
+        { $set: { lastBulkRetryAt: new Date(Date.now() - 11 * 60_000) } },
+      );
+
+    const third = await user.fetch("/api/v1/user-feeds/retry-failed", {
+      method: "POST",
+      body: JSON.stringify({ workspaceId }),
+    });
+    assert.deepStrictEqual(await third.json(), {
+      result: { retriedCount: 1, recoveryAlreadyActive: false },
     });
   });
 
