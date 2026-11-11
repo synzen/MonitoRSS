@@ -140,6 +140,46 @@ describe('FeedFetcherService', () => {
       );
     });
 
+    it('uses the xml-only accept header for hosts that content-negotiate', async () => {
+      const rssgroundUrl = 'https://www.rssground.com/services/facebook-rss/abc';
+
+      agent
+        .get('https://www.rssground.com')
+        .intercept({ path: '/services/facebook-rss/abc' })
+        .reply((opts) => {
+          capturedRequests.push({
+            url: `${opts.origin}${opts.path}`,
+            headers: (opts.headers as Record<string, string>) ?? {},
+          });
+
+          return {
+            statusCode: 200,
+            data: feedXml,
+            responseOptions: {
+              headers: { 'content-type': 'application/xml' },
+            },
+          };
+        });
+
+      await service.fetchAndSaveResponse(rssgroundUrl);
+
+      assert.strictEqual(
+        capturedRequests[0].headers['accept'],
+        'application/rss+xml,application/xml,text/xml,*/*;q=0.8',
+      );
+    });
+
+    it('uses the default accept header for all other hosts', async () => {
+      mockUndiciResponse();
+
+      await service.fetchAndSaveResponse(feedUrl);
+
+      assert.strictEqual(
+        capturedRequests[0].headers['accept'],
+        'text/html,text/xml,application/xml,application/rss+xml',
+      );
+    });
+
     describe('if ok response', () => {
       it('returns the request insert correctly', async () => {
         mockUndiciResponse();

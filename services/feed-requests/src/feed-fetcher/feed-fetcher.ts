@@ -23,6 +23,24 @@ const gunzipPromise = promisify(gunzip);
 
 const sha1 = createHash('sha1');
 
+/**
+ * Hosts that content-negotiate on accept and serve their HTML page instead of
+ * the XML when "text/html" appears in the accept header (e.g. rssground.com),
+ * which the parser then rejects.
+ */
+const CUSTOM_ACCEPT_HEADERS_BY_HOST = new Map<string, string>([
+  ['www.rssground.com', 'application/rss+xml,application/xml,text/xml,*/*;q=0.8'],
+]);
+
+const resolveAcceptHeaderForUrl = (url: string): string => {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    return CUSTOM_ACCEPT_HEADERS_BY_HOST.get(hostname) ?? 'text/html,text/xml,application/xml,application/rss+xml';
+  } catch {
+    return 'text/html,text/xml,application/xml,application/rss+xml';
+  }
+};
+
 const convertHeaderValue = (val?: string | string[] | null) => {
   if (Array.isArray(val)) {
     return val.join(',');
@@ -253,7 +271,7 @@ export function createFeedFetcherService({
       const fetchOptions: FetchOptions = {
         headers: {
           'user-agent': resolvedUserAgent,
-          accept: 'text/html,text/xml,application/xml,application/rss+xml',
+          accept: resolveAcceptHeaderForUrl(url),
           'accept-encoding': 'gzip',
           /**
            * Currently required for https://developer.oculus.com/blog/rss/ that returns 400 otherwise
