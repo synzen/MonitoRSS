@@ -27,6 +27,8 @@ services:
     logging:
       driver: none
     image: mongo:8.0
+    environment:
+      - GLIBC_TUNABLES=glibc.pthread.rseq=1
     volumes:
       - "mongodb-data:/data/db"
     networks:
