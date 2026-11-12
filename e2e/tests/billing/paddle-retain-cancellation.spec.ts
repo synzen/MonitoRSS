@@ -14,10 +14,14 @@ test.describe("Paddle Subscription Cancellation", () => {
     testInfo.setTimeout(200_000);
     const userResponse = await page.request.get("/api/v1/users/@me");
     const userData = await userResponse.json();
-    await ensurePaidSubscriptionState(page, {
-      email: userData.result.email,
-      priceId: TIER_1_MONTHLY_PRICE_ID,
-    });
+    await ensurePaidSubscriptionState(
+      page,
+      {
+        email: userData.result.email,
+        priceId: TIER_1_MONTHLY_PRICE_ID,
+      },
+      testInfo.parallelIndex,
+    );
   });
 
   test("cancels subscription and shows pending cancellation state", async ({
