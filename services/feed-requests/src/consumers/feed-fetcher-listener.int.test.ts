@@ -68,10 +68,6 @@ describe('FeedFetcherListener (Integration)', () => {
       cacheStorage: cacheStorageService as never,
       publish: publish as never,
     });
-    policies = createScheduledFetchPolicies({
-      backoffConfig,
-      partitionedRequestsStore: createPartitionedRequestsStore(getTestPool()),
-    });
   });
 
   beforeEach(async () => {
