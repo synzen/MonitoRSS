@@ -296,6 +296,7 @@ describe(
     describe("cloneConnection", { concurrency: false }, () => {
       it("clones the connection and returns the new id", async () => {
         const guildId = "guild-id";
+        const discordUserId = objectId();
         const connectionIdToUse = objectId();
 
         const connection: IDiscordChannelConnection = {
@@ -329,6 +330,7 @@ describe(
         };
 
         const createdFeed = await createFeed(ctx, {
+          discordUserId,
           connections: {
             discordChannels: [
               {
@@ -357,7 +359,7 @@ describe(
               targetFeedIds: [createdFeed.id],
             },
             "token",
-            "user-id",
+            discordUserId,
           );
 
         const clonedConnectionId = ids[0];
@@ -459,6 +461,7 @@ describe(
       it("clones connection with new channel id", async () => {
         const guildId = "guild-id";
         const newGuildId = "new-guild-id";
+        const discordUserId = objectId();
         const connectionIdToUse = objectId();
         const newChannelId = "new-channel-id";
 
@@ -480,6 +483,7 @@ describe(
         };
 
         const createdFeed = await createFeed(ctx, {
+          discordUserId,
           connections: {
             discordChannels: [
               {
@@ -501,7 +505,7 @@ describe(
               channelId: newChannelId,
             },
             "token",
-            "user-id",
+            discordUserId,
           );
 
         const updatedFeed = await getFeed(ctx, createdFeed.id);
@@ -645,6 +649,7 @@ describe(
       it("clones connection with all properties preserved", async () => {
         const guildId = "guild-id";
         const connectionIdToUse = objectId();
+        const discordUserId = objectId();
 
         const connection: IDiscordChannelConnection = {
           id: connectionIdToUse,
@@ -697,6 +702,7 @@ describe(
         };
 
         const createdFeed = await createFeed(ctx, {
+          discordUserId,
           connections: {
             discordChannels: [
               {
@@ -733,7 +739,7 @@ describe(
               targetFeedIds: [createdFeed.id],
             },
             "token",
-            "user-id",
+            discordUserId,
           );
 
         const updatedFeed = await getFeed(ctx, createdFeed.id);

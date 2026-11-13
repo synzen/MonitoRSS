@@ -682,9 +682,7 @@ export class FeedConnectionsDiscordChannelsService {
     try {
       const result = await this.deps.userFeedRepository.cloneConnectionToFeeds({
         targetFeedIds: useSelectedFeeds ? targetFeedIds : undefined,
-        ownershipDiscordUserId: useSelectedFeeds
-          ? undefined
-          : userDiscordUserId,
+        ownershipDiscordUserId: userDiscordUserId,
         search: useSelectedFeeds ? undefined : targetFeedSearch,
         excludeFeedIds: useSelectedFeeds ? undefined : targetFeedExcludeIds,
         connectionData,
