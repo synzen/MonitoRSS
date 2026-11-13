@@ -2274,6 +2274,9 @@ export class UserFeedMongooseRepository
         _id: {
           $in: targetFeedIds.map((id) => this.stringToObjectId(id)),
         },
+        ...(ownershipDiscordUserId
+          ? this.getOwnershipFilter(ownershipDiscordUserId)
+          : {}),
       };
     } else if (ownershipDiscordUserId) {
       feedQuery = {

@@ -634,6 +634,60 @@ describe(
           );
         });
 
+        it("does not clone to feeds owned by other users in 'selected' mode", async () => {
+          const discordUserId = generateSnowflake();
+          const user = await ctx.asUser(discordUserId);
+
+          const { feedId: sourceFeedId, connectionId: sourceConnectionId } =
+            await createTestFeedWithConnection(ctx, { discordUserId });
+          const { feedId: otherUserFeedId } =
+            await createTestFeedWithConnection(ctx);
+          const { feedId: ownFeedId } = await createTestFeedWithConnection(ctx, {
+            discordUserId,
+          });
+
+          const response = await user.fetch(
+            testUrl(sourceFeedId, sourceConnectionId),
+            {
+              method: "POST",
+              body: JSON.stringify(
+                validBody({
+                  targetFeedSelectionType: "selected",
+                  targetFeedIds: [otherUserFeedId, ownFeedId],
+                }),
+              ),
+            },
+          );
+
+          assert.strictEqual(response.status, 200);
+          const body = (await response.json()) as {
+            result: { ids: string[] };
+          };
+          // Only the caller-owned feed in the selection is cloned.
+          assert.strictEqual(body.result.ids.length, 1);
+
+          const ownFeed =
+            await ctx.container.userFeedRepository.findById(ownFeedId);
+          assert.ok(
+            ownFeed!.connections.discordChannels.find(
+              (c) => c.name === "cloned-connection",
+            ),
+            "Should still clone to the caller-owned feed in the selection",
+          );
+
+          const otherUserFeed =
+            await ctx.container.userFeedRepository.findById(otherUserFeedId);
+          const clonedOnOtherUser =
+            otherUserFeed!.connections.discordChannels.find(
+              (c) => c.name === "cloned-connection",
+            );
+          assert.strictEqual(
+            clonedOnOtherUser,
+            undefined,
+            "Should NOT clone to a feed owned by another user in 'selected' mode",
+          );
+        });
+
         it("clones to multiple selected target feeds", async () => {
           const discordUserId = generateSnowflake();
           const user = await ctx.asUser(discordUserId);
