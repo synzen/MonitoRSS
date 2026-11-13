@@ -188,7 +188,7 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
         })
       }
     } catch (err) {
-      log.debug(`Failed to send feed delivery result to queue`, err)
+      log.error(`Failed to send feed delivery result to queue`, err)
       logDatadog('error', `Failed to send feed delivery result to queue`, {
         stack: (err as Error).stack
       })
@@ -198,7 +198,13 @@ export async function createConsumerApp(deps: ConsumerAppDeps): Promise<Consumer
       log.debug(`Article delivered`, result)
       logDatadog('info', `Article delivered`, meta)
     } else {
-      log.debug(`Article delivery failed`, result)
+      log.warn(`Article delivery failed`, {
+        ...meta,
+        deliveryId: job.id,
+        feedId: job.meta?.feedId,
+        status: result.status,
+        body: result.body
+      })
       logDatadog('warn', `Article delivery failed`, {
         ...meta,
         status: result.status,
