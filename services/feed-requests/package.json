@@ -22,7 +22,7 @@
     "@aws-sdk/client-s3": "^3.1149.0",
     "@fastify/compress": "^9.2.1",
     "@monitorss/contracts": "^0.4.0",
-    "@monitorss/logger": "^1.1.2",
+    "@monitorss/logger": "^1.2.0",
     "dayjs": "^1.11.23",
     "dotenv": "^18.0.7",
     "fastify": "^5.12.5",

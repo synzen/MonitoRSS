@@ -13,6 +13,11 @@ export const ConfigSchema = z.object({
     host: z.string().optional(),
     service: z.string().optional(),
   }).optional(),
+  otlp: z.object({
+    endpoint: z.string().optional(),
+    headers: z.string().optional(),
+    service: z.string().optional(),
+  }).optional(),
 })
 
 export type ConfigType = z.infer<typeof ConfigSchema>

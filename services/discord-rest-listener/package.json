@@ -16,6 +16,7 @@
     "@mikro-orm/core": "^7.2.5",
     "@mikro-orm/decorators": "^7.2.5",
     "@mikro-orm/mongodb": "^7.2.5",
+    "@monitorss/logger": "^1.2.0",
     "@synzen/discord-rest": "^0.7.0-beta.17",
     "amqp-connection-manager": "^5.0.0",
     "amqplib": "^2.2.0",

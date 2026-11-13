@@ -46,9 +46,7 @@ export interface PartitionedRequestsStore {
     responseHeaders?: Record<string, string>;
     requestInitiatedAt: Date | null;
   }>;
-  getLatestAttempt(
-    lookupKey: string,
-  ): Promise<null | {
+  getLatestAttempt(lookupKey: string): Promise<null | {
     createdAt: Date;
     statusCode: number | null;
     responseHeaders?: Record<string, string>;

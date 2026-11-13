@@ -11,7 +11,7 @@
     "@fastify/secure-session": "^8.4.1",
     "@fastify/static": "^10.1.6",
     "@monitorss/contracts": "^0.4.0",
-    "@monitorss/logger": "^1.1.2",
+    "@monitorss/logger": "^1.2.0",
     "@sinclair/typebox": "^0.34.52",
     "ajv-formats": "^3.0.1",
     "commander": "^15.0.0",

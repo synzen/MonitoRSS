@@ -141,7 +141,8 @@ describe('FeedFetcherService', () => {
     });
 
     it('uses the xml-only accept header for hosts that content-negotiate', async () => {
-      const rssgroundUrl = 'https://www.rssground.com/services/facebook-rss/abc';
+      const rssgroundUrl =
+        'https://www.rssground.com/services/facebook-rss/abc';
 
       agent
         .get('https://www.rssground.com')

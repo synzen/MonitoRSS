@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@monitorss/contracts": "^0.4.0",
-    "@monitorss/logger": "^1.1.2",
+    "@monitorss/logger": "^1.2.0",
     "@synzen/discord-rest": "0.7.0-beta.17",
     "@types/feedparser": "^2.3.0",
     "dayjs": "^1.11.23",
