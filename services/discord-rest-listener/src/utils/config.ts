@@ -18,6 +18,11 @@ const config = {
     host: process.env.DISCORD_REST_LISTENER_DATADOG_HOST,
     service: process.env.DISCORD_REST_LISTENER_DATADOG_SERVICE,
   },
+  otlp: {
+    endpoint: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    headers: process.env.OTEL_EXPORTER_OTLP_HEADERS,
+    service: process.env.OTEL_SERVICE_NAME || process.env.DISCORD_REST_LISTENER_DATADOG_SERVICE,
+  },
 };
 
 const parsedConfig = ConfigSchema.parse(config);

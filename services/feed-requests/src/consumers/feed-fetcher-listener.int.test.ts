@@ -32,7 +32,6 @@ silenceLogger();
 
 describe('FeedFetcherListener (Integration)', () => {
   let listener: ReturnType<typeof createFeedFetcherListener>;
-  let policies: ReturnType<typeof createScheduledFetchPolicies>;
   const feedUrl = 'https://rss-feed.com/feed.xml';
 
   const backoffConfig: BackoffConfig = {
@@ -68,10 +67,6 @@ describe('FeedFetcherListener (Integration)', () => {
       ) as never,
       cacheStorage: cacheStorageService as never,
       publish: publish as never,
-    });
-    policies = createScheduledFetchPolicies({
-      backoffConfig,
-      partitionedRequestsStore: createPartitionedRequestsStore(getTestPool()),
     });
   });
 
@@ -405,7 +400,7 @@ describe('FeedFetcherListener (Integration)', () => {
       assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 2);
     });
 
-    it('still expires when a recovery marker arrives; revival is the force flag\'s job', async () => {
+    it("still expires when a recovery marker arrives; revival is the force flag's job", async () => {
       const shortBackoffListener = createShortBackoffListener();
 
       await seedRequests([
@@ -415,9 +410,7 @@ describe('FeedFetcherListener (Integration)', () => {
       await shortBackoffListener.onBrokerFetchRequestBatchHandler({
         timestamp: Date.now(),
         rateSeconds: 1800,
-        data: [
-          { url: feedUrl, recovery: { startedAt: recoveryStartedAt } },
-        ],
+        data: [{ url: feedUrl, recovery: { startedAt: recoveryStartedAt } }],
       } as unknown as Parameters<
         typeof listener.onBrokerFetchRequestBatchHandler
       >[0]);
@@ -539,9 +532,11 @@ describe('FeedFetcherListener (Integration)', () => {
         }),
       ]);
 
-      const { skip, nextRetryDate } = await compressedPolicies().getBackoffDecision(
-        { url: feedUrl, rateSeconds: 1800 },
-      );
+      const { skip, nextRetryDate } =
+        await compressedPolicies().getBackoffDecision({
+          url: feedUrl,
+          rateSeconds: 1800,
+        });
 
       // elapsed 150min ≥ suspension (2h) and < tier1 (3h) → hourly probes;
       // the last attempt was 20 minutes ago, so the probe waits ~40 minutes.
@@ -579,9 +574,11 @@ describe('FeedFetcherListener (Integration)', () => {
         buildInsert({ createdAt: dayjs().subtract(1, 'hour').toDate() }),
       ]);
 
-      const { skip, expired, elapsedMs } = await expiringPolicies.getBackoffDecision(
-        { url: feedUrl, rateSeconds: 1800 },
-      );
+      const { skip, expired, elapsedMs } =
+        await expiringPolicies.getBackoffDecision({
+          url: feedUrl,
+          rateSeconds: 1800,
+        });
 
       assert.strictEqual(skip, true);
       assert.strictEqual(expired, true);

@@ -59,9 +59,15 @@ describe("consumer integration", () => {
     assert.equal(record!.feedId, feedId)
     assert.equal(record!.feedURL, "https://example.com/rss")
 
-    const stat = await ctx.app.orm.em.findOne(GeneralStat, GeneralStat.keys.ARTICLES_SENT)
-    assert.ok(stat, "ARTICLES_SENT stat exists")
-    assert.ok((stat!.data as number) >= 1)
+    // The stat is incremented after the record insert, so poll instead of a
+    // one-shot read or this races the insert.
+    await ctx.waitFor(
+      async () => {
+        const stat = await ctx.app.orm.em.findOne(GeneralStat, GeneralStat.keys.ARTICLES_SENT)
+        return stat !== null && (stat.data as number) >= 1
+      },
+      { message: "ARTICLES_SENT stat never incremented" }
+    )
 
     const resultMessage = (await ctx.awaitDeliveryResultForJob(jobId, 5000)) as {
       job: { id: string }

@@ -1,3 +1,4 @@
+import { OtlpLogger } from '@monitorss/logger'
 import winston from 'winston'
 import config from './config'
 
@@ -35,9 +36,26 @@ if (config.datadog) {
   })
 }
 
+let otlpLog: OtlpLogger | undefined;
+
+if (config.otlp?.endpoint && config.otlp.headers && config.otlp.service) {
+  console.log('Setting up otlp')
+  otlpLog = new OtlpLogger({
+    env: process.env.NODE_ENV as string,
+    endpoint: config.otlp.endpoint,
+    headers: config.otlp.headers,
+    service: config.otlp.service,
+    useInEnvs: ['production'],
+  });
+}
+
 export const logDatadog = (level: string, message: string, meta?: any) => {
   if (datadogLog) {
     datadogLog.log(level, message, meta);
+  }
+  // During the dual-ship window, datadog-only messages also ship to OTLP.
+  if (otlpLog) {
+    otlpLog.log(level as 'debug' | 'info' | 'warn' | 'error', { message, ...meta });
   }
 }
 

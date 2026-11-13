@@ -29,13 +29,20 @@ const sha1 = createHash('sha1');
  * which the parser then rejects.
  */
 const CUSTOM_ACCEPT_HEADERS_BY_HOST = new Map<string, string>([
-  ['www.rssground.com', 'application/rss+xml,application/xml,text/xml,*/*;q=0.8'],
+  [
+    'www.rssground.com',
+    'application/rss+xml,application/xml,text/xml,*/*;q=0.8',
+  ],
 ]);
 
 const resolveAcceptHeaderForUrl = (url: string): string => {
   try {
     const hostname = new URL(url).hostname.toLowerCase();
-    return CUSTOM_ACCEPT_HEADERS_BY_HOST.get(hostname) ?? 'text/html,text/xml,application/xml,application/rss+xml';
+
+    return (
+      CUSTOM_ACCEPT_HEADERS_BY_HOST.get(hostname) ??
+      'text/html,text/xml,application/xml,application/rss+xml'
+    );
   } catch {
     return 'text/html,text/xml,application/xml,application/rss+xml';
   }

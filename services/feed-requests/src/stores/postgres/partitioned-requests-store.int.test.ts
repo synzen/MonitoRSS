@@ -365,7 +365,7 @@ describe('PartitionedRequestsStore (Integration)', () => {
       assert.ok(attempt?.createdAt);
     });
 
-    it('getEarliestRequestCreatedAt anchors never-succeeded URLs at their first request', async () => {
+    it('getEarliestRequestCreatedAt anchors never-succeeded URLs at first request', async () => {
       const store = createPartitionedRequestsStore(getTestPool());
       const firstAt = dayjs().subtract(3, 'days').toDate();
 
@@ -385,7 +385,9 @@ describe('PartitionedRequestsStore (Integration)', () => {
         firstAt.getTime(),
       );
       assert.strictEqual(
-        await store.getEarliestRequestCreatedAt('https://unknown-feed.example/rss'),
+        await store.getEarliestRequestCreatedAt(
+          'https://unknown-feed.example/rss',
+        ),
         null,
       );
     });

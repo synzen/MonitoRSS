@@ -13,6 +13,9 @@ if (process.env.NODE_ENV !== 'test') {
   }
 }
 
+const otlpEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
+const otlpHeaders = process.env.OTEL_EXPORTER_OTLP_HEADERS;
+
 const logger = setupLogger({
   env: process.env.NODE_ENV as string,
   datadog: datadogApiKey
@@ -21,6 +24,17 @@ const logger = setupLogger({
         service: process.env.SERVICE_NAME || 'monitorss-feed-requests-service',
       }
     : undefined,
+  otlp:
+    otlpEndpoint && otlpHeaders
+      ? {
+          endpoint: otlpEndpoint,
+          headers: otlpHeaders,
+          service:
+            process.env.OTEL_SERVICE_NAME ||
+            process.env.SERVICE_NAME ||
+            'monitorss-feed-requests-service',
+        }
+      : undefined,
   enableDebugLogs: process.env.LOG_LEVEL === 'debug',
   disableConsole: !!datadogApiKey,
 });

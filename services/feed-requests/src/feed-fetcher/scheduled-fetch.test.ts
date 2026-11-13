@@ -1,6 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
-import { calculateBackoffIntervalMs, type BackoffConfig } from './scheduled-fetch';
+import {
+  calculateBackoffIntervalMs,
+  type BackoffConfig,
+} from './scheduled-fetch';
 
 const config: BackoffConfig = {
   suspensionBaseMs: 4 * 60 * 60 * 1000,
@@ -34,7 +37,11 @@ describe('calculateBackoffIntervalMs', () => {
   it('suspends only after max(base, multiplier * rate) without a success', () => {
     // A 20-minute feed suspends after 4h; a 6-hourly feed only after 12h.
     assert.strictEqual(
-      calculateBackoffIntervalMs({ elapsedMs: 4 * HOUR, rateSeconds: RATE, config }),
+      calculateBackoffIntervalMs({
+        elapsedMs: 4 * HOUR,
+        rateSeconds: RATE,
+        config,
+      }),
       HOUR,
     );
     assert.strictEqual(
@@ -57,11 +64,19 @@ describe('calculateBackoffIntervalMs', () => {
 
   it('steps probe tiers at 24h and 72h, never probing faster than the feed pays for', () => {
     assert.strictEqual(
-      calculateBackoffIntervalMs({ elapsedMs: 24 * HOUR, rateSeconds: RATE, config }),
+      calculateBackoffIntervalMs({
+        elapsedMs: 24 * HOUR,
+        rateSeconds: RATE,
+        config,
+      }),
       6 * HOUR,
     );
     assert.strictEqual(
-      calculateBackoffIntervalMs({ elapsedMs: 72 * HOUR, rateSeconds: RATE, config }),
+      calculateBackoffIntervalMs({
+        elapsedMs: 72 * HOUR,
+        rateSeconds: RATE,
+        config,
+      }),
       24 * HOUR,
     );
     assert.strictEqual(

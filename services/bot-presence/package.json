@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@discordjs/core": "^2.6.0",
-    "@monitorss/logger": "^1.1.2",
+    "@monitorss/logger": "^1.2.0",
     "@discordjs/rest": "^2.6.3",
     "@discordjs/ws": "^2.0.4",
     "amqp-connection-manager": "^5.0.0",
