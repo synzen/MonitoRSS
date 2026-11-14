@@ -1097,6 +1097,14 @@ export async function deliverArticles(
         payload.meta as never
       );
     }
+
+    logger.debug(
+      `Enqueued ${allPayloads.length} Discord message(s) for delivery`,
+      {
+        feedId: options.feedId,
+        deliveryIds: allPayloads.map((p) => p.meta.id),
+      }
+    );
   }
 
   return allStates;
