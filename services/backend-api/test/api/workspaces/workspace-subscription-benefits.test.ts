@@ -11,7 +11,7 @@ import {
   createTestHttpServer,
   type TestHttpServer,
 } from "../../helpers/test-http-server";
-import type { MockApi } from "../../helpers/mock-apis";
+import { registerDefaultClassifyRoute, type MockApi } from "../../helpers/mock-apis";
 import {
   TEST_PADDLE_WEBHOOK_SECRET,
   createWebhookSignature,
@@ -68,6 +68,7 @@ describe(
     before(async () => {
       paddleApi = createMockPaddleApi();
       feedApiMockServer = createTestHttpServer();
+      registerDefaultClassifyRoute(feedApiMockServer);
       ctx = await createAppTestContext({
         configOverrides: {
           BACKEND_API_PADDLE_WEBHOOK_SECRET: TEST_PADDLE_WEBHOOK_SECRET,
@@ -439,6 +440,7 @@ describe(
 
     before(async () => {
       feedApiMockServer = createTestHttpServer();
+      registerDefaultClassifyRoute(feedApiMockServer);
       ctx = await createAppTestContext({
         configOverrides: {
           BACKEND_API_USER_FEEDS_API_HOST: feedApiMockServer.host,

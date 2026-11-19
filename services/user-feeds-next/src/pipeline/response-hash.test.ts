@@ -85,9 +85,7 @@ describe("response-hash", () => {
     it("parses valid feed deleted event", () => {
       const event = {
         data: {
-          feed: {
-            id: "feed-123",
-          },
+          feedId: "feed-123",
         },
       };
 
@@ -114,9 +112,7 @@ describe("response-hash", () => {
     it("returns null for invalid event (non-string id)", () => {
       const event = {
         data: {
-          feed: {
-            id: 123,
-          },
+          feedId: 123,
         },
       };
 
@@ -172,9 +168,7 @@ describe("response-hash", () => {
     it("removes response hash for the feed", async () => {
       const event = {
         data: {
-          feed: {
-            id: "feed-to-delete",
-          },
+          feedId: "feed-to-delete",
         },
       };
 
@@ -190,9 +184,7 @@ describe("response-hash", () => {
     it("clears article field store for the feed", async () => {
       const event = {
         data: {
-          feed: {
-            id: "feed-to-delete",
-          },
+          feedId: "feed-to-delete",
         },
       };
 

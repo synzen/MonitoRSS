@@ -496,6 +496,9 @@ export class SupportersService {
     maxFeeds: number;
     maxDailyArticles: number;
     refreshRateSeconds: number;
+    // Whether an active paid subscription backs the workspace (false for
+    // self-host instances, where billing is not a construct).
+    isSupporter: boolean;
     allowWebhooks: boolean;
     dormant: boolean;
   }> {
@@ -504,6 +507,7 @@ export class SupportersService {
         maxFeeds: this.defaultMaxWorkspaceFeeds ?? Number.MAX_SAFE_INTEGER,
         maxDailyArticles: this.maxDailyArticlesDefault,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
+        isSupporter: true,
         allowWebhooks: true,
         dormant: false,
       };
@@ -529,6 +533,7 @@ export class SupportersService {
         maxFeeds: effectiveMaxFeeds,
         maxDailyArticles: subscription.benefits.dailyArticleLimit,
         refreshRateSeconds: subscription.benefits.refreshRateSeconds,
+        isSupporter: true,
         allowWebhooks: subscription.benefits.allowWebhooks,
         dormant: false,
       };
@@ -539,6 +544,7 @@ export class SupportersService {
         maxFeeds: grant.feeds,
         maxDailyArticles: this.maxDailyArticlesDefault,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
+        isSupporter: true,
         allowWebhooks: true,
         dormant: false,
       };
@@ -548,6 +554,7 @@ export class SupportersService {
       maxFeeds: 0,
       maxDailyArticles: this.maxDailyArticlesDefault,
       refreshRateSeconds: this.defaultRefreshRateSeconds,
+      isSupporter: false,
       allowWebhooks: false,
       dormant: true,
     };
@@ -578,6 +585,7 @@ export class SupportersService {
     );
 
     return {
+      isSupporter: benefits.isSupporter,
       maxFeeds: benefits.maxUserFeeds,
       maxDailyArticles: benefits.maxDailyArticles,
       refreshRateSeconds: benefits.refreshRateSeconds,

@@ -47,6 +47,16 @@ const configSchema = z.object({
 
   // Feed settings
   BACKEND_API_FEED_USER_AGENT: z.string().min(1),
+  // Minimum refresh rate (seconds) for premium feeds (platform URLs served by
+  // provider adapters). Applies to every deployment including self-hosts;
+  // self-hosts bypass the access gates but not this floor. 0 disables it.
+  BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS: z.coerce
+    .number()
+    .default(3600),
+  // Cadence of the schedule emitter's maintenance loop (platform GC sweep,
+  // support checks). Lower values are for dev/e2e only: each sweep aggregates
+  // every active feed.
+  BACKEND_API_MAINTENANCE_INTERVAL_MS: z.coerce.number().default(300000),
 
   // Defaults
   BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: z.coerce.number().default(10),

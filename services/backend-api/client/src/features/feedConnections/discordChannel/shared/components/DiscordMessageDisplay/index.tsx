@@ -11,6 +11,7 @@ import {
   Separator,
   Image,
   SimpleGrid,
+  chakra,
 } from "@chakra-ui/react";
 import { FaUpRightFromSquare } from "react-icons/fa6";
 import { Avatar } from "@/components/ui/avatar";
@@ -21,6 +22,7 @@ import DiscordView from "../DiscordView";
 import { parseAllowLinks, jumboify } from "../DiscordView/utils/markdown";
 import { DiscordApiComponent } from "@/types/discord/DiscordApiPayload";
 import { MentionResolvers } from "../../contexts/MentionDataContext";
+import { isVideoMediaUrl } from "../../utils/isVideoMediaUrl";
 import { TERMLY_ESSENTIAL_IMAGE_PROPS } from "@/utils/termly";
 
 // eslint-disable-next-line no-bitwise
@@ -260,14 +262,26 @@ const renderApiAccessory = (
             SPOILER
           </Box>
         )}
-        <Image
-          src={accessory.media?.url || ""}
-          alt={accessory.description || "Thumbnail"}
-          fit="cover"
-          w="80px"
-          h="80px"
-          {...TERMLY_ESSENTIAL_IMAGE_PROPS}
-        />
+        {isVideoMediaUrl(accessory.media?.url) ? (
+          <chakra.video
+            src={accessory.media?.url || ""}
+            controls
+            w="80px"
+            h="80px"
+            objectFit="cover"
+            display="block"
+            bg="black"
+          />
+        ) : (
+          <Image
+            src={accessory.media?.url || ""}
+            alt={accessory.description || "Thumbnail"}
+            fit="cover"
+            w="80px"
+            h="80px"
+            {...TERMLY_ESSENTIAL_IMAGE_PROPS}
+          />
+        )}
       </Box>
     );
   }
@@ -381,16 +395,30 @@ const renderApiComponent = (
             SPOILER
           </Box>
         )}
-        <Image
-          src={item.media?.url || ""}
-          alt={item.description || "Gallery image"}
-          fit="cover"
-          width="100%"
-          height={height || "auto"}
-          minHeight="60px"
-          maxHeight={height ? undefined : "200px"}
-          {...TERMLY_ESSENTIAL_IMAGE_PROPS}
-        />
+        {isVideoMediaUrl(item.media?.url) ? (
+          <chakra.video
+            src={item.media?.url || ""}
+            controls
+            width="100%"
+            height={height || "auto"}
+            minHeight="60px"
+            maxHeight={height ? undefined : "200px"}
+            objectFit="cover"
+            display="block"
+            bg="black"
+          />
+        ) : (
+          <Image
+            src={item.media?.url || ""}
+            alt={item.description || "Gallery image"}
+            fit="cover"
+            width="100%"
+            height={height || "auto"}
+            minHeight="60px"
+            maxHeight={height ? undefined : "200px"}
+            {...TERMLY_ESSENTIAL_IMAGE_PROPS}
+          />
+        )}
       </Box>
     );
 

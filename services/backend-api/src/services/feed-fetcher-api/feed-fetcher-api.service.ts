@@ -3,7 +3,13 @@ import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-l
 import { UnexpectedApiResponseException } from "../../shared/exceptions/feed-fetcher.exceptions";
 import logger from "../../infra/logger";
 import type { FeedFetchOptions, FeedFetcherFetchFeedResponse } from "./types";
-import { FeedFetcherFetchFeedResponseSchema } from "./schemas";
+import {
+  ClassifyUrlsResponseSchema,
+  FeedFetcherFetchFeedResponseSchema,
+} from "./schemas";
+
+// Matches the classify endpoint's per-request cap (MAX_CLASSIFY_URLS).
+const CLASSIFY_URLS_BATCH_SIZE = 500;
 
 export class FeedFetcherApiService {
   private readonly host: string;
@@ -70,6 +76,120 @@ export class FeedFetcherApiService {
       );
 
       throw error;
+    }
+  }
+
+  /**
+   * Whether feed-requests classifies each URL as a platform (premium)
+   * destination URL — the single source of truth shared with the fetch
+   * path's routing. Results align by index with the input URLs.
+   */
+  async classifyUrls(urls: string[]): Promise<boolean[]> {
+    if (!this.host) {
+      throw new Error(
+        "BACKEND_API_FEED_REQUESTS_API_HOST config variable must be defined" +
+          " for use before executing a request",
+      );
+    }
+
+    if (urls.length === 0) {
+      return [];
+    }
+
+    const results: boolean[] = [];
+
+    for (let i = 0; i < urls.length; i += CLASSIFY_URLS_BATCH_SIZE) {
+      const batch = urls.slice(i, i + CLASSIFY_URLS_BATCH_SIZE);
+
+      try {
+        const response = await fetch(
+          `${this.host}/v1/platform/classify-urls`,
+          {
+            method: "POST",
+            body: JSON.stringify({ urls: batch }),
+            headers: {
+              "Content-Type": "application/json",
+              "api-key": this.apiKey,
+            },
+          },
+        );
+
+        if (response.status >= 500) {
+          throw new Error(
+            `Feed fetcher api responded with >= 500 status: ${response.status})`,
+          );
+        }
+
+        const responseBody = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            `Feed fetcher api responded with non-ok status: ${
+              response.status
+            }, response: ${JSON.stringify(responseBody)}`,
+          );
+        }
+
+        const parsed = this.validateResponse(
+          ClassifyUrlsResponseSchema,
+          responseBody,
+        );
+
+        if (parsed.results.length !== batch.length) {
+          throw new UnexpectedApiResponseException(
+            `Classification result count (${parsed.results.length}) does not match input count (${batch.length})`,
+          );
+        }
+
+        results.push(...parsed.results);
+      } catch (error) {
+        logger.error(
+          `Failed to classify urls with feed fetcher api (${(error as Error).message})`,
+          {
+            stack: (error as Error).stack,
+          },
+        );
+
+        throw error;
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * GC sweep: posts every active feed URL; feed-requests resolves each
+   * through the platform matcher and releases the vendor resources of
+   * identities no feed references anymore. Always called, even with an empty
+   * list, so a deployment with zero active feeds releases everything.
+   */
+  async syncActiveFeedUrls(urls: string[]): Promise<void> {
+    if (!this.host) {
+      throw new Error(
+        "BACKEND_API_FEED_REQUESTS_API_HOST config variable must be defined" +
+          " for use before executing a request",
+      );
+    }
+
+    const response = await fetch(`${this.host}/v1/platform/sync-active-urls`, {
+      method: "POST",
+      body: JSON.stringify({ urls }),
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": this.apiKey,
+      },
+    });
+
+    if (response.status >= 500) {
+      throw new Error(
+        `Feed fetcher api responded with >= 500 status: ${response.status})`,
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        `Feed fetcher api responded with non-ok status: ${response.status}`,
+      );
     }
   }
 

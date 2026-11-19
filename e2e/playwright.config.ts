@@ -4,6 +4,7 @@ import {
   MOCK_DISCORD_SERVER_PORT,
   MOCK_SMTP_HTTP_PORT,
   MOCK_REDDIT_SERVER_PORT,
+  VENDOR_MOCK_SERVER_PORT,
 } from "./helpers/constants";
 
 const INSTANCE = process.env.E2E_INSTANCE || "0";
@@ -137,6 +138,21 @@ export default defineConfig({
       stdout: "pipe",
       stderr: "pipe",
     },
+    // The platform vendor doubles live in the private package, so this server
+    // only starts when the gated platform specs are opted into (E2E_PLATFORM=1;
+    // scripts/vendor-mock.ts fails loudly if the package is missing). Public
+    // runs must never need the private package.
+    ...(process.env.E2E_PLATFORM === "1"
+      ? [
+          {
+            command: "npx tsx scripts/vendor-mock.ts",
+            port: VENDOR_MOCK_SERVER_PORT,
+            reuseExistingServer: false,
+            stdout: "pipe" as const,
+            stderr: "pipe" as const,
+          },
+        ]
+      : []),
     {
       command: "npx tsx mock-discord-server.ts",
       port: MOCK_DISCORD_SERVER_PORT,

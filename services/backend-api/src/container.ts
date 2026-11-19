@@ -436,6 +436,7 @@ export function createContainer(deps: {
     usersService,
     userFeedRepository,
     messageBrokerService,
+    feedFetcherApiService,
   });
 
   const messageBrokerEventsService = new MessageBrokerEventsService({

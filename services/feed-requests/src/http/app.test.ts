@@ -109,14 +109,28 @@ function createMockDeps() {
     incrementUrlCount: mock.fn<any>(),
   };
 
+  const platformUrlMatcher = mock.fn<any>(() => false);
+  const platformProviderSync = {
+    syncActiveUrls: mock.fn<any>(async () => ({ queued: 0 })),
+  };
+
   const deps: HttpAppDeps = {
     apiKey: API_KEY,
     feedFetcher: feedFetcher as never,
     partitionedRequestsStore: partitionedRequestsStore as never,
     hostRateLimiter: hostRateLimiter as never,
+    isPlatformUrl: platformUrlMatcher as never,
+    platformProviderSync: platformProviderSync as never,
   };
 
-  return { deps, feedFetcher, partitionedRequestsStore, hostRateLimiter };
+  return {
+    deps,
+    feedFetcher,
+    partitionedRequestsStore,
+    hostRateLimiter,
+    platformUrlMatcher,
+    platformProviderSync,
+  };
 }
 
 describe('HTTP app', () => {
@@ -471,6 +485,22 @@ describe('HTTP app', () => {
       });
 
       assert.strictEqual(res.statusCode, 400);
+    });
+
+    it('returns a plain FETCH_ERROR for non-platform URLs', async () => {
+      mocks.feedFetcher.getLatestRequest.mock.mockImplementation(async () =>
+        createMockRequest(RequestStatus.FETCH_ERROR, new Date()),
+      );
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/feed-requests',
+        headers: { 'api-key': API_KEY },
+        payload: { url },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.deepStrictEqual(res.json(), { requestStatus: 'FETCH_ERROR' });
     });
 
     it('coerces any present boolean field like the pre-migration pipe', async () => {
@@ -863,6 +893,139 @@ describe('HTTP app', () => {
 
       assert.strictEqual(res.statusCode, 200);
       assert.deepStrictEqual(res.json(), { requestStatus: 'FETCH_ERROR' });
+    });
+  });
+
+  describe('POST /v1/platform/classify-urls', () => {
+    it('rejects requests without the api key', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/platform/classify-urls',
+        payload: { urls: [url] },
+      });
+
+      assert.strictEqual(res.statusCode, 403);
+    });
+
+    it('rejects invalid bodies with a 400 message list', async () => {
+      for (const payload of [
+        {},
+        { urls: [] },
+        { urls: [''] },
+        { urls: 'not-an-array' },
+        { urls: Array.from({ length: 501 }, () => url) },
+      ]) {
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/platform/classify-urls',
+          headers: { 'api-key': API_KEY },
+          payload,
+        });
+
+        assert.strictEqual(res.statusCode, 400, JSON.stringify(payload));
+        assert.ok(Array.isArray(res.json().message));
+      }
+    });
+
+    it('returns per-URL booleans aligned with the input order', async () => {
+      mocks.platformUrlMatcher.mock.mockImplementation(
+        (u: string) => u.includes('reddit.com'),
+      );
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/platform/classify-urls',
+        headers: { 'api-key': API_KEY },
+        payload: {
+          urls: [
+            'https://www.reddit.com/r/javascript',
+            'https://example.com/feed.xml',
+            'https://www.reddit.com/user/spez',
+          ],
+        },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.deepStrictEqual(res.json(), {
+        results: [true, false, true],
+      });
+      assert.strictEqual(mocks.platformUrlMatcher.mock.callCount(), 3);
+    });
+  });
+
+  describe('POST /v1/platform/sync-active-urls', () => {
+    const syncUrl = '/v1/platform/sync-active-urls';
+
+    it('rejects requests without the api key', async () => {
+      const res = await app.inject({ method: 'POST', url: syncUrl, payload: { urls: [] } });
+
+      assert.strictEqual(res.statusCode, 403);
+    });
+
+    it('rejects invalid bodies with a 400 message list', async () => {
+      for (const payload of [{}, { urls: [''] }, { urls: 'not-an-array' }]) {
+        const res = await app.inject({
+          method: 'POST',
+          url: syncUrl,
+          headers: { 'api-key': API_KEY },
+          payload,
+        });
+
+        assert.strictEqual(res.statusCode, 400, JSON.stringify(payload));
+        assert.ok(Array.isArray(res.json().message));
+      }
+    });
+
+    it('forwards the referenced urls to the sync service', async () => {
+      const urls = ['https://x.com/jack', 'https://example.com/feed.xml'];
+      mocks.platformProviderSync.syncActiveUrls.mock.mockImplementation(
+        async () => ({ queued: 2 }),
+      );
+
+      const res = await app.inject({
+        method: 'POST',
+        url: syncUrl,
+        headers: { 'api-key': API_KEY },
+        payload: { urls },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.deepStrictEqual(res.json(), { queued: 2 });
+      assert.deepEqual(mocks.platformProviderSync.syncActiveUrls.mock.calls[0].arguments, [urls]);
+    });
+
+    it('accepts an empty url list (release everything)', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: syncUrl,
+        headers: { 'api-key': API_KEY },
+        payload: { urls: [] },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.deepStrictEqual(res.json(), { queued: 0 });
+    });
+
+    it('answers with zero when the sync service is absent (OSS builds)', async () => {
+      const appWithoutSync = createApp({
+        ...mocks.deps,
+        platformProviderSync: undefined,
+      });
+      await appWithoutSync.ready();
+
+      try {
+        const res = await appWithoutSync.inject({
+          method: 'POST',
+          url: syncUrl,
+          headers: { 'api-key': API_KEY },
+          payload: { urls: ['https://x.com/jack'] },
+        });
+
+        assert.strictEqual(res.statusCode, 200);
+        assert.deepStrictEqual(res.json(), { queued: 0 });
+      } finally {
+        await appWithoutSync.close();
+      }
     });
   });
 });

@@ -77,6 +77,9 @@ export interface IUserFeed {
   shareManageOptions?: IUserFeedShareManageOptions;
   legacyFeedId?: string;
   refreshRateSeconds?: number;
+  // Set from feed-requests' platform classification at create/clone/url-change;
+  // the premium refresh-rate floor keys on it everywhere rates are synced.
+  isPremiumFeed?: boolean;
   maxDailyArticles?: number;
   userRefreshRateSeconds?: number;
   slotOffsetMs?: number;
@@ -154,6 +157,7 @@ export interface CreateUserFeedInput {
   feedRequestLookupKey?: string;
   createdAt?: Date;
   refreshRateSeconds?: number;
+  isPremiumFeed?: boolean;
   slotOffsetMs?: number;
   maxDailyArticles?: number;
   dateCheckOptions?: IUserFeedDateCheckOptions;
@@ -287,6 +291,8 @@ export interface WorkspaceRefreshRateSyncInput {
     workspaceIds: string[];
     refreshRateSeconds: number;
   }>;
+  // Premium (platform) feeds never sync below this rate.
+  premiumFloorSeconds: number;
 }
 
 export interface WorkspaceMaxDailyArticlesSyncInput {
@@ -311,6 +317,11 @@ export interface CloneUserFeedInput {
     url: string;
     inputUrl?: string;
     workspaceId?: string;
+    // Premium-feed floors are applied by the service when the clone targets a
+    // platform URL; undefined keeps the source feed's stored value.
+    refreshRateSeconds?: number;
+    userRefreshRateSeconds?: number | null;
+    isPremiumFeed?: boolean;
   };
 }
 
@@ -440,6 +451,7 @@ export interface FeedForSlotOffsetRecalculation {
   url: string;
   refreshRateSeconds?: number;
   userRefreshRateSeconds?: number;
+  isPremiumFeed?: boolean;
 }
 
 export interface RefreshRateSyncInput {
@@ -448,6 +460,8 @@ export interface RefreshRateSyncInput {
     refreshRateSeconds: number;
   }>;
   defaultRefreshRateSeconds: number;
+  // Premium (platform) feeds never sync below this rate.
+  premiumFloorSeconds: number;
 }
 
 export interface MaxDailyArticlesSyncInput {
@@ -640,6 +654,17 @@ export interface IUserFeedRepository {
     excludeDisabledCodes: UserFeedDisabledCode[],
   ): Promise<Array<{ id: string; title: string; url: string; createdAt: Date }>>;
   findByUrls(discordUserId: string, urls: string[]): Promise<{ url: string }[]>;
+  // Urls of the user's personal feeds (no workspaceId) they own directly.
+  // Used by premium-feed allowance counting.
+  findPersonalFeedUrlsByOwner(
+    discordUserId: string,
+  ): Promise<Array<{ url: string }>>;
+  findWorkspaceFeedUrls(workspaceId: string): Promise<Array<{ url: string }>>;
+  // Id + url of every feed a copy-settings operation targets, resolved with
+  // the same filter copySettingsToFeeds applies.
+  findFeedUrlsForCopyTarget(
+    target: CopySettingsTarget,
+  ): Promise<Array<{ id: string; url: string }>>;
   findByIdAndOwnership(
     id: string,
     discordUserId: string,
@@ -788,6 +813,12 @@ export interface IUserFeedRepository {
     refreshRateSeconds: number,
     slotWindow: SlotWindow,
   ): AsyncIterable<ScheduledFeedWithLookupKey>;
+  /**
+   * Distinct URLs of every feed the scheduler would actually fetch (enabled
+   * connection, recovery feeds included) across all refresh rates. Consumed
+   * by the platform-provider GC sweep in the maintenance loop.
+   */
+  getDistinctActiveFeedUrls(): Promise<string[]>;
 
   // Retry-backoff methods (ADR-011). Expired feeds (disabled with
   // FAILED_REQUESTS) are revived by forced fetch-now batches; the retry

@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import { parseAllowLinks, parseEmbedTitle } from "./utils/markdown";
 import extractRGBFromInt from "../../utils/extractRgbFromInt";
 import { DiscordViewEmbed } from "@/types/discord/DiscordViewEmbed";
+import { isVideoMediaUrl } from "../../utils/isVideoMediaUrl";
 import { TERMLY_ESSENTIAL_IMAGE_PROPS } from "@/utils/termly";
 
 const Link = ({ children, ...props }: React.HTMLProps<HTMLAnchorElement>) => {
@@ -158,13 +159,17 @@ const EmbedImage = ({ url }: { url?: string | null }) => {
   return (
     // eslint-disable-next-line jsx-a11y/anchor-is-valid
     <a className="embed-thumbnail embed-thumbnail-rich">
-      <img
-        className="image"
-        role="presentation"
-        src={url}
-        alt=""
-        {...TERMLY_ESSENTIAL_IMAGE_PROPS}
-      />
+      {isVideoMediaUrl(url) ? (
+        <video className="image" role="presentation" src={url} controls />
+      ) : (
+        <img
+          className="image"
+          role="presentation"
+          src={url}
+          alt=""
+          {...TERMLY_ESSENTIAL_IMAGE_PROPS}
+        />
+      )}
     </a>
   );
 };

@@ -82,6 +82,10 @@ services:
       context: services/feed-requests
       dockerfile: Dockerfile
       target: build
+      # Set NPM_TOKEN (GitHub read:packages) in the root .env to build the
+      # private adapters package in; empty keeps the OSS build (silent skip).
+      args:
+        NPM_TOKEN: ${NPM_TOKEN:-}
     restart: "no"
     command: "npm run migration:up"
     depends_on:
@@ -123,6 +127,8 @@ services:
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
+      args:
+        NPM_TOKEN: ${NPM_TOKEN:-}
     restart: "no"
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -147,6 +153,19 @@ services:
       - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT=MonitoRSS
+      # Platform feeds fetch through the private package's provider adapters
+      # pointed at the package's own vendor doubles (scripts/vendor-mock.ts),
+      # which never authenticate — the package relaxes its credential
+      # requirement while PLATFORM_SOURCE_PROVIDER_BASE_URL is set. The
+      # package's env surface is opaque to this repo: provider credentials
+      # flow through as-is (set them in the environment for live runs),
+      # matching comes from the installed package's matcher (NPM_TOKEN build).
+      - PLATFORM_SOURCE_PROVIDER_API_KEY=${PLATFORM_SOURCE_PROVIDER_API_KEY:-}
+      - PLATFORM_SOURCE_PROVIDER_BASE_URL=http://host.docker.internal:${E2E_VENDOR_MOCK_PORT:-3007}
+      # Provider-selection env vars flow through from the environment; the
+      # package owns their names and defaults. Unset means the package picks
+      # its own default provider per platform.
+      - PLATFORM_SOURCE_REDDIT_PROVIDER=${PLATFORM_SOURCE_REDDIT_PROVIDER:-}
     networks:
       - e2e-default
 
@@ -154,6 +173,8 @@ services:
     build:
       context: services/feed-requests
       dockerfile: Dockerfile
+      args:
+        NPM_TOKEN: ${NPM_TOKEN:-}
     restart: "no"
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -177,6 +198,10 @@ services:
       - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT=MonitoRSS
+      # Same as feed-requests-service.
+      - PLATFORM_SOURCE_PROVIDER_BASE_URL=http://host.docker.internal:${E2E_VENDOR_MOCK_PORT:-3007}
+      - PLATFORM_SOURCE_PROVIDER_API_KEY=${PLATFORM_SOURCE_PROVIDER_API_KEY:-}
+      - PLATFORM_SOURCE_REDDIT_PROVIDER=${PLATFORM_SOURCE_REDDIT_PROVIDER:-}
     networks:
       - e2e-default
 
@@ -205,6 +230,40 @@ services:
       - USER_FEEDS_API_KEY=user-feeds-api-key
       - USER_FEEDS_REDIS_URI=redis://feed-requests-redis-cache:6379
       - USER_FEEDS_REDIS_DISABLE_CLUSTER=true
+    networks:
+      - e2e-default
+
+  # Consumes the Discord-message queue the delivery pipeline enqueues onto
+  # (@synzen/discord-rest RESTProducer in user-feeds-next) and performs the
+  # actual Discord API calls, forwarding job results back to user-feeds-next
+  # via the delivery-result queue. Without it, delivery records stay
+  # pending-delivery forever and no message ever reaches the mock Discord.
+  # The client id must match USER_FEEDS_DISCORD_CLIENT_ID so the producer and
+  # consumer resolve the same queue.
+  discord-rest-listener:
+    build:
+      context: services/discord-rest-listener
+      dockerfile: Dockerfile
+      target: build
+    # The Dockerfile's CMD lives in the prod stage, so the build target (which
+    # contains build/app.js, per docker-compose.base.yml's comment) has no
+    # entrypoint of its own — self-hosting gets `command: npm start` from the
+    # per-service compose merge; the standalone E2E compose sets it here.
+    command: ["node", "./build/app"]
+    restart: "no"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      rabbitmq-broker:
+        condition: service_healthy
+    environment:
+      - DISCORD_REST_LISTENER_BOT_TOKEN=fake-bot-token
+      - DISCORD_REST_LISTENER_BOT_CLIENT_ID=000000000000000001
+      - DISCORD_REST_LISTENER_MONGO_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
+      - DISCORD_REST_LISTENER_RABBITMQ_URI=amqp://guest:guest@rabbitmq-broker:5672
+      - DISCORD_REST_LISTENER_MAX_REQ_PER_SEC=40
     networks:
       - e2e-default
 
@@ -323,6 +382,9 @@ services:
       # 1-minute default refresh rate so the schedule emitter ticks feeds fast
       # enough for the retry-backoff spec to observe tier transitions.
       - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=1
+      # Premium-feed floor lowered to match: the platform-feed specs wait on
+      # fast scheduler ticks and the provider cost floor is irrelevant here.
+      - BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS=60
       - LOG_LEVEL=debug
       # Development, not Local: legal notices are only exposed in Local (dev
       # preview) or on the production dashboard host, and a live banner
@@ -369,6 +431,10 @@ services:
       - BACKEND_API_SESSION_SALT=e2esessionsalt16
       - BACKEND_API_ENABLE_SUPPORTERS=true
       - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=1
+      # GC sweep cadence: the platform GC spec deletes a feed and asserts the
+      # vendor release within seconds, so the 5-minute production default is
+      # cranked down here.
+      - BACKEND_API_MAINTENANCE_INTERVAL_MS=5000
       - LOG_LEVEL=debug
       - NODE_ENV=development
     command: npm run dev:schedule-emitter

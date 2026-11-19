@@ -63,3 +63,9 @@ export const FeedFetcherFetchFeedResponseSchema = z.discriminatedUnion(
     FeedFetchResponseInternalErrorSchema,
   ],
 );
+
+export const ClassifyUrlsResponseSchema = z.object({
+  // Boolean per input URL, aligned by index: whether feed-requests classifies
+  // the URL as a platform (premium) destination URL.
+  results: z.array(z.boolean()),
+});

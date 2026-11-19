@@ -83,6 +83,7 @@ export function createMockSupportersService(
     maxFeeds: options.workspaceMaxFeeds ?? 5,
     maxDailyArticles: options.workspaceMaxDailyArticles ?? 100,
     refreshRateSeconds: options.workspaceRefreshRateSeconds ?? 600,
+    isSupporter: true,
     allowWebhooks: options.workspaceAllowWebhooks ?? false,
     dormant: false,
   };
@@ -110,6 +111,7 @@ export function createMockSupportersService(
             ],
           }
         : {
+            isSupporter: personalBenefits.isSupporter,
             maxFeeds: personalBenefits.maxUserFeeds,
             maxDailyArticles: personalBenefits.maxDailyArticles,
             refreshRateSeconds: personalBenefits.refreshRateSeconds,
@@ -135,12 +137,14 @@ export function createMockUsersService(
     status: string;
     data: Record<string, string>;
   }>,
+  featureFlags?: { premiumFeeds?: boolean },
 ): UserFeedsServiceDeps["usersService"] {
   return {
     getOrCreateUserByDiscordId: async (inputDiscordUserId: string) => ({
       id: userId ?? generateTestId(),
       discordUserId: discordUserId ?? inputDiscordUserId ?? "test-user",
       externalCredentials,
+      featureFlags,
     }),
     syncLookupKeys: async () => {},
   } as unknown as UserFeedsServiceDeps["usersService"];
@@ -308,11 +312,31 @@ export function createMockFeedFetcherService(
 export interface MockFeedFetcherApiServiceOptions {
   requestStatus?: string;
   statusCode?: number;
+  // Host suffixes the mock classifier treats as premium. The real
+  // classification comes from feed-requests' matcher over HTTP; tests
+  // enumerate the hosts they exercise.
+  premiumHostSuffixes?: string[];
+  // Thrown by the mock classifier to exercise the fail-closed gate.
+  classifyUrlsError?: Error;
 }
+
+// The platform hosts the premium-gate tests exercise.
+const DEFAULT_PREMIUM_HOST_SUFFIXES = ["reddit.com", "x.com", "twitter.com"];
 
 export function createMockFeedFetcherApiService(
   options: MockFeedFetcherApiServiceOptions = {},
 ): UserFeedsServiceDeps["feedFetcherApiService"] {
+  const suffixes = options.premiumHostSuffixes ?? DEFAULT_PREMIUM_HOST_SUFFIXES;
+  const isPremiumUrl = (url: string) => {
+    try {
+      const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+
+      return suffixes.some((s) => host === s || host.endsWith(`.${s}`));
+    } catch {
+      return false;
+    }
+  };
+
   return {
     fetchAndSave: mock.fn(async () => ({
       requestStatus: options.requestStatus ?? "SUCCESS",
@@ -320,6 +344,13 @@ export function createMockFeedFetcherApiService(
         ? { statusCode: options.statusCode }
         : undefined,
     })),
+    classifyUrls: mock.fn(async (urls: string[]) => {
+      if (options.classifyUrlsError) {
+        throw options.classifyUrlsError;
+      }
+
+      return urls.map(isPremiumUrl);
+    }),
   } as unknown as UserFeedsServiceDeps["feedFetcherApiService"];
 }
 

@@ -39,6 +39,7 @@ export async function getMeHandler(
       featureFlags: user.featureFlags || {},
       capabilities: {
         workspaces: !!user.featureFlags?.workspaces,
+        premiumFeeds: !!user.featureFlags?.premiumFeeds,
       },
       supporterFeatures,
       externalAccounts,
@@ -85,6 +86,7 @@ export async function updateMeHandler(
       featureFlags: user.featureFlags || {},
       capabilities: {
         workspaces: !!user.featureFlags?.workspaces,
+        premiumFeeds: !!user.featureFlags?.premiumFeeds,
       },
       supporterFeatures,
       externalAccounts,

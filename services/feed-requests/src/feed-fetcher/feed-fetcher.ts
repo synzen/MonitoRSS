@@ -8,6 +8,11 @@ import { request, interceptors, getGlobalDispatcher } from 'undici';
 import type { ObjectFileStorageService } from '../object-file-storage/object-file-storage';
 import type { CacheStorageService } from '../cache-storage/cache-storage';
 import { resolveUserAgentForUrl } from './user-agent';
+import {
+  PlatformProviderFetchError,
+  type PlatformHttpGet,
+  type PlatformProviderRouter,
+} from '../platform-providers/types';
 import type { PartitionedRequestsStore } from '../stores/postgres/partitioned-requests-store';
 import {
   RequestSource,
@@ -105,6 +110,9 @@ const convertFetchOptionsForHashKey = (options: FetchOptions) => {
 interface FetchOptions {
   headers?: Record<string, string>;
   proxyUri?: string;
+  // POST support for platform provider adapters reaching vendor APIs.
+  method?: string;
+  body?: string;
 }
 
 interface FetchResponse {
@@ -169,12 +177,16 @@ export function createFeedFetcherService({
   objectFileStorage,
   cacheStorage,
   partitionedRequestsStore,
+  platformSourceRouterFactory,
 }: {
   defaultUserAgent: string;
   requestTimeoutMs: number;
   objectFileStorage: ObjectFileStorageService;
   cacheStorage: CacheStorageService;
   partitionedRequestsStore: PartitionedRequestsStore;
+  platformSourceRouterFactory?: (
+    httpGet: PlatformHttpGet,
+  ) => PlatformProviderRouter;
 }): FeedFetcherService {
   const feedRequestTimeoutMs = requestTimeoutMs;
 
@@ -202,7 +214,11 @@ export function createFeedFetcherService({
     return null;
   };
 
-  return {
+  // The platform-providers router reuses the service's own HTTP GET, so it is
+  // wired after the service object exists; route() only runs at fetch time.
+  let platformSourceRouter: PlatformProviderRouter | null = null;
+
+  const service: FeedFetcherService = {
     async getLatestRequest({ url, lookupKey }) {
       const request =
         await partitionedRequestsStore.getLatestRequestWithResponseBody(
@@ -312,11 +328,31 @@ export function createFeedFetcherService({
           contextLogger.info(`Fetching ${url} and saving to object storage`);
         }
 
-        const res = await this.fetchFeedResponse(
-          url,
-          fetchOptions,
-          options?.saveResponseToObjectStorage,
-        );
+        // Platform destination URLs fetch through a provider adapter instead
+        // of a plain HTTP GET of the feed URL; the adapter's normalized RSS
+        // document is treated as a 200 response body so persistence, hashing
+        // and parsing run unchanged. The adapter call is eager so its errors
+        // map into the failure taxonomy, not the text-parsing path.
+        const platformRoute = platformSourceRouter?.route(url);
+        const platformDocument = platformRoute
+          ? await platformRoute.adapter.fetchFeedDocument(
+              platformRoute.identity,
+            )
+          : null;
+
+        const res =
+          platformRoute && platformDocument !== null
+            ? {
+                ok: true,
+                status: 200,
+                headers: new Map([['content-type', 'application/rss+xml']]),
+                text: async () => platformDocument,
+              }
+            : await this.fetchFeedResponse(
+                url,
+                fetchOptions,
+                options?.saveResponseToObjectStorage,
+              );
 
         if (res.ok || res.status === 304) {
           requestModel.status = RequestStatus.OK;
@@ -460,7 +496,32 @@ export function createFeedFetcherService({
           stack: fetchError.stack,
         });
 
-        if (
+        if (err instanceof PlatformProviderFetchError) {
+          requestModel.status = err.requestStatus;
+          requestModel.errorMessage = err.message;
+
+          // A provider response failure keeps its status code on the row so
+          // consumers map it through the existing status-code taxonomy
+          // (e.g. a 404 for a non-existent resource).
+          if (
+            err.statusCode &&
+            err.requestStatus === RequestStatus.BAD_STATUS_CODE
+          ) {
+            requestModel.response = {
+              id: requestId,
+              statusCode: err.statusCode,
+              isCloudflare: false,
+              createdAt: new Date(),
+              responseHashKey: null,
+              content: null,
+              headers: {},
+              textHash: null,
+              s3ObjectKey: null,
+              redisCacheKey: null,
+              hasCompressedText: false,
+            };
+          }
+        } else if (
           errorCode === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' ||
           fetchError.message?.includes('unable to get local issuer certificate')
         ) {
@@ -490,7 +551,16 @@ export function createFeedFetcherService({
           nextRetryDate: requestModel.nextRetryDate,
           source: (requestModel.source as RequestSource | null) || null,
           status: requestModel.status,
-          response: null,
+          response: requestModel.response
+            ? {
+                statusCode: requestModel.response.statusCode,
+                textHash: null,
+                s3ObjectKey: null,
+                redisCacheKey: null,
+                headers: {},
+                body: null,
+              }
+            : null,
           requestInitiatedAt: requestModel.createdAt,
         };
 
@@ -534,6 +604,8 @@ export function createFeedFetcherService({
 
       const r = await request(url, {
         headers: useOptions.headers,
+        method: options?.method,
+        body: options?.body,
         signal: useOptions.signal,
         dispatcher: getGlobalDispatcher().compose(
           interceptors.redirect({ maxRedirections: 10 }),
@@ -608,4 +680,12 @@ export function createFeedFetcherService({
       };
     },
   };
+
+  if (platformSourceRouterFactory) {
+    platformSourceRouter = platformSourceRouterFactory((url, options) =>
+      service.fetchFeedResponse(url, options),
+    );
+  }
+
+  return service;
 }

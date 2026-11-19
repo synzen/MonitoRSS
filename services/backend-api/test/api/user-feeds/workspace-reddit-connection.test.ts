@@ -7,6 +7,7 @@ import {
   type AppTestContext,
 } from "../../helpers/test-context";
 import { generateSnowflake } from "../../helpers/test-id";
+import { registerDefaultClassifyRoute } from "../../helpers/mock-apis";
 import {
   createTestHttpServer,
   type TestHttpServer,
@@ -44,6 +45,7 @@ after(async () => {
 
 beforeEach(() => {
   feedApiMockServer.clear();
+  registerDefaultClassifyRoute(feedApiMockServer);
 });
 
 function mockFeedFetch(feedUrl: string, feedTitle = "Workspace Feed") {
@@ -267,70 +269,34 @@ describe("Workspace Reddit connection", { concurrency: false }, () => {
     }
   });
 
-  it("gates workspace reddit feeds on the WORKSPACE connection, never the creator's personal one", async () => {
+  it("allows workspace and personal reddit feeds with no Reddit connection (credential gate removed)", async () => {
     const discordId = randomUUID();
-    const userId = await seedWorkspaceUser(discordId);
+    await seedWorkspaceUser(discordId);
     const user = await ctx.asUser(discordId);
     const slug = `ws-${discordId.slice(0, 8)}`;
     const workspaceId = await createWorkspace(user, slug);
 
-    // The creator has an ACTIVE personal connection...
-    await ctx.container.usersService.setRedditCredentials({
-      userId,
-      accessToken: "personal-access",
-      refreshToken: "personal-refresh",
-      expiresIn: 3600,
-    });
-
     mockFeedFetch(REDDIT_URL, "gaming");
 
-    // ...but the workspace has none, so a workspace reddit feed is still gated.
-    const gated = await user.fetch("/api/v1/user-feeds", {
+    // Neither the workspace nor the creator has a Reddit connection, so
+    // provider-served reddit feeds require none.
+    const created = await user.fetch("/api/v1/user-feeds", {
       method: "POST",
       body: JSON.stringify({ url: REDDIT_URL, workspaceId }),
     });
-    assert.strictEqual(gated.status, 403);
-    const gatedBody = (await gated.json()) as { code: string };
-    assert.strictEqual(gatedBody.code, "REDDIT_CONNECTION_REQUIRED");
+    assert.strictEqual(created.status, 201);
 
-    // Workspace url-validation is gated the same way.
-    const gatedValidation = await user.fetch("/api/v1/user-feeds/url-validation", {
+    const validation = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
       body: JSON.stringify({ url: REDDIT_URL, workspaceId }),
     });
-    assert.strictEqual(gatedValidation.status, 403);
+    assert.strictEqual(validation.status, 200);
 
-    // A PERSONAL reddit feed is allowed (personal connection is active).
     const personal = await user.fetch("/api/v1/user-feeds", {
       method: "POST",
       body: JSON.stringify({ url: REDDIT_URL }),
     });
     assert.strictEqual(personal.status, 201);
-
-    // Connect the workspace; the workspace feed can now be added.
-    const tokenMock = mockRedditTokenExchange();
-
-    try {
-      const { state, cookie } = await startRedditLogin(user, workspaceId);
-      await completeRedditCallback(cookie, { state });
-    } finally {
-      tokenMock.mock.restore();
-    }
-
-    const allowed = await user.fetch("/api/v1/user-feeds", {
-      method: "POST",
-      body: JSON.stringify({ url: REDDIT_URL, workspaceId }),
-    });
-    assert.strictEqual(allowed.status, 201);
-    const allowedBody = (await allowed.json()) as {
-      result: { id: string };
-    };
-
-    // The workspace feed's lookup key comes from the workspace connection sync.
-    const feedDoc = await ctx.connection
-      .collection("userfeeds")
-      .findOne({ _id: new Types.ObjectId(allowedBody.result.id) });
-    assert.ok(feedDoc?.feedRequestLookupKey);
   });
 
   it("disconnects via DELETE, revoking at Reddit and unsetting workspace feeds' lookup keys", async () => {

@@ -18,5 +18,8 @@
     "pg": "^8.23.1",
     "prettier": "^3.9.10",
     "tsx": "^4.23.15"
+  },
+  "optionalDependencies": {
+    "@synzen/platform-adapters": "^0.9.0"
   }
 }

@@ -9,6 +9,9 @@ import {
   BannedFeedException,
   FeedLimitReachedException,
   ManualRequestTooSoonException,
+  PremiumFeedsLimitReachedException,
+  PremiumFeedsNotSupportedException,
+  PremiumFeedsPlanRequiredException,
   RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
 } from "../../src/shared/exceptions/user-feeds.exceptions";
@@ -16,7 +19,6 @@ import {
   UserFeedDisabledCode as RepoUserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../../src/repositories/shared/enums";
-import { RedditConnectionRequiredException } from "../../src/shared/exceptions/reddit.exceptions";
 import { createUserFeedsHarness } from "../helpers/user-feeds.harness";
 import { createMockDiscordChannelConnection } from "../helpers/mock-factories";
 import { UserFeedCopyableSetting } from "../../src/services/user-feeds/types";
@@ -60,13 +62,9 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
   });
 
-  describe("Reddit connection gate", () => {
+  describe("Reddit credential gate (removed for provider-served feeds)", () => {
     const REDDIT_URL = "https://www.reddit.com/r/gaming/.rss";
     const REDDIT_CLIENT_ID = "test-reddit-client-id";
-    // No accessToken: the gate only inspects type + status, and omitting the
-    // token keeps getFeedRequestLookupDetails out of the decrypt path (a bogus
-    // token would fail to decrypt).
-    const activeReddit = [{ type: "reddit", status: "ACTIVE", data: {} }];
     const revokedReddit = [{ type: "reddit", status: "REVOKED", data: {} }];
 
     const addReddit = (ctx: ReturnType<typeof harness.createContext>) =>
@@ -81,35 +79,100 @@ describe("UserFeedsService", { concurrency: true }, () => {
         { url: REDDIT_URL },
       );
 
-    describe("when reddit oauth is configured", () => {
-      it("rejects addFeed for a reddit url without an active connection", async () => {
-        const ctx = harness.createContext({ redditClientId: REDDIT_CLIENT_ID });
-
-        await assert.rejects(addReddit(ctx), RedditConnectionRequiredException);
+    it("allows addFeed for a reddit url without an active connection", async () => {
+      const ctx = harness.createContext({
+        redditClientId: REDDIT_CLIENT_ID,
+        feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
       });
 
-      it("rejects validateFeedUrl for a reddit url without an active connection", async () => {
-        const ctx = harness.createContext({ redditClientId: REDDIT_CLIENT_ID });
+      const feed = await addReddit(ctx);
 
-        await assert.rejects(
-          validateReddit(ctx),
-          RedditConnectionRequiredException,
-        );
+      assert.ok(feed.id);
+    });
+
+    it("allows validateFeedUrl for a reddit url without an active connection", async () => {
+      const ctx = harness.createContext({
+        redditClientId: REDDIT_CLIENT_ID,
+        feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
       });
 
-      it("rejects when the reddit connection is REVOKED", async () => {
+      const result = await validateReddit(ctx);
+
+      assert.strictEqual(result.feedTitle, "gaming");
+    });
+
+    it("allows addFeed when the reddit connection is REVOKED", async () => {
+      const ctx = harness.createContext({
+        redditClientId: REDDIT_CLIENT_ID,
+        externalCredentials: revokedReddit,
+        feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+      });
+
+      const feed = await addReddit(ctx);
+
+      assert.ok(feed.id);
+    });
+
+    it("does not gate non-reddit urls", async () => {
+      const ctx = harness.createContext({
+        redditClientId: REDDIT_CLIENT_ID,
+        feedHandler: {
+          url: "https://example.com/feed.xml",
+          feedTitle: "Example",
+        },
+      });
+
+      const feed = await ctx.service.addFeed(
+        { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+        { url: "https://example.com/feed.xml" },
+      );
+
+      assert.ok(feed.id);
+    });
+  });
+
+  describe("premium feeds (closed-beta gate, allowances, floor)", () => {
+    const REDDIT_URL = "https://www.reddit.com/r/gaming";
+    const FLOOR_SECONDS = 3600;
+    // The harness default tier rate (600s) sits below the floor, so every
+    // premium write-path assertion exercises the clamp. The raised feed caps
+    // keep the regular feed limit out of the way of the allowance assertions.
+    const flaggedSupporterOptions = {
+      billingEnabled: true,
+      isSupporter: true,
+      maxUserFeeds: 20,
+      workspaceMaxFeeds: 20,
+      featureFlags: { premiumFeeds: true } as const,
+      feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+    };
+
+    const addReddit = (ctx: ReturnType<typeof harness.createContext>) =>
+      ctx.service.addFeed(
+        { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+        { url: REDDIT_URL },
+      );
+
+    describe("access gate", () => {
+      it("rejects addFeed for a platform url without the beta flag when billing is enabled", async () => {
         const ctx = harness.createContext({
-          redditClientId: REDDIT_CLIENT_ID,
-          externalCredentials: revokedReddit,
+          billingEnabled: true,
+          isSupporter: true,
+          feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
         });
 
-        await assert.rejects(addReddit(ctx), RedditConnectionRequiredException);
+        await assert.rejects(addReddit(ctx), PremiumFeedsNotSupportedException);
       });
 
-      it("allows addFeed for a reddit url with an ACTIVE connection", async () => {
+      it("allows addFeed with the beta flag", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        const feed = await addReddit(ctx);
+
+        assert.ok(feed.id);
+      });
+
+      it("allows addFeed without the flag when billing is disabled (self-host)", async () => {
         const ctx = harness.createContext({
-          redditClientId: REDDIT_CLIENT_ID,
-          externalCredentials: activeReddit,
           feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
         });
 
@@ -118,9 +181,126 @@ describe("UserFeedsService", { concurrency: true }, () => {
         assert.ok(feed.id);
       });
 
-      it("does not gate non-reddit urls", async () => {
+      it("fails closed when classification is unavailable", async () => {
         const ctx = harness.createContext({
-          redditClientId: REDDIT_CLIENT_ID,
+          ...flaggedSupporterOptions,
+          feedFetcherApiService: {
+            classifyUrlsError: new Error("feed-requests unreachable"),
+          },
+        });
+
+        await assert.rejects(addReddit(ctx), /feed-requests unreachable/);
+      });
+    });
+
+    describe("plan gate", () => {
+      it("rejects a flagged non-supporter personal add", async () => {
+        const ctx = harness.createContext({
+          billingEnabled: true,
+          isSupporter: false,
+          featureFlags: { premiumFeeds: true },
+          feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+        });
+
+        await assert.rejects(addReddit(ctx), PremiumFeedsPlanRequiredException);
+      });
+    });
+
+    describe("allowances", () => {
+      const premiumUrl = (n: number) =>
+        `https://www.reddit.com/r/sub${n}-${Math.random().toString(36).slice(2)}`;
+
+      it("allows the 5th personal premium feed and blocks the 6th", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        for (let i = 0; i < 4; i++) {
+          await ctx.createFeed({ url: premiumUrl(i) });
+        }
+
+        await assert.doesNotReject(addReddit(ctx));
+
+        await assert.rejects(
+          ctx.service.addFeed(
+            { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+            { url: premiumUrl(100) },
+          ),
+          PremiumFeedsLimitReachedException,
+        );
+      });
+
+      it("does not count non-premium feeds toward the allowance", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        await ctx.createMany(7);
+
+        const feed = await addReddit(ctx);
+
+        assert.ok(feed.id);
+      });
+
+      it("blocks the 11th workspace premium feed (allowance 10)", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+        const workspace = await ctx.createWorkspace();
+
+        for (let i = 0; i < 10; i++) {
+          await ctx.createWorkspaceFeed(workspace.id, { url: premiumUrl(i) });
+        }
+
+        await assert.rejects(
+          ctx.service.addFeed(
+            { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+            { url: premiumUrl(50), workspaceId: workspace.id },
+          ),
+          PremiumFeedsLimitReachedException,
+        );
+      });
+
+      it("allows re-URLing an existing premium feed (its slot is already counted)", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        for (let i = 0; i < 4; i++) {
+          await ctx.createFeed({ url: premiumUrl(i) });
+        }
+
+        // The 5th (and last allowance slot).
+        const feed = await addReddit(ctx);
+
+        await assert.doesNotReject(
+          ctx.service.updateFeedById(
+            { id: feed.id },
+            { url: premiumUrl(200) },
+          ),
+        );
+      });
+
+      it("blocks URL-changing a non-premium feed to platform beyond the allowance", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        for (let i = 0; i < 5; i++) {
+          await ctx.createFeed({ url: premiumUrl(i) });
+        }
+
+        const regular = await ctx.createFeed({});
+
+        await assert.rejects(
+          ctx.service.updateFeedById({ id: regular.id }, { url: premiumUrl(201) }),
+          PremiumFeedsLimitReachedException,
+        );
+      });
+    });
+
+    describe("refresh-rate floor", () => {
+      it("clamps the created refreshRateSeconds to the floor", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        const feed = await addReddit(ctx);
+
+        assert.strictEqual(feed.refreshRateSeconds, FLOOR_SECONDS);
+      });
+
+      it("leaves non-premium refresh rates untouched", async () => {
+        const ctx = harness.createContext({
+          ...flaggedSupporterOptions,
           feedHandler: {
             url: "https://example.com/feed.xml",
             feedTitle: "Example",
@@ -132,29 +312,143 @@ describe("UserFeedsService", { concurrency: true }, () => {
           { url: "https://example.com/feed.xml" },
         );
 
-        assert.ok(feed.id);
+        assert.strictEqual(feed.refreshRateSeconds, 600);
       });
-    });
 
-    describe("when reddit oauth is not configured (self-host)", () => {
-      it("allows addFeed for a reddit url even without a connection", async () => {
-        const ctx = harness.createContext({
-          feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
-        });
+      it("rejects a user refresh rate below the floor on a premium feed", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
 
         const feed = await addReddit(ctx);
 
-        assert.ok(feed.id);
+        await assert.rejects(
+          ctx.service.updateFeedById(
+            { id: feed.id },
+            { userRefreshRateSeconds: 600 },
+          ),
+          RefreshRateNotAllowedException,
+        );
       });
 
-      it("allows validateFeedUrl for a reddit url even without a connection", async () => {
-        const ctx = harness.createContext({
-          feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+      it("allows a user refresh rate at the floor", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        const feed = await addReddit(ctx);
+
+        const updated = await ctx.service.updateFeedById(
+          { id: feed.id },
+          { userRefreshRateSeconds: FLOOR_SECONDS },
+        );
+
+        assert.strictEqual(updated?.userRefreshRateSeconds, FLOOR_SECONDS);
+      });
+
+      it("clamps the stored base rate when a URL change makes a feed premium", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        const feed = await ctx.createFeed({});
+
+        const updated = await ctx.service.updateFeedById(
+          { id: feed.id },
+          { url: REDDIT_URL },
+        );
+
+        assert.strictEqual(updated?.refreshRateSeconds, FLOOR_SECONDS);
+      });
+
+      it("rejects a sub-floor user rate sent alongside a URL change to platform", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        const feed = await ctx.createFeed({});
+
+        await assert.rejects(
+          ctx.service.updateFeedById(
+            { id: feed.id },
+            { url: REDDIT_URL, userRefreshRateSeconds: 600 },
+          ),
+          RefreshRateNotAllowedException,
+        );
+      });
+
+      it("drops a sub-floor user rate when cloning onto a platform URL", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        const feed = await addReddit(ctx);
+        // Stamp a sub-floor user rate directly; the update path would reject it.
+        await ctx.setFields(feed.id, { userRefreshRateSeconds: 600 });
+
+        const cloned = await ctx.service.clone(feed.id, "token");
+
+        const clonedFeed = await ctx.findById(cloned.id!);
+        assert.ok(clonedFeed);
+        assert.ok(!clonedFeed.userRefreshRateSeconds);
+        assert.strictEqual(clonedFeed.refreshRateSeconds, FLOOR_SECONDS);
+      });
+
+      it("keeps an at-floor user rate when cloning a premium feed", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        const feed = await addReddit(ctx);
+        await ctx.service.updateFeedById(
+          { id: feed.id },
+          { userRefreshRateSeconds: 7200 },
+        );
+
+        const cloned = await ctx.service.clone(feed.id, "token");
+
+        const clonedFeed = await ctx.findById(cloned.id!);
+        assert.strictEqual(clonedFeed?.userRefreshRateSeconds, 7200);
+      });
+    });
+
+    describe("copy-settings floor", () => {
+      it("drops a sub-floor source rate on premium targets while keeping it on regular targets", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        const premiumTarget = await addReddit(ctx);
+        const regularTarget = await ctx.createFeed({});
+        const source = await ctx.createFeed({});
+        await ctx.setFields(source.id, { userRefreshRateSeconds: 600 });
+        const sourceFeed = (await ctx.findById(source.id))!;
+
+        await ctx.service.copySettings({
+          sourceFeed,
+          dto: {
+            targetFeedIds: [premiumTarget.id, regularTarget.id],
+            settings: [UserFeedCopyableSetting.RefreshRate],
+            targetFeedSelectionType:
+              UserFeedTargetFeedSelectionType.Selected,
+          },
+          discordUserId: ctx.discordUserId,
         });
 
-        const result = await validateReddit(ctx);
+        const premium = await ctx.findById(premiumTarget.id);
+        const regular = await ctx.findById(regularTarget.id);
+        assert.ok(!premium?.userRefreshRateSeconds);
+        assert.strictEqual(regular?.userRefreshRateSeconds, 600);
+      });
 
-        assert.strictEqual(result.feedTitle, "gaming");
+      it("copies an at-floor source rate to premium targets", async () => {
+        const ctx = harness.createContext(flaggedSupporterOptions);
+
+        const premiumTarget = await addReddit(ctx);
+        const source = await ctx.createFeed({});
+        await ctx.setFields(source.id, {
+          userRefreshRateSeconds: FLOOR_SECONDS,
+        });
+        const sourceFeed = (await ctx.findById(source.id))!;
+
+        await ctx.service.copySettings({
+          sourceFeed,
+          dto: {
+            targetFeedIds: [premiumTarget.id],
+            settings: [UserFeedCopyableSetting.RefreshRate],
+            targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+          },
+          discordUserId: ctx.discordUserId,
+        });
+
+        const premium = await ctx.findById(premiumTarget.id);
+        assert.strictEqual(premium?.userRefreshRateSeconds, FLOOR_SECONDS);
       });
     });
   });
@@ -618,32 +912,15 @@ describe("UserFeedsService", { concurrency: true }, () => {
         { url: "https://example.com/new.xml" },
       );
 
-      assert.strictEqual(publishedQueue, "feed-deleted");
+      assert.strictEqual(publishedQueue, "feed.deleted");
       assert.deepStrictEqual(publishedMessage, {
-        data: { feed: { id: feed.id } },
+        data: { feedId: feed.id },
       });
     });
 
-    it("gates changing a feed's URL to a reddit url without an active connection", async () => {
+    it("allows changing a feed's URL to a reddit url without an active connection", async () => {
       const ctx = harness.createContext({
         redditClientId: "test-reddit-client-id",
-        feedHandler: { url: "https://www.reddit.com/r/gaming/.rss" },
-      });
-      const feed = await ctx.createFeed({});
-
-      await assert.rejects(
-        ctx.service.updateFeedById(
-          { id: feed.id },
-          { url: "https://www.reddit.com/r/gaming/.rss" },
-        ),
-        RedditConnectionRequiredException,
-      );
-    });
-
-    it("allows changing a feed's URL to a reddit url with an active connection", async () => {
-      const ctx = harness.createContext({
-        redditClientId: "test-reddit-client-id",
-        externalCredentials: [{ type: "reddit", status: "ACTIVE", data: {} }],
         feedHandler: {
           url: "https://www.reddit.com/r/gaming/.rss",
           feedTitle: "gaming",

@@ -38,6 +38,7 @@ const DEFAULT_PORTS = {
   smtp: 3004,
   smtpHttp: 3005,
   reddit: 3006,
+  vendor: 3007,
   postgres: 5433,
 };
 
@@ -301,13 +302,14 @@ function createContext(instance: number): RunContext {
     E2E_MOCK_SMTP_PORT: String(DEFAULT_PORTS.smtp + offset),
     E2E_MOCK_SMTP_HTTP_PORT: String(DEFAULT_PORTS.smtpHttp + offset),
     E2E_MOCK_REDDIT_PORT: String(DEFAULT_PORTS.reddit + offset),
+    E2E_VENDOR_MOCK_PORT: String(DEFAULT_PORTS.vendor + offset),
     E2E_POSTGRES_PORT: String(DEFAULT_PORTS.postgres + offset),
     BACKEND_API_REDDIT_CLIENT_ID:
       process.env.BACKEND_API_REDDIT_CLIENT_ID || "e2e-reddit-client-id",
     COMPOSE_PROJECT_NAME: projectName,
   };
 
-  const mockLogs = ["rss", "discord", "smtp", "reddit"].map((name) =>
+  const mockLogs = ["rss", "discord", "smtp", "reddit", "vendor"].map((name) =>
     join(LOG_DIR, `mock-${name}${suffix}.log`),
   );
   return {
@@ -560,7 +562,7 @@ async function main(): Promise<number> {
     `Starting E2E Docker stack (instance: ${instance}, project: ${context.projectName})...`,
   );
   console.log(
-    `  backend=${context.env.E2E_BACKEND_PORT} frontend=${context.env.E2E_FRONTEND_PORT} mongo=${context.env.E2E_MONGO_PORT} rss-mock=${context.env.E2E_MOCK_RSS_PORT} discord-mock=${context.env.E2E_MOCK_DISCORD_PORT} smtp-mock=${context.env.E2E_MOCK_SMTP_PORT}/${context.env.E2E_MOCK_SMTP_HTTP_PORT} reddit-mock=${context.env.E2E_MOCK_REDDIT_PORT}`,
+    `  backend=${context.env.E2E_BACKEND_PORT} frontend=${context.env.E2E_FRONTEND_PORT} mongo=${context.env.E2E_MONGO_PORT} rss-mock=${context.env.E2E_MOCK_RSS_PORT} discord-mock=${context.env.E2E_MOCK_DISCORD_PORT} smtp-mock=${context.env.E2E_MOCK_SMTP_PORT}/${context.env.E2E_MOCK_SMTP_HTTP_PORT} reddit-mock=${context.env.E2E_MOCK_REDDIT_PORT} vendor-mock=${context.env.E2E_VENDOR_MOCK_PORT}`,
   );
   appendLog(
     context.runnerLog,

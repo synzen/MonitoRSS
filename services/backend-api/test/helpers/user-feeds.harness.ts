@@ -63,6 +63,11 @@ export interface TestContextOptions {
   bannedFeedDetails?: unknown;
   publishMessage?: (queue: string, message: unknown) => Promise<void>;
   redditClientId?: string;
+  // Billing-enabled posture (hosted instance): supporters + Paddle creds set.
+  // Absent keeps the self-host posture where premium-feed gates never fire.
+  billingEnabled?: boolean;
+  premiumFeedsMinRefreshRateSeconds?: number;
+  featureFlags?: { premiumFeeds?: boolean };
   externalCredentials?: Array<{
     type: string;
     status: string;
@@ -177,12 +182,22 @@ export function createUserFeedsHarness(): UserFeedsHarness {
       const config = {
         BACKEND_API_ENCRYPTION_KEY_HEX: DEFAULT_ENCRYPTION_KEY,
         BACKEND_API_REDDIT_CLIENT_ID: options.redditClientId,
+        ...(options.billingEnabled
+          ? {
+              BACKEND_API_ENABLE_SUPPORTERS: true,
+              BACKEND_API_PADDLE_KEY: "test-paddle-key",
+              BACKEND_API_PADDLE_URL: "https://sandbox.paddle.com",
+            }
+          : {}),
+        BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS:
+          options.premiumFeedsMinRefreshRateSeconds ?? 3600,
       } as UserFeedsServiceDeps["config"];
 
       const usersService = createMockUsersService(
         userId,
         discordUserId,
         options.externalCredentials,
+        options.featureFlags,
       );
 
       const workspaceDigests: CapturedWorkspaceDigest[] = [];

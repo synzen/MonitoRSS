@@ -14,7 +14,10 @@ import {
   GetArticlesInput,
 } from "../feed-handler/types";
 import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective-refresh-rate";
-import { DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS } from "../../shared/utils/billing";
+import {
+  DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+  isBillingEnabled,
+} from "../../shared/utils/billing";
 import {
   BannedFeedException,
   FeedFetchTimeoutException,
@@ -27,6 +30,9 @@ import {
   RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
   ManualRequestTooSoonException,
+  PremiumFeedsNotSupportedException,
+  PremiumFeedsPlanRequiredException,
+  PremiumFeedsLimitReachedException,
 } from "../../shared/exceptions/user-feeds.exceptions";
 import logger from "../../infra/logger";
 import type {
@@ -59,14 +65,21 @@ import timezone from "dayjs/plugin/timezone";
 import { Types } from "mongoose";
 import { FeedFetcherFetchStatus } from "../feed-fetcher-api/types";
 import { UserFeedTargetFeedSelectionType } from "../feed-connections-discord-channels/types";
+import { MessageBrokerQueue } from "@monitorss/contracts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 type NextRetryReason = "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF";
 
-const MESSAGE_BROKER_QUEUE_FEED_DELETED = "feed-deleted";
 const BULK_DELETE_PUBLISH_CONCURRENCY = 10;
+
+// Premium-feed allowances (platform URLs served by provider adapters), counted
+// within the existing feed limits. Personal-scope feeds: per user; workspace
+// feeds: per workspace. Workspace plans are always team-tier, so the scope is
+// the tier distinction.
+const PREMIUM_PERSONAL_FEED_ALLOWANCE = 5;
+const PREMIUM_WORKSPACE_FEED_ALLOWANCE = 10;
 
 // The only disable states a successful manual request proves recovery from.
 // Other codes (Manual, ExceededFeedLimit, ExcessivelyActive, FeedTooLarge)
@@ -121,6 +134,102 @@ export class UserFeedsService {
     return workspaceId
       ? { scope: "workspace", workspaceId, maxFeeds }
       : { scope: "personal", discordUserId: ownerDiscordUserId, maxFeeds };
+  }
+
+  // Premium-ness is feed-requests' classification — gating keys on the same
+  // matcher the fetch path routes with. Fail-closed: an unreachable
+  // feed-requests rejects the operation rather than skipping the gates.
+  private async classifyPremiumUrls(urls: string[]): Promise<Set<string>> {
+    if (urls.length === 0) {
+      return new Set();
+    }
+
+    const results = await this.deps.feedFetcherApiService.classifyUrls(urls);
+    const premiumUrls = new Set<string>();
+
+    urls.forEach((url, i) => {
+      if (results[i]) {
+        premiumUrls.add(url);
+      }
+    });
+
+    return premiumUrls;
+  }
+
+  // Premium feeds (platform URLs served by provider adapters) sit behind the
+  // closed-beta user flag plus a paid plan, with per-scope allowances. Billing
+  // disabled (self-host) means uncapped — the gates are billing constructs.
+  private async assertPremiumFeedAllowed(input: {
+    isPremiumUrl: boolean;
+    user: Pick<IUser, "featureFlags">;
+    isSupporter: boolean;
+    ownerDiscordUserId: string;
+    workspaceId?: string;
+    // Set when re-URLing an existing feed that is already premium: its slot is
+    // already counted, so the swap must not count as an additional feed.
+    replacesPremiumFeed?: boolean;
+  }): Promise<void> {
+    if (!input.isPremiumUrl) {
+      return;
+    }
+
+    if (!isBillingEnabled(this.deps.config)) {
+      return;
+    }
+
+    if (!input.user.featureFlags?.premiumFeeds) {
+      throw new PremiumFeedsNotSupportedException(
+        "Premium feeds are not yet available on this account",
+      );
+    }
+
+    if (!input.isSupporter) {
+      throw new PremiumFeedsPlanRequiredException(
+        "Premium feeds require a paid plan",
+      );
+    }
+
+    const scopedUrls = input.workspaceId
+      ? await this.deps.userFeedRepository.findWorkspaceFeedUrls(
+          input.workspaceId,
+        )
+      : await this.deps.userFeedRepository.findPersonalFeedUrlsByOwner(
+          input.ownerDiscordUserId,
+        );
+
+    const scopedPremiumUrls = await this.classifyPremiumUrls(
+      scopedUrls.map((feed) => feed.url),
+    );
+
+    // Counted per feed, not per distinct URL — the allowance is feed slots.
+    const used =
+      scopedUrls.filter((feed) => scopedPremiumUrls.has(feed.url)).length -
+      (input.replacesPremiumFeed ? 1 : 0);
+    const allowance = input.workspaceId
+      ? PREMIUM_WORKSPACE_FEED_ALLOWANCE
+      : PREMIUM_PERSONAL_FEED_ALLOWANCE;
+
+    if (used >= allowance) {
+      throw new PremiumFeedsLimitReachedException(
+        `Premium feed limit reached (${allowance} allowed in this scope)`,
+      );
+    }
+  }
+
+  // The provider-cost floor: a premium feed must never fetch faster than the
+  // configured minimum, on any path that writes a refresh rate.
+  private clampPremiumRefreshRateSeconds(
+    isPremiumUrl: boolean,
+    rateSeconds: number,
+  ): number {
+    if (!isPremiumUrl) {
+      return rateSeconds;
+    }
+
+    return Math.max(
+      rateSeconds,
+      this.deps.config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS,
+    );
   }
 
   // Translates the repository's limit sentinel into the exception callers handle.
@@ -183,10 +292,7 @@ export class UserFeedsService {
 
     const myWorkspaceIds = workspaceId ? [workspaceId] : [];
 
-    const [
-      { maxFeeds, maxDailyArticles, refreshRateSeconds, dormant },
-      sourceFeedToCopyFrom,
-    ] = await Promise.all([
+    const [feedBenefits, sourceFeedToCopyFrom] = await Promise.all([
       this.deps.supportersService.resolveFeedBenefits({
         workspaceId,
         user: { discordUserId },
@@ -199,6 +305,9 @@ export class UserFeedsService {
           )
         : null,
     ]);
+
+    const { maxFeeds, maxDailyArticles, refreshRateSeconds, dormant } =
+      feedBenefits;
 
     // The dormant gate fires before any URL validation so the rejection is
     // unmistakable (activation prompt) rather than a generic fetch failure.
@@ -220,11 +329,6 @@ export class UserFeedsService {
         user,
       );
 
-    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-      url,
-      credentialSource,
-    );
-
     const tempLookupDetails =
       this.deps.feedCredentialsService.getLookupDetailsFromSource({
         feed: { url, feedRequestLookupKey: randomUUID() },
@@ -234,9 +338,22 @@ export class UserFeedsService {
     const { finalUrl, enableDateChecks, feedTitle } =
       await this.checkUrlIsValid(url, tempLookupDetails);
 
-    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-      finalUrl,
-      credentialSource,
+    // Gated on the validated final URL so a redirect landing on a platform
+    // host cannot bypass the gate (same as the clone/update paths).
+    const premiumUrls = await this.classifyPremiumUrls([finalUrl]);
+    const isPremiumUrl = premiumUrls.has(finalUrl);
+
+    await this.assertPremiumFeedAllowed({
+      isPremiumUrl,
+      user,
+      isSupporter: feedBenefits.isSupporter,
+      ownerDiscordUserId: discordUserId,
+      workspaceId,
+    });
+
+    const effectiveRefreshRateSeconds = this.clampPremiumRefreshRateSeconds(
+      isPremiumUrl,
+      refreshRateSeconds,
     );
 
     const {
@@ -256,8 +373,12 @@ export class UserFeedsService {
           discordUserId,
         },
         workspaceId,
-        refreshRateSeconds,
-        slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
+        refreshRateSeconds: effectiveRefreshRateSeconds,
+        isPremiumFeed: isPremiumUrl,
+        slotOffsetMs: calculateSlotOffsetMs(
+          finalUrl,
+          effectiveRefreshRateSeconds,
+        ),
         maxDailyArticles,
         feedRequestLookupKey: tempLookupDetails?.key,
         dateCheckOptions: enableDateChecks
@@ -340,7 +461,7 @@ export class UserFeedsService {
       );
     }
 
-    const { maxFeeds, dormant } =
+    const { maxFeeds, dormant, isSupporter } =
       await this.deps.supportersService.resolveFeedBenefits({
         workspaceId: destinationWorkspaceId,
         user: { discordUserId: sourceFeed.user.discordUserId },
@@ -361,17 +482,7 @@ export class UserFeedsService {
         user,
       );
 
-    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-      finalUrl,
-      credentialSource,
-    );
-
     if (data?.url && data.url !== sourceFeed.url) {
-      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-        data.url,
-        credentialSource,
-      );
-
       finalUrl = (
         await this.checkUrlIsValid(
           data.url,
@@ -382,11 +493,42 @@ export class UserFeedsService {
         )
       ).finalUrl;
 
-      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-        finalUrl,
-        credentialSource,
-      );
       inputUrl = data.url;
+    }
+
+    const premiumUrls = await this.classifyPremiumUrls([finalUrl]);
+    const isPremiumUrl = premiumUrls.has(finalUrl);
+
+    await this.assertPremiumFeedAllowed({
+      isPremiumUrl,
+      user,
+      isSupporter,
+      ownerDiscordUserId: sourceFeed.user.discordUserId,
+      workspaceId: destinationWorkspaceId,
+    });
+
+    // A premium clone inherits the source's rates; a user rate below the floor
+    // is dropped (falls back to the floored base rate) rather than copied.
+    const premiumRateOverrides: {
+      refreshRateSeconds?: number;
+      userRefreshRateSeconds?: number | null;
+      isPremiumFeed: boolean;
+    } = { isPremiumFeed: isPremiumUrl };
+
+    if (isPremiumUrl) {
+      premiumRateOverrides.refreshRateSeconds = this.clampPremiumRefreshRateSeconds(
+        isPremiumUrl,
+        sourceFeed.refreshRateSeconds ??
+          this.deps.supportersService.defaultRefreshRateSeconds,
+      );
+
+      if (
+        sourceFeed.userRefreshRateSeconds &&
+        sourceFeed.userRefreshRateSeconds <
+          this.deps.config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS
+      ) {
+        premiumRateOverrides.userRefreshRateSeconds = null;
+      }
     }
 
     const created = await this.cloneWithFeedLimit(
@@ -397,6 +539,7 @@ export class UserFeedsService {
           url: finalUrl,
           inputUrl,
           workspaceId: destinationWorkspaceId,
+          ...premiumRateOverrides,
         },
       },
       this.feedLimitScope({
@@ -513,6 +656,60 @@ export class UserFeedsService {
       );
 
       copyableSettings.connections = sourceFeed.connections;
+    }
+
+    // A source rate below the premium floor cannot legally land on premium
+    // targets; those fall back to their floored base rate instead. The copy is
+    // split into two writes so non-premium targets still receive the source
+    // rate.
+    const sourceRate = sourceFeed.userRefreshRateSeconds ?? null;
+    const subFloorSourceRate =
+      settingsToCopy.includes(UserFeedCopyableSetting.RefreshRate) &&
+      sourceRate !== null &&
+      sourceRate <
+        this.deps.config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS;
+
+    if (subFloorSourceRate) {
+      const targetFeeds =
+        await this.deps.userFeedRepository.findFeedUrlsForCopyTarget(target);
+      const premiumUrls = await this.classifyPremiumUrls(
+        targetFeeds.map((feed) => feed.url),
+      );
+      const premiumIds = targetFeeds
+        .filter((feed) => premiumUrls.has(feed.url))
+        .map((feed) => feed.id);
+
+      if (premiumIds.length === 0) {
+        await this.deps.userFeedRepository.copySettingsToFeeds({
+          target,
+          settings: copyableSettings,
+        });
+
+        return;
+      }
+
+      const premiumTarget: CopySettingsTarget = {
+        ...target,
+        type: "selected",
+        feedIds: premiumIds,
+      };
+      const regularIds = targetFeeds
+        .map((feed) => feed.id)
+        .filter((id) => !premiumIds.includes(id));
+
+      if (regularIds.length) {
+        await this.deps.userFeedRepository.copySettingsToFeeds({
+          target: { ...target, type: "selected", feedIds: regularIds },
+          settings: copyableSettings,
+        });
+      }
+
+      await this.deps.userFeedRepository.copySettingsToFeeds({
+        target: premiumTarget,
+        settings: { ...copyableSettings, userRefreshRateSeconds: null },
+      });
+
+      return;
     }
 
     await this.deps.userFeedRepository.copySettingsToFeeds({
@@ -656,25 +853,28 @@ export class UserFeedsService {
       $unset: {},
     };
 
+    // The premium floor evaluates against the URL this request leaves the feed
+    // with, so a PATCH that both re-URLs and re-rates cannot slip under the
+    // floor via the old URL.
+    let premiumRateUrl = feed.url;
+    // Classified premium URLs among the ones this request touches; populated
+    // on demand by the URL-change and rate sections below.
+    let premiumUrls: Set<string> | undefined;
+
     if (updates.title) {
       useUpdateObject.$set!.title = updates.title;
     }
 
     if (updates.url) {
       // Resolve credentials and lookup details from the NEW url, not the feed's
-      // existing one: changing to a Reddit url must apply the authenticated lookup
-      // (and gate on a connection), otherwise the validation fetch hits the raw
-      // Reddit url and is rate-limited. Mirrors the create/clone paths.
+      // existing one: changing to a Reddit url must apply the authenticated lookup,
+      // otherwise the validation fetch hits the raw Reddit url and is rate-limited.
+      // Mirrors the create/clone paths.
       const credentialSource =
         await this.deps.feedCredentialsService.resolveCredentialSource(
           feed,
           user,
         );
-
-      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-        updates.url,
-        credentialSource,
-      );
 
       const { finalUrl } = await this.checkUrlIsValid(
         updates.url,
@@ -684,23 +884,49 @@ export class UserFeedsService {
         }),
       );
 
-      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-        finalUrl,
-        credentialSource,
-      );
+      const urlChangeBenefits =
+        await this.deps.supportersService.resolveFeedBenefits(feed);
+      feedBenefits = urlChangeBenefits;
+
+      // One batched classification covers both URLs: the new one for the gate
+      // and floor, the old one for the replaces-slot allowance semantics.
+      premiumUrls = await this.classifyPremiumUrls([feed.url, finalUrl]);
+
+      await this.assertPremiumFeedAllowed({
+        isPremiumUrl: premiumUrls.has(finalUrl),
+        user,
+        isSupporter: urlChangeBenefits.isSupporter,
+        ownerDiscordUserId: feed.user.discordUserId,
+        workspaceId: feed.workspaceId,
+        replacesPremiumFeed: premiumUrls.has(feed.url),
+      });
 
       useUpdateObject.$set!.url = finalUrl;
       useUpdateObject.$set!.inputUrl = updates.url;
+      useUpdateObject.$set!.isPremiumFeed = premiumUrls.has(finalUrl);
+      premiumRateUrl = finalUrl;
 
-      // Recalculate slot offset when URL changes to maintain even distribution
-      const effectiveRefreshRate =
+      // Recalculate slot offset when URL changes to maintain even distribution.
+      // A non-premium feed becoming premium is clamped up to the floor here —
+      // the stored base rate included, since the scheduler keys on it.
+      const effectiveRefreshRate = this.clampPremiumRefreshRateSeconds(
+        premiumUrls.has(finalUrl),
         feed.userRefreshRateSeconds ??
-        feed.refreshRateSeconds ??
-        this.deps.supportersService.defaultRefreshRateSeconds;
+          feed.refreshRateSeconds ??
+          this.deps.supportersService.defaultRefreshRateSeconds,
+      );
       useUpdateObject.$set!.slotOffsetMs = calculateSlotOffsetMs(
         finalUrl,
         effectiveRefreshRate,
       );
+
+      if (
+        premiumUrls.has(finalUrl) &&
+        !premiumUrls.has(feed.url) &&
+        (feed.refreshRateSeconds ?? 0) < effectiveRefreshRate
+      ) {
+        useUpdateObject.$set!.refreshRateSeconds = effectiveRefreshRate;
+      }
     }
 
     if (updates.disabledCode !== undefined) {
@@ -780,6 +1006,25 @@ export class UserFeedsService {
 
       const { refreshRateSeconds: fastestPossibleRate } = feedBenefits;
 
+      // The premium floor applies to the effective rate, so a null/unset
+      // (base-rate) request on a premium feed only fails when the stored base
+      // rate itself is below the floor — which the create path prevents.
+      premiumUrls ??= await this.classifyPremiumUrls([premiumRateUrl]);
+      const premiumFloorSeconds = premiumUrls.has(premiumRateUrl)
+        ? this.deps.config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS
+        : 0;
+      const requestedRate =
+        updates.userRefreshRateSeconds === null
+          ? (feed.refreshRateSeconds ??
+            this.deps.supportersService.defaultRefreshRateSeconds)
+          : updates.userRefreshRateSeconds;
+
+      if (requestedRate < premiumFloorSeconds) {
+        throw new RefreshRateNotAllowedException(
+          `Refresh rate is too low. Premium feeds must refresh at least once every ${Math.ceil(premiumFloorSeconds / 60)} minutes.`,
+        );
+      }
+
       if (
         updates.userRefreshRateSeconds === null ||
         updates.userRefreshRateSeconds === fastestPossibleRate
@@ -847,11 +1092,10 @@ export class UserFeedsService {
       // Reddit url), so resync the lookup key or delivery fetches with a stale key.
       await this.deps.feedCredentialsService.syncLookupKeys({ feedIds: [id] });
 
-      await this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
-        data: { feed: { id } },
+      await this.deps.publishMessage(MessageBrokerQueue.FeedDeleted, {
+        data: { feedId: id },
       });
     }
-
     if (
       u &&
       (updates.disabledCode === null ||
@@ -890,8 +1134,8 @@ export class UserFeedsService {
 
     await this.deps.userFeedRepository.deleteById(id);
 
-    await this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
-      data: { feed: { id } },
+    await this.deps.publishMessage(MessageBrokerQueue.FeedDeleted, {
+      data: { feedId: id },
     });
 
     try {
@@ -1263,8 +1507,8 @@ export class UserFeedsService {
         feeds
           .slice(index, index + BULK_DELETE_PUBLISH_CONCURRENCY)
           .map((feed) =>
-            this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
-              data: { feed: { id: feed.id } },
+            this.deps.publishMessage(MessageBrokerQueue.FeedDeleted, {
+              data: { feedId: feed.id },
             }),
           ),
       );
@@ -1378,11 +1622,6 @@ export class UserFeedsService {
         user,
       );
 
-    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-      url,
-      credentialSource,
-    );
-
     const lookupDetails =
       this.deps.feedCredentialsService.getLookupDetailsFromSource({
         feed: { url, feedRequestLookupKey: randomUUID() },
@@ -1392,11 +1631,6 @@ export class UserFeedsService {
     const { finalUrl, feedTitle } = await this.checkUrlIsValid(
       url,
       lookupDetails,
-    );
-
-    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-      finalUrl,
-      credentialSource,
     );
 
     if (finalUrl !== url) {

@@ -9,6 +9,7 @@ import * as util from 'util';
 import compress from '@fastify/compress';
 import dayjs from 'dayjs';
 import qs from 'qs';
+import { z } from 'zod';
 import logger from '../utils/logger';
 import type { FeedFetcherService } from '../feed-fetcher/feed-fetcher';
 import {
@@ -21,6 +22,7 @@ import { createFetchFeedFlow } from '../feed-fetcher/fetch-feed';
 import { RequestStatus } from '../feed-fetcher/types';
 import type { PartitionedRequestsStore } from '../stores/postgres/partitioned-requests-store';
 import type { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter';
+import type { PlatformProviderSyncService } from '../platform-providers/sync';
 import calculateResponseFreshnessLifetime from '../feed-fetcher/calculate-response-freshness-lifetime';
 
 // Reproduces the three log records the pre-migration AllExceptionsFilter
@@ -104,7 +106,26 @@ export interface HttpAppDeps {
   feedFetcher: FeedFetcherService;
   partitionedRequestsStore: PartitionedRequestsStore;
   hostRateLimiter: HostRateLimiterService;
+  // The same matcher the fetch path routes with, so backend-api's premium
+  // gating keys on exactly what would be served through a provider.
+  isPlatformUrl: (url: string) => boolean;
+  platformProviderSync?: PlatformProviderSyncService;
 }
+
+// Keeps a classification batch (backend scopes: all feed URLs of a user or
+// workspace) within one cheap request.
+const MAX_CLASSIFY_URLS = 500;
+
+const classifyUrlsInputSchema = z.object({
+  urls: z.array(z.string().min(1)).min(1).max(MAX_CLASSIFY_URLS),
+});
+
+// The GC sweep posts every active feed URL in one call (non-platform ones
+// are ignored by the sync service's matcher), so the body carries the whole
+// set — bounded by the route's bodyLimit, not the schema.
+const syncActiveUrlsInputSchema = z.object({
+  urls: z.array(z.string().min(1)),
+});
 
 export function createApp(deps: HttpAppDeps): FastifyInstance {
   const app = Fastify({
@@ -323,6 +344,75 @@ export function createApp(deps: HttpAppDeps): FastifyInstance {
       }
 
       return fetchFeedFlow.fetchFeedDeliveryPreview(parsedBody.data);
+    },
+  );
+
+  app.post(
+    '/v1/platform/classify-urls',
+    {
+      preHandler: requireApiKey,
+    },
+    async (request, reply) => {
+      const parsedBody = parseWithMessages(
+        classifyUrlsInputSchema,
+        request.body,
+      );
+
+      if (!parsedBody.success) {
+        const response = {
+          statusCode: 400,
+          message: parsedBody.messages,
+          error: 'Bad Request',
+        };
+
+        logHttpException(request, {
+          name: 'BadRequestException',
+          message: parsedBody.messages,
+          response,
+        });
+
+        return reply.code(400).send(response);
+      }
+
+      return {
+        results: parsedBody.data.urls.map((url) => deps.isPlatformUrl(url)),
+      };
+    },
+  );
+
+  app.post(
+    '/v1/platform/sync-active-urls',
+    {
+      preHandler: requireApiKey,
+      bodyLimit: 20 * 1024 * 1024,
+    },
+    async (request, reply) => {
+      const parsedBody = parseWithMessages(
+        syncActiveUrlsInputSchema,
+        request.body,
+      );
+
+      if (!parsedBody.success) {
+        const response = {
+          statusCode: 400,
+          message: parsedBody.messages,
+          error: 'Bad Request',
+        };
+
+        logHttpException(request, {
+          name: 'BadRequestException',
+          message: parsedBody.messages,
+          response,
+        });
+
+        return reply.code(400).send(response);
+      }
+
+      if (!deps.platformProviderSync) {
+        return { queued: 0 };
+      }
+
+      return deps.platformProviderSync.syncActiveUrls(parsedBody.data.urls);
     },
   );
 

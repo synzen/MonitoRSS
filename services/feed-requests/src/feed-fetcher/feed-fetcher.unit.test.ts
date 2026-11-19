@@ -11,6 +11,8 @@ import {
   type Dispatcher,
 } from 'undici';
 import { createFeedFetcherService } from './feed-fetcher';
+import { createPlatformProviderRouter } from '../platform-providers/router';
+import type { PlatformFeedIdentity, PlatformProviderRegistry } from '../platform-providers/types';
 import { RequestStatus } from '../feed-fetcher/types';
 import { silenceLogger } from '../test/helpers/silence-logger';
 
@@ -262,6 +264,219 @@ describe('FeedFetcherService', () => {
         });
         assert.ok(insert.errorMessage?.includes('failed'));
       });
+    });
+  });
+
+  describe('platform provider routing', () => {
+    const redditUrl = 'https://www.reddit.com/r/javascript';
+    const providerOrigin = 'http://mock-provider.test';
+    const providerRss = `<rss><channel>
+      <item>
+        <guid>t3_1abcde</guid>
+        <link>https://www.reddit.com/r/javascript/comments/1abcde/x/</link>
+        <title>Post A</title>
+      </item>
+    </channel></rss>`;
+
+    // The registry owns matching wholesale, so its stub parses the platform
+    // URLs itself — mirroring how the private package declares its hosts.
+    const matchPlatformUrl = (url: string): PlatformFeedIdentity | null => {
+      let parsed: URL;
+
+      try {
+        parsed = new URL(url);
+      } catch {
+        return null;
+      }
+
+      // Legacy platform RSS URLs fall through, like the real matcher.
+      if (
+        parsed.hostname.toLowerCase().startsWith('rss.') ||
+        parsed.pathname.endsWith('.rss')
+      ) {
+        return null;
+      }
+
+      const segments = parsed.pathname.split('/').filter(Boolean);
+
+      if (
+        parsed.hostname.endsWith('reddit.com') &&
+        segments.length === 2 &&
+        segments[0] === 'r'
+      ) {
+        return {
+          platform: 'reddit',
+          kind: 'subreddit',
+          value: segments[1],
+        };
+      }
+
+      return null;
+    };
+
+    // A stub vendor adapter: GETs a provider URL derived from the identity
+    // and surfaces error statuses.
+    const registryWithProvider = (
+      providerName = 'private-default',
+    ): PlatformProviderRegistry => ({
+      findMatchingPlatform: matchPlatformUrl,
+      adapters: {
+        reddit: {
+          [providerName]: ({ httpGet: adapterHttpGet }) => ({
+            async fetchFeedDocument(identity) {
+              const res = await adapterHttpGet(
+                `${providerOrigin}/reddit/${identity.kind}/${identity.value}`,
+              );
+
+              if (!res.ok) {
+                throw Object.assign(
+                  new Error(`Provider responded with status ${res.status}`),
+                  { requestStatus: 'BAD_STATUS_CODE', statusCode: res.status },
+                );
+              }
+
+              return res.text();
+            },
+          }),
+        },
+      },
+      defaults: { reddit: providerName },
+    });
+
+    const interceptProvider = (overrides: { statusCode?: number } = {}) => {
+      agent
+        .get(providerOrigin)
+        .intercept({ path: '/reddit/subreddit/javascript' })
+        .reply((opts) => {
+          capturedRequests.push({
+            url: `${opts.origin}${opts.path}`,
+            headers: (opts.headers as Record<string, string>) ?? {},
+          });
+
+          return {
+            statusCode: overrides.statusCode ?? 200,
+            data: providerRss,
+            responseOptions: {
+              headers: { 'content-type': 'application/rss+xml' },
+            },
+          };
+        });
+    };
+
+    const createServiceWithRegistry = (registry: PlatformProviderRegistry) =>
+      createFeedFetcherService({
+        defaultUserAgent,
+        requestTimeoutMs: 15000,
+        objectFileStorage: {} as never,
+        cacheStorage: {} as never,
+        partitionedRequestsStore: {} as never,
+        platformSourceRouterFactory: (httpGet) =>
+          createPlatformProviderRouter({
+            matchPlatform: (url) => registry.findMatchingPlatform(url),
+            platformProviderRegistry: registry,
+            httpGet,
+          }),
+      });
+
+    it('routes a reddit destination URL to the provider adapter', async () => {
+      interceptProvider();
+
+      const routedService = createServiceWithRegistry(registryWithProvider());
+
+      const { request: insert, responseText } =
+        await routedService.fetchAndSaveResponse(redditUrl);
+
+      assert.strictEqual(capturedRequests.length, 1);
+      assert.strictEqual(
+        capturedRequests[0].url,
+        `${providerOrigin}/reddit/subreddit/javascript`,
+      );
+      assert.partialDeepStrictEqual(insert, {
+        // The stored URL remains the user-facing destination URL.
+        url: redditUrl,
+        lookupKey: redditUrl,
+        status: RequestStatus.OK,
+        response: {
+          statusCode: 200,
+          headers: { 'content-type': 'application/rss+xml' },
+        },
+      });
+      assert.strictEqual(responseText, providerRss);
+      assert.ok(insert.response?.body?.hashKey);
+      assert.ok(insert.response?.body?.contents);
+    });
+
+    it('maps an unknown provider name into a failed request insert', async () => {
+      const registry = registryWithProvider('vendor-x');
+      registry.adapters.reddit = {};
+
+      const routedService = createServiceWithRegistry(registry);
+
+      const { request: insert } =
+        await routedService.fetchAndSaveResponse(redditUrl);
+
+      assert.strictEqual(capturedRequests.length, 0);
+      assert.partialDeepStrictEqual(insert, {
+        url: redditUrl,
+        status: RequestStatus.FETCH_ERROR,
+      });
+      assert.match(insert.errorMessage || '', /Unknown platform provider/);
+    });
+
+    it('maps a provider error status into BAD_STATUS_CODE', async () => {
+      interceptProvider({ statusCode: 503 });
+
+      const routedService = createServiceWithRegistry(registryWithProvider());
+
+      const { request: insert } =
+        await routedService.fetchAndSaveResponse(redditUrl);
+
+      assert.partialDeepStrictEqual(insert, {
+        url: redditUrl,
+        status: RequestStatus.BAD_STATUS_CODE,
+        // The provider status stays on the row so consumers map it through
+        // the existing status-code taxonomy.
+        response: { statusCode: 503 },
+      });
+      assert.match(insert.errorMessage || '', /status 503/);
+    });
+
+    it('falls through to the normal fetch path for legacy reddit RSS URLs', async () => {
+      const legacyUrl = 'https://www.reddit.com/r/javascript.rss';
+
+      agent
+        .get('https://www.reddit.com')
+        .intercept({ path: '/r/javascript.rss' })
+        .reply(() => ({
+          statusCode: 200,
+          data: providerRss,
+          responseOptions: {
+            headers: { 'content-type': 'application/rss+xml' },
+          },
+        }));
+
+      const routedService = createServiceWithRegistry(registryWithProvider());
+
+      const { request: insert } =
+        await routedService.fetchAndSaveResponse(legacyUrl);
+
+      // The legacy RSS URL is fetched directly, not routed to a provider.
+      assert.strictEqual(capturedRequests.length, 0);
+      assert.partialDeepStrictEqual(insert, {
+        url: legacyUrl,
+        status: RequestStatus.OK,
+      });
+    });
+
+    it('takes the existing fetch path for non-platform URLs', async () => {
+      mockUndiciResponse();
+
+      const routedService = createServiceWithRegistry(registryWithProvider());
+
+      await routedService.fetchAndSaveResponse(feedUrl);
+
+      assert.strictEqual(capturedRequests.length, 1);
+      assert.strictEqual(capturedRequests[0].url, feedUrl);
     });
   });
 });

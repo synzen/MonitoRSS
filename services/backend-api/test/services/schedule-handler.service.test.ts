@@ -675,6 +675,84 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       );
     });
 
+    it("clamps premium feeds up to the premium floor when syncing tier rates", async () => {
+      const ctx = harness.createContext();
+      const supporterDiscordUserId = ctx.generateId();
+
+      const localCtx = harness.createContext({
+        supportersService: {
+          allUserBenefits: [
+            {
+              discordUserId: supporterDiscordUserId,
+              maxUserFeeds: 10,
+              maxDailyArticles: SUPPORTER_MAX_DAILY_ARTICLES,
+              refreshRateSeconds: SUPPORTER_REFRESH_RATE,
+              isSupporter: true,
+            },
+          ],
+        },
+      });
+
+      // Both feeds sit at the same below-floor rate before the sync.
+      const premiumFeed = await localCtx.createFeedForUser(
+        supporterDiscordUserId,
+        { refreshRateSeconds: 300, isPremiumFeed: true },
+      );
+      const regularFeed = await localCtx.createFeedForUser(
+        supporterDiscordUserId,
+        { refreshRateSeconds: 300 },
+      );
+
+      await localCtx.service.runMaintenanceOperations();
+
+      // The premium feed clamps up to the floor; the regular feed follows the tier.
+      const refreshedPremium = await localCtx.findById(premiumFeed.id);
+      const refreshedRegular = await localCtx.findById(regularFeed.id);
+      assert.strictEqual(refreshedPremium?.refreshRateSeconds, 3600);
+      assert.strictEqual(
+        refreshedRegular?.refreshRateSeconds,
+        SUPPORTER_REFRESH_RATE,
+      );
+    });
+
+    it("clamps premium workspace feeds up to the floor when syncing workspace rates", async () => {
+      const ctx = harness.createContext();
+      const workspaceId = await ctx.createWorkspace();
+
+      const localCtx = harness.createContext({
+        supportersService: {
+          workspaceBenefits: {
+            [workspaceId]: {
+              maxFeeds: 5,
+              maxDailyArticles: DEFAULT_MAX_DAILY_ARTICLES,
+              refreshRateSeconds: SUPPORTER_REFRESH_RATE,
+              allowWebhooks: false,
+            },
+          },
+        },
+      });
+
+      const premiumFeed = await localCtx.createFeedWithConnection({
+        workspaceId,
+        refreshRateSeconds: 300,
+      });
+      const regularFeed = await localCtx.createFeedWithConnection({
+        workspaceId,
+        refreshRateSeconds: 300,
+      });
+      await localCtx.setFields(premiumFeed.id, { isPremiumFeed: true });
+
+      await localCtx.service.runMaintenanceOperations();
+
+      const refreshedPremium = await localCtx.findById(premiumFeed.id);
+      const refreshedRegular = await localCtx.findById(regularFeed.id);
+      assert.strictEqual(refreshedPremium?.refreshRateSeconds, 3600);
+      assert.strictEqual(
+        refreshedRegular?.refreshRateSeconds,
+        SUPPORTER_REFRESH_RATE,
+      );
+    });
+
     it("updates feed maxDailyArticles based on supporter benefits", async () => {
       const ctx = harness.createContext();
       const supporterDiscordUserId = ctx.generateId();

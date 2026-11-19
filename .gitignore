@@ -10,6 +10,7 @@
 !test/fixtures/**/.*
 !.clang-format
 !.editorconfig
+!services/feed-requests/.npmrc
 !.eslintignore
 !.eslintrc.js
 !.flake8

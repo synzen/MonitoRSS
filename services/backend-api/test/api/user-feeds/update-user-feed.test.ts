@@ -4,6 +4,7 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
+import { registerDefaultClassifyRoute } from "../../helpers/mock-apis";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -35,6 +36,7 @@ after(async () => {
 
 beforeEach(() => {
   feedApiMockServer.clear();
+  registerDefaultClassifyRoute(feedApiMockServer);
 });
 
 describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {

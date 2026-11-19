@@ -304,10 +304,9 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
     assert.strictEqual(body.code, "FEED_NOT_FOUND");
   });
 
-  it("returns resolvedToUrl with .rss appended for bare reddit subreddit URLs", async () => {
+  it("passes bare reddit destination URLs through to user-feeds-next without rewriting", async () => {
     const user = await ctx.asUser(generateSnowflake());
     const inputUrl = "https://www.reddit.com/r/russian_memes_only";
-    const resolvedUrl = "https://www.reddit.com/r/russian_memes_only.rss";
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
       status: 200,
@@ -317,7 +316,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
           articles: [],
           totalArticles: 0,
           selectedProperties: [],
-          url: resolvedUrl,
+          url: inputUrl,
           feedTitle: "russian_memes_only",
         },
       },
@@ -332,7 +331,14 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
     const body = (await response.json()) as {
       result: { resolvedToUrl: string | null; feedTitle?: string };
     };
-    assert.strictEqual(body.result.resolvedToUrl, resolvedUrl);
+    // The stored URL stays the user-facing destination URL — no .rss rewrite.
+    assert.strictEqual(body.result.resolvedToUrl, null);
+    assert.strictEqual(body.result.feedTitle, "russian_memes_only");
+
+    const forwarded = feedApiMockServer
+      .getRequestsForPath("/v1/user-feeds/get-articles")
+      .map((r) => r.body as { url: string });
+    assert.strictEqual(forwarded[0]?.url, inputUrl);
   });
 
   it("returns 400 with BANNED_FEED when feed is banned", async () => {

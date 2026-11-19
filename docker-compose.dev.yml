@@ -82,6 +82,11 @@ services:
     extends:
       file: docker-compose.base.yml
       service: feed-requests-service
+    build:
+      args:
+        # Set NPM_TOKEN (GitHub read:packages) in the root .env to build the
+        # private adapters package in; empty keeps the OSS build (silent skip).
+        NPM_TOKEN: ${NPM_TOKEN:-}
     volumes:
       - ./services/feed-requests:/usr/src/app
       - /usr/src/app/node_modules/
@@ -101,13 +106,26 @@ services:
       - FEED_REQUESTS_START_TARGET=service
       - NODE_ENV=local
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
+      # Platform-source config lives in the private
+      # @synzen/platform-adapters package (installed via the NPM_TOKEN build
+      # arg): it owns matching, provider selection and reads these env names.
+      - PLATFORM_SOURCE_PROVIDER_API_KEY=${PLATFORM_SOURCE_PROVIDER_API_KEY:-}
+      # Provider-selection env vars flow through from the environment; the
+      # package owns their names and defaults.
+      - PLATFORM_SOURCE_REDDIT_PROVIDER=${PLATFORM_SOURCE_REDDIT_PROVIDER:-}
+      - PLATFORM_SOURCE_REDDIT_PROVIDER_API_KEY=${PLATFORM_SOURCE_REDDIT_PROVIDER_API_KEY:-}
 
   feed-requests-api:
     extends:
       file: docker-compose.base.yml
       service: feed-requests-service
+    build:
+      args:
+        NPM_TOKEN: ${NPM_TOKEN:-}
     volumes:
       - ./services/feed-requests:/usr/src/app
+      # Anonymous volume seeded from the image once; image rebuilds do NOT
+      # update it — after dependency bumps, up with --renew-anon-volumes.
       - /usr/src/app/node_modules/
     ports:
       - "5000:5000"
@@ -122,6 +140,10 @@ services:
       - FEED_REQUESTS_S3_API_KEY_ID=1
       - FEED_REQUESTS_S3_API_KEY=1
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
+      # Same as feed-requests-service.
+      - PLATFORM_SOURCE_PROVIDER_API_KEY=${PLATFORM_SOURCE_PROVIDER_API_KEY:-}
+      - PLATFORM_SOURCE_REDDIT_PROVIDER=${PLATFORM_SOURCE_REDDIT_PROVIDER:-}
+      - PLATFORM_SOURCE_REDDIT_PROVIDER_API_KEY=${PLATFORM_SOURCE_REDDIT_PROVIDER_API_KEY:-}
     networks:
       - monitorss-default
 

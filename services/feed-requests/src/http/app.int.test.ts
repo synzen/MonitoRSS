@@ -61,6 +61,7 @@ describe('HTTP app (Integration)', () => {
       feedFetcher,
       partitionedRequestsStore: store,
       hostRateLimiter,
+      isPlatformUrl: () => false,
     });
     await app.ready();
   });

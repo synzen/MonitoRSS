@@ -4,6 +4,7 @@ import type { SupportersService } from "../supporters/supporters.service";
 import type { UserFeedsService } from "../user-feeds/user-feeds.service";
 import type { UsersService } from "../users/users.service";
 import type { MessageBrokerService } from "../message-broker/message-broker.service";
+import type { FeedFetcherApiService } from "../feed-fetcher-api/feed-fetcher-api.service";
 import type {
   IUserFeedRepository,
   RefreshRateSyncInput,
@@ -35,6 +36,7 @@ export interface ScheduleHandlerServiceDeps {
   usersService: UsersService;
   userFeedRepository: IUserFeedRepository;
   messageBrokerService: MessageBrokerService;
+  feedFetcherApiService: FeedFetcherApiService;
   now?: () => number;
 }
 
@@ -98,7 +100,27 @@ export class ScheduleHandlerService {
       workspaceSyncInputs.maxDailyArticles,
     );
 
+    await this.syncActiveFeedUrls();
+
     logger.info("Maintenance operations completed");
+  }
+
+  /**
+   * Platform-provider GC sweep: tells feed-requests which URLs still have an
+   * actively-fetching feed so it can release vendor resources nobody uses.
+   * Failures only cost a cycle — the next sweep re-syncs the full set.
+   */
+  private async syncActiveFeedUrls(): Promise<void> {
+    try {
+      const urls =
+        await this.deps.userFeedRepository.getDistinctActiveFeedUrls();
+
+      await this.deps.feedFetcherApiService.syncActiveFeedUrls(urls);
+    } catch (err) {
+      logger.warn("Failed to sync active feed urls for platform GC sweep", {
+        error: (err as Error).stack,
+      });
+    }
   }
 
   async handleRefreshRate(
@@ -440,6 +462,8 @@ export class ScheduleHandlerService {
             refreshRateSeconds,
           }),
         ),
+        premiumFloorSeconds:
+          this.deps.config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS,
       },
       maxDailyArticles: {
         workspaceLimits: Array.from(workspaceIdsByArticles.entries()).map(
@@ -479,6 +503,8 @@ export class ScheduleHandlerService {
         }),
       ),
       defaultRefreshRateSeconds: this.defaultRefreshRateSeconds,
+      premiumFloorSeconds:
+        this.deps.config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS,
     };
   }
 
