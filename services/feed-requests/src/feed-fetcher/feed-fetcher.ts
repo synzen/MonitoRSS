@@ -500,6 +500,15 @@ export function createFeedFetcherService({
           requestModel.status = err.requestStatus;
           requestModel.errorMessage = err.message;
 
+          if (err.statusCode === 429) {
+            contextLogger.warn(`Platform fetch rate-limited for url ${url}`, {
+              statusCode: err.statusCode,
+              url,
+              lookupKey: requestModel.lookupKey,
+              errorMessage: err.message,
+            });
+          }
+
           // A provider response failure keeps its status code on the row so
           // consumers map it through the existing status-code taxonomy
           // (e.g. a 404 for a non-existent resource).

@@ -71,12 +71,52 @@ describe("templates", () => {
   });
 
   describe("MEDIA_GALLERY_TEMPLATE", () => {
-    it("requires image field", () => {
-      expect(MEDIA_GALLERY_TEMPLATE.requiredFields).toContain("image");
+    it("requires image or video field", () => {
+      expect(MEDIA_GALLERY_TEMPLATE.requiredFields ?? []).toEqual([]);
+      expect(MEDIA_GALLERY_TEMPLATE.requiredFieldsOr).toEqual(["image", "video"]);
     });
 
     it("uses V2Root format", () => {
       expect(MEDIA_GALLERY_TEMPLATE.createMessageComponent().type).toBe(ComponentType.V2Root);
+    });
+
+    it("builds gallery items from detected image and video fields", () => {
+      const root = MEDIA_GALLERY_TEMPLATE.createMessageComponent({
+        image: [{ field: "image__url", presentInAll: true }],
+        video: [{ field: "enclosures__0__url", presentInAll: true }],
+        description: [{ field: "description", presentInAll: true }],
+        title: [],
+        author: [],
+        link: [],
+      });
+
+      const container = root.children[0] as { children: Array<{ type: ComponentType; children?: unknown[] }> };
+      const gallery = container.children.find((c) => (c as { type: ComponentType }).type === ComponentType.V2MediaGallery) as {
+        children: Array<{ mediaUrl: string; name: string }>;
+      };
+
+      expect(gallery.children.map((item) => item.mediaUrl)).toEqual([
+        "{{image__url}}",
+        "{{enclosures__0__url}}",
+      ]);
+    });
+
+    it("falls back to the image placeholder when no media fields are detected", () => {
+      const root = MEDIA_GALLERY_TEMPLATE.createMessageComponent({
+        image: [],
+        video: [],
+        description: [],
+        title: [],
+        author: [],
+        link: [],
+      });
+
+      const container = root.children[0] as { children: Array<{ type: ComponentType; children?: unknown[] }> };
+      const gallery = container.children.find((c) => (c as { type: ComponentType }).type === ComponentType.V2MediaGallery) as {
+        children: Array<{ mediaUrl: string }>;
+      };
+
+      expect(gallery.children.map((item) => item.mediaUrl)).toEqual(["{{image}}"]);
     });
   });
 

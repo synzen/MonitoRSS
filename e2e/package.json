@@ -20,6 +20,6 @@
     "tsx": "^4.23.15"
   },
   "optionalDependencies": {
-    "@synzen/platform-adapters": "^0.9.0"
+    "@synzen/platform-adapters": "^0.12.0"
   }
 }

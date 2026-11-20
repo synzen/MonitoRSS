@@ -41,6 +41,7 @@ export const useConnectionTemplateSelection = ({
     const template = selectedTemplateId ? getTemplateById(selectedTemplateId) : DEFAULT_TEMPLATE;
     const messageComponent = template?.createMessageComponent({
       image: [],
+      video: [],
       description: [],
       author: [],
       link: [],
