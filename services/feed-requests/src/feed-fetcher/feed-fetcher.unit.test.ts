@@ -363,10 +363,14 @@ describe('FeedFetcherService', () => {
         });
     };
 
-    const createServiceWithRegistry = (registry: PlatformProviderRegistry) =>
+    const createServiceWithRegistry = (
+      registry: PlatformProviderRegistry,
+      platformResponseFreshnessSeconds?: number,
+    ) =>
       createFeedFetcherService({
         defaultUserAgent,
         requestTimeoutMs: 15000,
+        platformResponseFreshnessSeconds,
         objectFileStorage: {} as never,
         cacheStorage: {} as never,
         partitionedRequestsStore: {} as never,
@@ -404,6 +408,38 @@ describe('FeedFetcherService', () => {
       assert.strictEqual(responseText, providerRss);
       assert.ok(insert.response?.body?.hashKey);
       assert.ok(insert.response?.body?.contents);
+    });
+
+    it('advertises freshness on platform responses when configured', async () => {
+      interceptProvider();
+
+      const routedService = createServiceWithRegistry(
+        registryWithProvider(),
+        600,
+      );
+
+      const { request: insert } =
+        await routedService.fetchAndSaveResponse(redditUrl);
+
+      // The freshness directive is what lets the scheduler's freshness skip
+      // collapse repeat fetches of the same URL into one provider call.
+      assert.partialDeepStrictEqual(insert.response?.headers, {
+        'cache-control': 'public, max-age=600',
+      });
+    });
+
+    it('does not advertise freshness on platform responses when unconfigured', async () => {
+      interceptProvider();
+
+      const routedService = createServiceWithRegistry(registryWithProvider());
+
+      const { request: insert } =
+        await routedService.fetchAndSaveResponse(redditUrl);
+
+      assert.ok(
+        insert.response?.headers &&
+          !('cache-control' in insert.response.headers),
+      );
     });
 
     it('maps an unknown provider name into a failed request insert', async () => {

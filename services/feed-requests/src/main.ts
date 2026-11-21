@@ -80,14 +80,28 @@ interface CoreInfrastructure {
  * OptionalDependency: absent in OSS builds (npm 404-skips it); the platform
  * layer is then inert (nothing matches, classify reports false).
  */
-const loadPlatformProviderRegistry = ():
-  PlatformProviderRegistry | undefined => {
+const loadPlatformProviderModule = ():
+  | {
+      platformProviderRegistry: PlatformProviderRegistry;
+      canonicalPlatformFeedUrl: (url: string) => string | null;
+    }
+  | undefined => {
   try {
     const mod = createRequire(__filename)('@synzen/platform-adapters') as {
       platformProviderRegistry?: PlatformProviderRegistry;
+      canonicalPlatformFeedUrl?: (url: string) => string | null;
     };
 
-    return mod.platformProviderRegistry;
+    if (!mod.platformProviderRegistry) {
+      return undefined;
+    }
+
+    return {
+      platformProviderRegistry: mod.platformProviderRegistry,
+      // Package versions without the export degrade to a null canonicalizer
+      // (feed creation keeps raw URLs).
+      canonicalPlatformFeedUrl: mod.canonicalPlatformFeedUrl ?? (() => null),
+    };
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code !== 'MODULE_NOT_FOUND') {
       // An installed-but-broken private package must not silently downgrade
@@ -103,9 +117,18 @@ const loadPlatformProviderRegistry = ():
 
 // The one matcher for both routing and premium classification.
 function buildPlatformUrlMatcher(): PlatformUrlMatcher {
-  const registry = loadPlatformProviderRegistry();
+  const mod = loadPlatformProviderModule();
 
-  return (url) => registry?.findMatchingPlatform(url) ?? null;
+  return (url) =>
+    mod?.platformProviderRegistry.findMatchingPlatform(url) ?? null;
+}
+
+// Feed creation canonicalizes natural platform URLs through the same package
+// that owns routing, so what gets stored is exactly what the router serves.
+function buildPlatformUrlCanonicalizer(): (url: string) => string | null {
+  const mod = loadPlatformProviderModule();
+
+  return (url) => mod?.canonicalPlatformFeedUrl(url) ?? null;
 }
 
 async function buildCoreInfrastructure(
@@ -127,10 +150,13 @@ async function buildCoreInfrastructure(
   });
   const partitionedRequestsStore = createPartitionedRequestsStore(pool);
   const platformProviderStateStore = createPlatformProviderStateStore(pool);
-  const platformProviderRegistry = loadPlatformProviderRegistry();
+  const platformProviderRegistry = loadPlatformProviderModule()
+    ?.platformProviderRegistry;
   const feedFetcher = createFeedFetcherService({
     defaultUserAgent: config.FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT,
     requestTimeoutMs: config.FEED_REQUESTS_REQUEST_TIMEOUT_MS,
+    platformResponseFreshnessSeconds:
+      config.FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS,
     objectFileStorage,
     cacheStorage,
     partitionedRequestsStore,
@@ -175,6 +201,7 @@ async function startApi() {
     partitionedRequestsStore,
     hostRateLimiter,
     isPlatformUrl: (url) => platformUrlMatcher(url) !== null,
+    resolvePlatformUrl: buildPlatformUrlCanonicalizer(),
     platformProviderSync,
   });
 

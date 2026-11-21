@@ -75,15 +75,22 @@ export function createMockFeedHandlerApi(): MockApi {
 }
 
 /**
- * Neutral default for the feed-requests URL-classification endpoint on a
- * hand-rolled TestHttpServer: every URL classifies non-premium. Tests
- * exercising premium URLs override the route with a body provider.
+ * Neutral default for the feed-requests platform endpoints on a hand-rolled
+ * TestHttpServer: every URL classifies non-premium and resolves to itself.
+ * Tests exercising premium URLs override the route with a body provider.
  */
 export function registerDefaultClassifyRoute(server: TestHttpServer): void {
   server.registerRoute("POST", "/v1/platform/classify-urls", (req) => ({
     status: 200,
     body: {
       results: ((req.body as { urls?: string[] })?.urls ?? []).map(() => false),
+    },
+  }));
+
+  server.registerRoute("POST", "/v1/platform/resolve-urls", (req) => ({
+    status: 200,
+    body: {
+      results: ((req.body as { urls?: string[] })?.urls ?? []).map(() => null),
     },
   }));
 }

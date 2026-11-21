@@ -131,6 +131,101 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
   });
 
+  describe("natural reddit URL normalization (opt-in, new feeds only)", () => {
+    // Mirrors the package canonicalizer for the single form these tests use:
+    // .rss-suffixed forms become the destination URL; other inputs stay raw.
+    const resolveRedditRss = (url: string) =>
+      url.endsWith(".rss") ? url.slice(0, -".rss".length) : null;
+
+    const NATURAL_URL = "https://old.reddit.com/r/gaming/new.rss";
+    const CANONICAL_URL = "https://old.reddit.com/r/gaming/new";
+
+    const ctxWithResolver = (
+      options: Parameters<typeof harness.createContext>[0] = {},
+    ) =>
+      harness.createContext({
+        ...options,
+        feedFetcherApiService: { resolvePlatformUrl: resolveRedditRss },
+      });
+
+    it("addFeed stores the canonical url and keeps the raw input", async () => {
+      const ctx = ctxWithResolver({
+        feedHandler: { url: CANONICAL_URL, feedTitle: "gaming" },
+      });
+
+      const feed = await ctx.service.addFeed(
+        { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+        { url: NATURAL_URL },
+      );
+
+      assert.strictEqual(feed.url, CANONICAL_URL);
+      assert.strictEqual(feed.inputUrl, NATURAL_URL);
+      assert.strictEqual(feed.isPremiumFeed, true);
+    });
+
+    it("validateFeedUrl resolves the canonical url", async () => {
+      const ctx = ctxWithResolver({
+        feedHandler: { url: CANONICAL_URL, feedTitle: "gaming" },
+      });
+
+      const result = await ctx.service.validateFeedUrl(
+        { discordUserId: ctx.discordUserId },
+        { url: NATURAL_URL },
+      );
+
+      assert.strictEqual(result.resolvedToUrl, CANONICAL_URL);
+    });
+
+    it("updateFeed url change stores the canonical url and drops a credentialed lookup key", async () => {
+      const ctx = ctxWithResolver({
+        feedHandler: { url: CANONICAL_URL, feedTitle: "gaming" },
+      });
+
+      const feed = await ctx.createFeed({
+        url: "https://www.reddit.com/r/gaming/.rss",
+      });
+      // Unique per test: the suite runs with concurrency and the lookup-key
+      // index is unique, so hardcoded fixture keys collide across tests.
+      await ctx.setFields(feed.id, {
+        feedRequestLookupKey: `lookup-key-${ctx.generateId()}`,
+      });
+
+      const updated = await ctx.service.updateFeedById(
+        { id: feed.id },
+        { url: NATURAL_URL },
+      );
+
+      assert.strictEqual(updated?.url, CANONICAL_URL);
+      const stored = await ctx.findById(feed.id);
+      assert.ok(stored);
+      assert.ok(!stored.feedRequestLookupKey);
+    });
+
+    it("clone onto a natural URL stores the canonical url and drops the inherited lookup key", async () => {
+      const ctx = ctxWithResolver({
+        feedHandler: { url: CANONICAL_URL, feedTitle: "gaming" },
+      });
+
+      const source = await ctx.createFeed({
+        url: "https://www.reddit.com/r/gaming/.rss",
+      });
+      // Unique per test: the suite runs with concurrency and the lookup-key
+      // index is unique, so hardcoded fixture keys collide across tests.
+      await ctx.setFields(source.id, {
+        feedRequestLookupKey: `lookup-key-${ctx.generateId()}`,
+      });
+
+      const cloned = await ctx.service.clone(source.id, "token", {
+        url: NATURAL_URL,
+      });
+
+      const clonedFeed = await ctx.findById(cloned.id!);
+      assert.ok(clonedFeed);
+      assert.strictEqual(clonedFeed.url, CANONICAL_URL);
+      assert.ok(!clonedFeed.feedRequestLookupKey);
+    });
+  });
+
   describe("premium feeds (closed-beta gate, allowances, floor)", () => {
     const REDDIT_URL = "https://www.reddit.com/r/gaming";
     const FLOOR_SECONDS = 3600;

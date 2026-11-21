@@ -318,6 +318,9 @@ export interface MockFeedFetcherApiServiceOptions {
   premiumHostSuffixes?: string[];
   // Thrown by the mock classifier to exercise the fail-closed gate.
   classifyUrlsError?: Error;
+  // Optional canonicalizer for platform urls (mirrors the real resolve
+  // response); default keeps every URL raw.
+  resolvePlatformUrl?: (url: string) => string | null;
 }
 
 // The platform hosts the premium-gate tests exercise.
@@ -351,6 +354,11 @@ export function createMockFeedFetcherApiService(
 
       return urls.map(isPremiumUrl);
     }),
+    resolvePlatformUrls: mock.fn(async (urls: string[]) =>
+      options.resolvePlatformUrl
+        ? urls.map((url) => options.resolvePlatformUrl!(url))
+        : urls.map(() => null),
+    ),
   } as unknown as UserFeedsServiceDeps["feedFetcherApiService"];
 }
 

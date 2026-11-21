@@ -156,6 +156,18 @@ export class UserFeedsService {
     return premiumUrls;
   }
 
+  // Feed creation stores the canonical destination form of natural platform
+  // URLs (legacy hosts, redundant query params) so identical sources dedupe
+  // into one provider fetch. Applied only where raw user input becomes a feed
+  // URL — never to stored URLs, which is what keeps existing legacy feeds on
+  // the normal fetch path (opt-in migration).
+  private async resolveInputUrl(url: string): Promise<string> {
+    const [resolved] =
+      await this.deps.feedFetcherApiService.resolvePlatformUrls([url]);
+
+    return resolved ?? url;
+  }
+
   // Premium feeds (platform URLs served by provider adapters) sit behind the
   // closed-beta user flag plus a paid plan, with per-scope allowances. Billing
   // disabled (self-host) means uncapped — the gates are billing constructs.
@@ -323,20 +335,22 @@ export class UserFeedsService {
       );
     }
 
-    const credentialSource =
-      await this.deps.feedCredentialsService.resolveCredentialSource(
+    const [credentialSource, resolvedUrl] = await Promise.all([
+      this.deps.feedCredentialsService.resolveCredentialSource(
         { workspaceId },
         user,
-      );
+      ),
+      this.resolveInputUrl(url),
+    ]);
 
     const tempLookupDetails =
       this.deps.feedCredentialsService.getLookupDetailsFromSource({
-        feed: { url, feedRequestLookupKey: randomUUID() },
+        feed: { url: resolvedUrl, feedRequestLookupKey: randomUUID() },
         credentials: credentialSource,
       });
 
     const { finalUrl, enableDateChecks, feedTitle } =
-      await this.checkUrlIsValid(url, tempLookupDetails);
+      await this.checkUrlIsValid(resolvedUrl, tempLookupDetails);
 
     // Gated on the validated final URL so a redirect landing on a platform
     // host cannot bypass the gate (same as the clone/update paths).
@@ -380,7 +394,9 @@ export class UserFeedsService {
           effectiveRefreshRateSeconds,
         ),
         maxDailyArticles,
-        feedRequestLookupKey: tempLookupDetails?.key,
+        // Platform feeds never take the per-feed credentialed lookup path:
+        // provider fetches key on the plain URL so shared sources batch.
+        feedRequestLookupKey: isPremiumUrl ? undefined : tempLookupDetails?.key,
         dateCheckOptions: enableDateChecks
           ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
           : undefined,
@@ -476,16 +492,21 @@ export class UserFeedsService {
     let inputUrl = sourceFeed.inputUrl;
     let finalUrl = sourceFeed.url;
 
-    const credentialSource =
-      await this.deps.feedCredentialsService.resolveCredentialSource(
+    const [credentialSource, resolvedCloneUrl] = await Promise.all([
+      this.deps.feedCredentialsService.resolveCredentialSource(
         { workspaceId: destinationWorkspaceId },
         user,
-      );
+      ),
+      // Null when the clone keeps the source feed's url — no validation fetch.
+      data?.url && data.url !== sourceFeed.url
+        ? this.resolveInputUrl(data.url)
+        : null,
+    ]);
 
-    if (data?.url && data.url !== sourceFeed.url) {
+    if (resolvedCloneUrl) {
       finalUrl = (
         await this.checkUrlIsValid(
-          data.url,
+          resolvedCloneUrl,
           this.deps.feedCredentialsService.getLookupDetailsFromSource({
             feed: sourceFeed,
             credentials: credentialSource,
@@ -552,6 +573,14 @@ export class UserFeedsService {
     await this.deps.feedCredentialsService.syncLookupKeys({
       feedIds: [created.id],
     });
+
+    // A premium clone inherits the source's lookup key via the settings copy;
+    // provider fetches key on the plain URL.
+    if (isPremiumUrl) {
+      await this.deps.userFeedRepository.bulkUpdateLookupKeys([
+        { feedId: created.id, action: "unset" },
+      ]);
+    }
 
     for (const c of sourceFeed.connections.discordChannels) {
       await this.deps.feedConnectionsDiscordChannelsService.cloneConnection(
@@ -870,23 +899,21 @@ export class UserFeedsService {
       // existing one: changing to a Reddit url must apply the authenticated lookup,
       // otherwise the validation fetch hits the raw Reddit url and is rate-limited.
       // Mirrors the create/clone paths.
-      const credentialSource =
-        await this.deps.feedCredentialsService.resolveCredentialSource(
-          feed,
-          user,
-        );
+      const [credentialSource, resolvedUpdatesUrl, urlChangeBenefits] =
+        await Promise.all([
+          this.deps.feedCredentialsService.resolveCredentialSource(feed, user),
+          this.resolveInputUrl(updates.url),
+          this.deps.supportersService.resolveFeedBenefits(feed),
+        ]);
+      feedBenefits = urlChangeBenefits;
 
       const { finalUrl } = await this.checkUrlIsValid(
-        updates.url,
+        resolvedUpdatesUrl,
         this.deps.feedCredentialsService.getLookupDetailsFromSource({
-          feed: { url: updates.url, feedRequestLookupKey: randomUUID() },
+          feed: { url: resolvedUpdatesUrl, feedRequestLookupKey: randomUUID() },
           credentials: credentialSource,
         }),
       );
-
-      const urlChangeBenefits =
-        await this.deps.supportersService.resolveFeedBenefits(feed);
-      feedBenefits = urlChangeBenefits;
 
       // One batched classification covers both URLs: the new one for the gate
       // and floor, the old one for the replaces-slot allowance semantics.
@@ -904,6 +931,11 @@ export class UserFeedsService {
       useUpdateObject.$set!.url = finalUrl;
       useUpdateObject.$set!.inputUrl = updates.url;
       useUpdateObject.$set!.isPremiumFeed = premiumUrls.has(finalUrl);
+      // A feed re-URLed onto a platform URL must not keep a credentialed
+      // lookup key: provider fetches key on the plain URL.
+      if (premiumUrls.has(finalUrl)) {
+        useUpdateObject.$unset!.feedRequestLookupKey = "";
+      }
       premiumRateUrl = finalUrl;
 
       // Recalculate slot offset when URL changes to maintain even distribution.
@@ -1616,20 +1648,22 @@ export class UserFeedsService {
       );
     }
 
-    const credentialSource =
-      await this.deps.feedCredentialsService.resolveCredentialSource(
+    const [credentialSource, resolvedUrl] = await Promise.all([
+      this.deps.feedCredentialsService.resolveCredentialSource(
         { workspaceId },
         user,
-      );
+      ),
+      this.resolveInputUrl(url),
+    ]);
 
     const lookupDetails =
       this.deps.feedCredentialsService.getLookupDetailsFromSource({
-        feed: { url, feedRequestLookupKey: randomUUID() },
+        feed: { url: resolvedUrl, feedRequestLookupKey: randomUUID() },
         credentials: credentialSource,
       });
 
     const { finalUrl, feedTitle } = await this.checkUrlIsValid(
-      url,
+      resolvedUrl,
       lookupDetails,
     );
 

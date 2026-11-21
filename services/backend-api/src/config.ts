@@ -46,7 +46,6 @@ const configSchema = z.object({
   BACKEND_API_USER_FEEDS_API_KEY: z.string().min(1),
 
   // Feed settings
-  BACKEND_API_FEED_USER_AGENT: z.string().min(1),
   // Minimum refresh rate (seconds) for premium feeds (platform URLs served by
   // provider adapters). Applies to every deployment including self-hosts;
   // self-hosts bypass the access gates but not this floor. 0 disables it.

@@ -174,6 +174,7 @@ export interface FeedFetcherService {
 export function createFeedFetcherService({
   defaultUserAgent,
   requestTimeoutMs,
+  platformResponseFreshnessSeconds,
   objectFileStorage,
   cacheStorage,
   partitionedRequestsStore,
@@ -181,6 +182,7 @@ export function createFeedFetcherService({
 }: {
   defaultUserAgent: string;
   requestTimeoutMs: number;
+  platformResponseFreshnessSeconds?: number;
   objectFileStorage: ObjectFileStorageService;
   cacheStorage: CacheStorageService;
   partitionedRequestsStore: PartitionedRequestsStore;
@@ -345,7 +347,21 @@ export function createFeedFetcherService({
             ? {
                 ok: true,
                 status: 200,
-                headers: new Map([['content-type', 'application/rss+xml']]),
+                headers: new Map([
+                  ['content-type', 'application/rss+xml'],
+                  // Lets the scheduler's freshness skip reuse this stored
+                  // document for repeat fetches of the same URL within the
+                  // window (feeds sharing a source across refresh-rate
+                  // tiers) instead of paying a second provider call.
+                  ...(platformResponseFreshnessSeconds
+                    ? ([
+                        [
+                          'cache-control',
+                          `public, max-age=${platformResponseFreshnessSeconds}`,
+                        ],
+                      ] as const)
+                    : []),
+                ]),
                 text: async () => platformDocument,
               }
             : await this.fetchFeedResponse(

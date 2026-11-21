@@ -62,6 +62,7 @@ describe('HTTP app (Integration)', () => {
       partitionedRequestsStore: store,
       hostRateLimiter,
       isPlatformUrl: () => false,
+      resolvePlatformUrl: () => null,
     });
     await app.ready();
   });

@@ -6,6 +6,7 @@ import type { FeedFetchOptions, FeedFetcherFetchFeedResponse } from "./types";
 import {
   ClassifyUrlsResponseSchema,
   FeedFetcherFetchFeedResponseSchema,
+  ResolveUrlsResponseSchema,
 } from "./schemas";
 
 // Matches the classify endpoint's per-request cap (MAX_CLASSIFY_URLS).
@@ -85,6 +86,37 @@ export class FeedFetcherApiService {
    * path's routing. Results align by index with the input URLs.
    */
   async classifyUrls(urls: string[]): Promise<boolean[]> {
+    return this.postPlatformUrlBatch({
+      endpoint: "/v1/platform/classify-urls",
+      urls,
+      logContext: "classify urls",
+      parseResponse: (body) =>
+        this.validateResponse(ClassifyUrlsResponseSchema, body).results,
+    });
+  }
+
+  /**
+   * The canonical destination URL feed-requests derives from each URL, or
+   * null when it is non-platform or has no provider equivalent. Feed
+   * creation stores the canonical form so identical sources dedupe into one
+   * provider fetch. Results align by index with the input URLs.
+   */
+  async resolvePlatformUrls(urls: string[]): Promise<Array<string | null>> {
+    return this.postPlatformUrlBatch({
+      endpoint: "/v1/platform/resolve-urls",
+      urls,
+      logContext: "resolve platform urls",
+      parseResponse: (body) =>
+        this.validateResponse(ResolveUrlsResponseSchema, body).results,
+    });
+  }
+
+  private async postPlatformUrlBatch<A>(input: {
+    endpoint: string;
+    urls: string[];
+    logContext: string;
+    parseResponse: (body: unknown) => A[];
+  }): Promise<A[]> {
     if (!this.host) {
       throw new Error(
         "BACKEND_API_FEED_REQUESTS_API_HOST config variable must be defined" +
@@ -92,27 +124,24 @@ export class FeedFetcherApiService {
       );
     }
 
-    if (urls.length === 0) {
+    if (input.urls.length === 0) {
       return [];
     }
 
-    const results: boolean[] = [];
+    const results: A[] = [];
 
-    for (let i = 0; i < urls.length; i += CLASSIFY_URLS_BATCH_SIZE) {
-      const batch = urls.slice(i, i + CLASSIFY_URLS_BATCH_SIZE);
+    for (let i = 0; i < input.urls.length; i += CLASSIFY_URLS_BATCH_SIZE) {
+      const batch = input.urls.slice(i, i + CLASSIFY_URLS_BATCH_SIZE);
 
       try {
-        const response = await fetch(
-          `${this.host}/v1/platform/classify-urls`,
-          {
-            method: "POST",
-            body: JSON.stringify({ urls: batch }),
-            headers: {
-              "Content-Type": "application/json",
-              "api-key": this.apiKey,
-            },
+        const response = await fetch(`${this.host}${input.endpoint}`, {
+          method: "POST",
+          body: JSON.stringify({ urls: batch }),
+          headers: {
+            "Content-Type": "application/json",
+            "api-key": this.apiKey,
           },
-        );
+        });
 
         if (response.status >= 500) {
           throw new Error(
@@ -130,21 +159,18 @@ export class FeedFetcherApiService {
           );
         }
 
-        const parsed = this.validateResponse(
-          ClassifyUrlsResponseSchema,
-          responseBody,
-        );
+        const parsed = input.parseResponse(responseBody);
 
-        if (parsed.results.length !== batch.length) {
+        if (parsed.length !== batch.length) {
           throw new UnexpectedApiResponseException(
-            `Classification result count (${parsed.results.length}) does not match input count (${batch.length})`,
+            `Result count (${parsed.length}) does not match input count (${batch.length})`,
           );
         }
 
-        results.push(...parsed.results);
+        results.push(...parsed);
       } catch (error) {
         logger.error(
-          `Failed to classify urls with feed fetcher api (${(error as Error).message})`,
+          `Failed to ${input.logContext} with feed fetcher api (${(error as Error).message})`,
           {
             stack: (error as Error).stack,
           },

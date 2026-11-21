@@ -109,6 +109,11 @@ export interface HttpAppDeps {
   // The same matcher the fetch path routes with, so backend-api's premium
   // gating keys on exactly what would be served through a provider.
   isPlatformUrl: (url: string) => boolean;
+  // Canonical destination form of a natural platform URL, or null when the
+  // URL is non-platform or has no provider equivalent (the caller keeps the
+  // raw input there). Feed creation stores the canonical form so identical
+  // sources dedupe into one provider fetch.
+  resolvePlatformUrl: (url: string) => string | null;
   platformProviderSync?: PlatformProviderSyncService;
 }
 
@@ -376,6 +381,41 @@ export function createApp(deps: HttpAppDeps): FastifyInstance {
 
       return {
         results: parsedBody.data.urls.map((url) => deps.isPlatformUrl(url)),
+      };
+    },
+  );
+
+  app.post(
+    '/v1/platform/resolve-urls',
+    {
+      preHandler: requireApiKey,
+    },
+    async (request, reply) => {
+      const parsedBody = parseWithMessages(
+        classifyUrlsInputSchema,
+        request.body,
+      );
+
+      if (!parsedBody.success) {
+        const response = {
+          statusCode: 400,
+          message: parsedBody.messages,
+          error: 'Bad Request',
+        };
+
+        logHttpException(request, {
+          name: 'BadRequestException',
+          message: parsedBody.messages,
+          response,
+        });
+
+        return reply.code(400).send(response);
+      }
+
+      return {
+        results: parsedBody.data.urls.map((url) =>
+          deps.resolvePlatformUrl(url),
+        ),
       };
     },
   );

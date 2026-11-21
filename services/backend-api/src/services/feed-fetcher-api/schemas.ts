@@ -69,3 +69,10 @@ export const ClassifyUrlsResponseSchema = z.object({
   // the URL as a platform (premium) destination URL.
   results: z.array(z.boolean()),
 });
+
+export const ResolveUrlsResponseSchema = z.object({
+  // Canonical destination URL per input URL, aligned by index; null when the
+  // URL is non-platform or has no provider equivalent (caller keeps the raw
+  // input there).
+  results: z.array(z.string().nullable()),
+});

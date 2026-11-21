@@ -75,6 +75,13 @@ export const configSchema = z.object({
   FEED_REQUESTS_REDIS_URI: z.string().min(1),
   FEED_REQUESTS_REDIS_DISABLE_CLUSTER: booleanFromString,
   FEED_REQUESTS_REQUEST_TIMEOUT_MS: numberWithDefault(15000),
+  // Provider responses advertise this freshness so repeat fetches of the same
+  // URL (feeds sharing a source across refresh-rate tiers) reuse the stored
+  // document instead of paying a second provider call. Must stay <= the
+  // backend's BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS floor, so a
+  // skipped refetch is never fresher than the cadence a premium feed may
+  // legitimately run at.
+  FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS: numberWithDefault(600),
   FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT: numberWithDefault(3),
   FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS: numberWithDefault(2),
 });
@@ -128,6 +135,7 @@ export function testConfig(): Config {
     FEED_REQUESTS_BACKOFF_RATE_LIMIT_FLOOR_MINUTES: 60,
     FEED_REQUESTS_BACKOFF_RETRY_AFTER_MAX_HOURS: 24,
     FEED_REQUESTS_REQUEST_TIMEOUT_MS: 15000,
+    FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS: 600,
     FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT: 3,
     FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS: 2,
     FEED_REQUESTS_REDIS_DISABLE_CLUSTER: true,

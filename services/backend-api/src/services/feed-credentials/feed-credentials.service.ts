@@ -52,6 +52,7 @@ export class FeedCredentialsService {
     feed: {
       url: string;
       feedRequestLookupKey?: string;
+      isPremiumFeed?: boolean;
       workspaceId?: string | null;
     };
     user: FeedCredentialSource;
@@ -68,7 +69,7 @@ export class FeedCredentialsService {
     feed,
     credentials,
   }: {
-    feed: { url: string; feedRequestLookupKey?: string };
+    feed: { url: string; feedRequestLookupKey?: string; isPremiumFeed?: boolean };
     credentials: FeedCredentialSource;
   }): FeedRequestLookupDetails | null {
     return getFeedRequestLookupDetails({

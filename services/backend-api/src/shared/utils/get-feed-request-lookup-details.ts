@@ -47,7 +47,13 @@ export function getFeedRequestLookupDetails({
   decryptionKey,
   redditFeedBaseUrl,
 }: {
-  feed: { url: string; feedRequestLookupKey?: string };
+  feed: {
+    url: string;
+    feedRequestLookupKey?: string;
+    // Platform feeds fetch through provider adapters keyed on their plain
+    // URL; reddit credentials never apply to them.
+    isPremiumFeed?: boolean;
+  };
   credentials: FeedCredentialSource;
   decryptionKey: string | undefined;
   // BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL; overridable so tests can
@@ -55,6 +61,10 @@ export function getFeedRequestLookupDetails({
   redditFeedBaseUrl: string | undefined;
 }): FeedRequestLookupDetails | null {
   const { url, feedRequestLookupKey } = feed;
+
+  if (feed.isPremiumFeed) {
+    return null;
+  }
 
   if (!decryptionKey || !feedRequestLookupKey) {
     return null;

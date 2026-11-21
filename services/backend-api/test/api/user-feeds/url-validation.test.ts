@@ -5,6 +5,7 @@ import {
   type AppTestContext,
 } from "../../helpers/test-context";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
+import { registerDefaultClassifyRoute } from "../../helpers/mock-apis";
 import {
   createTestHttpServer,
   type TestHttpServer,
@@ -31,6 +32,9 @@ after(async () => {
 
 beforeEach(() => {
   feedApiMockServer.clear();
+  // validateFeedUrl canonicalizes natural platform URLs before validation;
+  // the neutral default keeps every URL raw.
+  registerDefaultClassifyRoute(feedApiMockServer);
 });
 
 describe("POST /api/v1/user-feeds/url-validation", () => {
@@ -124,6 +128,45 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
     };
     assert.strictEqual(body.result.resolvedToUrl, resolvedUrl);
     assert.strictEqual(body.result.feedTitle, "Discovered Feed");
+  });
+
+  it("resolves a natural reddit rss URL to its canonical destination", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+    const inputUrl = "https://old.reddit.com/r/gaming/new.rss";
+    const canonicalUrl = "https://old.reddit.com/r/gaming/new";
+
+    feedApiMockServer.registerRoute("POST", "/v1/platform/resolve-urls", (req) => ({
+      status: 200,
+      body: {
+        results: ((req.body as { urls?: string[] })?.urls ?? []).map((u) =>
+          u.endsWith(".rss") ? u.slice(0, -4) : null,
+        ),
+      },
+    }));
+    feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
+      status: 200,
+      body: {
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [],
+          totalArticles: 0,
+          selectedProperties: [],
+          url: canonicalUrl,
+          feedTitle: "gaming",
+        },
+      },
+    });
+
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
+      method: "POST",
+      body: JSON.stringify({ url: inputUrl }),
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      result: { resolvedToUrl: string | null };
+    };
+    assert.strictEqual(body.result.resolvedToUrl, canonicalUrl);
   });
 
   it("returns 400 with FEED_REQUEST_TIMEOUT when feed fetch times out", async () => {

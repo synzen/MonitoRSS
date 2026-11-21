@@ -99,7 +99,6 @@ function createTestConfig(overrides?: Partial<Config>): Config {
     BACKEND_API_USER_FEEDS_API_HOST: "http://localhost:5001",
     BACKEND_API_USER_FEEDS_API_KEY: "test-api-key",
 
-    BACKEND_API_FEED_USER_AGENT: "MonitoRSS-Test",
 
     BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: 10,
     BACKEND_API_DEFAULT_MAX_FEEDS: 5,

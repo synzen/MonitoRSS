@@ -110,6 +110,7 @@ function createMockDeps() {
   };
 
   const platformUrlMatcher = mock.fn<any>(() => false);
+  const platformUrlResolver = mock.fn<any>(() => null);
   const platformProviderSync = {
     syncActiveUrls: mock.fn<any>(async () => ({ queued: 0 })),
   };
@@ -120,6 +121,7 @@ function createMockDeps() {
     partitionedRequestsStore: partitionedRequestsStore as never,
     hostRateLimiter: hostRateLimiter as never,
     isPlatformUrl: platformUrlMatcher as never,
+    resolvePlatformUrl: platformUrlResolver as never,
     platformProviderSync: platformProviderSync as never,
   };
 
@@ -129,6 +131,7 @@ function createMockDeps() {
     partitionedRequestsStore,
     hostRateLimiter,
     platformUrlMatcher,
+    platformUrlResolver,
     platformProviderSync,
   };
 }
@@ -950,6 +953,69 @@ describe('HTTP app', () => {
         results: [true, false, true],
       });
       assert.strictEqual(mocks.platformUrlMatcher.mock.callCount(), 3);
+    });
+  });
+
+  describe('POST /v1/platform/resolve-urls', () => {
+    it('rejects requests without the api key', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/platform/resolve-urls',
+        payload: { urls: [url] },
+      });
+
+      assert.strictEqual(res.statusCode, 403);
+    });
+
+    it('rejects invalid bodies with a 400 message list', async () => {
+      for (const payload of [
+        {},
+        { urls: [] },
+        { urls: [''] },
+        { urls: 'not-an-array' },
+        { urls: Array.from({ length: 501 }, () => url) },
+      ]) {
+        const res = await app.inject({
+          method: 'POST',
+          url: '/v1/platform/resolve-urls',
+          headers: { 'api-key': API_KEY },
+          payload,
+        });
+
+        assert.strictEqual(res.statusCode, 400, JSON.stringify(payload));
+        assert.ok(Array.isArray(res.json().message));
+      }
+    });
+
+    it('returns per-URL canonical forms aligned with the input order', async () => {
+      mocks.platformUrlResolver.mock.mockImplementation((u: string) =>
+        u.includes('reddit.com')
+          ? `https://www.reddit.com/r/javascript`
+          : null,
+      );
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/platform/resolve-urls',
+        headers: { 'api-key': API_KEY },
+        payload: {
+          urls: [
+            'https://www.reddit.com/r/javascript.rss',
+            'https://example.com/feed.xml',
+            'https://www.reddit.com/user/spez',
+          ],
+        },
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      assert.deepStrictEqual(res.json(), {
+        results: [
+          'https://www.reddit.com/r/javascript',
+          null,
+          'https://www.reddit.com/r/javascript',
+        ],
+      });
+      assert.strictEqual(mocks.platformUrlResolver.mock.callCount(), 3);
     });
   });
 
