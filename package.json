@@ -18,5 +18,36 @@
     "e2e:paddle": "tsx e2e/scripts/run-e2e.ts --project=e2e-paddle",
     "e2e:scheduler": "tsx e2e/scripts/run-e2e.ts --project=e2e-scheduler",
     "e2e:web": "tsx e2e/scripts/run-e2e.ts --project=e2e-web"
+  },
+  "version": "1.0.0",
+  "description": "Delivers highly-customized news feeds to Discord!",
+  "main": "rs-initiate.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enviorment/MontioFeed.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/enviorment/MontioFeed/issues"
+  },
+  "homepage": "https://github.com/enviorment/MontioFeed#readme",
+  "dependencies": {
+    "discord.js": "^14.28.1",
+    "discordx": "^11.13.3"
+  },
+  "allowScripts": {
+    "bufferutil@4.1.0": true,
+    "esbuild@0.28.2": true,
+    "unrs-resolver@1.12.2": true,
+    "utf-8-validate@6.0.6": true
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
   }
 }
