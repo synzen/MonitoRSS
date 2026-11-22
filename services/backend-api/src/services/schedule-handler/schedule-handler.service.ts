@@ -22,11 +22,6 @@ import {
 } from "../../shared/constants/scheduler.constants";
 import { selectDueScheduledFeeds } from "../../shared/utils/scheduled-feed-computation";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
-import {
-  getFeedRequestLookupDetails,
-  pickFeedCredentialSource,
-  type FeedCredentialSource,
-} from "../../shared/utils/get-feed-request-lookup-details";
 import logger from "../../infra/logger";
 
 export interface ScheduleHandlerServiceDeps {
@@ -111,6 +106,10 @@ export class ScheduleHandlerService {
    * Failures only cost a cycle — the next sweep re-syncs the full set.
    */
   private async syncActiveFeedUrls(): Promise<void> {
+    if (!this.deps.config.BACKEND_API_PLATFORM_FEED_URL_SYNC_ENABLED) {
+      return;
+    }
+
     try {
       const urls =
         await this.deps.userFeedRepository.getDistinctActiveFeedUrls();
@@ -164,27 +163,17 @@ export class ScheduleHandlerService {
     for await (const {
       url,
       feedRequestLookupKey,
-      workspaceId,
-      users,
-      workspaces,
     } of this.deps.userFeedRepository.iterateFeedsWithLookupKeysForRefreshRate(
       refreshRateSeconds,
       slotWindow,
     )) {
-      const item = this.resolveLookupKeyBatchItem({
-        url,
-        feedRequestLookupKey,
-        workspaceId,
-        users,
-        workspaces,
-        saveToObjectStorage: urlsToDebug.has(url),
-      });
-
-      if (!item) {
-        continue;
-      }
-
-      urlBatch.push(item);
+      urlBatch.push(
+        this.resolveLookupKeyBatchItem({
+          url,
+          feedRequestLookupKey,
+          saveToObjectStorage: urlsToDebug.has(url),
+        }),
+      );
 
       if (urlBatch.length === URL_BATCH_SIZE) {
         await urlsHandler(urlBatch);
@@ -229,32 +218,14 @@ export class ScheduleHandlerService {
 
     for (const { feed, scheduledAt } of dueFeeds) {
       if (feed.feedRequestLookupKey) {
-        let item: UrlBatchItem | null = null;
-
-        try {
-          item = this.resolveLookupKeyBatchItem({
+        batchItems.push(
+          this.resolveLookupKeyBatchItem({
             url: feed.url,
             feedRequestLookupKey: feed.feedRequestLookupKey,
-            workspaceId: feed.workspaceId,
-            users: feed.users,
-            workspaces: feed.workspaces,
             saveToObjectStorage: urlsToDebug.has(feed.url),
             trigger: { kind: "scheduled", occurredAt: scheduledAt },
-          });
-        } catch (err) {
-          // One feed with an undecryptable credential must not kill the
-          // whole clock tick.
-          logger.warn(
-            `Failed to resolve lookup details for scheduled feed ${feed.id}, skipping`,
-            { error: (err as Error).message },
-          );
-        }
-
-        if (!item) {
-          continue;
-        }
-
-        batchItems.push(item);
+          }),
+        );
 
         continue;
       }
@@ -280,44 +251,22 @@ export class ScheduleHandlerService {
     }
   }
 
-  // Lookup-key feeds fetch with the credential owner's transformed URL, so
-  // they are resolved per feed instead of grouped by raw URL. Workspace feeds
-  // resolve only the workspace connection and personal feeds only the
-  // creator's; null means no usable credential, so the feed is skipped.
+  // Lookup keys previously selected credential-transformed oauth.reddit.com
+  // fetch urls; reddit credentials no longer affect fetching (reddit's RSS is
+  // gone and platform feeds fetch through provider adapters), so a lookup-key
+  // feed fetches its raw URL with its stored key for request-row identity.
   private resolveLookupKeyBatchItem(input: {
     url: string;
-    feedRequestLookupKey?: string;
-    workspaceId?: string;
-    users: Array<{ externalCredentials?: FeedCredentialSource["externalCredentials"] }>;
-    workspaces: Array<{ externalCredentials?: FeedCredentialSource["externalCredentials"] }>;
+    // Legacy rows can carry null instead of undefined for a missing key.
+    feedRequestLookupKey?: string | null;
     saveToObjectStorage: boolean;
     force?: boolean;
     trigger?: UrlFetchTrigger;
-  }): UrlBatchItem | null {
-    const lookupDetails = getFeedRequestLookupDetails({
-      feed: {
-        url: input.url,
-        feedRequestLookupKey: input.feedRequestLookupKey,
-      },
-      credentials: pickFeedCredentialSource({
-        feed: { workspaceId: input.workspaceId },
-        user: { externalCredentials: input.users[0]?.externalCredentials },
-        workspace: input.workspaces[0],
-      }),
-      decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-      redditFeedBaseUrl:
-        this.deps.config.BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL,
-    });
-
-    if (!lookupDetails) {
-      return null;
-    }
-
+  }): UrlBatchItem {
     return {
-      url: lookupDetails.url || input.url,
+      url: input.url,
+      lookupKey: input.feedRequestLookupKey ?? undefined,
       saveToObjectStorage: input.saveToObjectStorage,
-      lookupKey: lookupDetails.key,
-      headers: lookupDetails.headers,
       ...(input.force ? { force: true } : {}),
       ...(input.trigger ? { trigger: input.trigger } : {}),
     };
@@ -325,9 +274,9 @@ export class ScheduleHandlerService {
 
   /**
    * Publishes forced (bulk-retry) fetch batches for expired feeds (ADR-011):
-   * lookup details resolve per feed, duplicate URLs collapse to one entry,
-   * and each refresh rate gets its own batch so the request worker's
-   * per-rate lock scoping stays intact.
+   * lookup-key feeds carry their stored lookup key for row identity,
+   * duplicate URLs collapse to one entry, and each refresh rate gets its own
+   * batch so the request worker's per-rate lock scoping stays intact.
    */
   async emitForcedFetchBatches(
     workspaceId: string,
@@ -339,24 +288,12 @@ export class ScheduleHandlerService {
     >();
 
     for (const feed of feeds) {
-      // Plain feeds fetch their stored URL as-is; only lookup-key feeds need
-      // per-feed credential resolution (resolveLookupKeyBatchItem is the
-      // OAuth-only resolver and rejects plain URLs).
-      const item: UrlBatchItem | null = feed.feedRequestLookupKey
-        ? this.resolveLookupKeyBatchItem({
-            url: feed.url,
-            feedRequestLookupKey: feed.feedRequestLookupKey,
-            workspaceId,
-            users: feed.users,
-            workspaces: feed.workspaces,
-            saveToObjectStorage: false,
-            force: true,
-          })
-        : { url: feed.url, force: true };
-
-      if (!item) {
-        continue;
-      }
+      const item: UrlBatchItem = this.resolveLookupKeyBatchItem({
+        url: feed.url,
+        feedRequestLookupKey: feed.feedRequestLookupKey,
+        saveToObjectStorage: false,
+        force: true,
+      });
 
       const key = `${item.url}|${item.lookupKey ?? ""}`;
 

@@ -72,6 +72,9 @@ export interface MockUsersService {
 export interface ScheduleHandlerContextOptions {
   supportersService?: MockSupportersServiceOptions;
   encryptionKey?: string;
+  // Enables BACKEND_API_PLATFORM_FEED_URL_SYNC_ENABLED on the service config;
+  // the GC sweep is off by default in every context.
+  platformFeedUrlSync?: boolean;
   // Overrides the service clock; defaults to 0 (epoch) for determinism.
   now?: () => number;
 }
@@ -93,6 +96,7 @@ export interface ScheduleHandlerContext {
   discordUserId: string;
   encryptionKey?: string;
   service: ScheduleHandlerService;
+  syncActiveFeedUrlsMock: Mock<() => Promise<void>>;
   userFeedRepository: UserFeedMongooseRepository;
   userRepository: UserMongooseRepository;
   workspaceRepository: WorkspaceMongooseRepository;
@@ -230,6 +234,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
       const userFeedsService = createMockUserFeedsService();
       const usersService = createMockUsersService();
       const encryptionKey = options.encryptionKey;
+      const syncActiveFeedUrlsMock = mock.fn(async () => undefined);
 
       const serviceDeps: ScheduleHandlerServiceDeps = {
         config: {
@@ -237,6 +242,9 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
             DEFAULT_REFRESH_RATE_MINUTES,
           BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS: 3600,
           BACKEND_API_ENCRYPTION_KEY_HEX: encryptionKey,
+          ...(options.platformFeedUrlSync
+            ? { BACKEND_API_PLATFORM_FEED_URL_SYNC_ENABLED: "true" }
+            : {}),
         } as ScheduleHandlerServiceDeps["config"],
         supportersService: createMockSupportersService(
           options.supportersService,
@@ -249,7 +257,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
         messageBrokerService:
           messageBrokerService as unknown as ScheduleHandlerServiceDeps["messageBrokerService"],
         feedFetcherApiService: {
-          syncActiveFeedUrls: async () => undefined,
+          syncActiveFeedUrls: syncActiveFeedUrlsMock,
         } as unknown as ScheduleHandlerServiceDeps["feedFetcherApiService"],
         now: options.now ?? (() => 0),
       };
@@ -260,6 +268,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
         discordUserId,
         encryptionKey,
         service,
+        syncActiveFeedUrlsMock,
         userFeedRepository,
         userRepository,
         workspaceRepository,

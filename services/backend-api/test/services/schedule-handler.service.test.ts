@@ -127,27 +127,29 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         feedRequestLookupKey: "some-lookup-key",
       });
 
-      const collectedUrls: string[] = [];
+      const collectedItems: Array<{ url: string; lookupKey?: string }> = [];
 
       await ctx.service.handleRefreshRate(DEFAULT_REFRESH_RATE_SECONDS, {
         urlsHandler: async (batch) => {
-          for (const item of batch) {
-            collectedUrls.push(item.url);
-          }
+          collectedItems.push(...batch);
         },
       });
 
       assert.ok(
-        collectedUrls.includes(feedWithoutLookupKey.url),
+        collectedItems.some((item) => item.url === feedWithoutLookupKey.url),
         "Should include feed without lookup key",
       );
       assert.ok(
-        !collectedUrls.includes(feedWithLookupKey.url),
-        "Should exclude feed with lookup key from regular batched query",
+        collectedItems.every(
+          (item) =>
+            item.url !== feedWithLookupKey.url ||
+            item.lookupKey === "some-lookup-key",
+        ),
+        "Lookup-key feeds are fetched only through their lookup-key item, never the plain batched query",
       );
     });
 
-    it("processes feeds with lookup keys when user has Reddit credentials", async () => {
+    it("fetches lookup-key feeds with their raw URL even when the user has Reddit credentials", async () => {
       const encryptionKey = generateEncryptionKey();
       const uniqueRefreshRate = 7200;
       const ctx = harness.createContext({ encryptionKey });
@@ -236,13 +238,14 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         (item) => item.lookupKey === lookupKey,
       );
       assert.ok(matchingItem, "Should find feed with lookup key in results");
-      assert.ok(
-        matchingItem.url.includes("oauth.reddit.com"),
-        "URL should be transformed to OAuth Reddit URL",
+      assert.strictEqual(
+        matchingItem.url,
+        redditUrl,
+        "Lookup-key feeds fetch their raw URL; credentials no longer transform it",
       );
     });
 
-    it("skips feeds with lookup keys when user has no Reddit credentials", async () => {
+    it("emits lookup-key feeds even without Reddit credentials", async () => {
       const encryptionKey = generateEncryptionKey();
       const uniqueRefreshRate = 7800;
       const ctx = harness.createContext({ encryptionKey });
@@ -273,12 +276,17 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         (item) => item.lookupKey === lookupKey,
       );
       assert.ok(
-        !matchingItem,
-        "Should not find feed with lookup key when user has no credentials",
+        matchingItem,
+        "Lookup-key feeds are fetched without Reddit credentials",
+      );
+      assert.strictEqual(
+        matchingItem.url,
+        redditUrl,
+        "URL stays the raw feed URL",
       );
     });
 
-    it("processes workspace feeds with lookup keys using the workspace's Reddit credentials", async () => {
+    it("fetches workspace lookup-key feeds with their raw URL", async () => {
       const encryptionKey = generateEncryptionKey();
       const uniqueRefreshRate = 7300;
       const ctx = harness.createContext({ encryptionKey });
@@ -316,15 +324,14 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         matchingItem,
         "Should find workspace feed with lookup key in results",
       );
-      assert.ok(
-        matchingItem.url.includes("oauth.reddit.com"),
-        "URL should be transformed to OAuth Reddit URL using workspace credentials",
+      assert.strictEqual(
+        matchingItem.url,
+        redditUrl,
+        "Workspace lookup-key feeds fetch their raw URL",
       );
     });
 
-    it("skips workspace feeds with lookup keys when the creator has Reddit credentials but the workspace does not", async () => {
-      // Fail-closed: a workspace feed resolves ONLY the workspace connection,
-      // never falling back to the creator's personal credentials.
+    it("emits workspace lookup-key feeds even without workspace credentials", async () => {
       const encryptionKey = generateEncryptionKey();
       const uniqueRefreshRate = 7400;
       const ctx = harness.createContext({ encryptionKey });
@@ -362,8 +369,13 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         (item) => item.lookupKey === lookupKey,
       );
       assert.ok(
-        !matchingItem,
-        "Workspace feed must not fall back to the creator's personal credentials",
+        matchingItem,
+        "Workspace lookup-key feeds are fetched without workspace credentials",
+      );
+      assert.strictEqual(
+        matchingItem.url,
+        redditUrl,
+        "URL stays the raw feed URL",
       );
     });
 
@@ -643,6 +655,23 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
   });
 
   describe("runMaintenanceOperations", { concurrency: false }, () => {
+    it("does not run the platform GC sweep unless enabled", async () => {
+      const ctx = harness.createContext();
+
+      await ctx.service.runMaintenanceOperations();
+
+      assert.strictEqual(ctx.syncActiveFeedUrlsMock.mock.callCount(), 0);
+    });
+
+    it("syncs active feed urls for the platform GC sweep when enabled", async () => {
+      const ctx = harness.createContext({ platformFeedUrlSync: true });
+      await ctx.createFeedWithConnection({});
+
+      await ctx.service.runMaintenanceOperations();
+
+      assert.strictEqual(ctx.syncActiveFeedUrlsMock.mock.callCount(), 1);
+    });
+
     it("updates feed refresh rates based on supporter benefits", async () => {
       const ctx = harness.createContext();
       const supporterDiscordUserId = ctx.generateId();
@@ -1797,15 +1826,15 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         .find((item) => item.lookupKey === lookupKey);
 
       assert.ok(matching, "lookup-key feed should be scheduled");
-      assert.ok(
-        matching.url.includes("oauth.reddit.com"),
-        "URL should be transformed to the OAuth Reddit URL",
+      assert.strictEqual(
+        matching.url,
+        redditUrl,
+        "Scheduled lookup-key feeds fetch their raw URL",
       );
       assert.deepStrictEqual(matching.trigger, {
         kind: "scheduled",
         occurredAt: OCCURRENCE,
       });
-      assert.notStrictEqual(matching.url, feed.url);
     });
 
     it("keeps scheduled feeds out of interval refresh-rate scheduling", async () => {

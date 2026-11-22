@@ -56,6 +56,14 @@ const configSchema = z.object({
   // support checks). Lower values are for dev/e2e only: each sweep aggregates
   // every active feed.
   BACKEND_API_MAINTENANCE_INTERVAL_MS: z.coerce.number().default(300000),
+  // The maintenance loop's platform-provider GC sweep posts the active feed
+  // URL set to feed-requests, whose state store must exist (feed-requests
+  // migrations) before the sweep's first write. Off until a deployment opts
+  // in; the platform GC e2e spec enables it in the e2e stack.
+  BACKEND_API_PLATFORM_FEED_URL_SYNC_ENABLED: z
+    .string()
+    .default("false")
+    .transform((val) => val === "true"),
 
   // Defaults
   BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: z.coerce.number().default(10),

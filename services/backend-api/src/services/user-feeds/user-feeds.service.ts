@@ -492,18 +492,18 @@ export class UserFeedsService {
     let inputUrl = sourceFeed.inputUrl;
     let finalUrl = sourceFeed.url;
 
-    const [credentialSource, resolvedCloneUrl] = await Promise.all([
-      this.deps.feedCredentialsService.resolveCredentialSource(
-        { workspaceId: destinationWorkspaceId },
-        user,
-      ),
-      // Null when the clone keeps the source feed's url — no validation fetch.
-      data?.url && data.url !== sourceFeed.url
-        ? this.resolveInputUrl(data.url)
-        : null,
-    ]);
+    // Null when the clone keeps the source feed's url — no validation fetch.
+    const cloneUrl = data?.url && data.url !== sourceFeed.url ? data.url : null;
 
-    if (resolvedCloneUrl) {
+    if (cloneUrl) {
+      const [credentialSource, resolvedCloneUrl] = await Promise.all([
+        this.deps.feedCredentialsService.resolveCredentialSource(
+          { workspaceId: destinationWorkspaceId },
+          user,
+        ),
+        this.resolveInputUrl(cloneUrl),
+      ]);
+
       finalUrl = (
         await this.checkUrlIsValid(
           resolvedCloneUrl,
@@ -514,7 +514,7 @@ export class UserFeedsService {
         )
       ).finalUrl;
 
-      inputUrl = data.url;
+      inputUrl = cloneUrl;
     }
 
     const premiumUrls = await this.classifyPremiumUrls([finalUrl]);

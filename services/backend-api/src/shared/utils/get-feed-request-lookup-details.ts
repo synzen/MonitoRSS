@@ -3,8 +3,6 @@ import {
   UserExternalCredentialType,
 } from "../../repositories/shared/enums";
 import type { FeedRequestLookupDetails } from "../types/feed-request-lookup-details.type";
-import { decrypt } from "./decrypt";
-import { isRedditFeedUrl } from "./is-reddit-feed-url";
 
 // A holder of external credentials a feed can fetch with: a user or a
 // workspace. Lookup-detail construction reads `data`; connection gates read
@@ -41,59 +39,22 @@ export function pickFeedCredentialSource({
   return workspace ?? { externalCredentials: [] };
 }
 
-export function getFeedRequestLookupDetails({
-  feed,
-  credentials,
-  decryptionKey,
-  redditFeedBaseUrl,
-}: {
-  feed: {
-    url: string;
-    feedRequestLookupKey?: string;
-    // Platform feeds fetch through provider adapters keyed on their plain
-    // URL; reddit credentials never apply to them.
-    isPremiumFeed?: boolean;
-  };
-  credentials: FeedCredentialSource;
-  decryptionKey: string | undefined;
-  // BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL; overridable so tests can
-  // point authenticated reddit fetches at a mock server.
-  redditFeedBaseUrl: string | undefined;
-}): FeedRequestLookupDetails | null {
-  const { url, feedRequestLookupKey } = feed;
-
-  if (feed.isPremiumFeed) {
-    return null;
-  }
-
-  if (!decryptionKey || !feedRequestLookupKey) {
-    return null;
-  }
-
-  if (!isRedditFeedUrl(url)) {
-    return null;
-  }
-
-  const encryptedToken = credentials.externalCredentials?.find(
-    (cred) => cred.type === UserExternalCredentialType.Reddit,
-  )?.data?.accessToken;
-
-  if (!encryptedToken) {
-    return null;
-  }
-
-  const decrypted = decrypt(encryptedToken, decryptionKey);
-
-  const parsedUrl = new URL(url);
-  const baseUrl = redditFeedBaseUrl || "https://oauth.reddit.com";
-  const urlToFetch = `${baseUrl}${parsedUrl.pathname}${parsedUrl.search}`;
-
-  return {
-    key: feedRequestLookupKey,
-    url: urlToFetch,
-    headers: {
-      Authorization: `Bearer ${decrypted}`,
-      "user-agent": "MonitoRSS:1.0",
-    },
-  };
+// Lookup details previously carried the credential owner's oauth.reddit.com
+// URL and Bearer headers for authenticated reddit RSS fetching. Reddit's RSS
+// endpoints no longer exist (platform feeds fetch through provider adapters
+// that never use reddit credentials), so nothing constructs lookup details
+// anymore; the plumbing that consumes them is inert pending removal.
+export function getFeedRequestLookupDetails(
+  _input: {
+    feed: {
+      url: string;
+      feedRequestLookupKey?: string;
+      isPremiumFeed?: boolean;
+    };
+    credentials: FeedCredentialSource;
+    decryptionKey: string | undefined;
+    redditFeedBaseUrl: string | undefined;
+  },
+): FeedRequestLookupDetails | null {
+  return null;
 }
