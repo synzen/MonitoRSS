@@ -35,7 +35,7 @@
     "zod": "^4.6.5"
   },
   "optionalDependencies": {
-    "@synzen/platform-adapters": "^0.15.1"
+    "@synzen/platform-adapters": "0.20.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
