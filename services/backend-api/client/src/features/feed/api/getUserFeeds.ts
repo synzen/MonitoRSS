@@ -24,6 +24,7 @@ const GetUserFeedsOutputSchema = object({
   results: array(UserFeedSummarySchema.required()).required(),
   total: number().required(),
   feedsWithoutConnections: number().required(),
+  premiumFeedCount: number().required(),
 }).required();
 
 export type GetUserFeedsOutput = InferType<typeof GetUserFeedsOutputSchema>;

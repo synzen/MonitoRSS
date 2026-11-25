@@ -31,9 +31,11 @@ const mockUserMe: UserMe = {
   featureFlags: {
     externalProperties: true,
     workspaces: true,
+    premiumFeeds: true,
   },
   capabilities: {
     workspaces: true,
+    premiumFeeds: true,
   },
   supporterFeatures: {
     exrternalProperties: {

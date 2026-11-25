@@ -69,9 +69,11 @@ export const UserMeSchema = object({
   featureFlags: object({
     externalProperties: bool(),
     workspaces: bool(),
+    premiumFeeds: bool(),
   }),
   capabilities: object({
     workspaces: bool(),
+    premiumFeeds: bool(),
   }).optional(),
   supporterFeatures: object({
     exrternalProperties: object({

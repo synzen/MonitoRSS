@@ -632,6 +632,9 @@ export interface IUserFeedRepository {
   getUserFeedsCount(
     input: Omit<UserFeedListingInput, "limit" | "offset" | "sort">,
   ): Promise<number>;
+  getPremiumFeedCount(
+    input: Pick<UserFeedListingInput, "discordUserId" | "workspaceId">,
+  ): Promise<number>;
   findFeedIdsByFilters(
     input: UserFeedListingInput,
   ): Promise<string[]>;

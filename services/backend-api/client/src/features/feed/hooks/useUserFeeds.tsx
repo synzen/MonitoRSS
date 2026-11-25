@@ -79,6 +79,7 @@ export const useUserFeeds = (
       results: updatedFeeds,
       total: data.total,
       feedsWithoutConnections: data.feedsWithoutConnections,
+      premiumFeedCount: data.premiumFeedCount,
     });
   };
 

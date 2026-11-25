@@ -40,6 +40,7 @@ interface GetUserFeedsResult {
 interface GetUserFeedsResponse {
   results: GetUserFeedsResult[];
   total: number;
+  premiumFeedCount: number;
 }
 
 describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
@@ -1076,5 +1077,41 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
     const body = (await response.json()) as any;
     assert.ok(typeof body.feedsWithoutConnections === "number");
     assert.ok(body.feedsWithoutConnections >= 2);
+  });
+
+  it("counts premium feeds across pages instead of from the current page", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const userId = generateTestId();
+    const token = generateSnowflake();
+
+    for (let i = 0; i < 3; i += 1) {
+      await ctx.container.userFeedRepository.create({
+        title: `Premium ${i} ${token}`,
+        url: `https://x.com/premium-${generateSnowflake()}`,
+        user: { id: userId, discordUserId },
+      });
+    }
+
+    await ctx.container.userFeedRepository.updateManyByFilter(
+      { "user.discordUserId": discordUserId, title: new RegExp(token) },
+      { $set: { isMeteredPlatformFeed: true } },
+    );
+
+    const firstPage = await user.fetch(
+      `/api/v1/user-feeds?limit=1&offset=0&search=${token}`,
+      { method: "GET" },
+    );
+    const secondPage = await user.fetch(
+      `/api/v1/user-feeds?limit=1&offset=1&search=${token}`,
+      { method: "GET" },
+    );
+
+    assert.strictEqual(firstPage.status, 200);
+    assert.strictEqual(secondPage.status, 200);
+    const firstBody = (await firstPage.json()) as GetUserFeedsResponse;
+    const secondBody = (await secondPage.json()) as GetUserFeedsResponse;
+    assert.strictEqual(firstBody.premiumFeedCount, 3);
+    assert.strictEqual(secondBody.premiumFeedCount, 3);
   });
 });

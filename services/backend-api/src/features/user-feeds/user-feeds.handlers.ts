@@ -910,7 +910,7 @@ export async function getUserFeedsHandler(
     workspaceId,
   };
 
-  const [feeds, count, feedsWithoutConnectionsCount] = await Promise.all([
+  const [feeds, count, feedsWithoutConnectionsCount, premiumFeedCount] = await Promise.all([
     userFeedRepository.getUserFeedsListing({ discordUserId, ...input }),
     userFeedRepository.getUserFeedsCount({
       discordUserId,
@@ -923,6 +923,7 @@ export async function getUserFeedsHandler(
       workspaceId,
       filters: { hasConnections: false },
     }),
+    userFeedRepository.getPremiumFeedCount({ discordUserId, workspaceId }),
   ]);
 
   return reply.status(200).send({
@@ -943,6 +944,7 @@ export async function getUserFeedsHandler(
     })),
     total: count,
     feedsWithoutConnections: feedsWithoutConnectionsCount,
+    premiumFeedCount,
   });
 }
 

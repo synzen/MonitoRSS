@@ -1062,6 +1062,23 @@ export class UserFeedMongooseRepository
     return results[0]?.count || 0;
   }
 
+  async getPremiumFeedCount(
+    input: Pick<UserFeedListingInput, "discordUserId" | "workspaceId">,
+  ): Promise<number> {
+    const scopeMatch = input.workspaceId
+      ? { workspaceId: this.stringToObjectId(input.workspaceId) }
+      : {
+          $and: [
+            this.getOwnershipFilter(input.discordUserId),
+            { workspaceId: null },
+          ],
+        };
+
+    return this.model.countDocuments({
+      $and: [scopeMatch, { isMeteredPlatformFeed: true }],
+    });
+  }
+
   async findFeedIdsByFilters(input: UserFeedListingInput): Promise<string[]> {
     const pipeline = this.buildListingPipeline(input);
     pipeline.push({ $project: { _id: 1 } });
