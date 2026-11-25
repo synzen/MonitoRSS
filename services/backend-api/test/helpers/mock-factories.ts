@@ -331,7 +331,12 @@ export interface MockFeedFetcherApiServiceOptions {
 }
 
 // The platform hosts the premium-gate tests exercise.
-const DEFAULT_PREMIUM_HOST_SUFFIXES = ["reddit.com", "x.com", "twitter.com"];
+const DEFAULT_PREMIUM_HOST_SUFFIXES = [
+  "reddit.com",
+  "x.com",
+  "twitter.com",
+  "instagram.com",
+];
 
 export function createMockFeedFetcherApiService(
   options: MockFeedFetcherApiServiceOptions = {},

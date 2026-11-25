@@ -1407,9 +1407,12 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.strictEqual(result.feedTitle, "My Awesome Feed");
     });
 
-    it("uses platform provider routing during URL validation", async () => {
+    it("uses platform provider routing during URL validation for an eligible user", async () => {
       let capturedInput: GetArticlesInput | null = null;
       const ctx = await harness.createContext({
+        billingEnabled: true,
+        isSupporter: true,
+        featureFlags: { premiumFeeds: true },
         feedHandler: {
           url: "https://www.instagram.com/adrienbrody",
           feedTitle: "Instagram @adrienbrody posts",
@@ -1425,6 +1428,69 @@ describe("UserFeedsService", { concurrency: true }, () => {
       );
 
       assert.strictEqual(capturedInput?.usePlatformProvider, true);
+    });
+
+    it("does not use platform provider routing for an unflagged user", async () => {
+      let capturedInput: GetArticlesInput | null = null;
+      const ctx = await harness.createContext({
+        feedHandler: {
+          url: "https://www.instagram.com/adrienbrody",
+          onGetArticles: (input) => {
+            capturedInput = input;
+          },
+        },
+      });
+
+      await ctx.service.validateFeedUrl(
+        { discordUserId: ctx.discordUserId },
+        { url: "https://www.instagram.com/adrienbrody" },
+      );
+
+      assert.strictEqual(capturedInput?.usePlatformProvider, false);
+    });
+
+    it("rejects a flagged free user before platform provider routing", async () => {
+      let capturedInput: GetArticlesInput | null = null;
+      const ctx = await harness.createContext({
+        billingEnabled: true,
+        isSupporter: false,
+        featureFlags: { premiumFeeds: true },
+        feedHandler: {
+          url: "https://www.instagram.com/adrienbrody",
+          onGetArticles: (input) => {
+            capturedInput = input;
+          },
+        },
+      });
+
+      await assert.rejects(
+        ctx.service.validateFeedUrl(
+          { discordUserId: ctx.discordUserId },
+          { url: "https://www.instagram.com/adrienbrody" },
+        ),
+        PremiumFeedsPlanRequiredException,
+      );
+
+      assert.strictEqual(capturedInput, null);
+    });
+
+    it("does not use platform provider routing for an ordinary URL", async () => {
+      let capturedInput: GetArticlesInput | null = null;
+      const ctx = await harness.createContext({
+        feedHandler: {
+          url: "https://example.com/feed.xml",
+          onGetArticles: (input) => {
+            capturedInput = input;
+          },
+        },
+      });
+
+      await ctx.service.validateFeedUrl(
+        { discordUserId: ctx.discordUserId },
+        { url: "https://example.com/feed.xml" },
+      );
+
+      assert.strictEqual(capturedInput?.usePlatformProvider, false);
     });
   });
 

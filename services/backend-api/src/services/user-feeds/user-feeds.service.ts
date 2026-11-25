@@ -182,6 +182,20 @@ export class UserFeedsService {
     );
   }
 
+  private shouldUsePlatformProvider(
+    url: string,
+    platformUrls: Set<string>,
+    featureFlags?: IUser["featureFlags"],
+    isSupporter?: boolean,
+  ): boolean {
+    return (
+      platformUrls.has(url) &&
+      (isRedditFeedUrl(url) ||
+        (!!isSupporter &&
+          this.isMeteredPlatformUrl(url, platformUrls, featureFlags)))
+    );
+  }
+
   private meteredPlatformFeedValue(
     url: string,
     platformUrls: Set<string>,
@@ -414,8 +428,34 @@ export class UserFeedsService {
         credentials: credentialSource,
       });
 
+    const inputPlatformUrls = await this.classifyPlatformUrls([resolvedUrl]);
+    const usePlatformProvider = this.shouldUsePlatformProvider(
+      resolvedUrl,
+      inputPlatformUrls,
+      user.featureFlags,
+      feedBenefits.isSupporter,
+    );
+
+    if (
+      user.featureFlags?.premiumFeeds &&
+      this.isMeteredPlatformUrl(resolvedUrl, inputPlatformUrls, user.featureFlags)
+    ) {
+      await this.assertPlatformFeedAllowed({
+        isMeteredPlatformUrl: true,
+        user,
+        isSupporter: feedBenefits.isSupporter,
+        ownerDiscordUserId: discordUserId,
+        workspaceId,
+        workspaceFeedLimit: maxFeeds,
+      });
+    }
+
     const { finalUrl, enableDateChecks, feedTitle } =
-      await this.checkUrlIsValid(resolvedUrl, tempLookupDetails);
+      await this.checkUrlIsValid(
+        resolvedUrl,
+        tempLookupDetails,
+        usePlatformProvider,
+      );
 
     // Gated on the validated final URL so a redirect landing on a platform
     // host cannot bypass the gate (same as the clone/update paths).
@@ -587,13 +627,42 @@ export class UserFeedsService {
     const cloneUrl = data?.url && data.url !== sourceFeed.url ? data.url : null;
 
     if (cloneUrl) {
+      const resolvedCloneUrl = await this.resolveInputUrl(cloneUrl);
+      const inputPlatformUrls = await this.classifyPlatformUrls([
+        resolvedCloneUrl,
+      ]);
+
+      if (
+        user.featureFlags?.premiumFeeds &&
+        this.isMeteredPlatformUrl(
+          resolvedCloneUrl,
+          inputPlatformUrls,
+          user.featureFlags,
+        )
+      ) {
+        await this.assertPlatformFeedAllowed({
+          isMeteredPlatformUrl: true,
+          user,
+          isSupporter,
+          ownerDiscordUserId: sourceFeed.user.discordUserId,
+          workspaceId: destinationWorkspaceId,
+          workspaceFeedLimit: maxFeeds,
+        });
+      }
+
       finalUrl = (
         await this.checkUrlIsValid(
-          await this.resolveInputUrl(cloneUrl),
+          resolvedCloneUrl,
           this.deps.feedCredentialsService.getLookupDetailsFromSource({
             feed: sourceFeed,
             credentials: credentialSource,
           }),
+          this.shouldUsePlatformProvider(
+            resolvedCloneUrl,
+            inputPlatformUrls,
+            user.featureFlags,
+            isSupporter,
+          ),
         )
       ).finalUrl;
 
@@ -1017,12 +1086,42 @@ export class UserFeedsService {
         ]);
       feedBenefits = urlChangeBenefits;
 
+      const inputPlatformUrls = await this.classifyPlatformUrls([
+        resolvedUpdatesUrl,
+      ]);
+
+      if (
+        user.featureFlags?.premiumFeeds &&
+        this.isMeteredPlatformUrl(
+          resolvedUpdatesUrl,
+          inputPlatformUrls,
+          user.featureFlags,
+        )
+      ) {
+        await this.assertPlatformFeedAllowed({
+          isMeteredPlatformUrl: true,
+          user,
+          isSupporter: urlChangeBenefits.isSupporter,
+          ownerDiscordUserId: feed.user.discordUserId,
+          workspaceId: feed.workspaceId,
+          workspaceFeedLimit: urlChangeBenefits.maxFeeds,
+          replacesPlatformFeed:
+            this.isMeteredPlatformUrl(feed.url, new Set([feed.url]), user.featureFlags),
+        });
+      }
+
       const { finalUrl } = await this.checkUrlIsValid(
         resolvedUpdatesUrl,
         this.deps.feedCredentialsService.getLookupDetailsFromSource({
           feed: { url: resolvedUpdatesUrl, feedRequestLookupKey: randomUUID() },
           credentials: credentialSource,
         }),
+        this.shouldUsePlatformProvider(
+          resolvedUpdatesUrl,
+          inputPlatformUrls,
+          user.featureFlags,
+          urlChangeBenefits.isSupporter,
+        ),
       );
 
       // One batched classification covers both URLs: the new one for the gate
@@ -1805,12 +1904,16 @@ export class UserFeedsService {
       );
     }
 
-    const [credentialSource, resolvedUrl] = await Promise.all([
+    const [credentialSource, resolvedUrl, feedBenefits] = await Promise.all([
       this.deps.feedCredentialsService.resolveCredentialSource(
         { workspaceId },
         user,
       ),
       this.resolveInputUrl(url),
+      this.deps.supportersService.resolveFeedBenefits({
+        workspaceId,
+        user: { discordUserId },
+      }),
     ]);
 
     const lookupDetails =
@@ -1819,9 +1922,34 @@ export class UserFeedsService {
         credentials: credentialSource,
       });
 
+    const platformUrls = await this.classifyPlatformUrls([resolvedUrl]);
+
+    if (
+      this.isMeteredPlatformUrl(
+        resolvedUrl,
+        platformUrls,
+        user.featureFlags,
+      )
+    ) {
+      await this.assertPlatformFeedAllowed({
+        isMeteredPlatformUrl: true,
+        user,
+        isSupporter: feedBenefits.isSupporter,
+        ownerDiscordUserId: discordUserId,
+        workspaceId,
+        workspaceFeedLimit: feedBenefits.maxFeeds,
+      });
+    }
+
     const { finalUrl, feedTitle } = await this.checkUrlIsValid(
       resolvedUrl,
       lookupDetails,
+      this.shouldUsePlatformProvider(
+        resolvedUrl,
+        platformUrls,
+        user.featureFlags,
+        feedBenefits.isSupporter,
+      ),
     );
 
     if (finalUrl !== url) {
@@ -2302,6 +2430,7 @@ export class UserFeedsService {
   private async checkUrlIsValid(
     url: string,
     lookupDetails: FeedRequestLookupDetails | null,
+    usePlatformProvider: boolean,
   ): Promise<CheckUrlIsValidOutput> {
     const getArticlesResponse = await this.deps.feedHandlerService.getArticles(
       {
@@ -2321,7 +2450,7 @@ export class UserFeedsService {
         skip: 0,
         findRssFromHtml: true,
         executeFetchIfStale: true,
-        usePlatformProvider: true,
+        usePlatformProvider,
       },
       lookupDetails,
     );
