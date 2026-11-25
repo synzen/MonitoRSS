@@ -27,13 +27,20 @@ export interface MockFeedHandlerOptions {
   feedTitle?: string;
   requestStatus?: GetArticlesResponseRequestStatus;
   getArticlesError?: Error;
+  onGetArticles?: (
+    input: Parameters<
+      UserFeedsServiceDeps["feedHandlerService"]["getArticles"]
+    >[0],
+  ) => void;
 }
 
 export function createMockFeedHandlerService(
   options: MockFeedHandlerOptions = {},
 ): UserFeedsServiceDeps["feedHandlerService"] {
   return {
-    getArticles: async () => {
+    getArticles: async (input) => {
+      options.onGetArticles?.(input);
+
       if (options.getArticlesError) {
         throw options.getArticlesError;
       }

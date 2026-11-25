@@ -4,7 +4,10 @@ import {
   FeedConnectionDisabledCode,
   UserFeedDisabledCode,
 } from "../../src/repositories/shared/enums";
-import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handler/types";
+import {
+  GetArticlesInput,
+  GetArticlesResponseRequestStatus,
+} from "../../src/services/feed-handler/types";
 import {
   BannedFeedException,
   FeedLimitReachedException,
@@ -1402,6 +1405,26 @@ describe("UserFeedsService", { concurrency: true }, () => {
       );
 
       assert.strictEqual(result.feedTitle, "My Awesome Feed");
+    });
+
+    it("uses platform provider routing during URL validation", async () => {
+      let capturedInput: GetArticlesInput | null = null;
+      const ctx = await harness.createContext({
+        feedHandler: {
+          url: "https://www.instagram.com/adrienbrody",
+          feedTitle: "Instagram @adrienbrody posts",
+          onGetArticles: (input) => {
+            capturedInput = input;
+          },
+        },
+      });
+
+      await ctx.service.validateFeedUrl(
+        { discordUserId: ctx.discordUserId },
+        { url: "https://www.instagram.com/adrienbrody" },
+      );
+
+      assert.strictEqual(capturedInput?.usePlatformProvider, true);
     });
   });
 

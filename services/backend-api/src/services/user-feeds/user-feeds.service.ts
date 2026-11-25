@@ -2321,6 +2321,7 @@ export class UserFeedsService {
         skip: 0,
         findRssFromHtml: true,
         executeFetchIfStale: true,
+        usePlatformProvider: true,
       },
       lookupDetails,
     );
