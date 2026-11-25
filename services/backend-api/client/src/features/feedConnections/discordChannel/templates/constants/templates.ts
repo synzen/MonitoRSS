@@ -276,10 +276,12 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
   requiredFieldsOr: [TemplateRequiredField.Image, TemplateRequiredField.Video],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
     const descriptionField = fields?.description[0]?.field;
-    const mediaFieldNames = [
-      ...(fields?.image ?? []),
-      ...(fields?.video ?? []),
-    ].map((i) => i.field);
+    // A mixed-media feed can classify the same enclosure field as an image in
+    // one article and a video in another, so dedupe the field names: one
+    // gallery item per distinct placeholder, not per detected type.
+    const mediaFieldNames = Array.from(
+      new Set([...(fields?.image ?? []), ...(fields?.video ?? [])].map((i) => i.field)),
+    );
     const linkField = fields?.link[0]?.field;
     const titleField = fields?.title[0]?.field;
 

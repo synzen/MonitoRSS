@@ -72,6 +72,7 @@ export const fetchFeedInputSchema = z.object({
   executeFetchIfNotExists: optionalBoolean(),
   hashToCompare: optionalString('hashToCompare'),
   debug: optionalBoolean(),
+  usePlatformProvider: optionalBoolean(),
 });
 
 export const fetchFeedDeliveryPreviewInputSchema = z.object({

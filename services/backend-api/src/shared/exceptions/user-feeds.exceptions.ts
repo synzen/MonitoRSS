@@ -14,6 +14,10 @@ export class RefreshRateNotAllowedException extends StandardException {}
 export class PremiumFeedsNotSupportedException extends StandardException {}
 export class PremiumFeedsPlanRequiredException extends StandardException {}
 export class PremiumFeedsLimitReachedException extends StandardException {}
+// Reddit fetches through the feed owner's own OAuth grant (the official API
+// meters per user and serves nothing anonymously); without one a reddit feed
+// would never fetch.
+export class RedditConnectionRequiredException extends StandardException {}
 export class ManualRequestTooSoonException extends StandardException {
   secondsUntilNextRequest?: number;
 

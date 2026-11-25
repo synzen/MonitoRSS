@@ -90,8 +90,12 @@ describe("templates", () => {
         link: [],
       });
 
-      const container = root.children[0] as { children: Array<{ type: ComponentType; children?: unknown[] }> };
-      const gallery = container.children.find((c) => (c as { type: ComponentType }).type === ComponentType.V2MediaGallery) as {
+      const container = root.children[0] as {
+        children: Array<{ type: ComponentType; children?: unknown[] }>;
+      };
+      const gallery = container.children.find(
+        (c) => (c as { type: ComponentType }).type === ComponentType.V2MediaGallery,
+      ) as {
         children: Array<{ mediaUrl: string; name: string }>;
       };
 
@@ -99,6 +103,28 @@ describe("templates", () => {
         "{{image__url}}",
         "{{enclosures__0__url}}",
       ]);
+    });
+
+    it("does not duplicate a gallery item when the same field is detected as image and video", () => {
+      const root = MEDIA_GALLERY_TEMPLATE.createMessageComponent({
+        image: [{ field: "enclosures__0__url", presentInAll: false }],
+        video: [{ field: "enclosures__0__url", presentInAll: false }],
+        description: [],
+        title: [],
+        author: [],
+        link: [],
+      });
+
+      const container = root.children[0] as {
+        children: Array<{ type: ComponentType; children?: unknown[] }>;
+      };
+      const gallery = container.children.find(
+        (c) => (c as { type: ComponentType }).type === ComponentType.V2MediaGallery,
+      ) as {
+        children: Array<{ mediaUrl: string }>;
+      };
+
+      expect(gallery.children.map((item) => item.mediaUrl)).toEqual(["{{enclosures__0__url}}"]);
     });
 
     it("falls back to the image placeholder when no media fields are detected", () => {
@@ -111,8 +137,12 @@ describe("templates", () => {
         link: [],
       });
 
-      const container = root.children[0] as { children: Array<{ type: ComponentType; children?: unknown[] }> };
-      const gallery = container.children.find((c) => (c as { type: ComponentType }).type === ComponentType.V2MediaGallery) as {
+      const container = root.children[0] as {
+        children: Array<{ type: ComponentType; children?: unknown[] }>;
+      };
+      const gallery = container.children.find(
+        (c) => (c as { type: ComponentType }).type === ComponentType.V2MediaGallery,
+      ) as {
         children: Array<{ mediaUrl: string }>;
       };
 

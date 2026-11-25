@@ -125,6 +125,7 @@ export const getArticlesInputSchema = z.object({
   formatter: formatterSchema,
   findRssFromHtml: z.boolean().optional(),
   executeFetch: z.boolean().optional(),
+  usePlatformProvider: z.boolean().optional(),
   requestLookupDetails: lookupDetailsSchema.optional().nullable(),
   executeFetchIfStale: z.boolean().optional(),
   /** Include raw HTML in NO_SELECTOR_MATCH errors for troubleshooting (preview mode only) */

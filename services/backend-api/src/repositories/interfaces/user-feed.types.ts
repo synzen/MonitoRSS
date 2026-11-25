@@ -77,9 +77,9 @@ export interface IUserFeed {
   shareManageOptions?: IUserFeedShareManageOptions;
   legacyFeedId?: string;
   refreshRateSeconds?: number;
-  // Set from feed-requests' platform classification at create/clone/url-change;
-  // the premium refresh-rate floor keys on it everywhere rates are synced.
-  isPremiumFeed?: boolean;
+  // Set when the platform provider meters the feed fetch. Absence means the
+  // feed follows the regular plan refresh rate; true applies the provider floor.
+  isMeteredPlatformFeed?: boolean;
   maxDailyArticles?: number;
   userRefreshRateSeconds?: number;
   slotOffsetMs?: number;
@@ -157,7 +157,7 @@ export interface CreateUserFeedInput {
   feedRequestLookupKey?: string;
   createdAt?: Date;
   refreshRateSeconds?: number;
-  isPremiumFeed?: boolean;
+  isMeteredPlatformFeed?: boolean;
   slotOffsetMs?: number;
   maxDailyArticles?: number;
   dateCheckOptions?: IUserFeedDateCheckOptions;
@@ -291,7 +291,7 @@ export interface WorkspaceRefreshRateSyncInput {
     workspaceIds: string[];
     refreshRateSeconds: number;
   }>;
-  // Premium (platform) feeds never sync below this rate.
+  // Metered platform feeds never sync below this rate.
   premiumFloorSeconds: number;
 }
 
@@ -317,11 +317,14 @@ export interface CloneUserFeedInput {
     url: string;
     inputUrl?: string;
     workspaceId?: string;
-    // Premium-feed floors are applied by the service when the clone targets a
-    // platform URL; undefined keeps the source feed's stored value.
+    // Metered-feed floors are applied by the service when the clone targets a
+    // metered platform URL.
     refreshRateSeconds?: number;
     userRefreshRateSeconds?: number | null;
-    isPremiumFeed?: boolean;
+    isMeteredPlatformFeed?: boolean;
+    // Reddit clones mint a fresh key: their fetches carry the owner's grant
+    // through the per-feed credentialed lookup path.
+    feedRequestLookupKey?: string;
   };
 }
 
@@ -389,6 +392,7 @@ export interface UserFeedForPendingInvites {
 
 export interface ScheduledFeedUrl {
   url: string;
+  isMeteredPlatformFeed?: boolean;
 }
 
 // Per-feed targets for the workspace bulk retry (ADR-011): one entry per
@@ -404,6 +408,7 @@ export interface BulkRetryableFeed {
 
 export interface ScheduledFeedWithLookupKey {
   url: string;
+  isMeteredPlatformFeed?: boolean;
   feedRequestLookupKey?: string;
   workspaceId?: string;
   users: Array<{
@@ -426,6 +431,7 @@ export interface ScheduledFeedWithLookupKey {
 export interface ScheduledFeedForClockScheduling {
   id: string;
   url: string;
+  isMeteredPlatformFeed?: boolean;
   schedule: FeedSchedule;
   // Epoch ms of the last delivered scheduled occurrence; feeds already fired
   // for an occurrence are skipped by the emitter.
@@ -451,7 +457,7 @@ export interface FeedForSlotOffsetRecalculation {
   url: string;
   refreshRateSeconds?: number;
   userRefreshRateSeconds?: number;
-  isPremiumFeed?: boolean;
+  isMeteredPlatformFeed?: boolean;
 }
 
 export interface RefreshRateSyncInput {
@@ -460,7 +466,7 @@ export interface RefreshRateSyncInput {
     refreshRateSeconds: number;
   }>;
   defaultRefreshRateSeconds: number;
-  // Premium (platform) feeds never sync below this rate.
+  // Metered platform feeds never sync below this rate.
   premiumFloorSeconds: number;
 }
 
@@ -655,7 +661,7 @@ export interface IUserFeedRepository {
   ): Promise<Array<{ id: string; title: string; url: string; createdAt: Date }>>;
   findByUrls(discordUserId: string, urls: string[]): Promise<{ url: string }[]>;
   // Urls of the user's personal feeds (no workspaceId) they own directly.
-  // Used by premium-feed allowance counting.
+  // Used by platform-feed allowance counting.
   findPersonalFeedUrlsByOwner(
     discordUserId: string,
   ): Promise<Array<{ url: string }>>;

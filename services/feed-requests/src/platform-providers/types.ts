@@ -1,9 +1,47 @@
 import { RequestStatus } from '../feed-fetcher/types';
 
 export type PlatformFeedIdentity = {
-  platform: 'reddit' | 'twitter';
-  kind: 'subreddit' | 'user';
+  platform: 'reddit' | 'twitter' | 'instagram';
+  kind:
+    | 'subreddit'
+    | 'user'
+    | 'comment-thread'
+    | 'user-multi'
+    | 'search'
+    | 'domain';
   value: string;
+  sort?:
+    | 'new'
+    | 'hot'
+    | 'top'
+    | 'rising'
+    | 'controversial'
+    | 'best';
+  timeRange?: 'hour' | 'day' | 'week' | 'month' | 'year' | 'all';
+  search?: {
+    query: string;
+    sort?: 'relevance' | 'new' | 'hot' | 'top' | 'comments';
+    timeRange?: 'hour' | 'day' | 'week' | 'month' | 'year' | 'all';
+    nsfw?: boolean;
+  };
+  globalSearch?: {
+    query: string;
+    sort?: 'relevance' | 'new' | 'hot' | 'top' | 'comments';
+    timeRange?: 'hour' | 'day' | 'week' | 'month' | 'year' | 'all';
+    nsfw?: boolean;
+  };
+  domain?: {
+    domain: string;
+    sort?: 'new' | 'hot' | 'top' | 'rising' | 'controversial' | 'best';
+    timeRange?: 'hour' | 'day' | 'week' | 'month' | 'year' | 'all';
+  };
+  commentThread?: { subreddit: string; postId: string };
+  userMulti?: {
+    user: string;
+    multi: string;
+    sort?: 'new' | 'hot' | 'top' | 'rising' | 'controversial' | 'best';
+    timeRange?: 'hour' | 'day' | 'week' | 'month' | 'year' | 'all';
+  };
 };
 
 /**
@@ -12,8 +50,36 @@ export type PlatformFeedIdentity = {
  * platform-native post ID in <guid> and the canonical permalink in <link>;
  * downstream parsing and dedup key on those unchanged.
  */
+/**
+ * Per-request fetch context supplied by the consumer. Adapters that fetch on
+ * behalf of an end user (e.g. reddit through a user's OAuth grant) receive
+ * their credential here; providers with deployment-level credentials ignore
+ * it.
+ */
+export interface PlatformProviderFetchOptions {
+  bearerToken?: string;
+}
+
+/**
+ * A normalized feed document plus the reuse window its provider response
+ * advertised.
+ */
+export interface PlatformFeedDocument {
+  document: string;
+  /**
+   * Freshness of the provider response this document was rendered from, in
+   * seconds. `undefined` means the response carried no cache information (the
+   * configured fallback applies); `0` means it must not be reused
+   * (no-store / no-cache / max-age=0).
+   */
+  freshnessSeconds?: number;
+}
+
 export interface PlatformProviderAdapter {
-  fetchFeedDocument(identity: PlatformFeedIdentity): Promise<string>;
+  fetchFeedDocument(
+    identity: PlatformFeedIdentity,
+    options?: PlatformProviderFetchOptions,
+  ): Promise<PlatformFeedDocument>;
   /**
    * Releases the remote resource for the identity once no consumer feed
    * references it (garbage collection). Optional: stateless providers have

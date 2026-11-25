@@ -37,12 +37,16 @@ import {
   type MockFeedConnectionsDiscordChannelsServiceOptions,
   type MockFeedConnectionsDiscordChannelsService,
 } from "./mock-factories";
+import { encrypt } from "../../src/utils/encrypt";
 import { generateTestId } from "./test-id";
+import { generateEncryptionKey } from "./schedule-handler.harness";
 
 const DEFAULT_MAX_USER_FEEDS = 5;
 const DEFAULT_REFRESH_RATE_SECONDS = 600;
 const DEFAULT_MAX_DAILY_ARTICLES = 100;
-const DEFAULT_ENCRYPTION_KEY = "test-encryption-key-hex-value-32";
+// A real hex key: credentialed reddit fetches decrypt the stored token, so
+// the fixture credential must round-trip through encrypt/decrypt.
+const DEFAULT_ENCRYPTION_KEY = generateEncryptionKey();
 
 export interface TestContextOptions {
   maxUserFeeds?: number;
@@ -92,7 +96,11 @@ export interface CapturedWorkspaceDigest {
 export interface TestContext {
   discordUserId: string;
   userId: string;
+  // The hex key this context encrypts fixture credentials with; schedule
+  // fetch resolution decrypts with the same value.
+  encryptionKey: string;
   service: UserFeedsService;
+  userFeedRepository: UserFeedMongooseRepository;
   feedConnectionsDiscordChannelsService: MockFeedConnectionsDiscordChannelsService;
   workspaceDigests: CapturedWorkspaceDigest[];
   createWorkspace(): Promise<{ id: string; slug: string }>;
@@ -130,7 +138,7 @@ export interface TestContext {
 export interface UserFeedsHarness {
   setup(): Promise<void>;
   teardown(): Promise<void>;
-  createContext(options?: TestContextOptions): TestContext;
+  createContext(options?: TestContextOptions): Promise<TestContext>;
 }
 
 export function createUserFeedsHarness(): UserFeedsHarness {
@@ -170,7 +178,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
       await testContext.teardown();
     },
 
-    createContext(options: TestContextOptions = {}): TestContext {
+    async createContext(options: TestContextOptions = {}): Promise<TestContext> {
       const discordUserId = generateTestId();
       const userId = generateTestId();
 
@@ -190,15 +198,45 @@ export function createUserFeedsHarness(): UserFeedsHarness {
             }
           : {}),
         BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS:
-          options.premiumFeedsMinRefreshRateSeconds ?? 3600,
+          options.premiumFeedsMinRefreshRateSeconds ?? 7200,
       } as UserFeedsServiceDeps["config"];
 
       const usersService = createMockUsersService(
         userId,
         discordUserId,
-        options.externalCredentials,
+        // Default to a connected Reddit grant: the reddit write paths gate on
+        // the scope's grant, and the gate tests override this (revoked or
+        // empty) to exercise the rejection. The token is encrypted the way
+        // production stores it, since fetch resolution decrypts it.
+        options.externalCredentials ?? [
+          {
+            type: "reddit",
+            status: "ACTIVE",
+            data: {
+              accessToken: encrypt(
+                "harness-access-token",
+                DEFAULT_ENCRYPTION_KEY,
+              ),
+            },
+          },
+        ],
         options.featureFlags,
       );
+
+      // Seed the Mongo user document the mock users service claims to back:
+      // the schedule sweep resolves reddit fetch credentials from the users
+      // collection ($lookup by discordUserId), so the stored grant must
+      // mirror the mock's. Revoked/empty overrides seed nothing — the sweep
+      // then correctly finds no usable credential.
+      const storedCredentials = options.externalCredentials ?? [
+        {
+          type: "reddit",
+          status: "ACTIVE",
+          data: {
+            accessToken: encrypt("harness-access-token", DEFAULT_ENCRYPTION_KEY),
+          },
+        },
+      ];
 
       const workspaceDigests: CapturedWorkspaceDigest[] = [];
 
@@ -250,10 +288,32 @@ export function createUserFeedsHarness(): UserFeedsHarness {
 
       const service = new UserFeedsService(serviceDeps);
 
+      if (!options.externalCredentials?.length || options.externalCredentials.some((c) => c.status === "ACTIVE")) {
+        const userDoc = await userRepository.create({ discordUserId });
+        for (const cred of storedCredentials.filter((c) => c.status === "ACTIVE")) {
+          await userRepository.setExternalCredential(userDoc.id, {
+            type: cred.type as never,
+            data: cred.data,
+          });
+        }
+      }
+
+      const createFeedFor = (
+        overrides?: { title?: string; url?: string },
+        feedDiscordUserId: string = discordUserId,
+      ) =>
+        userFeedRepository.create({
+          title: overrides?.title ?? "Test Feed",
+          url: overrides?.url ?? `https://example.com/${generateTestId()}.xml`,
+          user: { id: userId, discordUserId: feedDiscordUserId },
+        });
+
       return {
         discordUserId,
         userId,
+        encryptionKey: DEFAULT_ENCRYPTION_KEY,
         service,
+        userFeedRepository,
         feedConnectionsDiscordChannelsService,
         workspaceDigests,
 
@@ -327,19 +387,28 @@ export function createUserFeedsHarness(): UserFeedsHarness {
           return feeds;
         },
 
-        async createDisabled(code) {
-          const feed = await this.createFeed({});
+        createDisabled: async (code) => {
+          const feed = await createFeedFor({
+            title: "Test Feed",
+            url: `https://example.com/${generateTestId()}.xml`,
+          });
           await userFeedRepository.updateById(feed.id, {
             $set: { disabledCode: code },
           });
           return { ...feed, disabledCode: code };
         },
 
-        async createDisabledForUser(
+        createDisabledForUser: async (
           feedDiscordUserId: string,
           code: UserFeedDisabledCode,
-        ) {
-          const feed = await this.createFeedForUser(feedDiscordUserId, {});
+        ) => {
+          const feed = await createFeedFor(
+            {
+              title: "Test Feed",
+              url: `https://example.com/${generateTestId()}.xml`,
+            },
+            feedDiscordUserId,
+          );
           await userFeedRepository.updateById(feed.id, {
             $set: { disabledCode: code },
           });

@@ -43,9 +43,9 @@ const wrapRegistryAdapter = (
   adapter: PlatformProviderAdapter,
 ): PlatformProviderAdapter => ({
   ...adapter,
-  async fetchFeedDocument(identity) {
+  async fetchFeedDocument(identity, options) {
     try {
-      return await adapter.fetchFeedDocument(identity);
+      return await adapter.fetchFeedDocument(identity, options);
     } catch (err) {
       if (err instanceof PlatformProviderFetchError) {
         throw err;

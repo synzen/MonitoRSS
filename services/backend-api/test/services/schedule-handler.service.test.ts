@@ -149,7 +149,29 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       );
     });
 
-    it("fetches lookup-key feeds with their raw URL even when the user has Reddit credentials", async () => {
+    it("skips keyless reddit feeds in the plain URL path instead of fetching them raw", async () => {
+      const ctx = harness.createContext();
+
+      const redditFeed = await ctx.createFeedWithConnection({
+        url: `https://www.reddit.com/r/plain-${ctx.generateId()}`,
+        refreshRateSeconds: DEFAULT_REFRESH_RATE_SECONDS,
+      });
+
+      const collectedItems: Array<{ url: string }> = [];
+
+      await ctx.service.handleRefreshRate(DEFAULT_REFRESH_RATE_SECONDS, {
+        urlsHandler: async (batch) => {
+          collectedItems.push(...batch);
+        },
+      });
+
+      assert.ok(
+        collectedItems.every((item) => item.url !== redditFeed.url),
+        "A reddit feed without a usable grant idles — reddit serves nothing anonymously",
+      );
+    });
+
+    it("attaches the owner's Reddit token to credentialed lookup-key feeds", async () => {
       const encryptionKey = generateEncryptionKey();
       const uniqueRefreshRate = 7200;
       const ctx = harness.createContext({ encryptionKey });
@@ -224,6 +246,7 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       const collectedItems: Array<{
         url: string;
         lookupKey?: string;
+        headers?: Record<string, string>;
       }> = [];
 
       await ctx.service.handleRefreshRate(uniqueRefreshRate, {
@@ -241,11 +264,16 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       assert.strictEqual(
         matchingItem.url,
         redditUrl,
-        "Lookup-key feeds fetch their raw URL; credentials no longer transform it",
+        "The fetch stays on the plain feed URL; the provider adapter builds the oauth URL from it",
+      );
+      assert.deepStrictEqual(
+        matchingItem.headers,
+        { Authorization: "Bearer test-access-token" },
+        "The owner's grant rides the item as the fetch Authorization header",
       );
     });
 
-    it("emits lookup-key feeds even without Reddit credentials", async () => {
+    it("skips reddit lookup-key feeds without Reddit credentials", async () => {
       const encryptionKey = generateEncryptionKey();
       const uniqueRefreshRate = 7800;
       const ctx = harness.createContext({ encryptionKey });
@@ -262,6 +290,7 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       const collectedItems: Array<{
         url: string;
         lookupKey?: string;
+        headers?: Record<string, string>;
       }> = [];
 
       await ctx.service.handleRefreshRate(uniqueRefreshRate, {
@@ -275,14 +304,10 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       const matchingItem = collectedItems.find(
         (item) => item.lookupKey === lookupKey,
       );
-      assert.ok(
-        matchingItem,
-        "Lookup-key feeds are fetched without Reddit credentials",
-      );
       assert.strictEqual(
-        matchingItem.url,
-        redditUrl,
-        "URL stays the raw feed URL",
+        matchingItem,
+        undefined,
+        "Reddit feeds without a usable grant are not fetched at all — the feed idles until its owner connects",
       );
     });
 
@@ -307,7 +332,11 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         feedRequestLookupKey: lookupKey,
       });
 
-      const collectedItems: Array<{ url: string; lookupKey?: string }> = [];
+      const collectedItems: Array<{
+        url: string;
+        lookupKey?: string;
+        headers?: Record<string, string>;
+      }> = [];
 
       await ctx.service.handleRefreshRate(uniqueRefreshRate, {
         urlsHandler: async (batch) => {
@@ -329,9 +358,14 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         redditUrl,
         "Workspace lookup-key feeds fetch their raw URL",
       );
+      assert.deepStrictEqual(
+        matchingItem.headers,
+        { Authorization: "Bearer workspace-access-token" },
+        "Workspace feeds fetch with the workspace connection's grant",
+      );
     });
 
-    it("emits workspace lookup-key feeds even without workspace credentials", async () => {
+    it("skips workspace reddit feeds without a workspace connection even when the creator has one", async () => {
       const encryptionKey = generateEncryptionKey();
       const uniqueRefreshRate = 7400;
       const ctx = harness.createContext({ encryptionKey });
@@ -355,7 +389,11 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         feedRequestLookupKey: lookupKey,
       });
 
-      const collectedItems: Array<{ url: string; lookupKey?: string }> = [];
+      const collectedItems: Array<{
+        url: string;
+        lookupKey?: string;
+        headers?: Record<string, string>;
+      }> = [];
 
       await ctx.service.handleRefreshRate(uniqueRefreshRate, {
         urlsHandler: async (batch) => {
@@ -368,14 +406,10 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       const matchingItem = collectedItems.find(
         (item) => item.lookupKey === lookupKey,
       );
-      assert.ok(
-        matchingItem,
-        "Workspace lookup-key feeds are fetched without workspace credentials",
-      );
       assert.strictEqual(
-        matchingItem.url,
-        redditUrl,
-        "URL stays the raw feed URL",
+        matchingItem,
+        undefined,
+        "Workspace feeds resolve only the workspace connection — never a fallback to the creator's grant",
       );
     });
 
@@ -725,21 +759,35 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       // Both feeds sit at the same below-floor rate before the sync.
       const premiumFeed = await localCtx.createFeedForUser(
         supporterDiscordUserId,
-        { refreshRateSeconds: 300, isPremiumFeed: true },
+        { refreshRateSeconds: 300, isMeteredPlatformFeed: true },
       );
       const regularFeed = await localCtx.createFeedForUser(
         supporterDiscordUserId,
         { refreshRateSeconds: 300 },
       );
+      // Reddit is not metered, so it follows the tier.
+      const redditFeed = await localCtx.createFeedForUser(
+        supporterDiscordUserId,
+        {
+          refreshRateSeconds: 300,
+          url: "https://www.reddit.com/r/gaming",
+        },
+      );
 
       await localCtx.service.runMaintenanceOperations();
 
-      // The premium feed clamps up to the floor; the regular feed follows the tier.
+      // The premium feed clamps up to the floor; regular and reddit feeds
+      // follow the tier.
       const refreshedPremium = await localCtx.findById(premiumFeed.id);
       const refreshedRegular = await localCtx.findById(regularFeed.id);
-      assert.strictEqual(refreshedPremium?.refreshRateSeconds, 3600);
+      const refreshedReddit = await localCtx.findById(redditFeed.id);
+      assert.strictEqual(refreshedPremium?.refreshRateSeconds, 7200);
       assert.strictEqual(
         refreshedRegular?.refreshRateSeconds,
+        SUPPORTER_REFRESH_RATE,
+      );
+      assert.strictEqual(
+        refreshedReddit?.refreshRateSeconds,
         SUPPORTER_REFRESH_RATE,
       );
     });
@@ -769,15 +817,26 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         workspaceId,
         refreshRateSeconds: 300,
       });
-      await localCtx.setFields(premiumFeed.id, { isPremiumFeed: true });
+      // Reddit is not metered, so it follows the tier.
+      const redditFeed = await localCtx.createFeedWithConnection({
+        workspaceId,
+        refreshRateSeconds: 300,
+        url: "https://www.reddit.com/r/gaming",
+      });
+      await localCtx.setFields(premiumFeed.id, { isMeteredPlatformFeed: true });
 
       await localCtx.service.runMaintenanceOperations();
 
       const refreshedPremium = await localCtx.findById(premiumFeed.id);
       const refreshedRegular = await localCtx.findById(regularFeed.id);
-      assert.strictEqual(refreshedPremium?.refreshRateSeconds, 3600);
+      const refreshedReddit = await localCtx.findById(redditFeed.id);
+      assert.strictEqual(refreshedPremium?.refreshRateSeconds, 7200);
       assert.strictEqual(
         refreshedRegular?.refreshRateSeconds,
+        SUPPORTER_REFRESH_RATE,
+      );
+      assert.strictEqual(
+        refreshedReddit?.refreshRateSeconds,
         SUPPORTER_REFRESH_RATE,
       );
     });

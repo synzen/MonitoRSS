@@ -60,6 +60,10 @@ export const FEED_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
     status: 400,
     code: ApiErrorCode.PREMIUM_FEEDS_LIMIT_REACHED,
   },
+  RedditConnectionRequiredException: {
+    status: 400,
+    code: ApiErrorCode.REDDIT_CONNECTION_REQUIRED,
+  },
 };
 
 export const UPDATE_USER_FEED_EXCEPTION_ERROR_CODES: ExceptionErrorCodes =

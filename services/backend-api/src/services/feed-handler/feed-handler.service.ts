@@ -205,6 +205,7 @@ export class FeedHandlerService {
   async getArticles(
     {
       url,
+      usePlatformProvider,
       limit,
       random,
       skip,
@@ -232,6 +233,7 @@ export class FeedHandlerService {
       executeFetch,
       executeFetchIfStale,
       includeHtmlInErrors,
+      usePlatformProvider,
       requestLookupDetails: lookupDetails
         ? {
             key: lookupDetails.key,

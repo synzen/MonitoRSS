@@ -52,7 +52,6 @@ export class FeedCredentialsService {
     feed: {
       url: string;
       feedRequestLookupKey?: string;
-      isPremiumFeed?: boolean;
       workspaceId?: string | null;
     };
     user: FeedCredentialSource;
@@ -69,15 +68,13 @@ export class FeedCredentialsService {
     feed,
     credentials,
   }: {
-    feed: { url: string; feedRequestLookupKey?: string; isPremiumFeed?: boolean };
+    feed: { url: string; feedRequestLookupKey?: string };
     credentials: FeedCredentialSource;
   }): FeedRequestLookupDetails | null {
     return getFeedRequestLookupDetails({
       feed,
       credentials,
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-      redditFeedBaseUrl:
-        this.deps.config.BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL,
     });
   }
 

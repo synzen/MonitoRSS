@@ -11,7 +11,9 @@ ARG SENTRY_PROJECT
 ARG SENTRY_AUTH_TOKEN
 ARG SENTRY_RELEASE
 
-COPY package*.json ./
+ARG NPM_TOKEN
+
+COPY package*.json .npmrc ./
 COPY client/package*.json client/
 
 RUN npm install && cd client && npm install

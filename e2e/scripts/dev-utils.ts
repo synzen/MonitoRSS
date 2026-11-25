@@ -178,3 +178,25 @@ export function runCompose(
     child.once("close", (code) => resolveRun({ code: code ?? 1, output }));
   });
 }
+
+// `docker compose down` intentionally omits --volumes so the named dev data
+// volumes (mongo/postgres/redis) survive restarts. That leaves the per-service
+// anonymous node_modules volumes from the previous session dangling; the dev
+// script renews them on every start, so without this prune each restart leaks
+// roughly a gigabyte. `docker volume prune` (without --all) removes only
+// unused anonymous volumes, never the named data volumes.
+export function pruneDanglingAnonymousVolumes(cwd: string): void {
+  const result = spawnSync("docker", ["volume", "prune", "-f"], {
+    cwd,
+    encoding: "utf8",
+    windowsHide: true,
+  });
+
+  if (result.status !== 0) return;
+
+  const reclaimed = /Total reclaimed space:\s*(.+)/.exec(result.stdout ?? "")?.[1];
+
+  if (reclaimed && reclaimed.trim() !== "0B") {
+    console.log(`Pruned dangling dev volumes (${reclaimed.trim()}).`);
+  }
+}

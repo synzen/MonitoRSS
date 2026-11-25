@@ -30,12 +30,12 @@ export const UserFeedSchema = object({
     .required(),
   updatedAt: string().transform((value) => (value ? new Date(value).toISOString() : value)),
   disabledCode: string().oneOf(Object.values(UserFeedDisabledCode)).optional(),
-  refreshRateOptions: array(
-    object({
-      rateSeconds: number().required(),
-      disabledCode: string().default(undefined),
-    }).required(),
-  ).required(),
+  refreshRateLimits: object({
+    minimumSeconds: number().required(),
+    maximumSeconds: number().required(),
+    canUpgrade: bool().required(),
+    limitedBy: string().oneOf(["plan", "platform"]).required(),
+  }).required(),
   healthStatus: string().oneOf(Object.values(UserFeedHealthStatus)).required(),
   connections: array(FeedConnectionSchema).required(),
   refreshRateSeconds: number().required(),

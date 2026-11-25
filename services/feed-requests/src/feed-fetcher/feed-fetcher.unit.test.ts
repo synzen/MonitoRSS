@@ -12,7 +12,10 @@ import {
 } from 'undici';
 import { createFeedFetcherService } from './feed-fetcher';
 import { createPlatformProviderRouter } from '../platform-providers/router';
-import type { PlatformFeedIdentity, PlatformProviderRegistry } from '../platform-providers/types';
+import type {
+  PlatformFeedIdentity,
+  PlatformProviderRegistry,
+} from '../platform-providers/types';
 import { RequestStatus } from '../feed-fetcher/types';
 import { silenceLogger } from '../test/helpers/silence-logger';
 
@@ -315,9 +318,11 @@ describe('FeedFetcherService', () => {
     };
 
     // A stub vendor adapter: GETs a provider URL derived from the identity
-    // and surfaces error statuses.
+    // and surfaces error statuses. freshnessSeconds simulates the provider
+    // response's reported reuse window.
     const registryWithProvider = (
       providerName = 'private-default',
+      freshnessSeconds?: number,
     ): PlatformProviderRegistry => ({
       findMatchingPlatform: matchPlatformUrl,
       adapters: {
@@ -335,7 +340,10 @@ describe('FeedFetcherService', () => {
                 );
               }
 
-              return res.text();
+              return {
+                document: await res.text(),
+                freshnessSeconds,
+              };
             },
           }),
         },
@@ -388,7 +396,11 @@ describe('FeedFetcherService', () => {
       const routedService = createServiceWithRegistry(registryWithProvider());
 
       const { request: insert, responseText } =
-        await routedService.fetchAndSaveResponse(redditUrl);
+        await routedService.fetchAndSaveResponse(redditUrl, {
+          lookupDetails: undefined,
+          source: undefined,
+          usePlatformProvider: true,
+        });
 
       assert.strictEqual(capturedRequests.length, 1);
       assert.strictEqual(
@@ -419,7 +431,11 @@ describe('FeedFetcherService', () => {
       );
 
       const { request: insert } =
-        await routedService.fetchAndSaveResponse(redditUrl);
+        await routedService.fetchAndSaveResponse(redditUrl, {
+          lookupDetails: undefined,
+          source: undefined,
+          usePlatformProvider: true,
+        });
 
       // The freshness directive is what lets the scheduler's freshness skip
       // collapse repeat fetches of the same URL into one provider call.
@@ -434,8 +450,55 @@ describe('FeedFetcherService', () => {
       const routedService = createServiceWithRegistry(registryWithProvider());
 
       const { request: insert } =
-        await routedService.fetchAndSaveResponse(redditUrl);
+        await routedService.fetchAndSaveResponse(redditUrl, {
+          lookupDetails: undefined,
+          source: undefined,
+          usePlatformProvider: true,
+        });
 
+      assert.ok(
+        insert.response?.headers &&
+          !('cache-control' in insert.response.headers),
+      );
+    });
+
+    it('uses the freshness reported by the provider response over the fallback', async () => {
+      interceptProvider();
+
+      const routedService = createServiceWithRegistry(
+        registryWithProvider('private-default', 120),
+        600,
+      );
+
+      const { request: insert } =
+        await routedService.fetchAndSaveResponse(redditUrl, {
+          lookupDetails: undefined,
+          source: undefined,
+          usePlatformProvider: true,
+        });
+
+      assert.partialDeepStrictEqual(insert.response?.headers, {
+        'cache-control': 'public, max-age=120',
+      });
+    });
+
+    it('advertises no reuse window when the provider response reports no-store', async () => {
+      interceptProvider();
+
+      const routedService = createServiceWithRegistry(
+        registryWithProvider('private-default', 0),
+        600,
+      );
+
+      const { request: insert } =
+        await routedService.fetchAndSaveResponse(redditUrl, {
+          lookupDetails: undefined,
+          source: undefined,
+          usePlatformProvider: true,
+        });
+
+      // max-age=0 from the provider (e.g. reddit's no-store) must suppress
+      // the fallback directive so every due tick refetches.
       assert.ok(
         insert.response?.headers &&
           !('cache-control' in insert.response.headers),
@@ -449,7 +512,11 @@ describe('FeedFetcherService', () => {
       const routedService = createServiceWithRegistry(registry);
 
       const { request: insert } =
-        await routedService.fetchAndSaveResponse(redditUrl);
+        await routedService.fetchAndSaveResponse(redditUrl, {
+          lookupDetails: undefined,
+          source: undefined,
+          usePlatformProvider: true,
+        });
 
       assert.strictEqual(capturedRequests.length, 0);
       assert.partialDeepStrictEqual(insert, {
@@ -465,7 +532,11 @@ describe('FeedFetcherService', () => {
       const routedService = createServiceWithRegistry(registryWithProvider());
 
       const { request: insert } =
-        await routedService.fetchAndSaveResponse(redditUrl);
+        await routedService.fetchAndSaveResponse(redditUrl, {
+          lookupDetails: undefined,
+          source: undefined,
+          usePlatformProvider: true,
+        });
 
       assert.partialDeepStrictEqual(insert, {
         url: redditUrl,
@@ -513,6 +584,20 @@ describe('FeedFetcherService', () => {
 
       assert.strictEqual(capturedRequests.length, 1);
       assert.strictEqual(capturedRequests[0].url, feedUrl);
+    });
+
+    it('keeps a recognized non-reddit platform URL on the normal fetch path when not enabled', async () => {
+      const twitterUrl = 'https://x.com/jack';
+      mockUndiciResponse();
+
+      const routedService = createServiceWithRegistry(registryWithProvider());
+
+      const { request: insert } =
+        await routedService.fetchAndSaveResponse(twitterUrl);
+
+      assert.strictEqual(capturedRequests.length, 0);
+      assert.strictEqual(insert.url, twitterUrl);
+      assert.strictEqual(insert.status, RequestStatus.OK);
     });
   });
 });

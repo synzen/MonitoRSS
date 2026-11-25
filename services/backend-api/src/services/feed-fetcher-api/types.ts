@@ -1,6 +1,7 @@
 export interface FeedFetchOptions {
   getCachedResponse?: boolean;
   debug?: boolean;
+  usePlatformProvider?: boolean;
 }
 
 export enum FeedFetcherFetchStatus {

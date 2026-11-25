@@ -29,6 +29,7 @@ export interface FetchFeedArticleOptions {
   externalFeedProperties?: ExternalFeedProperty[];
   /** Include raw HTML in NO_SELECTOR_MATCH errors for troubleshooting (preview mode only) */
   includeHtmlInErrors?: boolean;
+  usePlatformProvider?: boolean;
   requestLookupDetails?: {
     key: string;
     url?: string;
@@ -128,14 +129,16 @@ export async function findOrFetchFeedArticles(
     };
   }
 
-  // Credentialed feeds (reddit) must be fetched via the lookup URL (oauth.reddit.com
-  // with the Authorization header), exactly like the delivery pipeline does in
-  // shared-processing. The original url remains the feed's display/cache identity.
+  // Credentialed feeds (reddit) fetch with the owner's grant (the
+  // requestLookupDetails Authorization header feeds the provider adapter),
+  // exactly like the delivery pipeline does in shared-processing. The
+  // original url remains the feed's display/cache identity.
   const result = await fetchFeed(options.requestLookupDetails?.url || url, {
     executeFetch: options.executeFetch,
     executeFetchIfNotInCache: true,
     executeFetchIfStale: options.executeFetchIfStale,
     lookupDetails: options.requestLookupDetails,
+    usePlatformProvider: options.usePlatformProvider,
     serviceHost: options.feedRequestsServiceHost,
   });
 

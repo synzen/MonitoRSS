@@ -435,10 +435,6 @@ export class UserMongooseRepository
             // Workspace feeds resolve credentials from their workspace, never
             // their creator's personal connection.
             "feeds.workspaceId": { $exists: false },
-            // Platform feeds fetch through provider adapters keyed on their
-            // plain URL; a lookup key would put them on the per-feed
-            // credentialed path and forfeit URL batching.
-            "feeds.isPremiumFeed": { $ne: true },
             ...(options?.feedIds?.length && {
               "feeds._id": {
                 $in: options.feedIds.map((id) => this.stringToObjectId(id)),

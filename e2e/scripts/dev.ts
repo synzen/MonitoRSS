@@ -23,6 +23,7 @@ import {
   assertPortAvailable,
   clearStaleComposeLock,
   parseComposeLockPid,
+  pruneDanglingAnonymousVolumes,
   runCompose,
 } from "./dev-utils";
 
@@ -78,7 +79,10 @@ function resolveNotificationSettingId(): string {
 async function composeUp(): Promise<void> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const { code, output } = await runCompose(
-      ["compose", "-f", COMPOSE_FILE, "up", "-d"],
+      // --build picks up dependency bumps (layer-cached: a no-op when
+      // package.json/.npmrc are unchanged); --renew-anon-volumes re-seeds the
+      // anonymous node_modules volumes from the fresh image on recreation.
+      ["compose", "-f", COMPOSE_FILE, "up", "-d", "--build", "--renew-anon-volumes"],
       REPO_ROOT,
     );
     if (code === 0) return;
@@ -106,6 +110,7 @@ async function takeOverPreviousStack(): Promise<void> {
     ["compose", "-f", COMPOSE_FILE, "down", "--remove-orphans"],
     REPO_ROOT,
   );
+  pruneDanglingAnonymousVolumes(REPO_ROOT);
   if (code !== 0 && parseComposeLockPid(output) !== null) {
     const retry = clearStaleComposeLock(DEV_PROJECT_NAME);
     if (retry.cleared) {
@@ -113,6 +118,7 @@ async function takeOverPreviousStack(): Promise<void> {
         ["compose", "-f", COMPOSE_FILE, "down", "--remove-orphans"],
         REPO_ROOT,
       );
+      pruneDanglingAnonymousVolumes(REPO_ROOT);
       return;
     }
     const pid = parseComposeLockPid(output);
@@ -210,6 +216,7 @@ async function stopCompose(): Promise<void> {
       ["compose", "-f", COMPOSE_FILE, "down", "--remove-orphans"],
       REPO_ROOT,
     );
+    pruneDanglingAnonymousVolumes(REPO_ROOT);
   } catch {
     // teardown is best-effort during shutdown
   }

@@ -25,6 +25,7 @@ export class MessageBrokerService {
     rateSeconds: number;
     data: Array<{
       url: string;
+      usePlatformProvider?: boolean;
       saveToObjectStorage?: boolean;
       lookupKey?: string;
       headers?: Record<string, string>;

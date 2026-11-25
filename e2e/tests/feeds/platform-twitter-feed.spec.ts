@@ -31,6 +31,7 @@ interface VendorStats {
   creationsByHandle: Record<string, number>;
   fetchesByFeedId: Record<string, number>;
   deletionsByHandle: Record<string, number>;
+  firstFeedIdByHandle: Record<string, string>;
 }
 
 let handleCounter = 0;

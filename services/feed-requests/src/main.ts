@@ -150,8 +150,12 @@ async function buildCoreInfrastructure(
   });
   const partitionedRequestsStore = createPartitionedRequestsStore(pool);
   const platformProviderStateStore = createPlatformProviderStateStore(pool);
-  const platformProviderRegistry = loadPlatformProviderModule()
-    ?.platformProviderRegistry;
+  const platformModule = loadPlatformProviderModule();
+  const platformProviderRegistry = platformModule?.platformProviderRegistry;
+  logger.info('Platform provider registry', {
+    loaded: !!platformModule,
+    providers: platformProviderRegistry?.defaults,
+  });
   const feedFetcher = createFeedFetcherService({
     defaultUserAgent: config.FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT,
     requestTimeoutMs: config.FEED_REQUESTS_REQUEST_TIMEOUT_MS,

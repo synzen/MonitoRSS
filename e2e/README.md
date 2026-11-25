@@ -26,6 +26,33 @@ The platform-source specs (`tests/feeds/platform-*.spec.ts`) are opt-in: they ex
 
 Concurrent runs (`E2E_INSTANCE > 0`) suffix every live log file with `-<instance>` (e.g. `combined-1.log`). Every completed run is also archived under `logs/runs/<timestamp>-<instance>/`; `logs/latest-run[-<instance>].txt` identifies the newest archive.
 
+## Disk usage
+
+Every run rebuilds images, so teardown reclaims what would otherwise grow without bound:
+
+- `docker compose down --rmi local` removes the compose-built images for that project (pulled base images such as `mongo`/`postgres` stay).
+- `docker builder prune --keep-storage <E2E_BUILD_CACHE_KEEP_STORAGE>` bounds the Docker build cache (default `5GB`).
+- Archived runs under `logs/runs/` are pruned to `E2E_RUN_LOGS_TO_KEEP` newest entries (default `20`).
+
+`docker compose down -v` already removes the stack's volumes, but repeated **dev-stack** recreations can leave dangling anonymous `node_modules` volumes. `npm run dev` now prunes dangling anonymous volumes on startup and shutdown, and `npm run e2e:clean` is the catch-up cleanup if Docker's disk usage looks unexpectedly large:
+
+```bash
+npm run e2e:clean
+```
+
+That prunes old run logs, e2e project images, dangling images, the build cache (keeping 5GB), and unused anonymous volumes.
+
+**Windows gotcha:** Docker Desktop stores everything in `docker_data.vhdx`, which does **not** shrink when images/cache/volumes are deleted. Windows free space only recovers after compacting it with Docker stopped and an elevated shell:
+
+```powershell
+docker desktop stop
+wsl --shutdown
+Optimize-VHD -Path "$env:LOCALAPPDATA\Docker\wsl\disk\docker_data.vhdx" -Mode Full
+# then start Docker Desktop again
+```
+
+If `Optimize-VHD` is unavailable, use `diskpart` (`select vdisk file=...`, `attach vdisk readonly`, `compact vdisk`, `detach vdisk`).
+
 ```bash
 # Run all regular (non-paddle) tests via Docker stack (defaults to --project=e2e-web)
 npm run e2e

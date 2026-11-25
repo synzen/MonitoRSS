@@ -47,11 +47,13 @@ const configSchema = z.object({
 
   // Feed settings
   // Minimum refresh rate (seconds) for premium feeds (platform URLs served by
-  // provider adapters). Applies to every deployment including self-hosts;
-  // self-hosts bypass the access gates but not this floor. 0 disables it.
+  // provider adapters). Reddit platform feeds are exempt: they fetch with the
+  // owner's OAuth grant and inherit the regular plan rates. Applies to every
+  // deployment including self-hosts; self-hosts bypass the access gates but not
+  // this floor. 0 disables it.
   BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS: z.coerce
     .number()
-    .default(3600),
+    .default(7200),
   // Cadence of the schedule emitter's maintenance loop (platform GC sweep,
   // support checks). Lower values are for dev/e2e only: each sweep aggregates
   // every active feed.

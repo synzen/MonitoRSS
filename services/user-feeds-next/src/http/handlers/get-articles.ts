@@ -106,6 +106,7 @@ export async function handleGetArticles(
         findRssFromHtml: input.findRssFromHtml,
         executeFetch: input.executeFetch,
         executeFetchIfStale: input.executeFetchIfStale,
+        usePlatformProvider: input.usePlatformProvider,
         requestLookupDetails: input.requestLookupDetails
           ? {
               key: input.requestLookupDetails.key,

@@ -768,8 +768,9 @@ describe("POST /api/v1/user-feeds", () => {
       "Response should have refreshRateSeconds",
     );
     assert.ok(
-      Array.isArray(body.result.refreshRateOptions),
-      "Response should have refreshRateOptions array",
+      typeof body.result.refreshRateLimits === "object" &&
+        body.result.refreshRateLimits !== null,
+      "Response should have refreshRateLimits",
     );
   });
 

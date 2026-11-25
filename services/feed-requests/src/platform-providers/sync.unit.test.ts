@@ -8,12 +8,6 @@ import type {
   PlatformProviderStateStore,
 } from './types';
 
-const TWITTER_IDENTITY: PlatformFeedIdentity = {
-  platform: 'twitter',
-  kind: 'user',
-  value: 'jack',
-};
-
 interface StubRegistryOptions {
   releaseCalls?: PlatformFeedIdentity[];
   failFirstRelease?: boolean;
@@ -41,7 +35,7 @@ const createStubRegistry = (
   adapters: {
     twitter: {
       'tw-default': () => ({
-        fetchFeedDocument: async () => '<rss/>',
+        fetchFeedDocument: async () => ({ document: '<rss/>' }),
         releaseFeedDocument: async (identity) => {
           if (options.failFirstRelease && options.releaseCalls?.length === 0) {
             options.releaseCalls.push(identity);
@@ -73,6 +67,7 @@ const createMemoryStore = (
       if (values.has(key)) {
         return false;
       }
+
       values.set(key, value);
 
       return true;
@@ -81,6 +76,7 @@ const createMemoryStore = (
       if (values.get(key) !== expectedValue) {
         return false;
       }
+
       values.set(key, nextValue);
 
       return true;

@@ -139,6 +139,30 @@ describe("article-parser", () => {
     });
   });
 
+
+  describe("reddit compatibility", () => {
+    it("parses the fields used by migrated legacy placeholders", async () => {
+      const html =
+        '<table><tr><td><a href="https://www.reddit.com/r/test/comments/abc/post/"><img src="https://i.redd.it/x.jpg" /></a></td><td> submitted by <a href="https://www.reddit.com/user/alice">/u/alice</a> <br/><a href="https://example.com/deal">[link]</a> <a href="https://www.reddit.com/r/test/comments/abc/post/">[comments]</a></td></tr></table>';
+      const xml = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/"><channel><title>Reddit r/test posts</title><link>https://www.reddit.com/r/test</link><description>Reddit r/test posts</description><item><guid isPermaLink="false">t3_abc</guid><link>https://www.reddit.com/r/test/comments/abc/post/</link><title>Post</title><dc:creator>alice</dc:creator><pubDate>Sun, 23 Nov 2025 12:00:00 GMT</pubDate><description><![CDATA[${html}]]></description><atom:id>t3_abc</atom:id><atom:link rel="alternate" href="https://www.reddit.com/r/test/comments/abc/post/"/><atom:title>Post</atom:title><atom:author><name>/u/alice</name><uri>https://www.reddit.com/user/alice</uri></atom:author><atom:published>2025-11-23T12:00:00.000Z</atom:published><atom:updated>2025-11-23T12:00:00.000Z</atom:updated><atom:category term="r/test" label="r/test"/><atom:content type="html"><![CDATA[${html}]]></atom:content><media:thumbnail url="https://i.redd.it/x.jpg"/><enclosure url="https://i.redd.it/x.jpg" type="image/jpeg" length="0"/></item></channel></rss>`;
+
+      const article = (await parseArticlesFromXml(xml, { useParserRules: [] })).articles[0]!;
+      const fields = article.flattened;
+
+      assert.strictEqual(fields.id, "t3_abc");
+      assert.strictEqual(fields["image__url"], "https://i.redd.it/x.jpg");
+      assert.strictEqual(fields["media:thumbnail__@__url"], "https://i.redd.it/x.jpg");
+      assert.strictEqual(fields["atom:author__name__#"], "/u/alice");
+      assert.strictEqual(fields["atom:author__uri__#"], "https://www.reddit.com/user/alice");
+      assert.strictEqual(fields["extracted::description::image1"], "https://i.redd.it/x.jpg");
+      assert.strictEqual(fields["extracted::atom:content__#::image1"], "https://i.redd.it/x.jpg");
+      assert.strictEqual(fields["extracted::description::anchor1"], "https://www.reddit.com/r/test/comments/abc/post/");
+      assert.strictEqual(fields["extracted::description::anchor2"], "https://www.reddit.com/user/alice");
+      assert.strictEqual(fields["extracted::description::anchor3"], "https://example.com/deal");
+      assert.strictEqual(fields["extracted::description::anchor4"], "https://www.reddit.com/r/test/comments/abc/post/");
+    });
+  });
+
   describe("flatten", () => {
     it("flattens nested objects", () => {
       const article = {

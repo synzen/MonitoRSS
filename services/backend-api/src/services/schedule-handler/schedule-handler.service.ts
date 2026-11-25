@@ -22,6 +22,13 @@ import {
 } from "../../shared/constants/scheduler.constants";
 import { selectDueScheduledFeeds } from "../../shared/utils/scheduled-feed-computation";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
+import { decrypt } from "../../shared/utils/decrypt";
+import { isRedditFeedUrl } from "../../shared/utils/is-reddit-feed-url";
+import {
+  pickFeedCredentialSource,
+  type FeedCredentialSource,
+} from "../../shared/utils/get-feed-request-lookup-details";
+import { UserExternalCredentialType } from "../../repositories/shared/enums";
 import logger from "../../infra/logger";
 
 export interface ScheduleHandlerServiceDeps {
@@ -37,6 +44,7 @@ export interface ScheduleHandlerServiceDeps {
 
 interface UrlBatchItem {
   url: string;
+  usePlatformProvider?: boolean;
   saveToObjectStorage?: boolean;
   lookupKey?: string;
   headers?: Record<string, string>;
@@ -57,6 +65,12 @@ export class ScheduleHandlerService {
   constructor(private readonly deps: ScheduleHandlerServiceDeps) {
     this.defaultRefreshRateSeconds =
       deps.config.BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES * 60;
+
+    if (!deps.config.BACKEND_API_ENCRYPTION_KEY_HEX) {
+      logger.warn(
+        "No encryption key configured — encrypted reddit grants cannot be decrypted and keyed reddit feeds will idle instead of fetching",
+      );
+    }
   }
 
   async emitUrlRequestBatchEvent(data: {
@@ -135,11 +149,18 @@ export class ScheduleHandlerService {
 
     let urlBatch: UrlBatchItem[] = [];
 
-    for await (const { url } of this.deps.userFeedRepository.iterateUrlsForRefreshRate(
+    for await (const { url, isMeteredPlatformFeed } of this.deps.userFeedRepository.iterateUrlsForRefreshRate(
       refreshRateSeconds,
       slotWindow,
     )) {
       if (!url) {
+        continue;
+      }
+
+      // Reddit fetches through the owner's grant only; a reddit feed that
+      // lost its lookup key (dead credential) must idle here, not fetch its
+      // raw URL — reddit serves nothing anonymously anymore.
+      if (isRedditFeedUrl(url)) {
         continue;
       }
 
@@ -151,6 +172,7 @@ export class ScheduleHandlerService {
 
       urlBatch.push({
         url,
+        usePlatformProvider: isMeteredPlatformFeed,
         saveToObjectStorage: urlsToDebug.has(url),
       });
 
@@ -162,18 +184,42 @@ export class ScheduleHandlerService {
 
     for await (const {
       url,
+      isMeteredPlatformFeed,
       feedRequestLookupKey,
+      workspaceId,
+      users,
+      workspaces,
     } of this.deps.userFeedRepository.iterateFeedsWithLookupKeysForRefreshRate(
       refreshRateSeconds,
       slotWindow,
     )) {
-      urlBatch.push(
-        this.resolveLookupKeyBatchItem({
+      let item: UrlBatchItem | null;
+
+      try {
+        item = this.resolveLookupKeyBatchItem({
           url,
+          usePlatformProvider: isMeteredPlatformFeed,
           feedRequestLookupKey,
+          workspaceId,
+          users,
+          workspaces,
           saveToObjectStorage: urlsToDebug.has(url),
-        }),
-      );
+        });
+      } catch (err) {
+        // One feed with an undecryptable credential must not kill the sweep.
+        logger.warn(
+          `Failed to resolve credentials for feed url ${url}, skipping`,
+          { error: (err as Error).message },
+        );
+
+        continue;
+      }
+
+      if (!item) {
+        continue;
+      }
+
+      urlBatch.push(item);
 
       if (urlBatch.length === URL_BATCH_SIZE) {
         await urlsHandler(urlBatch);
@@ -218,23 +264,51 @@ export class ScheduleHandlerService {
 
     for (const { feed, scheduledAt } of dueFeeds) {
       if (feed.feedRequestLookupKey) {
-        batchItems.push(
-          this.resolveLookupKeyBatchItem({
+        let item: UrlBatchItem | null;
+
+        try {
+          item = this.resolveLookupKeyBatchItem({
             url: feed.url,
+            usePlatformProvider: feed.isMeteredPlatformFeed,
             feedRequestLookupKey: feed.feedRequestLookupKey,
+            workspaceId: feed.workspaceId,
+            users: feed.users,
+            workspaces: feed.workspaces,
             saveToObjectStorage: urlsToDebug.has(feed.url),
             trigger: { kind: "scheduled", occurredAt: scheduledAt },
-          }),
-        );
+          });
+        } catch (err) {
+          // One feed with an undecryptable credential must not kill the
+          // whole clock tick.
+          logger.warn(
+            `Failed to resolve credentials for scheduled feed ${feed.id}, skipping`,
+            { error: (err as Error).message },
+          );
+
+          continue;
+        }
+
+        if (!item) {
+          continue;
+        }
+
+        batchItems.push(item);
 
         continue;
       }
 
       const mapKey = `${feed.url}|${scheduledAt}`;
 
+      // Same credential rule as the interval path: a keyless reddit feed has
+      // no usable grant, so it must idle instead of fetching its raw URL.
+      if (isRedditFeedUrl(feed.url)) {
+        continue;
+      }
+
       if (!entriesByUrl.has(mapKey)) {
         entriesByUrl.set(mapKey, {
           url: feed.url,
+          usePlatformProvider: feed.isMeteredPlatformFeed,
           saveToObjectStorage: urlsToDebug.has(feed.url),
           trigger: { kind: "scheduled", occurredAt: scheduledAt },
         });
@@ -251,21 +325,58 @@ export class ScheduleHandlerService {
     }
   }
 
-  // Lookup keys previously selected credential-transformed oauth.reddit.com
-  // fetch urls; reddit credentials no longer affect fetching (reddit's RSS is
-  // gone and platform feeds fetch through provider adapters), so a lookup-key
-  // feed fetches its raw URL with its stored key for request-row identity.
+  // Reddit feeds fetch through the redditofficial provider with the
+  // credential owner's own OAuth grant: workspace feeds use only the
+  // workspace connection, personal feeds only the creator's. The stored
+  // access token rides the item as a Bearer header (the refresh sweep keeps
+  // it fresh); the provider adapter builds the oauth listing URL from the
+  // plain URL. A reddit feed without a usable credential emits nothing — the
+  // feed idles until its owner connects. Non-reddit lookup-key feeds keep
+  // fetching their raw URL with the stored key for request-row identity.
   private resolveLookupKeyBatchItem(input: {
     url: string;
+    usePlatformProvider?: boolean;
     // Legacy rows can carry null instead of undefined for a missing key.
     feedRequestLookupKey?: string | null;
+    workspaceId?: string | null;
+    users?: Array<{
+      externalCredentials?: FeedCredentialSource["externalCredentials"];
+    }>;
+    workspaces?: Array<{
+      externalCredentials?: FeedCredentialSource["externalCredentials"];
+    }>;
     saveToObjectStorage: boolean;
     force?: boolean;
     trigger?: UrlFetchTrigger;
-  }): UrlBatchItem {
+  }): UrlBatchItem | null {
+    let headers: Record<string, string> | undefined;
+
+    if (isRedditFeedUrl(input.url)) {
+      const credentials = pickFeedCredentialSource({
+        feed: { workspaceId: input.workspaceId },
+        user: { externalCredentials: input.users?.[0]?.externalCredentials },
+        workspace: input.workspaces?.[0],
+      });
+      const encryptedToken = credentials.externalCredentials?.find(
+        (cred) => cred.type === UserExternalCredentialType.Reddit,
+      )?.data?.accessToken;
+      const decryptionKey =
+        this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX;
+
+      if (!decryptionKey || !encryptedToken) {
+        return null;
+      }
+
+      headers = {
+        Authorization: `Bearer ${decrypt(encryptedToken, decryptionKey)}`,
+      };
+    }
+
     return {
       url: input.url,
+      usePlatformProvider: input.usePlatformProvider,
       lookupKey: input.feedRequestLookupKey ?? undefined,
+      headers,
       saveToObjectStorage: input.saveToObjectStorage,
       ...(input.force ? { force: true } : {}),
       ...(input.trigger ? { trigger: input.trigger } : {}),
@@ -284,16 +395,28 @@ export class ScheduleHandlerService {
   ): Promise<number> {
     const resolved = new Map<
       string,
-      { url: string; lookupKey?: string; rateSeconds: number }
+      {
+        url: string;
+        lookupKey?: string;
+        headers?: Record<string, string>;
+        rateSeconds: number;
+      }
     >();
 
     for (const feed of feeds) {
-      const item: UrlBatchItem = this.resolveLookupKeyBatchItem({
+      const item: UrlBatchItem | null = this.resolveLookupKeyBatchItem({
         url: feed.url,
         feedRequestLookupKey: feed.feedRequestLookupKey,
+        workspaceId,
+        users: feed.users,
+        workspaces: feed.workspaces,
         saveToObjectStorage: false,
         force: true,
       });
+
+      if (!item) {
+        continue;
+      }
 
       const key = `${item.url}|${item.lookupKey ?? ""}`;
 
@@ -301,6 +424,7 @@ export class ScheduleHandlerService {
         resolved.set(key, {
           url: item.url,
           lookupKey: item.lookupKey,
+          headers: item.headers,
           // Legacy rows can lack the field; the schema default never backfilled.
           rateSeconds: feed.refreshRateSeconds ?? this.defaultRefreshRateSeconds,
         });
@@ -309,7 +433,7 @@ export class ScheduleHandlerService {
 
     const byRate = new Map<
       number,
-      Array<{ url: string; lookupKey?: string; force: true }>
+      Array<{ url: string; lookupKey?: string; headers?: Record<string, string>; force: true }>
     >();
 
     for (const entry of resolved.values()) {
@@ -318,6 +442,7 @@ export class ScheduleHandlerService {
       batch.push({
         url: entry.url,
         ...(entry.lookupKey ? { lookupKey: entry.lookupKey } : {}),
+        ...(entry.headers ? { headers: entry.headers } : {}),
         force: true,
       });
       byRate.set(entry.rateSeconds, batch);

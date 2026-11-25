@@ -3,6 +3,8 @@ import {
   UserExternalCredentialType,
 } from "../../repositories/shared/enums";
 import type { FeedRequestLookupDetails } from "../types/feed-request-lookup-details.type";
+import { decrypt } from "./decrypt";
+import { isRedditFeedUrl } from "./is-reddit-feed-url";
 
 // A holder of external credentials a feed can fetch with: a user or a
 // workspace. Lookup-detail construction reads `data`; connection gates read
@@ -39,22 +41,45 @@ export function pickFeedCredentialSource({
   return workspace ?? { externalCredentials: [] };
 }
 
-// Lookup details previously carried the credential owner's oauth.reddit.com
-// URL and Bearer headers for authenticated reddit RSS fetching. Reddit's RSS
-// endpoints no longer exist (platform feeds fetch through provider adapters
-// that never use reddit credentials), so nothing constructs lookup details
-// anymore; the plumbing that consumes them is inert pending removal.
-export function getFeedRequestLookupDetails(
-  _input: {
-    feed: {
-      url: string;
-      feedRequestLookupKey?: string;
-      isPremiumFeed?: boolean;
-    };
-    credentials: FeedCredentialSource;
-    decryptionKey: string | undefined;
-    redditFeedBaseUrl: string | undefined;
-  },
-): FeedRequestLookupDetails | null {
-  return null;
+// Lookup details carry the credential owner's Bearer token so credentialed
+// reddit fetches validate and route with the owner's grant: the fetch path
+// stays the plain (canonical) URL — the redditofficial provider adapter
+// builds the oauth listing URL from it — and the token rides the request
+// headers. Null for non-reddit urls or sources without a reddit grant.
+export function getFeedRequestLookupDetails({
+  feed,
+  credentials,
+  decryptionKey,
+}: {
+  feed: {
+    url: string;
+    feedRequestLookupKey?: string;
+  };
+  credentials: FeedCredentialSource;
+  decryptionKey: string | undefined;
+}): FeedRequestLookupDetails | null {
+  const { url, feedRequestLookupKey } = feed;
+
+  if (!decryptionKey || !feedRequestLookupKey) {
+    return null;
+  }
+
+  if (!isRedditFeedUrl(url)) {
+    return null;
+  }
+
+  const encryptedToken = credentials.externalCredentials?.find(
+    (cred) => cred.type === UserExternalCredentialType.Reddit,
+  )?.data?.accessToken;
+
+  if (!encryptedToken) {
+    return null;
+  }
+
+  return {
+    key: feedRequestLookupKey,
+    headers: {
+      Authorization: `Bearer ${decrypt(encryptedToken, decryptionKey)}`,
+    },
+  };
 }

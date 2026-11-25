@@ -269,7 +269,7 @@ describe("Workspace Reddit connection", { concurrency: false }, () => {
     }
   });
 
-  it("allows workspace and personal reddit feeds with no Reddit connection (credential gate removed)", async () => {
+  it("rejects workspace and personal reddit feeds with no Reddit connection, while validation stays open", async () => {
     const discordId = randomUUID();
     await seedWorkspaceUser(discordId);
     const user = await ctx.asUser(discordId);
@@ -278,14 +278,21 @@ describe("Workspace Reddit connection", { concurrency: false }, () => {
 
     mockFeedFetch(REDDIT_URL, "gaming");
 
-    // Neither the workspace nor the creator has a Reddit connection, so
-    // provider-served reddit feeds require none.
+    // Reddit fetches through the owner's grant (the official API serves
+    // nothing anonymously), so neither scope can create without a connection.
     const created = await user.fetch("/api/v1/user-feeds", {
       method: "POST",
       body: JSON.stringify({ url: REDDIT_URL, workspaceId }),
     });
-    assert.strictEqual(created.status, 201);
+    assert.strictEqual(created.status, 400);
+    const createdBody = (await created.json()) as {
+      code?: string;
+    };
+    assert.strictEqual(createdBody.code, "REDDIT_CONNECTION_REQUIRED");
 
+    // Validation is ungated: the user can still preview the feed before
+    // connecting (the validation fetch carries no credential and reddit's
+    // oauth API rejects it — the client surfaces the connect prompt).
     const validation = await user.fetch("/api/v1/user-feeds/url-validation", {
       method: "POST",
       body: JSON.stringify({ url: REDDIT_URL, workspaceId }),
@@ -296,7 +303,7 @@ describe("Workspace Reddit connection", { concurrency: false }, () => {
       method: "POST",
       body: JSON.stringify({ url: REDDIT_URL }),
     });
-    assert.strictEqual(personal.status, 201);
+    assert.strictEqual(personal.status, 400);
   });
 
   it("disconnects via DELETE, revoking at Reddit and unsetting workspace feeds' lookup keys", async () => {

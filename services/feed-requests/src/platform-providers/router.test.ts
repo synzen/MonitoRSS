@@ -58,7 +58,7 @@ const matchPlatformUrl = (url: string): PlatformFeedIdentity | null => {
 
 const stubVendorAdapter = () => ({
   async fetchFeedDocument() {
-    return '<rss/>';
+    return { document: '<rss/>' };
   },
 });
 

@@ -10,6 +10,7 @@ import type { CacheStorageService } from '../cache-storage/cache-storage';
 import { resolveUserAgentForUrl } from './user-agent';
 import {
   PlatformProviderFetchError,
+  type PlatformFeedDocument,
   type PlatformHttpGet,
   type PlatformProviderRouter,
 } from '../platform-providers/types';
@@ -86,6 +87,20 @@ const trimHeadersForStorage = (
   return trimmed;
 };
 
+// Credentialed platform fetches carry the user grant as the item's
+// Authorization header (backend-api attaches it per feed); adapters receive
+// the raw token rather than header plumbing. Header names arrive verbatim,
+// so the lookup is case-insensitive.
+const extractBearerToken = (
+  headers?: Record<string, string | undefined>,
+): string | undefined => {
+  const value = Object.entries(headers || {}).find(([key]) =>
+    key.toLowerCase().startsWith('authorization'),
+  )?.[1];
+
+  return value?.replace(/^Bearer\s+/i, '') || undefined;
+};
+
 const convertFetchOptionsForHashKey = (options: FetchOptions) => {
   const { headers, ...rest } = options;
 
@@ -159,6 +174,7 @@ export interface FeedFetcherService {
       saveResponseToObjectStorage?: boolean;
       headers?: Record<string, string | undefined>;
       source: RequestSource | undefined;
+      usePlatformProvider?: boolean;
     },
   ): Promise<{
     request: PartitionedRequestInsert;
@@ -335,34 +351,52 @@ export function createFeedFetcherService({
         // document is treated as a 200 response body so persistence, hashing
         // and parsing run unchanged. The adapter call is eager so its errors
         // map into the failure taxonomy, not the text-parsing path.
-        const platformRoute = platformSourceRouter?.route(url);
-        const platformDocument = platformRoute
+        const matchedPlatformRoute = platformSourceRouter?.route(url);
+        const platformRoute =
+          matchedPlatformRoute &&
+          (options?.usePlatformProvider ||
+            matchedPlatformRoute.identity.platform === 'reddit')
+            ? matchedPlatformRoute
+            : null;
+        const platformFetch: PlatformFeedDocument | null = platformRoute
           ? await platformRoute.adapter.fetchFeedDocument(
               platformRoute.identity,
+              {
+                // Credentialed providers (e.g. redditofficial) fetch with the
+                // batch item's user grant; storage redacts it afterwards.
+                bearerToken: extractBearerToken(options?.headers),
+              },
             )
           : null;
+        // The provider's own response freshness wins; adapters that report
+        // none keep the configured fallback.
+        const platformFreshnessSeconds =
+          platformFetch?.freshnessSeconds ?? platformResponseFreshnessSeconds;
 
         const res =
-          platformRoute && platformDocument !== null
+          platformRoute && platformFetch !== null
             ? {
                 ok: true,
                 status: 200,
                 headers: new Map([
                   ['content-type', 'application/rss+xml'],
-                  // Lets the scheduler's freshness skip reuse this stored
-                  // document for repeat fetches of the same URL within the
-                  // window (feeds sharing a source across refresh-rate
-                  // tiers) instead of paying a second provider call.
-                  ...(platformResponseFreshnessSeconds
+                  // A response that reports no reusable window (no-store /
+                  // max-age=0) omits the directive, so the scheduler refetches
+                  // on every due tick. Otherwise it lets the freshness skip
+                  // reuse this stored document for repeat fetches of the same
+                  // URL within the window (feeds sharing a source across
+                  // refresh-rate tiers) instead of paying a second provider
+                  // call.
+                  ...(platformFreshnessSeconds
                     ? ([
                         [
                           'cache-control',
-                          `public, max-age=${platformResponseFreshnessSeconds}`,
+                          `public, max-age=${platformFreshnessSeconds}`,
                         ],
                       ] as const)
                     : []),
                 ]),
-                text: async () => platformDocument,
+                text: async () => platformFetch.document,
               }
             : await this.fetchFeedResponse(
                 url,

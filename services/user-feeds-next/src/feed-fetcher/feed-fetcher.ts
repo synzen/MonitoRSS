@@ -51,6 +51,7 @@ export async function fetchFeed(
     retries?: number;
     hashToCompare?: string;
     lookupDetails?: FeedRequestLookupDetails | null;
+    usePlatformProvider?: boolean;
     serviceHost: string;
   }
 ): Promise<FetchFeedResult> {
@@ -66,6 +67,7 @@ export async function fetchFeed(
       stalenessThresholdSeconds: options?.stalenessThresholdSeconds,
       hashToCompare: options?.hashToCompare || undefined,
       lookupDetails: options?.lookupDetails,
+      usePlatformProvider: options?.usePlatformProvider,
     };
     response = await pRetry(
       async () =>

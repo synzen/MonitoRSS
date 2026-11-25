@@ -109,7 +109,7 @@ export interface ScheduleHandlerContext {
     url?: string;
     refreshRateSeconds?: number;
     userRefreshRateSeconds?: number;
-    isPremiumFeed?: boolean;
+    isMeteredPlatformFeed?: boolean;
     feedRequestLookupKey?: string;
     slotOffsetMs?: number;
   }): Promise<IUserFeed>;
@@ -120,7 +120,7 @@ export interface ScheduleHandlerContext {
       url?: string;
       refreshRateSeconds?: number;
       userRefreshRateSeconds?: number;
-      isPremiumFeed?: boolean;
+      isMeteredPlatformFeed?: boolean;
       feedRequestLookupKey?: string;
       slotOffsetMs?: number;
     },
@@ -240,7 +240,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
         config: {
           BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES:
             DEFAULT_REFRESH_RATE_MINUTES,
-          BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS: 3600,
+          BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS: 7200,
           BACKEND_API_ENCRYPTION_KEY_HEX: encryptionKey,
           ...(options.platformFeedUrlSync
             ? { BACKEND_API_PLATFORM_FEED_URL_SYNC_ENABLED: "true" }
@@ -285,7 +285,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
             refreshRateSeconds:
               overrides.refreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
             userRefreshRateSeconds: overrides.userRefreshRateSeconds,
-            isPremiumFeed: overrides.isPremiumFeed,
+            isMeteredPlatformFeed: overrides.isMeteredPlatformFeed,
             feedRequestLookupKey: overrides.feedRequestLookupKey,
             slotOffsetMs: overrides.slotOffsetMs ?? 0,
           });
@@ -299,7 +299,7 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
             refreshRateSeconds:
               overrides.refreshRateSeconds ?? DEFAULT_REFRESH_RATE_SECONDS,
             userRefreshRateSeconds: overrides.userRefreshRateSeconds,
-            isPremiumFeed: overrides.isPremiumFeed,
+            isMeteredPlatformFeed: overrides.isMeteredPlatformFeed,
             feedRequestLookupKey: overrides.feedRequestLookupKey,
             slotOffsetMs: overrides.slotOffsetMs ?? 0,
           });

@@ -40,6 +40,7 @@ export class FeedFetcherApiService {
           url,
           executeFetch: options?.getCachedResponse ? false : true,
           debug: options?.debug,
+          usePlatformProvider: options?.usePlatformProvider,
           lookupDetails,
         }),
         headers: {

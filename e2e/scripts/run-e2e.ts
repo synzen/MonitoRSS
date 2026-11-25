@@ -19,6 +19,7 @@ import {
 } from "../helpers/paddle-api";
 import {
   isPortFree,
+  pruneOldRunDirs,
   runProcess as runChildProcess,
   toPlaywrightArgs,
 } from "./run-e2e-utils";
@@ -29,6 +30,16 @@ const COMPOSE_FILE = join(REPO_ROOT, "docker-compose.e2e.yml");
 const PLAYWRIGHT_CLI = require.resolve("@playwright/test/cli");
 const LOG_DIR = join(E2E_DIR, "logs");
 const PORT_STRIDE = 1000;
+// Repeated runs otherwise grow without bound: archived logs and Docker build
+// cache are the two largest accumulators. Compose-built images are removed by
+// `down --rmi local`; these bounds cap the rest.
+const KEPT_RUN_LOGS = (() => {
+  const parsed = Number(process.env.E2E_RUN_LOGS_TO_KEEP);
+
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 20;
+})();
+const BUILD_CACHE_KEEP_STORAGE =
+  process.env.E2E_BUILD_CACHE_KEEP_STORAGE || "5GB";
 const DEFAULT_PORTS = {
   backend: 8100,
   frontend: 3100,
@@ -444,6 +455,33 @@ async function assembleLogs(runContext: RunContext): Promise<void> {
   }
 }
 
+async function pruneDockerArtifacts(runContext: RunContext): Promise<void> {
+  const prunes: Array<[string, string[]]> = [
+    [
+      "build cache",
+      ["builder", "prune", "-f", "--keep-storage", BUILD_CACHE_KEEP_STORAGE],
+    ],
+    ["dangling images", ["image", "prune", "-f"]],
+  ];
+
+  for (const [label, args] of prunes) {
+    try {
+      await runProcess("docker", args, {
+        env: runContext.env,
+        logPath: runContext.runnerLog,
+        echo: false,
+        timeoutMs: 180_000,
+      });
+    } catch (error) {
+      // Disk cleanup must never fail the test run; log and continue.
+      appendLog(
+        runContext.runnerLog,
+        `Docker ${label} prune failed: ${String(error)}\n`,
+      );
+    }
+  }
+}
+
 async function cleanup(): Promise<void> {
   if (cleanupPromise) return cleanupPromise;
   cleanupPromise = (async () => {
@@ -466,7 +504,15 @@ async function cleanup(): Promise<void> {
     console.log("Tearing down E2E Docker stack...");
     const downCode = await runProcess(
       "docker",
-      composeArgs(context, ["down", "--volumes", "--remove-orphans"]),
+      composeArgs(context, [
+        "down",
+        "--volumes",
+        "--remove-orphans",
+        // Compose-built images are project-tagged; without this each instance
+        // leaves its own image set behind forever.
+        "--rmi",
+        "local",
+      ]),
       { env: context.env, logPath: context.runnerLog, timeoutMs: 60_000 },
     ).catch((error) => {
       cleanupFailed = true;
@@ -495,6 +541,17 @@ async function cleanup(): Promise<void> {
       cleanupFailed = true;
       console.error(`Log assembly failed: ${String(error)}`);
     });
+
+    await pruneDockerArtifacts(context);
+
+    const removedRunDirs = pruneOldRunDirs(
+      join(LOG_DIR, "runs"),
+      KEPT_RUN_LOGS,
+    );
+    if (removedRunDirs.length > 0) {
+      console.log(`Pruned ${removedRunDirs.length} old run log director${removedRunDirs.length === 1 ? "y" : "ies"}.`);
+    }
+
     console.log(`Combined log: ${context.combinedLog}`);
     console.log(`Archived run: ${context.runDir}`);
   })();

@@ -46,10 +46,15 @@ export const MOCK_DISCORD_SERVER_PORT = e2ePort("E2E_MOCK_DISCORD_PORT", 3002);
 // docker-compose.e2e.yml and drive its extend/stats control hooks.
 export const VENDOR_MOCK_SERVER_PORT = e2ePort("E2E_VENDOR_MOCK_PORT", 3007);
 export const VENDOR_MOCK_STATS_URL = `http://localhost:${VENDOR_MOCK_SERVER_PORT}/__stats`;
-export const vendorMockExtendUrl = (kind: "twitter" | "subreddit", value: string) =>
+export const vendorMockExtendUrl = (
+  kind: "twitter" | "subreddit" | "instagram",
+  value: string,
+) =>
   kind === "twitter"
     ? `http://localhost:${VENDOR_MOCK_SERVER_PORT}/twitter/user/${value}/extend`
-    : `http://localhost:${VENDOR_MOCK_SERVER_PORT}/reddit/subreddit/${value}/extend`;
+    : kind === "instagram"
+      ? `http://localhost:${VENDOR_MOCK_SERVER_PORT}/instagram/user/${value}/extend`
+      : `http://localhost:${VENDOR_MOCK_SERVER_PORT}/reddit/subreddit/${value}/extend`;
 
 // Mock Reddit OAuth + authenticated-feed server. The backend (in Docker) and the
 // browser popup both reach it via host.docker.internal (see docker-compose.e2e.yml

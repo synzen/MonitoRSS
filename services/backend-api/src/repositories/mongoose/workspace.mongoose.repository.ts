@@ -1501,10 +1501,6 @@ export class WorkspaceMongooseRepository extends BaseMongooseRepository<
         {
           $match: {
             "feeds.url": REDDIT_URL_REGEX,
-            // Platform feeds fetch through provider adapters keyed on their
-            // plain URL; a lookup key would put them on the per-feed
-            // credentialed path and forfeit URL batching.
-            "feeds.isPremiumFeed": { $ne: true },
             ...(options?.feedIds?.length && {
               "feeds._id": {
                 $in: options.feedIds.map((id) => this.stringToObjectId(id)),

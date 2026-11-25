@@ -192,7 +192,7 @@ const UserFeedSchema = new Schema(
     shareManageOptions: { type: UserFeedShareManageOptionsSchema },
     legacyFeedId: { type: Schema.Types.ObjectId },
     refreshRateSeconds: { type: Number },
-    isPremiumFeed: { type: Boolean, default: false },
+    isMeteredPlatformFeed: { type: Boolean },
     maxDailyArticles: { type: Number },
     userRefreshRateSeconds: { type: Number },
     slotOffsetMs: { type: Number },
@@ -361,7 +361,7 @@ export class UserFeedMongooseRepository
         : undefined,
       legacyFeedId: this.objectIdToString(doc.legacyFeedId ?? undefined),
       refreshRateSeconds: doc.refreshRateSeconds ?? undefined,
-      isPremiumFeed: doc.isPremiumFeed ?? undefined,
+      isMeteredPlatformFeed: doc.isMeteredPlatformFeed ?? undefined,
       maxDailyArticles: doc.maxDailyArticles ?? undefined,
       userRefreshRateSeconds: doc.userRefreshRateSeconds ?? undefined,
       slotOffsetMs: doc.slotOffsetMs ?? undefined,
@@ -531,7 +531,7 @@ export class UserFeedMongooseRepository
         ? new Types.ObjectId(input.workspaceId)
         : undefined,
       refreshRateSeconds: input.refreshRateSeconds,
-      isPremiumFeed: input.isPremiumFeed,
+      isMeteredPlatformFeed: input.isMeteredPlatformFeed,
       maxDailyArticles: input.maxDailyArticles,
       dateCheckOptions: input.dateCheckOptions,
       shareManageOptions: input.shareManageOptions
@@ -641,17 +641,29 @@ export class UserFeedMongooseRepository
         ? overrides.userRefreshRateSeconds
         : cloneableFields.userRefreshRateSeconds;
     const effectiveRefreshRate = userRefreshRateSeconds ?? refreshRateSeconds;
+    const {
+      isMeteredPlatformFeed: _sourceIsMeteredPlatformFeed,
+      refreshRateSeconds: _sourceRefreshRateSeconds,
+      userRefreshRateSeconds: _sourceUserRefreshRateSeconds,
+      title: _sourceTitle,
+      url: _sourceUrl,
+      inputUrl: _sourceInputUrl,
+      ...remainingCloneableFields
+    } = cloneableFields;
 
     return {
-      ...cloneableFields,
+      ...remainingCloneableFields,
       refreshRateSeconds,
       userRefreshRateSeconds,
-      isPremiumFeed: overrides.isPremiumFeed ?? cloneableFields.isPremiumFeed,
-      title: overrides.title || cloneableFields.title,
+      title: overrides.title || sourceFeed.title,
       url,
       inputUrl: overrides.inputUrl,
       workspaceId: overrides.workspaceId,
       connections: { discordChannels: [] },
+      isMeteredPlatformFeed: overrides.isMeteredPlatformFeed,
+      ...(overrides.feedRequestLookupKey
+        ? { feedRequestLookupKey: overrides.feedRequestLookupKey }
+        : {}),
       slotOffsetMs: effectiveRefreshRate
         ? calculateSlotOffsetMs(url, effectiveRefreshRate)
         : undefined,
@@ -2772,9 +2784,8 @@ export class UserFeedMongooseRepository
       (s) => s.discordUserIds,
     );
 
-    // Premium (platform) feeds never sync below the premium floor: the tier
-    // rate governs regular feeds, the floor governs the per-fetch cost of
-    // platform ones.
+    // Metered platform feeds never sync below the provider floor; all other
+    // feeds follow their tier rate.
     const rateOpsForGroup = (
       filter: Record<string, unknown>,
       refreshRateSeconds: number,
@@ -2791,7 +2802,7 @@ export class UserFeedMongooseRepository
                 updateMany: {
                   filter: {
                     ...filter,
-                    isPremiumFeed: true,
+                    isMeteredPlatformFeed: true,
                     refreshRateSeconds: { $ne: premiumRateSeconds },
                   },
                   update: { $set: { refreshRateSeconds: premiumRateSeconds } },
@@ -2803,7 +2814,7 @@ export class UserFeedMongooseRepository
           updateMany: {
             filter: {
               ...filter,
-              isPremiumFeed: { $ne: true },
+              isMeteredPlatformFeed: { $ne: true },
               refreshRateSeconds: { $ne: refreshRateSeconds },
             },
             update: { $set: { refreshRateSeconds } },
@@ -2876,8 +2887,8 @@ export class UserFeedMongooseRepository
   async syncWorkspaceRefreshRates(
     input: WorkspaceRefreshRateSyncInput,
   ): Promise<void> {
-    // Same premium floor as the personal-feed sync: a workspace tier rate
-    // must not push platform feeds below their per-fetch cost floor.
+    // Same metered-provider floor as the personal-feed sync: a workspace tier
+    // rate must not push metered feeds below their per-fetch cost floor.
     const bulkOps: Parameters<typeof this.model.bulkWrite>[0] =
       input.workspaceLimits.flatMap(({ workspaceIds, refreshRateSeconds }) => {
         const workspaceFilter = {
@@ -2897,7 +2908,7 @@ export class UserFeedMongooseRepository
                   updateMany: {
                     filter: {
                       ...workspaceFilter,
-                      isPremiumFeed: true,
+                      isMeteredPlatformFeed: true,
                       refreshRateSeconds: { $ne: premiumRateSeconds },
                     },
                     update: {
@@ -2911,7 +2922,7 @@ export class UserFeedMongooseRepository
             updateMany: {
               filter: {
                 ...workspaceFilter,
-                isPremiumFeed: { $ne: true },
+                isMeteredPlatformFeed: { $ne: true },
                 refreshRateSeconds: { $ne: refreshRateSeconds },
               },
               update: { $set: { refreshRateSeconds } },
@@ -2964,7 +2975,7 @@ export class UserFeedMongooseRepository
           workspaceId: null,
           refreshRateSeconds: { $ne: refreshRateSeconds },
         })
-        .select("_id url userRefreshRateSeconds isPremiumFeed")
+        .select("_id url userRefreshRateSeconds isMeteredPlatformFeed")
         .lean()
         .cursor();
 
@@ -2975,10 +2986,11 @@ export class UserFeedMongooseRepository
           userRefreshRateSeconds: feed.userRefreshRateSeconds as
             | number
             | undefined,
-          isPremiumFeed: feed.isPremiumFeed as boolean | undefined,
-          newRefreshRateSeconds: feed.isPremiumFeed
-            ? Math.max(refreshRateSeconds, premiumFloorSeconds)
-            : refreshRateSeconds,
+          isMeteredPlatformFeed: feed.isMeteredPlatformFeed as boolean | undefined,
+          newRefreshRateSeconds:
+            feed.isMeteredPlatformFeed
+              ? Math.max(refreshRateSeconds, premiumFloorSeconds)
+              : refreshRateSeconds,
         };
       }
     }
@@ -2989,7 +3001,7 @@ export class UserFeedMongooseRepository
         workspaceId: null,
         refreshRateSeconds: { $ne: defaultRefreshRateSeconds },
       })
-      .select("_id url userRefreshRateSeconds isPremiumFeed")
+      .select("_id url userRefreshRateSeconds isMeteredPlatformFeed")
       .lean()
       .cursor();
 
@@ -3000,10 +3012,11 @@ export class UserFeedMongooseRepository
         userRefreshRateSeconds: feed.userRefreshRateSeconds as
           | number
           | undefined,
-        isPremiumFeed: feed.isPremiumFeed as boolean | undefined,
-        newRefreshRateSeconds: feed.isPremiumFeed
-          ? Math.max(defaultRefreshRateSeconds, premiumFloorSeconds)
-          : defaultRefreshRateSeconds,
+        isMeteredPlatformFeed: feed.isMeteredPlatformFeed as boolean | undefined,
+        newRefreshRateSeconds:
+          feed.isMeteredPlatformFeed
+            ? Math.max(defaultRefreshRateSeconds, premiumFloorSeconds)
+            : defaultRefreshRateSeconds,
       };
     }
   }
@@ -3021,7 +3034,7 @@ export class UserFeedMongooseRepository
           },
           refreshRateSeconds: { $ne: refreshRateSeconds },
         })
-        .select("_id url userRefreshRateSeconds isPremiumFeed")
+        .select("_id url userRefreshRateSeconds isMeteredPlatformFeed")
         .lean()
         .cursor();
 
@@ -3032,10 +3045,11 @@ export class UserFeedMongooseRepository
           userRefreshRateSeconds: feed.userRefreshRateSeconds as
             | number
             | undefined,
-          isPremiumFeed: feed.isPremiumFeed as boolean | undefined,
-          newRefreshRateSeconds: feed.isPremiumFeed
-            ? Math.max(refreshRateSeconds, input.premiumFloorSeconds)
-            : refreshRateSeconds,
+          isMeteredPlatformFeed: feed.isMeteredPlatformFeed as boolean | undefined,
+          newRefreshRateSeconds:
+            feed.isMeteredPlatformFeed
+              ? Math.max(refreshRateSeconds, input.premiumFloorSeconds)
+              : refreshRateSeconds,
         };
       }
     }
@@ -3053,6 +3067,7 @@ export class UserFeedMongooseRepository
     pipeline.push({
       $group: {
         _id: "$url",
+        isMeteredPlatformFeed: { $max: "$isMeteredPlatformFeed" },
       },
     });
 
@@ -3066,6 +3081,7 @@ export class UserFeedMongooseRepository
       if (doc._id) {
         yield {
           url: doc._id,
+          isMeteredPlatformFeed: doc.isMeteredPlatformFeed === true,
         };
       }
     }
@@ -3084,6 +3100,7 @@ export class UserFeedMongooseRepository
     pipeline.push({
       $project: {
         url: 1,
+        isMeteredPlatformFeed: 1,
         feedRequestLookupKey: 1,
         workspaceId: 1,
         users: 1,
@@ -3100,6 +3117,7 @@ export class UserFeedMongooseRepository
     for await (const doc of cursor) {
       yield {
         url: doc.url,
+        isMeteredPlatformFeed: doc.isMeteredPlatformFeed === true,
         feedRequestLookupKey: doc.feedRequestLookupKey,
         workspaceId: doc.workspaceId?.toString(),
         users: doc.users || [],
@@ -3291,6 +3309,7 @@ export class UserFeedMongooseRepository
     pipeline.push({
       $project: {
         url: 1,
+        isMeteredPlatformFeed: 1,
         schedule: 1,
         lastScheduledFiredAt: 1,
         feedRequestLookupKey: 1,
@@ -3310,6 +3329,7 @@ export class UserFeedMongooseRepository
       yield {
         id: (doc._id as Types.ObjectId).toString(),
         url: doc.url,
+        isMeteredPlatformFeed: doc.isMeteredPlatformFeed === true,
         schedule: doc.schedule,
         lastScheduledFiredAt: doc.lastScheduledFiredAt
           ? new Date(doc.lastScheduledFiredAt).getTime()

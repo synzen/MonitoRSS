@@ -153,6 +153,11 @@ services:
       - FEED_REQUESTS_REDIS_DISABLE_CLUSTER=true
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT=MonitoRSS
+      # Platform-response freshness must stay <= the backend's premium-refresh
+      # floor (60s here): a higher value makes the host cache hold re-fetches
+      # of the same platform URL past the feed's whole delivery window, so the
+      # extend-hook's second post never reaches the pipeline.
+      - FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS=60
       # Platform feeds fetch through the private package's provider adapters
       # pointed at the package's own vendor doubles (scripts/vendor-mock.ts),
       # which never authenticate — the package relaxes its credential
@@ -163,9 +168,14 @@ services:
       - PLATFORM_SOURCE_PROVIDER_API_KEY=${PLATFORM_SOURCE_PROVIDER_API_KEY:-}
       - PLATFORM_SOURCE_PROVIDER_BASE_URL=http://host.docker.internal:${E2E_VENDOR_MOCK_PORT:-3007}
       # Provider-selection env vars flow through from the environment; the
-      # package owns their names and defaults. Unset means the package picks
-      # its own default provider per platform.
-      - PLATFORM_SOURCE_REDDIT_PROVIDER=${PLATFORM_SOURCE_REDDIT_PROVIDER:-}
+      # package owns their names and defaults. Reddit defaults to
+      # redditofficial here so the specs exercise the production path: the
+      # official oauth API with the user's own grant (minted by the mocked
+      # Reddit connect flow), served by the vendor mock's oauth double.
+      - PLATFORM_SOURCE_REDDIT_PROVIDER=${PLATFORM_SOURCE_REDDIT_PROVIDER:-redditofficial}
+      # The redditofficial adapter reaches oauth.reddit.com through its own
+      # base-URL override; e2e points it at the same vendor mock.
+      - PLATFORM_SOURCE_REDDITOFFICIAL_BASE_URL=http://host.docker.internal:${E2E_VENDOR_MOCK_PORT:-3007}
     networks:
       - e2e-default
 
@@ -186,12 +196,12 @@ services:
       feed-requests-postgres-migration:
         condition: service_completed_successfully
     environment:
-      - NODE_ENV=local
       - FEED_REQUESTS_START_TARGET=api
       - FEED_REQUESTS_POSTGRES_URI=postgres://postgres:postgres@feed-requests-postgres-db:5432/feedrequests
       - FEED_REQUESTS_POSTGRES_SCHEMA=feedrequests
       - FEED_REQUESTS_API_KEY=feed-requests-api-key
       - FEED_REQUESTS_API_PORT=5000
+      - NODE_ENV=local
       - FEED_REQUESTS_RABBITMQ_BROKER_URL=amqp://rabbitmq-broker:5672
       - FEED_REQUESTS_FAILED_REQUEST_DURATION_THRESHOLD_HOURS=48
       - FEED_REQUESTS_REDIS_URI=redis://feed-requests-redis-cache:6379
@@ -199,12 +209,14 @@ services:
       - FEED_REQUESTS_FEEDS_MONGODB_URI=mongodb://mongo:27017/rss?replicaSet=dbrs&directConnection=true
       - FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT=MonitoRSS
       # Same as feed-requests-service.
+      - FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS=60
       - PLATFORM_SOURCE_PROVIDER_BASE_URL=http://host.docker.internal:${E2E_VENDOR_MOCK_PORT:-3007}
       - PLATFORM_SOURCE_PROVIDER_API_KEY=${PLATFORM_SOURCE_PROVIDER_API_KEY:-}
-      - PLATFORM_SOURCE_REDDIT_PROVIDER=${PLATFORM_SOURCE_REDDIT_PROVIDER:-}
+      # Same as feed-requests-service.
+      - PLATFORM_SOURCE_REDDIT_PROVIDER=${PLATFORM_SOURCE_REDDIT_PROVIDER:-redditofficial}
+      - PLATFORM_SOURCE_REDDITOFFICIAL_BASE_URL=http://host.docker.internal:${E2E_VENDOR_MOCK_PORT:-3007}
     networks:
       - e2e-default
-
   e2e-user-feeds-service:
     build:
       context: services/user-feeds-next
@@ -214,6 +226,8 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       e2e-user-feeds-api:
+        condition: service_healthy
+      rabbitmq-broker:
         condition: service_healthy
     environment:
       - LOG_LEVEL=debug
@@ -429,8 +443,18 @@ services:
       - BACKEND_API_LOGIN_REDIRECT_URI=http://localhost:${E2E_FRONTEND_PORT:-3100}
       - BACKEND_API_SESSION_SECRET=e2e-session-secret-that-is-long-enough-for-validation
       - BACKEND_API_SESSION_SALT=e2esessionsalt16
+      # Reddit sweep fetches resolve the feed owner's stored grant (decrypt +
+      # attach to the batch item), so the emitter needs the same key web-api
+      # encrypts with.
+      - BACKEND_API_ENCRYPTION_KEY_HEX=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       - BACKEND_API_ENABLE_SUPPORTERS=true
       - BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES=1
+      # The emitter's maintenance rate-sync clamps premium feeds up to this
+      # floor and restamps their slot offsets — it must match the web-api's
+      # floor (60s) or every platform feed gets rescheduled onto the default
+      # (multi-hour) cadence and the delivery-window assertions never see a
+      # second fetch.
+      - BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS=60
       # GC sweep cadence: the platform GC spec deletes a feed and asserts the
       # vendor release within seconds, so the 5-minute production default is
       # cranked down here.

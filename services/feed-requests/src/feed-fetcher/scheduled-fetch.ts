@@ -437,6 +437,7 @@ export function createScheduledFetchProcessor({
           }
         : undefined,
       source: RequestSource.Schedule,
+      usePlatformProvider: data.usePlatformProvider,
       headers: {
         ...data.headers,
         'If-Modified-Since':

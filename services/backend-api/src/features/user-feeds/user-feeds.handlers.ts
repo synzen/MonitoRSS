@@ -44,6 +44,8 @@ import {
   resolveFeedForRequester,
 } from "../../shared/utils/feed-access";
 import { isAdminUser } from "../../shared/utils/admin";
+import { resolveRefreshRateLimits } from "../../services/user-feeds/refresh-rate-limits";
+import type { Config } from "../../config";
 import type {
   GetUserFeedsInputFilters,
   GetUserFeedsInputSortKey,
@@ -68,8 +70,12 @@ export async function createUserFeedHandler(
   request: FastifyRequest<{ Body: CreateUserFeedBody }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, supportersService, curatedFeedRepository } =
-    request.container;
+  const {
+    userFeedsService,
+    supportersService,
+    curatedFeedRepository,
+    config,
+  } = request.container;
   const { discordUserId, accessToken } = request;
   const { url, curatedFeedId, title, sourceFeedId, workspaceId } = request.body;
 
@@ -111,6 +117,7 @@ export async function createUserFeedHandler(
     feed,
     discordUserId,
     supportersService,
+    config,
   );
 
   return reply.status(201).send({ result: formatted });
@@ -129,6 +136,10 @@ export async function formatUserFeedResponse(
   feed: IUserFeed,
   discordUserId: string,
   supportersService: SupportersServiceForFormat,
+  config: Pick<
+    Config,
+    "BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS"
+  >,
 ) {
   const discordChannelConnections = feed.connections.discordChannels.map(
     (con) => formatDiscordChannelConnectionResponse(con),
@@ -136,31 +147,29 @@ export async function formatUserFeedResponse(
 
   const isOwner = feed.user.discordUserId === discordUserId;
   const feedBenefits = await supportersService.resolveFeedBenefits(feed);
+  const supportersEnabled =
+    (await supportersService.areSupportersEnabled()) === true;
+  const premiumFloorSeconds =
+    feed.isMeteredPlatformFeed
+      ? config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS
+      : 0;
+  const refreshRateLimits = resolveRefreshRateLimits({
+    planMinimumSeconds: feedBenefits.refreshRateSeconds,
+    premiumFloorSeconds,
+    upgrade: supportersEnabled
+      ? {
+          defaultRateSeconds: supportersService.defaultRefreshRateSeconds,
+          supporterRateSeconds:
+            supportersService.defaultSupporterRefreshRateSeconds,
+        }
+      : undefined,
+  });
 
   const userInviteId = feed.shareManageOptions?.invites?.find(
     (u) =>
       u.discordUserId === discordUserId &&
       u.status === UserFeedManagerStatus.Accepted,
   )?.id;
-
-  const refreshRateOptions: Array<{
-    rateSeconds: number;
-    disabledCode?: string;
-  }> = [
-    { rateSeconds: supportersService.defaultRefreshRateSeconds },
-    { rateSeconds: supportersService.defaultRefreshRateSeconds * 6 },
-  ];
-
-  if (await supportersService.areSupportersEnabled()) {
-    refreshRateOptions.unshift({
-      rateSeconds: supportersService.defaultSupporterRefreshRateSeconds,
-      disabledCode:
-        feedBenefits.refreshRateSeconds >=
-        supportersService.defaultRefreshRateSeconds
-          ? "INSUFFICIENT_SUPPORTER_TIER"
-          : undefined,
-    });
-  }
 
   return {
     id: feed.id,
@@ -190,7 +199,7 @@ export async function formatUserFeedResponse(
     // so the sharing UI is never surfaced for them.
     shareManageOptions:
       isOwner && !feed.workspaceId ? feed.shareManageOptions : undefined,
-    refreshRateOptions,
+    refreshRateLimits,
   };
 }
 
@@ -357,7 +366,7 @@ export async function getUserFeedHandler(
   request: FastifyRequest<{ Params: GetUserFeedParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { supportersService } = request.container;
+  const { supportersService, config } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
@@ -383,6 +392,7 @@ export async function getUserFeedHandler(
     feed,
     discordUserId,
     supportersService,
+    config,
   );
 
   return reply.status(200).send({ result: formatted });
@@ -395,7 +405,7 @@ export async function updateUserFeedHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, supportersService } = request.container;
+  const { userFeedsService, supportersService, config } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
@@ -466,6 +476,7 @@ export async function updateUserFeedHandler(
     updated!,
     discordUserId,
     supportersService,
+    config,
   );
 
   return reply.status(200).send({ result: formatted });

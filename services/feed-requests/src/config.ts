@@ -75,12 +75,13 @@ export const configSchema = z.object({
   FEED_REQUESTS_REDIS_URI: z.string().min(1),
   FEED_REQUESTS_REDIS_DISABLE_CLUSTER: booleanFromString,
   FEED_REQUESTS_REQUEST_TIMEOUT_MS: numberWithDefault(15000),
-  // Provider responses advertise this freshness so repeat fetches of the same
-  // URL (feeds sharing a source across refresh-rate tiers) reuse the stored
-  // document instead of paying a second provider call. Must stay <= the
-  // backend's BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS floor, so a
-  // skipped refetch is never fresher than the cadence a premium feed may
-  // legitimately run at.
+  // Fallback reuse window for platform provider responses whose adapter does
+  // not report the provider response's own freshness. Adapters that report it
+  // override this per response (a provider that answers no-store/max-age=0
+  // disables reuse entirely). When used, repeat fetches of the same URL (feeds
+  // sharing a source across refresh-rate tiers) reuse the stored document
+  // instead of paying a second provider call. Must stay <= the backend's
+  // premium refresh-rate floor.
   FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS: numberWithDefault(600),
   FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT: numberWithDefault(3),
   FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS: numberWithDefault(2),

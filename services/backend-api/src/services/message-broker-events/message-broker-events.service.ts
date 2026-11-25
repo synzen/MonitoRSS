@@ -647,8 +647,6 @@ export class MessageBrokerEventsService {
         workspace,
       }),
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-      redditFeedBaseUrl:
-        this.deps.config.BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL,
     });
 
     const publishData = {

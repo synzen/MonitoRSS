@@ -78,6 +78,7 @@ function buildFetchAndSaveOptions(data: FetchFeedInput) {
     saveResponseToObjectStorage: data.debug,
     lookupDetails: data.lookupDetails,
     source: undefined,
+    usePlatformProvider: data.usePlatformProvider,
     headers: data.lookupDetails?.headers as Record<string, string> | undefined,
   };
 }
