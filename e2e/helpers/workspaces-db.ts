@@ -39,6 +39,29 @@ export async function enableWorkspacesFeatureInDb(
   );
 }
 
+export async function enablePremiumFeedsFeatureInDb(
+  discordUserId: string,
+): Promise<void> {
+  await withUsersCollection((users) =>
+    users.updateOne(
+      { discordUserId },
+      { $set: { "featureFlags.premiumFeeds": true } },
+      { upsert: true },
+    ),
+  );
+}
+
+export async function clearPremiumFeedsFeatureInDb(
+  discordUserId: string,
+): Promise<void> {
+  await withUsersCollection((users) =>
+    users.updateOne(
+      { discordUserId },
+      { $unset: { "featureFlags.premiumFeeds": "" } },
+    ),
+  );
+}
+
 /**
  * Write a verified email directly so the passwordless send/confirm flow needs no
  * SMTP in tests. The email is unique per test user, so it never collides with
@@ -455,11 +478,15 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
   // billing". Omit to leave it without a subscription (the freshly-created
   // default, which surfaces as needsBilling when billing is enabled).
   withActiveSubscription?: boolean;
+  // Simulates a pre-ladder Tier 2 subscription whose stored benefits included
+  // add-on capacity. Tier 2 add-ons are now ignored by billing reads.
+  legacyTier2AddonQuantity?: number;
 }): Promise<{ workspaceId: string; slug: string }> {
   return withDb(async (db) => {
     const now = new Date();
     const workspaceId = new ObjectId();
     const slug = `seeded-${workspaceId.toHexString()}`;
+    const legacyTier2AddonQuantity = input.legacyTier2AddonQuantity ?? 0;
 
     await db.collection("workspaces").insertOne({
       _id: workspaceId,
@@ -489,12 +516,15 @@ export async function seedWorkspaceWithMembershipsInDb(input: {
                 // (getWorkspaceBenefits) resolve instead of throwing on a
                 // missing benefits subdocument.
                 benefits: {
-                  maxUserFeeds: 70,
+                  maxUserFeeds: 70 + legacyTier2AddonQuantity,
                   allowWebhooks: true,
                   dailyArticleLimit: 1000,
                   refreshRateSeconds: 120,
                 },
-                addons: [],
+                addons:
+                  legacyTier2AddonQuantity > 0
+                    ? [{ key: "t3feed", quantity: legacyTier2AddonQuantity }]
+                    : [],
                 cancellationDate: null,
                 nextBillDate: now,
                 createdAt: now,
@@ -589,9 +619,11 @@ export async function clearWorkspaceBulkRetryCooldownInDb(
   workspaceId: string,
 ): Promise<void> {
   await withDb(async (db) => {
-    await db.collection("workspaces").updateOne(
-      { _id: new ObjectId(workspaceId) },
-      { $set: { lastBulkRetryAt: new Date(Date.now() - 20 * 60_000) } },
-    );
+    await db
+      .collection("workspaces")
+      .updateOne(
+        { _id: new ObjectId(workspaceId) },
+        { $set: { lastBulkRetryAt: new Date(Date.now() - 20 * 60_000) } },
+      );
   });
 }

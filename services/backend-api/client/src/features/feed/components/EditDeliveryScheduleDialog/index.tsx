@@ -105,7 +105,7 @@ const buildRateNotAllowedError = (
 
   if (limits.limitedBy === "platform") {
     return {
-      message: `This platform feed can only be checked once every ${formatMinutes(
+      message: `This premium feed can only be checked once every ${formatMinutes(
         limits.minimumSeconds,
       )} minutes or more.`,
       canUpgrade: false,
@@ -381,7 +381,7 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
                           <Text fontSize="sm" color="fg.muted">
                             {feed.refreshRateLimits.limitedBy === "platform" ? (
                               <>
-                                This platform feed can be checked as often as every{" "}
+                                This premium feed can be checked as often as every{" "}
                                 {formatMinutes(feed.refreshRateLimits.minimumSeconds)} minutes.
                               </>
                             ) : (

@@ -41,6 +41,7 @@ interface GetUserFeedsResponse {
   results: GetUserFeedsResult[];
   total: number;
   premiumFeedCount: number;
+  premiumFeedLimit: number;
 }
 
 describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
@@ -1113,5 +1114,7 @@ describe("GET /api/v1/user-feeds", { concurrency: true }, () => {
     const secondBody = (await secondPage.json()) as GetUserFeedsResponse;
     assert.strictEqual(firstBody.premiumFeedCount, 3);
     assert.strictEqual(secondBody.premiumFeedCount, 3);
+    assert.strictEqual(firstBody.premiumFeedLimit, 2);
+    assert.strictEqual(secondBody.premiumFeedLimit, 2);
   });
 });

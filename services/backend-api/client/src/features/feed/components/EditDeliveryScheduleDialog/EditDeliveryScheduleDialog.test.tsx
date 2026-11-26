@@ -37,7 +37,7 @@ const planLimitedFeed = {
 const platformLimitedFeed = {
   ...baseFeed,
   refreshRateLimits: {
-    minimumSeconds: 7200,
+    minimumSeconds: 3600,
     maximumSeconds: 86400,
     canUpgrade: false,
     limitedBy: "platform",
@@ -110,7 +110,7 @@ describe("EditDeliveryScheduleDialog - refresh rate limits", () => {
 
     expect(
       await screen.findByText(
-        "This platform feed can only be checked once every 120.0 minutes or more.",
+        "This premium feed can only be checked once every 60.0 minutes or more.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -192,7 +192,7 @@ describe("EditDeliveryScheduleDialog - refresh rate limits", () => {
     renderDialog({ feed: platformLimitedFeed, onUpdate: vi.fn() });
 
     expect(
-      screen.getByText("This platform feed can be checked as often as every 120.0 minutes."),
+      screen.getByText("This premium feed can be checked as often as every 60.0 minutes."),
     ).toBeInTheDocument();
   });
 

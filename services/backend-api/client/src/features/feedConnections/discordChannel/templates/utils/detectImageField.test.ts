@@ -334,7 +334,7 @@ describe("detectImageFields", () => {
 });
 
 describe("detectVideoFields", () => {
-  it("detects mp4 enclosure fields (platform feed video tweets)", () => {
+  it("detects mp4 enclosure fields (premium feed video tweets)", () => {
     const articles = [
       {
         enclosures__0__url:

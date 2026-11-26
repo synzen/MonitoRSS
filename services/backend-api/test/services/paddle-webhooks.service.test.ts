@@ -620,6 +620,48 @@ describe("PaddleWebhooksService", { concurrency: true }, () => {
       );
     });
 
+    it("does not grant a Tier 2 subscription an add-on capacity", async () => {
+      const ctx = harness.createContext({
+        paddleService: {
+          getProduct: async (productId: string) => ({
+            paddleProductId: productId,
+            id:
+              productId === "prod-tier2"
+                ? SubscriptionProductKey.Tier2
+                : SubscriptionProductKey.Tier3AdditionalFeed,
+          }),
+        },
+      });
+      const user = await ctx.createUser();
+      const now = new Date();
+
+      const event = ctx.createSubscriptionUpdatedEvent({
+        custom_data: { userId: user.id },
+        items: [
+          { quantity: 1, price: { id: "price-1", product_id: "prod-tier2" } },
+          { quantity: 10, price: { id: "price-2", product_id: "prod-addon" } },
+        ],
+        current_billing_period: {
+          starts_at: now.toISOString(),
+          ends_at: now.toISOString(),
+        },
+      });
+
+      await ctx.service.handleSubscriptionUpdatedEvent(event);
+
+      const supporter = await ctx.supporterRepository.findById(
+        user.discordUserId,
+      );
+      assert.strictEqual(
+        supporter?.paddleCustomer?.subscription?.benefits.maxUserFeeds,
+        70,
+      );
+      assert.deepStrictEqual(
+        supporter?.paddleCustomer?.subscription?.addons,
+        [],
+      );
+    });
+
     it('sets cancellation date when scheduled_change action is "cancel"', async () => {
       const ctx = harness.createContext();
       const user = await ctx.createUser();

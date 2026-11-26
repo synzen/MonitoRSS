@@ -683,7 +683,7 @@ const handlers = [
       results: limitedResults,
       total: filtered.length,
       feedsWithoutConnections: 0,
-      premiumFeedCount: 0,
+      premiumFeedCount: 0, premiumFeedLimit: 2,
     });
   }),
 

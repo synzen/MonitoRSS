@@ -49,6 +49,47 @@ export const WORKSPACE_TIER_FEED_LIMITS = {
   [SubscriptionProductKey.Tier3]: 140,
 } as const satisfies Record<string, number>;
 
+// Premium-feed capacity is a plan entitlement, not a percentage of purchased
+// ordinary feed slots. Tier 2 is capped at its base rung even when older
+// subscriptions carry add-ons; Tier 3 and larger capacities follow the ladder.
+export const PREMIUM_FEED_ALLOWANCES = {
+  personal: 2,
+  workspace: [
+    { totalFeeds: 70, premiumSlots: 5 },
+    { totalFeeds: 140, premiumSlots: 10 },
+    { totalFeeds: 300, premiumSlots: 20 },
+    { totalFeeds: 500, premiumSlots: 35 },
+    { totalFeeds: 1000, premiumSlots: 70 },
+    { totalFeeds: 2000, premiumSlots: 140 },
+  ],
+} as const;
+
+export function workspaceTierSupportsAdditionalFeeds(
+  productKey: string,
+): boolean {
+  return productKey === SubscriptionProductKey.Tier3;
+}
+
+export function resolveWorkspacePremiumAllowance(input: {
+  totalFeeds: number;
+  baseTier: string | null | undefined;
+}): number {
+  const baseTierLimit = input.baseTier
+    ? WORKSPACE_TIER_FEED_LIMITS[
+        input.baseTier as keyof typeof WORKSPACE_TIER_FEED_LIMITS
+      ]
+    : undefined;
+  const effectiveFeeds =
+    baseTierLimit === WORKSPACE_TIER_FEED_LIMITS[SubscriptionProductKey.Tier2]
+      ? baseTierLimit
+      : input.totalFeeds;
+  const rung = [...PREMIUM_FEED_ALLOWANCES.workspace]
+    .reverse()
+    .find((candidate) => effectiveFeeds >= candidate.totalFeeds);
+
+  return rung?.premiumSlots ?? PREMIUM_FEED_ALLOWANCES.workspace[0].premiumSlots;
+}
+
 // The feed limit a set of subscription items would grant: the base tier's limit
 // plus one slot per additional-feed add-on. Mirrors how the webhook computes
 // maxUserFeeds when it activates the same items. Returns null when no base
@@ -77,11 +118,14 @@ export function resolveWorkspaceFeedLimit(
     return null;
   }
 
-  const addonFeeds = items
-    .filter(
-      (item) => item.productKey === SubscriptionProductKey.Tier3AdditionalFeed,
-    )
-    .reduce((sum, item) => sum + item.quantity, 0);
+  const addonFeeds = workspaceTierSupportsAdditionalFeeds(baseTier.productKey)
+    ? items
+        .filter(
+          (item) =>
+            item.productKey === SubscriptionProductKey.Tier3AdditionalFeed,
+        )
+        .reduce((sum, item) => sum + item.quantity, 0)
+    : 0;
 
   return baseLimit + addonFeeds;
 }

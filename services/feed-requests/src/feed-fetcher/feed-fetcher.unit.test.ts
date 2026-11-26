@@ -272,6 +272,7 @@ describe('FeedFetcherService', () => {
 
   describe('platform provider routing', () => {
     const redditUrl = 'https://www.reddit.com/r/javascript';
+    const instagramUrl = 'https://www.instagram.com/adrienbrody';
     const providerOrigin = 'http://mock-provider.test';
     const providerRss = `<rss><channel>
       <item>
@@ -314,6 +315,14 @@ describe('FeedFetcherService', () => {
         };
       }
 
+      if (parsed.hostname === 'www.instagram.com' && segments.length === 1) {
+        return {
+          platform: 'instagram',
+          kind: 'user',
+          value: segments[0],
+        };
+      }
+
       return null;
     };
 
@@ -350,6 +359,20 @@ describe('FeedFetcherService', () => {
       },
       defaults: { reddit: providerName },
     });
+
+    const instagramRss = `<rss><channel><item><guid>instagram-post-1</guid><link>https://www.instagram.com/p/Cmock0001/</link><title>Instagram post</title></item></channel></rss>`;
+    const instagramRegistry = (): PlatformProviderRegistry => {
+      const registry = registryWithProvider();
+      registry.adapters.instagram = {
+        fetchlayer: () => ({
+          async fetchFeedDocument() {
+            return { document: instagramRss };
+          },
+        }),
+      };
+      registry.defaults.instagram = 'fetchlayer';
+      return registry;
+    };
 
     const interceptProvider = (overrides: { statusCode?: number } = {}) => {
       agent
@@ -422,25 +445,50 @@ describe('FeedFetcherService', () => {
       assert.ok(insert.response?.body?.contents);
     });
 
-    it('advertises freshness on platform responses when configured', async () => {
-      interceptProvider();
+    it('routes an enabled instagram destination URL to the provider adapter', async () => {
+      const routedService = createServiceWithRegistry(instagramRegistry());
 
-      const routedService = createServiceWithRegistry(
-        registryWithProvider(),
-        600,
-      );
-
-      const { request: insert } =
-        await routedService.fetchAndSaveResponse(redditUrl, {
+      const { request: insert, responseText } =
+        await routedService.fetchAndSaveResponse(instagramUrl, {
           lookupDetails: undefined,
           source: undefined,
           usePlatformProvider: true,
         });
 
+      assert.strictEqual(capturedRequests.length, 0);
+      assert.strictEqual(responseText, instagramRss);
+      assert.partialDeepStrictEqual(insert, {
+        url: instagramUrl,
+        lookupKey: instagramUrl,
+        status: RequestStatus.OK,
+        response: {
+          statusCode: 200,
+          headers: { 'content-type': 'application/rss+xml' },
+        },
+      });
+    });
+
+    it('advertises freshness on platform responses when configured', async () => {
+      interceptProvider();
+
+      const routedService = createServiceWithRegistry(
+        registryWithProvider(),
+        3600,
+      );
+
+      const { request: insert } = await routedService.fetchAndSaveResponse(
+        redditUrl,
+        {
+          lookupDetails: undefined,
+          source: undefined,
+          usePlatformProvider: true,
+        },
+      );
+
       // The freshness directive is what lets the scheduler's freshness skip
       // collapse repeat fetches of the same URL into one provider call.
       assert.partialDeepStrictEqual(insert.response?.headers, {
-        'cache-control': 'public, max-age=600',
+        'cache-control': 'public, max-age=3600',
       });
     });
 
@@ -449,12 +497,14 @@ describe('FeedFetcherService', () => {
 
       const routedService = createServiceWithRegistry(registryWithProvider());
 
-      const { request: insert } =
-        await routedService.fetchAndSaveResponse(redditUrl, {
+      const { request: insert } = await routedService.fetchAndSaveResponse(
+        redditUrl,
+        {
           lookupDetails: undefined,
           source: undefined,
           usePlatformProvider: true,
-        });
+        },
+      );
 
       assert.ok(
         insert.response?.headers &&
@@ -467,15 +517,17 @@ describe('FeedFetcherService', () => {
 
       const routedService = createServiceWithRegistry(
         registryWithProvider('private-default', 120),
-        600,
+        3600,
       );
 
-      const { request: insert } =
-        await routedService.fetchAndSaveResponse(redditUrl, {
+      const { request: insert } = await routedService.fetchAndSaveResponse(
+        redditUrl,
+        {
           lookupDetails: undefined,
           source: undefined,
           usePlatformProvider: true,
-        });
+        },
+      );
 
       assert.partialDeepStrictEqual(insert.response?.headers, {
         'cache-control': 'public, max-age=120',
@@ -487,15 +539,17 @@ describe('FeedFetcherService', () => {
 
       const routedService = createServiceWithRegistry(
         registryWithProvider('private-default', 0),
-        600,
+        3600,
       );
 
-      const { request: insert } =
-        await routedService.fetchAndSaveResponse(redditUrl, {
+      const { request: insert } = await routedService.fetchAndSaveResponse(
+        redditUrl,
+        {
           lookupDetails: undefined,
           source: undefined,
           usePlatformProvider: true,
-        });
+        },
+      );
 
       // max-age=0 from the provider (e.g. reddit's no-store) must suppress
       // the fallback directive so every due tick refetches.
@@ -511,12 +565,14 @@ describe('FeedFetcherService', () => {
 
       const routedService = createServiceWithRegistry(registry);
 
-      const { request: insert } =
-        await routedService.fetchAndSaveResponse(redditUrl, {
+      const { request: insert } = await routedService.fetchAndSaveResponse(
+        redditUrl,
+        {
           lookupDetails: undefined,
           source: undefined,
           usePlatformProvider: true,
-        });
+        },
+      );
 
       assert.strictEqual(capturedRequests.length, 0);
       assert.partialDeepStrictEqual(insert, {
@@ -531,12 +587,14 @@ describe('FeedFetcherService', () => {
 
       const routedService = createServiceWithRegistry(registryWithProvider());
 
-      const { request: insert } =
-        await routedService.fetchAndSaveResponse(redditUrl, {
+      const { request: insert } = await routedService.fetchAndSaveResponse(
+        redditUrl,
+        {
           lookupDetails: undefined,
           source: undefined,
           usePlatformProvider: true,
-        });
+        },
+      );
 
       assert.partialDeepStrictEqual(insert, {
         url: redditUrl,

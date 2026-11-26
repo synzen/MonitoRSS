@@ -240,12 +240,12 @@ export function createScheduleHandlerHarness(): ScheduleHandlerHarness {
         config: {
           BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES:
             DEFAULT_REFRESH_RATE_MINUTES,
-          BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS: 7200,
+          BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS: 3600,
           BACKEND_API_ENCRYPTION_KEY_HEX: encryptionKey,
           ...(options.platformFeedUrlSync
             ? { BACKEND_API_PLATFORM_FEED_URL_SYNC_ENABLED: "true" }
             : {}),
-        } as ScheduleHandlerServiceDeps["config"],
+        } as unknown as ScheduleHandlerServiceDeps["config"],
         supportersService: createMockSupportersService(
           options.supportersService,
         ),

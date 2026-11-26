@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   WORKSPACE_CAPACITY_QUICK_PICKS,
+  WORKSPACE_FIRST_UPGRADE_FEEDS,
   WORKSPACE_MAX_FEEDS,
   WORKSPACE_MIN_FEEDS,
   formatWorkspaceFeedCount,
@@ -9,6 +10,7 @@ import {
 describe("workspace capacity", () => {
   it("supports the complete exact-capacity range and prescribed quick picks", () => {
     expect(WORKSPACE_MIN_FEEDS).toBe(70);
+    expect(WORKSPACE_FIRST_UPGRADE_FEEDS).toBe(140);
     expect(WORKSPACE_MAX_FEEDS).toBe(2000);
     expect(WORKSPACE_CAPACITY_QUICK_PICKS).toEqual([70, 140, 300, 500, 1000, 2000]);
   });

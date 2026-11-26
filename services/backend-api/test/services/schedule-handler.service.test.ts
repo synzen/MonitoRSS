@@ -781,7 +781,7 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       const refreshedPremium = await localCtx.findById(premiumFeed.id);
       const refreshedRegular = await localCtx.findById(regularFeed.id);
       const refreshedReddit = await localCtx.findById(redditFeed.id);
-      assert.strictEqual(refreshedPremium?.refreshRateSeconds, 7200);
+      assert.strictEqual(refreshedPremium?.refreshRateSeconds, 3600);
       assert.strictEqual(
         refreshedRegular?.refreshRateSeconds,
         SUPPORTER_REFRESH_RATE,
@@ -790,6 +790,33 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
         refreshedReddit?.refreshRateSeconds,
         SUPPORTER_REFRESH_RATE,
       );
+    });
+
+    it("lowers premium feeds above the floor when the floor policy is reduced", async () => {
+      const ctx = harness.createContext();
+      const supporterDiscordUserId = ctx.generateId();
+      const localCtx = harness.createContext({
+        supportersService: {
+          allUserBenefits: [
+            {
+              discordUserId: supporterDiscordUserId,
+              maxUserFeeds: 10,
+              maxDailyArticles: SUPPORTER_MAX_DAILY_ARTICLES,
+              refreshRateSeconds: SUPPORTER_REFRESH_RATE,
+              isSupporter: true,
+            },
+          ],
+        },
+      });
+      const feed = await localCtx.createFeedForUser(supporterDiscordUserId, {
+        refreshRateSeconds: 7200,
+        isMeteredPlatformFeed: true,
+      });
+
+      await localCtx.service.runMaintenanceOperations();
+
+      const refreshed = await localCtx.findById(feed.id);
+      assert.strictEqual(refreshed?.refreshRateSeconds, 3600);
     });
 
     it("clamps premium workspace feeds up to the floor when syncing workspace rates", async () => {
@@ -830,7 +857,7 @@ describe("ScheduleHandlerService", { concurrency: true }, () => {
       const refreshedPremium = await localCtx.findById(premiumFeed.id);
       const refreshedRegular = await localCtx.findById(regularFeed.id);
       const refreshedReddit = await localCtx.findById(redditFeed.id);
-      assert.strictEqual(refreshedPremium?.refreshRateSeconds, 7200);
+      assert.strictEqual(refreshedPremium?.refreshRateSeconds, 3600);
       assert.strictEqual(
         refreshedRegular?.refreshRateSeconds,
         SUPPORTER_REFRESH_RATE,

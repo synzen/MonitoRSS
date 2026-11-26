@@ -14,7 +14,7 @@ const emptyResult = {
   results: [],
   total: 0,
   feedsWithoutConnections: 0,
-  premiumFeedCount: 0,
+  premiumFeedCount: 0, premiumFeedLimit: 2,
 };
 
 describe("useOwnedPersonalFeeds", () => {

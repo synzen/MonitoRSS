@@ -2,12 +2,21 @@ import { useEffect, useId, useState } from "react";
 import { Badge, Box, HStack, Input, RadioCard, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import {
   WORKSPACE_CAPACITY_QUICK_PICKS,
+  WORKSPACE_FIRST_UPGRADE_FEEDS,
   WORKSPACE_MAX_FEEDS,
   WORKSPACE_MIN_FEEDS,
   formatWorkspaceFeedCount,
 } from "./detents";
 
 const rangeMessage = `Choose a whole number from ${WORKSPACE_MIN_FEEDS} to ${new Intl.NumberFormat().format(WORKSPACE_MAX_FEEDS)} feeds.`;
+
+export const normalizeWorkspaceCapacity = (feeds: number) => {
+  const clamped = Math.min(WORKSPACE_MAX_FEEDS, Math.max(WORKSPACE_MIN_FEEDS, feeds));
+
+  return clamped > WORKSPACE_MIN_FEEDS && clamped < WORKSPACE_FIRST_UPGRADE_FEEDS
+    ? WORKSPACE_FIRST_UPGRADE_FEEDS
+    : clamped;
+};
 
 export const CapacityPicker = ({
   value,
@@ -43,7 +52,7 @@ export const CapacityPicker = ({
       return;
     }
 
-    const clamped = Math.min(WORKSPACE_MAX_FEEDS, Math.max(WORKSPACE_MIN_FEEDS, parsed));
+    const clamped = normalizeWorkspaceCapacity(parsed);
     setMessage(
       clamped === parsed
         ? undefined

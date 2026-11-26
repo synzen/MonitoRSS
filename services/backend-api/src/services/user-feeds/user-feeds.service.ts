@@ -23,6 +23,8 @@ import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective
 import {
   DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
   isBillingEnabled,
+  PREMIUM_FEED_ALLOWANCES,
+  resolveWorkspacePremiumAllowance,
 } from "../../shared/utils/billing";
 import {
   BannedFeedException,
@@ -80,20 +82,6 @@ dayjs.extend(timezone);
 type NextRetryReason = "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF";
 
 const BULK_DELETE_PUBLISH_CONCURRENCY = 10;
-
-// Premium-feed allowances (platform URLs served by provider adapters), counted
-// within the existing feed limits. Personal-scope feeds: per user; workspace
-// feeds: per workspace, scaling with the plan's total feed limit (~7%, so the
-// allowance keeps pace as add-on feed slots grow it).
-const PREMIUM_PERSONAL_FEED_ALLOWANCE = 2;
-const WORKSPACE_PREMIUM_ALLOWANCE_FLOOR = 5;
-
-export function resolveWorkspacePremiumAllowance(maxFeeds: number): number {
-  return Math.max(
-    WORKSPACE_PREMIUM_ALLOWANCE_FLOOR,
-    Math.ceil(maxFeeds * 0.07),
-  );
-}
 
 // The only disable states a successful manual request proves recovery from.
 // Other codes (Manual, ExceededFeedLimit, ExcessivelyActive, FeedTooLarge)
@@ -229,8 +217,11 @@ export class UserFeedsService {
     ownerDiscordUserId: string;
     workspaceId?: string;
     // The scope's total feed limit from the resolved benefits; only read for
-    // workspace scope, where the premium allowance scales with it.
+    // workspace scope, where it selects the premium allowance rung.
     workspaceFeedLimit: number;
+    // The workspace subscription's base product. Tier 2 stays on its fixed
+    // premium rung even if a legacy subscription carries add-on feeds.
+    workspaceBaseTier?: string | null;
     // Set when re-URLing an existing platform feed: its slot is already
     // counted, so the swap must not count as an additional feed.
     replacesPlatformFeed?: boolean;
@@ -273,8 +264,11 @@ export class UserFeedsService {
       }).length -
       (input.replacesPlatformFeed ? 1 : 0);
     const allowance = input.workspaceId
-      ? resolveWorkspacePremiumAllowance(input.workspaceFeedLimit)
-      : PREMIUM_PERSONAL_FEED_ALLOWANCE;
+      ? resolveWorkspacePremiumAllowance({
+          totalFeeds: input.workspaceFeedLimit,
+          baseTier: input.workspaceBaseTier,
+        })
+      : PREMIUM_FEED_ALLOWANCES.personal;
 
     if (used >= allowance) {
       throw new PremiumFeedsLimitReachedException(
@@ -447,6 +441,7 @@ export class UserFeedsService {
         ownerDiscordUserId: discordUserId,
         workspaceId,
         workspaceFeedLimit: maxFeeds,
+        workspaceBaseTier: feedBenefits.premiumFeedBaseTier,
       });
     }
 
@@ -473,6 +468,7 @@ export class UserFeedsService {
       ownerDiscordUserId: discordUserId,
       workspaceId,
       workspaceFeedLimit: maxFeeds,
+      workspaceBaseTier: feedBenefits.premiumFeedBaseTier,
     });
 
     if (isRedditFeedUrl(finalUrl)) {
@@ -602,7 +598,12 @@ export class UserFeedsService {
       );
     }
 
-    const { maxFeeds, dormant, isSupporter } =
+    const {
+      maxFeeds,
+      dormant,
+      isSupporter,
+      premiumFeedBaseTier: destinationPremiumFeedBaseTier,
+    } =
       await this.deps.supportersService.resolveFeedBenefits({
         workspaceId: destinationWorkspaceId,
         user: { discordUserId: sourceFeed.user.discordUserId },
@@ -647,6 +648,7 @@ export class UserFeedsService {
           ownerDiscordUserId: sourceFeed.user.discordUserId,
           workspaceId: destinationWorkspaceId,
           workspaceFeedLimit: maxFeeds,
+          workspaceBaseTier: destinationPremiumFeedBaseTier,
         });
       }
 
@@ -683,6 +685,7 @@ export class UserFeedsService {
       ownerDiscordUserId: sourceFeed.user.discordUserId,
       workspaceId: destinationWorkspaceId,
       workspaceFeedLimit: maxFeeds,
+      workspaceBaseTier: destinationPremiumFeedBaseTier,
     });
 
     if (isRedditFeedUrl(finalUrl)) {
@@ -1105,6 +1108,7 @@ export class UserFeedsService {
           ownerDiscordUserId: feed.user.discordUserId,
           workspaceId: feed.workspaceId,
           workspaceFeedLimit: urlChangeBenefits.maxFeeds,
+          workspaceBaseTier: urlChangeBenefits.premiumFeedBaseTier,
           replacesPlatformFeed:
             this.isMeteredPlatformUrl(feed.url, new Set([feed.url]), user.featureFlags),
         });
@@ -1139,6 +1143,7 @@ export class UserFeedsService {
         ownerDiscordUserId: feed.user.discordUserId,
         workspaceId: feed.workspaceId,
         workspaceFeedLimit: urlChangeBenefits.maxFeeds,
+        workspaceBaseTier: urlChangeBenefits.premiumFeedBaseTier,
         replacesPlatformFeed:
           platformUrls.has(feed.url) &&
           appliesPremiumRefreshRateFloor(feed.url),
@@ -1302,7 +1307,7 @@ export class UserFeedsService {
         throw new RefreshRateNotAllowedException(
           requestedRateMinimum === premiumFloorSeconds &&
             premiumFloorSeconds > 0
-            ? `Refresh rate is too low. Metered platform feeds must refresh at least once every ${Math.ceil(premiumFloorSeconds / 60)} minutes.`
+            ? `Refresh rate is too low. Premium feeds must refresh at least once every ${Math.ceil(premiumFloorSeconds / 60)} minutes.`
             : `Refresh rate is too low. Must be at least ${refreshRateLimits.minimumSeconds} seconds.`,
         );
       }
@@ -1938,6 +1943,7 @@ export class UserFeedsService {
         ownerDiscordUserId: discordUserId,
         workspaceId,
         workspaceFeedLimit: feedBenefits.maxFeeds,
+        workspaceBaseTier: feedBenefits.premiumFeedBaseTier,
       });
     }
 
@@ -2413,6 +2419,8 @@ export class UserFeedsService {
             }
           : null,
         refreshRateSeconds: getEffectiveRefreshRateSeconds(feed),
+        usePlatformProvider:
+          feed.isMeteredPlatformFeed === true || isRedditFeedUrl(feed.url),
       },
       mediums,
       articleDayLimit: feed.maxDailyArticles ?? maxDailyArticles,

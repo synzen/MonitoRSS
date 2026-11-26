@@ -1,6 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 import {
+  PREMIUM_FEED_ALLOWANCES,
+  resolveWorkspacePremiumAllowance,
   resolveWorkspaceFeedLimit,
   WORKSPACE_TIER_FEED_LIMITS,
 } from "../../src/shared/utils/billing";
@@ -27,7 +29,10 @@ describe("resolveWorkspaceFeedLimit", () => {
     assert.strictEqual(
       resolveWorkspaceFeedLimit([
         { productKey: SubscriptionProductKey.Tier3, quantity: 1 },
-        { productKey: SubscriptionProductKey.Tier3AdditionalFeed, quantity: 10 },
+        {
+          productKey: SubscriptionProductKey.Tier3AdditionalFeed,
+          quantity: 10,
+        },
       ]),
       WORKSPACE_TIER_FEED_LIMITS[SubscriptionProductKey.Tier3] + 10,
     );
@@ -41,6 +46,19 @@ describe("resolveWorkspaceFeedLimit", () => {
         { productKey: SubscriptionProductKey.Tier3AdditionalFeed, quantity: 3 },
       ]),
       WORKSPACE_TIER_FEED_LIMITS[SubscriptionProductKey.Tier3] + 8,
+    );
+  });
+
+  it("does not grant add-on feeds to a Tier 2 base", () => {
+    assert.strictEqual(
+      resolveWorkspaceFeedLimit([
+        { productKey: SubscriptionProductKey.Tier2, quantity: 1 },
+        {
+          productKey: SubscriptionProductKey.Tier3AdditionalFeed,
+          quantity: 30,
+        },
+      ]),
+      WORKSPACE_TIER_FEED_LIMITS[SubscriptionProductKey.Tier2],
     );
   });
 
@@ -69,5 +87,47 @@ describe("resolveWorkspaceFeedLimit", () => {
     // the result is a number or null, never NaN.
     assert.strictEqual(result, null);
     assert.strictEqual(Number.isNaN(result as unknown as number), false);
+  });
+});
+
+describe("resolveWorkspacePremiumAllowance", () => {
+  it("maps the complete premium-feed ladder", () => {
+    const cases = [
+      [70, SubscriptionProductKey.Tier2, 5],
+      [140, SubscriptionProductKey.Tier3, 10],
+      [300, SubscriptionProductKey.Tier3, 20],
+      [500, SubscriptionProductKey.Tier3, 35],
+      [1000, SubscriptionProductKey.Tier3, 70],
+      [2000, SubscriptionProductKey.Tier3, 140],
+    ] as const;
+
+    for (const [totalFeeds, baseTier, expected] of cases) {
+      assert.strictEqual(
+        resolveWorkspacePremiumAllowance({ totalFeeds, baseTier }),
+        expected,
+      );
+    }
+  });
+
+  it("keeps Tier 2 on its fixed rung even when a legacy add-on increases total feeds", () => {
+    assert.strictEqual(
+      resolveWorkspacePremiumAllowance({
+        totalFeeds: 500,
+        baseTier: SubscriptionProductKey.Tier2,
+      }),
+      5,
+    );
+  });
+
+  it("uses the largest configured rung for capacities above the ladder", () => {
+    assert.strictEqual(
+      resolveWorkspacePremiumAllowance({
+        totalFeeds: 2500,
+        baseTier: SubscriptionProductKey.Tier3,
+      }),
+      PREMIUM_FEED_ALLOWANCES.workspace[
+        PREMIUM_FEED_ALLOWANCES.workspace.length - 1
+      ]!.premiumSlots,
+    );
   });
 });

@@ -80,6 +80,7 @@ export const useUserFeeds = (
       total: data.total,
       feedsWithoutConnections: data.feedsWithoutConnections,
       premiumFeedCount: data.premiumFeedCount,
+      premiumFeedLimit: data.premiumFeedLimit,
     });
   };
 

@@ -76,4 +76,16 @@ describe("feed-fetcher request bodies", () => {
     assert.equal(body.lookupKey, "lookup-key");
     assert.deepEqual(body.headers, { Authorization: "Bearer token" });
   });
+
+  it("fetchFeedForDeliveryPreview forwards platform provider routing", async () => {
+    await fetchFeedForDeliveryPreview("https://www.instagram.com/test", {
+      serviceHost,
+      stalenessThresholdSeconds: 120,
+      usePlatformProvider: true,
+    });
+
+    const body = JSON.parse(capturedBody as string);
+
+    assert.equal(body.usePlatformProvider, true);
+  });
 });

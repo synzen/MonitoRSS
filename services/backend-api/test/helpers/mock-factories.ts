@@ -32,13 +32,22 @@ export interface MockFeedHandlerOptions {
       UserFeedsServiceDeps["feedHandlerService"]["getArticles"]
     >[0],
   ) => void;
+  onGetDeliveryPreview?: (
+    input: Parameters<
+      UserFeedsServiceDeps["feedHandlerService"]["getDeliveryPreview"]
+    >[0],
+  ) => void;
 }
 
 export function createMockFeedHandlerService(
   options: MockFeedHandlerOptions = {},
 ): UserFeedsServiceDeps["feedHandlerService"] {
   return {
-    getArticles: async (input) => {
+    getArticles: async (
+      input: Parameters<
+        UserFeedsServiceDeps["feedHandlerService"]["getArticles"]
+      >[0],
+    ) => {
       options.onGetArticles?.(input);
 
       if (options.getArticlesError) {
@@ -51,6 +60,15 @@ export function createMockFeedHandlerService(
         articles: options.articles ?? [],
         feedTitle: options.feedTitle ?? "Test Feed",
       };
+    },
+    getDeliveryPreview: async (
+      input: Parameters<
+        UserFeedsServiceDeps["feedHandlerService"]["getDeliveryPreview"]
+      >[0],
+    ) => {
+      options.onGetDeliveryPreview?.(input);
+
+      return { result: {} };
     },
   } as unknown as UserFeedsServiceDeps["feedHandlerService"];
 }

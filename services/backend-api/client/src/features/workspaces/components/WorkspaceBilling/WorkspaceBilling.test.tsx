@@ -264,10 +264,8 @@ describe("WorkspaceBilling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
-    // One price preview powers the whole capacity slider: it carries the Tier2
-    // base and Tier3Feed per-feed unit prices (with unitAmount in minor units),
-    // from which the slider derives any detent. $10.00 base + $0.50/feed, so 70
-    // feeds = $10.00 and 100 feeds = 1000 + 30*50 = $25.00.
+    // One price preview powers the whole capacity picker: Tier 2 is $10 for 70
+    // feeds, Tier 3 is $20 for 140 feeds, and add-ons are $0.50 per feed.
     h.getPricePreview.mockResolvedValue(PRICE_PREVIEWS);
     // The Tier 3 card asks for the authoritative recurring total whenever extra
     // feeds are chosen; default to a recognizable combined figure.
@@ -387,7 +385,7 @@ describe("WorkspaceBilling", () => {
     );
   });
 
-  it("folds the slider overage above the base into one activation checkout with a live price", async () => {
+  it("folds Tier 3 add-on capacity into one activation checkout with a live price", async () => {
     mockPaddle();
     mockWorkspace({ role: "owner", subscription: null });
 
@@ -396,14 +394,11 @@ describe("WorkspaceBilling", () => {
     // Base price before moving the slider (formatCurrency drops the ".00").
     expect(await screen.findByText("$10", { exact: false })).toBeInTheDocument();
 
-    // Pick 2,000 feeds, i.e. 1,930 add-on feeds above the base.
+    // Pick 2,000 feeds, i.e. 1,860 add-on feeds above the Tier 3 base.
     await userEvent.click(await screen.findByRole("radio", { name: "2,000 feeds" }));
 
-    // The headline reflects the combined recurring total derived from the single
-    // preview (base $10.00 + 1,930 add-on feeds * $0.50 = $975.00, rendered "$975" as
-    // formatCurrency drops the ".00"), with no per-detent round-trip: the whole
-    // range is priced from that one preview.
-    const total = await screen.findByText("$975", { exact: false });
+    // Tier 3 base $20.00 + 1,860 add-on feeds * $0.50 = $950.00.
+    const total = await screen.findByText("$950", { exact: false });
 
     // The price summary is a polite live region that settles once resolved.
     const liveRegion = total.closest('[aria-live="polite"]');
@@ -416,8 +411,8 @@ describe("WorkspaceBilling", () => {
       expect(h.openCheckout).toHaveBeenCalledWith(
         expect.objectContaining({
           prices: [
-            { priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 },
-            { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 1930 },
+            { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
+            { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 1860 },
           ],
           customData: { workspaceId: "workspace-1" },
         }),
@@ -831,11 +826,11 @@ describe("WorkspaceBilling", () => {
     ).toBeInTheDocument();
   });
 
-  it("states the add-on breakdown and price when capacity is above the base tier", async () => {
+  it("ignores a legacy Tier 2 add-on when showing the current plan", async () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
-      // 70-feed base + 30 add-on feeds, priced $10 + 30 * $0.50 = $25.
+      // Add-ons apply only to Tier 3; an old Tier 2 add-on line is not capacity.
       subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 30 }] }),
     });
     mockChangePreview();
@@ -844,7 +839,7 @@ describe("WorkspaceBilling", () => {
 
     expect(
       await screen.findByText(
-        "Your plan covers 100 feeds in total (70 + 30 additional) at $25 / month.",
+        "Your plan covers 70 feeds in total at $10 / month.",
       ),
     ).toBeInTheDocument();
   });
@@ -1658,20 +1653,22 @@ describe("WorkspaceBilling", () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
-      // 70-feed base + 30 add-on feeds = 100 feeds of current capacity.
-      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 30 }] }),
+      subscription: activeSubscription({
+        productKey: "tier3",
+        addons: [{ key: ProductKey.Tier3Feed, quantity: 30 }],
+      }),
     });
     mockChangePreview();
 
     renderBilling();
     await openChangeDialog();
 
-    // The manage picker opens at the current capacity (100), not at the base (70)
+    // The manage picker opens at the current capacity (170), not at the base (140)
     // the way the buy-time picker does.
     const input = await screen.findByRole("spinbutton", {
       name: /or enter an exact feed capacity/i,
     });
-    expect(input).toHaveAttribute("aria-valuetext", "100 feeds");
+    expect(input).toHaveAttribute("aria-valuetext", "170 feeds");
   });
 
   it("does not show a perpetual preview spinner when the dialog opens at the current capacity", async () => {
@@ -1778,8 +1775,7 @@ describe("WorkspaceBilling", () => {
       expect(h.update).toHaveBeenCalledWith({
         workspaceSlug: "my-team",
         prices: [
-          { priceId: PRICE_IDS[ProductKey.Tier2].year, quantity: 1 },
-          { priceId: PRICE_IDS[ProductKey.Tier3Feed].year, quantity: 70 },
+          { priceId: PRICE_IDS[ProductKey.Tier3].year, quantity: 1 },
         ],
       }),
     );
@@ -1810,7 +1806,10 @@ describe("WorkspaceBilling", () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
-      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 767 }] }),
+      subscription: activeSubscription({
+        productKey: "tier3",
+        addons: [{ key: ProductKey.Tier3Feed, quantity: 767 }],
+      }),
     });
     mockChangePreview();
 
@@ -1981,10 +1980,13 @@ describe("WorkspaceBilling", () => {
 
   it("warns when a capacity decrease would disable feeds over the new limit", async () => {
     mockPaddle();
-    // Currently at 140 feeds so the slider can move DOWN to 70.
+    // Currently at 210 feeds so the picker can move DOWN to 70.
     mockWorkspace({
       role: "owner",
-      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 70 }] }),
+      subscription: activeSubscription({
+        productKey: "tier3",
+        addons: [{ key: ProductKey.Tier3Feed, quantity: 70 }],
+      }),
     });
     mockChangePreview({
       feedImpact: { newFeedLimit: 70, currentFeedCount: 73, willBeDisabledCount: 3 },
@@ -2020,7 +2022,7 @@ describe("WorkspaceBilling", () => {
 
     renderBilling();
     await openChangeDialog();
-    // 70 -> 200 feeds: base Tier 2 plus 130 add-on feeds.
+    // 70 -> 200 feeds: Tier 3 plus 60 add-on feeds.
     await setSliderToFeeds(200);
 
     const dialog = await screen.findByRole("dialog");
@@ -2030,8 +2032,8 @@ describe("WorkspaceBilling", () => {
       expect(h.update).toHaveBeenCalledWith({
         workspaceSlug: "my-team",
         prices: [
-          { priceId: PRICE_IDS[ProductKey.Tier2].month, quantity: 1 },
-          { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 130 },
+          { priceId: PRICE_IDS[ProductKey.Tier3].month, quantity: 1 },
+          { priceId: PRICE_IDS[ProductKey.Tier3Feed].month, quantity: 60 },
         ],
       }),
     );
@@ -2050,18 +2052,21 @@ describe("WorkspaceBilling", () => {
 
   it("confirms a capacity decrease with plain copy, not 'can now run up to'", async () => {
     mockPaddle();
-    // Currently at 140 feeds so the slider can move DOWN to 100.
+    // Currently at 210 feeds so the picker can move DOWN to 140.
     mockWorkspace({
       role: "owner",
-      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 70 }] }),
+      subscription: activeSubscription({
+        productKey: "tier3",
+        addons: [{ key: ProductKey.Tier3Feed, quantity: 70 }],
+      }),
     });
     mockChangePreview({
-      feedImpact: { newFeedLimit: 100, currentFeedCount: 10, willBeDisabledCount: 0 },
+      feedImpact: { newFeedLimit: 140, currentFeedCount: 10, willBeDisabledCount: 0 },
     });
 
     renderBilling();
     await openChangeDialog();
-    await setSliderToFeeds(100);
+    await setSliderToFeeds(140);
 
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: /update plan/i }));
@@ -2071,7 +2076,7 @@ describe("WorkspaceBilling", () => {
     await waitFor(() =>
       expect(h.createSuccessAlert).toHaveBeenCalledWith({
         title: "Plan updated",
-        description: "This workspace's capacity is now 100 feeds.",
+        description: "This workspace's capacity is now 140 feeds.",
       }),
     );
   });
@@ -2150,7 +2155,10 @@ describe("WorkspaceBilling", () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
-      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 70 }] }),
+      subscription: activeSubscription({
+        productKey: "tier3",
+        addons: [{ key: ProductKey.Tier3Feed, quantity: 70 }],
+      }),
     });
     const affected = Array.from({ length: 12 }, (_, i) => ({
       id: `feed-${i}`,
@@ -2193,7 +2201,10 @@ describe("WorkspaceBilling", () => {
     mockPaddle();
     mockWorkspace({
       role: "owner",
-      subscription: activeSubscription({ addons: [{ key: ProductKey.Tier3Feed, quantity: 767 }] }),
+      subscription: activeSubscription({
+        productKey: "tier3",
+        addons: [{ key: ProductKey.Tier3Feed, quantity: 697 }],
+      }),
     });
     mockChangePreview();
 

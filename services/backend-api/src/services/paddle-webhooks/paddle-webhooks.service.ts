@@ -3,6 +3,7 @@ import logger from "../../infra/logger";
 import {
   WORKSPACE_BASE_TIER_KEYS,
   WORKSPACE_TIER_FEED_LIMITS,
+  workspaceTierSupportsAdditionalFeeds,
 } from "../../shared/utils/billing";
 import {
   SubscriptionProductKey,
@@ -188,9 +189,13 @@ export class PaddleWebhooksService {
       event.data.customer_id,
     );
 
-    const extraFeedsToAdd = subscriptionItemsWithProduct.find(
-      (p) => p.product.id === SubscriptionProductKey.Tier3AdditionalFeed,
-    )?.item.quantity;
+    const extraFeedsToAdd = workspaceTierSupportsAdditionalFeeds(
+      topLevelBenefitsProductKey,
+    )
+      ? subscriptionItemsWithProduct.find(
+          (p) => p.product.id === SubscriptionProductKey.Tier3AdditionalFeed,
+        )?.item.quantity
+      : undefined;
 
     const benefits = BENEFITS_BY_TIER[topLevelBenefitsProductKey];
 
@@ -310,10 +315,11 @@ export class PaddleWebhooksService {
         }
       }
 
-      const workspace = await this.deps.workspaceRepository.upsertPaddleCustomer(
-        workspaceId,
-        { ...paddleCustomer, email: workspaceBillingEmail },
-      );
+      const workspace =
+        await this.deps.workspaceRepository.upsertPaddleCustomer(workspaceId, {
+          ...paddleCustomer,
+          email: workspaceBillingEmail,
+        });
 
       if (!workspace) {
         // Deleted between the existence check above and this write; ack as well.
@@ -327,9 +333,15 @@ export class PaddleWebhooksService {
       if (workspace.pendingCapacityGrant) {
         const authoritativeLimit = useBenefits.maxUserFeeds;
         if (authoritativeLimit >= workspace.pendingCapacityGrant.feeds) {
-          await this.deps.workspaceRepository.clearPendingCapacityGrant(workspaceId);
-        } else if (workspace.pendingCapacityGrant.expiresAt.getTime() <= Date.now()) {
-          await this.deps.workspaceRepository.clearPendingCapacityGrant(workspaceId);
+          await this.deps.workspaceRepository.clearPendingCapacityGrant(
+            workspaceId,
+          );
+        } else if (
+          workspace.pendingCapacityGrant.expiresAt.getTime() <= Date.now()
+        ) {
+          await this.deps.workspaceRepository.clearPendingCapacityGrant(
+            workspaceId,
+          );
         }
       }
 
@@ -420,7 +432,9 @@ export class PaddleWebhooksService {
     if (workspace) {
       // A cancelled subscription loses the courtesy grant; over-capacity policy follows
       if (workspace.pendingCapacityGrant) {
-        await this.deps.workspaceRepository.clearPendingCapacityGrant(workspace.id);
+        await this.deps.workspaceRepository.clearPendingCapacityGrant(
+          workspace.id,
+        );
       }
 
       await this.enforceWorkspaceFeedLimits(workspace.id);

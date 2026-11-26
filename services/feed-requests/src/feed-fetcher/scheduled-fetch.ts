@@ -504,6 +504,7 @@ export function createScheduledFetchProcessor({
             recovery,
             trigger,
             force,
+            usePlatformProvider,
           } = message;
           const logPrefix = saveToObjectStorage
             ? `DEBUG ${lookupKey || url}:`
@@ -606,6 +607,7 @@ export function createScheduledFetchProcessor({
                 headers,
                 recovery,
                 force,
+                usePlatformProvider,
               });
 
               if (result) {

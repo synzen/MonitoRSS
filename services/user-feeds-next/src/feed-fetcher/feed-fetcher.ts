@@ -186,6 +186,7 @@ export async function fetchFeedForDeliveryPreview(
     serviceHost: string;
     stalenessThresholdSeconds?: number;
     lookupDetails?: FeedRequestLookupDetails | null;
+    usePlatformProvider?: boolean;
     // These are accepted for compatibility but not used by this endpoint
     executeFetch?: boolean;
     executeFetchIfNotInCache?: boolean;
@@ -204,6 +205,7 @@ export async function fetchFeedForDeliveryPreview(
       headers: options.lookupDetails?.headers,
       stalenessThresholdSeconds: options.stalenessThresholdSeconds,
       hashToCompare: options.hashToCompare,
+      usePlatformProvider: options.usePlatformProvider,
     };
 
     const endpointUrl = serviceHost.endsWith("/")

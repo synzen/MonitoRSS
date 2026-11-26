@@ -198,7 +198,7 @@ export function createUserFeedsHarness(): UserFeedsHarness {
             }
           : {}),
         BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS:
-          options.premiumFeedsMinRefreshRateSeconds ?? 7200,
+          options.premiumFeedsMinRefreshRateSeconds ?? 3600,
       } as UserFeedsServiceDeps["config"];
 
       const usersService = createMockUsersService(

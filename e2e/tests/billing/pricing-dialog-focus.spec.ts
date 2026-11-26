@@ -122,6 +122,12 @@ test.describe("Pricing dialog focus management", () => {
     await picker.fill("1100");
     await picker.blur();
     await expect(picker).toHaveAttribute("aria-valuetext", "1,100 feeds");
+
+    // Tier 2 has a fixed 70-feed base and add-ons start with Tier 3, so the
+    // gap between the two base rungs normalizes to the first add-on capacity.
+    await picker.fill("100");
+    await picker.blur();
+    await expect(picker).toHaveAttribute("aria-valuetext", "140 feeds");
   });
 
   test("is mobile responsive: regions stack and content fits the viewport", async ({ page }) => {

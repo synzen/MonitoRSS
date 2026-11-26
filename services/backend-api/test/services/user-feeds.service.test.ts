@@ -72,13 +72,17 @@ describe("UserFeedsService", { concurrency: true }, () => {
     const REDDIT_CLIENT_ID = "test-reddit-client-id";
     const revokedReddit = [{ type: "reddit", status: "REVOKED", data: {} }];
 
-    const addReddit = (ctx: Awaited<ReturnType<typeof harness.createContext>>) =>
+    const addReddit = (
+      ctx: Awaited<ReturnType<typeof harness.createContext>>,
+    ) =>
       ctx.service.addFeed(
         { discordUserId: ctx.discordUserId, userAccessToken: "token" },
         { url: REDDIT_URL },
       );
 
-    const validateReddit = (ctx: Awaited<ReturnType<typeof harness.createContext>>) =>
+    const validateReddit = (
+      ctx: Awaited<ReturnType<typeof harness.createContext>>,
+    ) =>
       ctx.service.validateFeedUrl(
         { discordUserId: ctx.discordUserId },
         { url: REDDIT_URL },
@@ -91,10 +95,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
         feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
       });
 
-      await assert.rejects(
-        addReddit(ctx),
-        RedditConnectionRequiredException,
-      );
+      await assert.rejects(addReddit(ctx), RedditConnectionRequiredException);
     });
 
     it("allows validateFeedUrl for a reddit url without an active connection", async () => {
@@ -116,10 +117,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
         feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
       });
 
-      await assert.rejects(
-        addReddit(ctx),
-        RedditConnectionRequiredException,
-      );
+      await assert.rejects(addReddit(ctx), RedditConnectionRequiredException);
     });
 
     it("does not gate non-reddit urls", async () => {
@@ -244,7 +242,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
   describe("premium feeds (closed-beta gate, allowances, floor)", () => {
     const REDDIT_URL = "https://www.reddit.com/r/gaming";
     const OTHER_PLATFORM_URL = "https://x.com/someuser";
-    const FLOOR_SECONDS = 7200;
+    const FLOOR_SECONDS = 3600;
     // The harness default tier rate (600s) sits below the floor, so every
     // floor-bearing platform write-path assertion exercises the clamp. The
     // raised feed caps keep the regular feed limit out of the way of the
@@ -264,7 +262,9 @@ describe("UserFeedsService", { concurrency: true }, () => {
       feedHandler: { url: OTHER_PLATFORM_URL, feedTitle: "X" },
     };
 
-    const addReddit = (ctx: Awaited<ReturnType<typeof harness.createContext>>) =>
+    const addReddit = (
+      ctx: Awaited<ReturnType<typeof harness.createContext>>,
+    ) =>
       ctx.service.addFeed(
         { discordUserId: ctx.discordUserId, userAccessToken: "token" },
         { url: REDDIT_URL },
@@ -410,7 +410,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         const ctx = await harness.createContext({
           ...flaggedSupporterOptions,
           workspaceMaxFeeds: 140,
-          feedHandler: { url: "https://x.com/workspace-user10", feedTitle: "X" },
+          feedHandler: {
+            url: "https://x.com/workspace-user10",
+            feedTitle: "X",
+          },
         });
         const workspace = await ctx.createWorkspace();
 
@@ -424,7 +427,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         await assert.rejects(
           ctx.service.addFeed(
             { discordUserId: ctx.discordUserId, userAccessToken: "token" },
-            { url: "https://x.com/workspace-user10", workspaceId: workspace.id },
+            {
+              url: "https://x.com/workspace-user10",
+              workspaceId: workspace.id,
+            },
           ),
           PremiumFeedsLimitReachedException,
         );
@@ -618,7 +624,13 @@ describe("UserFeedsService", { concurrency: true }, () => {
         });
 
         it("clears the metered flag when cloning onto a reddit URL", async () => {
-          const ctx = await harness.createContext({ ...floorSupporterOptions, feedHandler: { url: "https://www.reddit.com/r/other", feedTitle: "other" } });
+          const ctx = await harness.createContext({
+            ...floorSupporterOptions,
+            feedHandler: {
+              url: "https://www.reddit.com/r/other",
+              feedTitle: "other",
+            },
+          });
           const source = await addOtherPlatform(ctx);
           await ctx.service.updateFeedById(
             { id: source.id },
@@ -673,8 +685,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
               redditTarget.id,
             ],
             settings: [UserFeedCopyableSetting.RefreshRate],
-            targetFeedSelectionType:
-              UserFeedTargetFeedSelectionType.Selected,
+            targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
           },
           discordUserId: ctx.discordUserId,
         });
@@ -737,24 +748,22 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
         const stored = await ctx.findById(feed.id);
         assert.ok(stored?.slotOffsetMs != null, "addFeed stamps a slot offset");
-        const scheduleHandler = new ScheduleHandlerService(
-          {
-            // The feed carries a lookup key and the harness credential, so
-            // fetch resolution needs the decryption key to attach the token.
-            config: { BACKEND_API_ENCRYPTION_KEY_HEX: ctx.encryptionKey },
-            supportersService: {},
-            userFeedsService: ctx.service,
-            usersService: {},
-            userFeedRepository: ctx.userFeedRepository,
-            messageBrokerService: {},
-            // Anchor the slot window on the feed's own offset so the single
-            // pass covers it, mirroring the emitter's steady-state cadence.
-            now: () => stored.slotOffsetMs!,
-            feedFetcherApiService: {},
-          } as unknown as ConstructorParameters<
-            typeof ScheduleHandlerService
-          >[0],
-        );
+        const scheduleHandler = new ScheduleHandlerService({
+          // The feed carries a lookup key and the harness credential, so
+          // fetch resolution needs the decryption key to attach the token.
+          config: { BACKEND_API_ENCRYPTION_KEY_HEX: ctx.encryptionKey },
+          supportersService: {},
+          userFeedsService: ctx.service,
+          usersService: {},
+          userFeedRepository: ctx.userFeedRepository,
+          messageBrokerService: {},
+          // Anchor the slot window on the feed's own offset so the single
+          // pass covers it, mirroring the emitter's steady-state cadence.
+          now: () => stored.slotOffsetMs!,
+          feedFetcherApiService: {},
+        } as unknown as ConstructorParameters<
+          typeof ScheduleHandlerService
+        >[0]);
 
         const captured: Array<{ url: string; lookupKey?: string }> = [];
         await scheduleHandler.handleRefreshRate(stored.refreshRateSeconds!, {
@@ -1408,7 +1417,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("uses platform provider routing during URL validation for an eligible user", async () => {
-      let capturedInput: GetArticlesInput | null = null;
+      let capturedInput: unknown = null;
       const ctx = await harness.createContext({
         billingEnabled: true,
         isSupporter: true,
@@ -1427,11 +1436,14 @@ describe("UserFeedsService", { concurrency: true }, () => {
         { url: "https://www.instagram.com/adrienbrody" },
       );
 
-      assert.strictEqual(capturedInput?.usePlatformProvider, true);
+      assert.strictEqual(
+        (capturedInput as GetArticlesInput | null)?.usePlatformProvider,
+        true,
+      );
     });
 
     it("does not use platform provider routing for an unflagged user", async () => {
-      let capturedInput: GetArticlesInput | null = null;
+      let capturedInput: unknown = null;
       const ctx = await harness.createContext({
         feedHandler: {
           url: "https://www.instagram.com/adrienbrody",
@@ -1446,11 +1458,14 @@ describe("UserFeedsService", { concurrency: true }, () => {
         { url: "https://www.instagram.com/adrienbrody" },
       );
 
-      assert.strictEqual(capturedInput?.usePlatformProvider, false);
+      assert.strictEqual(
+        (capturedInput as GetArticlesInput | null)?.usePlatformProvider,
+        false,
+      );
     });
 
     it("rejects a flagged free user before platform provider routing", async () => {
-      let capturedInput: GetArticlesInput | null = null;
+      let capturedInput: unknown = null;
       const ctx = await harness.createContext({
         billingEnabled: true,
         isSupporter: false,
@@ -1475,7 +1490,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("does not use platform provider routing for an ordinary URL", async () => {
-      let capturedInput: GetArticlesInput | null = null;
+      let capturedInput: unknown = null;
       const ctx = await harness.createContext({
         feedHandler: {
           url: "https://example.com/feed.xml",
@@ -1490,7 +1505,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
         { url: "https://example.com/feed.xml" },
       );
 
-      assert.strictEqual(capturedInput?.usePlatformProvider, false);
+      assert.strictEqual(
+        (capturedInput as GetArticlesInput | null)?.usePlatformProvider,
+        false,
+      );
     });
   });
 

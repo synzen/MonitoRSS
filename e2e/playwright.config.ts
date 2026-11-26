@@ -44,6 +44,7 @@ const PADDLE_CHECKOUT_TESTS = [
   "**/billing/paddle-workspace-slug-reuse-regression.spec.ts",
   "**/billing/paddle-workspace-feed-discovery-limit-regression.spec.ts",
   "**/billing/billing-email.spec.ts",
+  "**/billing/workspace-legacy-tier2-allowance.spec.ts",
 ];
 
 export default defineConfig({

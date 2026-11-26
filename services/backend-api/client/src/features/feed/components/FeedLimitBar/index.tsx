@@ -17,17 +17,6 @@ interface FeedLimitBarProps {
   showOnlyWhenConstrained?: boolean;
 }
 
-const PREMIUM_PERSONAL_FEED_ALLOWANCE = 2;
-const WORKSPACE_PREMIUM_ALLOWANCE_FLOOR = 5;
-
-const resolvePremiumAllowance = (
-  isWorkspaceScope: boolean,
-  maxFeeds: number,
-) =>
-  isWorkspaceScope
-    ? Math.max(WORKSPACE_PREMIUM_ALLOWANCE_FLOOR, Math.ceil(maxFeeds * 0.07))
-    : PREMIUM_PERSONAL_FEED_ALLOWANCE;
-
 export const FeedLimitBar = ({
   showOnlyWhenConstrained = false,
 }: FeedLimitBarProps) => {
@@ -46,10 +35,7 @@ export const FeedLimitBar = ({
     ? scope.maxFeeds
     : discordUserMe?.maxUserFeeds;
   const premiumCount = userFeedsData?.premiumFeedCount ?? 0;
-  const maxPremiumCount =
-    maxCount === undefined
-      ? undefined
-      : resolvePremiumAllowance(isWorkspaceScope, maxCount);
+  const maxPremiumCount = userFeedsData?.premiumFeedLimit;
   const isPremiumFeedLimitVisible =
     userMeData?.result.capabilities?.premiumFeeds === true;
 

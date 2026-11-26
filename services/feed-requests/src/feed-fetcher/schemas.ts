@@ -81,6 +81,7 @@ export const fetchFeedDeliveryPreviewInputSchema = z.object({
   headers: optionalObject(),
   stalenessThresholdSeconds: optionalNumber('stalenessThresholdSeconds'),
   hashToCompare: optionalString('hashToCompare'),
+  usePlatformProvider: optionalBoolean(),
 });
 
 // Query params arrive as strings; the pre-migration pipe coerced them with

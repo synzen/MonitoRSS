@@ -1,11 +1,19 @@
 import { test, expect } from "../../fixtures/test-fixtures";
-import { createConnection, deleteFeed, getTestChannelId } from "../../helpers/api";
+import {
+  createConnection,
+  deleteFeed,
+  getTestChannelId,
+} from "../../helpers/api";
 import { vendorMockExtendUrl } from "../../helpers/constants";
 import {
   clearSupporterStatusInDb,
   getDiscordUserIdFromPage,
   setSupporterStatusInDb,
 } from "../../helpers/paddle-db";
+import {
+  clearPremiumFeedsFeatureInDb,
+  enablePremiumFeedsFeatureInDb,
+} from "../../helpers/workspaces-db";
 
 // Platform-source provider feeds (Instagram through the private package's
 // default fetchlayer adapter): the user pastes a plain profile URL, feed-requests
@@ -34,7 +42,11 @@ let handleCounter = 0;
 // parallel workers and repeated fetches never collide on feed URLs or
 // feed-requests request rows. The adapter renders the channel title
 // "Instagram @<handle> posts", so the feed title is predictable.
-function uniquePlatformHandle(): { handle: string; url: string; title: string } {
+function uniquePlatformHandle(): {
+  handle: string;
+  url: string;
+  title: string;
+} {
   const handle = `e2e${Date.now().toString(36).slice(-6)}${Math.random()
     .toString(36)
     .slice(2, 5)}${handleCounter++}`;
@@ -45,7 +57,10 @@ function uniquePlatformHandle(): { handle: string; url: string; title: string } 
   };
 }
 
-async function searchDiscoveryFor(page: import("@playwright/test").Page, url: string) {
+async function searchDiscoveryFor(
+  page: import("@playwright/test").Page,
+  url: string,
+) {
   await page.goto("/feeds");
   await expect(
     page.getByRole("heading", { name: "Get news delivered to your Discord" }),
@@ -75,12 +90,14 @@ test.describe("Platform instagram feed pipeline", () => {
     }
 
     const { handle, url, title } = uniquePlatformHandle();
+    const previewArticleTitle = `@${handle} post one`;
     const articleTitle = `@${handle} post two`;
 
     // A non-supporter's article daily limit is 0, so nothing ever delivers;
     // grant supporter status before the feed is created and clean up after.
     const discordUserId = await getDiscordUserIdFromPage(page);
     await setSupporterStatusInDb(discordUserId);
+    await enablePremiumFeedsFeatureInDb(discordUserId);
 
     try {
       await searchDiscoveryFor(page, url);
@@ -105,6 +122,15 @@ test.describe("Platform instagram feed pipeline", () => {
       await createConnection(page, feedId as string, channelId);
 
       await page.getByRole("tab", { name: "Logs" }).click();
+      await expect(
+        page.getByRole("heading", { name: "Delivery Preview" }),
+      ).toBeVisible({ timeout: 30000 });
+      await expect(page.getByText("The feed contains invalid XML")).toHaveCount(
+        0,
+      );
+      await expect(page.getByText(previewArticleTitle)).toBeVisible({
+        timeout: 30000,
+      });
       const deliveryTable = page.locator(
         'table[aria-labelledby="delivery-history-table-title"]',
       );
@@ -147,6 +173,7 @@ test.describe("Platform instagram feed pipeline", () => {
 
       await deleteFeed(page, feedId as string);
     } finally {
+      await clearPremiumFeedsFeatureInDb(discordUserId);
       await clearSupporterStatusInDb(discordUserId);
     }
   });
@@ -168,18 +195,27 @@ test.describe("Platform instagram feed pipeline", () => {
       .toString(36)
       .slice(-6)}${handleCounter++}`;
 
-    await searchDiscoveryFor(page, missingUrl);
+    const discordUserId = await getDiscordUserIdFromPage(page);
+    await setSupporterStatusInDb(discordUserId);
+    await enablePremiumFeedsFeatureInDb(discordUserId);
 
-    // The vendor double 404s the fetch -> BAD_STATUS_CODE(404) row ->
-    // FEED_NOT_FOUND through the existing validation error path.
-    await expect(page.getByText("Failed to validate feed")).toBeVisible({
-      timeout: 30000,
-    });
-    await expect(
-      page.getByText(/Feed does not exist or is not accessible/),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /^Add .+ feed$/i }),
-    ).toHaveCount(0);
+    try {
+      await searchDiscoveryFor(page, missingUrl);
+
+      // The vendor double 404s the fetch -> BAD_STATUS_CODE(404) row ->
+      // FEED_NOT_FOUND through the existing validation error path.
+      await expect(page.getByText("Failed to validate feed")).toBeVisible({
+        timeout: 30000,
+      });
+      await expect(
+        page.getByText(/Feed does not exist or is not accessible/),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /^Add .+ feed$/i }),
+      ).toHaveCount(0);
+    } finally {
+      await clearPremiumFeedsFeatureInDb(discordUserId);
+      await clearSupporterStatusInDb(discordUserId);
+    }
   });
 });

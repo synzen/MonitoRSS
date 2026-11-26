@@ -248,6 +248,7 @@ export function createFetchFeedFlow({
         lookupDetails: data.lookupKey ? { key: data.lookupKey } : undefined,
         headers: data.headers as Record<string, string> | undefined,
         source: undefined,
+        usePlatformProvider: data.usePlatformProvider,
       });
 
       // Re-fetch latest

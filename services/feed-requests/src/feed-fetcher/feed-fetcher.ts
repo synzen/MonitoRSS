@@ -358,6 +358,17 @@ export function createFeedFetcherService({
             matchedPlatformRoute.identity.platform === 'reddit')
             ? matchedPlatformRoute
             : null;
+        contextLogger.debug(
+          `Resolved fetch route for ${url}: ${
+            platformRoute
+              ? `platform:${platformRoute.identity.platform}`
+              : 'standard-http'
+          }`,
+          {
+            usePlatformProvider: options?.usePlatformProvider === true,
+            matchedPlatform: matchedPlatformRoute?.identity.platform ?? null,
+          },
+        );
         const platformFetch: PlatformFeedDocument | null = platformRoute
           ? await platformRoute.adapter.fetchFeedDocument(
               platformRoute.identity,

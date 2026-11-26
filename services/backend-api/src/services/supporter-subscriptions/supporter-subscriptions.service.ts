@@ -1,9 +1,13 @@
 import type { Config } from "../../config";
 import type { ISupporterRepository } from "../../repositories/interfaces/supporter.types";
 import type { IUserRepository } from "../../repositories/interfaces/user.types";
-import { SubscriptionAlreadyCancelledException } from "../../shared/exceptions/paddle.exceptions";
+import {
+  AdditionalFeedsRequireTier3Exception,
+  SubscriptionAlreadyCancelledException,
+} from "../../shared/exceptions/paddle.exceptions";
 import { pollUntil } from "../../shared/utils/poll-until";
 import { formatCurrency } from "../../shared/utils/format-currency";
+import { workspaceTierSupportsAdditionalFeeds } from "../../shared/utils/billing";
 import type { MessageBrokerService } from "../message-broker/message-broker.service";
 import type { PaddleService } from "../paddle/paddle.service";
 import { SubscriptionProductKey } from "../paddle/types";
@@ -237,6 +241,8 @@ export class SupporterSubscriptionsService {
         discordUserId,
       });
 
+    await this.assertAdditionalFeedsAllowed(items);
+
     const existingSubscriptionId = subscription?.id;
 
     if (!existingSubscriptionId) {
@@ -303,6 +309,8 @@ export class SupporterSubscriptionsService {
       await this.deps.supportersService.getSupporterSubscription({
         discordUserId,
       });
+
+    await this.assertAdditionalFeedsAllowed(items);
 
     const existingSubscriptionId = subscription?.id;
 
@@ -449,6 +457,41 @@ export class SupporterSubscriptionsService {
     return this.deps.paddleService.getUpdatePaymentMethodTransaction(
       existingSubscriptionId,
     );
+  }
+
+  private async assertAdditionalFeedsAllowed(
+    items: Array<{ priceId: string; quantity: number }>,
+  ): Promise<void> {
+    const { products } = await this.deps.paddleService.getProducts();
+    const productKeyByPriceId = new Map(
+      products.flatMap((product) =>
+        product.prices.map((price) => [price.id, product.customData?.key] as const),
+      ),
+    );
+    const addonItem = items.find(
+      (item) =>
+        productKeyByPriceId.get(item.priceId) ===
+        SubscriptionProductKey.Tier3AdditionalFeed,
+    );
+
+    if (!addonItem) {
+      return;
+    }
+
+    const baseProductKey = items
+      .map((item) => productKeyByPriceId.get(item.priceId))
+      .find(
+        (key) =>
+          key === SubscriptionProductKey.Tier2 ||
+          key === SubscriptionProductKey.Tier3,
+      );
+
+    if (
+      !baseProductKey ||
+      !workspaceTierSupportsAdditionalFeeds(baseProductKey)
+    ) {
+      throw new AdditionalFeedsRequireTier3Exception();
+    }
   }
 
   private async pollForSubscriptionChange({

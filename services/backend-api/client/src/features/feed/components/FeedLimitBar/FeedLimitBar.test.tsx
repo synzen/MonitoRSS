@@ -42,7 +42,7 @@ describe("FeedLimitBar", () => {
   describe("Normal state (12/25)", () => {
     beforeEach(() => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 12, premiumFeedCount: 0 },
+        data: { results: [], total: 12, premiumFeedCount: 0, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 25 },
@@ -57,7 +57,7 @@ describe("FeedLimitBar", () => {
 
     it("shows Premium Feed Limit below the feed limit", () => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 12, premiumFeedCount: 2 },
+        data: { results: [], total: 12, premiumFeedCount: 2, premiumFeedLimit: 2 },
       } as never);
 
       renderBar();
@@ -67,7 +67,7 @@ describe("FeedLimitBar", () => {
 
     it("hides Premium Feed Limit when the user does not have the premium feeds capability", () => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 12, premiumFeedCount: 2 },
+        data: { results: [], total: 12, premiumFeedCount: 2, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useUserMe).mockReturnValue({
         data: { result: { capabilities: { premiumFeeds: false } } },
@@ -101,7 +101,7 @@ describe("FeedLimitBar", () => {
   describe("Boundary: 4 remaining (21/25)", () => {
     beforeEach(() => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 21, premiumFeedCount: 0 },
+        data: { results: [], total: 21, premiumFeedCount: 0, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 25 },
@@ -119,7 +119,7 @@ describe("FeedLimitBar", () => {
   describe("Boundary: 3 remaining (22/25)", () => {
     beforeEach(() => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 22, premiumFeedCount: 0 },
+        data: { results: [], total: 22, premiumFeedCount: 0, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 25 },
@@ -146,7 +146,7 @@ describe("FeedLimitBar", () => {
   describe("At limit (25/25)", () => {
     beforeEach(() => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 25, premiumFeedCount: 0 },
+        data: { results: [], total: 25, premiumFeedCount: 0, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 25 },
@@ -173,7 +173,7 @@ describe("FeedLimitBar", () => {
   describe("Interactions", () => {
     it("Increase Limits click calls onOpen from PricingDialogContext", () => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 12 },
+        data: { results: [], total: 12, premiumFeedCount: 0, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 25 },
@@ -187,7 +187,7 @@ describe("FeedLimitBar", () => {
 
     it("Increase Limits click at limit opens the pricing dialog targeted at the workspace panel", () => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 25 },
+        data: { results: [], total: 25, premiumFeedCount: 0, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 25 },
@@ -206,7 +206,7 @@ describe("FeedLimitBar", () => {
   describe("showOnlyWhenConstrained", () => {
     it("does not show the bar when only the premium limit is constrained without the capability", () => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 12, premiumFeedCount: 2 },
+        data: { results: [], total: 12, premiumFeedCount: 2, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 25 },
@@ -235,7 +235,7 @@ describe("FeedLimitBar", () => {
 
     it("shows bar when near limit (3 remaining)", () => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 22, premiumFeedCount: 0 },
+        data: { results: [], total: 22, premiumFeedCount: 0, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 25 },
@@ -248,7 +248,7 @@ describe("FeedLimitBar", () => {
 
     it("shows bar when at limit", () => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 25, premiumFeedCount: 0 },
+        data: { results: [], total: 25, premiumFeedCount: 0, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 25 },
@@ -263,7 +263,7 @@ describe("FeedLimitBar", () => {
 
     it("does not show warning for small limits with plenty of headroom (0/3)", () => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 0, premiumFeedCount: 0 },
+        data: { results: [], total: 0, premiumFeedCount: 0, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 3 },
@@ -276,7 +276,7 @@ describe("FeedLimitBar", () => {
 
     it("shows warning for small limits when at limit (3/3)", () => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 3, premiumFeedCount: 0 },
+        data: { results: [], total: 3, premiumFeedCount: 0, premiumFeedLimit: 2 },
       } as never);
       vi.mocked(useDiscordUserMe).mockReturnValue({
         data: { maxUserFeeds: 3 },
@@ -340,7 +340,7 @@ describe("FeedLimitBar", () => {
 
     beforeEach(() => {
       vi.mocked(useUserFeeds).mockReturnValue({
-        data: { results: [], total: 5, premiumFeedCount: 1 },
+        data: { results: [], total: 5, premiumFeedCount: 1, premiumFeedLimit: 5 },
       } as never);
       // Personal max must be ignored in workspace scope.
       vi.mocked(useDiscordUserMe).mockReturnValue({
@@ -352,7 +352,7 @@ describe("FeedLimitBar", () => {
       renderWorkspaceBar();
 
       expect(screen.getByText("Feed Limit: 5/140")).toBeInTheDocument();
-      expect(screen.getByText("Premium Feed Limit: 1/10")).toBeInTheDocument();
+      expect(screen.getByText("Premium Feed Limit: 1/5")).toBeInTheDocument();
     });
 
     it("hides the Increase Limits upsell in workspace scope", () => {

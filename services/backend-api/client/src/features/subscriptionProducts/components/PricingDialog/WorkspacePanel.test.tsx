@@ -9,7 +9,12 @@ import { WorkspacePanel } from "./WorkspacePanel";
 // Real per-unit figures (in minor units): base $10.00 + $0.50/feed, so the
 // slider's detent totals are derived deterministically by useWorkspaceSliderPrice
 // without any Paddle mock.
-const PRICING = { baseUnitAmount: 1000, perFeedUnitAmount: 50, currencyCode: "USD" };
+const PRICING = {
+  baseUnitAmount: 1000,
+  perFeedUnitAmount: 50,
+  currencyCode: "USD",
+  tier3BaseUnitAmount: 2000,
+};
 
 const renderPanel = (props: Partial<React.ComponentProps<typeof WorkspacePanel>> = {}) =>
   render(
@@ -48,7 +53,7 @@ describe("WorkspacePanel price announcer", () => {
     fireEvent.change(input, { target: { value: "1100" } });
     fireEvent.blur(input);
 
-    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$525 per month."));
+    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$500 per month."));
   });
 
   it("does not announce the price when only the billing interval changes", async () => {
@@ -57,7 +62,7 @@ describe("WorkspacePanel price announcer", () => {
     const input = screen.getByRole("spinbutton", { name: /or enter an exact/i });
     fireEvent.change(input, { target: { value: "1100" } });
     fireEvent.blur(input);
-    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$525 per month."));
+    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$500 per month."));
 
     rerender(
       <ChakraProvider value={system}>
@@ -73,7 +78,7 @@ describe("WorkspacePanel price announcer", () => {
     );
 
     await screen.findByText(/^per year$/);
-    expect(getAnnouncer(container)).toHaveTextContent("$525 per month.");
+    expect(getAnnouncer(container)).toHaveTextContent("$500 per month.");
   });
 
   it("the visible hero price is not itself a live region", () => {
@@ -108,15 +113,15 @@ describe("WorkspacePanel price announcer", () => {
   it("applies a quick pick directly, updating the selected capacity and visible price", async () => {
     const { container } = renderPanel();
 
-    // Choosing the 300-feed pick commits instantly (no blur needed) and the
-    // derived recurring price follows: 1000 + 230 * 50 = 12,500 minor units.
+    // Choosing the 300-feed pick commits instantly. The derived price is the
+    // Tier 3 base plus 160 add-on feeds: 2000 + 160 * 50 = 10,000 minor units.
     await userEvent.click(screen.getByRole("radio", { name: "300 feeds" }));
 
     await waitFor(() => expect(screen.getByRole("radio", { name: "300 feeds" })).toBeChecked());
     expect(
       screen.queryByRole("spinbutton", { name: /or enter an exact/i }),
     ).not.toBeInTheDocument();
-    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$125 per month."));
+    await waitFor(() => expect(getAnnouncer(container)).toHaveTextContent("$100 per month."));
   });
 
   it("the create CTA names the action, not a feed count", () => {

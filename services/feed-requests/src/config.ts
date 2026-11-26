@@ -82,7 +82,7 @@ export const configSchema = z.object({
   // sharing a source across refresh-rate tiers) reuse the stored document
   // instead of paying a second provider call. Must stay <= the backend's
   // premium refresh-rate floor.
-  FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS: numberWithDefault(600),
+  FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS: numberWithDefault(3600),
   FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT: numberWithDefault(3),
   FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS: numberWithDefault(2),
 });
@@ -136,7 +136,7 @@ export function testConfig(): Config {
     FEED_REQUESTS_BACKOFF_RATE_LIMIT_FLOOR_MINUTES: 60,
     FEED_REQUESTS_BACKOFF_RETRY_AFTER_MAX_HOURS: 24,
     FEED_REQUESTS_REQUEST_TIMEOUT_MS: 15000,
-    FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS: 600,
+    FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS: 3600,
     FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT: 3,
     FEED_REQUESTS_HISTORY_PERSISTENCE_MONTHS: 2,
     FEED_REQUESTS_REDIS_DISABLE_CLUSTER: true,

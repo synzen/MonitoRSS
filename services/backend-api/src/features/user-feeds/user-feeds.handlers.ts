@@ -45,6 +45,10 @@ import {
 } from "../../shared/utils/feed-access";
 import { isAdminUser } from "../../shared/utils/admin";
 import { resolveRefreshRateLimits } from "../../services/user-feeds/refresh-rate-limits";
+import {
+  PREMIUM_FEED_ALLOWANCES,
+  resolveWorkspacePremiumAllowance,
+} from "../../shared/utils/billing";
 import type { Config } from "../../config";
 import type {
   GetUserFeedsInputFilters,
@@ -876,8 +880,13 @@ export async function getUserFeedsHandler(
   request: FastifyRequest<{ Querystring: GetUserFeedsQuery }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, usersService, workspacesService, config } =
-    request.container;
+  const {
+    userFeedRepository,
+    usersService,
+    workspacesService,
+    supportersService,
+    config,
+  } = request.container;
   const { discordUserId } = request;
   const { workspaceId } = request.query;
 
@@ -910,7 +919,13 @@ export async function getUserFeedsHandler(
     workspaceId,
   };
 
-  const [feeds, count, feedsWithoutConnectionsCount, premiumFeedCount] = await Promise.all([
+  const [
+    feeds,
+    count,
+    feedsWithoutConnectionsCount,
+    premiumFeedCount,
+    feedBenefits,
+  ] = await Promise.all([
     userFeedRepository.getUserFeedsListing({ discordUserId, ...input }),
     userFeedRepository.getUserFeedsCount({
       discordUserId,
@@ -924,7 +939,18 @@ export async function getUserFeedsHandler(
       filters: { hasConnections: false },
     }),
     userFeedRepository.getPremiumFeedCount({ discordUserId, workspaceId }),
+    supportersService.resolveFeedBenefits({
+      workspaceId,
+      user: { discordUserId },
+    }),
   ]);
+
+  const premiumFeedLimit = workspaceId
+    ? resolveWorkspacePremiumAllowance({
+        totalFeeds: feedBenefits.maxFeeds,
+        baseTier: feedBenefits.premiumFeedBaseTier,
+      })
+    : PREMIUM_FEED_ALLOWANCES.personal;
 
   return reply.status(200).send({
     results: feeds.map((feed) => ({
@@ -945,6 +971,7 @@ export async function getUserFeedsHandler(
     total: count,
     feedsWithoutConnections: feedsWithoutConnectionsCount,
     premiumFeedCount,
+    premiumFeedLimit,
   });
 }
 

@@ -16,3 +16,7 @@ export class AddressLocationNotAllowedException extends StandardException {
 export class SubscriptionAlreadyCancelledException extends StandardException {
   override message = "Subscription has already been cancelled.";
 }
+
+export class AdditionalFeedsRequireTier3Exception extends StandardException {
+  override message = "Additional feed capacity requires a Tier 3 subscription.";
+}

@@ -6,20 +6,43 @@ import { PricePreview } from "@/types/PricePreview";
 import {
   useWorkspaceSliderPrice,
   workspaceFeedPricingFromProducts,
+  workspaceCapacityToBasket,
   WORKSPACE_BASE_FEEDS,
+  WORKSPACE_TIER3_BASE_FEEDS,
   feedCountToAddonQuantity,
   WorkspaceFeedPricing,
 } from "./useWorkspaceSliderPrice";
 
 describe("feedCountToAddonQuantity", () => {
-  it("is zero at or below the base feed count", () => {
+  it("is zero at or below the Tier 3 base feed count", () => {
     expect(feedCountToAddonQuantity(WORKSPACE_BASE_FEEDS)).toBe(0);
-    expect(feedCountToAddonQuantity(WORKSPACE_BASE_FEEDS - 10)).toBe(0);
+    expect(feedCountToAddonQuantity(WORKSPACE_TIER3_BASE_FEEDS)).toBe(0);
   });
 
-  it("is the overage above the base feed count", () => {
-    expect(feedCountToAddonQuantity(WORKSPACE_BASE_FEEDS + 30)).toBe(30);
-    expect(feedCountToAddonQuantity(500)).toBe(500 - WORKSPACE_BASE_FEEDS);
+  it("is the overage above the Tier 3 base feed count", () => {
+    expect(feedCountToAddonQuantity(WORKSPACE_TIER3_BASE_FEEDS + 30)).toBe(30);
+    expect(feedCountToAddonQuantity(500)).toBe(500 - WORKSPACE_TIER3_BASE_FEEDS);
+  });
+});
+
+describe("workspaceCapacityToBasket", () => {
+  it("uses the fixed Tier 2 plan at 70 feeds", () => {
+    expect(workspaceCapacityToBasket(70)).toEqual([
+      { productKey: ProductKey.Tier2, quantity: 1 },
+    ]);
+  });
+
+  it("uses Tier 3 without add-ons at 140 feeds", () => {
+    expect(workspaceCapacityToBasket(140)).toEqual([
+      { productKey: ProductKey.Tier3, quantity: 1 },
+    ]);
+  });
+
+  it("uses Tier 3 plus add-ons above 140 feeds", () => {
+    expect(workspaceCapacityToBasket(200)).toEqual([
+      { productKey: ProductKey.Tier3, quantity: 1 },
+      { productKey: ProductKey.Tier3Feed, quantity: 60 },
+    ]);
   });
 });
 
@@ -34,8 +57,16 @@ describe("workspaceFeedPricingFromProducts", () => {
   });
 
   const products: PricePreview[] = [
-    { id: ProductKey.Tier2, name: "Tier2", prices: [price("month", 1000), price("year", 10000)] },
-    { id: ProductKey.Tier3Feed, name: "Feed", prices: [price("month", 50), price("year", 500)] },
+    {
+      id: ProductKey.Tier2,
+      name: "Tier2",
+      prices: [price("month", 1000), price("year", 10000)],
+    },
+    {
+      id: ProductKey.Tier3Feed,
+      name: "Feed",
+      prices: [price("month", 50), price("year", 500)],
+    },
   ];
 
   it("is undefined until the preview lands", () => {
@@ -84,7 +115,11 @@ describe("workspaceFeedPricingFromProducts", () => {
 
   it("is undefined when a unit amount is not a finite number", () => {
     const poisoned: PricePreview[] = [
-      { id: ProductKey.Tier2, name: "Tier2", prices: [price("month", Number.NaN)] },
+      {
+        id: ProductKey.Tier2,
+        name: "Tier2",
+        prices: [price("month", Number.NaN)],
+      },
       { id: ProductKey.Tier3Feed, name: "Feed", prices: [price("month", 50)] },
     ];
     expect(workspaceFeedPricingFromProducts(poisoned, "month")).toBeUndefined();
@@ -98,6 +133,7 @@ describe("useWorkspaceSliderPrice", () => {
     baseUnitAmount: 1000,
     perFeedUnitAmount: 50,
     currencyCode: "USD",
+    tier3BaseUnitAmount: 2000,
   };
 
   const priceFor = (feeds: number, p: WorkspaceFeedPricing | undefined) =>
@@ -112,10 +148,10 @@ describe("useWorkspaceSliderPrice", () => {
     expect(priceFor(WORKSPACE_BASE_FEEDS, pricing)).toBe("$10");
   });
 
-  it("derives the total as base plus per-feed unit times the overage", () => {
-    // 1000 + 50 * 30 = 2500 cents = $25.00 -> "$25".
-    expect(priceFor(WORKSPACE_BASE_FEEDS + 30, pricing)).toBe("$25");
-    // 1000 + 50 * 430 = 22500 cents = $225.00 -> "$225".
-    expect(priceFor(500, pricing)).toBe("$225");
+  it("prices Tier 3 plus per-feed overage", () => {
+    // 2000 + 50 * 60 = 5000 cents = $50.00 -> "$50".
+    expect(priceFor(200, pricing)).toBe("$50");
+    // 2000 + 50 * 360 = 20000 cents = $200.00 -> "$200".
+    expect(priceFor(500, pricing)).toBe("$200");
   });
 });

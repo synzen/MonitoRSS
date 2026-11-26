@@ -241,6 +241,7 @@ export interface DeliveryPreviewFeedInput {
     headers?: Record<string, string>;
   } | null;
   refreshRateSeconds?: number;
+  usePlatformProvider?: boolean;
 }
 
 export interface DeliveryPreviewMediumInput {

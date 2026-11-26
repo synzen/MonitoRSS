@@ -53,7 +53,7 @@ const configSchema = z.object({
   // this floor. 0 disables it.
   BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS: z.coerce
     .number()
-    .default(7200),
+    .default(3600),
   // Cadence of the schedule emitter's maintenance loop (platform GC sweep,
   // support checks). Lower values are for dev/e2e only: each sweep aggregates
   // every active feed.
