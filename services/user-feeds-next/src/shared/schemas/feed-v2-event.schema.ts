@@ -371,6 +371,7 @@ export { componentV2Schema };
 export const feedV2EventSchema = z.object({
   timestamp: z.number().optional(),
   debug: z.boolean().optional(),
+  resetBaseline: z.boolean().optional(),
   data: z.object({
     feed: z.object({
       id: z.string(),

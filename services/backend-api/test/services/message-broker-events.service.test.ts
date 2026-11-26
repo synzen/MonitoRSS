@@ -50,7 +50,12 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
       assert.deepStrictEqual(
         ctx.userFeedRepository.updateHealthStatusByFilter.mock.calls[0]
           ?.arguments,
-        [{ url }, UserFeedHealthStatus.Failing, UserFeedHealthStatus.Failing, true],
+        [
+          { url },
+          UserFeedHealthStatus.Failing,
+          UserFeedHealthStatus.Failing,
+          true,
+        ],
       );
     });
 
@@ -539,9 +544,10 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
       const ctx = harness.createContext({
         now: () => FANOUT_NOW,
         userFeedRepository: {
-          iterateScheduledFeedsWithLookupKeysForDeliveryResult: (async function* () {
-            yield mockFeed;
-          })(),
+          iterateScheduledFeedsWithLookupKeysForDeliveryResult:
+            (async function* () {
+              yield mockFeed;
+            })(),
         },
       });
 
@@ -871,7 +877,6 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
         0,
       );
     });
-
   });
 
   describe("handleFeedRejectedDisableFeed", () => {
@@ -1125,6 +1130,34 @@ describe("MessageBrokerEventsService", { concurrency: true }, () => {
   });
 
   describe("emitDeliverFeedArticlesEvent", () => {
+    it("marks reset-and-refresh deliveries so user-feeds clears the old baseline", async () => {
+      const ctx = harness.createContext();
+      const userFeed = {
+        id: "feed-reset",
+        url: "https://example.com/new.xml",
+        connections: {
+          discordChannels: [
+            {
+              id: "connection-1",
+              details: {
+                channel: { id: "channel-1", guildId: "guild-1" },
+                embeds: [],
+                formatter: {},
+              },
+            },
+          ],
+        },
+      };
+
+      await ctx.service.resetAndRefreshFeed(userFeed as never);
+
+      const [, message] = ctx.publishMessage.mock.calls[0]?.arguments || [];
+      assert.strictEqual(
+        (message as { resetBaseline?: boolean }).resetBaseline,
+        true,
+      );
+    });
+
     it("publishes workspace-granted custom placeholders and external properties", async () => {
       const ctx = harness.createContext({
         supportersService: {

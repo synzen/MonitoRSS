@@ -1195,14 +1195,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("updates URL and recalculates slotOffsetMs", async () => {
-      let publishedMessage: unknown = null;
       const ctx = await harness.createContext({
         feedHandler: {
           url: "https://example.com/new.xml",
           feedTitle: "New Feed",
-        },
-        publishMessage: async (_queue, msg) => {
-          publishedMessage = msg;
         },
       });
 
@@ -1216,17 +1212,14 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.ok(result);
       assert.strictEqual(result.url, "https://example.com/new.xml");
       assert.ok(typeof result.slotOffsetMs === "number");
-      assert.ok(publishedMessage);
     });
 
-    it("publishes feed-deleted message when URL changes", async () => {
-      let publishedQueue: string | null = null;
-      let publishedMessage: unknown = null;
+    it("leaves baseline cleanup and refresh to the URL-update handler", async () => {
+      const publishedQueues: string[] = [];
       const ctx = await harness.createContext({
         feedHandler: { url: "https://example.com/new.xml" },
-        publishMessage: async (queue, msg) => {
-          publishedQueue = queue;
-          publishedMessage = msg;
+        publishMessage: async (queue) => {
+          publishedQueues.push(queue);
         },
       });
 
@@ -1237,10 +1230,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
         { url: "https://example.com/new.xml" },
       );
 
-      assert.strictEqual(publishedQueue, "feed.deleted");
-      assert.deepStrictEqual(publishedMessage, {
-        data: { feedId: feed.id },
-      });
+      assert.deepStrictEqual(publishedQueues, []);
     });
 
     it("allows changing a feed's URL to a reddit url without an active connection", async () => {

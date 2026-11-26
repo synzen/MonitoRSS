@@ -55,6 +55,34 @@ describe("App (e2e)", { concurrency: true }, () => {
     }
   });
 
+  it("resets the baseline and initializes a changed source without delivering old articles", async () => {
+    const ctx = createTestContext(stores);
+
+    try {
+      await ctx.seedArticles();
+      ctx.setFeedResponse(() => ({
+        body: getTestRssFeed(
+          [{ guid: "replacement-existing", title: "Replacement Existing" }],
+          true
+        ),
+        hash: randomUUID(),
+      }));
+
+      const results = await ctx.handleEvent(undefined, {
+        resetBaseline: true,
+      });
+
+      assert.deepStrictEqual(results, []);
+      assert.strictEqual(ctx.discordClient.capturedPayloads.length, 0);
+
+      const nextResults = await ctx.handleEvent();
+      assert.deepStrictEqual(nextResults, []);
+      assert.strictEqual(ctx.discordClient.capturedPayloads.length, 0);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("does not send new articles if blocked by comparisons", async () => {
     const ctx = createTestContext(stores, {
       feedEventOverrides: {

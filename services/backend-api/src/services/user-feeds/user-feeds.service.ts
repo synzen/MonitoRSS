@@ -1388,10 +1388,6 @@ export class UserFeedsService {
       // A url change can flip the feed's credential requirement (e.g. to/from a
       // Reddit url), so resync the lookup key or delivery fetches with a stale key.
       await this.deps.feedCredentialsService.syncLookupKeys({ feedIds: [id] });
-
-      await this.deps.publishMessage(MessageBrokerQueue.FeedDeleted, {
-        data: { feedId: id },
-      });
     }
     if (
       u &&

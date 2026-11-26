@@ -53,6 +53,7 @@ import {
   resolveWorkspacePremiumAllowance,
 } from "../../shared/utils/billing";
 import type { Config } from "../../config";
+import logger from "../../infra/logger";
 import type {
   GetUserFeedsInputFilters,
   GetUserFeedsInputSortKey,
@@ -412,7 +413,13 @@ export async function updateUserFeedHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, supportersService, config } = request.container;
+  const {
+    userFeedsService,
+    supportersService,
+    config,
+    messageBrokerEventsService,
+    workspacesService,
+  } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
@@ -461,6 +468,29 @@ export async function updateUserFeedHandler(
     { id: feedId, disabledCode: feed.disabledCode, user },
     request.body as Parameters<typeof userFeedsService.updateFeedById>[1],
   );
+
+  if (updated && request.body.url) {
+    try {
+      const workspace = updated.workspaceId
+        ? await workspacesService
+            .getRedditCredentials(updated.workspaceId)
+            .then((credential) => ({
+              externalCredentials: credential ? [credential] : [],
+            }))
+        : undefined;
+
+      await messageBrokerEventsService.resetAndRefreshFeed(
+        updated,
+        user,
+        workspace,
+      );
+    } catch (err) {
+      logger.warn(
+        `Feed ${updated.id} URL changed but immediate baseline refresh could not be queued`,
+        { error: (err as Error).stack },
+      );
+    }
+  }
 
   const acceptedInvite = updated!.shareManageOptions?.invites?.find(
     (inv) =>

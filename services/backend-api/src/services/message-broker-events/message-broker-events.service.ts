@@ -524,6 +524,7 @@ export class MessageBrokerEventsService {
     userFeed: UserFeedForDelivery | IUserFeed,
     user?: UserForDelivery,
     workspace?: WorkspaceForDelivery,
+    options?: { resetBaseline?: boolean },
   ): Promise<void> {
     const allConnections = Object.values(userFeed.connections).flat() as Array<{
       customPlaceholders?: unknown[];
@@ -552,7 +553,21 @@ export class MessageBrokerEventsService {
       parseExternalProperties: allowExternalProperties,
       user,
       workspace,
+      resetBaseline: options?.resetBaseline,
     });
+  }
+
+  async resetAndRefreshFeed(
+    userFeed: UserFeedForDelivery | IUserFeed,
+    user?: UserForDelivery,
+    workspace?: WorkspaceForDelivery,
+  ): Promise<void> {
+    await this.emitDeliverFeedArticlesEventWithPremiumCheck(
+      userFeed,
+      user,
+      workspace,
+      { resetBaseline: true },
+    );
   }
 
   async emitDeliverFeedArticlesEvent({
@@ -562,6 +577,7 @@ export class MessageBrokerEventsService {
     parseExternalProperties,
     user,
     workspace,
+    resetBaseline,
   }: {
     userFeed: UserFeedForDelivery | IUserFeed;
     maxDailyArticles: number;
@@ -569,6 +585,7 @@ export class MessageBrokerEventsService {
     parseExternalProperties?: boolean;
     user?: UserForDelivery;
     workspace?: WorkspaceForDelivery;
+    resetBaseline?: boolean;
   }): Promise<void> {
     const discordChannelMediums = userFeed.connections.discordChannels
       .filter((c) => !c.disabledCode)
@@ -693,6 +710,7 @@ export class MessageBrokerEventsService {
       MessageBrokerQueue.FeedDeliverArticles,
       {
         debug,
+        resetBaseline,
         timestamp: Date.now(),
         data: publishData,
         source: "backend-api::message-broker-events",

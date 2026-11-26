@@ -50,3 +50,16 @@ export async function handleFeedDeletedEvent(
 
   logger.debug(`Deleted feed info for feed ${feedId}`);
 }
+
+export async function resetFeedBaseline(
+  feedId: string,
+  options: {
+    responseHashStore: ResponseHashStore;
+    articleFieldStore: ArticleFieldStore;
+    feedRetryStore: FeedRetryStore;
+  }
+): Promise<void> {
+  await options.responseHashStore.remove(feedId);
+  await options.articleFieldStore.clear(feedId);
+  await options.feedRetryStore.remove(feedId);
+}
