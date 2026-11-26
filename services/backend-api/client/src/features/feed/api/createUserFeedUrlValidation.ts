@@ -4,6 +4,9 @@ import fetchRest from "../../../utils/fetchRest";
 export interface CreateUserFeedUrlValidationInput {
   details: {
     url: string;
+    // Existing feed being re-URLed. Validation uses its premium slot instead
+    // of treating the replacement URL as a new premium feed.
+    feedId?: string;
     // In workspace scope, reddit-connection checks resolve against the workspace's
     // connection instead of the caller's personal one.
     workspaceId?: string;

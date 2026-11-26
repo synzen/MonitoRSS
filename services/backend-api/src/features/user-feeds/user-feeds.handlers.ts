@@ -9,7 +9,10 @@ import {
 } from "../../infra/error-handler";
 import { Types } from "mongoose";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
-import { UserFeedManagerStatus, UserFeedScheduleMode } from "../../repositories/shared/enums";
+import {
+  UserFeedManagerStatus,
+  UserFeedScheduleMode,
+} from "../../repositories/shared/enums";
 import { UserFeedComputedStatus } from "../../repositories/interfaces/user-feed.types";
 import {
   ManualRequestTooSoonException,
@@ -74,12 +77,8 @@ export async function createUserFeedHandler(
   request: FastifyRequest<{ Body: CreateUserFeedBody }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const {
-    userFeedsService,
-    supportersService,
-    curatedFeedRepository,
-    config,
-  } = request.container;
+  const { userFeedsService, supportersService, curatedFeedRepository, config } =
+    request.container;
   const { discordUserId, accessToken } = request;
   const { url, curatedFeedId, title, sourceFeedId, workspaceId } = request.body;
 
@@ -140,10 +139,7 @@ export async function formatUserFeedResponse(
   feed: IUserFeed,
   discordUserId: string,
   supportersService: SupportersServiceForFormat,
-  config: Pick<
-    Config,
-    "BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS"
-  >,
+  config: Pick<Config, "BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS">,
 ) {
   const discordChannelConnections = feed.connections.discordChannels.map(
     (con) => formatDiscordChannelConnectionResponse(con),
@@ -153,10 +149,9 @@ export async function formatUserFeedResponse(
   const feedBenefits = await supportersService.resolveFeedBenefits(feed);
   const supportersEnabled =
     (await supportersService.areSupportersEnabled()) === true;
-  const premiumFloorSeconds =
-    feed.isMeteredPlatformFeed
-      ? config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS
-      : 0;
+  const premiumFloorSeconds = feed.isMeteredPlatformFeed
+    ? config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS
+    : 0;
   const refreshRateLimits = resolveRefreshRateLimits({
     planMinimumSeconds: feedBenefits.refreshRateSeconds,
     premiumFloorSeconds,
@@ -214,9 +209,17 @@ export async function validateFeedUrlHandler(
   const { userFeedsService } = request.container;
   const { discordUserId } = request;
 
+  const existingFeed = request.body.feedId
+    ? (await resolveFeedForRequester(request, request.body.feedId)).feed
+    : undefined;
+
   const result = await userFeedsService.validateFeedUrl(
     { discordUserId },
-    { url: request.body.url, workspaceId: request.body.workspaceId },
+    {
+      url: request.body.url,
+      workspaceId: request.body.workspaceId,
+      replacesFeed: existingFeed,
+    },
   );
 
   return reply.status(200).send({ result });
@@ -913,8 +916,7 @@ export async function getUserFeedsHandler(
     offset: request.query.offset,
     search: request.query.search,
     sort: (request.query.sort || undefined) as
-      | GetUserFeedsInputSortKey
-      | undefined,
+      GetUserFeedsInputSortKey | undefined,
     filters,
     workspaceId,
   };

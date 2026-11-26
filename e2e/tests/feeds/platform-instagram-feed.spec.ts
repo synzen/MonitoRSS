@@ -1,5 +1,6 @@
 import { test, expect } from "../../fixtures/test-fixtures";
 import {
+  createFeed,
   createConnection,
   deleteFeed,
   getTestChannelId,
@@ -213,6 +214,59 @@ test.describe("Platform instagram feed pipeline", () => {
       await expect(
         page.getByRole("button", { name: /^Add .+ feed$/i }),
       ).toHaveCount(0);
+    } finally {
+      await clearPremiumFeedsFeatureInDb(discordUserId);
+      await clearSupporterStatusInDb(discordUserId);
+    }
+  });
+
+  test("can change the URL of a premium feed at the premium allowance limit", async ({
+    page,
+  }, testInfo) => {
+    testInfo.skip(
+      process.env.E2E_PLATFORM !== "1",
+      "Opt-in platform run: set E2E_PLATFORM=1 with the private package installed (NPM_TOKEN build)",
+    );
+    test.setTimeout(120_000);
+
+    const original = uniquePlatformHandle();
+    const replacement = uniquePlatformHandle();
+    const discordUserId = await getDiscordUserIdFromPage(page);
+    await setSupporterStatusInDb(discordUserId);
+    await enablePremiumFeedsFeatureInDb(discordUserId);
+
+    try {
+      await createFeed(page, {
+        url: uniquePlatformHandle().url,
+      });
+      const feed = await createFeed(page, {
+        url: original.url,
+        title: original.title,
+      });
+
+      await page.goto("/feeds");
+      await page
+        .getByRole("link", { name: original.title, exact: true })
+        .click();
+      const feedId = feed.id;
+
+      await page.getByRole("button", { name: "Feed Actions" }).click();
+      await page.getByRole("menuitem", { name: "Edit" }).click();
+      const dialog = page.getByRole("dialog");
+      const urlInput = dialog.getByRole("textbox", { name: "RSS Feed Link" });
+      await urlInput.fill(replacement.url);
+      await dialog.getByRole("button", { name: "Save" }).click();
+
+      await expect(dialog).not.toBeVisible({ timeout: 30000 });
+      await expect(
+        page.getByRole("alert").getByText("Successfully updated feed."),
+      ).toBeVisible({ timeout: 30000 });
+      await expect(page.getByText("Failed to save changes")).toHaveCount(0);
+      await expect(
+        page.getByRole("link", { name: replacement.url, exact: true }),
+      ).toBeVisible();
+
+      await deleteFeed(page, feedId as string);
     } finally {
       await clearPremiumFeedsFeatureInDb(discordUserId);
       await clearSupporterStatusInDb(discordUserId);

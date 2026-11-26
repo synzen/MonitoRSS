@@ -33,6 +33,10 @@ export type DeduplicateFeedUrlsBody = Static<
 
 export const ValidateUrlBodySchema = Type.Object({
   url: Type.String({ minLength: 1 }),
+  // Set when validating a replacement URL for an existing feed. The validation
+  // endpoint uses the feed's current premium slot instead of treating the URL
+  // as a new premium feed.
+  feedId: Type.Optional(Type.String({ minLength: 1 })),
   // Validate in workspace scope: reddit-connection checks resolve against the
   // workspace's connection instead of the caller's personal one.
   workspaceId: Type.Optional(Type.String({ minLength: 1 })),
@@ -97,7 +101,10 @@ export const UpdateUserFeedsBodySchema = Type.Object(
                   Type.Union(
                     Object.values(UserFeedComputedStatus).map((v) =>
                       Type.Literal(v),
-                    ) as [ReturnType<typeof Type.Literal>, ...ReturnType<typeof Type.Literal>[]],
+                    ) as [
+                      ReturnType<typeof Type.Literal>,
+                      ...ReturnType<typeof Type.Literal>[],
+                    ],
                   ),
                 ),
               ),

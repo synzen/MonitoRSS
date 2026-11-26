@@ -1,4 +1,14 @@
-import { Alert, Box, Button, HStack, Icon, Input, Link, Stack, Text } from "@chakra-ui/react";
+import {
+  Alert,
+  Box,
+  Button,
+  HStack,
+  Icon,
+  Input,
+  Link,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -36,6 +46,7 @@ type FormData = InferType<typeof formSchema>;
 
 interface Props {
   onUpdate: (data: FormData) => Promise<void>;
+  feedId: string;
   defaultValues: Required<FormData>;
   onCloseRef?: React.RefObject<HTMLButtonElement | null>;
   isOpen: boolean;
@@ -50,6 +61,7 @@ const RESOLVABLE_ERRORS: string[] = [
 
 export const EditUserFeedDialog: React.FC<Props> = ({
   onUpdate,
+  feedId,
   defaultValues,
   onCloseRef,
   onClose,
@@ -80,8 +92,10 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   const error = updateError || validationError;
   const isConfirming = !!feedUrlValidationData?.result.resolvedToUrl;
   const isLoading = isSubmitting || validationStatus === "pending";
-  const canResolveError = !!error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
-  const isRedditConnectionRequired = error?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
+  const canResolveError =
+    !!error?.errorCode && RESOLVABLE_ERRORS.includes(error.errorCode);
+  const isRedditConnectionRequired =
+    error?.errorCode === ApiErrorCode.REDDIT_CONNECTION_REQUIRED;
   const showCta = canResolveError || isRedditConnectionRequired;
 
   // Set while the post-connect Reddit retry is driving the save. A subreddit URL
@@ -114,7 +128,9 @@ export const EditUserFeedDialog: React.FC<Props> = ({
 
     try {
       if (url && !feedUrlValidationData && !skipPreValidation) {
-        const { result } = await createUserFeedUrlValidation({ details: { url } });
+        const { result } = await createUserFeedUrlValidation({
+          details: { url, feedId },
+        });
 
         if (result.resolvedToUrl) {
           return;
@@ -141,11 +157,13 @@ export const EditUserFeedDialog: React.FC<Props> = ({
   const feedScope = useFeedScope();
   const hasRedditConnected = feedScope.workspaceId
     ? feedScope.redditConnection?.status === "ACTIVE"
-    : userMe?.result.externalAccounts?.find((e) => e.type === "reddit")?.status === "ACTIVE";
+    : userMe?.result.externalAccounts?.find((e) => e.type === "reddit")
+        ?.status === "ACTIVE";
   const prevHasRedditConnectedRef = useRef(hasRedditConnected);
 
   useEffect(() => {
-    const justConnected = hasRedditConnected && !prevHasRedditConnectedRef.current;
+    const justConnected =
+      hasRedditConnected && !prevHasRedditConnectedRef.current;
     prevHasRedditConnectedRef.current = hasRedditConnected;
 
     if (justConnected && redditGatePendingRef.current) {
@@ -213,8 +231,8 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                       </HStack>
                     </Link>{" "}
                     <Text display="inline">
-                      instead that might be related to the url you provided. Do you want to use this
-                      feed link instead?
+                      instead that might be related to the url you provided. Do
+                      you want to use this feed link instead?
                     </Text>
                   </Box>
                   <span
@@ -243,14 +261,20 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                 <Field
                   invalid={!!errors.title}
                   required
-                  label={t("features.feed.components.addFeedDialog.formTitleLabel")}
+                  label={t(
+                    "features.feed.components.addFeedDialog.formTitleLabel",
+                  )}
                   errorText={errors.title?.message}
-                  helperText={t("features.feed.components.addFeedDialog.formTitleDescription")}
+                  helperText={t(
+                    "features.feed.components.addFeedDialog.formTitleDescription",
+                  )}
                 >
                   <Controller
                     name="title"
                     control={control}
-                    render={({ field }) => <Input {...field} tabIndex={0} ref={initialFocusRef} />}
+                    render={({ field }) => (
+                      <Input {...field} tabIndex={0} ref={initialFocusRef} />
+                    )}
                   />
                 </Field>
                 <Field
@@ -258,12 +282,16 @@ export const EditUserFeedDialog: React.FC<Props> = ({
                   required
                   label="RSS Feed Link"
                   errorText={errors.url?.message}
-                  helperText={t("features.feed.components.addFeedDialog.formLinkDescription")}
+                  helperText={t(
+                    "features.feed.components.addFeedDialog.formLinkDescription",
+                  )}
                 >
                   <Controller
                     name="url"
                     control={control}
-                    render={({ field }) => <Input type="url" {...field} tabIndex={0} />}
+                    render={({ field }) => (
+                      <Input type="url" {...field} tabIndex={0} />
+                    )}
                   />
                 </Field>
               </Stack>
@@ -277,7 +305,9 @@ export const EditUserFeedDialog: React.FC<Props> = ({
             {showCta && (
               <FixFeedRequestsCTA
                 url={urlFromForm || ""}
-                variant={isRedditConnectionRequired ? "required" : "rate-limited"}
+                variant={
+                  isRedditConnectionRequired ? "required" : "rate-limited"
+                }
               />
             )}
             {isSubmitted && formErrorCount > 0 && (

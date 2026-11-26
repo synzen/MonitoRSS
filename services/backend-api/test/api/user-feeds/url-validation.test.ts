@@ -135,14 +135,18 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
     const inputUrl = "https://old.reddit.com/r/gaming/new.rss";
     const canonicalUrl = "https://old.reddit.com/r/gaming/new";
 
-    feedApiMockServer.registerRoute("POST", "/v1/platform/resolve-urls", (req) => ({
-      status: 200,
-      body: {
-        results: ((req.body as { urls?: string[] })?.urls ?? []).map((u) =>
-          u.endsWith(".rss") ? u.slice(0, -4) : null,
-        ),
-      },
-    }));
+    feedApiMockServer.registerRoute(
+      "POST",
+      "/v1/platform/resolve-urls",
+      (req) => ({
+        status: 200,
+        body: {
+          results: ((req.body as { urls?: string[] })?.urls ?? []).map((u) =>
+            u.endsWith(".rss") ? u.slice(0, -4) : null,
+          ),
+        },
+      }),
+    );
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
       status: 200,
       body: {
@@ -416,5 +420,93 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
     assert.strictEqual(response.status, 400);
     const body = (await response.json()) as { code: string };
     assert.strictEqual(body.code, "BANNED_FEED");
+  });
+
+  it("validates a premium replacement without consuming an additional slot", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const originalUrl = "https://www.instagram.com/original";
+    const replacementUrl = "https://www.instagram.com/mrdalekjd";
+
+    await ctx.connection
+      .collection("users")
+      .updateOne(
+        { discordUserId },
+        { $set: { "featureFlags.premiumFeeds": true } },
+      );
+
+    await ctx.container.userFeedRepository.create({
+      title: "Instagram first",
+      url: "https://www.instagram.com/first",
+      user: { id: generateTestId(), discordUserId },
+      isMeteredPlatformFeed: true,
+    });
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Instagram original",
+      url: originalUrl,
+      user: { id: generateTestId(), discordUserId },
+      isMeteredPlatformFeed: true,
+    });
+
+    feedApiMockServer.registerRoute(
+      "POST",
+      "/v1/platform/classify-urls",
+      (req) => ({
+        status: 200,
+        body: {
+          results: ((req.body as { urls?: string[] })?.urls ?? []).map((url) =>
+            url.includes("instagram.com"),
+          ),
+        },
+      }),
+    );
+    feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
+      status: 200,
+      body: {
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [],
+          totalArticles: 0,
+          selectedProperties: [],
+          url: replacementUrl,
+          feedTitle: "Instagram @mrdalekjd posts",
+        },
+      },
+    });
+
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
+      method: "POST",
+      body: JSON.stringify({ url: replacementUrl, feedId: feed.id }),
+    });
+
+    assert.strictEqual(response.status, 200);
+  });
+
+  it("returns 404 when validating with another user's feed id", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Private feed",
+      url: "https://www.instagram.com/private",
+      user: {
+        id: generateTestId(),
+        discordUserId: ownerDiscordUserId,
+      },
+      isMeteredPlatformFeed: true,
+    });
+    const otherUser = await ctx.asUser(generateSnowflake());
+
+    const response = await otherUser.fetch(
+      "/api/v1/user-feeds/url-validation",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          url: "https://www.instagram.com/replacement",
+          feedId: feed.id,
+        }),
+      },
+    );
+
+    assert.strictEqual(response.status, 404);
   });
 });

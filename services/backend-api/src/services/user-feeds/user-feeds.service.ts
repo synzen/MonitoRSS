@@ -260,9 +260,10 @@ export class UserFeedsService {
     // Counted per feed, not per distinct URL — the allowance is feed slots.
     const used =
       scopedFeedUrls.filter((url) => {
-        return scopedPlatformUrls.has(url) && appliesPremiumRefreshRateFloor(url);
-      }).length -
-      (input.replacesPlatformFeed ? 1 : 0);
+        return (
+          scopedPlatformUrls.has(url) && appliesPremiumRefreshRateFloor(url)
+        );
+      }).length - (input.replacesPlatformFeed ? 1 : 0);
     const allowance = input.workspaceId
       ? resolveWorkspacePremiumAllowance({
           totalFeeds: input.workspaceFeedLimit,
@@ -432,7 +433,11 @@ export class UserFeedsService {
 
     if (
       user.featureFlags?.premiumFeeds &&
-      this.isMeteredPlatformUrl(resolvedUrl, inputPlatformUrls, user.featureFlags)
+      this.isMeteredPlatformUrl(
+        resolvedUrl,
+        inputPlatformUrls,
+        user.featureFlags,
+      )
     ) {
       await this.assertPlatformFeedAllowed({
         isMeteredPlatformUrl: true,
@@ -475,12 +480,13 @@ export class UserFeedsService {
       this.assertRedditCredential(credentialSource);
     }
 
-    const effectiveRefreshRateSeconds = this.clampMeteredPlatformRefreshRateSeconds(
-      finalUrl,
-      isPlatformUrl,
-      refreshRateSeconds,
-      user.featureFlags,
-    );
+    const effectiveRefreshRateSeconds =
+      this.clampMeteredPlatformRefreshRateSeconds(
+        finalUrl,
+        isPlatformUrl,
+        refreshRateSeconds,
+        user.featureFlags,
+      );
 
     const {
       connections,
@@ -603,11 +609,10 @@ export class UserFeedsService {
       dormant,
       isSupporter,
       premiumFeedBaseTier: destinationPremiumFeedBaseTier,
-    } =
-      await this.deps.supportersService.resolveFeedBenefits({
-        workspaceId: destinationWorkspaceId,
-        user: { discordUserId: sourceFeed.user.discordUserId },
-      });
+    } = await this.deps.supportersService.resolveFeedBenefits({
+      workspaceId: destinationWorkspaceId,
+      user: { discordUserId: sourceFeed.user.discordUserId },
+    });
 
     if (destinationWorkspaceId && dormant) {
       throw new WorkspaceNotSubscribedException(
@@ -701,13 +706,14 @@ export class UserFeedsService {
     } = {};
 
     if (this.isMeteredPlatformUrl(finalUrl, platformUrls, user.featureFlags)) {
-      meteredRateOverrides.refreshRateSeconds = this.clampMeteredPlatformRefreshRateSeconds(
-        finalUrl,
-        isPlatformUrl,
-        sourceFeed.refreshRateSeconds ??
-          this.deps.supportersService.defaultRefreshRateSeconds,
-        user.featureFlags,
-      );
+      meteredRateOverrides.refreshRateSeconds =
+        this.clampMeteredPlatformRefreshRateSeconds(
+          finalUrl,
+          isPlatformUrl,
+          sourceFeed.refreshRateSeconds ??
+            this.deps.supportersService.defaultRefreshRateSeconds,
+          user.featureFlags,
+        );
 
       if (
         sourceFeed.userRefreshRateSeconds &&
@@ -1109,8 +1115,11 @@ export class UserFeedsService {
           workspaceId: feed.workspaceId,
           workspaceFeedLimit: urlChangeBenefits.maxFeeds,
           workspaceBaseTier: urlChangeBenefits.premiumFeedBaseTier,
-          replacesPlatformFeed:
-            this.isMeteredPlatformUrl(feed.url, new Set([feed.url]), user.featureFlags),
+          replacesPlatformFeed: this.isMeteredPlatformUrl(
+            feed.url,
+            new Set([feed.url]),
+            user.featureFlags,
+          ),
         });
       }
 
@@ -1344,7 +1353,10 @@ export class UserFeedsService {
       }
     }
 
-    if (updates.scheduleMode === UserFeedScheduleMode.Scheduled && updates.schedule) {
+    if (
+      updates.scheduleMode === UserFeedScheduleMode.Scheduled &&
+      updates.schedule
+    ) {
       useUpdateObject.$set!.scheduleMode = updates.scheduleMode;
       const days = updates.schedule.days?.length
         ? [...new Set(updates.schedule.days)].sort((a, b) => a - b)
@@ -1894,10 +1906,14 @@ export class UserFeedsService {
 
   async validateFeedUrl(
     opts: { discordUserId: string },
-    input: { url: string; workspaceId?: string },
+    input: {
+      url: string;
+      workspaceId?: string;
+      replacesFeed?: IUserFeed;
+    },
   ): Promise<ValidateFeedUrlOutput> {
     const { discordUserId } = opts;
-    const { url, workspaceId } = input;
+    const { url, workspaceId, replacesFeed } = input;
 
     const user =
       await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -1930,11 +1946,7 @@ export class UserFeedsService {
     const platformUrls = await this.classifyPlatformUrls([resolvedUrl]);
 
     if (
-      this.isMeteredPlatformUrl(
-        resolvedUrl,
-        platformUrls,
-        user.featureFlags,
-      )
+      this.isMeteredPlatformUrl(resolvedUrl, platformUrls, user.featureFlags)
     ) {
       await this.assertPlatformFeedAllowed({
         isMeteredPlatformUrl: true,
@@ -1944,6 +1956,13 @@ export class UserFeedsService {
         workspaceId,
         workspaceFeedLimit: feedBenefits.maxFeeds,
         workspaceBaseTier: feedBenefits.premiumFeedBaseTier,
+        replacesPlatformFeed: replacesFeed
+          ? this.isMeteredPlatformUrl(
+              replacesFeed.url,
+              new Set([replacesFeed.url]),
+              user.featureFlags,
+            )
+          : false,
       });
     }
 
