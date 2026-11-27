@@ -420,6 +420,53 @@ describe("GET /api/v1/user-feeds/:feedId/requests nextRetryAtIso", () => {
     assert.strictEqual(body.result.nextRetryReason, "HOST_CACHE");
   });
 
+  it("does not treat a freshness lifetime equal to the refresh rate as host-cache gated", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const feedUrl = "https://example.com/next-retry-equal-freshness-test.xml";
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Feed Next Retry Equal Freshness",
+      url: feedUrl,
+      user: { id: generateTestId(), discordUserId },
+      refreshRateSeconds: 3600,
+    });
+    const createdAtUnix = Math.floor(Date.now() / 1000) - 60;
+
+    feedApiMockServer.registerRoute("GET", "/v1/feed-requests", {
+      status: 200,
+      body: {
+        result: {
+          requests: [
+            {
+              id: "req-equal",
+              url: feedUrl,
+              status: "OK",
+              createdAt: createdAtUnix,
+              createdAtIso: new Date(createdAtUnix * 1000).toISOString(),
+              response: { statusCode: 200, headers: {} },
+              freshnessLifetimeMs: 60 * 60 * 1000,
+            },
+          ],
+          nextRetryTimestamp: null,
+        },
+      },
+    });
+
+    const response = await user.fetch(
+      `/api/v1/user-feeds/${feed.id}/requests`,
+      { method: "GET" },
+    );
+    const body = (await response.json()) as {
+      result: { nextRetryAtIso: string | null; nextRetryReason: string | null };
+    };
+
+    assert.strictEqual(
+      body.result.nextRetryAtIso,
+      new Date((createdAtUnix + 3600) * 1000).toISOString(),
+    );
+    assert.strictEqual(body.result.nextRetryReason, "REFRESH_RATE");
+  });
+
   it("uses upstream nextRetryTimestamp when latest request is not OK", async () => {
     const discordUserId = generateSnowflake();
     const user = await ctx.asUser(discordUserId);

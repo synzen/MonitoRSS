@@ -81,6 +81,11 @@ dayjs.extend(timezone);
 
 type NextRetryReason = "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF";
 
+// Keep this aligned with feed-requests' scheduled-fetch policy. A host cache
+// only overrides the feed cadence when it is materially longer; equal or nearly
+// equal lifetimes must not turn an hourly cadence into a two-hour interval.
+const HOST_CACHE_CADENCE_MARGIN_MS = 60_000;
+
 const BULK_DELETE_PUBLISH_CONCURRENCY = 10;
 
 // The only disable states a successful manual request proves recovery from.
@@ -1024,7 +1029,9 @@ export class UserFeedsService {
     const freshnessSeconds = latestRequest.freshnessLifetimeMs
       ? latestRequest.freshnessLifetimeMs / 1000
       : 0;
-    const cacheGated = freshnessSeconds > refreshRateSeconds;
+    const cacheGated =
+      freshnessSeconds * 1000 >
+      refreshRateSeconds * 1000 + HOST_CACHE_CADENCE_MARGIN_MS;
     const effectiveIntervalSeconds = cacheGated
       ? freshnessSeconds
       : refreshRateSeconds;

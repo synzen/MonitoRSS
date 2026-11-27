@@ -173,9 +173,6 @@ services:
       # official oauth API with the user's own grant (minted by the mocked
       # Reddit connect flow), served by the vendor mock's oauth double.
       - PLATFORM_SOURCE_REDDIT_PROVIDER=${PLATFORM_SOURCE_REDDIT_PROVIDER:-redditofficial}
-      # The redditofficial adapter reaches oauth.reddit.com through its own
-      # base-URL override; e2e points it at the same vendor mock.
-      - PLATFORM_SOURCE_REDDITOFFICIAL_BASE_URL=http://host.docker.internal:${E2E_VENDOR_MOCK_PORT:-3007}
     networks:
       - e2e-default
 
@@ -214,7 +211,6 @@ services:
       - PLATFORM_SOURCE_PROVIDER_API_KEY=${PLATFORM_SOURCE_PROVIDER_API_KEY:-}
       # Same as feed-requests-service.
       - PLATFORM_SOURCE_REDDIT_PROVIDER=${PLATFORM_SOURCE_REDDIT_PROVIDER:-redditofficial}
-      - PLATFORM_SOURCE_REDDITOFFICIAL_BASE_URL=http://host.docker.internal:${E2E_VENDOR_MOCK_PORT:-3007}
     networks:
       - e2e-default
   e2e-user-feeds-service:

@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import {
   calculateBackoffIntervalMs,
+  createScheduledFetchPolicies,
   createScheduledFetchProcessor,
   type BackoffConfig,
 } from './scheduled-fetch';
@@ -191,6 +192,30 @@ describe('calculateBackoffIntervalMs', () => {
 });
 
 describe('createScheduledFetchProcessor', () => {
+  it('does not let a host cache that only nearly ties the cadence suppress a fetch', async () => {
+    const policies = createScheduledFetchPolicies({
+      backoffConfig: config,
+      partitionedRequestsStore: {
+        getLatestRequestWithOkStatus: async () => ({
+          createdAt: new Date(Date.now() - 10 * 60 * 1000),
+          requestInitiatedAt: new Date(Date.now() - 10 * 60 * 1000),
+          responseHeaders: {
+            'cache-control': 'public, max-age=120',
+          },
+        }),
+        getLatestAttempt: async () => null,
+        getEarliestRequestCreatedAt: async () => null,
+      },
+    });
+
+    const result = await policies.isLatestResponseStillFreshInCache({
+      lookupKey: 'https://example.com/feed.xml',
+      rateSeconds: 140,
+    });
+
+    assert.strictEqual(result.isCacheStillActive, false);
+  });
+
   it('preserves platform provider routing from the batch item to the fetch', async () => {
     const calls: Array<{ url: string; usePlatformProvider?: boolean }> = [];
     const processor = createScheduledFetchProcessor({

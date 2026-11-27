@@ -14,7 +14,7 @@ import {
 // it through the package's matcher to the adapter, which fetches oauth-style
 // listing JSON with the user's stored grant and is pointed at the package's
 // own vendor doubles (@synzen/platform-adapters/mock-vendor, mounted by
-// scripts/vendor-mock.ts) via PLATFORM_SOURCE_REDDITOFFICIAL_BASE_URL in
+// scripts/vendor-mock.ts) via PLATFORM_SOURCE_PROVIDER_BASE_URL in
 // docker-compose.e2e.yml. The rest of the pipeline treats it like any other
 // feed. The oauth double rejects Bearer-less requests, so the credential
 // chain (store -> sweep -> batch item -> adapter) is exercised end to end.
