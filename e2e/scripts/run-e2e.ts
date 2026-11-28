@@ -618,8 +618,11 @@ async function main(): Promise<number> {
   console.log(
     `Starting E2E Docker stack (instance: ${instance}, project: ${context.projectName})...`,
   );
+  // Ports come from the constants, not the env object: run-e2e never logs
+  // process-env-derived values.
+  const offset = context.instance * PORT_STRIDE;
   console.log(
-    `  backend=${context.env.E2E_BACKEND_PORT} frontend=${context.env.E2E_FRONTEND_PORT} mongo=${context.env.E2E_MONGO_PORT} rss-mock=${context.env.E2E_MOCK_RSS_PORT} discord-mock=${context.env.E2E_MOCK_DISCORD_PORT} smtp-mock=${context.env.E2E_MOCK_SMTP_PORT}/${context.env.E2E_MOCK_SMTP_HTTP_PORT} reddit-mock=${context.env.E2E_MOCK_REDDIT_PORT} vendor-mock=${context.env.E2E_VENDOR_MOCK_PORT}`,
+    `  backend=${DEFAULT_PORTS.backend + offset} frontend=${DEFAULT_PORTS.frontend + offset} mongo=${DEFAULT_PORTS.mongo + offset} rss-mock=${DEFAULT_PORTS.rss + offset} discord-mock=${DEFAULT_PORTS.discord + offset} smtp-mock=${DEFAULT_PORTS.smtp + offset}/${DEFAULT_PORTS.smtpHttp + offset} reddit-mock=${DEFAULT_PORTS.reddit + offset} vendor-mock=${DEFAULT_PORTS.vendor + offset}`,
   );
   appendLog(
     context.runnerLog,

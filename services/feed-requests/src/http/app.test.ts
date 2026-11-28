@@ -932,7 +932,7 @@ describe('HTTP app', () => {
 
     it('returns per-URL booleans aligned with the input order', async () => {
       mocks.platformUrlMatcher.mock.mockImplementation(
-        (u: string) => u.includes('reddit.com'),
+        (u: string) => new URL(u).hostname === 'www.reddit.com',
       );
 
       const res = await app.inject({
@@ -989,7 +989,7 @@ describe('HTTP app', () => {
 
     it('returns per-URL canonical forms aligned with the input order', async () => {
       mocks.platformUrlResolver.mock.mockImplementation((u: string) =>
-        u.includes('reddit.com')
+        new URL(u).hostname === 'www.reddit.com'
           ? `https://www.reddit.com/r/javascript`
           : null,
       );

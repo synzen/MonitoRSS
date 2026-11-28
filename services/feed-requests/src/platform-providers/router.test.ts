@@ -41,7 +41,7 @@ const matchPlatformUrl = (url: string): PlatformFeedIdentity | null => {
 
   const segments = parsed.pathname.split('/').filter(Boolean);
 
-  if (parsed.hostname.endsWith('reddit.com') && segments.length === 2) {
+  if (parsed.hostname === 'www.reddit.com' && segments.length === 2) {
     return {
       platform: 'reddit',
       kind: segments[0] === 'r' ? 'subreddit' : 'user',

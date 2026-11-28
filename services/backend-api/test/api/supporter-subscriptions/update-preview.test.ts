@@ -10,6 +10,7 @@ import {
   type TestHttpServer,
 } from "../../helpers/test-http-server";
 import type { MockApi } from "../../helpers/mock-apis";
+import { registerDefaultPaddleProductsRoute } from "../../helpers/paddle-fixtures";
 import {
   SubscriptionProductKey,
   SubscriptionStatus,
@@ -17,6 +18,7 @@ import {
 
 function createMockPaddleApi(): MockApi & { server: TestHttpServer } {
   const server = createTestHttpServer();
+  registerDefaultPaddleProductsRoute(server);
 
   return {
     server,

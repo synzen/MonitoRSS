@@ -455,8 +455,8 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
       (req) => ({
         status: 200,
         body: {
-          results: ((req.body as { urls?: string[] })?.urls ?? []).map((url) =>
-            url.includes("instagram.com"),
+          results: ((req.body as { urls?: string[] })?.urls ?? []).map(
+            (url) => new URL(url).hostname === "www.instagram.com",
           ),
         },
       }),

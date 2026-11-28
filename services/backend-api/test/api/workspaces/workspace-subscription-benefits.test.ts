@@ -198,7 +198,7 @@ describe(
       assert.strictEqual(detail.result.maxFeeds, 70);
     });
 
-    it("resolves the Team base item plus 1,930 additional feeds to 2,000 feeds", async () => {
+    it("caps Tier 2 add-on feeds at the Tier 2 base limit", async () => {
       const discordUserId = randomUUID();
       await seedWorkspaceUser(ctx, discordUserId);
       const { user, workspaceId, slug } = await createWorkspaceAsUser(discordUserId);
@@ -212,7 +212,7 @@ describe(
         await user.fetch(`/api/v1/workspaces/${slug}`),
       );
 
-      assert.strictEqual(detail.result.maxFeeds, 2000);
+      assert.strictEqual(detail.result.maxFeeds, 70);
     });
 
     it("extends the Tier 3 feed limit by the add-on quantity", async () => {

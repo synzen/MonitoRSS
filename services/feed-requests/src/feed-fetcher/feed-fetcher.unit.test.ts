@@ -304,7 +304,7 @@ describe('FeedFetcherService', () => {
       const segments = parsed.pathname.split('/').filter(Boolean);
 
       if (
-        parsed.hostname.endsWith('reddit.com') &&
+        parsed.hostname === 'www.reddit.com' &&
         segments.length === 2 &&
         segments[0] === 'r'
       ) {
@@ -318,6 +318,14 @@ describe('FeedFetcherService', () => {
       if (parsed.hostname === 'www.instagram.com' && segments.length === 1) {
         return {
           platform: 'instagram',
+          kind: 'user',
+          value: segments[0],
+        };
+      }
+
+      if (parsed.hostname === 'x.com' && segments.length === 1) {
+        return {
+          platform: 'twitter',
           kind: 'user',
           value: segments[0],
         };
@@ -646,7 +654,19 @@ describe('FeedFetcherService', () => {
 
     it('keeps a recognized non-reddit platform URL on the normal fetch path when not enabled', async () => {
       const twitterUrl = 'https://x.com/jack';
-      mockUndiciResponse();
+
+      // The registry knows no twitter provider, so the matched URL must not
+      // route; the normal fetch path still runs (mocked to succeed).
+      agent
+        .get('https://x.com')
+        .intercept({ path: '/jack' })
+        .reply(() => ({
+          statusCode: 200,
+          data: feedXml,
+          responseOptions: {
+            headers: { 'content-type': 'application/xml' },
+          },
+        }));
 
       const routedService = createServiceWithRegistry(registryWithProvider());
 

@@ -11,6 +11,7 @@
 !.clang-format
 !.editorconfig
 !services/feed-requests/.npmrc
+!services/backend-api/.npmrc
 !.eslintignore
 !.eslintrc.js
 !.flake8

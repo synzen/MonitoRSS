@@ -9,6 +9,7 @@ import type { ObjectFileStorageService } from '../object-file-storage/object-fil
 import type { CacheStorageService } from '../cache-storage/cache-storage';
 import { resolveUserAgentForUrl } from './user-agent';
 import {
+  NoProviderAvailableError,
   PlatformProviderFetchError,
   type PlatformFeedDocument,
   type PlatformHttpGet,
@@ -350,8 +351,20 @@ export function createFeedFetcherService({
         // of a plain HTTP GET of the feed URL; the adapter's normalized RSS
         // document is treated as a 200 response body so persistence, hashing
         // and parsing run unchanged. The adapter call is eager so its errors
-        // map into the failure taxonomy, not the text-parsing path.
-        const matchedPlatformRoute = platformSourceRouter?.route(url);
+        // map into the failure taxonomy, not the text-parsing path. A matched
+        // platform the deployment has no provider for stays on the normal
+        // fetch path; a misconfigured provider name still fails the fetch.
+        const matchedPlatformRoute = (() => {
+          try {
+            return platformSourceRouter?.route(url) ?? null;
+          } catch (err) {
+            if (err instanceof NoProviderAvailableError) {
+              return null;
+            }
+
+            throw err;
+          }
+        })();
         const platformRoute =
           matchedPlatformRoute &&
           (options?.usePlatformProvider ||

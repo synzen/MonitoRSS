@@ -91,7 +91,7 @@ vi.mock("../../hooks", () => ({
       refetch: vi.fn(),
     };
   },
-  useUserFeeds: () => ({ data: { total: 5 } }),
+  useUserFeeds: () => ({ data: { total: 5, premiumFeedCount: 0, premiumFeedLimit: 2 } }),
   useCreateUserFeed: () => ({ mutateAsync: vi.fn() }),
 }));
 
