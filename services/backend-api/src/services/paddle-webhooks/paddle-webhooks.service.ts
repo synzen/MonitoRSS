@@ -90,10 +90,17 @@ const SUBSCRIPTION_STATUS_MAPPING: Record<
 };
 
 export class PaddleWebhooksService {
-  private readonly paddleWebhookSecret?: string;
+  private readonly paddleWebhookSecrets: string[];
 
   constructor(private readonly deps: PaddleWebhooksServiceDeps) {
-    this.paddleWebhookSecret = deps.config.BACKEND_API_PADDLE_WEBHOOK_SECRET;
+    const configuredSecrets = deps.config.BACKEND_API_PADDLE_WEBHOOK_SECRETS;
+    const additionalSecrets = configuredSecrets
+      ? (JSON.parse(configuredSecrets) as string[])
+      : [];
+    this.paddleWebhookSecrets = [
+      deps.config.BACKEND_API_PADDLE_WEBHOOK_SECRET,
+      ...additionalSecrets,
+    ].filter((secret): secret is string => Boolean(secret));
   }
 
   async isVerifiedWebhookEvent({
@@ -107,7 +114,7 @@ export class PaddleWebhooksService {
       return false;
     }
 
-    if (!this.paddleWebhookSecret) {
+    if (this.paddleWebhookSecrets.length === 0) {
       throw new Error(
         "Missing webhook secret in config while verifying paddle webhook event",
       );
@@ -133,11 +140,11 @@ export class PaddleWebhooksService {
 
     const signedPayload = `${timestamp}:${requestBody}`;
 
-    const expected = createHmac("sha256", this.paddleWebhookSecret)
-      .update(signedPayload)
-      .digest("hex");
-
-    return expected === eventSignature;
+    return this.paddleWebhookSecrets.some(
+      (secret) =>
+        createHmac("sha256", secret).update(signedPayload).digest("hex") ===
+        eventSignature,
+    );
   }
 
   async handleSubscriptionUpdatedEvent(

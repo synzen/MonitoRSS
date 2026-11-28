@@ -110,6 +110,7 @@ const configSchema = z.object({
   BACKEND_API_PADDLE_KEY: z.string().optional(),
   BACKEND_API_PADDLE_URL: z.string().optional(),
   BACKEND_API_PADDLE_WEBHOOK_SECRET: z.string().optional(),
+  BACKEND_API_PADDLE_WEBHOOK_SECRETS: z.string().optional(),
 
   // Legacy
   BACKEND_API_ALLOW_LEGACY_REVERSION: z

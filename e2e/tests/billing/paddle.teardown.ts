@@ -20,10 +20,16 @@ teardown("cancel subscriptions and stop tunnel", async () => {
     console.warn("Teardown subscription cleanup failed:", err);
   }
 
-  // Undo the run-wide "all" traffic source from setup (matters only for a
-  // bring-your-own setting; ephemeral settings are deleted right after).
+  const settingIds = JSON.parse(
+    process.env.E2E_PADDLE_NOTIFICATION_SETTING_IDS ?? "[]",
+  ) as string[];
+
   try {
-    await setNotificationTrafficSource("platform");
+    await Promise.all(
+      settingIds.map((_, workerIndex) =>
+        setNotificationTrafficSource("platform", workerIndex),
+      ),
+    );
   } catch (err) {
     console.warn("Teardown traffic source reset failed:", err);
   }
