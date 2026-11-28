@@ -35,6 +35,7 @@ export function getCommonFeedAggregateStages({
   slotWindow,
   includeRecoveryFeeds,
   scheduledOnly,
+  skipLookups,
 }: {
   refreshRateSeconds?: number;
   url?: string;
@@ -54,6 +55,10 @@ export function getCommonFeedAggregateStages({
   // scheduled feed must never be fetched by an interval cycle of its retained
   // refresh rate, nor delivered to by another feed's interval fetch.
   scheduledOnly?: boolean;
+  // Drops the users/workspaces $lookups: they only serve credential resolution
+  // downstream, and grouping-only consumers (e.g. distinct-URL sweeps) skip
+  // them to avoid two lookups per feed.
+  skipLookups?: boolean;
 }): PipelineStage[] {
   const disabledCodeMatch: QueryFilter<unknown> = includeRecoveryFeeds
     ? // Wrapped in $and: the query's top-level $or (connection eligibility)
@@ -155,26 +160,28 @@ export function getCommonFeedAggregateStages({
     }
   }
 
-  pipelineStages.push({
-    $lookup: {
-      from: "users",
-      localField: "user.discordUserId",
-      foreignField: "discordUserId",
-      as: "users",
-    },
-  });
+  if (!skipLookups) {
+    pipelineStages.push({
+      $lookup: {
+        from: "users",
+        localField: "user.discordUserId",
+        foreignField: "discordUserId",
+        as: "users",
+      },
+    });
 
-  // Workspace feeds resolve fetch credentials from their workspace's
-  // connection, so the workspace rides alongside the creator (whose record is
-  // still needed for delivery preferences and premium checks).
-  pipelineStages.push({
-    $lookup: {
-      from: "workspaces",
-      localField: "workspaceId",
-      foreignField: "_id",
-      as: "workspaces",
-    },
-  });
+    // Workspace feeds resolve fetch credentials from their workspace's
+    // connection, so the workspace rides alongside the creator (whose record is
+    // still needed for delivery preferences and premium checks).
+    pipelineStages.push({
+      $lookup: {
+        from: "workspaces",
+        localField: "workspaceId",
+        foreignField: "_id",
+        as: "workspaces",
+      },
+    });
+  }
 
   return pipelineStages;
 }

@@ -26,15 +26,19 @@ const redditError = new ApiAdapterError("Reddit connection required", {
 // the real subreddit -> authenticated-feed substitution), which exercises the
 // confirm-step path. Default null = already-valid, so onSubmit proceeds to onUpdate.
 let resolvedToUrl: string | null = null;
+const validationCalls: Array<{ details: { url: string; feedId?: string } }> =
+  [];
 
 // Stateful validation mock: returns a non-resolving (already-valid) result so onSubmit proceeds
 // straight to onUpdate, which is where the gate is enforced in this test.
 vi.mock("../../hooks/useCreateUserFeedUrlValidation", () => ({
   useCreateUserFeedUrlValidation: () => {
-    const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-    const [data, setData] = useState<{ result: { resolvedToUrl: string | null } } | undefined>(
-      undefined,
-    );
+    const [status, setStatus] = useState<
+      "idle" | "loading" | "success" | "error"
+    >("idle");
+    const [data, setData] = useState<
+      { result: { resolvedToUrl: string | null } } | undefined
+    >(undefined);
 
     return {
       status,
@@ -44,7 +48,10 @@ vi.mock("../../hooks/useCreateUserFeedUrlValidation", () => ({
         setStatus("idle");
         setData(undefined);
       },
-      mutateAsync: async () => {
+      mutateAsync: async (input: {
+        details: { url: string; feedId?: string };
+      }) => {
+        validationCalls.push(input);
         setStatus("loading");
         await Promise.resolve();
         setStatus("success");
@@ -103,6 +110,7 @@ const renderDialog = (
     <ChakraProvider value={system}>
       <MemoryRouter>
         <EditUserFeedDialog
+          feedId="6b06e48dbb68b994d3b75c35"
           isOpen
           onClose={vi.fn()}
           onUpdate={onUpdate}
@@ -123,7 +131,24 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
   beforeEach(() => {
     redditAccount = undefined;
     resolvedToUrl = null;
+    validationCalls.length = 0;
     userMeListeners.clear();
+  });
+
+  it("validates a replacement URL against the existing feed", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const { user } = renderDialog(onUpdate);
+    const urlInput = screen.getByDisplayValue("https://example.com/feed.xml");
+
+    await user.clear(urlInput);
+    await user.type(urlInput, "https://www.instagram.com/mrdalekjd");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(onUpdate).toHaveBeenCalled());
+    expect(validationCalls[0]?.details).toEqual({
+      url: "https://www.instagram.com/mrdalekjd",
+      feedId: "6b06e48dbb68b994d3b75c35",
+    });
   });
 
   it("shows the connect gate when updating to a subreddit URL fails with REDDIT_CONNECTION_REQUIRED", async () => {
@@ -144,6 +169,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
       <ChakraProvider value={system}>
         <MemoryRouter>
           <EditUserFeedDialog
+            feedId="6b06e48dbb68b994d3b75c35"
             isOpen
             onClose={vi.fn()}
             onUpdate={onUpdate}
@@ -157,7 +183,9 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
       </ChakraProvider>,
     );
 
-    expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Connect your Reddit account to continue"),
+    ).toBeInTheDocument();
   });
 
   it("does not render the gate for a generic (non-reddit) error", () => {
@@ -170,7 +198,9 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
       }),
     );
 
-    expect(screen.queryByText("Connect your Reddit account to continue")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Connect your Reddit account to continue"),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Something went wrong")).toBeInTheDocument();
   });
 
@@ -187,6 +217,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
       <ChakraProvider value={system}>
         <MemoryRouter>
           <EditUserFeedDialog
+            feedId="6b06e48dbb68b994d3b75c35"
             isOpen
             onClose={onClose}
             onUpdate={onUpdate}
@@ -204,7 +235,9 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     await user.clear(urlInput);
     await user.type(urlInput, "https://www.reddit.com/r/gaming");
 
-    expect(await screen.findByText("Reconnect your Reddit account")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Reconnect your Reddit account"),
+    ).toBeInTheDocument();
 
     // No connect event has fired, so the blocked update must not have been retried.
     await new Promise((resolve) => {
@@ -224,6 +257,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
       <ChakraProvider value={system}>
         <MemoryRouter>
           <EditUserFeedDialog
+            feedId="6b06e48dbb68b994d3b75c35"
             isOpen
             onClose={onClose}
             onUpdate={onUpdate}
@@ -242,7 +276,9 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     await user.clear(urlInput);
     await user.type(urlInput, "https://www.reddit.com/r/gaming");
 
-    expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Connect your Reddit account to continue"),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Connect Reddit" }));
 
@@ -276,6 +312,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
       <ChakraProvider value={system}>
         <MemoryRouter>
           <EditUserFeedDialog
+            feedId="6b06e48dbb68b994d3b75c35"
             isOpen
             onClose={onClose}
             onUpdate={onUpdate}
@@ -293,7 +330,9 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
     await user.clear(urlInput);
     await user.type(urlInput, "https://www.reddit.com/r/gaming");
 
-    expect(await screen.findByText("Connect your Reddit account to continue")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Connect your Reddit account to continue"),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Connect Reddit" }));
 
@@ -327,6 +366,7 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
       <ChakraProvider value={system}>
         <MemoryRouter>
           <EditUserFeedDialog
+            feedId="6b06e48dbb68b994d3b75c35"
             isOpen
             onClose={onClose}
             onUpdate={onUpdate}
@@ -347,7 +387,9 @@ describe("EditUserFeedDialog - Reddit connect gate", () => {
 
     // The first Save resolves the URL and pauses on confirm: no save, no close.
     await waitFor(() =>
-      expect(screen.getByText("https://www.reddit.com/r/gaming.rss?auth=1")).toBeInTheDocument(),
+      expect(
+        screen.getByText("https://www.reddit.com/r/gaming.rss?auth=1"),
+      ).toBeInTheDocument(),
     );
     expect(onUpdate).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();

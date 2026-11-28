@@ -2,6 +2,10 @@ import { DetectedField } from "../types/DetectedFields";
 
 const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)(\?.*)?$/i;
 
+// Videos classify separately from images: only media galleries can render
+// them (Discord thumbnails and embed images are image-only).
+const VIDEO_EXTENSIONS = /\.(mp4|webm|mov|m4v)(\?.*)?$/i;
+
 function selectPreferredField(fields: string[]): string {
   const sorted = fields.sort((a, b) => {
     // Prefer shorter field names
@@ -16,7 +20,7 @@ function selectPreferredField(fields: string[]): string {
   return sorted[0];
 }
 
-function isImageUrl(value: unknown): boolean {
+function isUrlOfExtension(value: unknown, extensions: RegExp): boolean {
   if (!value || typeof value !== "string") return false;
 
   const trimmed = value.trim();
@@ -27,11 +31,14 @@ function isImageUrl(value: unknown): boolean {
   try {
     const url = new URL(trimmed);
 
-    return IMAGE_EXTENSIONS.test(url.pathname);
+    return extensions.test(url.pathname);
   } catch {
     return false;
   }
 }
+
+const isImageUrl = (value: unknown) => isUrlOfExtension(value, IMAGE_EXTENSIONS);
+const isVideoUrl = (value: unknown) => isUrlOfExtension(value, VIDEO_EXTENSIONS);
 
 const REDDIT_IMAGE_HOSTS = ["redd.it", "redditmedia.com"];
 
@@ -66,14 +73,17 @@ function getImageDedupeKey(urlString: string): string {
   }
 }
 
-function getArticleImageFields(article: Record<string, unknown>): Set<string> {
+function getArticleMediaFields(
+  article: Record<string, unknown>,
+  isMediaUrl: (value: unknown) => boolean
+): Set<string> {
   const dedupeKeyToFields = new Map<string, string[]>();
 
   for (const [field, value] of Object.entries(article)) {
     if (field === "id" || field === "idHash") continue;
     if (field.includes("::anchor")) continue;
 
-    if (isImageUrl(value)) {
+    if (isMediaUrl(value)) {
       const url = value as string;
       const dedupeKey = getImageDedupeKey(url);
       const existing = dedupeKeyToFields.get(dedupeKey) || [];
@@ -91,14 +101,17 @@ function getArticleImageFields(article: Record<string, unknown>): Set<string> {
   return fields;
 }
 
-export function detectImageFields(articles: Array<Record<string, unknown>>): DetectedField[] {
+function detectFieldsOfExtension(
+  articles: Array<Record<string, unknown>>,
+  isUrlOfExtension: (value: unknown) => boolean
+): DetectedField[] {
   if (!articles || articles.length === 0) return [];
 
   const allFields = new Set<string>();
   const fieldArticleCount = new Map<string, number>();
 
   for (const article of articles) {
-    const articleFields = getArticleImageFields(article);
+    const articleFields = getArticleMediaFields(article, isUrlOfExtension);
 
     for (const field of articleFields) {
       allFields.add(field);
@@ -112,4 +125,12 @@ export function detectImageFields(articles: Array<Record<string, unknown>>): Det
       field,
       presentInAll: fieldArticleCount.get(field) === articles.length,
     }));
+}
+
+export function detectImageFields(articles: Array<Record<string, unknown>>): DetectedField[] {
+  return detectFieldsOfExtension(articles, isImageUrl);
+}
+
+export function detectVideoFields(articles: Array<Record<string, unknown>>): DetectedField[] {
+  return detectFieldsOfExtension(articles, isVideoUrl);
 }

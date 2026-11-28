@@ -48,6 +48,9 @@ export interface IUserPreferences {
 export interface IUserFeatureFlags {
   externalProperties?: boolean;
   workspaces?: boolean;
+  // Closed-beta access to premium feeds (platform URLs served by provider
+  // adapters). Gating happens at add-time in user-feeds.service.
+  premiumFeeds?: boolean;
 }
 
 export interface IUserExternalCredential {

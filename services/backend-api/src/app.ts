@@ -294,6 +294,12 @@ export async function createApp(
     root: clientDistPath,
     prefix: "/",
     decorateReply: true,
+    // Firefox ignores referrerpolicy on media elements (Bugzilla 1560913);
+    // hotlink-protected video CDNs (e.g. video.twimg.com) 403 any foreign
+    // referer, so the document must not send one.
+    setHeaders: (reply) => {
+      reply.header("Referrer-Policy", "no-referrer");
+    },
   });
 
   // Error handlers

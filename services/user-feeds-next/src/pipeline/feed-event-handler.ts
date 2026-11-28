@@ -46,6 +46,7 @@ export {
   type FeedDeletedEvent,
   parseFeedDeletedEvent,
   handleFeedDeletedEvent,
+  resetFeedBaseline,
 } from "./feed-cleanup-handler";
 
 export function parseFeedV2Event(event: unknown): FeedV2Event | null {

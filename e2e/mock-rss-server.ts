@@ -19,6 +19,11 @@ const flakyModes = new Map<string, FlakyMode>();
 // backoff's own tier intervals to be observable in the health-alert timestamp.
 const RATE_LIMIT_RETRY_AFTER_SECONDS = 7200;
 
+// Platform provider responses (vendor API shapes) are NOT served here:
+// they are vendor API doubles owned by the private package's mock-vendor
+// export (e2e/scripts/vendor-mock.ts, E2E_PLATFORM=1), so vendor shapes never
+// leak into this repo. This server stays generic RSS.
+
 const server = createServer((req, res) => {
   const parsedUrl = new URL(
     req.url || "/",

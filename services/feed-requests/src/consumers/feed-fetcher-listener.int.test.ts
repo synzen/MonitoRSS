@@ -250,7 +250,36 @@ describe('FeedFetcherListener (Integration)', () => {
       assert.strictEqual(publishedEvents('url.fetch.completed').length, 1);
     });
 
-    it('skips the fetch but emits fetch completed when the cached response is still fresh', async () => {
+    it('fetches when the host cache is equal to an hourly cadence', async () => {
+      await seedRequests([
+        buildInsert({
+          status: RequestStatus.OK,
+          createdAt: dayjs().subtract(60, 'minutes').toDate(),
+          requestInitiatedAt: dayjs().subtract(60, 'minutes').toDate(),
+          response: {
+            statusCode: 200,
+            textHash: null,
+            s3ObjectKey: null,
+            redisCacheKey: null,
+            headers: {
+              'cache-control': 'public, max-age=3600',
+              date: dayjs().subtract(60, 'minutes').toDate().toUTCString(),
+            },
+            body: null,
+          },
+        }),
+      ]);
+      fetchAndSaveResponse.mock.mockImplementation(async () => ({
+        request: buildInsert({ status: RequestStatus.OK }),
+      }));
+
+      await runBatch([{ url: feedUrl }], 3600);
+
+      assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 1);
+      assert.strictEqual(publishedEvents('url.fetch.completed').length, 1);
+    });
+
+    it('skips the fetch but emits fetch completed when the host cache materially exceeds the cadence', async () => {
       await seedRequests([
         buildInsert({
           status: RequestStatus.OK,
@@ -270,7 +299,7 @@ describe('FeedFetcherListener (Integration)', () => {
         }),
       ]);
 
-      await runBatch([{ url: feedUrl }], 100);
+      await runBatch([{ url: feedUrl }], 600);
 
       assert.strictEqual(fetchAndSaveResponse.mock.callCount(), 0);
       assert.strictEqual(publishedEvents('url.fetch.completed').length, 1);

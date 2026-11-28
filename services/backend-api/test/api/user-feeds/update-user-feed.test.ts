@@ -4,6 +4,7 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
+import { registerDefaultClassifyRoute } from "../../helpers/mock-apis";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -35,6 +36,7 @@ after(async () => {
 
 beforeEach(() => {
   feedApiMockServer.clear();
+  registerDefaultClassifyRoute(feedApiMockServer);
 });
 
 describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
@@ -465,6 +467,82 @@ describe("PATCH /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as { result: { url: string } };
       assert.strictEqual(body.result.url, newUrl);
+    });
+
+    it("queues an immediate baseline reset when changing a feed with an active connection", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+      const newUrl = "https://example.com/patch-url-valid.xml";
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Feed for URL Update",
+        url: "https://example.com/patch-url-old.xml",
+        user: { id: generateTestId(), discordUserId },
+        connections: {
+          discordChannels: [
+            {
+              id: generateTestId(),
+              name: "Connection",
+              details: {
+                channel: { id: "channel-1", guildId: "guild-1" },
+                embeds: [],
+                formatter: {},
+              },
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as never,
+          ],
+        },
+      });
+      assert.strictEqual(feed.connections.discordChannels.length, 1);
+      const resolvedFeed =
+        await ctx.container.userFeedRepository.findByIdAndOwnership(
+          feed.id,
+          discordUserId,
+        );
+      assert.strictEqual(resolvedFeed?.connections.discordChannels.length, 1);
+
+      const publishMessage = ctx.container.publishMessage;
+      const messageBrokerEventsService = ctx.container.messageBrokerEventsService;
+      const calls: Array<{ queue: string; message: unknown }> = [];
+      ctx.container.publishMessage = async (queue, message) => {
+        calls.push({ queue, message });
+      };
+      ctx.container.messageBrokerEventsService = {
+        ...messageBrokerEventsService,
+        resetAndRefreshFeed: async (_feed, _user, _workspace) => {
+          await ctx.container.publishMessage(
+            "feed.deliver-articles",
+            {
+              resetBaseline: true,
+              data: { feed: { url: newUrl } },
+            },
+          );
+        },
+      } as typeof messageBrokerEventsService;
+
+      try {
+        const response = await user.fetch(`/api/v1/user-feeds/${feed.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ url: newUrl }),
+        });
+
+        assert.strictEqual(response.status, 200);
+        const reset = calls.find(
+          (call) => call.queue === "feed.deliver-articles",
+        );
+        assert.ok(reset, `expected a reset event, got ${JSON.stringify(calls)}`);
+        assert.strictEqual(
+          (reset.message as { resetBaseline?: boolean }).resetBaseline,
+          true,
+        );
+        assert.strictEqual(
+          (reset.message as { data: { feed: { url: string } } }).data.feed.url,
+          newUrl,
+        );
+      } finally {
+        ctx.container.publishMessage = publishMessage;
+        ctx.container.messageBrokerEventsService = messageBrokerEventsService;
+      }
     });
 
     it("returns 400 FEED_REQUEST_TIMEOUT on url timeout", async () => {

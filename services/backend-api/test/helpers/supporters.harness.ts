@@ -92,6 +92,7 @@ export interface SupportersContext {
   supporterRepository: SupporterMongooseRepository;
   patronRepository: PatronMongooseRepository;
   userFeedLimitOverrideRepository: UserFeedLimitOverrideMongooseRepository;
+  workspaceRepository: WorkspaceMongooseRepository;
   discordApiService: MockDiscordApiService;
   generateId(): string;
   generateServerId(): string;
@@ -214,6 +215,7 @@ export function createSupportersHarness(): SupportersHarness {
         supporterRepository,
         patronRepository,
         userFeedLimitOverrideRepository,
+        workspaceRepository,
         discordApiService,
         generateId: generateTestId,
         generateServerId: generateTestId,

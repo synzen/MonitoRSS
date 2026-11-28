@@ -1,4 +1,4 @@
-import { detectImageFields } from "./detectImageField";
+import { detectImageFields, detectVideoFields } from "./detectImageField";
 
 describe("detectImageFields", () => {
   describe("basic detection", () => {
@@ -330,5 +330,43 @@ describe("detectImageFields", () => {
         { field: "image2", presentInAll: true },
       ]);
     });
+  });
+});
+
+describe("detectVideoFields", () => {
+  it("detects mp4 enclosure fields (premium feed video tweets)", () => {
+    const articles = [
+      {
+        enclosures__0__url:
+          "https://video.twimg.com/amplify_video/123/vid/avc1/720x1280/abc.mp4?tag=29",
+        enclosures__0__type: "video/mp4",
+      },
+    ];
+    expect(detectVideoFields(articles)).toEqual([
+      { field: "enclosures__0__url", presentInAll: true },
+    ]);
+  });
+
+  it("does not classify videos as image fields", () => {
+    const articles = [
+      { enclosures__0__url: "https://video.twimg.com/abc.mp4?tag=29" },
+    ];
+    expect(detectImageFields(articles)).toEqual([]);
+  });
+
+  it("does not classify images as video fields", () => {
+    const articles = [{ image: "https://example.com/photo.jpg" }];
+    expect(detectVideoFields(articles)).toEqual([]);
+  });
+
+  it("handles case-insensitive extensions and query parameters", () => {
+    const articles = [
+      { a: "https://video.twimg.com/abc.MP4?tag=12" },
+      { b: "https://example.com/clip.webm" },
+    ];
+    expect(detectVideoFields(articles)).toEqual([
+      { field: "a", presentInAll: false },
+      { field: "b", presentInAll: false },
+    ]);
   });
 });

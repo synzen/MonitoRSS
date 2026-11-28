@@ -39,6 +39,23 @@ export const MONGO_URI = `mongodb://127.0.0.1:${e2ePort("E2E_MONGO_PORT", 27019)
 export const E2E_POSTGRES_URI = `postgres://postgres:postgres@127.0.0.1:${e2ePort("E2E_POSTGRES_PORT", 5433)}/feedrequests`;
 export const MOCK_DISCORD_SERVER_PORT = e2ePort("E2E_MOCK_DISCORD_PORT", 3002);
 
+// The platform vendor doubles (the vendor APIs' response shapes) live in
+// the private package's mock-vendor export, so vendor API shapes never leak
+// into this repo. The gated platform specs (E2E_PLATFORM=1) point feed-requests
+// at this server via PLATFORM_SOURCE_PROVIDER_BASE_URL in
+// docker-compose.e2e.yml and drive its extend/stats control hooks.
+export const VENDOR_MOCK_SERVER_PORT = e2ePort("E2E_VENDOR_MOCK_PORT", 3007);
+export const VENDOR_MOCK_STATS_URL = `http://localhost:${VENDOR_MOCK_SERVER_PORT}/__stats`;
+export const vendorMockExtendUrl = (
+  kind: "twitter" | "subreddit" | "instagram",
+  value: string,
+) =>
+  kind === "twitter"
+    ? `http://localhost:${VENDOR_MOCK_SERVER_PORT}/twitter/user/${value}/extend`
+    : kind === "instagram"
+      ? `http://localhost:${VENDOR_MOCK_SERVER_PORT}/instagram/user/${value}/extend`
+      : `http://localhost:${VENDOR_MOCK_SERVER_PORT}/reddit/subreddit/${value}/extend`;
+
 // Mock Reddit OAuth + authenticated-feed server. The backend (in Docker) and the
 // browser popup both reach it via host.docker.internal (see docker-compose.e2e.yml
 // BACKEND_API_REDDIT_* env vars).

@@ -7,6 +7,7 @@ import {
   type TestDiscordRestClient,
 } from "../../src/delivery/discord/discord-rest-client";
 import { handleFeedV2Event } from "../../src/pipeline/feed-event-handler";
+import { resetFeedBaseline } from "../../src/pipeline/feed-cleanup-handler";
 import generateTestFeedV2Event from "../data/test-feed-v2-event";
 import getTestRssFeed from "../data/test-rss-feed";
 import type { FeedV2Event } from "../../src/shared/schemas";
@@ -35,7 +36,8 @@ export interface TestContext {
 
   /** Run the feed event handler */
   handleEvent(
-    overrideEvent?: FeedV2Event
+    overrideEvent?: FeedV2Event,
+    options?: { resetBaseline?: boolean }
   ): ReturnType<typeof handleFeedV2Event>;
 
   /** Seed initial articles and clear Discord captures */
@@ -101,17 +103,30 @@ export function createTestContext(
       return testServer.getRequestsForUrl(feedUrl);
     },
 
-    async handleEvent(overrideEvent) {
-      return handleFeedV2Event(overrideEvent ?? testFeedV2Event, {
-        articleFieldStore: stores.articleFieldStore,
-        deliveryRecordStore: stores.deliveryRecordStore,
-        responseHashStore: stores.responseHashStore,
-        feedRetryStore: stores.feedRetryStore,
-        parsedArticlesCacheStore: stores.parsedArticlesCacheStore,
-        feedRequestsServiceHost: stores.feedRequestsServiceHost,
-        queuePublisher,
-        discordClient,
-      });
+    async handleEvent(overrideEvent, options) {
+      const event = overrideEvent ?? testFeedV2Event;
+
+      if (options?.resetBaseline) {
+        await resetFeedBaseline(event.data.feed.id, {
+          articleFieldStore: stores.articleFieldStore,
+          responseHashStore: stores.responseHashStore,
+          feedRetryStore: stores.feedRetryStore,
+        });
+      }
+
+      return handleFeedV2Event(
+        event,
+        {
+          articleFieldStore: stores.articleFieldStore,
+          deliveryRecordStore: stores.deliveryRecordStore,
+          responseHashStore: stores.responseHashStore,
+          feedRetryStore: stores.feedRetryStore,
+          parsedArticlesCacheStore: stores.parsedArticlesCacheStore,
+          feedRequestsServiceHost: stores.feedRequestsServiceHost,
+          queuePublisher,
+          discordClient,
+        }
+      );
     },
 
     async seedArticles(event?: FeedV2Event) {

@@ -51,6 +51,10 @@ export default defineConfig({
       usePolling: VITE_USE_POLLING,
     },
     port: 3000,
+    // Firefox ignores referrerpolicy on media elements (Bugzilla 1560913);
+    // hotlink-protected video CDNs (e.g. video.twimg.com) 403 any foreign
+    // referer, so the document must not send one.
+    headers: { "Referrer-Policy": "no-referrer" },
   },
   build: {
     sourcemap: true,

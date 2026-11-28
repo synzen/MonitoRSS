@@ -125,6 +125,27 @@ export const MIGRATIONS: Migration[] = [
       await client.query(`DROP INDEX IF EXISTS idx_req_latest_body;`);
     },
   },
+  {
+    version: '20261115120000',
+    name: 'Migration20261115120000',
+    async up(client) {
+      // Durable per-provider state (e.g. a vendor feed id mapped to a platform
+      // handle), shared by every feed-requests process and kept across
+      // restarts so adapters reuse remote resources instead of re-creating
+      // them on each fetch.
+      await client.query(`
+        CREATE TABLE platform_provider_state (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+      `);
+    },
+    async down(client) {
+      await client.query(`DROP TABLE IF EXISTS platform_provider_state;`);
+    },
+  },
 ];
 
 function toMigration(legacy: LegacyMigration): Migration {

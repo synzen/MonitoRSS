@@ -22,6 +22,10 @@ export interface FeedBenefits {
   maxFeeds: number;
   maxDailyArticles: number;
   refreshRateSeconds: number;
+  premiumFeedBaseTier: string | null;
+  // Whether the scope has a paid plan behind it: a personal subscription or
+  // Patreon pledge for personal scopes, an active subscription for workspaces.
+  isSupporter: boolean;
   allowWebhooks: boolean;
   allowCustomPlaceholders: boolean;
   allowExternalProperties: boolean;

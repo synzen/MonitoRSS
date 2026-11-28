@@ -1,16 +1,10 @@
 import type { Config } from "../../config";
-import {
-  UserExternalCredentialStatus,
-  UserExternalCredentialType,
-} from "../../repositories/shared/enums";
-import { RedditConnectionRequiredException } from "../../shared/exceptions/reddit.exceptions";
 import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
 import {
   getFeedRequestLookupDetails,
   pickFeedCredentialSource,
   type FeedCredentialSource,
 } from "../../shared/utils/get-feed-request-lookup-details";
-import { isRedditFeedUrl } from "../../shared/utils/is-reddit-feed-url";
 import type { WorkspacesService } from "../../features/workspaces/workspaces.service";
 import type { UsersService } from "../users/users.service";
 
@@ -81,34 +75,7 @@ export class FeedCredentialsService {
       feed,
       credentials,
       decryptionKey: this.deps.config.BACKEND_API_ENCRYPTION_KEY_HEX,
-      redditFeedBaseUrl:
-        this.deps.config.BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL,
     });
-  }
-
-  assertRedditConnectionIfRequired(
-    url: string,
-    credentials: FeedCredentialSource,
-  ): void {
-    if (!isRedditFeedUrl(url)) {
-      return;
-    }
-
-    if (!this.deps.config.BACKEND_API_REDDIT_CLIENT_ID) {
-      return;
-    }
-
-    const hasActiveRedditConnection = credentials.externalCredentials?.some(
-      (cred) =>
-        cred.type === UserExternalCredentialType.Reddit &&
-        cred.status === UserExternalCredentialStatus.Active,
-    );
-
-    if (!hasActiveRedditConnection) {
-      throw new RedditConnectionRequiredException(
-        "Reddit requires a connected account to add Reddit feeds",
-      );
-    }
   }
 
   // Reconcile lookup keys for feeds whose scope isn't known at the call site:

@@ -110,3 +110,39 @@ export function buildPaddleCustomer(overrides: {
     updatedAt: new Date(),
   };
 }
+
+// Price-id → product mapping the additional-feed tier gate resolves against
+// when processing subscription update/preview requests.
+export function registerDefaultPaddleProductsRoute(
+  server: TestHttpServer,
+): void {
+  server.registerRoute("GET", "/products", {
+    status: 200,
+    body: {
+      data: [
+        {
+          id: generateTestId(),
+          name: "Tier 1",
+          custom_data: { key: SubscriptionProductKey.Tier1 },
+          prices: [{ id: "price_new_tier", status: "active" }],
+        },
+        {
+          id: generateTestId(),
+          name: "Tier 3",
+          custom_data: { key: SubscriptionProductKey.Tier3 },
+          prices: [
+            { id: "price_tier3", status: "active" },
+            { id: "price_downgrade", status: "active" },
+            { id: "price_change", status: "active" },
+          ],
+        },
+        {
+          id: generateTestId(),
+          name: "Additional Feed",
+          custom_data: { key: SubscriptionProductKey.Tier3AdditionalFeed },
+          prices: [{ id: "price_additional_feed", status: "active" }],
+        },
+      ],
+    },
+  });
+}

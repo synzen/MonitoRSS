@@ -138,6 +138,9 @@ const mockPricingData = (
                 baseUnitAmount: base.unitAmount,
                 perFeedUnitAmount: feed.unitAmount,
                 currencyCode: base.currencyCode,
+                tier3BaseUnitAmount: PRODUCTS.find(
+                  (p) => p.id === ProductKey.Tier3,
+                )?.prices.find((p) => p.interval === forInterval)?.unitAmount,
               }
             : undefined;
         },
@@ -377,7 +380,12 @@ describe("PricingDialog FAQ", () => {
     } as never);
     vi.mocked(useUserMe).mockReturnValue({
       data: {
-        result: { subscription: { subscriptionId: undefined, product: { key: ProductKey.Free } } },
+        result: {
+          subscription: {
+            subscriptionId: undefined,
+            product: { key: ProductKey.Free },
+          },
+        },
       },
     } as never);
   });
@@ -407,7 +415,12 @@ describe("PricingDialog workspace capacity picker + live price + dynamic CTA", (
     } as never);
     vi.mocked(useUserMe).mockReturnValue({
       data: {
-        result: { subscription: { subscriptionId: undefined, product: { key: ProductKey.Free } } },
+        result: {
+          subscription: {
+            subscriptionId: undefined,
+            product: { key: ProductKey.Free },
+          },
+        },
       },
     } as never);
   });
@@ -469,7 +482,7 @@ describe("PricingDialog workspace capacity picker + live price + dynamic CTA", (
     await waitFor(() => expect(picker).toHaveAttribute("aria-valuetext", "70 feeds"));
   });
 
-  it("derives the hero price from the page preview when feeds are added above the base", async () => {
+  it("derives the hero price from the Tier 3 base when feeds exceed Tier 2", async () => {
     // The Team hero is priced entirely from the page-level price preview (Tier2
     // base + Tier3Feed per-feed unit), not a Paddle call of its own: changing the
     // capacity just re-derives the total locally.
@@ -484,9 +497,8 @@ describe("PricingDialog workspace capacity picker + live price + dynamic CTA", (
     fireEvent.change(picker, { target: { value: "100" } });
     fireEvent.blur(picker);
 
-    // 70 -> 100 feeds = base $10.00 + 30 * $0.50 = $25.00 ("$25"), derived from
-    // the preview's authoritative per-feed unit price.
-    expect(await within(forTeam).findByText("$25")).toBeInTheDocument();
+    // 100 feeds normalizes to the 140-feed Tier 3 base, priced at $20.00.
+    expect(await within(forTeam).findByText("$20")).toBeInTheDocument();
   });
 });
 
@@ -500,7 +512,12 @@ describe("PricingDialog workspace CTA when the user already owns a workspace", (
     } as never);
     vi.mocked(useUserMe).mockReturnValue({
       data: {
-        result: { subscription: { subscriptionId: undefined, product: { key: ProductKey.Free } } },
+        result: {
+          subscription: {
+            subscriptionId: undefined,
+            product: { key: ProductKey.Free },
+          },
+        },
       },
     } as never);
   });
@@ -595,8 +612,20 @@ describe("PricingDialog workspace CTA when the user already owns a workspace", (
     // an already-paid one.
     vi.mocked(useWorkspaces).mockReturnValue({
       workspaces: [
-        { id: "w1", name: "Paid", slug: "paid", role: "owner", needsBilling: false },
-        { id: "w2", name: "Mine", slug: "mine", role: "owner", needsBilling: true },
+        {
+          id: "w1",
+          name: "Paid",
+          slug: "paid",
+          role: "owner",
+          needsBilling: false,
+        },
+        {
+          id: "w2",
+          name: "Mine",
+          slug: "mine",
+          role: "owner",
+          needsBilling: true,
+        },
       ],
     } as never);
 
@@ -619,7 +648,10 @@ describe("PricingDialog billing-interval switch for a current Personal subscribe
     // The dialog reads the subscription from usePricingData, not useUserMe, so
     // both mocks carry the paid Personal state.
     mockPricingData({
-      userSubscription: { product: { key: ProductKey.Tier1 }, billingInterval: "month" },
+      userSubscription: {
+        product: { key: ProductKey.Tier1 },
+        billingInterval: "month",
+      },
     });
     vi.mocked(usePaddleContext).mockReturnValue({
       resetCheckoutData: vi.fn(),
@@ -649,7 +681,9 @@ describe("PricingDialog billing-interval switch for a current Personal subscribe
       "true",
     );
     expect(
-      within(forYou).queryByRole("button", { name: /switch to (yearly|monthly) billing/i }),
+      within(forYou).queryByRole("button", {
+        name: /switch to (yearly|monthly) billing/i,
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -697,7 +731,9 @@ describe("PricingDialog billing-interval switch for a current Personal subscribe
     await userEvent.click(await screen.findByRole("button", { name: /switch to yearly billing/i }));
 
     expect(
-      await screen.findByRole("heading", { name: /confirm subscription changes/i }),
+      await screen.findByRole("heading", {
+        name: /confirm subscription changes/i,
+      }),
     ).toBeInTheDocument();
     // The change request must target the yearly price of the same product.
     expect(await screen.findByText("$50.00/year")).toBeInTheDocument();
@@ -726,7 +762,12 @@ describe("PricingDialog billing-interval switch for a current Personal subscribe
     // both mocks carry the paid Personal state. The hook syncs its interval to
     // the subscription's billing interval on load, so the mock starts at year.
     mockPricingData(
-      { userSubscription: { product: { key: ProductKey.Tier1 }, billingInterval: "year" } },
+      {
+        userSubscription: {
+          product: { key: ProductKey.Tier1 },
+          billingInterval: "year",
+        },
+      },
       "year",
     );
     renderDialog();

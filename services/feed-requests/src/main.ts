@@ -1,9 +1,12 @@
 import { MessageBrokerQueue } from '@monitorss/contracts';
+import { createRequire } from 'module';
+import type { PlatformProviderRegistry } from './platform-providers/types';
 import { loadConfig } from './config';
 import logger from './utils/logger';
 import pruneAndCreatePartitions from './utils/prune-and-create-partitions';
 import { initPool, closePool, getPool } from './stores/postgres';
 import { createPartitionedRequestsStore } from './stores/postgres/partitioned-requests-store';
+import { createPlatformProviderStateStore } from './stores/postgres/platform-provider-state-store';
 import {
   createCacheClient,
   createCacheStorageService,
@@ -11,6 +14,9 @@ import {
 import { createObjectFileStorageService } from './object-file-storage/object-file-storage';
 import { createHostRateLimiterService } from './host-rate-limiter/host-rate-limiter';
 import { createFeedFetcherService } from './feed-fetcher/feed-fetcher';
+import { createPlatformProviderRouter } from './platform-providers/router';
+import { createPlatformProviderSyncService } from './platform-providers/sync';
+import type { PlatformUrlMatcher } from './platform-providers/types';
 import { createApp } from './http/app';
 import {
   createRabbitConnection,
@@ -67,10 +73,67 @@ interface CoreInfrastructure {
   cacheStorage: ReturnType<typeof createCacheStorageService>;
   partitionedRequestsStore: ReturnType<typeof createPartitionedRequestsStore>;
   feedFetcher: ReturnType<typeof createFeedFetcherService>;
+  platformProviderSync: ReturnType<typeof createPlatformProviderSyncService>;
+}
+
+/**
+ * OptionalDependency: absent in OSS builds (npm 404-skips it); the platform
+ * layer is then inert (nothing matches, classify reports false).
+ */
+const loadPlatformProviderModule = ():
+  | {
+      platformProviderRegistry: PlatformProviderRegistry;
+      canonicalPlatformFeedUrl: (url: string) => string | null;
+    }
+  | undefined => {
+  try {
+    const mod = createRequire(__filename)('@synzen/platform-adapters') as {
+      platformProviderRegistry?: PlatformProviderRegistry;
+      canonicalPlatformFeedUrl?: (url: string) => string | null;
+    };
+
+    if (!mod.platformProviderRegistry) {
+      return undefined;
+    }
+
+    return {
+      platformProviderRegistry: mod.platformProviderRegistry,
+      // Package versions without the export degrade to a null canonicalizer
+      // (feed creation keeps raw URLs).
+      canonicalPlatformFeedUrl: mod.canonicalPlatformFeedUrl ?? (() => null),
+    };
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'MODULE_NOT_FOUND') {
+      // An installed-but-broken private package must not silently downgrade
+      // the deployment to a package-less one.
+      logger.warn('Failed to load the private platform-adapters package', {
+        error: (err as Error).stack,
+      });
+    }
+
+    return undefined;
+  }
+};
+
+// The one matcher for both routing and premium classification.
+function buildPlatformUrlMatcher(): PlatformUrlMatcher {
+  const mod = loadPlatformProviderModule();
+
+  return (url) =>
+    mod?.platformProviderRegistry.findMatchingPlatform(url) ?? null;
+}
+
+// Feed creation canonicalizes natural platform URLs through the same package
+// that owns routing, so what gets stored is exactly what the router serves.
+function buildPlatformUrlCanonicalizer(): (url: string) => string | null {
+  const mod = loadPlatformProviderModule();
+
+  return (url) => mod?.canonicalPlatformFeedUrl(url) ?? null;
 }
 
 async function buildCoreInfrastructure(
   config: ReturnType<typeof loadConfig>,
+  platformUrlMatcher: PlatformUrlMatcher,
 ): Promise<CoreInfrastructure> {
   const pool = initPool(config.FEED_REQUESTS_POSTGRES_URI, {
     max: config.FEED_REQUESTS_RABBITMQ_PREFETCH_COUNT * 3,
@@ -86,21 +149,54 @@ async function buildCoreInfrastructure(
     key: config.FEED_REQUESTS_S3_API_KEY,
   });
   const partitionedRequestsStore = createPartitionedRequestsStore(pool);
+  const platformProviderStateStore = createPlatformProviderStateStore(pool);
+  const platformModule = loadPlatformProviderModule();
+  const platformProviderRegistry = platformModule?.platformProviderRegistry;
+  logger.info('Platform provider registry', {
+    loaded: !!platformModule,
+    providers: platformProviderRegistry?.defaults,
+  });
   const feedFetcher = createFeedFetcherService({
     defaultUserAgent: config.FEED_REQUESTS_FEED_REQUEST_DEFAULT_USER_AGENT,
     requestTimeoutMs: config.FEED_REQUESTS_REQUEST_TIMEOUT_MS,
+    platformResponseFreshnessSeconds:
+      config.FEED_REQUESTS_PLATFORM_RESPONSE_FRESHNESS_SECONDS,
     objectFileStorage,
     cacheStorage,
     partitionedRequestsStore,
+    platformSourceRouterFactory: (httpGet) =>
+      createPlatformProviderRouter({
+        matchPlatform: platformUrlMatcher,
+        platformProviderRegistry,
+        httpGet,
+        platformProviderStateStore,
+      }),
   });
 
-  return { cacheStorage, partitionedRequestsStore, feedFetcher };
+  const platformProviderSync = createPlatformProviderSyncService({
+    matchPlatform: platformUrlMatcher,
+    platformProviderRegistry,
+    stateStore: platformProviderStateStore,
+    httpGet: (url, options) => feedFetcher.fetchFeedResponse(url, options),
+  });
+
+  return {
+    cacheStorage,
+    partitionedRequestsStore,
+    feedFetcher,
+    platformProviderSync,
+  };
 }
 
 async function startApi() {
   const config = loadConfig();
-  const { cacheStorage, feedFetcher, partitionedRequestsStore } =
-    await buildCoreInfrastructure(config);
+  const platformUrlMatcher = buildPlatformUrlMatcher();
+  const {
+    cacheStorage,
+    feedFetcher,
+    partitionedRequestsStore,
+    platformProviderSync,
+  } = await buildCoreInfrastructure(config, platformUrlMatcher);
   const hostRateLimiter = createHostRateLimiterService(cacheStorage);
 
   const app = createApp({
@@ -108,6 +204,9 @@ async function startApi() {
     feedFetcher,
     partitionedRequestsStore,
     hostRateLimiter,
+    isPlatformUrl: (url) => platformUrlMatcher(url) !== null,
+    resolvePlatformUrl: buildPlatformUrlCanonicalizer(),
+    platformProviderSync,
   });
 
   await app.listen({
@@ -132,8 +231,9 @@ async function startApi() {
 
 async function startService() {
   const config = loadConfig();
+  const platformUrlMatcher = buildPlatformUrlMatcher();
   const { cacheStorage, feedFetcher, partitionedRequestsStore } =
-    await buildCoreInfrastructure(config);
+    await buildCoreInfrastructure(config, platformUrlMatcher);
   const hostRateLimiter = createHostRateLimiterService(cacheStorage);
 
   const connection = createRabbitConnection(

@@ -8,9 +8,7 @@ export type { ResponseHashStore };
 
 export const feedDeletedEventSchema = z.object({
   data: z.object({
-    feed: z.object({
-      id: z.string(),
-    }),
+    feedId: z.string(),
   }),
 });
 
@@ -42,7 +40,7 @@ export async function handleFeedDeletedEvent(
   }
 ): Promise<void> {
   const { responseHashStore, articleFieldStore, feedRetryStore } = options;
-  const feedId = event.data.feed.id;
+  const feedId = event.data.feedId;
 
   logger.debug("Received feed deleted event", { event });
 
@@ -51,4 +49,17 @@ export async function handleFeedDeletedEvent(
   await feedRetryStore.remove(feedId);
 
   logger.debug(`Deleted feed info for feed ${feedId}`);
+}
+
+export async function resetFeedBaseline(
+  feedId: string,
+  options: {
+    responseHashStore: ResponseHashStore;
+    articleFieldStore: ArticleFieldStore;
+    feedRetryStore: FeedRetryStore;
+  }
+): Promise<void> {
+  await options.responseHashStore.remove(feedId);
+  await options.articleFieldStore.clear(feedId);
+  await options.feedRetryStore.remove(feedId);
 }

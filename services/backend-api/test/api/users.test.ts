@@ -103,7 +103,7 @@ describe("GET /api/v1/users/@me", { concurrency: true }, () => {
           creditBalance: { availableFormatted: string };
           enableBilling: boolean;
           featureFlags: Record<string, unknown>;
-          capabilities: { workspaces: boolean };
+          capabilities: { workspaces: boolean; premiumFeeds: boolean };
           supporterFeatures: {
             exrternalProperties: { enabled: boolean };
           };
@@ -124,7 +124,7 @@ describe("GET /api/v1/users/@me", { concurrency: true }, () => {
       assert.strictEqual(body.result.creditBalance.availableFormatted, "0");
       assert.strictEqual(body.result.enableBilling, true);
       assert.deepStrictEqual(body.result.featureFlags, {});
-      assert.deepStrictEqual(body.result.capabilities, { workspaces: false });
+      assert.deepStrictEqual(body.result.capabilities, { workspaces: false, premiumFeeds: false });
       assert.ok(body.result.supporterFeatures);
       assert.strictEqual(
         body.result.supporterFeatures.exrternalProperties.enabled,
@@ -946,9 +946,9 @@ describe(
 
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as {
-        result: { capabilities: { workspaces: boolean } };
+        result: { capabilities: { workspaces: boolean; premiumFeeds: boolean } };
       };
-      assert.deepStrictEqual(body.result.capabilities, { workspaces: true });
+      assert.deepStrictEqual(body.result.capabilities, { workspaces: true, premiumFeeds: false });
     });
 
     it("GET /users/@me returns capabilities.workspaces=false without the flag", async () => {
@@ -958,9 +958,9 @@ describe(
 
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as {
-        result: { capabilities: { workspaces: boolean } };
+        result: { capabilities: { workspaces: boolean; premiumFeeds: boolean } };
       };
-      assert.deepStrictEqual(body.result.capabilities, { workspaces: false });
+      assert.deepStrictEqual(body.result.capabilities, { workspaces: false, premiumFeeds: false });
     });
 
     it("PATCH /users/@me also returns capabilities.workspaces=true when the user has the flag", async () => {
@@ -978,9 +978,9 @@ describe(
 
       assert.strictEqual(response.status, 200);
       const body = (await response.json()) as {
-        result: { capabilities: { workspaces: boolean } };
+        result: { capabilities: { workspaces: boolean; premiumFeeds: boolean } };
       };
-      assert.deepStrictEqual(body.result.capabilities, { workspaces: true });
+      assert.deepStrictEqual(body.result.capabilities, { workspaces: true, premiumFeeds: false });
     });
   },
 );

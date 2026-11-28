@@ -12,7 +12,6 @@ import { RedditAppRevokedException } from "../shared/exceptions/reddit.exception
 import logger from "../infra/logger";
 
 const REDDIT_REFRESH_INTERVAL_MS = 1000 * 60 * 20; // 20 minutes
-const MAINTENANCE_INTERVAL_MS = 1000 * 60 * 5; // 5 minutes
 const REDDIT_CREDENTIAL_EXPIRY_WINDOW_MS = 1000 * 60 * 60 * 2; // 2 hours
 
 let timersIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -68,7 +67,7 @@ async function main() {
   runMaintenanceOps(container);
   maintenanceIntervalId = setInterval(() => {
     runMaintenanceOps(container);
-  }, MAINTENANCE_INTERVAL_MS);
+  }, config.BACKEND_API_MAINTENANCE_INTERVAL_MS);
 
   await runTimers(container);
   timersIntervalId = setInterval(() => {

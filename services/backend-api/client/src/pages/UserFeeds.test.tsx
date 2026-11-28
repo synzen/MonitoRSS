@@ -570,6 +570,8 @@ describe("UserFeeds - active empty workspace personal feed move", () => {
           ? {
               total: 2,
               feedsWithoutConnections: 0,
+              premiumFeedCount: 0,
+              premiumFeedLimit: 2,
               results: [
                 {
                   id: "personal-1",
@@ -740,9 +742,11 @@ describe("UserFeeds - populated workspace personal feed move", () => {
       "fetch",
       vi.fn().mockResolvedValue(
         new Response(
-          JSON.stringify({
-            total: 3,
-            feedsWithoutConnections: 0,
+            JSON.stringify({
+              total: 3,
+              feedsWithoutConnections: 0,
+              premiumFeedCount: 0,
+              premiumFeedLimit: 2,
             results: [
               {
                 id: "personal-1",

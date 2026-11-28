@@ -14,4 +14,8 @@ export const UPDATE_PREVIEW_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
     status: 400,
     code: ApiErrorCode.SUBSCRIPTION_ALREADY_CANCELLED,
   },
+  AdditionalFeedsRequireTier3Exception: {
+    status: 400,
+    code: ApiErrorCode.WORKSPACE_INVALID_TIER,
+  },
 };

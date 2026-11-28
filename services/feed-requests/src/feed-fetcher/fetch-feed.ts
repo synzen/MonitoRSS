@@ -78,6 +78,7 @@ function buildFetchAndSaveOptions(data: FetchFeedInput) {
     saveResponseToObjectStorage: data.debug,
     lookupDetails: data.lookupDetails,
     source: undefined,
+    usePlatformProvider: data.usePlatformProvider,
     headers: data.lookupDetails?.headers as Record<string, string> | undefined,
   };
 }
@@ -247,6 +248,7 @@ export function createFetchFeedFlow({
         lookupDetails: data.lookupKey ? { key: data.lookupKey } : undefined,
         headers: data.headers as Record<string, string> | undefined,
         source: undefined,
+        usePlatformProvider: data.usePlatformProvider,
       });
 
       // Re-fetch latest

@@ -51,6 +51,8 @@ describe("GET /api/v1/user-feeds/:feedId/daily-limit for workspace feeds", () =>
       maxFeeds: 10,
       maxDailyArticles: 321,
       refreshRateSeconds: 120,
+      premiumFeedBaseTier: null,
+      isSupporter: true,
       allowWebhooks: true,
       allowCustomPlaceholders: true,
       allowExternalProperties: true,

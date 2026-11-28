@@ -29,7 +29,10 @@ import type {
 } from "./types";
 import type { GuildSubscriptionFormatted } from "../guild-subscriptions/types";
 import logger from "../../infra/logger";
-import { isBillingEnabled } from "../../shared/utils/billing";
+import {
+  isBillingEnabled,
+  WORKSPACE_TIER_FEED_LIMITS,
+} from "../../shared/utils/billing";
 
 export interface SupportersServiceDeps {
   config: Config;
@@ -482,8 +485,9 @@ export class SupportersService {
    * member's personal supporter perks. Resolves three ways:
    *
    * 1. Billing enabled + the workspace's own Paddle subscription grants
-   *    benefits → the subscription's stored tier benefits (add-on quantity is
-   *    already folded into maxUserFeeds by the webhook handler).
+   *    benefits → the subscription's stored tier benefits. Tier 2 is fixed at
+   *    its base allowance, while Tier 3 add-ons are folded into maxUserFeeds by
+   *    the webhook handler.
    * 2. Billing enabled but no benefit-granting subscription → dormant: zero
    *    feeds, no webhooks. Membership/invitations/settings are not gated here;
    *    only feed capacity is.
@@ -496,6 +500,12 @@ export class SupportersService {
     maxFeeds: number;
     maxDailyArticles: number;
     refreshRateSeconds: number;
+    // The paid plan that determines the premium-feed allowance. Null for a
+    // self-host or courtesy-only workspace with no subscription tier.
+    premiumFeedBaseTier: string | null;
+    // Whether an active paid subscription backs the workspace (false for
+    // self-host instances, where billing is not a construct).
+    isSupporter: boolean;
     allowWebhooks: boolean;
     dormant: boolean;
   }> {
@@ -504,6 +514,8 @@ export class SupportersService {
         maxFeeds: this.defaultMaxWorkspaceFeeds ?? Number.MAX_SAFE_INTEGER,
         maxDailyArticles: this.maxDailyArticlesDefault,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
+        premiumFeedBaseTier: null,
+        isSupporter: true,
         allowWebhooks: true,
         dormant: false,
       };
@@ -521,14 +533,24 @@ export class SupportersService {
       subscription &&
       SupportersService.subscriptionGrantsBenefits(subscription)
     ) {
+      const tierFeedLimit =
+        WORKSPACE_TIER_FEED_LIMITS[
+          subscription.productKey as keyof typeof WORKSPACE_TIER_FEED_LIMITS
+        ];
+      const subscriptionMaxFeeds =
+        subscription.productKey === SubscriptionProductKey.Tier2
+          ? tierFeedLimit
+          : subscription.benefits.maxUserFeeds;
       const effectiveMaxFeeds = isGrantLive
-        ? Math.max(subscription.benefits.maxUserFeeds, grant.feeds)
-        : subscription.benefits.maxUserFeeds;
+        ? Math.max(subscriptionMaxFeeds, grant.feeds)
+        : subscriptionMaxFeeds;
 
       return {
         maxFeeds: effectiveMaxFeeds,
         maxDailyArticles: subscription.benefits.dailyArticleLimit,
         refreshRateSeconds: subscription.benefits.refreshRateSeconds,
+        premiumFeedBaseTier: subscription.productKey,
+        isSupporter: true,
         allowWebhooks: subscription.benefits.allowWebhooks,
         dormant: false,
       };
@@ -539,6 +561,8 @@ export class SupportersService {
         maxFeeds: grant.feeds,
         maxDailyArticles: this.maxDailyArticlesDefault,
         refreshRateSeconds: this.defaultRefreshRateSeconds,
+        premiumFeedBaseTier: null,
+        isSupporter: true,
         allowWebhooks: true,
         dormant: false,
       };
@@ -548,6 +572,8 @@ export class SupportersService {
       maxFeeds: 0,
       maxDailyArticles: this.maxDailyArticlesDefault,
       refreshRateSeconds: this.defaultRefreshRateSeconds,
+      premiumFeedBaseTier: null,
+      isSupporter: false,
       allowWebhooks: false,
       dormant: true,
     };
@@ -578,9 +604,11 @@ export class SupportersService {
     );
 
     return {
+      isSupporter: benefits.isSupporter,
       maxFeeds: benefits.maxUserFeeds,
       maxDailyArticles: benefits.maxDailyArticles,
       refreshRateSeconds: benefits.refreshRateSeconds,
+      premiumFeedBaseTier: benefits.subscription?.productKey ?? null,
       allowWebhooks: benefits.isSupporter,
       allowCustomPlaceholders: benefits.allowCustomPlaceholders,
       allowExternalProperties: benefits.allowExternalProperties,

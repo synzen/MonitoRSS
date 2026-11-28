@@ -1,76 +1,85 @@
-import { describe, it } from "node:test";
+import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert";
-import { tryGetRedditRssUrl } from "./articles.service";
+import { findOrFetchFeedArticles } from "./articles.service";
+import { FeedResponseRequestStatus } from "../../feed-fetcher";
+import type { ParsedArticlesCacheStore } from "../../stores/interfaces/parsed-articles-cache";
 
-describe("tryGetRedditRssUrl", () => {
-  it("appends .rss to bare subreddit URLs", () => {
-    assert.strictEqual(
-      tryGetRedditRssUrl("https://www.reddit.com/r/russian_memes_only"),
-      "https://www.reddit.com/r/russian_memes_only.rss",
-    );
+const feedRequestsServiceHost = "http://feed-requests:8000";
+
+const stubCacheStore = (): ParsedArticlesCacheStore =>
+  ({
+    exists: async () => false,
+    get: async () => null,
+    set: async () => undefined,
+  }) as never;
+
+describe("findOrFetchFeedArticles URL passthrough", () => {
+  const originalFetch = globalThis.fetch;
+  let capturedBody: string | undefined;
+
+  beforeEach(() => {
+    capturedBody = undefined;
+
+    globalThis.fetch = (async (
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ) => {
+      capturedBody = init?.body as string;
+
+      return new Response(
+        JSON.stringify({
+          requestStatus: FeedResponseRequestStatus.Success,
+          response: {
+            statusCode: 200,
+            body: `<rss><channel><title>t</title>
+              <item><guid>g1</guid><title>Post</title><link>https://example.com/1</link></item>
+            </channel></rss>`,
+            hash: "hash",
+          },
+        }),
+        { status: 200 },
+      );
+    }) as typeof fetch;
   });
 
-  it("strips trailing slash before appending .rss", () => {
-    assert.strictEqual(
-      tryGetRedditRssUrl("https://www.reddit.com/r/foo/"),
-      "https://www.reddit.com/r/foo.rss",
-    );
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
   });
 
-  it("appends .rss to subreddit sort URLs (e.g. /top, /new)", () => {
-    assert.strictEqual(
-      tryGetRedditRssUrl("https://www.reddit.com/r/foo/top"),
-      "https://www.reddit.com/r/foo/top.rss",
-    );
+  it("passes reddit destination URLs through unchanged for feed-requests to route", async () => {
+    await findOrFetchFeedArticles("https://www.reddit.com/r/javascript", {
+      feedRequestsServiceHost,
+      parsedArticlesCacheStore: stubCacheStore(),
+    });
+
+    const body = JSON.parse(capturedBody as string);
+
+    assert.strictEqual(body.url, "https://www.reddit.com/r/javascript");
   });
 
-  it("returns null when URL already ends in .rss", () => {
-    assert.strictEqual(
-      tryGetRedditRssUrl("https://www.reddit.com/r/foo.rss"),
-      null,
-    );
+  it("passes legacy reddit RSS URLs through unchanged", async () => {
+    const legacyUrl = "https://www.reddit.com/r/javascript.rss";
+
+    await findOrFetchFeedArticles(legacyUrl, {
+      feedRequestsServiceHost,
+      parsedArticlesCacheStore: stubCacheStore(),
+    });
+
+    const body = JSON.parse(capturedBody as string);
+
+    assert.strictEqual(body.url, legacyUrl);
   });
 
-  it("normalizes oauth.reddit.com URLs and preserves the oauth host", () => {
-    assert.strictEqual(
-      tryGetRedditRssUrl("https://oauth.reddit.com/r/foo"),
-      "https://oauth.reddit.com/r/foo.rss",
-    );
-  });
+  it("passes non-reddit URLs through unchanged", async () => {
+    const feedUrl = "https://example.com/feed.xml";
 
-  it("normalizes old.reddit.com URLs and preserves the host", () => {
-    assert.strictEqual(
-      tryGetRedditRssUrl("https://old.reddit.com/r/foo"),
-      "https://old.reddit.com/r/foo.rss",
-    );
-  });
+    await findOrFetchFeedArticles(feedUrl, {
+      feedRequestsServiceHost,
+      parsedArticlesCacheStore: stubCacheStore(),
+    });
 
-  it("preserves bare reddit.com host (does not force www)", () => {
-    assert.strictEqual(
-      tryGetRedditRssUrl("https://reddit.com/r/foo"),
-      "https://reddit.com/r/foo.rss",
-    );
-  });
+    const body = JSON.parse(capturedBody as string);
 
-  it("preserves the query string", () => {
-    assert.strictEqual(
-      tryGetRedditRssUrl("https://www.reddit.com/r/foo?limit=10"),
-      "https://www.reddit.com/r/foo.rss?limit=10",
-    );
-  });
-
-  it("returns null for non-reddit hosts", () => {
-    assert.strictEqual(tryGetRedditRssUrl("https://example.com/r/foo"), null);
-  });
-
-  it("returns null for unsupported reddit subdomains", () => {
-    assert.strictEqual(
-      tryGetRedditRssUrl("https://mod.reddit.com/r/foo"),
-      null,
-    );
-  });
-
-  it("returns null for invalid URLs", () => {
-    assert.strictEqual(tryGetRedditRssUrl("not a url"), null);
+    assert.strictEqual(body.url, feedUrl);
   });
 });

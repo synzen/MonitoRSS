@@ -1,35 +1,34 @@
 import { test, expect } from "../../fixtures/test-fixtures";
 import { getDiscordUserIdFromPage } from "../../helpers/paddle-db";
 import { seedRevokedRedditCredentialInDb } from "../../helpers/reddit-db";
-import { connectReddit, uniqueSubreddit } from "../../helpers/reddit-oauth";
+import { connectReddit } from "../../helpers/reddit-oauth";
 
-// Personal-scope Reddit OAuth through the real (mocked) popup flow: the connect button
-// opens /api/v1/reddit/login, which round-trips the mock reddit server's authorize
-// endpoint and the backend callback (session-stored state validation, token exchange),
-// then posts back to the opener. Adding the feed afterwards proves the stored grant
-// actually authenticates fetches: the mock serves subreddit RSS only to requests
-// carrying a Bearer token it issued, and 403s everything else.
+// Personal-scope Reddit OAuth machinery through the real (mocked) flow on the
+// account settings page: the connect button opens /api/v1/reddit/login, which
+// round-trips the mock reddit server's authorize endpoint and the backend
+// callback (session-stored state validation, token exchange), then lands back
+// on the settings page.
+
+async function gotoAccountSettings(page: import("@playwright/test").Page) {
+  await page.goto("/feeds");
+  await expect(
+    page.getByRole("button", { name: "Account settings" }),
+  ).toBeVisible({ timeout: 15000 });
+
+  await page.getByRole("button", { name: "Account settings" }).click();
+  await page.getByRole("menuitem", { name: /account settings/i }).click();
+}
 
 test.describe("Reddit OAuth (personal)", () => {
-  test("connecting through the gate popup auto-retries and adds the subreddit feed", async ({
+  test("connecting on the account settings page completes the OAuth round trip and disconnecting removes the grant", async ({
     page,
   }) => {
     test.setTimeout(90000);
-    const { url, title } = uniqueSubreddit();
 
-    await page.goto("/feeds");
-    await expect(
-      page.getByRole("heading", { name: "Get news delivered to your Discord" }),
-    ).toBeVisible({ timeout: 15000 });
+    await gotoAccountSettings(page);
 
-    const searchInput = page.getByRole("textbox", {
-      name: "Search popular feeds or paste a URL",
-    });
-    await searchInput.fill(url);
-    await page.getByRole("button", { name: "Go", exact: true }).click();
-
-    await expect(page.getByText("Connect your Reddit account to continue")).toBeVisible({
-      timeout: 30000,
+    await expect(page.getByText("Not Connected")).toBeVisible({
+      timeout: 15000,
     });
 
     await connectReddit(
@@ -37,54 +36,34 @@ test.describe("Reddit OAuth (personal)", () => {
       page.getByRole("button", { name: "Connect Reddit" }),
     );
 
-    // The popup's completion auto-retries the blocked validation with the new grant:
-    // the gate clears and the feed card appears without any further input.
-    const addButton = page.getByRole("button", { name: /^Add .+ feed$/i }).first();
-    await expect(addButton).toBeVisible({ timeout: 30000 });
-    await expect(page.getByText("Connect your Reddit account to continue")).toHaveCount(0);
-
-    await addButton.click();
-    await expect(page.getByRole("heading", { name: /1 feed added!/ })).toBeVisible({
-      timeout: 10000,
+    await expect(page.getByText("Connected", { exact: true })).toBeVisible({
+      timeout: 30000,
     });
 
-    // The feed (titled from the authenticated fetch's channel title) is in the table.
-    await page.getByRole("button", { name: /View your feeds/ }).click();
-    await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
-    // exact-named link: the row also renders the URL link, which contains the title.
-    await expect(
-      page.getByRole("table").getByRole("link", { name: title, exact: true }),
-    ).toBeVisible();
+    await page.getByRole("button", { name: "Disconnect" }).click();
+    await expect(page.getByText("Not Connected")).toBeVisible({
+      timeout: 15000,
+    });
   });
 
-  test("a dead connection shows the reconnect prompt and reconnecting revives feed adds", async ({
+  test("a dead connection shows the disconnected state and reconnecting revives it", async ({
     page,
   }) => {
     test.setTimeout(90000);
-    const { url, title } = uniqueSubreddit();
 
-    await page.goto("/feeds");
-    await expect(
-      page.getByRole("heading", { name: "Get news delivered to your Discord" }),
-    ).toBeVisible({ timeout: 15000 });
+    await gotoAccountSettings(page);
 
     // A previously connected account whose grant has died (e.g. revoked at Reddit).
     const discordUserId = await getDiscordUserIdFromPage(page);
     await seedRevokedRedditCredentialInDb(discordUserId);
     await page.reload();
-    await expect(
-      page.getByRole("heading", { name: "Get news delivered to your Discord" }),
-    ).toBeVisible({ timeout: 15000 });
-
-    const searchInput = page.getByRole("textbox", {
-      name: "Search popular feeds or paste a URL",
+    await expect(page.getByRole("button", { name: "Account settings" })).toBeVisible({
+      timeout: 15000,
     });
-    await searchInput.fill(url);
-    await page.getByRole("button", { name: "Go", exact: true }).click();
 
-    // The gate distinguishes a dead connection from never-connected.
-    await expect(page.getByText("Reconnect your Reddit account")).toBeVisible({
-      timeout: 30000,
+    // The settings row distinguishes a dead connection from never-connected.
+    await expect(page.getByText("Disconnected", { exact: true })).toBeVisible({
+      timeout: 15000,
     });
     await expect(page.getByText(/no longer active/i)).toBeVisible();
 
@@ -93,76 +72,8 @@ test.describe("Reddit OAuth (personal)", () => {
       page.getByRole("button", { name: "Reconnect Reddit" }),
     );
 
-    const addButton = page.getByRole("button", { name: /^Add .+ feed$/i }).first();
-    await expect(addButton).toBeVisible({ timeout: 30000 });
-
-    await addButton.click();
-    await expect(page.getByRole("heading", { name: /1 feed added!/ })).toBeVisible({
-      timeout: 10000,
-    });
-
-    await page.getByRole("button", { name: /View your feeds/ }).click();
-    await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
-    // exact-named link: the row also renders the URL link, which contains the title.
-    await expect(
-      page.getByRole("table").getByRole("link", { name: title, exact: true }),
-    ).toBeVisible();
-  });
-
-  test("connecting after a gated feed-URL edit returns to the feed and the save goes through", async ({
-    page,
-    testFeed,
-  }) => {
-    test.setTimeout(90000);
-    const { url } = uniqueSubreddit();
-
-    await page.goto(`/feeds/${testFeed.id}`);
-    await expect(page.getByRole("heading", { name: testFeed.title })).toBeVisible({
-      timeout: 10000,
-    });
-
-    await page.getByRole("button", { name: "Feed Actions" }).click();
-    await page.getByRole("menuitem", { name: "Edit" }).click();
-
-    const editDialog = page.getByRole("dialog");
-    const urlInput = editDialog.getByLabel("RSS Feed Link");
-    await expect(urlInput).toBeVisible({ timeout: 10000 });
-    await urlInput.fill(url);
-    await editDialog.getByRole("button", { name: "Save" }).click();
-
-    await expect(page.getByText("Connect your Reddit account to continue")).toBeVisible({
+    await expect(page.getByText("Connected", { exact: true })).toBeVisible({
       timeout: 30000,
-    });
-
-    await connectReddit(
-      page,
-      page.getByRole("button", { name: "Connect Reddit" }),
-    );
-
-    // The OAuth round trip navigates the same tab, so the app reloads and the dialog (with
-    // its in-memory form state) is gone. The user reopens the editor, retypes the URL, and
-    // the save now passes the satisfied gate.
-    await expect(editDialog).not.toBeVisible({ timeout: 30000 });
-    await expect(
-      page.getByText("Connect your Reddit account to continue"),
-    ).toHaveCount(0);
-
-    await page.getByRole("button", { name: "Feed Actions" }).click();
-    await page.getByRole("menuitem", { name: "Edit" }).click();
-    const reopenedDialog = page.getByRole("dialog");
-    const reopenedInput = reopenedDialog.getByLabel("RSS Feed Link");
-    await expect(reopenedInput).toBeVisible({ timeout: 10000 });
-    await reopenedInput.fill(url);
-    await reopenedDialog.getByRole("button", { name: "Save" }).click();
-
-    // The save went through with the new grant: the dialog closed itself on success.
-    await expect(reopenedDialog).not.toBeVisible({ timeout: 30000 });
-
-    // The URL change stuck: reopening the editor shows the subreddit URL.
-    await page.getByRole("button", { name: "Feed Actions" }).click();
-    await page.getByRole("menuitem", { name: "Edit" }).click();
-    await expect(page.getByRole("dialog").getByLabel("RSS Feed Link")).toHaveValue(url, {
-      timeout: 10000,
     });
   });
 });

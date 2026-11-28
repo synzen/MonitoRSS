@@ -336,6 +336,48 @@ describe(
       assert.strictEqual(body.result.receivedLimit, 20);
     });
 
+    it("enables platform provider routing for metered platform feeds", async () => {
+      const discordUserId = generateSnowflake();
+      const user = await ctx.asUser(discordUserId);
+
+      const feed = await ctx.container.userFeedRepository.create({
+        title: "Instagram @delivery-preview posts",
+        url: "https://www.instagram.com/delivery-preview",
+        user: { id: generateTestId(), discordUserId },
+        isMeteredPlatformFeed: true,
+      });
+
+      feedApiMockServer.registerRoute(
+        "POST",
+        `/v1/user-feeds/delivery-preview`,
+        deliveryPreviewMockHandler,
+      );
+
+      const response = await user.fetch(
+        `/api/v1/user-feeds/${feed.id}/delivery-preview`,
+        {
+          method: "POST",
+          body: JSON.stringify({}),
+        },
+      );
+
+      assert.strictEqual(response.status, 200);
+
+      const upstreamRequest = feedApiMockServer
+        .getRequestsForPath("/v1/user-feeds/delivery-preview")
+        .find(
+          (request) =>
+            (request.body as { feed?: { id?: string } } | undefined)?.feed
+              ?.id === feed.id,
+        );
+
+      assert.strictEqual(
+        (upstreamRequest?.body as { feed?: { usePlatformProvider?: boolean } })
+          ?.feed?.usePlatformProvider,
+        true,
+      );
+    });
+
     it("filters connections for shared manager with limited connection IDs", async () => {
       const ownerDiscordUserId = generateSnowflake();
       const sharedManagerDiscordUserId = generateSnowflake();

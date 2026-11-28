@@ -5,6 +5,7 @@ import {
   type AppTestContext,
 } from "../../helpers/test-context";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
+import { registerDefaultClassifyRoute } from "../../helpers/mock-apis";
 import {
   createTestHttpServer,
   type TestHttpServer,
@@ -31,6 +32,9 @@ after(async () => {
 
 beforeEach(() => {
   feedApiMockServer.clear();
+  // validateFeedUrl canonicalizes natural platform URLs before validation;
+  // the neutral default keeps every URL raw.
+  registerDefaultClassifyRoute(feedApiMockServer);
 });
 
 describe("POST /api/v1/user-feeds/url-validation", () => {
@@ -124,6 +128,49 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
     };
     assert.strictEqual(body.result.resolvedToUrl, resolvedUrl);
     assert.strictEqual(body.result.feedTitle, "Discovered Feed");
+  });
+
+  it("resolves a natural reddit rss URL to its canonical destination", async () => {
+    const user = await ctx.asUser(generateSnowflake());
+    const inputUrl = "https://old.reddit.com/r/gaming/new.rss";
+    const canonicalUrl = "https://old.reddit.com/r/gaming/new";
+
+    feedApiMockServer.registerRoute(
+      "POST",
+      "/v1/platform/resolve-urls",
+      (req) => ({
+        status: 200,
+        body: {
+          results: ((req.body as { urls?: string[] })?.urls ?? []).map((u) =>
+            u.endsWith(".rss") ? u.slice(0, -4) : null,
+          ),
+        },
+      }),
+    );
+    feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
+      status: 200,
+      body: {
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [],
+          totalArticles: 0,
+          selectedProperties: [],
+          url: canonicalUrl,
+          feedTitle: "gaming",
+        },
+      },
+    });
+
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
+      method: "POST",
+      body: JSON.stringify({ url: inputUrl }),
+    });
+
+    assert.strictEqual(response.status, 200);
+    const body = (await response.json()) as {
+      result: { resolvedToUrl: string | null };
+    };
+    assert.strictEqual(body.result.resolvedToUrl, canonicalUrl);
   });
 
   it("returns 400 with FEED_REQUEST_TIMEOUT when feed fetch times out", async () => {
@@ -304,10 +351,9 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
     assert.strictEqual(body.code, "FEED_NOT_FOUND");
   });
 
-  it("returns resolvedToUrl with .rss appended for bare reddit subreddit URLs", async () => {
+  it("passes bare reddit destination URLs through to user-feeds-next without rewriting", async () => {
     const user = await ctx.asUser(generateSnowflake());
     const inputUrl = "https://www.reddit.com/r/russian_memes_only";
-    const resolvedUrl = "https://www.reddit.com/r/russian_memes_only.rss";
 
     feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
       status: 200,
@@ -317,7 +363,7 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
           articles: [],
           totalArticles: 0,
           selectedProperties: [],
-          url: resolvedUrl,
+          url: inputUrl,
           feedTitle: "russian_memes_only",
         },
       },
@@ -332,7 +378,14 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
     const body = (await response.json()) as {
       result: { resolvedToUrl: string | null; feedTitle?: string };
     };
-    assert.strictEqual(body.result.resolvedToUrl, resolvedUrl);
+    // The stored URL stays the user-facing destination URL — no .rss rewrite.
+    assert.strictEqual(body.result.resolvedToUrl, null);
+    assert.strictEqual(body.result.feedTitle, "russian_memes_only");
+
+    const forwarded = feedApiMockServer
+      .getRequestsForPath("/v1/user-feeds/get-articles")
+      .map((r) => r.body as { url: string });
+    assert.strictEqual(forwarded[0]?.url, inputUrl);
   });
 
   it("returns 400 with BANNED_FEED when feed is banned", async () => {
@@ -367,5 +420,93 @@ describe("POST /api/v1/user-feeds/url-validation", () => {
     assert.strictEqual(response.status, 400);
     const body = (await response.json()) as { code: string };
     assert.strictEqual(body.code, "BANNED_FEED");
+  });
+
+  it("validates a premium replacement without consuming an additional slot", async () => {
+    const discordUserId = generateSnowflake();
+    const user = await ctx.asUser(discordUserId);
+    const originalUrl = "https://www.instagram.com/original";
+    const replacementUrl = "https://www.instagram.com/mrdalekjd";
+
+    await ctx.connection
+      .collection("users")
+      .updateOne(
+        { discordUserId },
+        { $set: { "featureFlags.premiumFeeds": true } },
+      );
+
+    await ctx.container.userFeedRepository.create({
+      title: "Instagram first",
+      url: "https://www.instagram.com/first",
+      user: { id: generateTestId(), discordUserId },
+      isMeteredPlatformFeed: true,
+    });
+
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Instagram original",
+      url: originalUrl,
+      user: { id: generateTestId(), discordUserId },
+      isMeteredPlatformFeed: true,
+    });
+
+    feedApiMockServer.registerRoute(
+      "POST",
+      "/v1/platform/classify-urls",
+      (req) => ({
+        status: 200,
+        body: {
+          results: ((req.body as { urls?: string[] })?.urls ?? []).map(
+            (url) => new URL(url).hostname === "www.instagram.com",
+          ),
+        },
+      }),
+    );
+    feedApiMockServer.registerRoute("POST", "/v1/user-feeds/get-articles", {
+      status: 200,
+      body: {
+        result: {
+          requestStatus: "SUCCESS",
+          articles: [],
+          totalArticles: 0,
+          selectedProperties: [],
+          url: replacementUrl,
+          feedTitle: "Instagram @mrdalekjd posts",
+        },
+      },
+    });
+
+    const response = await user.fetch("/api/v1/user-feeds/url-validation", {
+      method: "POST",
+      body: JSON.stringify({ url: replacementUrl, feedId: feed.id }),
+    });
+
+    assert.strictEqual(response.status, 200);
+  });
+
+  it("returns 404 when validating with another user's feed id", async () => {
+    const ownerDiscordUserId = generateSnowflake();
+    const feed = await ctx.container.userFeedRepository.create({
+      title: "Private feed",
+      url: "https://www.instagram.com/private",
+      user: {
+        id: generateTestId(),
+        discordUserId: ownerDiscordUserId,
+      },
+      isMeteredPlatformFeed: true,
+    });
+    const otherUser = await ctx.asUser(generateSnowflake());
+
+    const response = await otherUser.fetch(
+      "/api/v1/user-feeds/url-validation",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          url: "https://www.instagram.com/replacement",
+          feedId: feed.id,
+        }),
+      },
+    );
+
+    assert.strictEqual(response.status, 404);
   });
 });

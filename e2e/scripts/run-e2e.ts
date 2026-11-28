@@ -19,6 +19,7 @@ import {
 } from "../helpers/paddle-api";
 import {
   isPortFree,
+  pruneOldRunDirs,
   runProcess as runChildProcess,
   toPlaywrightArgs,
 } from "./run-e2e-utils";
@@ -29,6 +30,16 @@ const COMPOSE_FILE = join(REPO_ROOT, "docker-compose.e2e.yml");
 const PLAYWRIGHT_CLI = require.resolve("@playwright/test/cli");
 const LOG_DIR = join(E2E_DIR, "logs");
 const PORT_STRIDE = 1000;
+// Repeated runs otherwise grow without bound: archived logs and Docker build
+// cache are the two largest accumulators. Compose-built images are removed by
+// `down --rmi local`; these bounds cap the rest.
+const KEPT_RUN_LOGS = (() => {
+  const parsed = Number(process.env.E2E_RUN_LOGS_TO_KEEP);
+
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 20;
+})();
+const BUILD_CACHE_KEEP_STORAGE =
+  process.env.E2E_BUILD_CACHE_KEEP_STORAGE || "5GB";
 const DEFAULT_PORTS = {
   backend: 8100,
   frontend: 3100,
@@ -38,6 +49,7 @@ const DEFAULT_PORTS = {
   smtp: 3004,
   smtpHttp: 3005,
   reddit: 3006,
+  vendor: 3007,
   postgres: 5433,
 };
 
@@ -301,13 +313,14 @@ function createContext(instance: number): RunContext {
     E2E_MOCK_SMTP_PORT: String(DEFAULT_PORTS.smtp + offset),
     E2E_MOCK_SMTP_HTTP_PORT: String(DEFAULT_PORTS.smtpHttp + offset),
     E2E_MOCK_REDDIT_PORT: String(DEFAULT_PORTS.reddit + offset),
+    E2E_VENDOR_MOCK_PORT: String(DEFAULT_PORTS.vendor + offset),
     E2E_POSTGRES_PORT: String(DEFAULT_PORTS.postgres + offset),
     BACKEND_API_REDDIT_CLIENT_ID:
       process.env.BACKEND_API_REDDIT_CLIENT_ID || "e2e-reddit-client-id",
     COMPOSE_PROJECT_NAME: projectName,
   };
 
-  const mockLogs = ["rss", "discord", "smtp", "reddit"].map((name) =>
+  const mockLogs = ["rss", "discord", "smtp", "reddit", "vendor"].map((name) =>
     join(LOG_DIR, `mock-${name}${suffix}.log`),
   );
   return {
@@ -442,6 +455,33 @@ async function assembleLogs(runContext: RunContext): Promise<void> {
   }
 }
 
+async function pruneDockerArtifacts(runContext: RunContext): Promise<void> {
+  const prunes: Array<[string, string[]]> = [
+    [
+      "build cache",
+      ["builder", "prune", "-f", "--keep-storage", BUILD_CACHE_KEEP_STORAGE],
+    ],
+    ["dangling images", ["image", "prune", "-f"]],
+  ];
+
+  for (const [label, args] of prunes) {
+    try {
+      await runProcess("docker", args, {
+        env: runContext.env,
+        logPath: runContext.runnerLog,
+        echo: false,
+        timeoutMs: 180_000,
+      });
+    } catch (error) {
+      // Disk cleanup must never fail the test run; log and continue.
+      appendLog(
+        runContext.runnerLog,
+        `Docker ${label} prune failed: ${String(error)}\n`,
+      );
+    }
+  }
+}
+
 async function cleanup(): Promise<void> {
   if (cleanupPromise) return cleanupPromise;
   cleanupPromise = (async () => {
@@ -464,7 +504,15 @@ async function cleanup(): Promise<void> {
     console.log("Tearing down E2E Docker stack...");
     const downCode = await runProcess(
       "docker",
-      composeArgs(context, ["down", "--volumes", "--remove-orphans"]),
+      composeArgs(context, [
+        "down",
+        "--volumes",
+        "--remove-orphans",
+        // Compose-built images are project-tagged; without this each instance
+        // leaves its own image set behind forever.
+        "--rmi",
+        "local",
+      ]),
       { env: context.env, logPath: context.runnerLog, timeoutMs: 60_000 },
     ).catch((error) => {
       cleanupFailed = true;
@@ -493,6 +541,17 @@ async function cleanup(): Promise<void> {
       cleanupFailed = true;
       console.error(`Log assembly failed: ${String(error)}`);
     });
+
+    await pruneDockerArtifacts(context);
+
+    const removedRunDirs = pruneOldRunDirs(
+      join(LOG_DIR, "runs"),
+      KEPT_RUN_LOGS,
+    );
+    if (removedRunDirs.length > 0) {
+      console.log(`Pruned ${removedRunDirs.length} old run log director${removedRunDirs.length === 1 ? "y" : "ies"}.`);
+    }
+
     console.log(`Combined log: ${context.combinedLog}`);
     console.log(`Archived run: ${context.runDir}`);
   })();
@@ -559,8 +618,11 @@ async function main(): Promise<number> {
   console.log(
     `Starting E2E Docker stack (instance: ${instance}, project: ${context.projectName})...`,
   );
+  // Ports come from the constants, not the env object: run-e2e never logs
+  // process-env-derived values.
+  const offset = context.instance * PORT_STRIDE;
   console.log(
-    `  backend=${context.env.E2E_BACKEND_PORT} frontend=${context.env.E2E_FRONTEND_PORT} mongo=${context.env.E2E_MONGO_PORT} rss-mock=${context.env.E2E_MOCK_RSS_PORT} discord-mock=${context.env.E2E_MOCK_DISCORD_PORT} smtp-mock=${context.env.E2E_MOCK_SMTP_PORT}/${context.env.E2E_MOCK_SMTP_HTTP_PORT} reddit-mock=${context.env.E2E_MOCK_REDDIT_PORT}`,
+    `  backend=${DEFAULT_PORTS.backend + offset} frontend=${DEFAULT_PORTS.frontend + offset} mongo=${DEFAULT_PORTS.mongo + offset} rss-mock=${DEFAULT_PORTS.rss + offset} discord-mock=${DEFAULT_PORTS.discord + offset} smtp-mock=${DEFAULT_PORTS.smtp + offset}/${DEFAULT_PORTS.smtpHttp + offset} reddit-mock=${DEFAULT_PORTS.reddit + offset} vendor-mock=${DEFAULT_PORTS.vendor + offset}`,
   );
   appendLog(
     context.runnerLog,

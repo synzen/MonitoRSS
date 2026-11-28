@@ -400,16 +400,16 @@ test.describe("Paddle workspace roundtrip", () => {
     // completeInlineCheckout already waits out the activation webhook, so the page
     // is on the active current-plan view by the time it returns; these are instant
     // client renders. Short timeouts so a UI regression fails in seconds, not at
-    // the test-level ceiling. Every capacity is base tier + per-feed add-ons, so
-    // 2,000 feeds is the 70-feed Team base item plus 1,930 additional feeds.
+    // the test-level ceiling. Every capacity above 140 is the Tier 3 base plus
+    // per-feed add-ons, so 2,000 feeds is 140 plus 1,860 additional feeds.
     await completeInlineCheckout(page);
     await expect(page.getByText("Current plan").first()).toBeVisible({ timeout: 10000 });
     // The plan summary states the total feed count and the recurring price in
-    // one sentence ("Your plan covers 2,000 feeds in total (70 + 1,930
+    // one sentence ("Your plan covers 2,000 feeds in total (140 + 1,860
     // additional) at $X / month."); match the feeds part so the assertion does
     // not depend on the sandbox price.
     await expect(
-      page.getByText(/2,000 feeds in total \(70 \+ 1,930 additional\)/),
+      page.getByText(/2,000 feeds in total \(140 \+ 1,860 additional\)/),
     ).toBeVisible({ timeout: 10000 });
 
     // Teardown: cancel the workspace's sandbox subscription, then delete it.

@@ -77,6 +77,9 @@ export interface IUserFeed {
   shareManageOptions?: IUserFeedShareManageOptions;
   legacyFeedId?: string;
   refreshRateSeconds?: number;
+  // Set when the platform provider meters the feed fetch. Absence means the
+  // feed follows the regular plan refresh rate; true applies the provider floor.
+  isMeteredPlatformFeed?: boolean;
   maxDailyArticles?: number;
   userRefreshRateSeconds?: number;
   slotOffsetMs?: number;
@@ -154,6 +157,7 @@ export interface CreateUserFeedInput {
   feedRequestLookupKey?: string;
   createdAt?: Date;
   refreshRateSeconds?: number;
+  isMeteredPlatformFeed?: boolean;
   slotOffsetMs?: number;
   maxDailyArticles?: number;
   dateCheckOptions?: IUserFeedDateCheckOptions;
@@ -287,6 +291,8 @@ export interface WorkspaceRefreshRateSyncInput {
     workspaceIds: string[];
     refreshRateSeconds: number;
   }>;
+  // Metered platform feeds never sync below this rate.
+  premiumFloorSeconds: number;
 }
 
 export interface WorkspaceMaxDailyArticlesSyncInput {
@@ -311,6 +317,14 @@ export interface CloneUserFeedInput {
     url: string;
     inputUrl?: string;
     workspaceId?: string;
+    // Metered-feed floors are applied by the service when the clone targets a
+    // metered platform URL.
+    refreshRateSeconds?: number;
+    userRefreshRateSeconds?: number | null;
+    isMeteredPlatformFeed?: boolean;
+    // Reddit clones mint a fresh key: their fetches carry the owner's grant
+    // through the per-feed credentialed lookup path.
+    feedRequestLookupKey?: string;
   };
 }
 
@@ -378,6 +392,7 @@ export interface UserFeedForPendingInvites {
 
 export interface ScheduledFeedUrl {
   url: string;
+  isMeteredPlatformFeed?: boolean;
 }
 
 // Per-feed targets for the workspace bulk retry (ADR-011): one entry per
@@ -393,6 +408,7 @@ export interface BulkRetryableFeed {
 
 export interface ScheduledFeedWithLookupKey {
   url: string;
+  isMeteredPlatformFeed?: boolean;
   feedRequestLookupKey?: string;
   workspaceId?: string;
   users: Array<{
@@ -415,6 +431,7 @@ export interface ScheduledFeedWithLookupKey {
 export interface ScheduledFeedForClockScheduling {
   id: string;
   url: string;
+  isMeteredPlatformFeed?: boolean;
   schedule: FeedSchedule;
   // Epoch ms of the last delivered scheduled occurrence; feeds already fired
   // for an occurrence are skipped by the emitter.
@@ -440,6 +457,7 @@ export interface FeedForSlotOffsetRecalculation {
   url: string;
   refreshRateSeconds?: number;
   userRefreshRateSeconds?: number;
+  isMeteredPlatformFeed?: boolean;
 }
 
 export interface RefreshRateSyncInput {
@@ -448,6 +466,8 @@ export interface RefreshRateSyncInput {
     refreshRateSeconds: number;
   }>;
   defaultRefreshRateSeconds: number;
+  // Metered platform feeds never sync below this rate.
+  premiumFloorSeconds: number;
 }
 
 export interface MaxDailyArticlesSyncInput {
@@ -612,6 +632,9 @@ export interface IUserFeedRepository {
   getUserFeedsCount(
     input: Omit<UserFeedListingInput, "limit" | "offset" | "sort">,
   ): Promise<number>;
+  getPremiumFeedCount(
+    input: Pick<UserFeedListingInput, "discordUserId" | "workspaceId">,
+  ): Promise<number>;
   findFeedIdsByFilters(
     input: UserFeedListingInput,
   ): Promise<string[]>;
@@ -640,6 +663,17 @@ export interface IUserFeedRepository {
     excludeDisabledCodes: UserFeedDisabledCode[],
   ): Promise<Array<{ id: string; title: string; url: string; createdAt: Date }>>;
   findByUrls(discordUserId: string, urls: string[]): Promise<{ url: string }[]>;
+  // Urls of the user's personal feeds (no workspaceId) they own directly.
+  // Used by platform-feed allowance counting.
+  findPersonalFeedUrlsByOwner(
+    discordUserId: string,
+  ): Promise<Array<{ url: string }>>;
+  findWorkspaceFeedUrls(workspaceId: string): Promise<Array<{ url: string }>>;
+  // Id + url of every feed a copy-settings operation targets, resolved with
+  // the same filter copySettingsToFeeds applies.
+  findFeedUrlsForCopyTarget(
+    target: CopySettingsTarget,
+  ): Promise<Array<{ id: string; url: string }>>;
   findByIdAndOwnership(
     id: string,
     discordUserId: string,
@@ -788,6 +822,12 @@ export interface IUserFeedRepository {
     refreshRateSeconds: number,
     slotWindow: SlotWindow,
   ): AsyncIterable<ScheduledFeedWithLookupKey>;
+  /**
+   * Distinct URLs of every feed the scheduler would actually fetch (enabled
+   * connection, recovery feeds included) across all refresh rates. Consumed
+   * by the platform-provider GC sweep in the maintenance loop.
+   */
+  getDistinctActiveFeedUrls(): Promise<string[]>;
 
   // Retry-backoff methods (ADR-011). Expired feeds (disabled with
   // FAILED_REQUESTS) are revived by forced fetch-now batches; the retry

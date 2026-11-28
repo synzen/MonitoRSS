@@ -19,7 +19,7 @@ describe("Workspace feed limit enforcement", () => {
 
   describe("enforceWorkspaceFeedLimit", () => {
     it("disables oldest workspace feeds first when over limit", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 2 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 2 });
       const workspace = await ctx.createWorkspace();
 
       const oldest = await ctx.createWorkspaceFeed(workspace.id);
@@ -41,7 +41,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("re-enables newest ExceededFeedLimit feeds first when under limit", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 3 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 3 });
       const workspace = await ctx.createWorkspace();
 
       const enabled = await ctx.createWorkspaceFeed(workspace.id);
@@ -73,7 +73,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("does not re-enable manually disabled feeds or feeds disabled for other reasons", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 5 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 5 });
       const workspace = await ctx.createWorkspace();
 
       const manual = await ctx.createWorkspaceFeed(workspace.id);
@@ -94,7 +94,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("does not disable the creator's personal feeds when the workspace is over limit", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 1 });
       const workspace = await ctx.createWorkspace();
 
       const personal = await ctx.createFeed();
@@ -118,7 +118,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("sends a digest for the disabled feeds", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 1 });
       const workspace = await ctx.createWorkspace();
 
       const oldest = await ctx.createWorkspaceFeed(workspace.id, {
@@ -143,7 +143,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("does not send a digest when nothing is disabled", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 5 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 5 });
       const workspace = await ctx.createWorkspace();
 
       await ctx.createWorkspaceFeed(workspace.id);
@@ -164,7 +164,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("disables webhook connections when workspace benefits disallow webhooks", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         workspaceMaxFeeds: 5,
         workspaceAllowWebhooks: false,
       });
@@ -189,7 +189,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("re-enables webhook connections when workspace benefits allow webhooks", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         workspaceMaxFeeds: 5,
         workspaceAllowWebhooks: true,
       });
@@ -217,7 +217,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("removes the supporter-rate refresh override when workspace benefits do not grant it", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         workspaceMaxFeeds: 5,
         workspaceRefreshRateSeconds: 600,
         defaultSupporterRefreshRateSeconds: 120,
@@ -241,7 +241,7 @@ describe("Workspace feed limit enforcement", () => {
   // must not exempt a workspace forever.
   describe("conversion-in-progress guard", () => {
     it("does not disable over-limit workspace feeds while a fresh guard is set", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 1 });
       const workspace = await ctx.createWorkspace();
 
       const feedA = await ctx.createWorkspaceFeed(workspace.id);
@@ -259,7 +259,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("disables over-limit workspace feeds when the guard has expired (TTL)", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 1 });
       const workspace = await ctx.createWorkspace();
 
       const oldest = await ctx.createWorkspaceFeed(workspace.id);
@@ -286,7 +286,7 @@ describe("Workspace feed limit enforcement", () => {
 
   describe("enforceAllWorkspaceFeedLimits", () => {
     it("enforces every workspace independently and digests per workspace", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 1 });
       const workspaceA = await ctx.createWorkspace();
       const workspaceB = await ctx.createWorkspace();
 
@@ -333,7 +333,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("skips disabling for a fresh-guarded workspace but reconciles an expired-guard one", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 1 });
       const fresh = await ctx.createWorkspace();
       const expired = await ctx.createWorkspace();
 
@@ -370,7 +370,7 @@ describe("Workspace feed limit enforcement", () => {
 
   describe("mutation-triggered enforcement", () => {
     it("re-enables a workspace feed after deleting another workspace feed", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 1 });
       const workspace = await ctx.createWorkspace();
 
       const active = await ctx.createWorkspaceFeed(workspace.id);
@@ -389,7 +389,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("disables the oldest feed and digests when bulk enable pushes the workspace over limit", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 1 });
       const workspace = await ctx.createWorkspace();
 
       const oldest = await ctx.createWorkspaceFeed(workspace.id);
@@ -419,7 +419,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("re-enables a workspace feed after bulk disabling another", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 1 });
       const workspace = await ctx.createWorkspace();
 
       const active = await ctx.createWorkspaceFeed(workspace.id);
@@ -442,7 +442,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("does not let personal-feed enforcement touch workspace feeds", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         maxUserFeeds: 1,
         defaultMaxUserFeeds: 1,
         workspaceMaxFeeds: 5,
@@ -470,7 +470,7 @@ describe("Workspace feed limit enforcement", () => {
     });
 
     it("blocks enabling a workspace feed via update when the workspace is at its limit", async () => {
-      const ctx = harness.createContext({ workspaceMaxFeeds: 1 });
+      const ctx = await harness.createContext({ workspaceMaxFeeds: 1 });
       const workspace = await ctx.createWorkspace();
 
       await ctx.createWorkspaceFeed(workspace.id);

@@ -14,15 +14,44 @@ Run `npm run e2e:doctor` for a fast check of Docker daemon access, Docker Compos
 
 The runner writes logs to `e2e/logs/` (gitignored) that outlive the torn-down stack. **If a run fails, read `logs/combined.log` first** — it is the one file containing everything, top to bottom:
 
-- `logs/combined.log` — **read this first after a run ends.** Runner output + Playwright output + every container's logs + all four mock servers, concatenated under `===== SECTION =====` headers. Assembled on teardown.
+- `logs/combined.log` — **read this first after a run ends.** Runner output + Playwright output + every container's logs + all host-side mock servers, concatenated under `===== SECTION =====` headers. Assembled on teardown.
 - `logs/runner.log` — Docker startup, failure diagnostics, and teardown output.
 - `logs/playwright.log` — the Playwright run output, written live.
 - `logs/docker-stack.log` — `docker compose logs --timestamps --follow` for all services, streamed **live** for the whole run. The place to inspect container-side behaviour, e.g. inbound Paddle webhooks in `web-api` ("Paddle webhook received" / "Invalid signature received for paddle webhook event").
-- `logs/mock-rss.log`, `logs/mock-discord.log`, `logs/mock-smtp.log`, `logs/mock-reddit.log` — the host-side mock servers Playwright launches, written live. Look here for things like `[mock-discord] Unmatched: <method> <path>` when a request isn't being mocked.
+- `logs/mock-rss.log`, `logs/mock-discord.log`, `logs/mock-smtp.log`, `logs/mock-reddit.log`, `logs/mock-vendor.log` — the host-side mock servers Playwright launches, written live. Look here for things like `[mock-discord] Unmatched: <method> <path>` when a request isn't being mocked.
+
+The platform-source specs (`tests/feeds/platform-*.spec.ts`) are opt-in: they exercise the private package's provider adapters and vendor doubles (`@synzen/platform-adapters/mock-vendor`, started only when set), so run them with `E2E_PLATFORM=1 npm run e2e -- tests/feeds/<spec>.spec.ts`. Without the flag they skip, keeping public CI free of any private-package dependency. Provider selection flows through from the environment (the package owns the env names and defaults), so setting the package's provider-selection env vars in `.env.local` or the shell runs the reddit specs against whichever reddit provider the package resolves.
 
 `combined.log` is assembled on teardown, so it only exists once the run ends. **While a run is still going, read the source logs above — they are all written live.** Runner startup and teardown output is captured in `logs/runner.log`.
 
 Concurrent runs (`E2E_INSTANCE > 0`) suffix every live log file with `-<instance>` (e.g. `combined-1.log`). Every completed run is also archived under `logs/runs/<timestamp>-<instance>/`; `logs/latest-run[-<instance>].txt` identifies the newest archive.
+
+## Disk usage
+
+Every run rebuilds images, so teardown reclaims what would otherwise grow without bound:
+
+- `docker compose down --rmi local` removes the compose-built images for that project (pulled base images such as `mongo`/`postgres` stay).
+- `docker builder prune --keep-storage <E2E_BUILD_CACHE_KEEP_STORAGE>` bounds the Docker build cache (default `5GB`).
+- Archived runs under `logs/runs/` are pruned to `E2E_RUN_LOGS_TO_KEEP` newest entries (default `20`).
+
+`docker compose down -v` already removes the stack's volumes, but repeated **dev-stack** recreations can leave dangling anonymous `node_modules` volumes. `npm run dev` now prunes dangling anonymous volumes on startup and shutdown, and `npm run e2e:clean` is the catch-up cleanup if Docker's disk usage looks unexpectedly large:
+
+```bash
+npm run e2e:clean
+```
+
+That prunes old run logs, e2e project images, dangling images, the build cache (keeping 5GB), and unused anonymous volumes.
+
+**Windows gotcha:** Docker Desktop stores everything in `docker_data.vhdx`, which does **not** shrink when images/cache/volumes are deleted. Windows free space only recovers after compacting it with Docker stopped and an elevated shell:
+
+```powershell
+docker desktop stop
+wsl --shutdown
+Optimize-VHD -Path "$env:LOCALAPPDATA\Docker\wsl\disk\docker_data.vhdx" -Mode Full
+# then start Docker Desktop again
+```
+
+If `Optimize-VHD` is unavailable, use `diskpart` (`select vdisk file=...`, `attach vdisk readonly`, `compact vdisk`, `detach vdisk`).
 
 ```bash
 # Run all regular (non-paddle) tests via Docker stack (defaults to --project=e2e-web)

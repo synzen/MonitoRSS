@@ -8,6 +8,13 @@ import { request, interceptors, getGlobalDispatcher } from 'undici';
 import type { ObjectFileStorageService } from '../object-file-storage/object-file-storage';
 import type { CacheStorageService } from '../cache-storage/cache-storage';
 import { resolveUserAgentForUrl } from './user-agent';
+import {
+  NoProviderAvailableError,
+  PlatformProviderFetchError,
+  type PlatformFeedDocument,
+  type PlatformHttpGet,
+  type PlatformProviderRouter,
+} from '../platform-providers/types';
 import type { PartitionedRequestsStore } from '../stores/postgres/partitioned-requests-store';
 import {
   RequestSource,
@@ -81,6 +88,20 @@ const trimHeadersForStorage = (
   return trimmed;
 };
 
+// Credentialed platform fetches carry the user grant as the item's
+// Authorization header (backend-api attaches it per feed); adapters receive
+// the raw token rather than header plumbing. Header names arrive verbatim,
+// so the lookup is case-insensitive.
+const extractBearerToken = (
+  headers?: Record<string, string | undefined>,
+): string | undefined => {
+  const value = Object.entries(headers || {}).find(([key]) =>
+    key.toLowerCase().startsWith('authorization'),
+  )?.[1];
+
+  return value?.replace(/^Bearer\s+/i, '') || undefined;
+};
+
 const convertFetchOptionsForHashKey = (options: FetchOptions) => {
   const { headers, ...rest } = options;
 
@@ -105,6 +126,9 @@ const convertFetchOptionsForHashKey = (options: FetchOptions) => {
 interface FetchOptions {
   headers?: Record<string, string>;
   proxyUri?: string;
+  // POST support for platform provider adapters reaching vendor APIs.
+  method?: string;
+  body?: string;
 }
 
 interface FetchResponse {
@@ -151,6 +175,7 @@ export interface FeedFetcherService {
       saveResponseToObjectStorage?: boolean;
       headers?: Record<string, string | undefined>;
       source: RequestSource | undefined;
+      usePlatformProvider?: boolean;
     },
   ): Promise<{
     request: PartitionedRequestInsert;
@@ -166,15 +191,21 @@ export interface FeedFetcherService {
 export function createFeedFetcherService({
   defaultUserAgent,
   requestTimeoutMs,
+  platformResponseFreshnessSeconds,
   objectFileStorage,
   cacheStorage,
   partitionedRequestsStore,
+  platformSourceRouterFactory,
 }: {
   defaultUserAgent: string;
   requestTimeoutMs: number;
+  platformResponseFreshnessSeconds?: number;
   objectFileStorage: ObjectFileStorageService;
   cacheStorage: CacheStorageService;
   partitionedRequestsStore: PartitionedRequestsStore;
+  platformSourceRouterFactory?: (
+    httpGet: PlatformHttpGet,
+  ) => PlatformProviderRouter;
 }): FeedFetcherService {
   const feedRequestTimeoutMs = requestTimeoutMs;
 
@@ -202,7 +233,11 @@ export function createFeedFetcherService({
     return null;
   };
 
-  return {
+  // The platform-providers router reuses the service's own HTTP GET, so it is
+  // wired after the service object exists; route() only runs at fetch time.
+  let platformSourceRouter: PlatformProviderRouter | null = null;
+
+  const service: FeedFetcherService = {
     async getLatestRequest({ url, lookupKey }) {
       const request =
         await partitionedRequestsStore.getLatestRequestWithResponseBody(
@@ -312,11 +347,86 @@ export function createFeedFetcherService({
           contextLogger.info(`Fetching ${url} and saving to object storage`);
         }
 
-        const res = await this.fetchFeedResponse(
-          url,
-          fetchOptions,
-          options?.saveResponseToObjectStorage,
+        // Platform destination URLs fetch through a provider adapter instead
+        // of a plain HTTP GET of the feed URL; the adapter's normalized RSS
+        // document is treated as a 200 response body so persistence, hashing
+        // and parsing run unchanged. The adapter call is eager so its errors
+        // map into the failure taxonomy, not the text-parsing path. A matched
+        // platform the deployment has no provider for stays on the normal
+        // fetch path; a misconfigured provider name still fails the fetch.
+        const matchedPlatformRoute = (() => {
+          try {
+            return platformSourceRouter?.route(url) ?? null;
+          } catch (err) {
+            if (err instanceof NoProviderAvailableError) {
+              return null;
+            }
+
+            throw err;
+          }
+        })();
+        const platformRoute =
+          matchedPlatformRoute &&
+          (options?.usePlatformProvider ||
+            matchedPlatformRoute.identity.platform === 'reddit')
+            ? matchedPlatformRoute
+            : null;
+        contextLogger.debug(
+          `Resolved fetch route for ${url}: ${
+            platformRoute
+              ? `platform:${platformRoute.identity.platform}`
+              : 'standard-http'
+          }`,
+          {
+            usePlatformProvider: options?.usePlatformProvider === true,
+            matchedPlatform: matchedPlatformRoute?.identity.platform ?? null,
+          },
         );
+        const platformFetch: PlatformFeedDocument | null = platformRoute
+          ? await platformRoute.adapter.fetchFeedDocument(
+              platformRoute.identity,
+              {
+                // Credentialed providers (e.g. redditofficial) fetch with the
+                // batch item's user grant; storage redacts it afterwards.
+                bearerToken: extractBearerToken(options?.headers),
+              },
+            )
+          : null;
+        // The provider's own response freshness wins; adapters that report
+        // none keep the configured fallback.
+        const platformFreshnessSeconds =
+          platformFetch?.freshnessSeconds ?? platformResponseFreshnessSeconds;
+
+        const res =
+          platformRoute && platformFetch !== null
+            ? {
+                ok: true,
+                status: 200,
+                headers: new Map([
+                  ['content-type', 'application/rss+xml'],
+                  // A response that reports no reusable window (no-store /
+                  // max-age=0) omits the directive, so the scheduler refetches
+                  // on every due tick. Otherwise it lets the freshness skip
+                  // reuse this stored document for repeat fetches of the same
+                  // URL within the window (feeds sharing a source across
+                  // refresh-rate tiers) instead of paying a second provider
+                  // call.
+                  ...(platformFreshnessSeconds
+                    ? ([
+                        [
+                          'cache-control',
+                          `public, max-age=${platformFreshnessSeconds}`,
+                        ],
+                      ] as const)
+                    : []),
+                ]),
+                text: async () => platformFetch.document,
+              }
+            : await this.fetchFeedResponse(
+                url,
+                fetchOptions,
+                options?.saveResponseToObjectStorage,
+              );
 
         if (res.ok || res.status === 304) {
           requestModel.status = RequestStatus.OK;
@@ -460,7 +570,41 @@ export function createFeedFetcherService({
           stack: fetchError.stack,
         });
 
-        if (
+        if (err instanceof PlatformProviderFetchError) {
+          requestModel.status = err.requestStatus;
+          requestModel.errorMessage = err.message;
+
+          if (err.statusCode === 429) {
+            contextLogger.warn(`Platform fetch rate-limited for url ${url}`, {
+              statusCode: err.statusCode,
+              url,
+              lookupKey: requestModel.lookupKey,
+              errorMessage: err.message,
+            });
+          }
+
+          // A provider response failure keeps its status code on the row so
+          // consumers map it through the existing status-code taxonomy
+          // (e.g. a 404 for a non-existent resource).
+          if (
+            err.statusCode &&
+            err.requestStatus === RequestStatus.BAD_STATUS_CODE
+          ) {
+            requestModel.response = {
+              id: requestId,
+              statusCode: err.statusCode,
+              isCloudflare: false,
+              createdAt: new Date(),
+              responseHashKey: null,
+              content: null,
+              headers: {},
+              textHash: null,
+              s3ObjectKey: null,
+              redisCacheKey: null,
+              hasCompressedText: false,
+            };
+          }
+        } else if (
           errorCode === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE' ||
           fetchError.message?.includes('unable to get local issuer certificate')
         ) {
@@ -490,7 +634,16 @@ export function createFeedFetcherService({
           nextRetryDate: requestModel.nextRetryDate,
           source: (requestModel.source as RequestSource | null) || null,
           status: requestModel.status,
-          response: null,
+          response: requestModel.response
+            ? {
+                statusCode: requestModel.response.statusCode,
+                textHash: null,
+                s3ObjectKey: null,
+                redisCacheKey: null,
+                headers: {},
+                body: null,
+              }
+            : null,
           requestInitiatedAt: requestModel.createdAt,
         };
 
@@ -534,6 +687,8 @@ export function createFeedFetcherService({
 
       const r = await request(url, {
         headers: useOptions.headers,
+        method: options?.method,
+        body: options?.body,
         signal: useOptions.signal,
         dispatcher: getGlobalDispatcher().compose(
           interceptors.redirect({ maxRedirections: 10 }),
@@ -608,4 +763,12 @@ export function createFeedFetcherService({
       };
     },
   };
+
+  if (platformSourceRouterFactory) {
+    platformSourceRouter = platformSourceRouterFactory((url, options) =>
+      service.fetchFeedResponse(url, options),
+    );
+  }
+
+  return service;
 }

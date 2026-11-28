@@ -133,6 +133,7 @@ export enum GetFeedArticlesFilterReturnType {
 
 export interface GetArticlesInput {
   url: string;
+  usePlatformProvider?: boolean;
   limit: number;
   skip: number;
   random?: boolean;
@@ -182,6 +183,7 @@ export interface SendTestArticleInput {
         cssSelector: string;
       }> | null;
       requestLookupDetails?: FeedRequestLookupDetails;
+      usePlatformProvider?: boolean;
     };
     article?: {
       id: string;
@@ -239,6 +241,7 @@ export interface DeliveryPreviewFeedInput {
     headers?: Record<string, string>;
   } | null;
   refreshRateSeconds?: number;
+  usePlatformProvider?: boolean;
 }
 
 export interface DeliveryPreviewMediumInput {

@@ -29,6 +29,7 @@ export interface FetchFeedArticleOptions {
   externalFeedProperties?: ExternalFeedProperty[];
   /** Include raw HTML in NO_SELECTOR_MATCH errors for troubleshooting (preview mode only) */
   includeHtmlInErrors?: boolean;
+  usePlatformProvider?: boolean;
   requestLookupDetails?: {
     key: string;
     url?: string;
@@ -76,59 +77,17 @@ function extractRssFromHtml(html: string): string | null {
 }
 
 /**
- * Try to get RSS URL for Reddit pages by appending .rss to the path.
- * Preserves the input host so that oauth.reddit.com URLs (used for OAuth-authenticated
- * fetches) keep hitting the OAuth endpoint instead of getting rewritten to www.reddit.com.
- */
-export function tryGetRedditRssUrl(url: string): string | null {
-  let parsed: URL;
-
-  try {
-    parsed = new URL(url);
-  } catch {
-    return null;
-  }
-
-  const hostname = parsed.hostname.toLowerCase();
-
-  if (
-    hostname !== "reddit.com" &&
-    hostname !== "www.reddit.com" &&
-    hostname !== "old.reddit.com" &&
-    hostname !== "oauth.reddit.com"
-  ) {
-    return null;
-  }
-
-  if (parsed.pathname.endsWith(".rss")) {
-    return null;
-  }
-
-  const cleaned = parsed.pathname.replace(/\/+$/, "");
-
-  return `${parsed.protocol}//${parsed.host}${cleaned}.rss${parsed.search}`;
-}
-
-/**
  * Fetch and parse articles from a feed URL.
  */
 export async function findOrFetchFeedArticles(
   inputUrl: string,
   inputOptions: FindOrFetchFeedArticlesOptions,
 ): Promise<FetchFeedArticlesResult> {
-  const url = tryGetRedditRssUrl(inputUrl) ?? inputUrl;
-
-  const lookupDetailsUrl = inputOptions.requestLookupDetails?.url;
-  const options =
-    lookupDetailsUrl && inputOptions.requestLookupDetails
-      ? {
-          ...inputOptions,
-          requestLookupDetails: {
-            ...inputOptions.requestLookupDetails,
-            url: tryGetRedditRssUrl(lookupDetailsUrl) ?? lookupDetailsUrl,
-          },
-        }
-      : inputOptions;
+  // Reddit destination URLs are passed through unchanged: feed-requests owns
+  // platform detection and routes them to provider adapters. Legacy reddit
+  // .rss URLs likewise pass through and take the normal fetch path.
+  const url = inputUrl;
+  const options = inputOptions;
 
   const { parsedArticlesCacheStore } = options;
 
@@ -170,14 +129,16 @@ export async function findOrFetchFeedArticles(
     };
   }
 
-  // Credentialed feeds (reddit) must be fetched via the lookup URL (oauth.reddit.com
-  // with the Authorization header), exactly like the delivery pipeline does in
-  // shared-processing. The original url remains the feed's display/cache identity.
+  // Credentialed feeds (reddit) fetch with the owner's grant (the
+  // requestLookupDetails Authorization header feeds the provider adapter),
+  // exactly like the delivery pipeline does in shared-processing. The
+  // original url remains the feed's display/cache identity.
   const result = await fetchFeed(options.requestLookupDetails?.url || url, {
     executeFetch: options.executeFetch,
     executeFetchIfNotInCache: true,
     executeFetchIfStale: options.executeFetchIfStale,
     lookupDetails: options.requestLookupDetails,
+    usePlatformProvider: options.usePlatformProvider,
     serviceHost: options.feedRequestsServiceHost,
   });
 

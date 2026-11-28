@@ -350,6 +350,7 @@ describe("WorkspaceBillingService.previewChange with a cross-interval basket", (
   const workspaceId = "507f1f77bcf86cd799439011";
   const subscriptionId = "sub-1";
   const tier2YearlyPriceId = "pri-tier2-year";
+  const tier3YearlyPriceId = "pri-tier3-year";
   const tier3FeedYearlyPriceId = "pri-t3feed-year";
 
   function buildWorkspace(): IWorkspace {
@@ -382,6 +383,7 @@ describe("WorkspaceBillingService.previewChange with a cross-interval basket", (
         getProducts: async () => ({
           products: [
             { id: SubscriptionProductKey.Tier2, prices: [{ id: tier2YearlyPriceId }] },
+            { id: SubscriptionProductKey.Tier3, prices: [{ id: tier3YearlyPriceId }] },
             {
               id: SubscriptionProductKey.Tier3AdditionalFeed,
               prices: [{ id: tier3FeedYearlyPriceId }],
@@ -457,20 +459,21 @@ describe("WorkspaceBillingService.previewChange with a cross-interval basket", (
     const { deps, updateItemsCalls } = buildDeps();
     const service = new WorkspaceBillingService(deps);
 
-    // 70-feed base + 30 add-on feeds, all re-priced onto the yearly interval.
+    // 140-feed Tier 3 base + 30 add-on feeds, all re-priced onto the yearly
+    // interval. Only Tier 3 subscriptions may carry add-on feeds.
     const result = await service.previewChange(buildWorkspace(), [
-      { priceId: tier2YearlyPriceId, quantity: 1 },
+      { priceId: tier3YearlyPriceId, quantity: 1 },
       { priceId: tier3FeedYearlyPriceId, quantity: 30 },
     ]);
 
-    assert.strictEqual(result.feedImpact.newFeedLimit, 100);
+    assert.strictEqual(result.feedImpact.newFeedLimit, 170);
     assert.strictEqual(result.feedImpact.willBeDisabledCount, 0);
     const [, payload] = updateItemsCalls[0] as [
       string,
       { items: Array<{ priceId: string }> },
     ];
     assert.deepStrictEqual(payload.items, [
-      { priceId: tier2YearlyPriceId, quantity: 1 },
+      { priceId: tier3YearlyPriceId, quantity: 1 },
       { priceId: tier3FeedYearlyPriceId, quantity: 30 },
     ]);
   });

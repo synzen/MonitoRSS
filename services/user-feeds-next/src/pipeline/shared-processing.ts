@@ -70,6 +70,7 @@ export interface FeedProcessingOptions {
       url?: string;
       headers?: Record<string, string>;
     } | null;
+    usePlatformProvider?: boolean;
   };
   feedRequestsServiceHost: string;
   hashToCompare?: string;
@@ -117,6 +118,7 @@ export async function fetchAndParseFeed(
         executeFetchIfStale: options.executeFetchIfStale,
         executeFetchIfNotInCache: options.executeFetchIfNotInCache,
         stalenessThresholdSeconds: options.stalenessThresholdSeconds,
+        usePlatformProvider: options.feed.usePlatformProvider,
       }
     );
   } catch (err) {

@@ -10,6 +10,11 @@ import type { FeedFetcherService } from './feed-fetcher';
 import type { PartitionedRequestInsert } from './types';
 import { RequestSource, RequestStatus } from './types';
 import type { PartitionedRequestsStore } from '../stores/postgres/partitioned-requests-store';
+
+// A host cache lifetime only overrides a feed's cadence when it is materially
+// longer. A 60-second margin absorbs scheduler tick and queue-processing jitter
+// without letting a cache equal to the cadence suppress the next due fetch.
+export const SCHEDULED_FETCH_CACHE_OVERRIDE_MARGIN_MS = 60_000;
 import type { HostRateLimiterService } from '../host-rate-limiter/host-rate-limiter';
 import type { CacheStorageService } from '../cache-storage/cache-storage';
 import type {
@@ -142,7 +147,10 @@ export function calculateBackoffIntervalMs(params: {
  * processor for direct testing.
  */
 export interface ScheduledFetchPolicies {
-  isLatestResponseStillFreshInCache(params: { lookupKey: string }): Promise<{
+  isLatestResponseStillFreshInCache(params: {
+    lookupKey: string;
+    rateSeconds: number;
+  }): Promise<{
     isCacheStillActive: boolean;
     freshnessLifetimeMs?: number;
     responseAgeMs?: number;
@@ -177,8 +185,10 @@ export function createScheduledFetchPolicies({
 }): ScheduledFetchPolicies {
   async function isLatestResponseStillFreshInCache({
     lookupKey,
+    rateSeconds,
   }: {
     lookupKey: string;
+    rateSeconds: number;
   }) {
     const latestOkRequest =
       await partitionedRequestsStore.getLatestRequestWithOkStatus(lookupKey, {
@@ -201,11 +211,14 @@ export function createScheduledFetchPolicies({
       responseTime: latestOkRequest?.requestInitiatedAt,
     });
 
+    const cadenceMs = rateSeconds * 1000;
+    const cacheCanOverrideCadence =
+      freshnessLifetime > cadenceMs + SCHEDULED_FETCH_CACHE_OVERRIDE_MARGIN_MS;
     const responseIsFresh = freshnessLifetime > currentAgeOfResponse;
 
     return {
       latestOkRequest,
-      isCacheStillActive: freshnessLifetime ? responseIsFresh : false,
+      isCacheStillActive: cacheCanOverrideCadence && responseIsFresh,
       freshnessLifetimeMs: freshnessLifetime,
       responseAgeMs: currentAgeOfResponse,
     };
@@ -396,6 +409,7 @@ export function createScheduledFetchProcessor({
       responseAgeMs,
     } = await policies.isLatestResponseStillFreshInCache({
       lookupKey: lookupKey || url,
+      rateSeconds,
     });
 
     // Recovery attempts ignore a still-fresh cached response: the point of the
@@ -437,6 +451,7 @@ export function createScheduledFetchProcessor({
           }
         : undefined,
       source: RequestSource.Schedule,
+      usePlatformProvider: data.usePlatformProvider,
       headers: {
         ...data.headers,
         'If-Modified-Since':
@@ -503,6 +518,7 @@ export function createScheduledFetchProcessor({
             recovery,
             trigger,
             force,
+            usePlatformProvider,
           } = message;
           const logPrefix = saveToObjectStorage
             ? `DEBUG ${lookupKey || url}:`
@@ -605,6 +621,7 @@ export function createScheduledFetchProcessor({
                 headers,
                 recovery,
                 force,
+                usePlatformProvider,
               });
 
               if (result) {

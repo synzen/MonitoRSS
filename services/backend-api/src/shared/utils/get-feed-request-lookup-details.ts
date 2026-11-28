@@ -41,18 +41,22 @@ export function pickFeedCredentialSource({
   return workspace ?? { externalCredentials: [] };
 }
 
+// Lookup details carry the credential owner's Bearer token so credentialed
+// reddit fetches validate and route with the owner's grant: the fetch path
+// stays the plain (canonical) URL — the redditofficial provider adapter
+// builds the oauth listing URL from it — and the token rides the request
+// headers. Null for non-reddit urls or sources without a reddit grant.
 export function getFeedRequestLookupDetails({
   feed,
   credentials,
   decryptionKey,
-  redditFeedBaseUrl,
 }: {
-  feed: { url: string; feedRequestLookupKey?: string };
+  feed: {
+    url: string;
+    feedRequestLookupKey?: string;
+  };
   credentials: FeedCredentialSource;
   decryptionKey: string | undefined;
-  // BACKEND_API_REDDIT_AUTHENTICATED_FEED_BASE_URL; overridable so tests can
-  // point authenticated reddit fetches at a mock server.
-  redditFeedBaseUrl: string | undefined;
 }): FeedRequestLookupDetails | null {
   const { url, feedRequestLookupKey } = feed;
 
@@ -72,18 +76,10 @@ export function getFeedRequestLookupDetails({
     return null;
   }
 
-  const decrypted = decrypt(encryptedToken, decryptionKey);
-
-  const parsedUrl = new URL(url);
-  const baseUrl = redditFeedBaseUrl || "https://oauth.reddit.com";
-  const urlToFetch = `${baseUrl}${parsedUrl.pathname}${parsedUrl.search}`;
-
   return {
     key: feedRequestLookupKey,
-    url: urlToFetch,
     headers: {
-      Authorization: `Bearer ${decrypted}`,
-      "user-agent": "MonitoRSS:1.0",
+      Authorization: `Bearer ${decrypt(encryptedToken, decryptionKey)}`,
     },
   };
 }

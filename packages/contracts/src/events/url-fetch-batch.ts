@@ -24,6 +24,10 @@ import { z } from "zod";
  * `force` marks a bulk-retry fetch (ADR-011): the consumer bypasses the retry
  * backoff skip, the fresh-cache skip, and the recent-request dedupe so the
  * fetch happens now regardless of the URL's backoff state.
+ *
+ * `usePlatformProvider` opts a URL into platform-provider routing. It is
+ * omitted for non-alpha feeds so recognized platform URLs retain the normal
+ * HTTP fetch path.
  */
 export const UrlFetchTriggerSchema = z.object({
   kind: z.enum(["interval", "scheduled"]).default("interval"),
@@ -46,6 +50,7 @@ export const UrlFetchBatchSchema = z.object({
         .optional(),
       trigger: UrlFetchTriggerSchema.optional(),
       force: z.boolean().optional(),
+      usePlatformProvider: z.boolean().optional(),
     }),
   ),
 });

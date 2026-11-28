@@ -7,6 +7,7 @@ import {
   handleArticleDeliveryResult,
   parseFeedDeletedEvent,
   handleFeedDeletedEvent,
+  resetFeedBaseline,
   type ResponseHashStore,
 } from "./src/pipeline/feed-event-handler";
 import { MessageBrokerQueue } from "./src/shared/constants";
@@ -443,6 +444,15 @@ async function startServiceMode(
           `User feed event for feed ${feedId} is already being processed, ignoring`
         );
         return;
+      }
+
+      if (event.resetBaseline) {
+        await resetFeedBaseline(feedId, {
+          responseHashStore: infrastructure.responseHashStore,
+          articleFieldStore: infrastructure.articleFieldStore,
+          feedRetryStore: infrastructure.feedRetryStore,
+        });
+        logger.info(`Reset stored article baseline for feed ${feedId}`);
       }
 
       try {

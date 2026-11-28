@@ -104,7 +104,12 @@ describe("GET /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
         updatedAt: string;
         healthStatus: string;
         refreshRateSeconds: number;
-        refreshRateOptions: unknown[];
+        refreshRateLimits: {
+          minimumSeconds: number;
+          maximumSeconds: number;
+          canUpgrade: boolean;
+          limitedBy: "plan" | "platform";
+        };
       };
     };
     assert.ok(body.result);
@@ -116,7 +121,9 @@ describe("GET /api/v1/user-feeds/:feedId", { concurrency: true }, () => {
     assert.ok(body.result.updatedAt);
     assert.ok(body.result.healthStatus);
     assert.ok(body.result.refreshRateSeconds !== undefined);
-    assert.ok(Array.isArray(body.result.refreshRateOptions));
+    assert.notStrictEqual(body.result.refreshRateLimits, undefined);
+    assert.ok(body.result.refreshRateLimits.minimumSeconds > 0);
+    assert.strictEqual(body.result.refreshRateLimits.maximumSeconds, 86400);
   });
 
   it("returns 200 with sharedAccessDetails.inviteId when user is an accepted shared manager", async () => {

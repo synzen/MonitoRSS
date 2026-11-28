@@ -46,7 +46,26 @@ const configSchema = z.object({
   BACKEND_API_USER_FEEDS_API_KEY: z.string().min(1),
 
   // Feed settings
-  BACKEND_API_FEED_USER_AGENT: z.string().min(1),
+  // Minimum refresh rate (seconds) for premium feeds (platform URLs served by
+  // provider adapters). Reddit platform feeds are exempt: they fetch with the
+  // owner's OAuth grant and inherit the regular plan rates. Applies to every
+  // deployment including self-hosts; self-hosts bypass the access gates but not
+  // this floor. 0 disables it.
+  BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS: z.coerce
+    .number()
+    .default(3600),
+  // Cadence of the schedule emitter's maintenance loop (platform GC sweep,
+  // support checks). Lower values are for dev/e2e only: each sweep aggregates
+  // every active feed.
+  BACKEND_API_MAINTENANCE_INTERVAL_MS: z.coerce.number().default(300000),
+  // The maintenance loop's platform-provider GC sweep posts the active feed
+  // URL set to feed-requests, whose state store must exist (feed-requests
+  // migrations) before the sweep's first write. Off until a deployment opts
+  // in; the platform GC e2e spec enables it in the e2e stack.
+  BACKEND_API_PLATFORM_FEED_URL_SYNC_ENABLED: z
+    .string()
+    .default("false")
+    .transform((val) => val === "true"),
 
   // Defaults
   BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: z.coerce.number().default(10),

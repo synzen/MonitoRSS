@@ -48,8 +48,20 @@ export const FEED_EXCEPTION_ERROR_CODES: ExceptionErrorCodes = {
   },
   FeedNotFoundException: { status: 400, code: ApiErrorCode.FEED_NOT_FOUND },
   FeedTooLargeException: { status: 400, code: ApiErrorCode.FEED_TOO_LARGE },
+  PremiumFeedsNotSupportedException: {
+    status: 400,
+    code: ApiErrorCode.PREMIUM_FEEDS_NOT_SUPPORTED,
+  },
+  PremiumFeedsPlanRequiredException: {
+    status: 400,
+    code: ApiErrorCode.PREMIUM_FEEDS_PLAN_REQUIRED,
+  },
+  PremiumFeedsLimitReachedException: {
+    status: 400,
+    code: ApiErrorCode.PREMIUM_FEEDS_LIMIT_REACHED,
+  },
   RedditConnectionRequiredException: {
-    status: 403,
+    status: 400,
     code: ApiErrorCode.REDDIT_CONNECTION_REQUIRED,
   },
 };

@@ -4,11 +4,18 @@ import {
   FeedConnectionDisabledCode,
   UserFeedDisabledCode,
 } from "../../src/repositories/shared/enums";
-import { GetArticlesResponseRequestStatus } from "../../src/services/feed-handler/types";
+import {
+  GetArticlesInput,
+  GetArticlesResponseRequestStatus,
+} from "../../src/services/feed-handler/types";
 import {
   BannedFeedException,
   FeedLimitReachedException,
   ManualRequestTooSoonException,
+  PremiumFeedsLimitReachedException,
+  PremiumFeedsNotSupportedException,
+  PremiumFeedsPlanRequiredException,
+  RedditConnectionRequiredException,
   RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
 } from "../../src/shared/exceptions/user-feeds.exceptions";
@@ -16,9 +23,9 @@ import {
   UserFeedDisabledCode as RepoUserFeedDisabledCode,
   UserFeedHealthStatus,
 } from "../../src/repositories/shared/enums";
-import { RedditConnectionRequiredException } from "../../src/shared/exceptions/reddit.exceptions";
 import { createUserFeedsHarness } from "../helpers/user-feeds.harness";
 import { createMockDiscordChannelConnection } from "../helpers/mock-factories";
+import { ScheduleHandlerService } from "../../src/services/schedule-handler/schedule-handler.service";
 import { UserFeedCopyableSetting } from "../../src/services/user-feeds/types";
 import { UserFeedTargetFeedSelectionType } from "../../src/services/feed-connections-discord-channels/types";
 
@@ -34,7 +41,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("deduplicateFeedUrls", () => {
     it("removes URLs that user already has", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const existingUrl = `https://example.com/${ctx.generateId()}.xml`;
 
       await ctx.createFeed({ url: existingUrl });
@@ -49,7 +56,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("returns all URLs if none exist", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const result = await ctx.service.deduplicateFeedUrls(ctx.discordUserId, [
         "https://example.com/1.xml",
@@ -60,56 +67,244 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
   });
 
-  describe("Reddit connection gate", () => {
+  describe("Reddit credential gate", () => {
     const REDDIT_URL = "https://www.reddit.com/r/gaming/.rss";
     const REDDIT_CLIENT_ID = "test-reddit-client-id";
-    // No accessToken: the gate only inspects type + status, and omitting the
-    // token keeps getFeedRequestLookupDetails out of the decrypt path (a bogus
-    // token would fail to decrypt).
-    const activeReddit = [{ type: "reddit", status: "ACTIVE", data: {} }];
     const revokedReddit = [{ type: "reddit", status: "REVOKED", data: {} }];
 
-    const addReddit = (ctx: ReturnType<typeof harness.createContext>) =>
+    const addReddit = (
+      ctx: Awaited<ReturnType<typeof harness.createContext>>,
+    ) =>
       ctx.service.addFeed(
         { discordUserId: ctx.discordUserId, userAccessToken: "token" },
         { url: REDDIT_URL },
       );
 
-    const validateReddit = (ctx: ReturnType<typeof harness.createContext>) =>
+    const validateReddit = (
+      ctx: Awaited<ReturnType<typeof harness.createContext>>,
+    ) =>
       ctx.service.validateFeedUrl(
         { discordUserId: ctx.discordUserId },
         { url: REDDIT_URL },
       );
 
-    describe("when reddit oauth is configured", () => {
-      it("rejects addFeed for a reddit url without an active connection", async () => {
-        const ctx = harness.createContext({ redditClientId: REDDIT_CLIENT_ID });
-
-        await assert.rejects(addReddit(ctx), RedditConnectionRequiredException);
+    it("rejects addFeed for a reddit url without an active connection", async () => {
+      const ctx = await harness.createContext({
+        redditClientId: REDDIT_CLIENT_ID,
+        externalCredentials: [],
+        feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
       });
 
-      it("rejects validateFeedUrl for a reddit url without an active connection", async () => {
-        const ctx = harness.createContext({ redditClientId: REDDIT_CLIENT_ID });
+      await assert.rejects(addReddit(ctx), RedditConnectionRequiredException);
+    });
 
-        await assert.rejects(
-          validateReddit(ctx),
-          RedditConnectionRequiredException,
-        );
+    it("allows validateFeedUrl for a reddit url without an active connection", async () => {
+      const ctx = await harness.createContext({
+        redditClientId: REDDIT_CLIENT_ID,
+        externalCredentials: [],
+        feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
       });
 
-      it("rejects when the reddit connection is REVOKED", async () => {
-        const ctx = harness.createContext({
-          redditClientId: REDDIT_CLIENT_ID,
-          externalCredentials: revokedReddit,
+      const result = await validateReddit(ctx);
+
+      assert.strictEqual(result.feedTitle, "gaming");
+    });
+
+    it("rejects addFeed when the reddit connection is REVOKED", async () => {
+      const ctx = await harness.createContext({
+        redditClientId: REDDIT_CLIENT_ID,
+        externalCredentials: revokedReddit,
+        feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+      });
+
+      await assert.rejects(addReddit(ctx), RedditConnectionRequiredException);
+    });
+
+    it("does not gate non-reddit urls", async () => {
+      const ctx = await harness.createContext({
+        redditClientId: REDDIT_CLIENT_ID,
+        feedHandler: {
+          url: "https://example.com/feed.xml",
+          feedTitle: "Example",
+        },
+      });
+
+      const feed = await ctx.service.addFeed(
+        { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+        { url: "https://example.com/feed.xml" },
+      );
+
+      assert.ok(feed.id);
+    });
+  });
+
+  describe("natural reddit URL normalization (opt-in, new feeds only)", () => {
+    // Mirrors the package canonicalizer for the single form these tests use:
+    // .rss-suffixed forms become the destination URL; other inputs stay raw.
+    const resolveRedditRss = (url: string) =>
+      url.endsWith(".rss") ? url.slice(0, -".rss".length) : null;
+
+    const NATURAL_URL = "https://old.reddit.com/r/gaming/new.rss";
+    const CANONICAL_URL = "https://old.reddit.com/r/gaming/new";
+
+    const ctxWithResolver = async (
+      options: Parameters<typeof harness.createContext>[0] = {},
+    ) =>
+      await harness.createContext({
+        ...options,
+        feedFetcherApiService: { resolvePlatformUrl: resolveRedditRss },
+      });
+
+    it("addFeed stores the canonical url and keeps the raw input", async () => {
+      const ctx = await ctxWithResolver({
+        feedHandler: { url: CANONICAL_URL, feedTitle: "gaming" },
+      });
+
+      const feed = await ctx.service.addFeed(
+        { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+        { url: NATURAL_URL },
+      );
+
+      assert.strictEqual(feed.url, CANONICAL_URL);
+      assert.strictEqual(feed.inputUrl, NATURAL_URL);
+      assert.strictEqual(feed.isMeteredPlatformFeed, undefined);
+    });
+
+    it("validateFeedUrl resolves the canonical url", async () => {
+      const ctx = await ctxWithResolver({
+        feedHandler: { url: CANONICAL_URL, feedTitle: "gaming" },
+      });
+
+      const result = await ctx.service.validateFeedUrl(
+        { discordUserId: ctx.discordUserId },
+        { url: NATURAL_URL },
+      );
+
+      assert.strictEqual(result.resolvedToUrl, CANONICAL_URL);
+    });
+
+    it("updateFeed url change stores the canonical url and keeps a credentialed lookup key", async () => {
+      const ctx = await ctxWithResolver({
+        feedHandler: { url: CANONICAL_URL, feedTitle: "gaming" },
+      });
+
+      const feed = await ctx.createFeed({
+        url: "https://www.reddit.com/r/gaming/.rss",
+      });
+      // Unique per test: the suite runs with concurrency and the lookup-key
+      // index is unique, so hardcoded fixture keys collide across tests.
+      await ctx.setFields(feed.id, {
+        feedRequestLookupKey: `lookup-key-${ctx.generateId()}`,
+      });
+
+      const updated = await ctx.service.updateFeedById(
+        { id: feed.id },
+        { url: NATURAL_URL },
+      );
+
+      assert.strictEqual(updated?.url, CANONICAL_URL);
+      const stored = await ctx.findById(feed.id);
+      assert.ok(stored);
+      // Reddit fetches carry the owner's grant, so the credentialed lookup
+      // path stays intact on re-URL.
+      assert.ok(stored.feedRequestLookupKey);
+    });
+
+    it("clone onto a natural URL stores the canonical url and mints a fresh lookup key", async () => {
+      const ctx = await ctxWithResolver({
+        feedHandler: { url: CANONICAL_URL, feedTitle: "gaming" },
+      });
+
+      const source = await ctx.createFeed({
+        url: "https://www.reddit.com/r/gaming/.rss",
+      });
+      // Unique per test: the suite runs with concurrency and the lookup-key
+      // index is unique, so hardcoded fixture keys collide across tests.
+      const sourceKey = `lookup-key-${ctx.generateId()}`;
+      await ctx.setFields(source.id, {
+        feedRequestLookupKey: sourceKey,
+      });
+
+      const cloned = await ctx.service.clone(source.id, "token", {
+        url: NATURAL_URL,
+      });
+
+      const clonedFeed = await ctx.findById(cloned.id!);
+      assert.ok(clonedFeed);
+      assert.strictEqual(clonedFeed.url, CANONICAL_URL);
+      // The clone never shares the source's request-row key; reddit clones
+      // mint a fresh one so their fetches carry the owner's grant.
+      assert.ok(clonedFeed.feedRequestLookupKey);
+      assert.notStrictEqual(clonedFeed.feedRequestLookupKey, sourceKey);
+    });
+  });
+
+  describe("premium feeds (closed-beta gate, allowances, floor)", () => {
+    const REDDIT_URL = "https://www.reddit.com/r/gaming";
+    const OTHER_PLATFORM_URL = "https://x.com/someuser";
+    const FLOOR_SECONDS = 3600;
+    // The harness default tier rate (600s) sits below the floor, so every
+    // floor-bearing platform write-path assertion exercises the clamp. The
+    // raised feed caps keep the regular feed limit out of the way of the
+    // allowance assertions.
+    const flaggedSupporterOptions = {
+      billingEnabled: true,
+      isSupporter: true,
+      maxUserFeeds: 20,
+      workspaceMaxFeeds: 20,
+      featureFlags: { premiumFeeds: true } as const,
+      feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+    };
+    // Metered platform feeds carry the closed-beta gate and refresh-rate floor.
+    // These options classify the mock fetch as x.com.
+    const floorSupporterOptions = {
+      ...flaggedSupporterOptions,
+      feedHandler: { url: OTHER_PLATFORM_URL, feedTitle: "X" },
+    };
+
+    const addReddit = (
+      ctx: Awaited<ReturnType<typeof harness.createContext>>,
+    ) =>
+      ctx.service.addFeed(
+        { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+        { url: REDDIT_URL },
+      );
+
+    const addOtherPlatform = (
+      ctx: Awaited<ReturnType<typeof harness.createContext>>,
+    ) =>
+      ctx.service.addFeed(
+        { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+        { url: OTHER_PLATFORM_URL },
+      );
+
+    describe("access gate", () => {
+      it("falls through silently for a metered platform url without the beta flag", async () => {
+        const ctx = await harness.createContext({
+          billingEnabled: true,
+          isSupporter: true,
+          feedHandler: { url: OTHER_PLATFORM_URL, feedTitle: "X" },
         });
 
-        await assert.rejects(addReddit(ctx), RedditConnectionRequiredException);
+        const feed = await addOtherPlatform(ctx);
+
+        assert.ok(feed.id);
+        assert.strictEqual(feed.isMeteredPlatformFeed, undefined);
+        assert.strictEqual(feed.refreshRateSeconds, 600);
       });
 
-      it("allows addFeed for a reddit url with an ACTIVE connection", async () => {
-        const ctx = harness.createContext({
-          redditClientId: REDDIT_CLIENT_ID,
-          externalCredentials: activeReddit,
+      it("allows addFeed for a metered platform url with the beta flag", async () => {
+        const ctx = await harness.createContext(flaggedSupporterOptions);
+
+        const feed = await addOtherPlatform(ctx);
+
+        assert.ok(feed.id);
+      });
+
+      it("allows reddit without the beta flag or paid plan when its grant is active", async () => {
+        const ctx = await harness.createContext({
+          billingEnabled: true,
+          isSupporter: false,
           feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
         });
 
@@ -118,9 +313,179 @@ describe("UserFeedsService", { concurrency: true }, () => {
         assert.ok(feed.id);
       });
 
-      it("does not gate non-reddit urls", async () => {
-        const ctx = harness.createContext({
-          redditClientId: REDDIT_CLIENT_ID,
+      it("allows addFeed without the flag when billing is disabled (self-host)", async () => {
+        const ctx = await harness.createContext({
+          feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+        });
+
+        const feed = await addReddit(ctx);
+
+        assert.ok(feed.id);
+      });
+
+      it("fails closed when classification is unavailable", async () => {
+        const ctx = await harness.createContext({
+          ...flaggedSupporterOptions,
+          feedFetcherApiService: {
+            classifyUrlsError: new Error("feed-requests unreachable"),
+          },
+        });
+
+        await assert.rejects(addReddit(ctx), /feed-requests unreachable/);
+      });
+    });
+
+    describe("plan gate", () => {
+      it("rejects a flagged non-supporter personal add", async () => {
+        const ctx = await harness.createContext({
+          billingEnabled: true,
+          isSupporter: false,
+          featureFlags: { premiumFeeds: true },
+          feedHandler: { url: OTHER_PLATFORM_URL, feedTitle: "X" },
+        });
+
+        await assert.rejects(
+          addOtherPlatform(ctx),
+          PremiumFeedsPlanRequiredException,
+        );
+      });
+    });
+
+    describe("allowances", () => {
+      it("allows the 2nd personal premium feed and blocks the 3rd", async () => {
+        const ctx = await harness.createContext({
+          ...flaggedSupporterOptions,
+          feedHandler: { url: "https://x.com/user2", feedTitle: "X" },
+        });
+
+        await ctx.createFeed({ url: "https://x.com/user0" });
+
+        await ctx.service.addFeed(
+          { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+          { url: "https://x.com/user1" },
+        );
+
+        await assert.rejects(
+          ctx.service.addFeed(
+            { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+            { url: "https://x.com/user2" },
+          ),
+          PremiumFeedsLimitReachedException,
+        );
+      });
+
+      it("does not count non-premium feeds toward the allowance", async () => {
+        const ctx = await harness.createContext(flaggedSupporterOptions);
+
+        await ctx.createMany(7);
+
+        const feed = await addReddit(ctx);
+
+        assert.ok(feed.id);
+      });
+
+      it("blocks the 6th workspace premium feed (allowance floor 5 for a small plan)", async () => {
+        const ctx = await harness.createContext({
+          ...flaggedSupporterOptions,
+          feedHandler: { url: "https://x.com/workspace-user5", feedTitle: "X" },
+        });
+        const workspace = await ctx.createWorkspace();
+
+        for (let i = 0; i < 5; i++) {
+          await ctx.createWorkspaceFeed(workspace.id, {
+            url: `https://x.com/workspace-user${i}`,
+          });
+        }
+
+        await assert.rejects(
+          ctx.service.addFeed(
+            { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+            { url: "https://x.com/workspace-user5", workspaceId: workspace.id },
+          ),
+          PremiumFeedsLimitReachedException,
+        );
+      });
+
+      it("scales the workspace allowance with the plan's feed limit", async () => {
+        const ctx = await harness.createContext({
+          ...flaggedSupporterOptions,
+          workspaceMaxFeeds: 140,
+          feedHandler: {
+            url: "https://x.com/workspace-user10",
+            feedTitle: "X",
+          },
+        });
+        const workspace = await ctx.createWorkspace();
+
+        for (let i = 0; i < 10; i++) {
+          await ctx.createWorkspaceFeed(workspace.id, {
+            url: `https://x.com/workspace-user${i}`,
+          });
+        }
+
+        // ceil(140 * 0.07) = 10: the 11th slot is beyond the allowance.
+        await assert.rejects(
+          ctx.service.addFeed(
+            { discordUserId: ctx.discordUserId, userAccessToken: "token" },
+            {
+              url: "https://x.com/workspace-user10",
+              workspaceId: workspace.id,
+            },
+          ),
+          PremiumFeedsLimitReachedException,
+        );
+      });
+
+      it("allows re-URLing an existing premium feed (its slot is already counted)", async () => {
+        const ctx = await harness.createContext(flaggedSupporterOptions);
+
+        await ctx.createFeed({ url: "https://x.com/user0" });
+
+        // The 2nd (and last allowance slot).
+        const feed = await addOtherPlatform(ctx);
+
+        await assert.doesNotReject(
+          ctx.service.updateFeedById(
+            { id: feed.id },
+            { url: "https://x.com/user2" },
+          ),
+        );
+      });
+
+      it("blocks URL-changing a non-premium feed to platform beyond the allowance", async () => {
+        const ctx = await harness.createContext({
+          ...flaggedSupporterOptions,
+          feedHandler: { url: "https://x.com/user2", feedTitle: "X" },
+        });
+
+        await ctx.createFeed({ url: "https://x.com/user0" });
+        await ctx.createFeed({ url: "https://x.com/user1" });
+
+        const regular = await ctx.createFeed({});
+
+        await assert.rejects(
+          ctx.service.updateFeedById(
+            { id: regular.id },
+            { url: "https://x.com/user2" },
+          ),
+          PremiumFeedsLimitReachedException,
+        );
+      });
+    });
+
+    describe("refresh-rate floor", () => {
+      it("clamps the created refreshRateSeconds to the floor", async () => {
+        const ctx = await harness.createContext(floorSupporterOptions);
+
+        const feed = await addOtherPlatform(ctx);
+
+        assert.strictEqual(feed.isMeteredPlatformFeed, true);
+        assert.strictEqual(feed.refreshRateSeconds, FLOOR_SECONDS);
+      });
+
+      it("leaves non-premium refresh rates untouched", async () => {
+        const ctx = await harness.createContext({
+          ...flaggedSupporterOptions,
           feedHandler: {
             url: "https://example.com/feed.xml",
             feedTitle: "Example",
@@ -132,36 +497,290 @@ describe("UserFeedsService", { concurrency: true }, () => {
           { url: "https://example.com/feed.xml" },
         );
 
-        assert.ok(feed.id);
+        assert.strictEqual(feed.refreshRateSeconds, 600);
+      });
+
+      it("rejects a user refresh rate below the floor on a platform feed", async () => {
+        const ctx = await harness.createContext(floorSupporterOptions);
+
+        const feed = await addOtherPlatform(ctx);
+
+        await assert.rejects(
+          ctx.service.updateFeedById(
+            { id: feed.id },
+            { userRefreshRateSeconds: 600 },
+          ),
+          RefreshRateNotAllowedException,
+        );
+      });
+
+      it("allows a user refresh rate at the floor", async () => {
+        const ctx = await harness.createContext(floorSupporterOptions);
+
+        const feed = await addOtherPlatform(ctx);
+
+        const updated = await ctx.service.updateFeedById(
+          { id: feed.id },
+          { userRefreshRateSeconds: FLOOR_SECONDS },
+        );
+
+        assert.strictEqual(updated?.userRefreshRateSeconds, FLOOR_SECONDS);
+      });
+
+      it("clamps the stored base rate when a URL change makes a feed premium", async () => {
+        const ctx = await harness.createContext(floorSupporterOptions);
+
+        const feed = await ctx.createFeed({});
+
+        const updated = await ctx.service.updateFeedById(
+          { id: feed.id },
+          { url: OTHER_PLATFORM_URL },
+        );
+
+        assert.strictEqual(updated?.refreshRateSeconds, FLOOR_SECONDS);
+      });
+
+      it("rejects a sub-floor user rate sent alongside a URL change to platform", async () => {
+        const ctx = await harness.createContext(floorSupporterOptions);
+
+        const feed = await ctx.createFeed({});
+
+        await assert.rejects(
+          ctx.service.updateFeedById(
+            { id: feed.id },
+            { url: OTHER_PLATFORM_URL, userRefreshRateSeconds: 600 },
+          ),
+          RefreshRateNotAllowedException,
+        );
+      });
+
+      it("drops a sub-floor user rate when cloning onto a platform URL", async () => {
+        const ctx = await harness.createContext(floorSupporterOptions);
+
+        const feed = await addOtherPlatform(ctx);
+        // Stamp a sub-floor user rate directly; the update path would reject it.
+        await ctx.setFields(feed.id, { userRefreshRateSeconds: 600 });
+
+        const cloned = await ctx.service.clone(feed.id, "token");
+
+        const clonedFeed = await ctx.findById(cloned.id!);
+        assert.ok(clonedFeed);
+        assert.ok(!clonedFeed.userRefreshRateSeconds);
+        assert.strictEqual(clonedFeed.refreshRateSeconds, FLOOR_SECONDS);
+      });
+
+      it("keeps an at-floor user rate when cloning a platform feed", async () => {
+        const ctx = await harness.createContext(floorSupporterOptions);
+
+        const feed = await addOtherPlatform(ctx);
+        await ctx.service.updateFeedById(
+          { id: feed.id },
+          { userRefreshRateSeconds: FLOOR_SECONDS },
+        );
+
+        const cloned = await ctx.service.clone(feed.id, "token");
+
+        const clonedFeed = await ctx.findById(cloned.id!);
+        assert.strictEqual(clonedFeed?.userRefreshRateSeconds, FLOOR_SECONDS);
+      });
+
+      describe("reddit exemption", () => {
+        it("does not clamp a reddit feed's created rate to the floor", async () => {
+          const ctx = await harness.createContext(flaggedSupporterOptions);
+
+          const feed = await addReddit(ctx);
+
+          // Reddit is platform-gated but its credentialed fetches are not
+          // metered, so it inherits the regular tier rate.
+          assert.strictEqual(feed.isMeteredPlatformFeed, undefined);
+          assert.strictEqual(feed.refreshRateSeconds, 600);
+        });
+
+        it("allows a reddit user rate below the floor", async () => {
+          const ctx = await harness.createContext(flaggedSupporterOptions);
+
+          const feed = await addReddit(ctx);
+
+          const updated = await ctx.service.updateFeedById(
+            { id: feed.id },
+            { userRefreshRateSeconds: 1200 },
+          );
+
+          assert.strictEqual(updated?.userRefreshRateSeconds, 1200);
+        });
+
+        it("does not clamp the stored base rate when a URL change makes a feed reddit", async () => {
+          const ctx = await harness.createContext(flaggedSupporterOptions);
+
+          const feed = await ctx.createFeed({});
+
+          const updated = await ctx.service.updateFeedById(
+            { id: feed.id },
+            { url: REDDIT_URL },
+          );
+
+          assert.strictEqual(updated?.refreshRateSeconds, 600);
+          assert.strictEqual(updated?.isMeteredPlatformFeed, undefined);
+        });
+
+        it("clears the metered flag when cloning onto a reddit URL", async () => {
+          const ctx = await harness.createContext({
+            ...floorSupporterOptions,
+            feedHandler: {
+              url: "https://www.reddit.com/r/other",
+              feedTitle: "other",
+            },
+          });
+          const source = await addOtherPlatform(ctx);
+          await ctx.service.updateFeedById(
+            { id: source.id },
+            { userRefreshRateSeconds: FLOOR_SECONDS },
+          );
+
+          const cloned = await ctx.service.clone(source.id, "token", {
+            url: "https://www.reddit.com/r/other",
+          });
+
+          const clonedFeed = await ctx.findById(cloned.id!);
+          assert.strictEqual(clonedFeed?.isMeteredPlatformFeed, undefined);
+        });
+
+        it("keeps a sub-floor user rate when cloning a reddit feed", async () => {
+          const ctx = await harness.createContext(flaggedSupporterOptions);
+
+          const feed = await addReddit(ctx);
+          await ctx.service.updateFeedById(
+            { id: feed.id },
+            { userRefreshRateSeconds: 1200 },
+          );
+
+          const cloned = await ctx.service.clone(feed.id, "token");
+
+          const clonedFeed = await ctx.findById(cloned.id!);
+          assert.strictEqual(clonedFeed?.userRefreshRateSeconds, 1200);
+        });
       });
     });
 
-    describe("when reddit oauth is not configured (self-host)", () => {
-      it("allows addFeed for a reddit url even without a connection", async () => {
-        const ctx = harness.createContext({
-          feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+    describe("copy-settings floor", () => {
+      it("drops a sub-floor source rate on platform targets but keeps it on regular and reddit targets", async () => {
+        const ctx = await harness.createContext(floorSupporterOptions);
+
+        const platformTarget = await addOtherPlatform(ctx);
+        const regularTarget = await ctx.createFeed({});
+        // Created directly so it keeps a reddit URL under the x.com validation
+        // mock; the copy-settings floor classification reads the stored URL.
+        const redditTarget = await ctx.createFeed({ url: REDDIT_URL });
+        await ctx.setFields(redditTarget.id, { isMeteredPlatformFeed: true });
+        const source = await ctx.createFeed({});
+        await ctx.setFields(source.id, { userRefreshRateSeconds: 600 });
+        const sourceFeed = (await ctx.findById(source.id))!;
+
+        await ctx.service.copySettings({
+          sourceFeed,
+          dto: {
+            targetFeedIds: [
+              platformTarget.id,
+              regularTarget.id,
+              redditTarget.id,
+            ],
+            settings: [UserFeedCopyableSetting.RefreshRate],
+            targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+          },
+          discordUserId: ctx.discordUserId,
+        });
+
+        const platform = await ctx.findById(platformTarget.id);
+        const regular = await ctx.findById(regularTarget.id);
+        const reddit = await ctx.findById(redditTarget.id);
+        assert.ok(!platform?.userRefreshRateSeconds);
+        assert.strictEqual(regular?.userRefreshRateSeconds, 600);
+        assert.strictEqual(reddit?.userRefreshRateSeconds, 600);
+      });
+
+      it("copies an at-floor source rate to platform and reddit targets", async () => {
+        const ctx = await harness.createContext(floorSupporterOptions);
+
+        const platformTarget = await addOtherPlatform(ctx);
+        const redditTarget = await ctx.createFeed({ url: REDDIT_URL });
+        await ctx.setFields(redditTarget.id, { isMeteredPlatformFeed: true });
+        const source = await ctx.createFeed({});
+        await ctx.setFields(source.id, {
+          userRefreshRateSeconds: FLOOR_SECONDS,
+        });
+        const sourceFeed = (await ctx.findById(source.id))!;
+
+        await ctx.service.copySettings({
+          sourceFeed,
+          dto: {
+            targetFeedIds: [platformTarget.id, redditTarget.id],
+            settings: [UserFeedCopyableSetting.RefreshRate],
+            targetFeedSelectionType: UserFeedTargetFeedSelectionType.Selected,
+          },
+          discordUserId: ctx.discordUserId,
+        });
+
+        const platform = await ctx.findById(platformTarget.id);
+        const reddit = await ctx.findById(redditTarget.id);
+        assert.strictEqual(platform?.userRefreshRateSeconds, FLOOR_SECONDS);
+        assert.strictEqual(reddit?.userRefreshRateSeconds, FLOOR_SECONDS);
+      });
+    });
+
+    // Stitches the two halves the other suites exercise separately: the real
+    // addFeed path (hash-stamped slot offset) into the real scheduler
+    // aggregate, which is what actually triggers production fetches.
+    describe("scheduling seam", () => {
+      it("emits a premium feed created through addFeed on its rate bucket", async () => {
+        const ctx = await harness.createContext({
+          ...flaggedSupporterOptions,
+          refreshRateSeconds: 120,
         });
 
         const feed = await addReddit(ctx);
-
-        assert.ok(feed.id);
-      });
-
-      it("allows validateFeedUrl for a reddit url even without a connection", async () => {
-        const ctx = harness.createContext({
-          feedHandler: { url: REDDIT_URL, feedTitle: "gaming" },
+        // Scheduled emission only selects feeds with an enabled connection.
+        await ctx.setFields(feed.id, {
+          connections: {
+            discordChannels: [createMockDiscordChannelConnection()],
+            discordWebhooks: [],
+          },
         });
 
-        const result = await validateReddit(ctx);
+        const stored = await ctx.findById(feed.id);
+        assert.ok(stored?.slotOffsetMs != null, "addFeed stamps a slot offset");
+        const scheduleHandler = new ScheduleHandlerService({
+          // The feed carries a lookup key and the harness credential, so
+          // fetch resolution needs the decryption key to attach the token.
+          config: { BACKEND_API_ENCRYPTION_KEY_HEX: ctx.encryptionKey },
+          supportersService: {},
+          userFeedsService: ctx.service,
+          usersService: {},
+          userFeedRepository: ctx.userFeedRepository,
+          messageBrokerService: {},
+          // Anchor the slot window on the feed's own offset so the single
+          // pass covers it, mirroring the emitter's steady-state cadence.
+          now: () => stored.slotOffsetMs!,
+          feedFetcherApiService: {},
+        } as unknown as ConstructorParameters<
+          typeof ScheduleHandlerService
+        >[0]);
 
-        assert.strictEqual(result.feedTitle, "gaming");
+        const captured: Array<{ url: string; lookupKey?: string }> = [];
+        await scheduleHandler.handleRefreshRate(stored.refreshRateSeconds!, {
+          urlsHandler: async (batch) => {
+            captured.push(...batch);
+          },
+        });
+
+        const item = captured.find((entry) => entry.url === stored.url);
+        assert.ok(item, "the feed must be emitted on its rate bucket");
       });
     });
   });
 
   describe("deleteFeedById", () => {
     it("deletes feed and returns deleted document", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed = await ctx.createFeed({ title: "To Delete" });
 
       const result = await ctx.service.deleteFeedById(feed.id);
@@ -174,7 +793,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("returns null when feed not found", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const fakeId = ctx.generateId();
 
       const result = await ctx.service.deleteFeedById(fakeId);
@@ -185,7 +804,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("bulkDelete", () => {
     it("deletes multiple feeds and returns status", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed1 = await ctx.createFeed({ title: "Feed 1" });
       const feed2 = await ctx.createFeed({ title: "Feed 2" });
       const fakeId = ctx.generateId();
@@ -201,7 +820,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     it("publishes deleted-feed events with bounded concurrency", async () => {
       let activePublishes = 0;
       let peakPublishes = 0;
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         publishMessage: async () => {
           activePublishes += 1;
           peakPublishes = Math.max(peakPublishes, activePublishes);
@@ -224,7 +843,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("bulkDisable", () => {
     it("disables multiple feeds", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed1 = await ctx.createFeed({ title: "Feed 1" });
       const feed2 = await ctx.createFeed({ title: "Feed 2" });
 
@@ -241,7 +860,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("skips already disabled feeds with non-manual code", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed = await ctx.createFeed({});
       await ctx.setDisabledCode(feed.id, UserFeedDisabledCode.BadFormat);
 
@@ -254,7 +873,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("bulkEnable", () => {
     it("enables multiple manually disabled feeds", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed1 = await ctx.createFeed({ title: "Feed 1" });
       const feed2 = await ctx.createFeed({ title: "Feed 2" });
 
@@ -274,7 +893,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("does not enable feeds disabled for other reasons", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed = await ctx.createFeed({});
       await ctx.setDisabledCode(feed.id, UserFeedDisabledCode.BadFormat);
 
@@ -290,7 +909,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("addFeed", () => {
     it("creates a new feed with correct properties", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: {
           url: "https://example.com/feed.xml",
           articles: [{ date: new Date().toISOString() }],
@@ -312,7 +931,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("does not set feedRequestLookupKey for non-Reddit feeds", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: { url: "https://example.com/feed.xml" },
       });
 
@@ -325,7 +944,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("throws FeedLimitReachedException when user has reached max feeds", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: { url: "https://example.com/feed.xml" },
       });
 
@@ -342,7 +961,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("copies settings from source feed when sourceFeedId is provided", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: {
           url: "https://example.com/new.xml",
           feedTitle: "New Feed",
@@ -370,7 +989,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("throws SourceFeedNotFoundException when sourceFeedId not found", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: { url: "https://example.com/feed.xml" },
       });
 
@@ -387,7 +1006,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("sets dateCheckOptions when feed has articles with dates", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: {
           url: "https://example.com/feed.xml",
           articles: [{ date: new Date().toISOString() }],
@@ -407,7 +1026,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const inputUrl = "https://example.com/page.html";
       const resolvedUrl = "https://example.com/feed.xml";
 
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: { url: resolvedUrl, feedTitle: "Resolved Feed" },
       });
 
@@ -421,7 +1040,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("throws BannedFeedException if feed is banned", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         bannedFeedDetails: { reason: "spam" },
         feedHandler: { url: "https://banned.com/feed.xml" },
       });
@@ -438,7 +1057,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
     it("throws if getArticles throws an error", async () => {
       const testError = new Error("feed fetch error");
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: { getArticlesError: testError },
       });
 
@@ -458,7 +1077,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("updateFeedById", () => {
     it("updates feed title", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed = await ctx.createFeed({ title: "Original Title" });
 
       const result = await ctx.service.updateFeedById(
@@ -471,7 +1090,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("updates passingComparisons", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed = await ctx.createFeed({});
 
       const result = await ctx.service.updateFeedById(
@@ -487,7 +1106,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("updates blockingComparisons", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed = await ctx.createFeed({});
 
       const result = await ctx.service.updateFeedById(
@@ -500,7 +1119,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("replaces formatOptions entirely", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed = await ctx.createFeed({});
       await ctx.setFields(feed.id, {
         formatOptions: { dateFormat: "YYYY", dateTimezone: "UTC" },
@@ -517,7 +1136,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("disables feed manually", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed = await ctx.createFeed({});
 
       const result = await ctx.service.updateFeedById(
@@ -530,7 +1149,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("enables manually disabled feed", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed = await ctx.createFeed({});
       await ctx.setDisabledCode(feed.id, UserFeedDisabledCode.Manual);
 
@@ -544,7 +1163,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("throws FeedLimitReachedException when enabling feed would exceed limit", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       await ctx.createMany(TEST_MAX_USER_FEEDS);
       const disabledFeed = await ctx.createDisabled(
@@ -565,7 +1184,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("throws error when feed not found", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const fakeId = ctx.generateId();
 
       await assert.rejects(
@@ -576,14 +1195,10 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("updates URL and recalculates slotOffsetMs", async () => {
-      let publishedMessage: unknown = null;
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: {
           url: "https://example.com/new.xml",
           feedTitle: "New Feed",
-        },
-        publishMessage: async (_queue, msg) => {
-          publishedMessage = msg;
         },
       });
 
@@ -597,17 +1212,14 @@ describe("UserFeedsService", { concurrency: true }, () => {
       assert.ok(result);
       assert.strictEqual(result.url, "https://example.com/new.xml");
       assert.ok(typeof result.slotOffsetMs === "number");
-      assert.ok(publishedMessage);
     });
 
-    it("publishes feed-deleted message when URL changes", async () => {
-      let publishedQueue: string | null = null;
-      let publishedMessage: unknown = null;
-      const ctx = harness.createContext({
+    it("leaves baseline cleanup and refresh to the URL-update handler", async () => {
+      const publishedQueues: string[] = [];
+      const ctx = await harness.createContext({
         feedHandler: { url: "https://example.com/new.xml" },
-        publishMessage: async (queue, msg) => {
-          publishedQueue = queue;
-          publishedMessage = msg;
+        publishMessage: async (queue) => {
+          publishedQueues.push(queue);
         },
       });
 
@@ -618,32 +1230,12 @@ describe("UserFeedsService", { concurrency: true }, () => {
         { url: "https://example.com/new.xml" },
       );
 
-      assert.strictEqual(publishedQueue, "feed-deleted");
-      assert.deepStrictEqual(publishedMessage, {
-        data: { feed: { id: feed.id } },
-      });
+      assert.deepStrictEqual(publishedQueues, []);
     });
 
-    it("gates changing a feed's URL to a reddit url without an active connection", async () => {
-      const ctx = harness.createContext({
+    it("allows changing a feed's URL to a reddit url without an active connection", async () => {
+      const ctx = await harness.createContext({
         redditClientId: "test-reddit-client-id",
-        feedHandler: { url: "https://www.reddit.com/r/gaming/.rss" },
-      });
-      const feed = await ctx.createFeed({});
-
-      await assert.rejects(
-        ctx.service.updateFeedById(
-          { id: feed.id },
-          { url: "https://www.reddit.com/r/gaming/.rss" },
-        ),
-        RedditConnectionRequiredException,
-      );
-    });
-
-    it("allows changing a feed's URL to a reddit url with an active connection", async () => {
-      const ctx = harness.createContext({
-        redditClientId: "test-reddit-client-id",
-        externalCredentials: [{ type: "reddit", status: "ACTIVE", data: {} }],
         feedHandler: {
           url: "https://www.reddit.com/r/gaming/.rss",
           feedTitle: "gaming",
@@ -661,7 +1253,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("throws BannedFeedException if URL resolves to a banned feed", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         bannedFeedDetails: { reason: "spam" },
         feedHandler: { url: "https://banned.com/feed.xml" },
       });
@@ -679,7 +1271,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
     it("throws if fetch feed throws when updating URL", async () => {
       const testError = new Error("feed fetch error");
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: { getArticlesError: testError },
       });
       const feed = await ctx.createFeed({});
@@ -699,7 +1291,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
     it("unsets userRefreshRateSeconds if it equals the user's default rate", async () => {
       const userDefaultRate = 600;
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         refreshRateSeconds: userDefaultRate,
       });
       const feed = await ctx.createFeed({});
@@ -717,7 +1309,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     it("sets userRefreshRateSeconds if it is slower than the user's default rate", async () => {
       const userDefaultRate = 600;
       const slowerRate = 1200;
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         refreshRateSeconds: userDefaultRate,
       });
       const feed = await ctx.createFeed({});
@@ -734,7 +1326,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     it("throws RefreshRateNotAllowedException if refresh rate is faster than allowed", async () => {
       const userDefaultRate = 600;
       const fasterRate = 300;
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         refreshRateSeconds: userDefaultRate,
       });
       const feed = await ctx.createFeed({});
@@ -750,7 +1342,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("does not update anything if no updates are provided", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const feed = await ctx.createFeed({ title: "Original Title" });
       await ctx.setFields(feed.id, {
         passingComparisons: ["original"],
@@ -771,7 +1363,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       const inputUrl = "https://example.com/page.html";
       const resolvedUrl = "https://example.com/feed.xml";
 
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: { url: resolvedUrl, feedTitle: "Test Feed" },
       });
 
@@ -786,7 +1378,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     it("returns null resolvedToUrl when URL is same as input", async () => {
       const url = "https://example.com/feed.xml";
 
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: { url, feedTitle: "Test Feed" },
       });
 
@@ -799,7 +1391,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("returns feedTitle when available", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: {
           url: "https://example.com/feed.xml",
           feedTitle: "My Awesome Feed",
@@ -813,12 +1405,107 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       assert.strictEqual(result.feedTitle, "My Awesome Feed");
     });
+
+    it("uses platform provider routing during URL validation for an eligible user", async () => {
+      let capturedInput: unknown = null;
+      const ctx = await harness.createContext({
+        billingEnabled: true,
+        isSupporter: true,
+        featureFlags: { premiumFeeds: true },
+        feedHandler: {
+          url: "https://www.instagram.com/adrienbrody",
+          feedTitle: "Instagram @adrienbrody posts",
+          onGetArticles: (input) => {
+            capturedInput = input;
+          },
+        },
+      });
+
+      await ctx.service.validateFeedUrl(
+        { discordUserId: ctx.discordUserId },
+        { url: "https://www.instagram.com/adrienbrody" },
+      );
+
+      assert.strictEqual(
+        (capturedInput as GetArticlesInput | null)?.usePlatformProvider,
+        true,
+      );
+    });
+
+    it("does not use platform provider routing for an unflagged user", async () => {
+      let capturedInput: unknown = null;
+      const ctx = await harness.createContext({
+        feedHandler: {
+          url: "https://www.instagram.com/adrienbrody",
+          onGetArticles: (input) => {
+            capturedInput = input;
+          },
+        },
+      });
+
+      await ctx.service.validateFeedUrl(
+        { discordUserId: ctx.discordUserId },
+        { url: "https://www.instagram.com/adrienbrody" },
+      );
+
+      assert.strictEqual(
+        (capturedInput as GetArticlesInput | null)?.usePlatformProvider,
+        false,
+      );
+    });
+
+    it("rejects a flagged free user before platform provider routing", async () => {
+      let capturedInput: unknown = null;
+      const ctx = await harness.createContext({
+        billingEnabled: true,
+        isSupporter: false,
+        featureFlags: { premiumFeeds: true },
+        feedHandler: {
+          url: "https://www.instagram.com/adrienbrody",
+          onGetArticles: (input) => {
+            capturedInput = input;
+          },
+        },
+      });
+
+      await assert.rejects(
+        ctx.service.validateFeedUrl(
+          { discordUserId: ctx.discordUserId },
+          { url: "https://www.instagram.com/adrienbrody" },
+        ),
+        PremiumFeedsPlanRequiredException,
+      );
+
+      assert.strictEqual(capturedInput, null);
+    });
+
+    it("does not use platform provider routing for an ordinary URL", async () => {
+      let capturedInput: unknown = null;
+      const ctx = await harness.createContext({
+        feedHandler: {
+          url: "https://example.com/feed.xml",
+          onGetArticles: (input) => {
+            capturedInput = input;
+          },
+        },
+      });
+
+      await ctx.service.validateFeedUrl(
+        { discordUserId: ctx.discordUserId },
+        { url: "https://example.com/feed.xml" },
+      );
+
+      assert.strictEqual(
+        (capturedInput as GetArticlesInput | null)?.usePlatformProvider,
+        false,
+      );
+    });
   });
 
   describe("enforceUserFeedLimit", () => {
     describe("supporter limits", () => {
       it("disables feeds when supporter exceeds their limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: true,
           maxUserFeeds: 2,
         });
@@ -841,7 +1528,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("disables oldest feeds first when over limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: true,
           maxUserFeeds: 2,
         });
@@ -866,7 +1553,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("does not disable feeds when at or under limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: true,
           maxUserFeeds: 3,
         });
@@ -885,7 +1572,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("does not enable manually disabled feeds when under limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: true,
           maxUserFeeds: 5,
         });
@@ -900,7 +1587,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("does not enable feeds disabled for other reasons when under limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: true,
           maxUserFeeds: 5,
         });
@@ -918,7 +1605,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("re-enables ExceededFeedLimit feeds when deleting brings user under limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: true,
           maxUserFeeds: TEST_MAX_USER_FEEDS,
         });
@@ -935,7 +1622,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("re-enables newest disabled feeds first when under limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: true,
           maxUserFeeds: 2,
         });
@@ -962,7 +1649,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
     describe("non-supporter (default) limits", () => {
       it("disables feeds when non-supporter exceeds default limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 2,
           defaultMaxUserFeeds: 2,
@@ -992,7 +1679,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("enables feeds when non-supporter is under default limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 3,
           defaultMaxUserFeeds: 3,
@@ -1019,7 +1706,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("does not enable feeds disabled for other reasons when under limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 5,
           defaultMaxUserFeeds: 5,
@@ -1038,7 +1725,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("treats manually disabled feeds as not counting against limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 2,
           defaultMaxUserFeeds: 2,
@@ -1062,7 +1749,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("does not enable manually disabled feeds when under limit", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 5,
           defaultMaxUserFeeds: 5,
@@ -1079,7 +1766,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
     describe("integration through various methods", () => {
       it("enforces limits after updateFeedById when disabledCode changes", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 2,
           defaultMaxUserFeeds: 2,
@@ -1105,7 +1792,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("enforces limits after deleteFeedById", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 2,
           defaultMaxUserFeeds: 2,
@@ -1124,7 +1811,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("enforces limits after bulkDelete", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 2,
           defaultMaxUserFeeds: 2,
@@ -1143,7 +1830,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("enforces limits after bulkDisable", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 2,
           defaultMaxUserFeeds: 2,
@@ -1164,7 +1851,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
       });
 
       it("enforces limits after bulkEnable", async () => {
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 2,
           defaultMaxUserFeeds: 2,
@@ -1191,7 +1878,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     describe("refresh rate enforcement", () => {
       it("unsets userRefreshRateSeconds when non-supporter has supporter rate set", async () => {
         const supporterRefreshRate = 120;
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: false,
           maxUserFeeds: 5,
           defaultMaxUserFeeds: 5,
@@ -1212,7 +1899,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
       it("does not unset userRefreshRateSeconds for supporter at supporter rate", async () => {
         const supporterRefreshRate = 120;
-        const ctx = harness.createContext({
+        const ctx = await harness.createContext({
           isSupporter: true,
           maxUserFeeds: 5,
           refreshRateSeconds: supporterRefreshRate,
@@ -1237,7 +1924,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("enforceWebhookConnections", () => {
     it("disables webhooks if the user is not a supporter", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const secondDiscordUserId = ctx.discordUserId + "2";
       const thirdDiscordUserId = ctx.discordUserId + "3";
 
@@ -1354,7 +2041,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("does not disable manually-disabled webhook connections if user is not a supporter", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const feed = await ctx.createFeedWithConnections({
         discordUserId: ctx.discordUserId,
@@ -1393,7 +2080,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("enables webhooks if the user is a supporter", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const feed = await ctx.createFeedWithConnections({
         discordUserId: ctx.discordUserId,
@@ -1433,7 +2120,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("manuallyRequest", () => {
     it("throws ManualRequestTooSoonException when called too soon after last request", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedFetcherApiService: { requestStatus: "SUCCESS" },
       });
       const feed = await ctx.createFeed({});
@@ -1451,7 +2138,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("updates lastManualRequestAt on successful request", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedFetcherApiService: { requestStatus: "SUCCESS" },
       });
       const feed = await ctx.createFeed({});
@@ -1466,7 +2153,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("sets health status to Ok on successful request", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedFetcherApiService: { requestStatus: "SUCCESS" },
       });
       const feed = await ctx.createFeed({});
@@ -1485,7 +2172,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("returns requestStatus from the result", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedFetcherApiService: { requestStatus: "SUCCESS" },
       });
       const feed = await ctx.createFeed({});
@@ -1496,7 +2183,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("returns statusCode when request fails with bad status code", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedFetcherApiService: {
           requestStatus: "BAD_STATUS_CODE",
           statusCode: 404,
@@ -1511,7 +2198,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("clears disabledCode when feed was disabled with InvalidFeed and request succeeds", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedFetcherApiService: { requestStatus: "SUCCESS" },
         feedHandler: {
           requestStatus: GetArticlesResponseRequestStatus.Success,
@@ -1533,7 +2220,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("does not clear disabledCode when article properties check fails", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedFetcherApiService: { requestStatus: "SUCCESS" },
         feedHandler: {
           requestStatus: GetArticlesResponseRequestStatus.ParseError,
@@ -1560,7 +2247,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("getFeedArticleProperties", () => {
     it("returns properties from articles", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: {
           requestStatus: GetArticlesResponseRequestStatus.Success,
           articles: [
@@ -1582,7 +2269,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("returns sorted unique properties", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: {
           requestStatus: GetArticlesResponseRequestStatus.Success,
           articles: [
@@ -1602,7 +2289,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("returns requestStatus from feed handler", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: {
           requestStatus: GetArticlesResponseRequestStatus.Success,
           articles: [],
@@ -1622,7 +2309,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("returns empty properties when no articles", async () => {
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: {
           requestStatus: GetArticlesResponseRequestStatus.Success,
           articles: [],
@@ -1641,7 +2328,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("clone", () => {
     it("throws error when source feed not found", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const fakeId = ctx.generateId();
 
       await assert.rejects(
@@ -1651,7 +2338,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("throws FeedLimitReachedException when user at max feeds", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const feeds = await ctx.createMany(TEST_MAX_USER_FEEDS);
 
@@ -1662,7 +2349,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("successfully clones feed with same URL", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const sourceFeed = await ctx.createFeed({
         title: "Original Feed",
         url: "https://example.com/original.xml",
@@ -1678,7 +2365,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("successfully clones feed with custom title", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const sourceFeed = await ctx.createFeed({ title: "Original" });
 
       const result = await ctx.service.clone(sourceFeed.id, "token", {
@@ -1692,7 +2379,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
     it("successfully clones feed with different URL", async () => {
       const newUrl = "https://example.com/new-feed.xml";
-      const ctx = harness.createContext({
+      const ctx = await harness.createContext({
         feedHandler: { url: newUrl, feedTitle: "New Feed" },
       });
       const sourceFeed = await ctx.createFeed({
@@ -1710,7 +2397,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("cloned feed inherits settings from source", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const sourceFeed = await ctx.createFeed({});
       await ctx.setFields(sourceFeed.id, {
         passingComparisons: ["title", "description"],
@@ -1736,7 +2423,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("clones discord channel connections from source feed", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const sourceFeed = await ctx.createFeedWithConnections({
         title: "Source Feed",
         connections: {
@@ -1756,7 +2443,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("returns the new feed ID", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const sourceFeed = await ctx.createFeed({});
 
       const result = await ctx.service.clone(sourceFeed.id, "token");
@@ -1769,7 +2456,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
 
   describe("copySettings", () => {
     it("copies PassingComparisons to target feeds", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
       await ctx.setFields(sourceFeed.id, {
@@ -1800,7 +2487,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("copies BlockingComparisons to target feeds", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
       await ctx.setFields(sourceFeed.id, {
@@ -1828,7 +2515,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("copies ExternalProperties with new IDs", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
       const sourcePropertyId = ctx.generateId();
@@ -1875,7 +2562,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("copies DateChecks settings", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
       await ctx.setFields(sourceFeed.id, {
@@ -1906,7 +2593,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("copies DatePlaceholderSettings (formatOptions)", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
       await ctx.setFields(sourceFeed.id, {
@@ -1943,7 +2630,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("copies RefreshRate when present", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
       await ctx.setFields(sourceFeed.id, {
@@ -1971,7 +2658,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("unsets RefreshRate when source has none", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
 
@@ -1999,7 +2686,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("only updates feeds in targetFeedIds when using Selected mode", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
       await ctx.setFields(sourceFeed.id, {
@@ -2032,7 +2719,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("updates all feeds matching search except source when using All mode", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "NewsSource" });
       await ctx.setFields(sourceFeed.id, {
@@ -2072,7 +2759,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("only updates feeds owned by the user", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
       await ctx.setFields(sourceFeed.id, {
@@ -2108,7 +2795,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("includes feeds where user has accepted share invite", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
       await ctx.setFields(sourceFeed.id, {
@@ -2137,7 +2824,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("does nothing when settings array is empty", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
 
       const sourceFeed = await ctx.createFeed({ title: "Source Feed" });
       await ctx.setFields(sourceFeed.id, {
@@ -2169,7 +2856,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("copies connections to target feed with new IDs", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const sourceConnection = createMockDiscordChannelConnection();
       const sourceFeed = await ctx.createFeedWithConnections({
         connections: { discordChannels: [sourceConnection] },
@@ -2203,7 +2890,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("copies multiple connections with unique IDs for each", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const conn1 = createMockDiscordChannelConnection();
       const conn2 = createMockDiscordChannelConnection();
       const sourceFeed = await ctx.createFeedWithConnections({
@@ -2234,7 +2921,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("deletes application-owned webhooks from target feeds before copying", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const sourceFeed = await ctx.createFeedWithConnections({
         connections: {
           discordChannels: [createMockDiscordChannelConnection()],
@@ -2278,7 +2965,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("does not delete non-application-owned webhooks from target feeds", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const sourceFeed = await ctx.createFeedWithConnections({
         connections: {
           discordChannels: [createMockDiscordChannelConnection()],
@@ -2317,7 +3004,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("copies connections to all matching feeds in All mode", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const sourceConn = createMockDiscordChannelConnection();
       const sourceFeed = await ctx.createFeedWithConnections({
         connections: { discordChannels: [sourceConn] },
@@ -2354,7 +3041,7 @@ describe("UserFeedsService", { concurrency: true }, () => {
     });
 
     it("replaces target connections with empty array when source has none", async () => {
-      const ctx = harness.createContext();
+      const ctx = await harness.createContext();
       const sourceFeed = await ctx.createFeed({});
 
       const targetFeed = await ctx.createFeedWithConnections({

@@ -270,22 +270,28 @@ export const COMPACT_CARD_TEMPLATE: Template = {
 export const MEDIA_GALLERY_TEMPLATE: Template = {
   id: "media-gallery",
   name: "Media Gallery",
-  description: "Showcase multiple images in a gallery layout",
+  description: "Showcase multiple images and videos in a gallery layout",
   ThumbnailComponent: MediaGalleryThumbnail,
-  requiredFields: [TemplateRequiredField.Image],
+  requiredFields: [],
+  requiredFieldsOr: [TemplateRequiredField.Image, TemplateRequiredField.Video],
   createMessageComponent: (fields?: DetectedFields): MessageComponentRoot => {
     const descriptionField = fields?.description[0]?.field;
-    const imageFieldNames = (fields?.image ?? []).map((i) => i.field);
+    // A mixed-media feed can classify the same enclosure field as an image in
+    // one article and a video in another, so dedupe the field names: one
+    // gallery item per distinct placeholder, not per detected type.
+    const mediaFieldNames = Array.from(
+      new Set([...(fields?.image ?? []), ...(fields?.video ?? [])].map((i) => i.field)),
+    );
     const linkField = fields?.link[0]?.field;
     const titleField = fields?.title[0]?.field;
 
-    const imagesToUse = imageFieldNames.length > 0 ? imageFieldNames.slice(0, 10) : ["image"];
+    const mediaToUse = mediaFieldNames.length > 0 ? mediaFieldNames.slice(0, 10) : ["image"];
 
-    const galleryItems: MediaGalleryItemComponent[] = imagesToUse.map((imageField, index) => ({
+    const galleryItems: MediaGalleryItemComponent[] = mediaToUse.map((mediaField, index) => ({
       type: ComponentType.V2MediaGalleryItem,
       id: `media-gallery-item-${index + 1}`,
-      name: `Image ${index + 1}`,
-      mediaUrl: `{{${imageField}}}`,
+      name: `Media ${index + 1}`,
+      mediaUrl: `{{${mediaField}}}`,
       description: titleField ? `{{${titleField}}}` : "",
       children: [],
     }));
@@ -344,7 +350,7 @@ export const MEDIA_GALLERY_TEMPLATE: Template = {
             {
               type: ComponentType.V2MediaGallery,
               id: "media-gallery-gallery",
-              name: "Image Gallery",
+              name: "Media Gallery",
               children: galleryItems,
             },
             ...(linkField

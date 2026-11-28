@@ -1,6 +1,7 @@
 import { ChildProcess, spawn, SpawnOptions } from "child_process";
-import { createWriteStream } from "fs";
+import { createWriteStream, readdirSync, rmSync, statSync } from "fs";
 import { createServer } from "net";
+import { join } from "path";
 
 export type RunProcessOptions = {
   cwd: string;
@@ -19,6 +20,44 @@ export type RunProcessOptions = {
 
 export function toPlaywrightArgs(args: string[]): string[] {
   return args.filter((arg) => arg !== "--doctor" && arg !== "--");
+}
+
+/**
+ * Deletes archived run directories beyond the newest `keep` entries. The
+ * runner archives every run's logs under logs/runs/<timestamp>; without this
+ * bound a developer machine accumulates a full log copy per run forever.
+ */
+export function pruneOldRunDirs(runsDir: string, keep: number): string[] {
+  let names: string[];
+
+  try {
+    names = readdirSync(runsDir);
+  } catch {
+    return [];
+  }
+
+  const keptCount = Math.max(0, Math.floor(keep));
+  const dirs = names
+    .map((name) => {
+      const path = join(runsDir, name);
+      try {
+        const stats = statSync(path);
+
+        return stats.isDirectory() ? { path, mtimeMs: stats.mtimeMs } : null;
+      } catch {
+        return null;
+      }
+    })
+    .filter((entry): entry is { path: string; mtimeMs: number } => !!entry)
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+  const removed: string[] = [];
+  for (const dir of dirs.slice(keptCount)) {
+    rmSync(dir.path, { recursive: true, force: true });
+    removed.push(dir.path);
+  }
+
+  return removed;
 }
 
 export function classifyPortBindError(

@@ -53,16 +53,15 @@ import {
 } from "@/features/subscriptionProducts";
 import {
   useWorkspaceSliderPrice,
-  feedCountToAddonQuantity,
+  workspaceCapacityToBasket,
   workspaceFeedPricingFromProducts,
   WORKSPACE_BASE_FEEDS,
-  WORKSPACE_MAX_FEEDS,
-  WORKSPACE_MIN_FEEDS,
   CapacityPicker,
   IntervalPicker,
   BILLING_INTERVAL_WORD,
   formatWorkspaceFeedCount,
   formatWorkspaceFeedNumber,
+  normalizeWorkspaceCapacity,
   WorkspaceFeedPricing,
   type BillingInterval,
 } from "@/shared/workspaceCapacity";
@@ -838,7 +837,7 @@ export const WorkspaceBilling = () => {
   const requestedFeeds = Number(searchParams.get("feeds"));
   const [activationFeeds, setActivationFeeds] = useState(() =>
     Number.isInteger(requestedFeeds)
-      ? Math.min(WORKSPACE_MAX_FEEDS, Math.max(WORKSPACE_MIN_FEEDS, requestedFeeds))
+      ? normalizeWorkspaceCapacity(requestedFeeds)
       : WORKSPACE_BASE_FEEDS,
   );
   const [isConvertOpen, setIsConvertOpen] = useState(false);
@@ -917,19 +916,14 @@ export const WorkspaceBilling = () => {
     return null;
   }
 
-  // Every capacity maps to one real purchasable basket: the base workspace tier
-  // plus a per-feed add-on for the overage above the base. The buy moment (here)
-  // and the manage moment (update plan) build the same basket, so a workspace
-  // is billed identically however the capacity was chosen.
+  // Tier 2 is the fixed 70-feed plan. Any larger capacity uses the Tier 3 base,
+  // with add-ons only above its 140-feed allowance. The buy and manage moments
+  // share this basket rule.
   const capacityBasket = (feeds: number, useInterval: BillingInterval) => {
-    const addonFeeds = feedCountToAddonQuantity(feeds);
-
-    return [
-      { priceId: PRICE_IDS[ProductKey.Tier2][useInterval], quantity: 1 },
-      ...(addonFeeds > 0
-        ? [{ priceId: PRICE_IDS[ProductKey.Tier3Feed][useInterval], quantity: addonFeeds }]
-        : []),
-    ];
+    return workspaceCapacityToBasket(feeds).map((line) => ({
+      priceId: PRICE_IDS[line.productKey][useInterval],
+      quantity: line.quantity,
+    }));
   };
 
   const subscribeToCapacity = (feeds: number) => {
@@ -974,7 +968,8 @@ export const WorkspaceBilling = () => {
   // The workspace's current total capacity = its base tier's feed limit plus any
   // per-feed add-ons. Seeds the update-plan picker and the plan summary.
   const currentCapacityFeeds = currentTier
-    ? TIER_FEED_LIMITS[currentTier] + currentAddonQuantity
+    ? TIER_FEED_LIMITS[currentTier] +
+      (currentTier === ProductKey.Tier3 ? currentAddonQuantity : 0)
     : WORKSPACE_BASE_FEEDS;
 
   // The recurring price the workspace actually bills at: an existing
@@ -997,7 +992,10 @@ export const WorkspaceBilling = () => {
       return undefined;
     }
 
-    const overageFeeds = Math.max(0, currentCapacityFeeds - TIER_FEED_LIMITS[currentTier]);
+    const overageFeeds =
+      currentTier === ProductKey.Tier3
+        ? Math.max(0, currentCapacityFeeds - TIER_FEED_LIMITS[currentTier])
+        : 0;
 
     return formatCurrency(
       String(baseUnitAmount + pricing.perFeedUnitAmount * overageFeeds),
@@ -1090,8 +1088,8 @@ export const WorkspaceBilling = () => {
               {currentTier && (
                 <Text color="fg.muted">
                   Your plan covers{" "}
-                  {currentAddonQuantity > 0
-                    ? `${formatWorkspaceFeedCount(TIER_FEED_LIMITS[currentTier] + currentAddonQuantity)} in total (${formatWorkspaceFeedNumber(TIER_FEED_LIMITS[currentTier])} + ${formatWorkspaceFeedNumber(currentAddonQuantity)} additional)`
+                  {currentTier === ProductKey.Tier3 && currentAddonQuantity > 0
+                    ? `${formatWorkspaceFeedCount(currentCapacityFeeds)} in total (${formatWorkspaceFeedNumber(TIER_FEED_LIMITS[currentTier])} + ${formatWorkspaceFeedNumber(currentAddonQuantity)} additional)`
                     : `${formatWorkspaceFeedCount(TIER_FEED_LIMITS[currentTier])} in total`}
                   {currentPlanPrice ? ` at ${currentPlanPrice} / ${subscriptionInterval}` : ""}.
                 </Text>

@@ -10,22 +10,38 @@ import { PricingDialogContext } from "@/features/subscriptionProducts";
 import { UserFeed } from "../../types";
 import { EditDeliveryScheduleDialog, FormSchema } from "./index";
 
-// The refresh-rate error must tell the user WHY the rate was rejected (their
-// plan's fastest allowed rate) and offer an upgrade CTA when lower rates exist
-// on paid plans, instead of the generic "Refresh rate is not allowed."
+// The refresh-rate error must explain the limit the backend enforces for THIS
+// feed (plan floor or platform-provider floor) and only offer the upgrade CTA
+// when an upgrade can actually lower it.
 
-const feed = {
+const baseFeed = {
   id: "feed-1",
   title: "My feed",
   url: "https://example.com/rss",
   refreshRateSeconds: 600,
-  refreshRateOptions: [
-    { rateSeconds: 600 },
-    { rateSeconds: 300, disabledCode: "INSUFFICIENT_SUPPORTER_TIER" },
-  ],
   connections: [],
   healthStatus: "healthy",
   createdAt: "2026-01-01T00:00:00Z",
+};
+
+const planLimitedFeed = {
+  ...baseFeed,
+  refreshRateLimits: {
+    minimumSeconds: 600,
+    maximumSeconds: 86400,
+    canUpgrade: true,
+    limitedBy: "plan",
+  },
+} as unknown as UserFeed;
+
+const platformLimitedFeed = {
+  ...baseFeed,
+  refreshRateLimits: {
+    minimumSeconds: 3600,
+    maximumSeconds: 86400,
+    canUpgrade: false,
+    limitedBy: "platform",
+  },
 } as unknown as UserFeed;
 
 const rateNotAllowedError = new ApiAdapterError("Refresh rate is not allowed.", {
@@ -34,7 +50,7 @@ const rateNotAllowedError = new ApiAdapterError("Refresh rate is not allowed.", 
 });
 
 const renderDialog = ({
-  feed: feedProp = feed,
+  feed = planLimitedFeed,
   onUpdate,
   onOpenPricingDialog,
 }: {
@@ -46,7 +62,7 @@ const renderDialog = ({
   const result = render(
     <ChakraProvider value={system}>
       <PricingDialogContext.Provider value={{ onOpen: onOpenPricingDialog ?? vi.fn() }}>
-        <EditDeliveryScheduleDialog isOpen onClose={vi.fn()} feed={feedProp} onUpdate={onUpdate} />
+        <EditDeliveryScheduleDialog isOpen onClose={vi.fn()} feed={feed} onUpdate={onUpdate} />
       </PricingDialogContext.Provider>
     </ChakraProvider>,
   );
@@ -54,12 +70,19 @@ const renderDialog = ({
   return { user, ...result };
 };
 
-describe("EditDeliveryScheduleDialog - refresh rate rejection", () => {
-  it("explains the fastest allowed rate and shows the upgrade CTA when lower rates are locked", async () => {
+const typeRefreshRate = async (user: ReturnType<typeof userEvent.setup>, minutes: string) => {
+  const refreshRateInput = screen.getByRole("spinbutton");
+  await user.clear(refreshRateInput);
+  await user.type(refreshRateInput, minutes);
+};
+
+describe("EditDeliveryScheduleDialog - refresh rate limits", () => {
+  it("explains the resolved plan minimum and shows the upgrade CTA when an upgrade helps", async () => {
     const onUpdate = vi.fn().mockRejectedValueOnce(rateNotAllowedError);
     const onOpenPricingDialog = vi.fn();
     const { user } = renderDialog({ onUpdate, onOpenPricingDialog });
 
+    await typeRefreshRate(user, "5");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(
@@ -73,19 +96,21 @@ describe("EditDeliveryScheduleDialog - refresh rate rejection", () => {
     expect(onOpenPricingDialog).toHaveBeenCalledTimes(1);
   });
 
-  it("does not show the upgrade CTA when the attempted rate is below even the paid plans' fastest rate", async () => {
+  it("explains a platform-provider minimum without offering an upgrade", async () => {
     const onUpdate = vi.fn().mockRejectedValueOnce(rateNotAllowedError);
     const onOpenPricingDialog = vi.fn();
-    const { user } = renderDialog({ onUpdate, onOpenPricingDialog });
+    const { user } = renderDialog({
+      feed: platformLimitedFeed,
+      onUpdate,
+      onOpenPricingDialog,
+    });
 
-    const refreshRateInput = screen.getByRole("spinbutton");
-    await user.clear(refreshRateInput);
-    await user.type(refreshRateInput, "1");
+    await typeRefreshRate(user, "20");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(
       await screen.findByText(
-        "Your current plan only allows checking this feed once every 10.0 minutes or more. The fastest rate available is every 5.0 minutes.",
+        "This premium feed can only be checked once every 60.0 minutes or more.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -94,17 +119,20 @@ describe("EditDeliveryScheduleDialog - refresh rate rejection", () => {
     expect(onOpenPricingDialog).not.toHaveBeenCalled();
   });
 
-  it("reports the absolute fastest rate without a plan reference when no faster plan exists", async () => {
-    const supporterFeed = {
-      ...feed,
-      refreshRateOptions: [{ rateSeconds: 300 }, { rateSeconds: 600 }],
+  it("reports the fastest available rate when no plan upgrade can lower the minimum", async () => {
+    const noUpgradeFeed = {
+      ...baseFeed,
+      refreshRateLimits: {
+        minimumSeconds: 300,
+        maximumSeconds: 86400,
+        canUpgrade: false,
+        limitedBy: "plan",
+      },
     } as unknown as UserFeed;
     const onUpdate = vi.fn().mockRejectedValueOnce(rateNotAllowedError);
-    const { user } = renderDialog({ feed: supporterFeed, onUpdate });
+    const { user } = renderDialog({ feed: noUpgradeFeed, onUpdate });
 
-    const refreshRateInput = screen.getByRole("spinbutton");
-    await user.clear(refreshRateInput);
-    await user.type(refreshRateInput, "1");
+    await typeRefreshRate(user, "1");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(
@@ -113,6 +141,27 @@ describe("EditDeliveryScheduleDialog - refresh rate rejection", () => {
     expect(
       screen.queryByRole("button", { name: "Upgrade for faster refresh rates" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("explains the backend maximum for an over-long rate", async () => {
+    const onUpdate = vi.fn().mockRejectedValueOnce(rateNotAllowedError);
+    const { user } = renderDialog({ onUpdate });
+
+    await typeRefreshRate(user, "2000");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(
+      await screen.findByText("Refresh rates cannot be slower than every 24.0 hours."),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to the server message when the rate is inside the limits", async () => {
+    const onUpdate = vi.fn().mockRejectedValueOnce(rateNotAllowedError);
+    const { user } = renderDialog({ onUpdate });
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(await screen.findByText("Refresh rate is not allowed.")).toBeInTheDocument();
   });
 
   it("does not show the upgrade CTA for unrelated errors", async () => {
@@ -129,7 +178,7 @@ describe("EditDeliveryScheduleDialog - refresh rate rejection", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("hints at the plan's fastest allowed rate before submitting", () => {
+  it("hints at the plan minimum before submitting", () => {
     renderDialog({ onUpdate: vi.fn() });
 
     expect(
@@ -139,13 +188,19 @@ describe("EditDeliveryScheduleDialog - refresh rate rejection", () => {
     ).toBeInTheDocument();
   });
 
+  it("hints at the platform minimum before submitting", () => {
+    renderDialog({ feed: platformLimitedFeed, onUpdate: vi.fn() });
+
+    expect(
+      screen.getByText("This premium feed can be checked as often as every 60.0 minutes."),
+    ).toBeInTheDocument();
+  });
+
   it("blocks saving a negative refresh rate with a field error", async () => {
     const onUpdate = vi.fn().mockResolvedValue(undefined);
     const { user } = renderDialog({ onUpdate });
 
-    const refreshRateInput = screen.getByRole("spinbutton");
-    await user.clear(refreshRateInput);
-    await user.type(refreshRateInput, "-5");
+    await typeRefreshRate(user, "-5");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(await screen.findByText("Enter a refresh rate greater than 0")).toBeInTheDocument();
@@ -169,6 +224,7 @@ describe("EditDeliveryScheduleDialog - refresh rate rejection", () => {
     const onUpdate = vi.fn().mockRejectedValue(rateNotAllowedError);
     const { user, rerender } = renderDialog({ onUpdate });
 
+    await typeRefreshRate(user, "5");
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText(/Your current plan only allows checking/)).toBeInTheDocument();
 
@@ -178,7 +234,7 @@ describe("EditDeliveryScheduleDialog - refresh rate rejection", () => {
           <EditDeliveryScheduleDialog
             isOpen={false}
             onClose={vi.fn()}
-            feed={feed}
+            feed={planLimitedFeed}
             onUpdate={onUpdate}
           />
         </PricingDialogContext.Provider>

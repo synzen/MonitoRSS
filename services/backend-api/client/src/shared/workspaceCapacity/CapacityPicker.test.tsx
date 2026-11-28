@@ -5,7 +5,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { system } from "@/utils/theme";
-import { CapacityPicker } from "./CapacityPicker";
+import { CapacityPicker, normalizeWorkspaceCapacity } from "./CapacityPicker";
 
 const renderPicker = (initialValue = 70, onChange = vi.fn(), withNextFocusTarget = false) => {
   const Picker = () => {
@@ -33,6 +33,14 @@ const renderPicker = (initialValue = 70, onChange = vi.fn(), withNextFocusTarget
 };
 
 describe("CapacityPicker", () => {
+  it("normalizes capacities between the two base plans to the first Tier 3 capacity", () => {
+    expect(normalizeWorkspaceCapacity(70)).toBe(70);
+    expect(normalizeWorkspaceCapacity(100)).toBe(140);
+    expect(normalizeWorkspaceCapacity(139)).toBe(140);
+    expect(normalizeWorkspaceCapacity(140)).toBe(140);
+    expect(normalizeWorkspaceCapacity(200)).toBe(200);
+  });
+
   it("offers presets in one labelled keyboard-operable radio group", async () => {
     const user = userEvent.setup();
     renderPicker();
@@ -172,9 +180,9 @@ describe("CapacityPicker", () => {
 
     expect(onChange).toHaveBeenLastCalledWith(2000);
     expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toHaveValue(
-      2000,
-    );
+    expect(
+      screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" }),
+    ).toHaveValue(2000);
   });
 
   it("seeds a non-preset value without firing an update", () => {
@@ -182,9 +190,9 @@ describe("CapacityPicker", () => {
     renderPicker(837, onChange);
 
     expect(screen.getByRole("radio", { name: "Custom" })).toBeChecked();
-    expect(screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" })).toHaveValue(
-      837,
-    );
+    expect(
+      screen.getByRole("spinbutton", { name: "Or enter an exact feed capacity" }),
+    ).toHaveValue(837);
     expect(onChange).not.toHaveBeenCalled();
   });
 

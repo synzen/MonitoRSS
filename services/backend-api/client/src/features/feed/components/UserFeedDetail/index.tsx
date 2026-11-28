@@ -297,6 +297,7 @@ export const UserFeedDetail: React.FC = () => {
       >
         <AddConnectionDialog isOpen={isOpen} onClose={onClose} />
         <EditUserFeedDialog
+          feedId={feedId as string}
           onCloseRef={menuButtonRef}
           isOpen={editIsOpen}
           onClose={() => {

@@ -75,69 +75,57 @@ export const FormSchema = object({
 
 type FormValues = InferType<typeof FormSchema>;
 
-// Rates without a disabledCode are the ones the user's plan allows; locked
-// rates are marked INSUFFICIENT_SUPPORTER_TIER.
-const getFastestAllowedRateSeconds = (feed: UserFeed) => {
-  const rates = feed.refreshRateOptions
-    .filter((option) => !option.disabledCode)
-    .map((option) => option.rateSeconds);
+const formatMinutes = (seconds: number) => (seconds / 60).toFixed(1);
 
-  return rates.length ? Math.min(...rates) : undefined;
-};
-
-const getCanUpgradeRefreshRate = (feed: UserFeed) =>
-  feed.refreshRateOptions.some((option) => option.disabledCode === "INSUFFICIENT_SUPPORTER_TIER");
-
-const getFastestPossibleRateSeconds = (feed: UserFeed) => {
-  const rates = feed.refreshRateOptions.map((option) => option.rateSeconds);
-
-  return rates.length ? Math.min(...rates) : undefined;
-};
-
-// A rate below the fastest rate of ANY plan (locked options included) cannot be
-// unlocked by upgrading, so the error must not offer the upgrade CTA.
+// The backend owns the refresh-rate policy (plan floor, platform-provider
+// floor, maximum) and returns the effective limits on the feed; the dialog
+// only turns those numbers into copy.
 const buildRateNotAllowedError = (
   feed: UserFeed,
   attemptedRateSeconds: number | undefined,
-): SubmitError => {
-  const fastestAllowedRateSeconds = getFastestAllowedRateSeconds(feed);
-  const fastestPossibleRateSeconds = getFastestPossibleRateSeconds(feed);
+): SubmitError | undefined => {
+  const limits = feed.refreshRateLimits;
 
-  if (
-    attemptedRateSeconds === undefined ||
-    fastestPossibleRateSeconds === undefined ||
-    attemptedRateSeconds >= fastestPossibleRateSeconds
-  ) {
+  if (attemptedRateSeconds === undefined) {
+    return undefined;
+  }
+
+  if (attemptedRateSeconds > limits.maximumSeconds) {
     return {
-      message:
-        fastestAllowedRateSeconds !== undefined
-          ? `Your current plan only allows checking this feed once every ${(
-              fastestAllowedRateSeconds / 60
-            ).toFixed(1)} minutes or more.`
-          : "The selected refresh rate is not allowed for your current plan.",
-      canUpgrade: getCanUpgradeRefreshRate(feed),
+      message: `Refresh rates cannot be slower than every ${(limits.maximumSeconds / 3600).toFixed(
+        1,
+      )} hours.`,
+      canUpgrade: false,
     };
   }
 
-  if (
-    fastestAllowedRateSeconds !== undefined &&
-    fastestAllowedRateSeconds > fastestPossibleRateSeconds
-  ) {
+  if (attemptedRateSeconds >= limits.minimumSeconds) {
+    return undefined;
+  }
+
+  if (limits.limitedBy === "platform") {
     return {
-      message: `Your current plan only allows checking this feed once every ${(
-        fastestAllowedRateSeconds / 60
-      ).toFixed(1)} minutes or more. The fastest rate available is every ${(
-        fastestPossibleRateSeconds / 60
-      ).toFixed(1)} minutes.`,
+      message: `This premium feed can only be checked once every ${formatMinutes(
+        limits.minimumSeconds,
+      )} minutes or more.`,
+      canUpgrade: false,
+    };
+  }
+
+  if (!limits.canUpgrade) {
+    return {
+      message: `The fastest refresh rate available is every ${formatMinutes(
+        limits.minimumSeconds,
+      )} minutes.`,
       canUpgrade: false,
     };
   }
 
   return {
-    message: `The fastest refresh rate available is every ${(
-      fastestPossibleRateSeconds / 60
-    ).toFixed(1)} minutes.`,
-    canUpgrade: false,
+    message: `Your current plan only allows checking this feed once every ${formatMinutes(
+      limits.minimumSeconds,
+    )} minutes or more.`,
+    canUpgrade: true,
   };
 };
 
@@ -255,9 +243,7 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
       : null;
 
   const timesErrors = errors.scheduleTimes as
-    | { message?: string }
-    | Array<{ message?: string } | undefined>
-    | undefined;
+    { message?: string } | Array<{ message?: string } | undefined> | undefined;
   const timesListError = !Array.isArray(timesErrors) ? timesErrors?.message : undefined;
   const timesRowErrors = Array.isArray(timesErrors)
     ? timesErrors.map((e) => e?.message)
@@ -309,7 +295,12 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
       onClose();
     } catch (err) {
       if (err instanceof ApiAdapterError && err.errorCode === "USER_REFRESH_RATE_NOT_ALLOWED") {
-        setSubmitError(buildRateNotAllowedError(feed, attemptedRateSeconds));
+        setSubmitError(
+          buildRateNotAllowedError(feed, attemptedRateSeconds) ?? {
+            message: err.message,
+            canUpgrade: false,
+          },
+        );
       } else {
         setSubmitError({
           message: err instanceof Error ? err.message : "Something went wrong. Please try again.",
@@ -364,44 +355,47 @@ export const EditDeliveryScheduleDialog: React.FC<Props> = ({
                   <Controller
                     name="userRefreshRateMinutes"
                     control={control}
-                    render={({ field }) => {
-                      const fastestAllowedRateSeconds = getFastestAllowedRateSeconds(feed);
-
-                      return (
-                        <Field
-                          invalid={!!errors.userRefreshRateMinutes}
-                          errorText={errors.userRefreshRateMinutes?.message}
-                        >
-                          <Text fontSize="sm" fontWeight="medium">
-                            Refresh rate
-                          </Text>
-                          <HStack gap={3}>
-                            <NumberInputRoot
-                              step={0.1}
-                              allowMouseWheel
-                              value={field.value}
-                              onValueChange={(details) => field.onChange(details.value)}
-
-                              onBlur={() => field.onBlur()}
-                              name={field.name}
-                              ref={field.ref}
-                            >
-                              <NumberInputField width="130px" />
-                            </NumberInputRoot>
-                            <Text>minutes</Text>
-                          </HStack>
-                          {fastestAllowedRateSeconds !== undefined &&
-                            !errors.userRefreshRateMinutes && (
-                              <Text fontSize="sm" color="fg.muted">
+                    render={({ field }) => (
+                      <Field
+                        invalid={!!errors.userRefreshRateMinutes}
+                        errorText={errors.userRefreshRateMinutes?.message}
+                      >
+                        <Text fontSize="sm" fontWeight="medium">
+                          Refresh rate
+                        </Text>
+                        <HStack gap={3}>
+                          <NumberInputRoot
+                            step={0.1}
+                            allowMouseWheel
+                            value={field.value}
+                            onValueChange={(details) => field.onChange(details.value)}
+                            onBlur={() => field.onBlur()}
+                            name={field.name}
+                            ref={field.ref}
+                          >
+                            <NumberInputField width="130px" />
+                          </NumberInputRoot>
+                          <Text>minutes</Text>
+                        </HStack>
+                        {!errors.userRefreshRateMinutes && (
+                          <Text fontSize="sm" color="fg.muted">
+                            {feed.refreshRateLimits.limitedBy === "platform" ? (
+                              <>
+                                This premium feed can be checked as often as every{" "}
+                                {formatMinutes(feed.refreshRateLimits.minimumSeconds)} minutes.
+                              </>
+                            ) : (
+                              <>
                                 Your plan allows checking as often as every{" "}
-                                {(fastestAllowedRateSeconds / 60).toFixed(1)} minutes.
-                                {getCanUpgradeRefreshRate(feed) &&
+                                {formatMinutes(feed.refreshRateLimits.minimumSeconds)} minutes.
+                                {feed.refreshRateLimits.canUpgrade &&
                                   " Lower rates are available on paid plans."}
-                              </Text>
+                              </>
                             )}
-                        </Field>
-                      );
-                    }}
+                          </Text>
+                        )}
+                      </Field>
+                    )}
                   />
                 </ModeCard>
                 <ModeCard

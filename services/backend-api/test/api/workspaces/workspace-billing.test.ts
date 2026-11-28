@@ -395,6 +395,38 @@ describe("Workspace billing API", { concurrency: true }, () => {
     );
   });
 
+  it("rejects Tier 2 plus add-on feeds", async () => {
+    const discordUserId = randomUUID();
+    await seedWorkspaceUser(ctx, discordUserId);
+    const { user, workspaceId, slug } =
+      await createWorkspaceAsUser(discordUserId);
+
+    await ctx.container.workspaceRepository.upsertPaddleCustomer(
+      workspaceId,
+      buildPaddleCustomer({
+        subscriptionId: generateTestId(),
+        productKey: SubscriptionProductKey.Tier2,
+      }),
+    );
+
+    const res = await user.fetch(`/api/v1/workspaces/${slug}/billing/update`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prices: [
+          { priceId: "price_tier2_month", quantity: 1 },
+          { priceId: "price_t3feed_month", quantity: 30 },
+        ],
+      }),
+    });
+
+    assert.strictEqual(res.status, 400);
+    assert.strictEqual(
+      (await readJson<{ code: string }>(res)).code,
+      "WORKSPACE_INVALID_TIER",
+    );
+  });
+
   it("returns a structured WORKSPACE_NOT_SUBSCRIBED error when mutating billing on a never-subscribed workspace", async () => {
     const discordUserId = randomUUID();
     await seedWorkspaceUser(ctx, discordUserId);

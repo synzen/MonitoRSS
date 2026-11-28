@@ -7,16 +7,13 @@ import {
   seedWorkspaceWithMembershipsInDb,
   setVerifiedEmailInDb,
 } from "../../helpers/workspaces-db";
-import { connectReddit, uniqueSubreddit } from "../../helpers/reddit-oauth";
-import { fillDiscoverySearchAndSubmit } from "../../helpers/discovery";
+import { connectReddit } from "../../helpers/reddit-oauth";
 
-// Workspace Reddit connections: workspace feeds resolve the WORKSPACE's Reddit
-// connection (one member's grant backing the whole workspace), never anyone's
-// personal connection. The reddit gate in workspace scope therefore prompts for a
-// workspace connection, and the workspace settings page exposes the connection
-// with attribution and any-member connect/disconnect. The OAuth round trip runs
-// same-tab flow against the mock reddit server (authorize -> callback -> token
-// exchange), and feed adds prove the stored grant authenticates fetches.
+// Workspace Reddit connections: the workspace settings page exposes the
+// connection with attribution and any-member connect/disconnect. The OAuth
+// round trip runs same-tab flow against the mock reddit server (authorize ->
+// callback -> token exchange). This spec covers the connection lifecycle
+// itself: connect, disconnect, and revocation through membership changes.
 
 async function waitForAuthenticatedApp(page: Page): Promise<void> {
   await expect(page.getByRole("button", { name: "Account settings" })).toBeVisible({
@@ -46,13 +43,6 @@ async function waitForCommittedScope(page: Page, scopeName: string | RegExp): Pr
           : scopeName,
     }),
   ).toBeVisible({ timeout: 15000 });
-}
-
-async function switchToPersonalScope(page: Page): Promise<void> {
-  await page.getByRole("button", { name: /Switch workspace/ }).click();
-  await page.getByRole("menuitemradio", { name: /personal/i }).click();
-  await expect(page).toHaveURL(/\/feeds$/, { timeout: 15000 });
-  await waitForCommittedScope(page, "Personal");
 }
 
 async function createWorkspace(page: Page, workspaceName: string): Promise<string> {
@@ -90,90 +80,16 @@ async function gotoWorkspaceSettingsViaSwitcher(page: Page, workspaceName: strin
   await expect(page).toHaveURL(/\/workspaces\/[^/]+\/settings$/, { timeout: 15000 });
 }
 
-// Re-selecting the already-active workspace in the switcher's radio group may not fire a
-// navigation, so hop through Personal and back to land on the workspace feeds page.
-async function gotoWorkspaceFeedsViaSwitcher(page: Page, workspaceName: string): Promise<void> {
-  await switchToPersonalScope(page);
-  await page.getByRole("button", { name: /Switch workspace/ }).click();
-  await page.getByRole("menuitemradio", { name: workspaceName }).click();
-  await expect(page).toHaveURL(/\/workspaces\/[^/]+\/feeds$/, { timeout: 15000 });
-  await waitForCommittedScope(page, workspaceName);
-}
-
-async function pasteUrlIntoInlineDiscovery(page: Page, url: string): Promise<void> {
-  // Same remount race as addFeedViaDiscovery (see helpers/discovery): the fill
-  // can be wiped by the post-navigation layout swap. Either validation outcome
-  // proves the submit landed — an "Add feed" button when the URL validates, or
-  // the Reddit gate ("a Reddit account" in workspace scope, "your Reddit
-  // account" in personal scope) when it does not.
-  await fillDiscoverySearchAndSubmit(page, url, () =>
-    expect(
-      page
-        .getByRole("button", { name: /^Add .+ feed$/i })
-        .first()
-        .or(page.getByText(/Connect (a|your) Reddit account to continue/)),
-    ).toBeVisible({ timeout: 20000 }),
-  );
-}
-
 test.describe("Workspace Reddit connection", () => {
-  test("connecting through the workspace gate adds the feed; personal scope stays gated", async ({
+  test("connect via settings shows member attribution; disconnect removes the record", async ({
     page,
   }) => {
     test.slow();
-    const workspaceFeed = uniqueSubreddit();
-    const personalFeed = uniqueSubreddit();
-
-    await page.goto("/feeds");
-    await waitForAuthenticatedApp(page);
-    await enableWorkspacesForCurrentUser(page);
-    await createWorkspace(page, `E2E Reddit Workspace ${Date.now()}`);
-
-    await pasteUrlIntoInlineDiscovery(page, workspaceFeed.url);
-
-    // The gate prompts for a WORKSPACE connection ("a Reddit account", not "your"),
-    // proving the workspace scope reached the validation endpoint and the CTA.
-    await expect(page.getByText("Connect a Reddit account to continue")).toBeVisible({
-      timeout: 30000,
-    });
-    // Gate short-circuits before any fetch: no Add button appears.
-    await expect(page.getByRole("button", { name: /^Add .+ feed$/i })).toHaveCount(0);
-
-    await connectReddit(
-      page,
-      page.getByRole("button", { name: "Connect Reddit" }),
-    );
-
-    // Back from the OAuth round trip, the `?addFeed=` deep link restores the gated search and
-    // re-validates it with the new grant: the feed card appears and the add goes through.
-    // blocked validation: the feed card appears and the add goes through.
-    const addButton = page.getByRole("button", { name: /^Add .+ feed$/i }).first();
-    await expect(addButton).toBeVisible({ timeout: 30000 });
-    await addButton.click();
-    await expect(page.getByRole("heading", { name: /1 feed added!/ })).toBeVisible({
-      timeout: 10000,
-    });
-
-    // No fallback in reverse: the workspace's connection never unlocks PERSONAL feeds.
-    await switchToPersonalScope(page);
-    await pasteUrlIntoInlineDiscovery(page, personalFeed.url);
-    await expect(page.getByText("Connect your Reddit account to continue")).toBeVisible({
-      timeout: 30000,
-    });
-    await expect(page.getByRole("button", { name: /^Add .+ feed$/i })).toHaveCount(0);
-  });
-
-  test("connect via settings unlocks feed adds; disconnect restores the gate", async ({
-    page,
-  }) => {
-    test.slow();
-    const firstFeed = uniqueSubreddit();
-    const secondFeed = uniqueSubreddit();
-
-    await page.goto("/feeds");
-    await waitForAuthenticatedApp(page);
-    await enableWorkspacesForCurrentUser(page);
     const workspaceName = `E2E Reddit Settings ${Date.now()}`;
+
+    await page.goto("/feeds");
+    await waitForAuthenticatedApp(page);
+    await enableWorkspacesForCurrentUser(page);
     await createWorkspace(page, workspaceName);
 
     await gotoWorkspaceSettingsViaSwitcher(page, workspaceName);
@@ -196,79 +112,9 @@ test.describe("Workspace Reddit connection", () => {
     await expect(page.getByText("Connected", { exact: true })).toBeVisible({ timeout: 20000 });
     await expect(page.getByText(/Connected by .*\(you\)/)).toBeVisible();
 
-    // With the workspace connected, a reddit feed adds with no gate at all.
-    await gotoWorkspaceFeedsViaSwitcher(page, workspaceName);
-    await pasteUrlIntoInlineDiscovery(page, firstFeed.url);
-    const addButton = page.getByRole("button", { name: /^Add .+ feed$/i }).first();
-    await expect(addButton).toBeVisible({ timeout: 30000 });
-    await expect(page.getByText("Connect a Reddit account to continue")).toHaveCount(0);
-    await addButton.click();
-    // Target the confirmation heading specifically: the discovery search also emits
-    // an aria-live status that reads "<feed> feed added", so a bare text match for
-    // "feed added" would resolve to two elements.
-    await expect(
-      page.getByRole("heading", { name: /1 feed added!/ }),
-    ).toBeVisible({ timeout: 10000 });
-    await page.getByRole("button", { name: /View your feeds/ }).click();
-    await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
-    // exact-named link: the row also renders the URL link, which contains the title.
-    await expect(
-      page.getByRole("table").getByRole("link", { name: firstFeed.title, exact: true }),
-    ).toBeVisible();
-
     // Any member can disconnect; the record is removed outright.
-    await gotoWorkspaceSettingsViaSwitcher(page, workspaceName);
     await page.getByRole("button", { name: "Disconnect" }).click();
     await expect(page.getByText("Not Connected")).toBeVisible({ timeout: 15000 });
-
-    // New reddit adds are gated again (via the Add a Feed dialog, since the
-    // workspace now has a feed and the inline discovery no longer renders).
-    await gotoWorkspaceFeedsViaSwitcher(page, workspaceName);
-    await expect(page.getByRole("table")).toBeVisible({ timeout: 15000 });
-    await page.getByRole("button", { name: "Add Feed", exact: true }).click();
-    const dialog = page.getByRole("dialog");
-    await expect(dialog.getByRole("heading", { name: "Add a Feed" })).toBeVisible();
-    await dialog
-      .getByRole("textbox", { name: "Search popular feeds or paste a URL" })
-      .fill(secondFeed.url);
-    await dialog.getByRole("button", { name: "Go", exact: true }).click();
-    await expect(dialog.getByText("Connect a Reddit account to continue")).toBeVisible({
-      timeout: 30000,
-    });
-    await expect(dialog.getByRole("button", { name: /^Add .+ feed$/i })).toHaveCount(0);
-  });
-
-  test("a personal Reddit connection never unlocks workspace feeds (no fallback)", async ({
-    page,
-  }) => {
-    test.slow();
-    const personalFeed = uniqueSubreddit();
-    const workspaceFeed = uniqueSubreddit();
-
-    await page.goto("/feeds");
-    await waitForAuthenticatedApp(page);
-    await enableWorkspacesForCurrentUser(page);
-
-    // Establish a REAL personal connection first (popup completes, validation retries).
-    await pasteUrlIntoInlineDiscovery(page, personalFeed.url);
-    await expect(page.getByText("Connect your Reddit account to continue")).toBeVisible({
-      timeout: 30000,
-    });
-    await connectReddit(
-      page,
-      page.getByRole("button", { name: "Connect Reddit" }),
-    );
-    await expect(page.getByRole("button", { name: /^Add .+ feed$/i }).first()).toBeVisible({
-      timeout: 30000,
-    });
-
-    // The workspace still demands its own connection.
-    await createWorkspace(page, `E2E Reddit NoFallback ${Date.now()}`);
-    await pasteUrlIntoInlineDiscovery(page, workspaceFeed.url);
-    await expect(page.getByText("Connect a Reddit account to continue")).toBeVisible({
-      timeout: 30000,
-    });
-    await expect(page.getByRole("button", { name: /^Add .+ feed$/i })).toHaveCount(0);
   });
 
   test("removing the connecting member revokes the connection and another member reconnects", async ({

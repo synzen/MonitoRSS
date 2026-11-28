@@ -6,6 +6,7 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
+import { registerDefaultClassifyRoute } from "../../helpers/mock-apis";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -36,6 +37,7 @@ after(async () => {
 
 beforeEach(() => {
   feedApiMockServer.clear();
+  registerDefaultClassifyRoute(feedApiMockServer);
 });
 
 function mockFeedFetch(feedUrl: string) {
@@ -147,6 +149,7 @@ describe("Workspace-associated user feeds", { concurrency: false }, () => {
     const adminDiscordId = randomUUID();
 
     const adminFeedApiMock = createTestHttpServer();
+    registerDefaultClassifyRoute(adminFeedApiMock);
     const adminCtx = await createAppTestContext({
       configOverrides: {
         BACKEND_API_USER_FEEDS_API_HOST: adminFeedApiMock.host,
@@ -235,6 +238,7 @@ describe("Workspace-associated user feeds", { concurrency: false }, () => {
     const adminDiscordId = randomUUID();
 
     const adminFeedApiMock = createTestHttpServer();
+    registerDefaultClassifyRoute(adminFeedApiMock);
     const adminCtx = await createAppTestContext({
       configOverrides: {
         BACKEND_API_USER_FEEDS_API_HOST: adminFeedApiMock.host,
@@ -458,6 +462,7 @@ describe(
 
     beforeEach(() => {
       quotaMockServer.clear();
+      registerDefaultClassifyRoute(quotaMockServer);
     });
 
     function mockQuotaFeedFetch(feedUrl: string) {

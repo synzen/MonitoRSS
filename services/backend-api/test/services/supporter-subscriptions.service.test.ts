@@ -2,7 +2,10 @@ import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import { createSupporterSubscriptionsHarness } from "../helpers/supporter-subscriptions.harness";
 import { SubscriptionProductKey } from "../../src/services/paddle/types";
-import { SubscriptionAlreadyCancelledException } from "../../src/shared/exceptions/paddle.exceptions";
+import {
+  AdditionalFeedsRequireTier3Exception,
+  SubscriptionAlreadyCancelledException,
+} from "../../src/shared/exceptions/paddle.exceptions";
 import type {
   PaddlePricingPreviewResponse,
   PaddleSubscriptionPreviewResponse,
@@ -313,6 +316,63 @@ describe("SupporterSubscriptionsService", { concurrency: true }, () => {
           message: "No existing subscription for user found",
         },
       );
+    });
+
+    it("rejects Tier 2 plus add-on feeds before previewing", async () => {
+      const ctx = harness.createContext({
+        supportersService: {
+          getSupporterSubscription: async () => ({
+            discordUserId: "user-1",
+            customer: { id: "cust-1", currencyCode: "USD" },
+            subscription: {
+              id: "sub-123",
+              currencyCode: "USD",
+              updatedAt: new Date(),
+            },
+          }),
+        },
+        paddleService: {
+          getProducts: async () => ({
+            products: [
+              {
+                id: SubscriptionProductKey.Tier2,
+                name: "Tier 2",
+                prices: [
+                  {
+                    id: "price-tier2",
+                    billingCycle: { interval: "month", frequency: 1 },
+                  },
+                ],
+                customData: { key: SubscriptionProductKey.Tier2 },
+              },
+              {
+                id: SubscriptionProductKey.Tier3AdditionalFeed,
+                name: "Additional Feed",
+                prices: [
+                  {
+                    id: "price-addon",
+                    billingCycle: { interval: "month", frequency: 1 },
+                  },
+                ],
+                customData: { key: SubscriptionProductKey.Tier3AdditionalFeed },
+              },
+            ],
+          }),
+        },
+      });
+
+      await assert.rejects(
+        () =>
+          ctx.service.previewSubscriptionChange({
+            discordUserId: "user-1",
+            items: [
+              { priceId: "price-tier2", quantity: 1 },
+              { priceId: "price-addon", quantity: 30 },
+            ],
+          }),
+        AdditionalFeedsRequireTier3Exception,
+      );
+      assert.strictEqual(ctx.paddleService.updateSubscriptionItems.mock.callCount(), 0);
     });
 
     it("throws when immediate_transaction is null", async () => {

@@ -50,7 +50,12 @@ const mockUserFeeds: UserFeed[] = [
     inputUrl: "https://www.empty-feed-test.com/rss",
     updatedAt: new Date().toISOString(),
     externalProperties: [],
-    refreshRateOptions: [{ rateSeconds: 600 }],
+    refreshRateLimits: {
+      minimumSeconds: 600,
+      maximumSeconds: 86400,
+      canUpgrade: false,
+      limitedBy: "plan",
+    },
     blockingComparisons: [],
     passingComparisons: [],
     isLegacyFeed: false,
@@ -120,15 +125,12 @@ const mockUserFeeds: UserFeed[] = [
         cssSelector: "#description",
       },
     ],
-    refreshRateOptions: [
-      {
-        rateSeconds: 600,
-      },
-      {
-        rateSeconds: 120,
-        disabledCode: "NON_SUPPORTER",
-      },
-    ],
+    refreshRateLimits: {
+      minimumSeconds: 600,
+      maximumSeconds: 86400,
+      canUpgrade: true,
+      limitedBy: "plan",
+    },
     blockingComparisons: ["title", "description"],
     passingComparisons: ["author"],
     formatOptions: {
@@ -595,7 +597,12 @@ const mockUserFeeds: UserFeed[] = [
     url: "https://www.feed2.com",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    refreshRateOptions: [],
+    refreshRateLimits: {
+      minimumSeconds: 60,
+      maximumSeconds: 86400,
+      canUpgrade: false,
+      limitedBy: "plan",
+    },
     healthStatus: UserFeedHealthStatus.Failed,
     passingComparisons: ["title", "description"],
     connections: [],
@@ -612,7 +619,12 @@ const mockUserFeeds: UserFeed[] = [
     sharedAccessDetails: undefined,
     title: "CNN",
     url: "https://www.feed3.com",
-    refreshRateOptions: [],
+    refreshRateLimits: {
+      minimumSeconds: 60,
+      maximumSeconds: 86400,
+      canUpgrade: false,
+      limitedBy: "plan",
+    },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     healthStatus: UserFeedHealthStatus.Failing,
@@ -641,7 +653,12 @@ const mockUserFeeds: UserFeed[] = [
 //       dateFormat: undefined,
 //       dateTimezone: "UTC",
 //     },
-//     refreshRateOptions: [],
+//     refreshRateLimits: {
+//       minimumSeconds: 60,
+//       maximumSeconds: 86400,
+//       canUpgrade: false,
+//       limitedBy: "plan",
+//     },
 //   });
 // }
 

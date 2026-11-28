@@ -4,6 +4,7 @@ import {
   createAppTestContext,
   type AppTestContext,
 } from "../../helpers/test-context";
+import { registerDefaultClassifyRoute } from "../../helpers/mock-apis";
 import { generateSnowflake, generateTestId } from "../../helpers/test-id";
 import {
   createTestHttpServer,
@@ -31,6 +32,7 @@ after(async () => {
 
 beforeEach(() => {
   feedApiMockServer.clear();
+  registerDefaultClassifyRoute(feedApiMockServer);
 });
 
 describe("POST /api/v1/user-feeds", () => {
@@ -766,8 +768,9 @@ describe("POST /api/v1/user-feeds", () => {
       "Response should have refreshRateSeconds",
     );
     assert.ok(
-      Array.isArray(body.result.refreshRateOptions),
-      "Response should have refreshRateOptions array",
+      typeof body.result.refreshRateLimits === "object" &&
+        body.result.refreshRateLimits !== null,
+      "Response should have refreshRateLimits",
     );
   });
 

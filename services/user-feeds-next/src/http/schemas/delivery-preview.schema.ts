@@ -56,6 +56,7 @@ const feedSchema = z.object({
   externalProperties: z.array(externalFeedPropertySchema).optional().default([]),
   requestLookupDetails: feedV2EventRequestLookupDetails.optional().nullable(),
   refreshRateSeconds: z.number().positive().optional(),
+  usePlatformProvider: z.boolean().optional(),
 });
 
 /**

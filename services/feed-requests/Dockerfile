@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM node:24 AS build
 
 # Node.js uses its own CA bundle; add system certs for sites like apps.usfa.fema.gov
@@ -5,7 +6,9 @@ ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
+ARG NPM_TOKEN
+
+COPY package*.json .npmrc ./
 
 RUN npm install
 

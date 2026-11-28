@@ -98,6 +98,7 @@ const UserFeatureFlagsSchema = new Schema(
   {
     externalProperties: { type: Boolean },
     workspaces: { type: Boolean },
+    premiumFeeds: { type: Boolean },
   },
   { _id: false, timestamps: false },
 );
@@ -177,6 +178,7 @@ export class UserMongooseRepository
             externalProperties:
               doc.featureFlags.externalProperties ?? undefined,
             workspaces: doc.featureFlags.workspaces ?? undefined,
+            premiumFeeds: doc.featureFlags.premiumFeeds ?? undefined,
           }
         : undefined,
       enableBilling: doc.enableBilling ?? undefined,

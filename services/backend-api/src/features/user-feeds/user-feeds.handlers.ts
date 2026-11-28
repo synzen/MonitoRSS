@@ -9,7 +9,10 @@ import {
 } from "../../infra/error-handler";
 import { Types } from "mongoose";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
-import { UserFeedManagerStatus, UserFeedScheduleMode } from "../../repositories/shared/enums";
+import {
+  UserFeedManagerStatus,
+  UserFeedScheduleMode,
+} from "../../repositories/shared/enums";
 import { UserFeedComputedStatus } from "../../repositories/interfaces/user-feed.types";
 import {
   ManualRequestTooSoonException,
@@ -44,6 +47,13 @@ import {
   resolveFeedForRequester,
 } from "../../shared/utils/feed-access";
 import { isAdminUser } from "../../shared/utils/admin";
+import { resolveRefreshRateLimits } from "../../services/user-feeds/refresh-rate-limits";
+import {
+  PREMIUM_FEED_ALLOWANCES,
+  resolveWorkspacePremiumAllowance,
+} from "../../shared/utils/billing";
+import type { Config } from "../../config";
+import logger from "../../infra/logger";
 import type {
   GetUserFeedsInputFilters,
   GetUserFeedsInputSortKey,
@@ -68,7 +78,7 @@ export async function createUserFeedHandler(
   request: FastifyRequest<{ Body: CreateUserFeedBody }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, supportersService, curatedFeedRepository } =
+  const { userFeedsService, supportersService, curatedFeedRepository, config } =
     request.container;
   const { discordUserId, accessToken } = request;
   const { url, curatedFeedId, title, sourceFeedId, workspaceId } = request.body;
@@ -111,6 +121,7 @@ export async function createUserFeedHandler(
     feed,
     discordUserId,
     supportersService,
+    config,
   );
 
   return reply.status(201).send({ result: formatted });
@@ -129,6 +140,7 @@ export async function formatUserFeedResponse(
   feed: IUserFeed,
   discordUserId: string,
   supportersService: SupportersServiceForFormat,
+  config: Pick<Config, "BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS">,
 ) {
   const discordChannelConnections = feed.connections.discordChannels.map(
     (con) => formatDiscordChannelConnectionResponse(con),
@@ -136,31 +148,28 @@ export async function formatUserFeedResponse(
 
   const isOwner = feed.user.discordUserId === discordUserId;
   const feedBenefits = await supportersService.resolveFeedBenefits(feed);
+  const supportersEnabled =
+    (await supportersService.areSupportersEnabled()) === true;
+  const premiumFloorSeconds = feed.isMeteredPlatformFeed
+    ? config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS
+    : 0;
+  const refreshRateLimits = resolveRefreshRateLimits({
+    planMinimumSeconds: feedBenefits.refreshRateSeconds,
+    premiumFloorSeconds,
+    upgrade: supportersEnabled
+      ? {
+          defaultRateSeconds: supportersService.defaultRefreshRateSeconds,
+          supporterRateSeconds:
+            supportersService.defaultSupporterRefreshRateSeconds,
+        }
+      : undefined,
+  });
 
   const userInviteId = feed.shareManageOptions?.invites?.find(
     (u) =>
       u.discordUserId === discordUserId &&
       u.status === UserFeedManagerStatus.Accepted,
   )?.id;
-
-  const refreshRateOptions: Array<{
-    rateSeconds: number;
-    disabledCode?: string;
-  }> = [
-    { rateSeconds: supportersService.defaultRefreshRateSeconds },
-    { rateSeconds: supportersService.defaultRefreshRateSeconds * 6 },
-  ];
-
-  if (await supportersService.areSupportersEnabled()) {
-    refreshRateOptions.unshift({
-      rateSeconds: supportersService.defaultSupporterRefreshRateSeconds,
-      disabledCode:
-        feedBenefits.refreshRateSeconds >=
-        supportersService.defaultRefreshRateSeconds
-          ? "INSUFFICIENT_SUPPORTER_TIER"
-          : undefined,
-    });
-  }
 
   return {
     id: feed.id,
@@ -190,7 +199,7 @@ export async function formatUserFeedResponse(
     // so the sharing UI is never surfaced for them.
     shareManageOptions:
       isOwner && !feed.workspaceId ? feed.shareManageOptions : undefined,
-    refreshRateOptions,
+    refreshRateLimits,
   };
 }
 
@@ -201,9 +210,17 @@ export async function validateFeedUrlHandler(
   const { userFeedsService } = request.container;
   const { discordUserId } = request;
 
+  const existingFeed = request.body.feedId
+    ? (await resolveFeedForRequester(request, request.body.feedId)).feed
+    : undefined;
+
   const result = await userFeedsService.validateFeedUrl(
     { discordUserId },
-    { url: request.body.url, workspaceId: request.body.workspaceId },
+    {
+      url: request.body.url,
+      workspaceId: request.body.workspaceId,
+      replacesFeed: existingFeed,
+    },
   );
 
   return reply.status(200).send({ result });
@@ -357,7 +374,7 @@ export async function getUserFeedHandler(
   request: FastifyRequest<{ Params: GetUserFeedParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { supportersService } = request.container;
+  const { supportersService, config } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
@@ -383,6 +400,7 @@ export async function getUserFeedHandler(
     feed,
     discordUserId,
     supportersService,
+    config,
   );
 
   return reply.status(200).send({ result: formatted });
@@ -395,7 +413,13 @@ export async function updateUserFeedHandler(
   }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedsService, supportersService } = request.container;
+  const {
+    userFeedsService,
+    supportersService,
+    config,
+    messageBrokerEventsService,
+    workspacesService,
+  } = request.container;
   const { discordUserId } = request;
   const { feedId } = request.params;
 
@@ -445,6 +469,29 @@ export async function updateUserFeedHandler(
     request.body as Parameters<typeof userFeedsService.updateFeedById>[1],
   );
 
+  if (updated && request.body.url) {
+    try {
+      const workspace = updated.workspaceId
+        ? await workspacesService
+            .getRedditCredentials(updated.workspaceId)
+            .then((credential) => ({
+              externalCredentials: credential ? [credential] : [],
+            }))
+        : undefined;
+
+      await messageBrokerEventsService.resetAndRefreshFeed(
+        updated,
+        user,
+        workspace,
+      );
+    } catch (err) {
+      logger.warn(
+        `Feed ${updated.id} URL changed but immediate baseline refresh could not be queued`,
+        { error: (err as Error).stack },
+      );
+    }
+  }
+
   const acceptedInvite = updated!.shareManageOptions?.invites?.find(
     (inv) =>
       inv.discordUserId === discordUserId &&
@@ -466,6 +513,7 @@ export async function updateUserFeedHandler(
     updated!,
     discordUserId,
     supportersService,
+    config,
   );
 
   return reply.status(200).send({ result: formatted });
@@ -865,8 +913,13 @@ export async function getUserFeedsHandler(
   request: FastifyRequest<{ Querystring: GetUserFeedsQuery }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const { userFeedRepository, usersService, workspacesService, config } =
-    request.container;
+  const {
+    userFeedRepository,
+    usersService,
+    workspacesService,
+    supportersService,
+    config,
+  } = request.container;
   const { discordUserId } = request;
   const { workspaceId } = request.query;
 
@@ -893,13 +946,18 @@ export async function getUserFeedsHandler(
     offset: request.query.offset,
     search: request.query.search,
     sort: (request.query.sort || undefined) as
-      | GetUserFeedsInputSortKey
-      | undefined,
+      GetUserFeedsInputSortKey | undefined,
     filters,
     workspaceId,
   };
 
-  const [feeds, count, feedsWithoutConnectionsCount] = await Promise.all([
+  const [
+    feeds,
+    count,
+    feedsWithoutConnectionsCount,
+    premiumFeedCount,
+    feedBenefits,
+  ] = await Promise.all([
     userFeedRepository.getUserFeedsListing({ discordUserId, ...input }),
     userFeedRepository.getUserFeedsCount({
       discordUserId,
@@ -912,7 +970,19 @@ export async function getUserFeedsHandler(
       workspaceId,
       filters: { hasConnections: false },
     }),
+    userFeedRepository.getPremiumFeedCount({ discordUserId, workspaceId }),
+    supportersService.resolveFeedBenefits({
+      workspaceId,
+      user: { discordUserId },
+    }),
   ]);
+
+  const premiumFeedLimit = workspaceId
+    ? resolveWorkspacePremiumAllowance({
+        totalFeeds: feedBenefits.maxFeeds,
+        baseTier: feedBenefits.premiumFeedBaseTier,
+      })
+    : PREMIUM_FEED_ALLOWANCES.personal;
 
   return reply.status(200).send({
     results: feeds.map((feed) => ({
@@ -932,6 +1002,8 @@ export async function getUserFeedsHandler(
     })),
     total: count,
     feedsWithoutConnections: feedsWithoutConnectionsCount,
+    premiumFeedCount,
+    premiumFeedLimit,
   });
 }
 

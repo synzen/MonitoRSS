@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import {
   PatronStatus,
   SubscriptionProductKey,
+  SubscriptionStatus,
 } from "../../src/repositories/shared/enums";
 import {
   createSupportersHarness,
@@ -67,9 +68,7 @@ describe("SupportersService", { concurrency: true }, () => {
     it("grants unlimited feeds, webhooks, and no dormancy when no cap is set", async () => {
       const ctx = harness.createContext();
 
-      const benefits = await ctx.service.getWorkspaceBenefits(
-        ctx.generateId(),
-      );
+      const benefits = await ctx.service.getWorkspaceBenefits(ctx.generateId());
 
       assert.strictEqual(benefits.maxFeeds, Number.MAX_SAFE_INTEGER);
       assert.strictEqual(benefits.allowWebhooks, true);
@@ -81,11 +80,67 @@ describe("SupportersService", { concurrency: true }, () => {
         config: { BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS: 5 },
       });
 
-      const benefits = await ctx.service.getWorkspaceBenefits(
-        ctx.generateId(),
-      );
+      const benefits = await ctx.service.getWorkspaceBenefits(ctx.generateId());
 
       assert.strictEqual(benefits.maxFeeds, 5);
+      assert.strictEqual(benefits.dormant, false);
+    });
+  });
+
+  describe("getWorkspaceBenefits (billing enabled)", () => {
+    it("clamps a stored legacy Tier 2 feed allowance to the Tier 2 base", async () => {
+      const ctx = harness.createContext({
+        config: {
+          BACKEND_API_PADDLE_KEY: "test-paddle-key",
+          BACKEND_API_PADDLE_URL: "https://sandbox-api.paddle.com",
+        },
+      });
+      const now = new Date();
+      const workspace = await ctx.workspaceRepository.createWorkspaceWithOwner({
+        name: "Legacy Tier 2 Workspace",
+        slug: ctx.generateId(),
+        ownerUserId: ctx.generateId(),
+      });
+
+      await ctx.workspaceRepository.upsertPaddleCustomer(workspace.id, {
+        customerId: ctx.generateId(),
+        email: "legacy-tier2@example.com",
+        lastCurrencyCodeUsed: "USD",
+        createdAt: now,
+        updatedAt: now,
+        subscription: {
+          id: ctx.generateId(),
+          productKey: SubscriptionProductKey.Tier2,
+          status: SubscriptionStatus.Active,
+          currencyCode: "USD",
+          billingPeriodStart: now,
+          billingPeriodEnd: dayjs().add(1, "month").toDate(),
+          billingInterval: "month",
+          benefits: {
+            maxUserFeeds: 100,
+            allowWebhooks: true,
+            dailyArticleLimit: 1000,
+            refreshRateSeconds: 120,
+          },
+          addons: [
+            {
+              key: SubscriptionProductKey.Tier3AdditionalFeed,
+              quantity: 30,
+            },
+          ],
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+
+      const benefits = await ctx.service.getWorkspaceBenefits(workspace.id);
+
+      assert.strictEqual(benefits.maxFeeds, 70);
+      assert.strictEqual(
+        benefits.premiumFeedBaseTier,
+        SubscriptionProductKey.Tier2,
+      );
+      assert.strictEqual(benefits.isSupporter, true);
       assert.strictEqual(benefits.dormant, false);
     });
   });
@@ -144,6 +199,8 @@ describe("SupportersService", { concurrency: true }, () => {
         maxFeeds: 0,
         maxDailyArticles: 50,
         refreshRateSeconds: 600,
+        premiumFeedBaseTier: null,
+        isSupporter: false,
         allowWebhooks: false,
         dormant: true,
       });

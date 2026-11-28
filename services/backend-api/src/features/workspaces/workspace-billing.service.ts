@@ -1,5 +1,5 @@
 import type { Config } from "../../config";
-import { SubscriptionStatus } from "../../repositories/shared/enums";
+import { SubscriptionProductKey, SubscriptionStatus } from "../../repositories/shared/enums";
 import { ApiErrorCode, NotFoundError } from "../../infra/error-handler";
 import type {
   IWorkspace,
@@ -38,6 +38,7 @@ import {
   resolveWorkspaceFeedLimit,
   WORKSPACE_BASE_TIER_KEYS,
   WORKSPACE_PRODUCT_KEYS,
+  workspaceTierSupportsAdditionalFeeds,
 } from "../../shared/utils/billing";
 import { pollUntil, PollTimeoutException } from "../../shared/utils/poll-until";
 import { formatCurrency } from "../../shared/utils/format-currency";
@@ -595,13 +596,26 @@ export class WorkspaceBillingService {
 
     // Paddle replaces the subscription's item set with whatever is sent, so
     // an add-on-only array would silently drop the base plan.
-    const hasBaseTier = items.some((item) =>
+    const baseTierItem = items.find((item) =>
       WORKSPACE_BASE_TIER_KEYS.has(productKeyByPriceId.get(item.priceId) ?? ""),
     );
 
-    if (!hasBaseTier) {
+    if (!baseTierItem) {
       throw new InvalidWorkspaceTierException(
         "Workspace subscription changes must include a base workspace tier",
+      );
+    }
+
+    const baseTierProductKey = productKeyByPriceId.get(baseTierItem.priceId)!;
+    const hasAddon = items.some(
+      (item) =>
+        productKeyByPriceId.get(item.priceId) ===
+        SubscriptionProductKey.Tier3AdditionalFeed,
+    );
+
+    if (hasAddon && !workspaceTierSupportsAdditionalFeeds(baseTierProductKey)) {
+      throw new InvalidWorkspaceTierException(
+        "Additional feed capacity requires a Tier 3 workspace subscription",
       );
     }
 

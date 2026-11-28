@@ -21,7 +21,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1149.0",
     "@fastify/compress": "^9.2.1",
-    "@monitorss/contracts": "^0.4.0",
+    "@monitorss/contracts": "^0.4.1",
     "@monitorss/logger": "^1.2.0",
     "dayjs": "^1.11.23",
     "dotenv": "^18.0.7",
@@ -33,6 +33,9 @@
     "redis": "^6.3.0",
     "undici": "^8.11.2",
     "zod": "^4.6.5"
+  },
+  "optionalDependencies": {
+    "@synzen/platform-adapters": "0.20.2"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

@@ -2,11 +2,17 @@ import { randomUUID } from "crypto";
 import type { IUserFeed } from "../../repositories/interfaces/user-feed.types";
 import type { IUser } from "../../repositories/interfaces/user.types";
 import {
+  UserExternalCredentialStatus,
+  UserExternalCredentialType,
   UserFeedDisabledCode,
   UserFeedHealthStatus,
   UserFeedScheduleMode,
 } from "../../repositories/shared/enums";
 import { calculateSlotOffsetMs } from "../../shared/utils/fnv1a-hash";
+import { isRedditFeedUrl } from "../../shared/utils/is-reddit-feed-url";
+import { appliesPremiumRefreshRateFloor } from "../../shared/utils/premium-refresh-rate-floor";
+import { resolveRefreshRateLimits } from "./refresh-rate-limits";
+import type { FeedCredentialSource } from "../../shared/utils/get-feed-request-lookup-details";
 import type { FeedRequestLookupDetails } from "../../shared/types/feed-request-lookup-details.type";
 import {
   GetArticlesResponseRequestStatus,
@@ -14,7 +20,12 @@ import {
   GetArticlesInput,
 } from "../feed-handler/types";
 import { getEffectiveRefreshRateSeconds } from "../../shared/utils/get-effective-refresh-rate";
-import { DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS } from "../../shared/utils/billing";
+import {
+  DISABLED_CODES_FOR_EXCEEDED_FEED_LIMITS,
+  isBillingEnabled,
+  PREMIUM_FEED_ALLOWANCES,
+  resolveWorkspacePremiumAllowance,
+} from "../../shared/utils/billing";
 import {
   BannedFeedException,
   FeedFetchTimeoutException,
@@ -27,6 +38,10 @@ import {
   RefreshRateNotAllowedException,
   SourceFeedNotFoundException,
   ManualRequestTooSoonException,
+  PremiumFeedsNotSupportedException,
+  PremiumFeedsPlanRequiredException,
+  PremiumFeedsLimitReachedException,
+  RedditConnectionRequiredException,
 } from "../../shared/exceptions/user-feeds.exceptions";
 import logger from "../../infra/logger";
 import type {
@@ -59,13 +74,18 @@ import timezone from "dayjs/plugin/timezone";
 import { Types } from "mongoose";
 import { FeedFetcherFetchStatus } from "../feed-fetcher-api/types";
 import { UserFeedTargetFeedSelectionType } from "../feed-connections-discord-channels/types";
+import { MessageBrokerQueue } from "@monitorss/contracts";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 type NextRetryReason = "REFRESH_RATE" | "HOST_CACHE" | "FAILED_RETRY_BACKOFF";
 
-const MESSAGE_BROKER_QUEUE_FEED_DELETED = "feed-deleted";
+// Keep this aligned with feed-requests' scheduled-fetch policy. A host cache
+// only overrides the feed cadence when it is materially longer; equal or nearly
+// equal lifetimes must not turn an hourly cadence into a two-hour interval.
+const HOST_CACHE_CADENCE_MARGIN_MS = 60_000;
+
 const BULK_DELETE_PUBLISH_CONCURRENCY = 10;
 
 // The only disable states a successful manual request proves recovery from.
@@ -121,6 +141,186 @@ export class UserFeedsService {
     return workspaceId
       ? { scope: "workspace", workspaceId, maxFeeds }
       : { scope: "personal", discordUserId: ownerDiscordUserId, maxFeeds };
+  }
+
+  // Platform-ness is feed-requests' classification — access gates and fetch
+  // routing share the matcher. Fail-closed: an unreachable feed-requests
+  // rejects the operation rather than skipping the gates.
+  private async classifyPlatformUrls(urls: string[]): Promise<Set<string>> {
+    if (urls.length === 0) {
+      return new Set();
+    }
+
+    const results = await this.deps.feedFetcherApiService.classifyUrls(urls);
+    const platformUrls = new Set<string>();
+
+    urls.forEach((url, i) => {
+      if (results[i]) {
+        platformUrls.add(url);
+      }
+    });
+
+    return platformUrls;
+  }
+
+  private isMeteredPlatformUrl(
+    url: string,
+    platformUrls: Set<string>,
+    featureFlags?: IUser["featureFlags"],
+  ): boolean {
+    return (
+      !!featureFlags?.premiumFeeds &&
+      platformUrls.has(url) &&
+      appliesPremiumRefreshRateFloor(url)
+    );
+  }
+
+  private shouldUsePlatformProvider(
+    url: string,
+    platformUrls: Set<string>,
+    featureFlags?: IUser["featureFlags"],
+    isSupporter?: boolean,
+  ): boolean {
+    return (
+      platformUrls.has(url) &&
+      (isRedditFeedUrl(url) ||
+        (!!isSupporter &&
+          this.isMeteredPlatformUrl(url, platformUrls, featureFlags)))
+    );
+  }
+
+  private meteredPlatformFeedValue(
+    url: string,
+    platformUrls: Set<string>,
+    featureFlags?: IUser["featureFlags"],
+  ): true | undefined {
+    return this.isMeteredPlatformUrl(url, platformUrls, featureFlags)
+      ? true
+      : undefined;
+  }
+
+  // Feed creation stores the canonical destination form of natural platform
+  // URLs (legacy hosts, redundant query params) so identical sources dedupe
+  // into one provider fetch. Applied only where raw user input becomes a feed
+  // URL — never to stored URLs, which is what keeps existing legacy feeds on
+  // the normal fetch path (opt-in migration).
+  private async resolveInputUrl(url: string): Promise<string> {
+    const [resolved] =
+      await this.deps.feedFetcherApiService.resolvePlatformUrls([url]);
+
+    return resolved ?? url;
+  }
+
+  // Metered platform feeds sit behind the closed-beta user flag plus a paid
+  // plan, with per-scope allowances. Reddit uses the owner's grant and is
+  // exempt. Billing disabled (self-host) means uncapped — the gates are
+  // billing constructs.
+  private async assertPlatformFeedAllowed(input: {
+    isMeteredPlatformUrl: boolean;
+    user: Pick<IUser, "featureFlags">;
+    isSupporter: boolean;
+    ownerDiscordUserId: string;
+    workspaceId?: string;
+    // The scope's total feed limit from the resolved benefits; only read for
+    // workspace scope, where it selects the premium allowance rung.
+    workspaceFeedLimit: number;
+    // The workspace subscription's base product. Tier 2 stays on its fixed
+    // premium rung even if a legacy subscription carries add-on feeds.
+    workspaceBaseTier?: string | null;
+    // Set when re-URLing an existing platform feed: its slot is already
+    // counted, so the swap must not count as an additional feed.
+    replacesPlatformFeed?: boolean;
+  }): Promise<void> {
+    if (!input.isMeteredPlatformUrl) {
+      return;
+    }
+
+    if (!isBillingEnabled(this.deps.config)) {
+      return;
+    }
+
+    if (!input.user.featureFlags?.premiumFeeds) {
+      throw new PremiumFeedsNotSupportedException(
+        "Premium feeds are not yet available on this account",
+      );
+    }
+
+    if (!input.isSupporter) {
+      throw new PremiumFeedsPlanRequiredException(
+        "Premium feeds require a paid plan",
+      );
+    }
+
+    const scopedUrls = input.workspaceId
+      ? await this.deps.userFeedRepository.findWorkspaceFeedUrls(
+          input.workspaceId,
+        )
+      : await this.deps.userFeedRepository.findPersonalFeedUrlsByOwner(
+          input.ownerDiscordUserId,
+        );
+
+    const scopedFeedUrls = scopedUrls.map((feed) => feed.url);
+    const scopedPlatformUrls = await this.classifyPlatformUrls(scopedFeedUrls);
+
+    // Counted per feed, not per distinct URL — the allowance is feed slots.
+    const used =
+      scopedFeedUrls.filter((url) => {
+        return (
+          scopedPlatformUrls.has(url) && appliesPremiumRefreshRateFloor(url)
+        );
+      }).length - (input.replacesPlatformFeed ? 1 : 0);
+    const allowance = input.workspaceId
+      ? resolveWorkspacePremiumAllowance({
+          totalFeeds: input.workspaceFeedLimit,
+          baseTier: input.workspaceBaseTier,
+        })
+      : PREMIUM_FEED_ALLOWANCES.personal;
+
+    if (used >= allowance) {
+      throw new PremiumFeedsLimitReachedException(
+        `Premium feed limit reached (${allowance} allowed in this scope)`,
+      );
+    }
+  }
+
+  // The provider-cost floor: a metered platform feed must never fetch faster
+  // than the configured minimum, on any path that writes a refresh rate.
+  private clampMeteredPlatformRefreshRateSeconds(
+    url: string,
+    isPlatformUrl: boolean,
+    rateSeconds: number,
+    featureFlags?: IUser["featureFlags"],
+  ): number {
+    if (
+      !this.isMeteredPlatformUrl(
+        url,
+        isPlatformUrl ? new Set([url]) : new Set(),
+        featureFlags,
+      )
+    ) {
+      return rateSeconds;
+    }
+
+    return Math.max(
+      rateSeconds,
+      this.deps.config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS,
+    );
+  }
+
+  // Reddit fetches through the feed owner's own OAuth grant (the official
+  // API serves nothing anonymously), so a reddit feed without a usable grant
+  // in its scope is rejected at the write paths instead of idling.
+  private assertRedditCredential(credentials: FeedCredentialSource): void {
+    const hasUsableGrant = credentials.externalCredentials?.some(
+      (cred) =>
+        cred.type === UserExternalCredentialType.Reddit &&
+        cred.status !== UserExternalCredentialStatus.Revoked &&
+        !!cred.data?.accessToken,
+    );
+
+    if (!hasUsableGrant) {
+      throw new RedditConnectionRequiredException();
+    }
   }
 
   // Translates the repository's limit sentinel into the exception callers handle.
@@ -183,10 +383,7 @@ export class UserFeedsService {
 
     const myWorkspaceIds = workspaceId ? [workspaceId] : [];
 
-    const [
-      { maxFeeds, maxDailyArticles, refreshRateSeconds, dormant },
-      sourceFeedToCopyFrom,
-    ] = await Promise.all([
+    const [feedBenefits, sourceFeedToCopyFrom] = await Promise.all([
       this.deps.supportersService.resolveFeedBenefits({
         workspaceId,
         user: { discordUserId },
@@ -199,6 +396,9 @@ export class UserFeedsService {
           )
         : null,
     ]);
+
+    const { maxFeeds, maxDailyArticles, refreshRateSeconds, dormant } =
+      feedBenefits;
 
     // The dormant gate fires before any URL validation so the rejection is
     // unmistakable (activation prompt) rather than a generic fetch failure.
@@ -214,30 +414,84 @@ export class UserFeedsService {
       );
     }
 
-    const credentialSource =
-      await this.deps.feedCredentialsService.resolveCredentialSource(
+    const [credentialSource, resolvedUrl] = await Promise.all([
+      this.deps.feedCredentialsService.resolveCredentialSource(
         { workspaceId },
         user,
-      );
-
-    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-      url,
-      credentialSource,
-    );
+      ),
+      this.resolveInputUrl(url),
+    ]);
 
     const tempLookupDetails =
       this.deps.feedCredentialsService.getLookupDetailsFromSource({
-        feed: { url, feedRequestLookupKey: randomUUID() },
+        feed: { url: resolvedUrl, feedRequestLookupKey: randomUUID() },
         credentials: credentialSource,
       });
 
-    const { finalUrl, enableDateChecks, feedTitle } =
-      await this.checkUrlIsValid(url, tempLookupDetails);
-
-    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-      finalUrl,
-      credentialSource,
+    const inputPlatformUrls = await this.classifyPlatformUrls([resolvedUrl]);
+    const usePlatformProvider = this.shouldUsePlatformProvider(
+      resolvedUrl,
+      inputPlatformUrls,
+      user.featureFlags,
+      feedBenefits.isSupporter,
     );
+
+    if (
+      user.featureFlags?.premiumFeeds &&
+      this.isMeteredPlatformUrl(
+        resolvedUrl,
+        inputPlatformUrls,
+        user.featureFlags,
+      )
+    ) {
+      await this.assertPlatformFeedAllowed({
+        isMeteredPlatformUrl: true,
+        user,
+        isSupporter: feedBenefits.isSupporter,
+        ownerDiscordUserId: discordUserId,
+        workspaceId,
+        workspaceFeedLimit: maxFeeds,
+        workspaceBaseTier: feedBenefits.premiumFeedBaseTier,
+      });
+    }
+
+    const { finalUrl, enableDateChecks, feedTitle } =
+      await this.checkUrlIsValid(
+        resolvedUrl,
+        tempLookupDetails,
+        usePlatformProvider,
+      );
+
+    // Gated on the validated final URL so a redirect landing on a platform
+    // host cannot bypass the gate (same as the clone/update paths).
+    const platformUrls = await this.classifyPlatformUrls([finalUrl]);
+    const isPlatformUrl = platformUrls.has(finalUrl);
+
+    await this.assertPlatformFeedAllowed({
+      isMeteredPlatformUrl: this.isMeteredPlatformUrl(
+        finalUrl,
+        platformUrls,
+        user.featureFlags,
+      ),
+      user,
+      isSupporter: feedBenefits.isSupporter,
+      ownerDiscordUserId: discordUserId,
+      workspaceId,
+      workspaceFeedLimit: maxFeeds,
+      workspaceBaseTier: feedBenefits.premiumFeedBaseTier,
+    });
+
+    if (isRedditFeedUrl(finalUrl)) {
+      this.assertRedditCredential(credentialSource);
+    }
+
+    const effectiveRefreshRateSeconds =
+      this.clampMeteredPlatformRefreshRateSeconds(
+        finalUrl,
+        isPlatformUrl,
+        refreshRateSeconds,
+        user.featureFlags,
+      );
 
     const {
       connections,
@@ -256,10 +510,25 @@ export class UserFeedsService {
           discordUserId,
         },
         workspaceId,
-        refreshRateSeconds,
-        slotOffsetMs: calculateSlotOffsetMs(finalUrl, refreshRateSeconds),
+        refreshRateSeconds: effectiveRefreshRateSeconds,
+        isMeteredPlatformFeed: this.meteredPlatformFeedValue(
+          finalUrl,
+          platformUrls,
+          user.featureFlags,
+        ),
+        slotOffsetMs: calculateSlotOffsetMs(
+          finalUrl,
+          effectiveRefreshRateSeconds,
+        ),
         maxDailyArticles,
-        feedRequestLookupKey: tempLookupDetails?.key,
+        // Reddit feeds ride the per-feed credentialed lookup path (their
+        // fetches carry the owner's grant); other platform feeds fetch
+        // keyless on the plain URL so shared sources batch.
+        feedRequestLookupKey: isRedditFeedUrl(finalUrl)
+          ? tempLookupDetails?.key
+          : isPlatformUrl
+            ? undefined
+            : tempLookupDetails?.key,
         dateCheckOptions: enableDateChecks
           ? { oldArticleDateDiffMsThreshold: 1000 * 60 * 60 * 24 }
           : undefined,
@@ -340,11 +609,15 @@ export class UserFeedsService {
       );
     }
 
-    const { maxFeeds, dormant } =
-      await this.deps.supportersService.resolveFeedBenefits({
-        workspaceId: destinationWorkspaceId,
-        user: { discordUserId: sourceFeed.user.discordUserId },
-      });
+    const {
+      maxFeeds,
+      dormant,
+      isSupporter,
+      premiumFeedBaseTier: destinationPremiumFeedBaseTier,
+    } = await this.deps.supportersService.resolveFeedBenefits({
+      workspaceId: destinationWorkspaceId,
+      user: { discordUserId: sourceFeed.user.discordUserId },
+    });
 
     if (destinationWorkspaceId && dormant) {
       throw new WorkspaceNotSubscribedException(
@@ -352,41 +625,108 @@ export class UserFeedsService {
       );
     }
 
-    let inputUrl = sourceFeed.inputUrl;
-    let finalUrl = sourceFeed.url;
-
     const credentialSource =
       await this.deps.feedCredentialsService.resolveCredentialSource(
         { workspaceId: destinationWorkspaceId },
         user,
       );
 
-    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-      finalUrl,
-      credentialSource,
-    );
+    let inputUrl = sourceFeed.inputUrl;
+    let finalUrl = sourceFeed.url;
 
-    if (data?.url && data.url !== sourceFeed.url) {
-      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-        data.url,
-        credentialSource,
-      );
+    // Null when the clone keeps the source feed's url — no validation fetch.
+    const cloneUrl = data?.url && data.url !== sourceFeed.url ? data.url : null;
+
+    if (cloneUrl) {
+      const resolvedCloneUrl = await this.resolveInputUrl(cloneUrl);
+      const inputPlatformUrls = await this.classifyPlatformUrls([
+        resolvedCloneUrl,
+      ]);
+
+      if (
+        user.featureFlags?.premiumFeeds &&
+        this.isMeteredPlatformUrl(
+          resolvedCloneUrl,
+          inputPlatformUrls,
+          user.featureFlags,
+        )
+      ) {
+        await this.assertPlatformFeedAllowed({
+          isMeteredPlatformUrl: true,
+          user,
+          isSupporter,
+          ownerDiscordUserId: sourceFeed.user.discordUserId,
+          workspaceId: destinationWorkspaceId,
+          workspaceFeedLimit: maxFeeds,
+          workspaceBaseTier: destinationPremiumFeedBaseTier,
+        });
+      }
 
       finalUrl = (
         await this.checkUrlIsValid(
-          data.url,
+          resolvedCloneUrl,
           this.deps.feedCredentialsService.getLookupDetailsFromSource({
             feed: sourceFeed,
             credentials: credentialSource,
           }),
+          this.shouldUsePlatformProvider(
+            resolvedCloneUrl,
+            inputPlatformUrls,
+            user.featureFlags,
+            isSupporter,
+          ),
         )
       ).finalUrl;
 
-      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
+      inputUrl = cloneUrl;
+    }
+
+    const platformUrls = await this.classifyPlatformUrls([finalUrl]);
+    const isPlatformUrl = platformUrls.has(finalUrl);
+
+    await this.assertPlatformFeedAllowed({
+      isMeteredPlatformUrl: this.isMeteredPlatformUrl(
         finalUrl,
-        credentialSource,
-      );
-      inputUrl = data.url;
+        platformUrls,
+        user.featureFlags,
+      ),
+      user,
+      isSupporter,
+      ownerDiscordUserId: sourceFeed.user.discordUserId,
+      workspaceId: destinationWorkspaceId,
+      workspaceFeedLimit: maxFeeds,
+      workspaceBaseTier: destinationPremiumFeedBaseTier,
+    });
+
+    if (isRedditFeedUrl(finalUrl)) {
+      this.assertRedditCredential(credentialSource);
+    }
+
+    // A premium clone inherits the source's rates; a user rate below the floor
+    // is dropped (falls back to the floored base rate) rather than copied.
+    // Reddit clones keep their rates: the floor does not apply to them.
+    const meteredRateOverrides: {
+      refreshRateSeconds?: number;
+      userRefreshRateSeconds?: number | null;
+    } = {};
+
+    if (this.isMeteredPlatformUrl(finalUrl, platformUrls, user.featureFlags)) {
+      meteredRateOverrides.refreshRateSeconds =
+        this.clampMeteredPlatformRefreshRateSeconds(
+          finalUrl,
+          isPlatformUrl,
+          sourceFeed.refreshRateSeconds ??
+            this.deps.supportersService.defaultRefreshRateSeconds,
+          user.featureFlags,
+        );
+
+      if (
+        sourceFeed.userRefreshRateSeconds &&
+        sourceFeed.userRefreshRateSeconds <
+          this.deps.config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS
+      ) {
+        meteredRateOverrides.userRefreshRateSeconds = null;
+      }
     }
 
     const created = await this.cloneWithFeedLimit(
@@ -397,6 +737,18 @@ export class UserFeedsService {
           url: finalUrl,
           inputUrl,
           workspaceId: destinationWorkspaceId,
+          // Clones never inherit the source's request-row key (the repo
+          // strips it); reddit destinations mint a fresh one so their
+          // fetches ride the credentialed lookup path.
+          ...(isRedditFeedUrl(finalUrl)
+            ? { feedRequestLookupKey: randomUUID() }
+            : {}),
+          isMeteredPlatformFeed: this.meteredPlatformFeedValue(
+            finalUrl,
+            platformUrls,
+            user.featureFlags,
+          ),
+          ...meteredRateOverrides,
         },
       },
       this.feedLimitScope({
@@ -409,6 +761,15 @@ export class UserFeedsService {
     await this.deps.feedCredentialsService.syncLookupKeys({
       feedIds: [created.id],
     });
+
+    // Non-reddit platform clones must not keep a credentialed lookup key:
+    // those providers fetch keyless on the plain URL. Reddit keeps its key —
+    // its fetches carry the owner's grant through the credentialed path.
+    if (isPlatformUrl && !isRedditFeedUrl(finalUrl)) {
+      await this.deps.userFeedRepository.bulkUpdateLookupKeys([
+        { feedId: created.id, action: "unset" },
+      ]);
+    }
 
     for (const c of sourceFeed.connections.discordChannels) {
       await this.deps.feedConnectionsDiscordChannelsService.cloneConnection(
@@ -515,6 +876,64 @@ export class UserFeedsService {
       copyableSettings.connections = sourceFeed.connections;
     }
 
+    // A source rate below the premium floor cannot legally land on floor-bearing
+    // premium targets; those fall back to their floored base rate instead. The
+    // copy is split into two writes so non-premium and reddit targets still
+    // receive the source rate.
+    const sourceRate = sourceFeed.userRefreshRateSeconds ?? null;
+    const subFloorSourceRate =
+      settingsToCopy.includes(UserFeedCopyableSetting.RefreshRate) &&
+      sourceRate !== null &&
+      sourceRate <
+        this.deps.config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS;
+
+    if (subFloorSourceRate) {
+      const targetFeeds =
+        await this.deps.userFeedRepository.findFeedUrlsForCopyTarget(target);
+      const platformUrls = await this.classifyPlatformUrls(
+        targetFeeds.map((feed) => feed.url),
+      );
+      const premiumIds = targetFeeds
+        .filter(
+          (feed) =>
+            platformUrls.has(feed.url) &&
+            appliesPremiumRefreshRateFloor(feed.url),
+        )
+        .map((feed) => feed.id);
+
+      if (premiumIds.length === 0) {
+        await this.deps.userFeedRepository.copySettingsToFeeds({
+          target,
+          settings: copyableSettings,
+        });
+
+        return;
+      }
+
+      const premiumTarget: CopySettingsTarget = {
+        ...target,
+        type: "selected",
+        feedIds: premiumIds,
+      };
+      const regularIds = targetFeeds
+        .map((feed) => feed.id)
+        .filter((id) => !premiumIds.includes(id));
+
+      if (regularIds.length) {
+        await this.deps.userFeedRepository.copySettingsToFeeds({
+          target: { ...target, type: "selected", feedIds: regularIds },
+          settings: copyableSettings,
+        });
+      }
+
+      await this.deps.userFeedRepository.copySettingsToFeeds({
+        target: premiumTarget,
+        settings: { ...copyableSettings, userRefreshRateSeconds: null },
+      });
+
+      return;
+    }
+
     await this.deps.userFeedRepository.copySettingsToFeeds({
       target,
       settings: copyableSettings,
@@ -610,7 +1029,9 @@ export class UserFeedsService {
     const freshnessSeconds = latestRequest.freshnessLifetimeMs
       ? latestRequest.freshnessLifetimeMs / 1000
       : 0;
-    const cacheGated = freshnessSeconds > refreshRateSeconds;
+    const cacheGated =
+      freshnessSeconds * 1000 >
+      refreshRateSeconds * 1000 + HOST_CACHE_CADENCE_MARGIN_MS;
     const effectiveIntervalSeconds = cacheGated
       ? freshnessSeconds
       : refreshRateSeconds;
@@ -656,51 +1077,144 @@ export class UserFeedsService {
       $unset: {},
     };
 
+    // The premium floor evaluates against the URL this request leaves the feed
+    // with, so a PATCH that both re-URLs and re-rates cannot slip under the
+    // floor via the old URL.
+    let premiumRateUrl = feed.url;
+    // Classified platform URLs among the ones this request touches; populated
+    // on demand by the URL-change and rate sections below.
+    let platformUrls: Set<string> | undefined;
+
     if (updates.title) {
       useUpdateObject.$set!.title = updates.title;
     }
 
     if (updates.url) {
       // Resolve credentials and lookup details from the NEW url, not the feed's
-      // existing one: changing to a Reddit url must apply the authenticated lookup
-      // (and gate on a connection), otherwise the validation fetch hits the raw
-      // Reddit url and is rate-limited. Mirrors the create/clone paths.
-      const credentialSource =
-        await this.deps.feedCredentialsService.resolveCredentialSource(
-          feed,
-          user,
-        );
+      // existing one: changing to a Reddit url must apply the authenticated lookup,
+      // otherwise the validation fetch hits the raw Reddit url and is rate-limited.
+      // Mirrors the create/clone paths.
+      const [credentialSource, resolvedUpdatesUrl, urlChangeBenefits] =
+        await Promise.all([
+          this.deps.feedCredentialsService.resolveCredentialSource(feed, user),
+          this.resolveInputUrl(updates.url),
+          this.deps.supportersService.resolveFeedBenefits(feed),
+        ]);
+      feedBenefits = urlChangeBenefits;
 
-      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-        updates.url,
-        credentialSource,
-      );
+      const inputPlatformUrls = await this.classifyPlatformUrls([
+        resolvedUpdatesUrl,
+      ]);
+
+      if (
+        user.featureFlags?.premiumFeeds &&
+        this.isMeteredPlatformUrl(
+          resolvedUpdatesUrl,
+          inputPlatformUrls,
+          user.featureFlags,
+        )
+      ) {
+        await this.assertPlatformFeedAllowed({
+          isMeteredPlatformUrl: true,
+          user,
+          isSupporter: urlChangeBenefits.isSupporter,
+          ownerDiscordUserId: feed.user.discordUserId,
+          workspaceId: feed.workspaceId,
+          workspaceFeedLimit: urlChangeBenefits.maxFeeds,
+          workspaceBaseTier: urlChangeBenefits.premiumFeedBaseTier,
+          replacesPlatformFeed: this.isMeteredPlatformUrl(
+            feed.url,
+            new Set([feed.url]),
+            user.featureFlags,
+          ),
+        });
+      }
 
       const { finalUrl } = await this.checkUrlIsValid(
-        updates.url,
+        resolvedUpdatesUrl,
         this.deps.feedCredentialsService.getLookupDetailsFromSource({
-          feed: { url: updates.url, feedRequestLookupKey: randomUUID() },
+          feed: { url: resolvedUpdatesUrl, feedRequestLookupKey: randomUUID() },
           credentials: credentialSource,
         }),
+        this.shouldUsePlatformProvider(
+          resolvedUpdatesUrl,
+          inputPlatformUrls,
+          user.featureFlags,
+          urlChangeBenefits.isSupporter,
+        ),
       );
 
-      this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-        finalUrl,
-        credentialSource,
-      );
+      // One batched classification covers both URLs: the new one for the gate
+      // and floor, the old one for the replacement-slot semantics.
+      platformUrls = await this.classifyPlatformUrls([feed.url, finalUrl]);
+
+      await this.assertPlatformFeedAllowed({
+        isMeteredPlatformUrl: this.isMeteredPlatformUrl(
+          finalUrl,
+          platformUrls,
+          user.featureFlags,
+        ),
+        user,
+        isSupporter: urlChangeBenefits.isSupporter,
+        ownerDiscordUserId: feed.user.discordUserId,
+        workspaceId: feed.workspaceId,
+        workspaceFeedLimit: urlChangeBenefits.maxFeeds,
+        workspaceBaseTier: urlChangeBenefits.premiumFeedBaseTier,
+        replacesPlatformFeed:
+          platformUrls.has(feed.url) &&
+          appliesPremiumRefreshRateFloor(feed.url),
+      });
+
+      if (isRedditFeedUrl(finalUrl)) {
+        this.assertRedditCredential(credentialSource);
+      }
 
       useUpdateObject.$set!.url = finalUrl;
       useUpdateObject.$set!.inputUrl = updates.url;
+      const isMeteredPlatformFeed = this.isMeteredPlatformUrl(
+        finalUrl,
+        platformUrls,
+        user.featureFlags,
+      );
 
-      // Recalculate slot offset when URL changes to maintain even distribution
-      const effectiveRefreshRate =
+      if (isMeteredPlatformFeed) {
+        useUpdateObject.$set!.isMeteredPlatformFeed = true;
+      } else {
+        useUpdateObject.$unset!.isMeteredPlatformFeed = "";
+      }
+      // A feed re-URLed onto a non-reddit platform URL must not keep a
+      // credentialed lookup key: those providers fetch keyless on the plain
+      // URL. Reddit keeps its key — its fetches carry the owner's grant.
+      if (platformUrls.has(finalUrl) && !isRedditFeedUrl(finalUrl)) {
+        useUpdateObject.$unset!.feedRequestLookupKey = "";
+      } else if (isRedditFeedUrl(finalUrl) && !feed.feedRequestLookupKey) {
+        useUpdateObject.$set!.feedRequestLookupKey = randomUUID();
+      }
+      premiumRateUrl = finalUrl;
+
+      // Recalculate slot offset when URL changes to maintain even distribution.
+      // A non-metered feed becoming metered is clamped up to the floor here —
+      // the stored base rate included, since the scheduler keys on it.
+      const effectiveRefreshRate = this.clampMeteredPlatformRefreshRateSeconds(
+        finalUrl,
+        platformUrls.has(finalUrl),
         feed.userRefreshRateSeconds ??
-        feed.refreshRateSeconds ??
-        this.deps.supportersService.defaultRefreshRateSeconds;
+          feed.refreshRateSeconds ??
+          this.deps.supportersService.defaultRefreshRateSeconds,
+        user.featureFlags,
+      );
       useUpdateObject.$set!.slotOffsetMs = calculateSlotOffsetMs(
         finalUrl,
         effectiveRefreshRate,
       );
+
+      if (
+        platformUrls.has(finalUrl) &&
+        !platformUrls.has(feed.url) &&
+        (feed.refreshRateSeconds ?? 0) < effectiveRefreshRate
+      ) {
+        useUpdateObject.$set!.refreshRateSeconds = effectiveRefreshRate;
+      }
     }
 
     if (updates.disabledCode !== undefined) {
@@ -780,6 +1294,40 @@ export class UserFeedsService {
 
       const { refreshRateSeconds: fastestPossibleRate } = feedBenefits;
 
+      // The metered platform floor applies to the effective rate, so a
+      // null/unset (base-rate) request only fails when the stored base rate
+      // itself is below the floor — which the create path prevents.
+      platformUrls ??= await this.classifyPlatformUrls([premiumRateUrl]);
+      const premiumFloorSeconds =
+        platformUrls.has(premiumRateUrl) &&
+        appliesPremiumRefreshRateFloor(premiumRateUrl)
+          ? this.deps.config.BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS
+          : 0;
+      const refreshRateLimits = resolveRefreshRateLimits({
+        planMinimumSeconds: fastestPossibleRate,
+        premiumFloorSeconds,
+      });
+      const requestedRate =
+        updates.userRefreshRateSeconds === null
+          ? (feed.refreshRateSeconds ??
+            this.deps.supportersService.defaultRefreshRateSeconds)
+          : updates.userRefreshRateSeconds;
+      // A null request resets to the stored base rate: the plan floor does not
+      // govern that reset, only the platform floor (as before).
+      const requestedRateMinimum =
+        updates.userRefreshRateSeconds === null
+          ? premiumFloorSeconds
+          : refreshRateLimits.minimumSeconds;
+
+      if (requestedRate < requestedRateMinimum) {
+        throw new RefreshRateNotAllowedException(
+          requestedRateMinimum === premiumFloorSeconds &&
+            premiumFloorSeconds > 0
+            ? `Refresh rate is too low. Premium feeds must refresh at least once every ${Math.ceil(premiumFloorSeconds / 60)} minutes.`
+            : `Refresh rate is too low. Must be at least ${refreshRateLimits.minimumSeconds} seconds.`,
+        );
+      }
+
       if (
         updates.userRefreshRateSeconds === null ||
         updates.userRefreshRateSeconds === fastestPossibleRate
@@ -794,13 +1342,11 @@ export class UserFeedsService {
           feed.url,
           newEffectiveRate,
         );
-      } else if (updates.userRefreshRateSeconds > 86400) {
+      } else if (
+        updates.userRefreshRateSeconds > refreshRateLimits.maximumSeconds
+      ) {
         throw new RefreshRateNotAllowedException(
-          `Refresh rate is too high. Maximum is 86400 seconds (24 hours).`,
-        );
-      } else if (updates.userRefreshRateSeconds < fastestPossibleRate) {
-        throw new RefreshRateNotAllowedException(
-          `Refresh rate is too low. Must be at least ${fastestPossibleRate} seconds.`,
+          `Refresh rate is too high. Maximum is ${refreshRateLimits.maximumSeconds} seconds (24 hours).`,
         );
       } else {
         useUpdateObject.$set!.userRefreshRateSeconds =
@@ -814,7 +1360,10 @@ export class UserFeedsService {
       }
     }
 
-    if (updates.scheduleMode === UserFeedScheduleMode.Scheduled && updates.schedule) {
+    if (
+      updates.scheduleMode === UserFeedScheduleMode.Scheduled &&
+      updates.schedule
+    ) {
       useUpdateObject.$set!.scheduleMode = updates.scheduleMode;
       const days = updates.schedule.days?.length
         ? [...new Set(updates.schedule.days)].sort((a, b) => a - b)
@@ -846,12 +1395,7 @@ export class UserFeedsService {
       // A url change can flip the feed's credential requirement (e.g. to/from a
       // Reddit url), so resync the lookup key or delivery fetches with a stale key.
       await this.deps.feedCredentialsService.syncLookupKeys({ feedIds: [id] });
-
-      await this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
-        data: { feed: { id } },
-      });
     }
-
     if (
       u &&
       (updates.disabledCode === null ||
@@ -890,8 +1434,8 @@ export class UserFeedsService {
 
     await this.deps.userFeedRepository.deleteById(id);
 
-    await this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
-      data: { feed: { id } },
+    await this.deps.publishMessage(MessageBrokerQueue.FeedDeleted, {
+      data: { feedId: id },
     });
 
     try {
@@ -1016,6 +1560,8 @@ export class UserFeedsService {
       lookupDetails,
       {
         getCachedResponse: false,
+        usePlatformProvider:
+          feed.isMeteredPlatformFeed === true || isRedditFeedUrl(feed.url),
       },
     );
 
@@ -1110,7 +1656,11 @@ export class UserFeedsService {
 
     const { articles, requestStatus } =
       await this.deps.feedHandlerService.getArticles(
-        input,
+        {
+          ...input,
+          usePlatformProvider:
+            feed.isMeteredPlatformFeed === true || isRedditFeedUrl(feed.url),
+        },
         await this.deps.feedCredentialsService.getLookupDetails({ feed, user }),
       );
 
@@ -1178,6 +1728,8 @@ export class UserFeedsService {
         selectProperties,
         selectPropertyTypes,
         includeHtmlInErrors,
+        usePlatformProvider:
+          feed.isMeteredPlatformFeed === true || isRedditFeedUrl(feed.url),
         formatter: {
           ...formatter,
           options: {
@@ -1263,8 +1815,8 @@ export class UserFeedsService {
         feeds
           .slice(index, index + BULK_DELETE_PUBLISH_CONCURRENCY)
           .map((feed) =>
-            this.deps.publishMessage(MESSAGE_BROKER_QUEUE_FEED_DELETED, {
-              data: { feed: { id: feed.id } },
+            this.deps.publishMessage(MessageBrokerQueue.FeedDeleted, {
+              data: { feedId: feed.id },
             }),
           ),
       );
@@ -1357,10 +1909,14 @@ export class UserFeedsService {
 
   async validateFeedUrl(
     opts: { discordUserId: string },
-    input: { url: string; workspaceId?: string },
+    input: {
+      url: string;
+      workspaceId?: string;
+      replacesFeed?: IUserFeed;
+    },
   ): Promise<ValidateFeedUrlOutput> {
     const { discordUserId } = opts;
-    const { url, workspaceId } = input;
+    const { url, workspaceId, replacesFeed } = input;
 
     const user =
       await this.deps.usersService.getOrCreateUserByDiscordId(discordUserId);
@@ -1372,31 +1928,56 @@ export class UserFeedsService {
       );
     }
 
-    const credentialSource =
-      await this.deps.feedCredentialsService.resolveCredentialSource(
+    const [credentialSource, resolvedUrl, feedBenefits] = await Promise.all([
+      this.deps.feedCredentialsService.resolveCredentialSource(
         { workspaceId },
         user,
-      );
-
-    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-      url,
-      credentialSource,
-    );
+      ),
+      this.resolveInputUrl(url),
+      this.deps.supportersService.resolveFeedBenefits({
+        workspaceId,
+        user: { discordUserId },
+      }),
+    ]);
 
     const lookupDetails =
       this.deps.feedCredentialsService.getLookupDetailsFromSource({
-        feed: { url, feedRequestLookupKey: randomUUID() },
+        feed: { url: resolvedUrl, feedRequestLookupKey: randomUUID() },
         credentials: credentialSource,
       });
 
-    const { finalUrl, feedTitle } = await this.checkUrlIsValid(
-      url,
-      lookupDetails,
-    );
+    const platformUrls = await this.classifyPlatformUrls([resolvedUrl]);
 
-    this.deps.feedCredentialsService.assertRedditConnectionIfRequired(
-      finalUrl,
-      credentialSource,
+    if (
+      this.isMeteredPlatformUrl(resolvedUrl, platformUrls, user.featureFlags)
+    ) {
+      await this.assertPlatformFeedAllowed({
+        isMeteredPlatformUrl: true,
+        user,
+        isSupporter: feedBenefits.isSupporter,
+        ownerDiscordUserId: discordUserId,
+        workspaceId,
+        workspaceFeedLimit: feedBenefits.maxFeeds,
+        workspaceBaseTier: feedBenefits.premiumFeedBaseTier,
+        replacesPlatformFeed: replacesFeed
+          ? this.isMeteredPlatformUrl(
+              replacesFeed.url,
+              new Set([replacesFeed.url]),
+              user.featureFlags,
+            )
+          : false,
+      });
+    }
+
+    const { finalUrl, feedTitle } = await this.checkUrlIsValid(
+      resolvedUrl,
+      lookupDetails,
+      this.shouldUsePlatformProvider(
+        resolvedUrl,
+        platformUrls,
+        user.featureFlags,
+        feedBenefits.isSupporter,
+      ),
     );
 
     if (finalUrl !== url) {
@@ -1860,6 +2441,8 @@ export class UserFeedsService {
             }
           : null,
         refreshRateSeconds: getEffectiveRefreshRateSeconds(feed),
+        usePlatformProvider:
+          feed.isMeteredPlatformFeed === true || isRedditFeedUrl(feed.url),
       },
       mediums,
       articleDayLimit: feed.maxDailyArticles ?? maxDailyArticles,
@@ -1877,6 +2460,7 @@ export class UserFeedsService {
   private async checkUrlIsValid(
     url: string,
     lookupDetails: FeedRequestLookupDetails | null,
+    usePlatformProvider: boolean,
   ): Promise<CheckUrlIsValidOutput> {
     const getArticlesResponse = await this.deps.feedHandlerService.getArticles(
       {
@@ -1896,6 +2480,7 @@ export class UserFeedsService {
         skip: 0,
         findRssFromHtml: true,
         executeFetchIfStale: true,
+        usePlatformProvider,
       },
       lookupDetails,
     );

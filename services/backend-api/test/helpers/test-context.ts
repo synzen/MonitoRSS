@@ -8,6 +8,7 @@ import { Environment } from "../../src/config";
 import { getTestDbUri } from "./test-constants";
 import type { SessionAccessToken } from "../../src/services/discord-auth/types";
 import { createTestHttpServer, type TestHttpServer } from "./test-http-server";
+import { registerDefaultClassifyRoute } from "./mock-apis";
 import { createMockAccessToken } from "./mock-factories";
 import type { MockApi } from "./mock-apis";
 
@@ -98,12 +99,13 @@ function createTestConfig(overrides?: Partial<Config>): Config {
     BACKEND_API_USER_FEEDS_API_HOST: "http://localhost:5001",
     BACKEND_API_USER_FEEDS_API_KEY: "test-api-key",
 
-    BACKEND_API_FEED_USER_AGENT: "MonitoRSS-Test",
-
     BACKEND_API_DEFAULT_REFRESH_RATE_MINUTES: 10,
     BACKEND_API_DEFAULT_MAX_FEEDS: 5,
     BACKEND_API_DEFAULT_MAX_USER_FEEDS: 5,
     BACKEND_API_DEFAULT_MAX_WORKSPACE_FEEDS: 140,
+    BACKEND_API_MAINTENANCE_INTERVAL_MS: 300000,
+    BACKEND_API_PLATFORM_FEED_URL_SYNC_ENABLED: false,
+    BACKEND_API_PREMIUM_FEEDS_MIN_REFRESH_RATE_SECONDS: 3600,
     BACKEND_API_DEFAULT_DATE_FORMAT: "ddd, D MMMM YYYY, h:mm A z",
     BACKEND_API_DEFAULT_TIMEZONE: "UTC",
     BACKEND_API_DEFAULT_DATE_LANGUAGE: "en",
@@ -174,6 +176,11 @@ export async function createAppTestContext(
 ): Promise<AppTestContext> {
   const connection = await setupDatabase();
   const discordMockServer = createTestHttpServer({ pathPrefix: "/api/v10" });
+  // Default feed-requests mock so classification-dependent paths (premium
+  // gating) work without per-test setup; the neutral route classifies every
+  // URL as non-premium. Callers passing their own host override this.
+  const feedRequestsMockServer = createTestHttpServer();
+  registerDefaultClassifyRoute(feedRequestsMockServer);
 
   // If construction throws after this point (e.g. createContainer/createApp),
   // the connection and mock server are already open with no teardown path —
@@ -194,6 +201,7 @@ export async function createAppTestContext(
 
     const config = createTestConfig({
       BACKEND_API_DISCORD_API_BASE_URL: discordMockServer.host,
+      BACKEND_API_FEED_REQUESTS_API_HOST: feedRequestsMockServer.host,
       ...mockApiOverrides,
       ...options.configOverrides,
     });
@@ -221,6 +229,7 @@ export async function createAppTestContext(
     await app.listen({ port: 0 });
   } catch (err) {
     await discordMockServer.stop().catch(() => {});
+    await feedRequestsMockServer.stop().catch(() => {});
     await connection.close().catch(() => {});
     throw err;
   }
@@ -300,6 +309,7 @@ export async function createAppTestContext(
     async teardown() {
       await app.close();
       await discordMockServer.stop();
+      await feedRequestsMockServer.stop();
       await connection.dropDatabase();
       await connection.close();
     },
